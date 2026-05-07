@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+*.log
+.DS_Store
+dist/
+scorm-package/
+*.zip
+
+# Local export folder used to share specific topics — not part of the runnable app
+topics-1-2-review/
+
+# Local Claude Code agent state / skill data — not part of the runnable app
+.claude/
