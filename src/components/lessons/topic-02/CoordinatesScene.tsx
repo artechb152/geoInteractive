@@ -44,8 +44,7 @@ const SYSTEMS: System[] = [
 ];
 
 export function CoordinatesScene() {
-  const [hovered, setHovered] = useState<'itm' | 'wgs84' | null>(null);
-  const [shift, setShift] = useState(0); 
+  const [shift, setShift] = useState(0);
 
   return (
     <section id="scene-coordinates" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -89,16 +88,10 @@ export function CoordinatesScene() {
         {SYSTEMS.map((s) => (
           <motion.article
             key={s.id}
-            onMouseEnter={() => setHovered(s.id)}
-            onMouseLeave={() => setHovered(null)}
             initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className={cn(
-              'surface-elevated p-6 transition-all border border-border/50 rounded-xl',
-              hovered === s.id && 'border-accent/50 shadow-glow bg-accent/5',
-              hovered && hovered !== s.id && 'opacity-60 blur-[1px]'
-            )}
+            className="surface-elevated p-6 border border-border/50 rounded-xl"
           >
             <div className="flex items-baseline justify-between mb-4">
               <div>
@@ -207,11 +200,7 @@ function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: numb
         <span>100 מ׳ (החטאה מלאה)</span>
       </div>
 
-      <div className="grid md:grid-cols-[1.6fr_1fr] gap-8 items-stretch">
-        <div className="surface relative aspect-video overflow-hidden rounded-xl border border-border/40 shadow-inner">
-          <ImpactMap shift={shift} />
-        </div>
-
+      <div className="grid md:grid-cols-[1fr_1.6fr] gap-8 items-stretch">
         <div className="surface p-6 flex flex-col justify-center rounded-xl bg-bg/30">
           <div className="text-[10px] font-mono text-fg-dim mb-3 tracking-widest uppercase font-bold">
             השלכה מבצעית בשטח
@@ -226,10 +215,14 @@ function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: numb
           </p>
           <div className="pt-4 border-t border-border-subtle text-xs text-fg-muted leading-relaxed">
             <strong className="text-fg block mb-1 underline">איך זה קורה בפועל?</strong>
-            חייל א׳ מודד נ"צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM. 
+            חייל א׳ מודד נ"צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM.
             <br/><br/>
             <strong>התוצאה:</strong> בלי תרגום נכון → הקואורדינטה תתפרש כמיקום אחר לגמרי.
           </div>
+        </div>
+
+        <div className="surface relative aspect-video overflow-hidden rounded-xl border border-border/40 shadow-inner">
+          <ImpactMap shift={shift} />
         </div>
       </div>
     </motion.div>

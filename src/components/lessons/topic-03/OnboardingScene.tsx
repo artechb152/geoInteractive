@@ -80,7 +80,16 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
 
 export function OnboardingScene() {
   const [phase, setPhase] = useState<Phase>('plan');
-  const current = STEPS.find((s) => s.id === phase)!;
+  const [expandedStep, setExpandedStep] = useState<Phase | null>('plan');
+
+  const handleStepClick = (id: Phase) => {
+    if (expandedStep === id) {
+      setExpandedStep(null);
+    } else {
+      setPhase(id);
+      setExpandedStep(id);
+    }
+  };
 
   return (
     <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -95,92 +104,118 @@ export function OnboardingScene() {
         intro="דמיין שאתה צריך להוביל קבוצה ממקום A למקום B — בלילה, בשטח שאתה לא מכיר. בוא נראה ביחד מה זה אומר בפועל, צעד אחר צעד."
       />
 
-      <div className="grid lg:grid-cols-[3fr_2fr] gap-6 items-stretch">
-        <div className="surface-elevated relative overflow-hidden">
-          <MissionStage phase={phase} />
-        </div>
-
+      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = phase === s.id;
+            const expanded = expandedStep === s.id;
             const passed = STEPS.findIndex((x) => x.id === phase) > i;
             return (
-              <motion.button
+              <div
                 key={s.id}
-                onClick={() => setPhase(s.id)}
-                whileHover={{ x: -3 }}
-                whileTap={{ scale: 0.98 }}
                 className={cn(
-                  'w-full surface p-4 text-right transition-all flex items-center gap-3 relative overflow-hidden',
+                  'surface overflow-hidden transition-colors',
                   active
                     ? 'border-accent shadow-glow bg-accent/5'
-                    : 'hover:border-border-strong hover:bg-bg-accent/30',
+                    : 'hover:border-border-strong',
                   passed && !active && 'opacity-80'
                 )}
               >
-                {active && (
-                  <motion.span
-                    layoutId="t3-onb-step-bar"
-                    className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
-                  />
-                )}
-                <span
-                  className={cn(
-                    'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
-                    active ? 'bg-accent text-bg shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
-                  )}
+                <button
+                  type="button"
+                  onClick={() => handleStepClick(s.id)}
+                  aria-expanded={expanded}
+                  aria-controls={`step-panel-${s.id}`}
+                  className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  {passed && !active ? (
-                    <Icon name="check" size={16} strokeWidth={2.5} />
-                  ) : (
-                    <span className="font-mono text-sm font-bold">{i + 1}</span>
+                  {active && (
+                    <motion.span
+                      layoutId="t3-onb-step-bar"
+                      className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+                    />
                   )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className={cn('font-medium leading-tight text-sm', active && 'text-accent')}>
-                    {s.label}
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
+                      active ? 'bg-accent text-bg shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
+                    )}
+                  >
+                    {passed && !active ? (
+                      <Icon name="check" size={16} strokeWidth={2.5} />
+                    ) : (
+                      <span className="font-mono text-sm font-bold">{i + 1}</span>
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className={cn('font-medium leading-tight text-sm', active && 'text-accent')}>
+                      {s.label}
+                    </div>
                   </div>
-                </div>
-                <Icon
-                  name={s.icon}
-                  size={20}
-                  className={cn('transition-colors', active ? 'text-accent' : 'text-fg-dim')}
-                />
-              </motion.button>
+                  <Icon
+                    name={s.icon}
+                    size={20}
+                    className={cn('transition-colors shrink-0', active ? 'text-accent' : 'text-fg-dim')}
+                  />
+                  <motion.span
+                    animate={{ rotate: expanded ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('shrink-0 inline-flex', expanded ? 'text-accent' : 'text-fg-dim')}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {expanded && (
+                    <motion.div
+                      key={`panel-${s.id}`}
+                      id={`step-panel-${s.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-3">
+                        <div className="mt-3">
+                          <div className="text-xs font-mono text-accent-cool mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
+                            <Icon name="eye" size={14} />
+                            מה אתה עושה בשלב הזה
+                          </div>
+                          <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
+                        </div>
+                        <div className="pt-2 border-t border-border-subtle">
+                          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
+                            <Icon name="spark" size={14} />
+                            ולמה זה משנה
+                          </div>
+                          <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
         </div>
-      </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="mt-6 surface-elevated p-6 grid md:grid-cols-2 gap-6"
-        >
-          <div className="flex gap-4 items-start">
-            <Icon name="eye" size={22} className="text-accent-cool shrink-0 mt-0.5" />
-            <div>
-              <div className="text-[10px] font-mono text-accent-cool mb-1.5 tracking-widest uppercase">
-                מה אתה עושה בשלב הזה
-              </div>
-              <p className="text-sm leading-relaxed text-fg">{current.caption}</p>
-            </div>
-          </div>
-          <div className="flex gap-4 items-start">
-            <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
-            <div>
-              <div className="text-[10px] font-mono text-accent mb-1.5 tracking-widest uppercase">
-                ולמה זה משנה
-              </div>
-              <p className="text-sm leading-relaxed text-fg">{current.insight}</p>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+        <div className="surface-elevated relative overflow-hidden sticky top-6">
+          <MissionStage phase={phase} />
+        </div>
+      </div>
 
       <SoftDivider text="ניווט גרוע = חיים בסכנה" />
 
@@ -192,23 +227,22 @@ export function OnboardingScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -3 }}
-            className="surface p-5 hover:border-accent/40 hover:shadow-elevated transition-all duration-300 relative overflow-hidden group"
+            className="surface p-5 relative overflow-hidden"
           >
             <div
               aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-50 group-hover:opacity-100 transition-opacity"
+              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
             />
             <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0 group-hover:border-accent/40 transition-colors">
+              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
                 <Icon name={h.icon} size={22} className={h.accent} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim group-hover:bg-accent transition-colors" />
+                  <span className="size-1 rounded-full bg-fg-dim" />
                   {h.place}
                 </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance group-hover:text-accent transition-colors">
+                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
                   {h.headline}
                 </h3>
                 <p className="text-sm text-fg-muted leading-relaxed text-pretty">

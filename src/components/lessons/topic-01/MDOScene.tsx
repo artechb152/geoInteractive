@@ -91,27 +91,7 @@ export function MDOScene() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6">
-        <div className="surface-elevated p-6 sm:p-8 relative overflow-hidden">
-          <div aria-hidden className="absolute inset-0 topo-bg opacity-20 pointer-events-none" />
-          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent-cool/5 pointer-events-none" />
-          <div className="relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">
-                לחץ על כל ממד כדי לכבות / להפעיל
-              </div>
-              <button
-                onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
-                className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
-              >
-                <Icon name="check" size={10} strokeWidth={2.5} />
-                הפעל הכל
-              </button>
-            </div>
-            <SuperioritySphere domains={DOMAINS} active={active} onToggle={toggle} />
-          </div>
-        </div>
-
+      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6">
         <div className="space-y-4">
           <SuperiorityIndicator on={allOn} off={allOff} count={active.size} pct={pct} />
 
@@ -169,6 +149,26 @@ export function MDOScene() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        <div className="surface-elevated p-6 sm:p-8 relative overflow-hidden">
+          <div aria-hidden className="absolute inset-0 topo-bg opacity-20 pointer-events-none" />
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent-cool/5 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">
+                לחץ על כל ממד כדי לכבות / להפעיל
+              </div>
+              <button
+                onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
+                className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
+              >
+                <Icon name="check" size={10} strokeWidth={2.5} />
+                הפעל הכל
+              </button>
+            </div>
+            <SuperioritySphere domains={DOMAINS} active={active} onToggle={toggle} />
+          </div>
         </div>
       </div>
 

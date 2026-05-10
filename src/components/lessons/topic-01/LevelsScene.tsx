@@ -18,7 +18,6 @@ type LevelMeta = {
   example: string;
   borderActive: string;
   bgActive: string;
-  borderRight: string;
   text: string;
   fillClass: string;
   zoomLevel: number; // 1=widest, 3=closest
@@ -35,7 +34,6 @@ const LEVELS: Record<Level, LevelMeta> = {
     example: 'האם המדינה יוצאת למלחמה כוללת? עם אילו מדינות חותמים ברית? החלטות תקציב דרמטיות, למשל – להפסיק לייצר טנקים ולרכוש צוללות במקום.',
     borderActive: 'border-accent-intel',
     bgActive: 'bg-accent-intel/15',
-    borderRight: 'border-r-accent-intel',
     text: 'text-accent-intel',
     fillClass: 'fill-accent-intel/30',
     zoomLevel: 1,
@@ -50,7 +48,6 @@ const LEVELS: Record<Level, LevelMeta> = {
     example: 'תכנון איך להזרים 30,000 חיילים ומאות טנקים לחזית מבלי ליצור פקק תנועה ענק ופגיע, והחלטה איפה להקים עבורם מאגרי דלק ענקיים בשטח.',
     borderActive: 'border-accent',
     bgActive: 'bg-accent/15',
-    borderRight: 'border-r-accent',
     text: 'text-accent',
     fillClass: 'fill-accent/30',
     zoomLevel: 2,
@@ -65,12 +62,22 @@ const LEVELS: Record<Level, LevelMeta> = {
     example: 'בחירת סלע ספציפי שיסתיר חייל מצלף, החלטה מאיזו זווית לפרוץ לבניין כדי שהשמש תסנוור את האויב, ובאיזה ערוץ נחל הפלוגה תתגנב בשקט בלי להתגלות.',
     borderActive: 'border-terrain-sand',
     bgActive: 'bg-terrain-sand/15',
-    borderRight: 'border-r-terrain-sand',
     text: 'text-terrain-sand',
     fillClass: 'fill-terrain-sand/30',
     zoomLevel: 3,
   },
 };
+
+// In RTL, first column → right side. Strategic = broadest = right.
+const LEVEL_ORDER: Level[] = ['strategic', 'operational', 'tactical'];
+
+type MatrixRowKey = 'who' | 'zoom' | 'time' | 'example';
+const MATRIX_ROWS: { key: MatrixRowKey; label: string }[] = [
+  { key: 'who', label: 'מי מחליט?' },
+  { key: 'zoom', label: 'זום מרחבי' },
+  { key: 'time', label: 'אופק זמן' },
+  { key: 'example', label: 'דוגמה מבצעית' },
+];
 
 const SCENARIOS: { text: string; correct: Level; icon: IconName }[] = [
   { text: 'מפקד פלוגה מאתר עמדת מקלע אויב על שלוחה', correct: 'tactical', icon: 'crosshair' },
@@ -82,13 +89,37 @@ const SCENARIOS: { text: string; correct: Level; icon: IconName }[] = [
 ];
 
 export function LevelsScene() {
-  const [open, setOpen] = useState<Level>('operational');
-  const [picks, setPicks] = useState<Record<number, Level>>({});
+  const [assignments, setAssignments] = useState<Record<number, Level>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<number | null>(null);
 
-  const correctCount = Object.entries(picks).filter(
-    ([i, l]) => SCENARIOS[Number(i)].correct === l
-  ).length;
-  const answered = Object.keys(picks).length;
+  const assignedCount = Object.keys(assignments).length;
+  const allAssigned = assignedCount === SCENARIOS.length;
+  const correctCount = SCENARIOS.filter((s, i) => assignments[i] === s.correct).length;
+
+  const pool = SCENARIOS.map((s, i) => ({ s, i })).filter((x) => !assignments[x.i]);
+  const inBin = (level: Level) =>
+    SCENARIOS.map((s, i) => ({ s, i })).filter((x) => assignments[x.i] === level);
+
+  const moveScenario = (idx: number, level: Level | null) => {
+    setAssignments((prev) => {
+      if (level) return { ...prev, [idx]: level };
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
+    setSelectedScenario(null);
+  };
+
+  const reset = () => {
+    setAssignments({});
+    setSubmitted(false);
+    setSelectedScenario(null);
+  };
+
+  const handleScenarioSelect = (idx: number) => {
+    setSelectedScenario(selectedScenario === idx ? null : idx);
+  };
 
   return (
     <section id="scene-levels" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -100,181 +131,235 @@ export function LevelsScene() {
             <span className="gradient-text">3 רמות</span> · אותה מלחמה, רזולוציה אחרת
           </>
         }
-        intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. לחצו על כל רמה כדי לגלות מי מחליט, על איזה שטח מדובר, ואיך מודדים שם זמן."
+        intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
       />
 
-      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6">
-        <div className="surface-elevated p-6 flex flex-col items-center justify-center gap-4">
-          <SVGPyramid open={open} setOpen={setOpen} />
-          <div className="text-xs text-fg-dim font-mono tracking-widest uppercase mt-2">
-            למעלה: רחב במרחב ובזמן · למטה: צמוד לקרקע
+      {/* === Comparison Matrix === */}
+      <div className="surface-elevated p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 pb-5 border-b border-border-subtle">
+          <div className="shrink-0 mx-auto sm:mx-0">
+            <SVGPyramidStatic />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-display font-bold text-lg leading-tight mb-1.5">
+              שלוש הרמות במבט אחד
+            </h3>
+            <p className="text-sm text-fg-muted leading-relaxed text-pretty">
+              למעלה (אסטרטגית) — רחב, איטי, רחוק. למטה (טקטית) — צמוד, מהיר, כאן ועכשיו. ביניהן (אופרטיבית) — דרג הביניים שמתרגם מטרות מדיניות לתנועה בשטח.
+            </p>
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={open}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.25 }}
-            className={cn('surface-elevated p-6 border-r-4', LEVELS[open].borderRight)}
-          >
-            <div className="flex items-baseline justify-between mb-5">
-              <h3 className={cn('text-3xl font-bold', LEVELS[open].text)}>{LEVELS[open].label}</h3>
-              <span className="font-mono text-xs text-fg-dim">{LEVELS[open].english}</span>
-            </div>
-
-            <ZoomIndicator level={LEVELS[open].zoomLevel} icon={LEVELS[open].zoomIcon} />
-
-            <dl className="space-y-3 mt-5 mb-5">
-              <Row label="מי מחליט" value={LEVELS[open].who} />
-              <Row label="זום מרחבי" value={LEVELS[open].zoom} />
-              <Row label="אופק זמן" value={LEVELS[open].time} />
-            </dl>
-            <div className="pt-4 border-t border-border-subtle">
-              <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase">דוגמה</div>
-              <div className="text-sm text-fg leading-relaxed">{LEVELS[open].example}</div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+        <ComparisonMatrix />
       </div>
 
+      {/* === Practice: Drag scenarios into bins === */}
       <div className="mt-12">
         <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
           <div>
-            <h3 className="text-xl font-bold mb-1">תרגול מהיר</h3>
-            <p className="text-fg-muted text-sm">סווג כל אירוע לרמה הנכונה</p>
+            <h3 className="text-xl font-bold mb-1">תרגול גרירה</h3>
+            <p className="text-fg-muted text-sm">
+              גרור (או הקש בנייד) כל משפט לקטגוריה המתאימה. אחרי שכל ה־{SCENARIOS.length} ימוינו — לחץ "בדוק תשובות".
+            </p>
           </div>
-          {answered > 0 && (
-            <div className="chip border-accent/40 bg-accent/10 text-accent">
-              <Icon name="check" size={14} strokeWidth={2.5} />
-              <span className="font-mono">{correctCount}/{answered} נכון</span>
+          {submitted && (
+            <div
+              className={cn(
+                'chip',
+                correctCount === SCENARIOS.length
+                  ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
+                  : 'border-status-warn/40 bg-status-warn/10 text-status-warn'
+              )}
+            >
+              <Icon
+                name={correctCount === SCENARIOS.length ? 'check' : 'spark'}
+                size={14}
+                strokeWidth={2.5}
+              />
+              <span className="font-mono">
+                {correctCount}/{SCENARIOS.length} נכון
+              </span>
             </div>
           )}
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-3">
-          {SCENARIOS.map((s, i) => {
-            const picked = picks[i];
-            const isCorrect = picked === s.correct;
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ delay: i * 0.05 }}
-                className={cn(
-                  'surface p-4 transition-all',
-                  picked && isCorrect && 'border-status-ok/40 bg-status-ok/5',
-                  picked && !isCorrect && 'border-status-danger/40 bg-status-danger/5',
-                  !picked && 'hover:border-border-strong'
-                )}
-              >
-                <div className="flex gap-3 mb-3">
-                  <div className={cn(
-                    'size-8 rounded-lg flex items-center justify-center shrink-0',
-                    picked ? (isCorrect ? 'bg-status-ok/15 text-status-ok' : 'bg-status-danger/15 text-status-danger') : 'bg-bg-accent text-fg-muted'
-                  )}>
-                    <Icon name={s.icon} size={16} />
-                  </div>
-                  <p className="text-sm leading-relaxed flex-1">{s.text}</p>
-                </div>
-                <div className="flex gap-1.5">
-                  {(['strategic', 'operational', 'tactical'] as Level[]).map((l) => {
-                    const showResult = !!picked && l === picked;
-                    return (
-                      <button
-                        key={l}
-                        onClick={() => setPicks((p) => ({ ...p, [i]: l }))}
-                        className={cn(
-                          'flex-1 px-2 py-2 rounded-lg text-xs font-medium border transition-all',
-                          !picked && 'border-border hover:border-accent/50 hover:bg-accent/5 active:scale-[0.97]',
-                          showResult && isCorrect && 'border-status-ok bg-status-ok/15 text-status-ok',
-                          showResult && !isCorrect && 'border-status-danger bg-status-danger/15 text-status-danger',
-                          picked && !showResult && l === s.correct && 'border-status-ok/50 bg-status-ok/5 text-status-ok',
-                          picked && !showResult && l !== s.correct && 'opacity-40'
-                        )}
-                        disabled={!!picked}
-                      >
-                        {LEVELS[l].label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {picked && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className={cn('mt-2 text-xs flex items-center gap-1.5', isCorrect ? 'text-status-ok' : 'text-status-danger')}
-                  >
-                    <Icon name={isCorrect ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
-                    {isCorrect ? 'נכון!' : `התשובה הנכונה: ${LEVELS[s.correct].label}`}
-                  </motion.div>
-                )}
-              </motion.div>
-            );
-          })}
+        {/* Pool of unassigned scenarios */}
+        <ScenarioPool
+          pool={pool}
+          selectedScenario={selectedScenario}
+          submitted={submitted}
+          onSelect={handleScenarioSelect}
+          onMoveScenario={moveScenario}
+        />
+
+        {/* 3 Category Bins */}
+        <div className="grid md:grid-cols-3 gap-3 mb-6">
+          {LEVEL_ORDER.map((level) => (
+            <CategoryBin
+              key={level}
+              level={level}
+              scenariosInBin={inBin(level)}
+              selectedScenario={selectedScenario}
+              submitted={submitted}
+              onSelect={handleScenarioSelect}
+              onMoveScenario={moveScenario}
+            />
+          ))}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3 justify-center items-center">
+          <button
+            onClick={() => setSubmitted(true)}
+            disabled={!allAssigned}
+            className={cn(
+              'px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2',
+              allAssigned
+                ? 'bg-accent text-bg shadow-glow hover:scale-105 active:scale-95'
+                : 'bg-bg-accent text-fg-dim border border-border cursor-not-allowed'
+            )}
+          >
+            <Icon name="check" size={16} strokeWidth={2.5} />
+            {allAssigned
+              ? 'בדוק תשובות'
+              : `נותרו ${SCENARIOS.length - assignedCount} למיון`}
+          </button>
+          {(assignedCount > 0 || submitted) && (
+            <button
+              onClick={reset}
+              className="px-6 py-3 rounded-xl border border-border hover:border-border-strong font-medium text-sm flex items-center gap-2"
+            >
+              <Icon name="spark" size={14} />
+              אפס הכל
+            </button>
+          )}
         </div>
       </div>
     </section>
   );
 }
 
-function SVGPyramid({ open, setOpen }: { open: Level; setOpen: (l: Level) => void }) {
+function ComparisonMatrix() {
+  return (
+    <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+      <table className="w-full border-separate border-spacing-0 text-sm">
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              className="hidden sm:table-cell pb-4 px-3 text-right text-xs font-mono text-fg-dim tracking-widest uppercase whitespace-nowrap align-bottom w-[110px]"
+            >
+              ממד
+            </th>
+            {LEVEL_ORDER.map((id) => {
+              const meta = LEVELS[id];
+              return (
+                <th
+                  key={id}
+                  scope="col"
+                  className="pb-4 px-3 text-right align-bottom"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={cn(
+                        'size-9 rounded-lg flex items-center justify-center border-2 shrink-0',
+                        meta.borderActive,
+                        meta.bgActive
+                      )}
+                    >
+                      <Icon name={meta.zoomIcon} size={18} className={meta.text} />
+                    </div>
+                    <div className="min-w-0">
+                      <div
+                        className={cn(
+                          'font-display font-bold text-base leading-tight',
+                          meta.text
+                        )}
+                      >
+                        {meta.label}
+                      </div>
+                      <div className="text-[10px] font-mono text-fg-dim mt-0.5">
+                        {meta.english}
+                      </div>
+                    </div>
+                  </div>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {MATRIX_ROWS.map((row) => (
+            <tr key={row.key}>
+              <th
+                scope="row"
+                className="hidden sm:table-cell py-4 px-3 text-right align-top text-xs font-mono text-fg-dim tracking-widest uppercase whitespace-nowrap border-t border-border-subtle"
+              >
+                {row.label}
+              </th>
+              {LEVEL_ORDER.map((id) => {
+                const meta = LEVELS[id];
+                return (
+                  <td
+                    key={id}
+                    className="py-4 px-3 text-right align-top leading-relaxed border-t border-border-subtle"
+                  >
+                    <div className="sm:hidden text-[10px] font-mono text-fg-dim mb-1.5 tracking-widest uppercase">
+                      {row.label}
+                    </div>
+                    <span
+                      className={cn(
+                        row.key === 'example'
+                          ? 'text-fg-muted text-pretty text-xs sm:text-sm'
+                          : 'text-fg text-xs sm:text-sm'
+                      )}
+                    >
+                      {meta[row.key]}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SVGPyramidStatic() {
   const order: { id: Level; y: number; left: number; right: number }[] = [
-    { id: 'strategic',   y: 8,   left: 5,  right: 95 },
-    { id: 'operational', y: 40,  left: 22, right: 78 },
-    { id: 'tactical',    y: 70,  left: 36, right: 64 },
+    { id: 'strategic', y: 8, left: 5, right: 95 },
+    { id: 'operational', y: 40, left: 22, right: 78 },
+    { id: 'tactical', y: 70, left: 36, right: 64 },
   ];
   const bottomCap = { y: 98, left: 44, right: 56 };
 
   return (
-    <svg viewBox="0 0 100 110" className="w-full max-w-[280px]">
-      {/* Outer (inverted) pyramid outline — wide top, narrow truncated bottom */}
+    <svg viewBox="0 0 100 110" className="w-[120px] sm:w-[110px]" aria-hidden>
       <polygon
         points={`${order[0].left},${order[0].y - 3} ${order[0].right},${order[0].y - 3} ${bottomCap.right},${bottomCap.y + 2} ${bottomCap.left},${bottomCap.y + 2}`}
         className="fill-bg-card stroke-border"
         strokeWidth="0.5"
       />
-
       {order.map((r, i) => {
         const next = order[i + 1] ?? bottomCap;
-        const isActive = open === r.id;
         const meta = LEVELS[r.id];
         const points = `${r.left},${r.y} ${r.right},${r.y} ${next.right},${next.y} ${next.left},${next.y}`;
         return (
-          <g key={r.id} onClick={() => setOpen(r.id)} className="cursor-pointer">
+          <g key={r.id}>
             <polygon
               points={points}
-              className={cn(
-                'transition-all duration-300',
-                isActive ? meta.fillClass : 'fill-bg-elevated',
-                isActive ? 'stroke-current' : 'stroke-border-subtle',
-                isActive && meta.text
-              )}
+              className={cn(meta.fillClass, 'stroke-current', meta.text)}
               strokeWidth="0.6"
             />
-            {/* Label */}
             <text
               x="50"
-              y={(r.y + next.y) / 2 + 1}
+              y={(r.y + next.y) / 2 + 1.5}
               textAnchor="middle"
-              className={cn(
-                'text-[5px] font-display font-bold transition-colors',
-                isActive ? `${meta.text}` : 'fill-fg-muted'
-              )}
+              className={cn('text-[5px] font-display font-bold', meta.text)}
             >
               {meta.label}
-            </text>
-            <text
-              x="50"
-              y={(r.y + next.y) / 2 + 7}
-              textAnchor="middle"
-              className="fill-fg-dim text-[3px] font-mono"
-            >
-              {meta.english}
             </text>
           </g>
         );
@@ -283,34 +368,269 @@ function SVGPyramid({ open, setOpen }: { open: Level; setOpen: (l: Level) => voi
   );
 }
 
-function ZoomIndicator({ level, icon }: { level: number; icon: IconName }) {
+function ScenarioPool({
+  pool,
+  selectedScenario,
+  submitted,
+  onSelect,
+  onMoveScenario,
+}: {
+  pool: { s: (typeof SCENARIOS)[number]; i: number }[];
+  selectedScenario: number | null;
+  submitted: boolean;
+  onSelect: (idx: number) => void;
+  onMoveScenario: (idx: number, level: Level | null) => void;
+}) {
+  const [isOver, setIsOver] = useState(false);
+
   return (
-    <div className="surface bg-bg-accent/40 px-4 py-3 flex items-center gap-3">
-      <Icon name={icon} size={20} className="text-fg-muted" />
-      <div className="flex-1">
-        <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase">רזולוציית התבוננות</div>
-        <div className="flex gap-1">
-          {[1, 2, 3].map((i) => (
-            <div
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsOver(true);
+      }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        const raw = e.dataTransfer.getData('text/scenario');
+        const idx = Number(raw);
+        if (!Number.isNaN(idx)) onMoveScenario(idx, null);
+        setIsOver(false);
+      }}
+      className={cn(
+        'surface-elevated p-4 mb-6 rounded-2xl border-2 border-dashed transition-all',
+        isOver ? 'border-accent shadow-glow bg-accent/5' : 'border-border'
+      )}
+    >
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">
+          {pool.length > 0
+            ? `אירועים למיון (${pool.length})`
+            : '✓ כל המשפטים סווגו לקטגוריות'}
+        </div>
+        {pool.length > 0 && (
+          <div className="text-[10px] font-mono text-fg-dim">
+            גרור משפט לאחת מ־3 הקטגוריות למטה
+          </div>
+        )}
+      </div>
+
+      {pool.length === 0 ? (
+        <div className="text-center py-3 text-sm text-fg-muted">
+          לחץ "בדוק תשובות" כדי לראות תוצאות, או גרור משפט בחזרה לכאן כדי לסווג מחדש.
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-2">
+          {pool.map(({ s, i }) => (
+            <ScenarioChip
               key={i}
-              className={cn(
-                'h-1.5 flex-1 rounded-full transition-all',
-                i <= level ? 'bg-accent' : 'bg-bg-accent border border-border-subtle'
-              )}
+              index={i}
+              scenario={s}
+              isSelected={selectedScenario === i}
+              isCorrect={false}
+              isWrong={false}
+              submitted={submitted}
+              onSelect={() => onSelect(i)}
             />
           ))}
         </div>
-      </div>
-      <span className="font-mono text-xs text-fg-muted">{level === 1 ? 'רחוק' : level === 2 ? 'בינוני' : 'קרוב'}</span>
+      )}
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function CategoryBin({
+  level,
+  scenariosInBin,
+  selectedScenario,
+  submitted,
+  onSelect,
+  onMoveScenario,
+}: {
+  level: Level;
+  scenariosInBin: { s: (typeof SCENARIOS)[number]; i: number }[];
+  selectedScenario: number | null;
+  submitted: boolean;
+  onSelect: (idx: number) => void;
+  onMoveScenario: (idx: number, level: Level | null) => void;
+}) {
+  const [isOver, setIsOver] = useState(false);
+  const meta = LEVELS[level];
+
   return (
-    <div className="text-sm">
-      <dt className="text-xs font-mono text-fg-dim mb-1 tracking-widest uppercase">{label}</dt>
-      <dd className="text-fg leading-relaxed">{value}</dd>
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsOver(true);
+      }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        const raw = e.dataTransfer.getData('text/scenario');
+        const idx = Number(raw);
+        if (!Number.isNaN(idx)) onMoveScenario(idx, level);
+        setIsOver(false);
+      }}
+      onClick={() => {
+        if (selectedScenario != null) {
+          onMoveScenario(selectedScenario, level);
+        }
+      }}
+      className={cn(
+        'surface-elevated rounded-2xl border-2 transition-all flex flex-col',
+        meta.borderActive,
+        isOver && 'shadow-glow scale-[1.01]',
+        selectedScenario != null && 'cursor-pointer hover:shadow-glow'
+      )}
+    >
+      <div className={cn('flex items-center gap-2.5 p-3 border-b-2', meta.borderActive, meta.bgActive)}>
+        <div
+          className={cn(
+            'size-9 rounded-lg flex items-center justify-center border-2 shrink-0',
+            meta.borderActive,
+            'bg-bg-card'
+          )}
+        >
+          <Icon name={meta.zoomIcon} size={18} className={meta.text} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={cn('font-display font-bold leading-tight', meta.text)}>
+            {meta.label}
+          </div>
+          <div className="text-[10px] font-mono text-fg-dim mt-0.5">
+            {scenariosInBin.length} {scenariosInBin.length === 1 ? 'משפט' : 'משפטים'}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3 flex-1 min-h-[140px]">
+        {scenariosInBin.length === 0 ? (
+          <div
+            className={cn(
+              'h-full min-h-[120px] rounded-xl border-2 border-dashed flex items-center justify-center text-center px-3 transition-colors',
+              isOver
+                ? 'border-accent bg-accent/10'
+                : selectedScenario != null
+                ? 'border-accent/40 text-accent'
+                : 'border-border text-fg-dim'
+            )}
+          >
+            <span className="text-xs font-mono tracking-widest uppercase">
+              {isOver
+                ? 'שחרר כאן'
+                : selectedScenario != null
+                ? `הקש כדי לשבץ כאן`
+                : 'גרור משפט לכאן'}
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {scenariosInBin.map(({ s, i }) => {
+              const isCorrect = submitted && level === s.correct;
+              const isWrong = submitted && level !== s.correct;
+              return (
+                <ScenarioChip
+                  key={i}
+                  index={i}
+                  scenario={s}
+                  isSelected={selectedScenario === i}
+                  isCorrect={isCorrect}
+                  isWrong={isWrong}
+                  submitted={submitted}
+                  onSelect={() => onSelect(i)}
+                  compact
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScenarioChip({
+  index,
+  scenario,
+  isSelected,
+  isCorrect,
+  isWrong,
+  submitted,
+  onSelect,
+  compact = false,
+}: {
+  index: number;
+  scenario: (typeof SCENARIOS)[number];
+  isSelected: boolean;
+  isCorrect: boolean;
+  isWrong: boolean;
+  submitted: boolean;
+  onSelect: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/scenario', String(index));
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
+      className={cn(
+        'surface cursor-grab active:cursor-grabbing transition-all',
+        compact ? 'p-2.5' : 'p-3',
+        isSelected && 'border-accent shadow-glow ring-2 ring-accent/40',
+        isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/5',
+        isWrong && !isSelected && 'border-status-danger/50 bg-status-danger/5',
+        !isSelected && !isCorrect && !isWrong && 'hover:border-border-strong'
+      )}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+    >
+      <div className="flex items-start gap-2">
+        <div
+          className={cn(
+            'rounded-md flex items-center justify-center shrink-0',
+            compact ? 'size-6' : 'size-7',
+            isCorrect
+              ? 'bg-status-ok/15 text-status-ok'
+              : isWrong
+              ? 'bg-status-danger/15 text-status-danger'
+              : 'bg-bg-accent text-fg-muted'
+          )}
+        >
+          <Icon name={scenario.icon} size={compact ? 12 : 14} />
+        </div>
+        <p className={cn('flex-1 leading-snug', compact ? 'text-xs' : 'text-sm')}>
+          {scenario.text}
+        </p>
+        {submitted && (isCorrect || isWrong) && (
+          <Icon
+            name={isCorrect ? 'check' : 'spark'}
+            size={compact ? 12 : 14}
+            strokeWidth={2.5}
+            className={cn(
+              'shrink-0 mt-0.5',
+              isCorrect ? 'text-status-ok' : 'text-status-danger'
+            )}
+          />
+        )}
+      </div>
+      {submitted && isWrong && (
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className={cn('mt-1.5 text-[11px] text-status-danger leading-snug')}
+          >
+            הקטגוריה הנכונה: <strong>{LEVELS[scenario.correct].label}</strong>
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }

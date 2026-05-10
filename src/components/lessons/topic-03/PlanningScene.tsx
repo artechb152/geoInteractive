@@ -61,11 +61,7 @@ function RouteStoryBuilder() {
   const [active, setActive] = useState(0);
 
   return (
-    <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch">
-      <div className="surface-elevated relative overflow-hidden">
-        <RouteMap activeStep={active} />
-      </div>
-
+    <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
       <div className="space-y-3">
         <div className="text-[10px] font-mono text-fg-dim mb-1 tracking-widest uppercase">
           המסלול ב-5 נקודות אימות
@@ -113,6 +109,10 @@ function RouteStoryBuilder() {
             </motion.button>
           );
         })}
+      </div>
+
+      <div className="surface-elevated relative overflow-hidden">
+        <RouteMap activeStep={active} />
       </div>
     </div>
   );

@@ -76,41 +76,143 @@ export function TopographyScene() {
         intro="טופוגרפיה = חקר צורת הקרקע (איפה יש הר, גבעה או עמק). את אותו ההר אפשר להציג ב-3 דרכים. לחצו על האפשרויות ובדקו מה היתרונות והחסרונות של כל אחת:"
       />
 
-      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
-        <div className="space-y-2">
+      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
+        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
+        <div className="space-y-3">
           {VIEWS.map((v, i) => {
             const isActive = view === v.id;
             return (
-              <button
+              <div
                 key={v.id}
-                onClick={() => setView(v.id)}
                 className={cn(
-                  'w-full surface p-4 text-right transition-all flex items-center gap-3',
-                  isActive ? 'border-accent shadow-glow' : 'hover:border-border-strong'
+                  'surface overflow-hidden transition-colors',
+                  isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
                 )}
               >
-                <div
-                  className={cn(
-                    'size-10 rounded-xl flex items-center justify-center shrink-0',
-                    isActive ? 'bg-accent text-bg' : 'bg-bg-accent text-fg-muted'
-                  )}
+                <button
+                  type="button"
+                  onClick={() => setView(v.id)}
+                  aria-expanded={isActive}
+                  className="w-full p-4 text-right flex items-center gap-3"
                 >
-                  <Icon name={v.icon} size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase">
-                    תצוגה {String(i + 1).padStart(2, '0')}
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+                      isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
+                    )}
+                  >
+                    <Icon name={v.icon} size={18} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">
+                      תצוגה {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <div className={cn('font-medium text-sm leading-tight', isActive && 'text-accent')}>
+                      {v.label}
+                    </div>
                   </div>
-                  <div className="font-medium text-sm">{v.label}</div>
-                </div>
-                {isActive && (
-                  <span className="size-2 rounded-full bg-accent shadow-glow" />
-                )}
-              </button>
+                  <motion.span
+                    animate={{ rotate: isActive ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('shrink-0 inline-flex', isActive ? 'text-accent' : 'text-fg-dim')}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isActive && (
+                    <motion.div
+                      key={`panel-${v.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-4">
+                        <div>
+                          <div className="text-xs font-mono text-accent-cool mt-3 mb-1.5 tracking-widest uppercase">
+                            במילים פשוטות
+                          </div>
+                          <p className="text-sm text-fg leading-relaxed">{v.whatItIs}</p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <div className="surface p-3 border-r-4 border-r-status-ok">
+                            <div className="flex items-center gap-2 text-xs font-mono text-status-ok mb-2 tracking-widest uppercase">
+                              <Icon name="check" size={12} strokeWidth={2.5} />
+                              מה היתרון
+                            </div>
+                            <ul className="space-y-1.5 text-sm">
+                              {v.pros.map((p) => (
+                                <li key={p} className="flex gap-2">
+                                  <span className="text-status-ok mt-0.5">·</span>
+                                  <span className="text-fg">{p}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="surface p-3 border-r-4 border-r-status-warn">
+                            <div className="flex items-center gap-2 text-xs font-mono text-status-warn mb-2 tracking-widest uppercase">
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden
+                              >
+                                <path d="M18 6 6 18M6 6l12 12" />
+                              </svg>
+                              מה הבעיה
+                            </div>
+                            <ul className="space-y-1.5 text-sm">
+                              {v.cons.map((c) => (
+                                <li key={c} className="flex gap-2">
+                                  <span className="text-status-warn mt-0.5">·</span>
+                                  <span className="text-fg">{c}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div className="surface p-3 border-r-4 border-r-accent flex gap-2.5 items-start">
+                          <Icon name="spark" size={18} className="text-accent shrink-0 mt-0.5" />
+                          <div>
+                            <div className="text-xs font-mono text-accent mb-1 tracking-widest uppercase">
+                              למה זה חשוב
+                            </div>
+                            <p className="text-sm text-fg leading-relaxed text-pretty">{v.whyItMatters}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
         </div>
 
+        {/* Visualization — second child → LEFT in RTL */}
         <div className="surface-elevated relative overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -127,89 +229,12 @@ export function TopographyScene() {
             </motion.div>
           </AnimatePresence>
 
-          <div className="absolute bottom-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
+          <div className="absolute bottom-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-xs text-fg-muted">
             <Icon name={meta.icon} size={12} />
             {meta.label}
           </div>
         </div>
       </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={view}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="mt-6 space-y-4"
-        >
-          <div className="surface-elevated p-5 border-r-4 border-r-accent-cool flex gap-3 items-start">
-            <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-            <div>
-              <div className="text-[10px] font-mono text-accent-cool mb-1 tracking-widest uppercase">
-                במילים פשוטות
-              </div>
-              <p className="text-sm text-fg leading-relaxed">{meta.whatItIs}</p>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="surface p-5 border-r-4 border-r-status-ok">
-              <div className="flex items-center gap-2 text-[10px] font-mono text-status-ok mb-3 tracking-widest uppercase">
-                <Icon name="check" size={12} strokeWidth={2.5} />
-                מה היתרון
-              </div>
-              <ul className="space-y-1.5 text-sm">
-                {meta.pros.map((p) => (
-                  <li key={p} className="flex gap-2">
-                    <span className="text-status-ok mt-1">·</span>
-                    <span className="text-fg">{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="surface p-5 border-r-4 border-r-status-warn">
-              <div className="flex items-center gap-2 text-[10px] font-mono text-status-warn mb-3 tracking-widest uppercase">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M18 6 6 18M6 6l12 12" />
-                </svg>
-                מה הבעיה
-              </div>
-              <ul className="space-y-1.5 text-sm">
-                {meta.cons.map((c) => (
-                  <li key={c} className="flex gap-2">
-                    <span className="text-status-warn mt-1">·</span>
-                    <span className="text-fg">{c}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="surface-elevated p-6 border-r-4 border-r-accent flex gap-4 items-start">
-            <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
-            <div>
-              <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
-                למה זה חשוב
-              </div>
-              <p className="text-fg leading-relaxed text-pretty">
-                {meta.whyItMatters}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
     </section>
   );
 }

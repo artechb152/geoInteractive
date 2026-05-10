@@ -98,18 +98,16 @@ export function LandformsScene() {
         intro="מתוך עשרות צורות אפשריות, יש 5 שמופיעות שוב ושוב בקרבות. אם אתה יודע לזהות אותן ולהבין מה הן עושות לקרב — אתה במקום אחר לגמרי."
       />
 
-      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch mb-12">
-        <div className="space-y-2">
+      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start mb-12">
+        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
+        <div className="space-y-3">
           {FORMS.map((f, i) => {
             const isActive = active === f.id;
             return (
-              <motion.button
+              <div
                 key={f.id}
-                onClick={() => setActive(f.id)}
-                whileHover={{ x: -3 }}
-                whileTap={{ scale: 0.98 }}
                 className={cn(
-                  'w-full surface p-4 text-right transition-all flex items-center gap-3 relative overflow-hidden',
+                  'surface overflow-hidden transition-colors relative',
                   isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
                 )}
               >
@@ -119,26 +117,87 @@ export function LandformsScene() {
                     className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
                   />
                 )}
-                <span
-                  className={cn(
-                    'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all font-mono text-sm font-bold',
-                    isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
-                  )}
+                <button
+                  type="button"
+                  onClick={() => setActive(f.id)}
+                  aria-expanded={isActive}
+                  className="w-full p-4 text-right flex items-center gap-3"
                 >
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className={cn('font-display font-bold leading-tight', isActive ? 'text-accent' : 'text-fg')}>
-                    {f.label}
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all font-mono text-sm font-bold',
+                      isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className={cn('font-display font-bold leading-tight', isActive ? 'text-accent' : 'text-fg')}>
+                      {f.label}
+                    </div>
+                    <div className="text-xs font-mono text-fg-dim mt-0.5">{f.english}</div>
                   </div>
-                  <div className="text-[10px] font-mono text-fg-dim mt-0.5">{f.english}</div>
-                </div>
-              </motion.button>
+                  <motion.span
+                    animate={{ rotate: isActive ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('shrink-0 inline-flex', isActive ? 'text-accent' : 'text-fg-dim')}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isActive && (
+                    <motion.div
+                      key={`panel-${f.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-3">
+                        <div className="mt-3">
+                          <div className="text-xs font-mono text-accent-cool mb-1 tracking-widest uppercase">
+                            מה זה
+                          </div>
+                          <p className="text-sm leading-relaxed text-fg">{f.description}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs font-mono text-accent mb-1 tracking-widest uppercase">
+                            איך מזהים במפה
+                          </div>
+                          <p className="text-sm leading-relaxed text-fg">{f.contourHint}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs font-mono text-status-warn mb-1 tracking-widest uppercase">
+                            משמעות צבאית
+                          </div>
+                          <p className="text-sm leading-relaxed text-fg">{f.tactical}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden min-h-[320px]">
+        {/* Visualization — second child → LEFT in RTL */}
+        <div className="surface-elevated relative overflow-hidden min-h-[320px] sticky top-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
@@ -153,36 +212,6 @@ export function LandformsScene() {
           </AnimatePresence>
         </div>
       </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="grid md:grid-cols-3 gap-4 mb-12"
-        >
-          <div className="surface-elevated p-5 border-r-4 border-r-accent-cool">
-            <div className="text-[10px] font-mono text-accent-cool mb-2 tracking-widest uppercase">
-              מה זה
-            </div>
-            <p className="text-sm leading-relaxed text-fg">{meta.description}</p>
-          </div>
-          <div className="surface-elevated p-5 border-r-4 border-r-accent">
-            <div className="text-[10px] font-mono text-accent mb-2 tracking-widest uppercase">
-              איך מזהים במפה
-            </div>
-            <p className="text-sm leading-relaxed text-fg">{meta.contourHint}</p>
-          </div>
-          <div className="surface-elevated p-5 border-r-4 border-r-status-warn">
-            <div className="text-[10px] font-mono text-status-warn mb-2 tracking-widest uppercase">
-              משמעות צבאית
-            </div>
-            <p className="text-sm leading-relaxed text-fg">{meta.tactical}</p>
-          </div>
-        </motion.div>
-      </AnimatePresence>
 
       <motion.div
         initial={{ opacity: 0 }}

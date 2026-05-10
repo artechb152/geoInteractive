@@ -54,7 +54,6 @@ const METHODS: MethodData[] = [
 
 export function CombatNavScene() {
   const [active, setActive] = useState<Method>('handrail');
-  const meta = METHODS.find((m) => m.id === active)!;
 
   return (
     <section id="scene-combat" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,18 +68,16 @@ export function CombatNavScene() {
         intro="ניווט בשטח עוין הוא לא עוד טיול בטבע. המטרה היא לא רק להגיע ליעד, אלא להגיע אליו בבטחה: להישאר מוסתרים, להימנע מסכנות בדרך, ולהתאים את ההליכה לתנאי השטח. הנה שלוש טכניקות ניווט מיוחדות למצבי קיצון שכל אחד יכול להבין."
       />
 
-      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
-        <div className="space-y-2">
+      <div className="grid lg:grid-cols-[1fr_1.7fr] gap-6 items-start">
+        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
+        <div className="space-y-3">
           {METHODS.map((m, i) => {
             const isActive = active === m.id;
             return (
-              <motion.button
+              <div
                 key={m.id}
-                onClick={() => setActive(m.id)}
-                whileHover={{ x: -3 }}
-                whileTap={{ scale: 0.98 }}
                 className={cn(
-                  'w-full surface p-4 text-right transition-all flex items-center gap-3 relative overflow-hidden',
+                  'surface overflow-hidden transition-colors relative',
                   isActive
                     ? 'border-accent shadow-glow bg-accent/5'
                     : 'hover:border-border-strong hover:bg-bg-accent/30'
@@ -92,29 +89,99 @@ export function CombatNavScene() {
                     className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
                   />
                 )}
-                <span
-                  className={cn(
-                    'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
-                    isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
-                  )}
+                <button
+                  type="button"
+                  onClick={() => setActive(m.id)}
+                  aria-expanded={isActive}
+                  className="w-full p-4 text-right flex items-center gap-3"
                 >
-                  <span className="font-mono text-sm font-bold">{i + 1}</span>
-                </span>
-                <div className="flex-1 min-w-0 text-right">
-                  <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">
-                    טכניקה {i + 1}
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
+                      isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
+                    )}
+                  >
+                    <span className="font-mono text-sm font-bold">{i + 1}</span>
+                  </span>
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="text-xs font-mono text-fg-dim mb-0.5 tracking-widest uppercase">
+                      טכניקה {i + 1}
+                    </div>
+                    <div className={cn('font-display font-bold leading-tight', isActive ? 'text-accent' : 'text-fg')}>
+                      {m.label}
+                    </div>
+                    <div className="text-xs font-mono text-fg-dim mt-0.5">{m.english}</div>
                   </div>
-                  <div className={cn('font-display font-bold leading-tight', isActive ? 'text-accent' : 'text-fg')}>
-                    {m.label}
-                  </div>
-                  <div className="text-[10px] font-mono text-fg-dim mt-0.5">{m.english}</div>
-                </div>
-              </motion.button>
+                  <motion.span
+                    animate={{ rotate: isActive ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('shrink-0 inline-flex', isActive ? 'text-accent' : 'text-fg-dim')}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isActive && (
+                    <motion.div
+                      key={`panel-${m.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-3">
+                        <div className="mt-3">
+                          <div className="text-xs font-mono text-accent mb-1 tracking-widest uppercase">
+                            מה זה ולמה זה עובד
+                          </div>
+                          <p className="text-sm text-fg leading-relaxed">{m.detail}</p>
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-mono text-accent-cool mb-1 tracking-widest uppercase">
+                            מתי משתמשים בזה
+                          </div>
+                          <ul className="space-y-1.5 text-sm">
+                            {m.whenToUse.map((u) => (
+                              <li key={u} className="flex gap-2">
+                                <Icon name="check" size={14} className="text-accent-cool mt-0.5 shrink-0" strokeWidth={2.5} />
+                                <span className="text-fg leading-relaxed">{u}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="pt-2 border-t border-border-subtle">
+                          <div className="text-xs font-mono text-fg-dim mb-1 tracking-widest uppercase">
+                            דוגמה
+                          </div>
+                          <p className="text-sm text-fg-muted leading-relaxed">{m.example}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden min-h-[320px]">
+        {/* Visualization — second child → LEFT in RTL */}
+        <div className="surface-elevated relative overflow-hidden min-h-[480px] sticky top-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
@@ -131,44 +198,6 @@ export function CombatNavScene() {
           </AnimatePresence>
         </div>
       </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="mt-6 grid md:grid-cols-2 gap-4"
-        >
-          <div className="surface-elevated p-5 sm:p-6">
-            <div className="text-[10px] font-mono text-accent mb-2 tracking-widest uppercase">
-              מה זה ולמה זה עובד
-            </div>
-            <p className="text-sm text-fg leading-relaxed mb-4">{meta.detail}</p>
-            <div className="pt-4 border-t border-border-subtle">
-              <div className="text-[10px] font-mono text-fg-dim mb-2 tracking-widest uppercase">
-                דוגמה
-              </div>
-              <p className="text-sm text-fg-muted leading-relaxed">{meta.example}</p>
-            </div>
-          </div>
-
-          <div className="surface p-5 sm:p-6 border-r-4 border-r-accent-cool">
-            <div className="text-[10px] font-mono text-accent-cool mb-3 tracking-widest uppercase">
-              מתי משתמשים בזה
-            </div>
-            <ul className="space-y-2 text-sm">
-              {meta.whenToUse.map((u) => (
-                <li key={u} className="flex gap-2">
-                  <Icon name="check" size={14} className="text-accent-cool mt-1 shrink-0" strokeWidth={2.5} />
-                  <span className="text-fg leading-relaxed">{u}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </motion.div>
-      </AnimatePresence>
 
       <ConclusionCard />
     </section>

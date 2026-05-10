@@ -40,13 +40,13 @@ export function RecapScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
-            className="surface p-5 group hover:border-accent/40 transition-all"
+            className="surface p-5"
           >
             <div className="flex items-start gap-3">
               <span className="font-mono text-xs text-accent mt-1">{String(i + 1).padStart(2, '0')}</span>
               <div className="flex-1">
                 <div className="font-display font-bold mb-1">{t.term}</div>
-                <div className="text-sm text-fg-muted opacity-70 group-hover:opacity-100 transition-opacity">
+                <div className="text-sm text-fg-muted">
                   {t.def}
                 </div>
               </div>

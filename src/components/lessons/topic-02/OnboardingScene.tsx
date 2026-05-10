@@ -10,15 +10,52 @@ type Layer = {
   id: string;
   label: string;
   desc: string;
+  popupTitle: string;
+  popupBody: string;
   icon: IconName;
 };
 
 const LAYERS: Layer[] = [
-  { id: 'base',     label: 'הטבע: הר, נהר, מדבר',     desc: 'כל מה שהיה כאן לפני שאנשים נכנסו לשטח.',                                  icon: 'mountain' },
-  { id: 'roads',    label: 'דרכים וצינורות',          desc: 'איך זזים בשטח: כבישים, מסילות, צינורות גז ודלק.',                         icon: 'truck' },
-  { id: 'buildings',label: 'איפה אנשים נמצאים',       desc: 'ערים, כפרים, בתים, מתחמים — היכן גרים, עובדים ומסתתרים.',                  icon: 'capital' },
-  { id: 'borders',  label: 'גבולות וזכויות שליטה',    desc: 'קווים שמסמנים מי שולט באיזה אזור — לא רואים אותם בשטח, אבל הם משנים הכל.', icon: 'flag' },
-  { id: 'ops',      label: 'שכבה צבאית בזמן אמת',     desc: 'איפה הכוחות שלנו, איפה האויב, איפה האיומים — משתנה כל שעה.',               icon: 'crosshair' },
+  {
+    id: 'base',
+    label: 'הטבע: הר, נהר, מדבר',
+    desc: 'כל מה שהיה כאן לפני שאנשים נכנסו לשטח.',
+    popupTitle: 'השכבה הבסיסית: הטבע',
+    popupBody: 'התחלנו — רואים רק את הטבע: הרים, נהרות ומדבר. כל ההחלטות הצבאיות שיגיעו אחר כך מסתמכות על הצורה הטבעית של הקרקע. בלי השכבה הזו אין על מה להוסיף שום דבר אחר.',
+    icon: 'mountain',
+  },
+  {
+    id: 'roads',
+    label: 'דרכים וצינורות',
+    desc: 'איך זזים בשטח: כבישים, מסילות, צינורות גז ודלק.',
+    popupTitle: 'איך זזים בשטח',
+    popupBody: 'הוספנו דרכים — עכשיו אפשר לתכנן איך לזוז במרחב. כבישים, מסילות, צינורות גז ודלק הם העורקים שדרכם הצבא מתנייע ומזין את עצמו. בלי השכבה הזו השטח הוא ים של הרים ובוץ ללא ציר תנועה.',
+    icon: 'truck',
+  },
+  {
+    id: 'buildings',
+    label: 'איפה אנשים נמצאים',
+    desc: 'ערים, כפרים, בתים, מתחמים — היכן גרים, עובדים ומסתתרים.',
+    popupTitle: 'איפה האנשים נמצאים',
+    popupBody: 'הוספנו יישובים — עכשיו ברור איפה אנשים נמצאים. ערים, כפרים, בתים ומתחמים מספרים איפה ימצאו אזרחים, איפה האויב יכול להתחפר, ואיפה חייבים להיזהר במיוחד מפגיעה בחפים מפשע.',
+    icon: 'capital',
+  },
+  {
+    id: 'borders',
+    label: 'גבולות וזכויות שליטה',
+    desc: 'קווים שמסמנים מי שולט באיזה אזור — לא רואים אותם בשטח, אבל הם משנים הכל.',
+    popupTitle: 'מי שולט באיזה אזור',
+    popupBody: 'הוספנו גבולות — עכשיו ברור מי שולט באיזה אזור. אלו קווים שלא רואים בשטח, אבל הם קובעים איפה מותר לחצות, איפה צריך אישור מדיני, ואיפה בכלל הקרב יכול להתרחש.',
+    icon: 'flag',
+  },
+  {
+    id: 'ops',
+    label: 'שכבה צבאית בזמן אמת',
+    desc: 'איפה הכוחות שלנו, איפה האויב, איפה האיומים — משתנה כל שעה.',
+    popupTitle: 'התמונה המבצעית בזמן אמת',
+    popupBody: 'השכבה האחרונה והמשתנה ביותר: איפה הכוחות שלנו, איפה האויב ואיפה האיומים. עכשיו יש לנו תמונה מלאה לתכנון מבצעי — בלי אחת מהשכבות הקודמות, היינו מקבלים החלטה עיוורת.',
+    icon: 'crosshair',
+  },
 ];
 
 const FACTS: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
@@ -55,14 +92,18 @@ const FACTS: { headline: string; place: string; lesson: string; icon: IconName; 
 export function OnboardingScene() {
   // Sequential build-up: `step` = how many layers from the top of LAYERS are active (0..5).
   const [step, setStep] = useState(1);
+  // Which layer's accordion panel is currently expanded (null = collapsed).
+  const [expanded, setExpanded] = useState<string | null>(LAYERS[0].id);
   const enabled = new Set(LAYERS.slice(0, step).map((l) => l.id));
-  const enabledList = LAYERS.slice(0, step);
 
   function clickLayer(i: number) {
-    // Each layer button represents "show me up to layer i".
-    // Clicking the current top layer again backs off one step (undo).
-    const isTop = i === step - 1;
-    setStep(isTop ? i : i + 1);
+    const id = LAYERS[i].id;
+    if (expanded === id) {
+      setExpanded(null);
+      return;
+    }
+    setStep(i + 1);
+    setExpanded(id);
   }
 
   return (
@@ -78,102 +119,108 @@ export function OnboardingScene() {
         intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שקופים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
-      <div className="grid lg:grid-cols-[3fr_2fr] gap-6 items-stretch">
-        <div className="surface-elevated relative overflow-hidden">
-          <LayeredMap enabled={enabled} />
-        </div>
-
+      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {LAYERS.map((l, i) => {
             const isOn = i < step;
-            const isNext = i === step;
-            const isTop = isOn && i === step - 1;
+            const isExpanded = expanded === l.id;
             return (
-              <button
+              <div
                 key={l.id}
-                onClick={() => clickLayer(i)}
-                aria-pressed={isOn}
                 className={cn(
-                  'w-full surface p-4 text-right transition-all flex items-center gap-3 relative',
-                  isOn && 'border-accent/60 shadow-glow',
-                  !isOn && isNext && 'border-accent/40 hover:border-accent hover:bg-accent/5',
-                  !isOn && !isNext && 'opacity-50 hover:opacity-90'
+                  'surface overflow-hidden transition-colors relative',
+                  isOn ? 'border-accent/60 shadow-glow' : 'opacity-80 hover:opacity-100'
                 )}
               >
-                {/* Sequential step badge */}
-                <div
-                  className={cn(
-                    'size-7 rounded-full flex items-center justify-center shrink-0 font-mono font-bold text-xs transition-colors',
-                    isOn
-                      ? 'bg-accent text-bg shadow-glow'
-                      : isNext
-                      ? 'bg-accent/15 text-accent border border-accent/40 animate-pulse'
-                      : 'bg-bg-accent text-fg-dim border border-border'
-                  )}
+                <button
+                  type="button"
+                  onClick={() => clickLayer(i)}
+                  aria-expanded={isExpanded}
+                  aria-controls={`layer-panel-${l.id}`}
+                  className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  {i + 1}
-                </div>
+                  <div
+                    className={cn(
+                      'size-7 rounded-full flex items-center justify-center shrink-0 font-mono font-bold text-xs transition-colors',
+                      isOn
+                        ? 'bg-accent text-bg shadow-glow'
+                        : 'bg-bg-accent text-fg-dim border border-border'
+                    )}
+                  >
+                    {i + 1}
+                  </div>
 
-                <div
-                  className={cn(
-                    'size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors',
-                    isOn
-                      ? 'bg-accent/15 text-accent border border-accent/40'
-                      : 'bg-bg-accent text-fg-dim border border-border'
+                  <div
+                    className={cn(
+                      'size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+                      isOn
+                        ? 'bg-accent/15 text-accent border border-accent/40'
+                        : 'bg-bg-accent text-fg-dim border border-border'
+                    )}
+                  >
+                    <Icon name={l.icon} size={18} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className={cn('font-medium text-sm', isExpanded && 'text-accent')}>{l.label}</div>
+                    <div className="text-xs text-fg-dim mt-0.5 line-clamp-1">{l.desc}</div>
+                  </div>
+
+                  <motion.span
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('shrink-0 inline-flex', isExpanded ? 'text-accent' : 'text-fg-dim')}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      key={`panel-${l.id}`}
+                      id={`layer-panel-${l.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-accent/20">
+                        <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
+                          מה השכבה הזו מוסיפה
+                        </div>
+                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                          {l.popupTitle}
+                        </h4>
+                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                          {l.popupBody}
+                        </p>
+                      </div>
+                    </motion.div>
                   )}
-                >
-                  <Icon name={l.icon} size={18} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm">{l.label}</div>
-                  <div className="text-xs text-fg-dim mt-0.5 line-clamp-1">{l.desc}</div>
-                </div>
-
-                {/* State chip — explains what clicking will do */}
-                <span
-                  className={cn(
-                    'shrink-0 text-xs font-mono px-2 py-1 rounded-md border whitespace-nowrap',
-                    isTop && 'border-accent/50 bg-accent/10 text-accent',
-                    isOn && !isTop && 'border-border bg-bg-accent text-fg-muted',
-                    !isOn && isNext && 'border-accent/40 bg-accent/5 text-accent',
-                    !isOn && !isNext && 'border-border-subtle bg-bg-accent text-fg-dim'
-                  )}
-                >
-                  {isTop ? 'בטל ↩' : isOn ? 'חזור לכאן' : isNext ? '+ הוסף' : `דלג עד שלב ${i + 1}`}
-                </span>
-              </button>
+                </AnimatePresence>
+              </div>
             );
           })}
         </div>
-      </div>
 
-      <AnimatePresence mode="wait">
-        {enabledList.length > 0 && (
-          <motion.div
-            key={enabledList.length}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="mt-6 surface p-5 border-r-4 border-r-accent-cool flex gap-4 items-start"
-          >
-            <Icon name="layers" size={22} className="text-accent-cool shrink-0 mt-0.5" />
-            <div>
-              <div className="text-[10px] font-mono text-accent-cool mb-1.5 tracking-widest uppercase">
-                {enabledList.length} שכבות פעילות
-              </div>
-              <p className="text-sm text-fg-muted leading-relaxed">
-                {enabledList.length === 1 && 'התחלנו — רואים רק את הטבע: הרים, נהרות, מדבר.'}
-                {enabledList.length === 2 && 'הוספת דרכים — עכשיו אפשר לתכנן איך לזוז במרחב.'}
-                {enabledList.length === 3 && 'הוספת יישובים — עכשיו ברור איפה אנשים נמצאים.'}
-                {enabledList.length === 4 && 'הוספת גבולות — עכשיו ברור מי שולט באיזה אזור.'}
-                {enabledList.length === 5 && 'תמונה מלאה לתכנון מבצעי. בלי אחת מהשכבות — נחסר מידע קריטי להחלטה.'}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <div className="surface-elevated relative overflow-hidden sticky top-6">
+          <LayeredMap enabled={enabled} />
+        </div>
+      </div>
 
       <SoftDivider text="לקרוא מפה — להציל חיים" />
 
@@ -185,7 +232,7 @@ export function OnboardingScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.08 }}
-            className="surface p-5 hover:border-accent/40 transition-all"
+            className="surface p-5"
           >
             <div className="flex items-start gap-4">
               <div className="size-12 rounded-xl bg-bg-accent border border-border flex items-center justify-center shrink-0">

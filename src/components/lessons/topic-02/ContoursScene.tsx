@@ -128,11 +128,7 @@ export function ContoursScene() {
         })}
       </div>
 
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch">
-        <div className="surface-elevated relative overflow-hidden border border-border/50 rounded-2xl">
-          <ShapeMap shape={shape} />
-        </div>
-
+      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
         <div className="space-y-4">
           <AnimatePresence mode="wait">
             <motion.div
@@ -156,6 +152,10 @@ export function ContoursScene() {
           </AnimatePresence>
 
           <Glossary />
+        </div>
+
+        <div className="surface-elevated relative overflow-hidden border border-border/50 rounded-2xl">
+          <ShapeMap shape={shape} />
         </div>
       </div>
     </section>

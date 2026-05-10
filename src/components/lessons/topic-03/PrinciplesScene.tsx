@@ -64,11 +64,7 @@ function AzimuthExplorer() {
     : 'צפון־מערב';
 
   return (
-    <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 items-stretch">
-      <div className="surface-elevated p-6 sm:p-8 flex flex-col items-center justify-center">
-        <CompassDial azimuth={azimuth} back={back} />
-      </div>
-
+    <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
       <div className="space-y-4">
         <div className="surface-elevated p-5 sm:p-6">
           <div className="text-[10px] font-mono text-fg-dim mb-2 tracking-widest uppercase">
@@ -126,6 +122,10 @@ function AzimuthExplorer() {
             כדי לחזור הביתה בבטחה, כדי לוודא שחברים שלכם נמצאים במיקום הנכון, או כדי לבצע נסיגה חכמה דרך נתיב שכבר בדקתם וסימנתם כבטוח.
           </div>
         </div>
+      </div>
+
+      <div className="surface-elevated p-6 sm:p-8 flex flex-col items-center justify-center">
+        <CompassDial azimuth={azimuth} back={back} />
       </div>
     </div>
   );
@@ -289,55 +289,6 @@ function ThreeNorthsCard() {
       </div>
 
       <div className="grid lg:grid-cols-[1fr_1fr] gap-6 items-stretch">
-        <div className="surface aspect-square sm:aspect-auto sm:min-h-[280px] flex items-center justify-center p-6 relative overflow-hidden">
-          <svg viewBox="-50 -50 100 100" className="w-full h-full max-w-[260px]">
-            <circle cx="0" cy="0" r="40" className="fill-bg-elevated stroke-border" strokeWidth="0.4" />
-
-            {Object.entries(NORTHS).map(([id, n]) => {
-              const isActive = id === active;
-              const a = ((n.angle - 90) * Math.PI) / 180;
-              const x = Math.cos(a) * 36;
-              const y = Math.sin(a) * 36;
-              return (
-                <g key={id}>
-                  <motion.line
-                    x1="0"
-                    y1="0"
-                    x2={x}
-                    y2={y}
-                    className={cn('transition-all', n.color)}
-                    stroke="currentColor"
-                    strokeWidth={isActive ? 1 : 0.4}
-                    opacity={isActive ? 1 : 0.4}
-                  />
-                  <motion.polygon
-                    points={`${x},${y} ${x - 1.5},${y + 3} ${x + 1.5},${y + 3}`}
-                    transform={`rotate(${n.angle} ${x} ${y})`}
-                    className={n.color}
-                    fill="currentColor"
-                    opacity={isActive ? 1 : 0.5}
-                    animate={{ opacity: isActive ? 1 : 0.5 }}
-                  />
-                  <text
-                    x={x * 1.18}
-                    y={y * 1.18 + 1}
-                    textAnchor="middle"
-                    className={cn('text-[3px] font-mono font-bold transition-opacity', n.color)}
-                    opacity={isActive ? 1 : 0.4}
-                  >
-                    {n.label}
-                  </text>
-                </g>
-              );
-            })}
-
-            <circle cx="0" cy="0" r="1.5" className="fill-bg stroke-fg" strokeWidth="0.4" />
-            <text x="0" y="48" textAnchor="middle" className="fill-fg-dim text-[2.5px] font-mono">
-              *ההפרש מוגזם להמחשה ויזואלית
-            </text>
-          </svg>
-        </div>
-
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-2">
             {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n]) => {
@@ -378,6 +329,64 @@ function ThreeNorthsCard() {
                 <dd className="text-fg-muted leading-relaxed">{meta.why}</dd>
               </div>
             </dl>
+          </div>
+        </div>
+
+        <div className="surface aspect-square sm:aspect-auto sm:min-h-[280px] flex flex-col items-center justify-center p-6 relative overflow-hidden gap-3">
+          <svg viewBox="-50 -50 100 100" className="w-full h-full max-w-[260px]">
+            <circle cx="0" cy="0" r="40" className="fill-bg-elevated stroke-border" strokeWidth="0.4" />
+
+            {Object.entries(NORTHS).map(([id, n]) => {
+              const isActive = id === active;
+              const a = ((n.angle - 90) * Math.PI) / 180;
+              const x = Math.cos(a) * 36;
+              const y = Math.sin(a) * 36;
+              return (
+                <g key={id}>
+                  <motion.line
+                    x1="0"
+                    y1="0"
+                    x2={x}
+                    y2={y}
+                    className={cn('transition-all', n.color)}
+                    stroke="currentColor"
+                    strokeWidth={isActive ? 1.2 : 0.5}
+                    opacity={isActive ? 1 : 0.45}
+                  />
+                  <motion.polygon
+                    points={`${x},${y} ${x - 1.5},${y + 3} ${x + 1.5},${y + 3}`}
+                    transform={`rotate(${n.angle} ${x} ${y})`}
+                    className={n.color}
+                    fill="currentColor"
+                    opacity={isActive ? 1 : 0.5}
+                    animate={{ opacity: isActive ? 1 : 0.5 }}
+                  />
+                </g>
+              );
+            })}
+
+            <circle cx="0" cy="0" r="1.8" className="fill-bg stroke-fg" strokeWidth="0.4" />
+            <text x="0" y="48" textAnchor="middle" className="fill-fg-dim text-[3px] font-mono">
+              *ההפרש מוגזם להמחשה ויזואלית
+            </text>
+          </svg>
+
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs">
+            {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n]) => {
+              const isActive = id === active;
+              return (
+                <div
+                  key={id}
+                  className={cn(
+                    'flex items-center gap-1.5 transition-opacity',
+                    isActive ? 'opacity-100' : 'opacity-50'
+                  )}
+                >
+                  <span className={cn('inline-block size-2.5 rounded-full', n.color)} style={{ backgroundColor: 'currentColor' }} />
+                  <span className={cn('font-mono font-bold whitespace-nowrap', n.color)}>{n.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

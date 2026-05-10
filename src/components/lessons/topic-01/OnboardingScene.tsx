@@ -94,9 +94,20 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
 
 export function OnboardingScene() {
   const [step, setStep] = useState<Feature>('flat');
+  // Whether the current step's explanation panel is expanded; null = collapsed.
+  // Defaults to the first step being open so the user sees content immediately.
+  const [expandedStep, setExpandedStep] = useState<Feature | null>('flat');
 
   const handleStepClick = (id: Feature) => {
-    setStep((prev) => (prev === id ? prev : id));
+    if (expandedStep === id) {
+      // Clicking the open panel collapses it (the visualization on the left
+      // stays — `step` doesn't change).
+      setExpandedStep(null);
+    } else {
+      // Open this step and update the visualization to match.
+      setStep(id);
+      setExpandedStep(id);
+    }
   };
 
   return (
@@ -112,14 +123,12 @@ export function OnboardingScene() {
         intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר, תזרימו נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
       />
 
-      <div className="grid lg:grid-cols-[3fr_2fr] gap-6 items-stretch">
-        <div className="surface-elevated relative overflow-hidden">
-          <TerrainStage feature={step} />
-        </div>
-
+      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = step === s.id;
+            const expanded = expandedStep === s.id;
             const passed = STEPS.findIndex((x) => x.id === step) > i;
             return (
               <div
@@ -135,7 +144,7 @@ export function OnboardingScene() {
                 <button
                   type="button"
                   onClick={() => handleStepClick(s.id)}
-                  aria-expanded={active}
+                  aria-expanded={expanded}
                   aria-controls={`accordion-panel-${s.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
@@ -166,9 +175,9 @@ export function OnboardingScene() {
                     className={cn('transition-colors shrink-0', active ? 'text-accent' : 'text-fg-dim')}
                   />
                   <motion.span
-                    animate={{ rotate: active ? 180 : 0 }}
+                    animate={{ rotate: expanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', active ? 'text-accent' : 'text-fg-dim')}
+                    className={cn('shrink-0 inline-flex', expanded ? 'text-accent' : 'text-fg-dim')}
                   >
                     <svg
                       width="18"
@@ -186,7 +195,7 @@ export function OnboardingScene() {
                   </motion.span>
                 </button>
                 <AnimatePresence initial={false}>
-                  {active && (
+                  {expanded && (
                     <motion.div
                       key={`panel-${s.id}`}
                       id={`accordion-panel-${s.id}`}
@@ -214,6 +223,11 @@ export function OnboardingScene() {
             );
           })}
         </div>
+
+        {/* Visualization — second child → LEFT in RTL */}
+        <div className="surface-elevated relative overflow-hidden sticky top-6">
+          <TerrainStage feature={step} />
+        </div>
       </div>
 
       <SoftDivider text="ועכשיו 4 סיפורים אמיתיים מההיסטוריה" />
@@ -226,23 +240,22 @@ export function OnboardingScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -3 }}
-            className="surface p-5 hover:border-accent/40 hover:shadow-elevated transition-all duration-300 relative overflow-hidden group"
+            className="surface p-5 relative overflow-hidden"
           >
             <div
               aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-50 group-hover:opacity-100 transition-opacity"
+              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
             />
             <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0 group-hover:border-accent/40 transition-colors">
+              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
                 <Icon name={h.icon} size={22} className={h.accent} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim group-hover:bg-accent transition-colors" />
+                  <span className="size-1 rounded-full bg-fg-dim" />
                   {h.place}
                 </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance group-hover:text-accent transition-colors">
+                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
                   {h.headline}
                 </h3>
                 <p className="text-sm text-fg-muted leading-relaxed text-pretty">

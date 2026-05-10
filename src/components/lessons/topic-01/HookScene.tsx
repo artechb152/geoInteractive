@@ -58,10 +58,9 @@ export function HookScene() {
                 hidden: { opacity: 0, y: 12 },
                 visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
               }}
-              whileHover={{ y: -2 }}
-              className="surface px-3 py-4 text-center group hover:border-accent/40 hover:shadow-glow transition-all duration-300"
+              className="surface px-3 py-4 text-center"
             >
-              <Icon name={s.icon} size={18} className="text-accent mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <Icon name={s.icon} size={18} className="text-accent mx-auto mb-2" />
               <div className="font-display font-bold text-2xl tabular-nums">{s.value}</div>
               <div className="text-xs text-fg-dim mt-0.5">{s.label}</div>
             </motion.div>

@@ -63,9 +63,9 @@ export function HookScene() {
                 hidden: { opacity: 0, y: 12 },
                 visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
               }}
-              className="surface group px-4 py-6 text-center border border-white/5 hover:border-accent/30 transition-colors rounded-xl bg-white/2"
+              className="surface px-4 py-6 text-center border border-white/5 rounded-xl bg-white/2"
             >
-              <Icon name={s.icon} size={20} className="text-accent/60 group-hover:text-accent mx-auto mb-3 transition-colors" />
+              <Icon name={s.icon} size={20} className="text-accent mx-auto mb-3" />
               <div className="font-display font-bold text-3xl tabular-nums text-fg">{s.value}</div>
               <div className="text-[10px] font-mono text-fg-dim uppercase tracking-widest mt-1">{s.label}</div>
             </motion.div>

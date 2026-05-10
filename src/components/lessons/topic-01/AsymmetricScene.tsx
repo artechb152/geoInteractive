@@ -221,15 +221,14 @@ export function AsymmetricScene() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.06 }}
-              whileHover={{ y: -3 }}
-              className="surface p-5 hover:border-accent/40 hover:shadow-elevated transition-all duration-300 group relative overflow-hidden"
+              className="surface p-5 relative overflow-hidden"
             >
-              <div className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 group-hover:bg-accent/10 blur-2xl transition-colors pointer-events-none" />
+              <div className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
               <div className="relative flex items-start justify-between mb-3">
-                <div className="size-11 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center group-hover:scale-110 group-hover:border-accent/60 transition-all">
+                <div className="size-11 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center">
                   <Icon name={t.icon} size={22} className="text-accent" />
                 </div>
-                <span className="font-mono text-xs text-fg-dim group-hover:text-accent transition-colors">
+                <span className="font-mono text-xs text-fg-dim">
                   {String(i + 1).padStart(2, '0')}
                 </span>
               </div>
@@ -528,105 +527,91 @@ const WARS: { name: string; days: number; meta: string; color: string }[] = [
 ];
 
 function WarTimeline({ currentDays }: { currentDays: number }) {
-  // Log scale: 1d → 0%, 10000d (~27y) → 100%
-  const log = (d: number) => (Math.log10(Math.max(1, d)) / Math.log10(10000)) * 100;
-  const ticks = [
-    { d: 1,    label: 'יום' },
-    { d: 30,   label: 'חודש' },
-    { d: 365,  label: 'שנה' },
-    { d: 3650, label: '10 שנים' },
-    { d: 10000,label: '~30 שנים' },
-  ];
-
-  // Two-row stagger to keep labels from colliding
-  const rowFor = (i: number) => (i % 2 === 0 ? 0 : 1);
+  // Sort short → long so the user sees what they've already "outlasted" first.
+  const sorted = [...WARS].sort((a, b) => a.days - b.days);
+  const passedCount = sorted.filter((w) => currentDays >= w.days).length;
 
   return (
     <div className="mt-8 surface-elevated p-5 sm:p-6 relative overflow-hidden">
       <div aria-hidden className="absolute inset-0 topo-bg opacity-10 pointer-events-none" />
       <div className="relative">
-        <div className="flex items-center gap-2 mb-1">
-          <Icon name="clock" size={14} className="text-accent" />
-          <div className="text-xs font-mono text-accent tracking-widest uppercase">
-            איפה אתה על ציר ההיסטוריה?
+        <div className="flex items-baseline justify-between gap-4 flex-wrap mb-1">
+          <div>
+            <div className="flex items-center gap-2">
+              <Icon name="clock" size={14} className="text-accent" />
+              <div className="text-xs font-mono text-accent tracking-widest uppercase">
+                ב-{currentDays} ימים — בכמה מלחמות בהיסטוריה כבר היית עומד?
+              </div>
+            </div>
+            <p className="text-sm text-fg-muted mt-1">
+              לכל מלחמה, כמה אחוז ממשך הזמן שלה כבר עבר עליך.
+            </p>
+          </div>
+          <div className="text-end">
+            <div className="font-display font-bold text-3xl tabular-nums text-accent leading-none">
+              {passedCount}<span className="text-fg-muted text-xl">/{sorted.length}</span>
+            </div>
+            <div className="text-xs text-fg-muted mt-1">מלחמות שכבר עברת</div>
           </div>
         </div>
-        <p className="text-sm text-fg-muted mb-8">
-          השוואה למלחמות אמיתיות. הציר לוגריתמי — כדי שגם 6 ימים וגם 20 שנה יוכלו להיכנס לאותה תמונה.
-        </p>
 
-        {/* Vertical layout:
-            0–62  : war labels (two staggered rows)
-            64    : war dots
-            72    : track
-            80    : tick labels
-            108   : "you are here" chip
-            stem from chip up to track at 72                                       */}
-        <div className="relative" style={{ height: '170px' }}>
-          {/* Track */}
-          <div className="absolute inset-x-0 top-[72px] h-1 rounded-full bg-bg-accent" />
-          <motion.div
-            className="absolute top-[72px] start-0 h-1 rounded-full bg-gradient-to-l from-accent to-accent-cool shadow-glow"
-            animate={{ width: `${log(currentDays)}%` }}
-            transition={{ duration: 0.3 }}
-          />
-
-          {/* Tick marks below track */}
-          {ticks.map((t) => (
-            <div
-              key={t.d}
-              className="absolute -translate-x-1/2"
-              style={{ insetInlineStart: `${log(t.d)}%`, top: '78px' }}
-            >
-              <div className="h-2 w-px bg-border-strong mx-auto" />
-              <div className="text-xs font-mono text-fg-dim mt-1 whitespace-nowrap">{t.label}</div>
-            </div>
-          ))}
-
-          {/* War markers — all above the track, in 2 staggered rows */}
-          {WARS.map((w, i) => {
-            const left = log(w.days);
-            const row = rowFor(i);
-            const labelTop = row === 0 ? 0 : 30;
+        <div className="mt-6 space-y-3">
+          {sorted.map((w) => {
+            const passed = currentDays >= w.days;
+            const pct = Math.min(100, (currentDays / w.days) * 100);
+            const isCurrent = w.color === 'bg-accent-hot'; // חרבות ברזל highlight
             return (
-              <div
-                key={w.name}
-                className="absolute -translate-x-1/2 text-center"
-                style={{ insetInlineStart: `${left}%` }}
-              >
-                <div
-                  className="absolute -translate-x-1/2 whitespace-nowrap"
-                  style={{ insetInlineStart: '50%', top: `${labelTop}px` }}
-                >
-                  <div className="text-xs text-fg leading-tight font-medium">{w.name}</div>
-                  <div className="text-xs font-mono text-fg-dim">{w.days} ימים</div>
+              <div key={w.name} className="flex items-center gap-3 sm:gap-4">
+                {/* Name + meta — first → RIGHT in RTL */}
+                <div className="w-28 sm:w-44 shrink-0 text-end">
+                  <div
+                    className={cn(
+                      'text-sm font-medium leading-tight',
+                      isCurrent ? 'text-accent-hot' : 'text-fg'
+                    )}
+                  >
+                    {w.name}
+                  </div>
+                  <div className="text-xs font-mono text-fg-dim">{w.meta}</div>
                 </div>
-                {/* connector */}
-                <div
-                  className="absolute -translate-x-1/2 w-px bg-border-subtle"
-                  style={{ insetInlineStart: '50%', top: `${labelTop + 28}px`, height: `${64 - (labelTop + 28)}px` }}
-                />
-                {/* dot on track */}
-                <div
-                  className={cn('absolute -translate-x-1/2 h-2.5 w-2.5 rounded-full ring-2 ring-bg-elevated', w.color)}
-                  style={{ insetInlineStart: '50%', top: '63px' }}
-                />
+
+                {/* Progress bar — middle */}
+                <div className="flex-1 h-3 rounded-full bg-bg-accent border border-border-subtle overflow-hidden relative">
+                  <motion.div
+                    className={cn(
+                      'h-full rounded-full',
+                      passed
+                        ? 'bg-gradient-to-l from-status-ok to-status-ok/70'
+                        : 'bg-gradient-to-l from-accent to-accent/60'
+                    )}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+
+                {/* Status — last → LEFT in RTL */}
+                <div className="w-24 sm:w-28 shrink-0 flex items-center gap-1.5 text-xs justify-start">
+                  {passed ? (
+                    <>
+                      <Icon name="check" size={12} className="text-status-ok" strokeWidth={3} />
+                      <span className="text-status-ok font-medium font-mono tabular-nums">
+                        עברת ({w.days}d)
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-fg-muted font-mono tabular-nums">
+                      {currentDays}/{w.days}d
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}
+        </div>
 
-          {/* "You are here" marker — below the track */}
-          <motion.div
-            className="absolute -translate-x-1/2 z-10 pointer-events-none"
-            style={{ top: '108px' }}
-            animate={{ insetInlineStart: `${log(currentDays)}%` }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="w-0.5 h-9 bg-accent mx-auto -mt-9" />
-            <div className="chip border-accent bg-accent text-bg shadow-glow whitespace-nowrap font-mono">
-              אתה כאן · {currentDays}d
-            </div>
-          </motion.div>
+        <div className="mt-5 text-xs text-fg-dim leading-relaxed">
+          <strong className="text-fg">איך לקרוא:</strong> כל פס מציג מלחמה אמיתית.
+          הירוקים — כבר נמשכו פחות זמן ממה שעבר בסימולציה. הכתומים — עדיין בעיצומם בנקודת זמן זו.
         </div>
       </div>
     </div>
