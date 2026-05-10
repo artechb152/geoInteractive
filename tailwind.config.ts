@@ -12,20 +12,20 @@ const config: Config = {
       },
       colors: {
         bg: {
-          DEFAULT: '#0a0e14',
-          elevated: '#11161f',
-          card: '#161c27',
-          accent: '#1e2530',
+          DEFAULT: '#f6f8fb',
+          elevated: '#ffffff',
+          card: '#ffffff',
+          accent: '#eef2f7',
         },
         border: {
-          DEFAULT: '#3a4452',
-          subtle: '#2a323d',
-          strong: '#4a5566',
+          DEFAULT: '#d8dee7',
+          subtle: '#e9edf2',
+          strong: '#bcc4d0',
         },
         fg: {
-          DEFAULT: '#eef2f7',
-          muted: '#c5cdd9',
-          dim: '#9aa5b4',
+          DEFAULT: '#101720',
+          muted: '#4a5566',
+          dim: '#6c7686',
         },
         terrain: {
           sand: '#c2a26b',
@@ -53,7 +53,7 @@ const config: Config = {
       boxShadow: {
         glow: '0 0 40px -10px rgba(212, 167, 44, 0.35)',
         'glow-cool': '0 0 40px -10px rgba(91, 157, 217, 0.4)',
-        elevated: '0 10px 30px -10px rgba(0,0,0,0.6), 0 4px 10px -4px rgba(0,0,0,0.4)',
+        elevated: '0 10px 30px -12px rgba(15, 23, 42, 0.12), 0 4px 10px -4px rgba(15, 23, 42, 0.08)',
       },
       backgroundImage: {
         'grid-pattern':

@@ -209,8 +209,8 @@ function TacticalMap({
         <svg viewBox="0 0 160 100" className="w-full h-full" preserveAspectRatio="none">
           <defs>
             <linearGradient id="ground-tac" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#161c27" />
-              <stop offset="100%" stopColor="#11161f" />
+              <stop offset="0%" stopColor="#f3f5f9" />
+              <stop offset="100%" stopColor="#e6ebf2" />
             </linearGradient>
           </defs>
 

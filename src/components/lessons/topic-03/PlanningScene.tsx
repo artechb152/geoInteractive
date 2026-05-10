@@ -14,11 +14,11 @@ type Checkpoint = {
 };
 
 const CHECKPOINTS: Checkpoint[] = [
-  { id: '1', label: 'נקודה 1', feature: 'יוצאים מהבסיס · קשת חדה לכיוון מזרח',  icon: 'flag' },
-  { id: '2', label: 'נקודה 2', feature: 'מגיעים לפיתול בנחל · עוברים אותו ימינה', icon: 'wave' },
-  { id: '3', label: 'נקודה 3', feature: 'עוקפים את הגבעה משמאל · רואים תורן', icon: 'mountain' },
-  { id: '4', label: 'נקודה 4', feature: 'חוצים דרך עפר · ממשיכים ישר 600 מ׳', icon: 'truck' },
-  { id: '5', label: 'יעד', feature: 'מגיעים לקפל קרקע מסומן · מאמתים ועוצרים', icon: 'target' },
+  { id: '1', label: 'נקודה 1: יוצאים לדרך',     feature: 'עוזבים את המבנים האחרונים בבסיס. לוקחים קשת חדה לכיוון מזרח ומחפשים את תחילת ערוץ הנחל.',                       icon: 'flag' },
+  { id: '2', label: 'נקודה 2: עיקול הנחל',      feature: 'מגיעים לסיבוב משמעותי בנחל. חוצים אותו לצד ימין ומטפסים בשיפוע מתון לכיוון צפון-מזרח.',                          icon: 'wave' },
+  { id: '3', label: 'נקודה 3: אימות גובה',      feature: 'עוקפים את הגבעה מצד שמאל (מערב). בשלב זה אתם אמורים לראות את תורן האנטנה בקו הרכס הרחוק.',                       icon: 'mountain' },
+  { id: '4', label: 'נקודה 4: חציית ציר',       feature: 'מגיעים לדרך עפר רחבה. חוצים אותה בזהירות וממשיכים בתוך חורשת העצים למשך 600 מטרים נוספים.',                      icon: 'truck' },
+  { id: '5', label: 'היעד: נקודת הסיום',         feature: 'הגעה לקרקע סלעית עם קבוצת עצי אורן בולטים. זהו היעד — מוודאים אימות אחרון ועוצרים.',                              icon: 'target' },
 ];
 
 export function PlanningScene() {
@@ -26,22 +26,22 @@ export function PlanningScene() {
     <section id="scene-planning" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="03.2"
-        eyebrow="תכנון ציר תנועה"
+        eyebrow="תכנון ציר ותנועה"
         title={
           <>
-            <span className="gradient-text">סיפור דרך</span> · המסלול שכותבים מראש
+            <span className="gradient-text">סיפור דרך</span> • התסריט שכותבים מראש
           </>
         }
-        intro="לפני שיוצאים לשטח, מכינים תוכנית מסלול מפורטת — מין 'תסריט' של מה צריך לראות בכל קטע. ככה גם אם הדרך קשה, אתה לא מאבד את החוט."
+        intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפורטת — מעין 'ספוילר' של מה שהעיניים שלכם אמורות לראות בכל קטע בדרך. ככה גם אם הלילה קשה והדרך מורכבת, אתם לא מאבדים את החוט."
       />
 
       <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
         <div className="flex gap-3 items-start">
           <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
           <div className="text-sm leading-relaxed">
-            <strong className="text-fg">למה לכתוב את זה מראש?</strong>{' '}
-            כי בלילה, בלחץ קרבי, או אחרי שעות הליכה — המוח שלך כבר לא חושב טוב.
-            "סיפור דרך" כתוב מראש מאפשר לך פשוט לעקוב — בלי לחשוב יותר מדי. זה מציל חיים.
+            <strong className="text-fg">למה לכתוב את זה מראש?</strong>
+            <br />
+            בלילה, תחת לחץ או אחרי שעות של הליכה, המוח שלנו עובד פחות טוב. 'סיפור דרך' מוכן מראש מאפשר לכם לנווט על 'אוטומט' — פשוט לעקוב אחרי ההוראות של עצמכם מבלי להיתקע בחישובים מיותרים. זה ממש מציל חיים.
           </div>
         </div>
       </div>
@@ -217,97 +217,62 @@ function RouteMap({ activeStep }: { activeStep: number }) {
 }
 
 function PacingDemo() {
-  const [meters, setMeters] = useState(500);
-  const stepLength = 1.5; // average soldier double-step length in meters
-  const pairs = Math.round(meters / stepLength);
+  const [distance, setDistance] = useState(500);
+  const stepLength = 1.5; // אורך צמד צעדים ממוצע
+  const paces = Math.round(distance / stepLength);
 
-  // Convert to "ספירת צעדים" — Israeli typical: count pairs (one count per 2 steps)
   return (
     <div className="surface-elevated p-6 sm:p-8">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold mb-1">ספירת צעדים — איך מודדים מרחק בלי GPS</h3>
-        <p className="text-fg-muted text-sm">
-          הטכניקה הכי פשוטה ופשוטה: סופרים כל זוג צעדים. מכפילים באורך של זוג שלך — וזה המרחק. גרור את הסרגל וראה כמה צעדים זה.
-        </p>
-      </div>
+      <h3 className="text-xl font-bold mb-4 text-center">ספירת צעדים — איך מודדים מרחק בלי GPS?</h3>
+      <p className="text-sm text-fg-muted text-center mb-8 max-w-2xl mx-auto">
+        השיטה הכי פשוטה והכי בטוחה: סופרים כמה 'צעדים כפולים' (כל פעם שרגל ימין פוגשת את הקרקע) אתם עושים.
+        זהו 'מד המרחק' האנושי שלכם. גללו את הסרגל כדי לראות כמה צעדים תצטרכו לעשות.
+      </p>
 
-      <div className="grid md:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
-        <div>
-          <div className="surface-elevated p-5">
-            <div className="text-[10px] font-mono text-fg-dim mb-1 tracking-widest uppercase">
-              מרחק שצריך לעבור
-            </div>
-            <div className="font-display font-bold text-5xl tabular-nums mb-3">
-              {meters}
-              <span className="text-2xl text-fg-muted ms-1">מ׳</span>
-            </div>
-
-            <input
-              type="range"
-              min={50}
-              max={2000}
-              step={50}
-              value={meters}
-              onChange={(e) => setMeters(Number(e.target.value))}
-              className="w-full accent-accent"
-              aria-label="מרחק במטרים"
-            />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
-              <span>50</span>
-              <span>500</span>
-              <span>1,000</span>
-              <span>2,000 מ׳</span>
-            </div>
+      <div className="grid md:grid-cols-2 gap-8 items-center">
+        <div className="space-y-6">
+          <div className="flex justify-between items-end">
+            <span className="text-xs font-mono text-fg-dim uppercase">מרחק שצריך לעבור:</span>
+            <span className="text-4xl font-display font-bold text-accent">{distance} מ'</span>
           </div>
-
-          <div className="surface p-5 mt-3 border-r-4 border-r-accent">
-            <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
-              כמה זוגות צעדים תספור
-            </div>
-            <div className="flex items-baseline gap-3 mb-2">
-              <span className="font-display font-bold text-4xl tabular-nums text-accent">
-                {pairs.toLocaleString('he-IL')}
-              </span>
-              <span className="text-fg-muted text-sm">זוגות צעדים</span>
-            </div>
-            <div className="text-xs text-fg-dim font-mono">
-              {meters} מ׳ ÷ {stepLength} מ׳ לזוג = {pairs} זוגות
-            </div>
+          <input
+            type="range"
+            min={50}
+            max={2000}
+            step={50}
+            value={distance}
+            onChange={(e) => setDistance(Number(e.target.value))}
+            className="w-full accent-accent"
+            aria-label="מרחק במטרים"
+          />
+          <div className="grid grid-cols-4 text-[10px] font-mono text-fg-dim">
+            <span>50 מ'</span>
+            <span className="text-center">500</span>
+            <span className="text-center">1,000</span>
+            <span className="text-left">2,000</span>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="surface p-5">
-            <div className="text-[10px] font-mono text-fg-dim mb-2 tracking-widest uppercase">
-              איך עושים את זה בפועל
-            </div>
-            <ol className="space-y-2.5 text-sm text-fg-muted">
-              <li className="flex gap-3">
-                <span className="size-6 rounded-lg bg-bg-accent text-fg-muted text-xs font-mono flex items-center justify-center shrink-0">1</span>
-                <span>מודדים מראש כמה אורך זוג הצעדים שלך (בדרך כלל 1.4–1.6 מ׳).</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="size-6 rounded-lg bg-bg-accent text-fg-muted text-xs font-mono flex items-center justify-center shrink-0">2</span>
-                <span>בעת ההליכה, סופרים בראש כל פעם שרגל ימין יורדת לקרקע (= זוג שלם).</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="size-6 rounded-lg bg-bg-accent text-fg-muted text-xs font-mono flex items-center justify-center shrink-0">3</span>
-                <span>שומרים את הספירה במחשבון פיזי, בקשר עם מספרים, או בחבל עם קשרים.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="size-6 rounded-lg bg-bg-accent text-fg-muted text-xs font-mono flex items-center justify-center shrink-0">4</span>
-                <span>כשהגעת לזוג היעד — נעצרים, מאמתים את הסביבה. זה המקום.</span>
-              </li>
-            </ol>
-          </div>
+        <div className="surface p-6 rounded-2xl border-2 border-accent/20 flex flex-col items-center justify-center bg-accent/5">
+          <div className="text-[10px] font-mono text-accent mb-2 uppercase tracking-widest">כמות צמדי צעדים משוערת</div>
+          <div className="text-6xl font-display font-bold text-accent tabular-nums mb-2">{paces}</div>
+          <div className="text-sm font-bold text-fg">זוגות צעדים</div>
+          <div className="text-[10px] text-fg-dim mt-4">חישוב: {distance} מ' ÷ 1.5 מ' (אורך צמד צעדים) = {paces}</div>
+        </div>
+      </div>
 
-          <div className="surface p-4 border-r-4 border-r-status-warn flex gap-3 items-start">
-            <Icon name="spark" size={18} className="text-status-warn shrink-0 mt-0.5" />
-            <div className="text-xs leading-relaxed">
-              <strong className="text-fg">חשוב:</strong> אורך הצעד משתנה לפי השטח. עלייה בהר = צעד קצר יותר. ירידה = ארוך יותר.
-              נווט טוב יודע לכייל את הספירה לפי השטח.
-            </div>
-          </div>
+      <div className="mt-8 grid sm:grid-cols-2 gap-4">
+        <div className="surface p-4 flex gap-3 items-start">
+          <div className="size-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0 font-bold">1</div>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <strong className="text-fg">מדידה מראש:</strong> כל אחד צועד קצת אחרת. תמדדו כמה צעדים כפולים לוקח לכם לעבור 100 מטרים במישור.
+          </p>
+        </div>
+        <div className="surface p-4 flex gap-3 items-start">
+          <div className="size-8 rounded-lg bg-status-warn/10 flex items-center justify-center text-status-warn shrink-0 font-bold">!</div>
+          <p className="text-xs text-fg-muted leading-relaxed">
+            <strong className="text-fg">פקטור שטח:</strong> בעלייה הצעד מתקצר (תספרו יותר), בירידה הוא מתארך. נווט מנוסה יודע 'לפצות' על זה בספירה.
+          </p>
         </div>
       </div>
     </div>
@@ -317,20 +282,18 @@ function PacingDemo() {
 function ConclusionCard() {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="surface-elevated p-6 border-r-4 border-r-accent flex gap-4 items-start"
+      className="surface-elevated p-6 border-r-4 border-r-accent-cool flex gap-4 items-start"
     >
-      <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
+      <Icon name="spark" size={22} className="text-accent-cool shrink-0 mt-0.5" />
       <div>
-        <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
-          סיכום העיקרון
+        <div className="text-[10px] font-mono text-accent-cool mb-1 tracking-widest uppercase">
+          סיכום התכנון
         </div>
         <p className="text-fg leading-relaxed text-pretty">
-          תכנון ציר זה לא רק "לסמן קו במפה". זה לבנות סיפור — סדרה של דברים שאני אמור לראות, אחד אחרי השני.
-          ולבדוק תוך כדי הליכה: סופרים צעדים, מסמנים נקודות אימות, מאמתים שכל פרט תואם לתוכנית.
-          ככה — גם אם פתאום אין GPS, או חושך, או לחץ — <strong className="text-fg">המסלול עצמו מנחה אותי הביתה</strong>.
+          תכנון ציר הוא לא רק לסמן קו על מפה. זה לבנות <strong className="text-fg">סיפור</strong> שתוכלו לעקוב אחריו תוך כדי תנועה, ולאמת אותו בעזרת <strong className="text-fg">ספירת צעדים</strong> מדויקת. ככה — גם אם פתאום אין GPS, או שחשוך לגמרי — המסלול עצמו מנחה אתכם הביתה.
         </p>
       </div>
     </motion.div>

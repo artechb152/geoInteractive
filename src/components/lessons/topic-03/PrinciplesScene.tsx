@@ -17,18 +17,18 @@ export function PrinciplesScene() {
             איך יודעים <span className="gradient-text">לאן ללכת</span>?
           </>
         }
-        intro="ניווט מתחיל בשאלה אחת: איזה כיוון בדיוק? התשובה היא 'אזימוט' — מספר בין 0 ל-360 שאומר כמה לסטות מהצפון. בוא נראה איך זה עובד."
+        intro="ניווט הוא לא ניחוש - הוא מדע של דיוק. הכל מתחיל ב'אזימוט': הכלי שמאפשר לכם לדעת בדיוק לאן ללכת, גם באמצע שום מקום ובחושך מוחלט."
       />
 
       <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
         <div className="flex gap-3 items-start">
           <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
           <div className="text-sm leading-relaxed">
-            <strong className="text-fg">מילון מהיר:</strong>
+            <strong className="text-fg">מילון שטח מהיר:</strong>
             <ul className="mt-2 space-y-1 text-fg-muted">
-              <li>· <strong className="text-fg">אזימוט (Azimuth)</strong> — זווית במעלות (0–360) שאומרת לאן ללכת. 0° = ישר צפונה, 90° = מזרח, 180° = דרום, 270° = מערב.</li>
-              <li>· <strong className="text-fg">אזימוט חוזר (Back Azimuth)</strong> — הכיוון ההפוך — לחזור משם שהגעת. פשוט: הוסף או הפחת 180°.</li>
-              <li>· <strong className="text-fg">GPS-Denied</strong> — מצב שבו אין GPS (האויב משבש, או נמצאים מתחת לאדמה). חוזרים לעבוד עם מצפן ומפה כמו פעם.</li>
+              <li>· <strong className="text-fg">אזימוט (Azimuth)</strong> — הזווית המדויקת ליעד שלכם (0–360 מעלות). 0° זה צפון, 90° זה מזרח.</li>
+              <li>· <strong className="text-fg">אזימוט חוזר (Back Azimuth)</strong> — הדרך המהירה והבטוחה הביתה. פשוט הופכים את הכיוון (מוסיפים או מחסירים 180°).</li>
+              <li>· <strong className="text-fg">GPS-Denied</strong> — הרגע שבו הטכנולוגיה בוגדת בנו. כשהאויב משבש לוויינים או כשנמצאים מתחת לאדמה, חוזרים למפה ולמצפן.</li>
             </ul>
           </div>
         </div>
@@ -72,7 +72,7 @@ function AzimuthExplorer() {
       <div className="space-y-4">
         <div className="surface-elevated p-5 sm:p-6">
           <div className="text-[10px] font-mono text-fg-dim mb-2 tracking-widest uppercase">
-            הזז את הסרגל — בחר אזימוט
+            תנו למצפן סיבוב — בחרו כיוון
           </div>
           <div className="flex items-baseline gap-3 mb-4">
             <div className="font-display font-bold text-5xl tabular-nums text-accent">
@@ -102,7 +102,7 @@ function AzimuthExplorer() {
 
           <div className="mt-5 pt-4 border-t border-border-subtle">
             <div className="text-[10px] font-mono text-fg-dim mb-2 tracking-widest uppercase">
-              אזימוט חוזר (לחזרה אחורה)
+              אזימוט חוזר (הדרך חזרה)
             </div>
             <div className="flex items-center gap-3">
               <span className="font-mono text-fg-muted text-sm">
@@ -113,7 +113,7 @@ function AzimuthExplorer() {
               </span>
             </div>
             <p className="text-xs text-fg-muted mt-2 leading-relaxed">
-              אם הלכת ב-{azimuth}° כדי להגיע ליעד — תחזור ב-{back}° בדיוק לאותו מקום שבו התחלת.
+              הלכתם ליעד ב-{azimuth}°? כדי לחזור בדיוק הביתה לנקודת המוצא, אתם צריכים את הדרך ההפוכה: {back}°.
             </p>
           </div>
         </div>
@@ -121,9 +121,9 @@ function AzimuthExplorer() {
         <div className="surface p-4 border-r-4 border-r-accent-cool flex gap-3 items-start">
           <Icon name="spark" size={18} className="text-accent-cool shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed">
-            <strong className="text-fg">למה צריך אזימוט חוזר?</strong>
+            <strong className="text-fg">מתי משתמשים באזימוט חוזר?</strong>
             <br />
-            לחזור בדיוק לנקודת המוצא, לאמת מיקום של חוליה אחרת, או לבצע נסיגה דרך נתיב שכבר עברנו (וידוע שהוא בטוח מטילים ומוקשים).
+            כדי לחזור הביתה בבטחה, כדי לוודא שחברים שלכם נמצאים במיקום הנכון, או כדי לבצע נסיגה חכמה דרך נתיב שכבר בדקתם וסימנתם כבטוח.
           </div>
         </div>
       </div>
@@ -249,9 +249,9 @@ function ThreeNorthsCard() {
       bg: 'bg-accent-hot/10',
       border: 'border-accent-hot',
       angle: 7, // visualization offset
-      who: 'מצפן (כל מצפן בעולם)',
-      what: 'הכיוון שאליו מצביעה מחט המצפן. זה לא בדיוק "צפון אמיתי" — כי השדה המגנטי של כדור הארץ זז.',
-      why: 'יתרון: זמין בכל מקום, לא צריך חשמל. חיסרון: זז כל שנה, וצריך לתקן את הסטייה כדי לעבוד עם מפה.',
+      who: 'המצפן שביד שלכם',
+      what: 'הכיוון שאליו נמשכת מחט המצפן. הוא "נצמד" למגנט הענק של כדור הארץ, אבל המגנט הזה קצת זז כל שנה.',
+      why: 'יתרון: עובד תמיד, בלי סוללות. חיסרון: צריך לתקן את הסטייה שלו כשמשווים אותו למפה.',
     },
     grid: {
       label: 'צפון רשת',
@@ -260,9 +260,9 @@ function ThreeNorthsCard() {
       bg: 'bg-accent/10',
       border: 'border-accent',
       angle: 0,
-      who: 'מפה צבאית',
-      what: 'הצפון לפי הקווים האנכיים שמצוירים על המפה. הכיוון שכל הרשת מתבססת עליו.',
-      why: 'יתרון: זה הצפון שהמפה "מבינה". כל נ"צ ואזימוט במפה הם ביחס אליו. חיסרון: לא תואם בדיוק למצפן או לכוכבים.',
+      who: 'המפה הצבאית',
+      what: 'הצפון של המפות. אלו הקווים הישרים שמודפסים על הנייר. זה הצפון הכי נוח לחישובים בתוך החמ"ל.',
+      why: 'יתרון: קל לתכנון נ"צ ומסלולים. חיסרון: הוא לא תואם בדיוק את המצפן או את הכוכבים.',
     },
     true: {
       label: 'צפון אמיתי',
@@ -271,9 +271,9 @@ function ThreeNorthsCard() {
       bg: 'bg-accent-cool/10',
       border: 'border-accent-cool',
       angle: -3,
-      who: 'כוכבים, GPS, אסטרונומיה',
-      what: 'הכיוון של ציר הסיבוב של כדור הארץ. הוא מצביע על הקוטב הצפוני האמיתי — שם שכוכב הצפון נמצא.',
-      why: 'יתרון: קבוע — לא משתנה. חיסרון: אי אפשר למדוד אותו ישירות עם מצפן רגיל.',
+      who: 'כוכבים, GPS וניווט מתקדם',
+      what: 'הנקודה המדויקת של הקוטב הצפוני. שם נמצא כוכב הצפון. זהו כיוון קבוע ויציב שלא משתנה לעולם.',
+      why: 'יתרון: הכי מדויק שיש. חיסרון: אי אפשר למדוד אותו עם מצפן פשוט בשטח.',
     },
   };
 
@@ -282,9 +282,9 @@ function ThreeNorthsCard() {
   return (
     <div className="surface-elevated p-6 sm:p-8">
       <div className="mb-6">
-        <h3 className="text-xl font-bold mb-1">3 סוגי "צפון" — וכל אחד שונה</h3>
+        <h3 className="text-xl font-bold mb-1">הצפון הוא לא אחד: הכירו את שלושת הצפונים</h3>
         <p className="text-fg-muted text-sm">
-          זה מבלבל בהתחלה: יש שלושה צפונים שונים, וכולם נכונים. לחץ על כל אחד כדי להבין למה.
+          זה נשמע מבלבל, אבל בשטח יש 3 סוגי "צפון". כדי לא ללכת לאיבוד, אתם חייבים להכיר את ההבדלים ביניהם.
         </p>
       </div>
 
@@ -333,7 +333,7 @@ function ThreeNorthsCard() {
 
             <circle cx="0" cy="0" r="1.5" className="fill-bg stroke-fg" strokeWidth="0.4" />
             <text x="0" y="48" textAnchor="middle" className="fill-fg-dim text-[2.5px] font-mono">
-              ההפרש מוגזם להמחשה
+              *ההפרש מוגזם להמחשה ויזואלית
             </text>
           </svg>
         </div>
@@ -366,15 +366,15 @@ function ThreeNorthsCard() {
             </div>
             <dl className="space-y-2.5 text-sm">
               <div>
-                <dt className="text-fg-dim text-xs mb-0.5">מי משתמש בו</dt>
+                <dt className="text-fg-dim text-xs mb-0.5">במה משתמשים?</dt>
                 <dd className="text-fg">{meta.who}</dd>
               </div>
               <div>
-                <dt className="text-fg-dim text-xs mb-0.5">מה זה</dt>
+                <dt className="text-fg-dim text-xs mb-0.5">מה זה בעצם?</dt>
                 <dd className="text-fg leading-relaxed">{meta.what}</dd>
               </div>
               <div>
-                <dt className="text-fg-dim text-xs mb-0.5">יתרון / חיסרון</dt>
+                <dt className="text-fg-dim text-xs mb-0.5">למה כן? / למה לא?</dt>
                 <dd className="text-fg-muted leading-relaxed">{meta.why}</dd>
               </div>
             </dl>
@@ -385,8 +385,7 @@ function ThreeNorthsCard() {
       <div className="mt-5 surface p-4 border-r-4 border-r-status-warn flex gap-3 items-start">
         <Icon name="spark" size={18} className="text-status-warn shrink-0 mt-0.5" />
         <div className="text-xs leading-relaxed">
-          <strong className="text-fg">סיכון מעשי:</strong>{' '}
-          אם תמדוד אזימוט במצפן (צפון מגנטי) ותסמן אותו על מפה (צפון רשת) בלי לתקן את ההפרש — תסטה מהמטרה. בישראל ההפרש קטן (~5°), במדינות אחרות הוא יכול להיות 20° ויותר.
+          <strong className="text-fg">שימו לב:</strong> אם תמדדו כיוון במצפן ותסמנו אותו ישר על המפה בלי "לתקן" את הסטייה - תפספסו את המטרה. בישראל הסטייה קטנה, אבל בניווטים ארוכים כל מעלה קובעת.
         </div>
       </div>
     </div>
@@ -397,18 +396,18 @@ function GpsDeniedCard() {
   const items: { icon: IconName; title: string; desc: string }[] = [
     {
       icon: 'bolt',
-      title: 'שיבוש פעיל מהאויב',
-      desc: 'רוסיה, איראן ואחרים פיתחו טכנולוגיה ש"מחשיכה" GPS באזורים שלמים. סטרליטה של מאות ק"מ.',
+      title: 'מלחמה אלקטרונית',
+      desc: 'האויב משדר רעש "שמחשיך" את הלוויינים ברדיוס של מאות קילומטרים. פתאום המכשיר פשוט מפסיק לעבוד.',
     },
     {
       icon: 'mountain',
-      title: 'תת־קרקע, מנהרות, הררים',
-      desc: 'אות הלוויין לא חודר אדמה או סלעים. ברגע שאתה במנהרה, או בתוך כפר עירוני סבוך — אין GPS.',
+      title: 'מחסומים טבעיים',
+      desc: 'לוויינים לא רואים דרך בטון, סלעים או אדמה. במנהרות, בתוך מבנים סבוכים או בואדיות עמוקים - ה-GPS מתעוור.',
     },
     {
       icon: 'satellite',
-      title: 'תקלה / הורדת לוויינים',
-      desc: 'אם הלוויינים נופלים (שיגור גרוע או תקיפה), כל חיל שתלוי בהם — מתעוור. צבא חכם מתאמן בלי GPS.',
+      title: 'תקלות והשבתה',
+      desc: 'לוויינים יכולים ליפול, להתקלקל או להיפגע. צבא חכם תמיד שומר על היכולת לנצח גם עם מפת נייר ומצפן.',
     },
   ];
 
@@ -416,12 +415,11 @@ function GpsDeniedCard() {
     <div className="surface-elevated p-6 sm:p-8">
       <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 items-start">
         <div>
-          <h3 className="text-xl font-bold mb-2">למה GPS לבד לא מספיק?</h3>
+          <h3 className="text-xl font-bold mb-2">למה אסור לסמוך רק על ה-GPS?</h3>
           <p className="text-fg-muted text-sm leading-relaxed">
-            ב-2025, GPS הוא תשתית קריטית לכל מערכת צבאית. אבל הוא גם נקודת תורפה. בכל רגע, האויב יכול להפסיק לך אותו —
-            ואתה צריך לדעת לעבוד בלעדיו.
+            היום הכל עובד על GPS, וזו בדיוק הבעיה. זה נוח, עד שמישהו מחליט לכבות לכם את האור.
             <br /><br />
-            המונח <strong className="text-fg">"GPS-Denied"</strong> מתאר כל מצב שבו אין לך GPS זמין. צבא טוב מתאמן על השיטות הישנות (מצפן, מפה, ספירת צעדים) דווקא כדי להיות מוכן לרגעים האלה.
+            המונח <strong className="text-fg">"GPS-Denied"</strong> מתאר כל מצב שבו המערכות הלווייניות מושבתות. נווט טוב הוא מי ששולט בשיטות ה"אולד-סקול" - מפה, מצפן וספירת צעדים - כי אלו הכלים היחידים שלא צריכים קליטה או סוללה.
           </p>
         </div>
         <div className="space-y-3">
@@ -460,11 +458,10 @@ function ConclusionCard() {
       <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
       <div>
         <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
-          סיכום העיקרון
+          השורה התחתונה
         </div>
         <p className="text-fg leading-relaxed text-pretty">
-          ניווט מתחיל בדבר אחד: <strong className="text-fg">לדעת לאן בדיוק ללכת</strong> — לא "בערך לכיוון מזרח", אלא 47 מעלות בדיוק.
-          זה אזימוט. הלוך וחזור. בעבודה עם 3 סוגי צפון. ובעולם שבו GPS עלול להיעלם בכל רגע — היכולת הזאת היא ההבדל בין משימה מוצלחת לבין כוח שאבד.
+          ניווט הוא לא "בערך". זה <strong className="text-fg">אזימוט מדויק</strong>, הבנה של סוגי הצפונים, ומוכנות מלאה לרגע שבו הטכנולוגיה תפסיק לעבוד. היכולת הזו היא מה שמבדיל בין כוח שמגיע ליעד לבין כוח שהולך לאיבוד בשטח אויב.
         </p>
       </div>
     </motion.div>
