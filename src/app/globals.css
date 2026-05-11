@@ -50,11 +50,15 @@
   }
 
   .btn-primary {
-    @apply btn bg-accent text-bg hover:bg-accent/90 shadow-glow active:scale-[0.98];
+    @apply btn bg-accent text-fg hover:bg-accent-hover shadow-glow active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn bg-brand text-bg-elevated hover:bg-brand-dark active:scale-[0.98];
   }
 
   .btn-ghost {
-    @apply btn bg-transparent border border-border text-fg hover:bg-bg-accent;
+    @apply btn bg-transparent border border-brand/40 text-brand-dark hover:bg-brand/10;
   }
 
   .topo-bg {
@@ -62,7 +66,7 @@
   }
 
   .gradient-text {
-    @apply bg-gradient-to-l from-accent via-amber-300 to-accent-cool bg-clip-text text-transparent;
+    @apply bg-gradient-to-l from-accent via-accent-hover to-brand-dark bg-clip-text text-transparent;
   }
 }
 

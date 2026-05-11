@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl" className={`${heebo.variable} ${rubik.variable}`}>
-      <body>
+      <body className="overflow-x-clip">
         <div className="min-h-screen flex flex-col">{children}</div>
       </body>
     </html>
