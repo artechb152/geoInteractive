@@ -1,10 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 type Feature = 'flat' | 'mountain' | 'river' | 'narrow';
 
@@ -124,30 +130,32 @@ export function OnboardingScene() {
       />
 
       <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
-        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
-        <div className="space-y-3">
+        {/* Accordion — first child → RIGHT in RTL (text on right) */}
+        <Accordion
+          type="single"
+          collapsible
+          value={expandedStep ?? ''}
+          onValueChange={(v) => {
+            setExpandedStep((v as Feature) || null);
+            if (v) setStep(v as Feature);
+          }}
+          className="space-y-3"
+        >
           {STEPS.map((s, i) => {
             const active = step === s.id;
-            const expanded = expandedStep === s.id;
             const passed = STEPS.findIndex((x) => x.id === step) > i;
             return (
-              <div
+              <AccordionItem
                 key={s.id}
+                value={s.id}
                 className={cn(
-                  'surface overflow-hidden transition-colors',
                   active
                     ? 'border-accent shadow-glow bg-accent/5'
                     : 'hover:border-border-strong',
                   passed && !active && 'opacity-80'
                 )}
               >
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(s.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`accordion-panel-${s.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
-                >
+                <AccordionTrigger>
                   {active && (
                     <motion.span
                       layoutId="active-step-bar"
@@ -174,55 +182,22 @@ export function OnboardingScene() {
                     size={20}
                     className={cn('transition-colors shrink-0', active ? 'text-accent' : 'text-fg-dim')}
                   />
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-accent' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`panel-${s.id}`}
-                      id={`accordion-panel-${s.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 pt-1 border-t border-accent/20">
-                        <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
-                          למה זה משנה
-                        </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
-                          {s.popupTitle}
-                        </h4>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
-                          {s.popupBody}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
+                    למה זה משנה
+                  </div>
+                  <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                    {s.popupTitle}
+                  </h4>
+                  <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                    {s.popupBody}
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
             );
           })}
-        </div>
+        </Accordion>
 
         {/* Visualization — second child → LEFT in RTL */}
         <div className="surface-elevated relative overflow-hidden sticky top-6">
