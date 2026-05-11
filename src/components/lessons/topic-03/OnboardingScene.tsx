@@ -147,7 +147,7 @@ export function OnboardingScene() {
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium leading-tight text-sm', active && 'text-accent')}>
+                    <div className={cn('font-medium leading-tight', active && 'text-accent')}>
                       {s.label}
                     </div>
                   </div>
@@ -265,7 +265,7 @@ export function OnboardingScene() {
           <Icon name="arrow-left" size={20} />
         </div>
         <div className="relative flex-1">
-          <div className="text-[10px] font-mono text-accent mb-1.5 tracking-widest uppercase">
+          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">
             עכשיו אתה מוכן
           </div>
           <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">

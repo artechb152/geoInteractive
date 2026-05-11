@@ -124,12 +124,16 @@ export function OnboardingScene() {
           {LAYERS.map((l, i) => {
             const isOn = i < step;
             const isExpanded = expanded === l.id;
+            const isPassed = isOn && !isExpanded;
             return (
               <div
                 key={l.id}
                 className={cn(
-                  'surface overflow-hidden transition-colors relative',
-                  isOn ? 'border-accent/60 shadow-glow' : 'opacity-80 hover:opacity-100'
+                  'surface overflow-hidden transition-colors',
+                  isExpanded
+                    ? 'border-accent shadow-glow bg-accent/5'
+                    : 'hover:border-border-strong',
+                  isPassed && 'opacity-80'
                 )}
               >
                 <button
@@ -139,32 +143,34 @@ export function OnboardingScene() {
                   aria-controls={`layer-panel-${l.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  <div
+                  {isExpanded && (
+                    <motion.span
+                      layoutId="t2-onb-bar"
+                      className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+                    />
+                  )}
+                  <span
                     className={cn(
-                      'size-7 rounded-full flex items-center justify-center shrink-0 font-mono font-bold text-xs transition-colors',
-                      isOn
-                        ? 'bg-accent text-bg shadow-glow'
-                        : 'bg-bg-accent text-fg-dim border border-border'
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
+                      isExpanded ? 'bg-accent text-bg shadow-glow' : isPassed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
                     )}
                   >
-                    {i + 1}
-                  </div>
-
-                  <div
-                    className={cn(
-                      'size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors',
-                      isOn
-                        ? 'bg-accent/15 text-accent border border-accent/40'
-                        : 'bg-bg-accent text-fg-dim border border-border'
+                    {isPassed ? (
+                      <Icon name="check" size={16} strokeWidth={2.5} />
+                    ) : (
+                      <span className="font-mono text-sm font-bold">{i + 1}</span>
                     )}
-                  >
-                    <Icon name={l.icon} size={18} />
-                  </div>
+                  </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium text-sm', isExpanded && 'text-accent')}>{l.label}</div>
-                    <div className="text-xs text-fg-dim mt-0.5 line-clamp-1">{l.desc}</div>
+                    <div className={cn('font-medium leading-tight', isExpanded && 'text-accent')}>{l.label}</div>
                   </div>
+
+                  <Icon
+                    name={l.icon}
+                    size={20}
+                    className={cn('transition-colors shrink-0', isExpanded ? 'text-accent' : 'text-fg-dim')}
+                  />
 
                   <motion.span
                     animate={{ rotate: isExpanded ? 180 : 0 }}
@@ -232,17 +238,22 @@ export function OnboardingScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.08 }}
-            className="surface p-5"
+            className="surface p-5 relative overflow-hidden"
           >
-            <div className="flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-accent border border-border flex items-center justify-center shrink-0">
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
+            />
+            <div className="relative flex items-start gap-4">
+              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
                 <Icon name={f.icon} size={22} className={f.accent} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-mono text-fg-dim mb-1 tracking-widest uppercase">
+                <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
+                  <span className="size-1 rounded-full bg-fg-dim" />
                   {f.place}
                 </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-1.5 text-balance">
+                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
                   {f.headline}
                 </h3>
                 <p className="text-sm text-fg-muted leading-relaxed text-pretty">
@@ -255,19 +266,23 @@ export function OnboardingScene() {
       </div>
 
       <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="mt-10 surface-elevated p-6 flex gap-4 items-center"
+        className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7 flex gap-4 sm:gap-5 items-center"
       >
-        <div className="size-12 rounded-full bg-accent/10 border border-accent/40 flex items-center justify-center text-accent shrink-0">
+        <div className="absolute -end-12 -top-12 size-40 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+        <div className="relative size-12 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-accent shrink-0 shadow-glow">
           <Icon name="arrow-left" size={20} />
         </div>
-        <div className="flex-1">
-          <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
+        <div className="relative flex-1">
+          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">
             עכשיו אתה מוכן
           </div>
-          <p className="text-fg leading-relaxed text-pretty">הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה": איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל.        </p>
+          <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">
+            הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה":
+            <strong className="text-fg"> איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל</strong>.
+          </p>
         </div>
       </motion.div>
     </section>

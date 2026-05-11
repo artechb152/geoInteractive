@@ -195,30 +195,24 @@ function CompassDial({ azimuth, back }: { azimuth: number; back: number }) {
           );
         })}
 
-        {/* Forward arrow (azimuth) */}
+        {/* Forward arrow (azimuth) — fills compass */}
         <motion.g
           animate={{ rotate: azimuth }}
-          transition={{ type: 'spring', stiffness: 80, damping: 15 }}
+          transition={{ type: 'spring', stiffness: 180, damping: 22 }}
           style={{ transformOrigin: '0 0' }}
         >
-          <line x1="0" y1="0" x2="0" y2="-32" className="stroke-accent" strokeWidth="1" />
-          <polygon points="0,-32 -3,-26 3,-26" className="fill-accent" />
-          <text x="0" y="-36" textAnchor="middle" className="fill-accent text-[3.5px] font-mono font-bold">
-            {azimuth}°
-          </text>
+          <line x1="0" y1="0" x2="0" y2="-37" className="stroke-accent" strokeWidth="1.6" strokeLinecap="round" />
+          <polygon points="0,-39 -4.5,-31 4.5,-31" className="fill-accent" />
         </motion.g>
 
-        {/* Back azimuth arrow (dimmer) */}
+        {/* Back azimuth arrow (full length, dimmer) */}
         <motion.g
           animate={{ rotate: back }}
-          transition={{ type: 'spring', stiffness: 80, damping: 15 }}
+          transition={{ type: 'spring', stiffness: 180, damping: 22 }}
           style={{ transformOrigin: '0 0' }}
         >
-          <line x1="0" y1="0" x2="0" y2="-22" className="stroke-accent-cool/60" strokeWidth="0.6" strokeDasharray="1 1" />
-          <polygon points="0,-22 -2,-18 2,-18" className="fill-accent-cool/70" />
-          <text x="0" y="-26" textAnchor="middle" className="fill-accent-cool text-[2.5px] font-mono">
-            {back}°
-          </text>
+          <line x1="0" y1="0" x2="0" y2="-37" className="stroke-accent-cool/70" strokeWidth="1" strokeDasharray="1.6 1.2" strokeLinecap="round" />
+          <polygon points="0,-39 -3.5,-32 3.5,-32" className="fill-accent-cool/80" />
         </motion.g>
 
         {/* Center pin */}
