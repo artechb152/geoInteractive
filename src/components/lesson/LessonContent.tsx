@@ -1,5 +1,6 @@
 import { parseTopic } from '@/lib/content';
 import type { Lesson } from '@/lib/lessons';
+import { Target } from 'lucide-react';
 
 export function LessonContent({
   raw,
@@ -11,42 +12,68 @@ export function LessonContent({
   const sections = parseTopic(raw);
 
   return (
-    <article className="space-y-12">
-      <header className="space-y-4">
-        <div className="text-sm font-mono text-accent">
-          שיעור {String(lesson.number).padStart(2, '0')} · {lesson.tags.join(' · ')}
+    <article className="space-y-14">
+      {/* ── Lesson header ─────────────────────────────────────────────── */}
+      <header className="space-y-5">
+        <div className="inline-flex flex-wrap items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider text-fg-muted">
+          <span className="size-2 rounded-full bg-accent" aria-hidden />
+          <span>שיעור {String(lesson.number).padStart(2, '0')}</span>
+          {lesson.tags.length > 0 && <span className="text-fg-dim/60" aria-hidden>·</span>}
+          {lesson.tags.map((t, i) => (
+            <span key={t} className="text-fg-dim">
+              {t}
+              {i < lesson.tags.length - 1 && (
+                <span className="mx-1.5 text-fg-dim/60" aria-hidden>·</span>
+              )}
+            </span>
+          ))}
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-balance leading-tight">
+
+        <h1 className="font-display font-bold tracking-tight text-balance leading-[1.05] text-[clamp(2rem,4.5vw,3.25rem)]">
           {lesson.title}
         </h1>
-        <p className="text-lg text-fg-muted text-pretty leading-relaxed max-w-3xl">
+
+        <p className="text-base md:text-lg text-fg-muted text-pretty leading-relaxed max-w-3xl">
           {lesson.subtitle}
         </p>
       </header>
 
-      <section className="surface p-6">
-        <h2 className="text-sm font-mono text-fg-dim mb-3">מטרות הלמידה</h2>
-        <ul className="space-y-2">
+      {/* ── Objectives card ──────────────────────────────────────────── */}
+      <section className="relative rounded-2xl border border-brand/25 bg-bg-elevated p-6 md:p-7">
+        <div className="inline-flex items-center gap-2.5 text-sm font-display font-semibold tracking-wider text-brand-dark mb-5">
+          <Target className="size-4" aria-hidden />
+          מטרות הלמידה
+        </div>
+        <ul className="space-y-3.5">
           {lesson.objectives.map((o, i) => (
-            <li key={i} className="flex gap-3 items-start">
-              <span className="size-5 rounded-full bg-accent/15 text-accent text-xs font-mono flex items-center justify-center mt-0.5 shrink-0">
+            <li key={i} className="flex gap-3.5 items-start">
+              <span
+                className="grid place-items-center size-7 shrink-0 mt-0.5 rounded-full bg-brand/12 border border-brand/30 text-brand-dark font-display font-bold text-sm"
+                aria-hidden
+              >
                 {i + 1}
               </span>
-              <span className="text-fg leading-relaxed">{o}</span>
+              <span className="text-fg leading-relaxed text-[15px] md:text-base text-pretty">
+                {o}
+              </span>
             </li>
           ))}
         </ul>
       </section>
 
+      {/* ── Body sections (parsed from markdown) ─────────────────────── */}
       {sections.map((s, i) => (
-        <section key={i} className="space-y-4">
+        <section key={i} className="space-y-5">
           {s.heading && (
-            <h2 className="text-2xl font-display font-semibold text-balance">
-              <span className="text-accent font-mono text-sm me-3">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              {s.heading}
-            </h2>
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2.5 text-xs md:text-sm font-display font-semibold tracking-wider text-fg-dim">
+                <span className="font-mono">{String(i + 1).padStart(2, '0')}</span>
+                <span className="h-px w-6 bg-border" aria-hidden />
+              </div>
+              <h2 className="font-display font-bold tracking-tight text-balance leading-tight text-[clamp(1.5rem,2.6vw,2rem)]">
+                {s.heading}
+              </h2>
+            </div>
           )}
           <div className="prose-content space-y-4 text-fg leading-relaxed text-[17px]">
             {s.body
@@ -57,7 +84,7 @@ export function LessonContent({
                   <p key={j} className="text-pretty">
                     {p.trim()}
                   </p>
-                ) : null
+                ) : null,
               )}
           </div>
         </section>

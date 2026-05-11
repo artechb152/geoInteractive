@@ -149,45 +149,59 @@ export function OnboardingScene() {
                 key={s.id}
                 value={s.id}
                 className={cn(
+                  'transition-all duration-300 ease-snap',
                   active
-                    ? 'border-accent shadow-glow bg-accent/5'
-                    : 'hover:border-border-strong',
-                  passed && !active && 'opacity-80'
+                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                  passed && !active && 'opacity-85'
                 )}
               >
                 <AccordionTrigger>
                   {active && (
                     <motion.span
                       layoutId="active-step-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
                     />
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
-                      active ? 'bg-accent text-bg shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      active && 'bg-accent text-fg border-accent shadow-glow',
+                      passed && !active && 'bg-status-ok/15 text-status-ok border-status-ok/30',
+                      !active && !passed && 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
                       <Icon name="check" size={16} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-mono text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-sm font-bold">{i + 1}</span>
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium leading-tight', active && 'text-accent')}>{s.label}</div>
+                    <div
+                      className={cn(
+                        'font-display font-semibold leading-tight transition-colors',
+                        active ? 'text-fg' : 'text-fg'
+                      )}
+                    >
+                      {s.label}
+                    </div>
                   </div>
                   <Icon
                     name={s.buttonIcon}
                     size={20}
-                    className={cn('transition-colors shrink-0', active ? 'text-accent' : 'text-fg-dim')}
+                    className={cn(
+                      'transition-colors shrink-0',
+                      active ? 'text-brand-dark' : 'text-fg-dim'
+                    )}
                   />
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
+                  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                    <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                     למה זה משנה
                   </div>
-                  <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                  <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2 text-fg">
                     {s.popupTitle}
                   </h4>
                   <p className="text-sm leading-relaxed text-fg-muted text-pretty">
