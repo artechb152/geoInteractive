@@ -81,7 +81,7 @@ export function ContoursScene() {
       <div className="surface-elevated p-6 mb-6 rounded-2xl border border-border/50 shadow-inner">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div className="space-y-3">
-            <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase font-bold">
+            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
               מבט מהצד · ההר כעוגת פרוסות
             </div>
             <div className="surface bg-bg-accent/20 rounded-xl p-4 border border-border/40">
@@ -90,7 +90,7 @@ export function ContoursScene() {
           </div>
 
           <div className="space-y-3">
-            <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase font-bold">
+            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
               מבט מלמעלה · איך זה נראה במפה
             </div>
             <div className="surface bg-bg-accent/20 rounded-xl p-4 border border-border/40">
@@ -118,7 +118,7 @@ export function ContoursScene() {
               )}
             >
               <div className="font-display font-bold text-lg mb-1">{s.label}</div>
-              <div className={cn('text-[10px] font-mono tracking-widest uppercase font-bold', active ? 'text-accent' : 'text-fg-dim')}>
+              <div className={cn('text-sm font-display font-semibold tracking-wider font-bold', active ? 'text-accent-hover' : 'text-fg-muted')}>
                 {s.steepnessHint === 'gentle' && '↘ מדרון נוח'}
                 {s.steepnessHint === 'steep' && '↑ תלול ומאתגר'}
                 {s.steepnessHint === 'cliff' && '! חסימה / מצוק'}
@@ -190,15 +190,24 @@ function SlicedHill({ activeRing }: { activeRing: number | null }) {
               <text
                 x={50 + s.w / 2 + 5}
                 y={s.y + 1}
-                className={cn('text-[3px] font-mono font-bold tabular-nums', isActive ? 'fill-accent' : 'fill-fg-dim')}
-              >
+                className={cn('text-[3px] font-display font-bold font-bold tabular-nums', isActive ? 'fill-accent' : 'fill-fg-dim')}
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >
                 {(slices.length - i) * 10} מ׳
               </text>
             </g>
           );
         })}
         <line x1="10" y1="20" x2="10" y2="80" className="stroke-border-strong" strokeWidth="0.3" strokeDasharray="1 1" />
-        <text x="12" y="22" className="fill-fg-dim text-[2.5px] font-mono font-bold">↑ גובה</text>
+        <text x="12" y="22" className="fill-fg-dim text-[2.5px] font-display font-bold font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >↑ גובה</text>
       </svg>
     </div>
   );
@@ -239,7 +248,12 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
                 strokeWidth={isActive ? 0.8 : 0.4}
                 className={cn('transition-colors', isActive ? 'text-accent' : 'text-accent/40')}
               />
-              <text x="50" y={50 - r.ry - 1} textAnchor="middle" className={cn('text-[2.5px] font-mono font-bold', isActive ? 'fill-accent' : 'fill-fg-dim')}>
+              <text x="50" y={50 - r.ry - 1} textAnchor="middle" className={cn('text-[2.5px] font-display font-bold font-bold', isActive ? 'fill-accent' : 'fill-fg-dim')}
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >
                 {r.h}
               </text>
             </g>
@@ -288,7 +302,7 @@ function ShapeMap({ shape }: { shape: Shape }) {
 function Glossary() {
   return (
     <div className="surface p-6 rounded-xl space-y-4 bg-bg-accent/10 border border-border/30">
-      <div className="text-[10px] font-mono text-accent tracking-widest uppercase font-bold mb-2">מילון מושגים לניווט</div>
+      <div className="text-sm font-display font-semibold text-accent-hover tracking-wider font-bold mb-2">מילון מושגים לניווט</div>
       <Item term="קו גובה (Contour Line)" def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר." />
       <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים." />
       <Item term="קו אינדקס (Index Contour)" def="כל קו חמישי הוא עבה יותר ורשום עליו הגובה. זה ה'עוגן' שעוזר לספור גבהים מהר." />
@@ -310,7 +324,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-14 flex items-center gap-6">
       <div className="h-px flex-1 bg-gradient-to-l from-border/50 to-transparent" />
-      <span className="text-[10px] font-mono text-fg-dim tracking-widest uppercase font-bold">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">{text}</span>
       <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent" />
     </div>
   );

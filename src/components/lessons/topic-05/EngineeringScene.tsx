@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -29,9 +30,9 @@ const MODES: ModeMeta[] = [
     color: 'text-terrain-sky',
     bg: 'bg-terrain-sky/10',
     border: 'border-terrain-sky/40',
-    popupTitle: 'מה שהקרקע כבר מציעה',
+    popupTitle: 'המלכודות שהטבע מכין לנו מראש',
     popupBody:
-      'נהר רחב וזורם, מצוק תלול, יער עבות, ביצה — כולם מכשולים שנמצאים בשטח לפני שהאויב נכנס. תפקיד המתכנן הצבאי הוא <strong>לזהות אותם</strong> ולהפנות את האויב אליהם. מכשול טבעי הוא ה"שלד" של מערך ההגנה — חזק, אבל לבד הוא לא מספיק.',
+      'נהר רחב, צוק גבוה, יער סבוך או ביצה טובענית — אלו מכשולים שתמיד היו שם, הרבה לפני שמישהו התחיל לתכנן את הקרב. התפקיד שלנו הוא <strong>לזהות אותם במפה</strong> ולתכנן את ההגנה כך שהאויב ייתקע בהם. המכשול הטבעי הוא ה"שלד" של ההגנה שלנו — הוא מספק בסיס חזק, אבל כשהוא לבד הוא אף פעם לא מספיק.',
   },
   {
     id: 'artificial',
@@ -41,33 +42,33 @@ const MODES: ModeMeta[] = [
     color: 'text-accent-hot',
     bg: 'bg-accent-hot/10',
     border: 'border-accent-hot/40',
-    popupTitle: 'הנדסה משדרגת את הטבע',
+    popupTitle: 'כשההנדסה משדרגת את הטבע',
     popupBody:
-      'שדה מוקשים, תעלת נ"ט עמוקה, גדר תלתלית, חומת בטון. שילוב <strong>סינרגטי</strong> עם מכשול טבעי — שדה מוקשים על גדת נחל, גדר אורך מצוק — יוצר "רשת עצירה" כמעט בלתי עבירה. עיקרון: לעולם לא לסמוך על מכשול בודד.',
+      'מדובר במכשולים שאנחנו מציבים: שדה מוקשים, תעלה עמוקה שנועדה לעצור טנקים (תעלת נ"ט), גדרות תיל או חומות בטון. השילוב המנצח (סינרגיה) הוא לחבר אותם למכשול טבעי — למשל, לפזר מוקשים בדיוק ביציאה מנחל, או לפרוס גדר לאורך קצה של צוק. ככה נוצרת "רשת לכידה" שקשה מאוד לעבור. כלל ברזל בצבא: לעולם אל תסמכו על מכשול אחד בלבד.',
   },
   {
     id: 'mobility',
-    label: 'קידום ניידות',
+    label: 'קידום ניידות (לפנות לנו את הדרך)',
     english: 'Mobility',
     icon: 'truck',
     color: 'text-status-ok',
     bg: 'bg-status-ok/10',
     border: 'border-status-ok/40',
-    popupTitle: 'פורצים את המכשולים של האויב',
+    popupTitle: 'איך פורצים את המלכודות של האויב?',
     popupBody:
-      '<strong>Breaching</strong> — פעולות חיל ההנדסה לפריצת המכשולים של האויב. פינוי מוקשים בנתיב צר וברור, השלכת גשרים על נחלים, פיצוץ קירות, פילוס דרכים בבולדוזרים בטרשים. המטרה: לחדור דרך קווי ההגנה במהירות, לפני שהאויב יספיק להגיב.',
+      '<strong>פריצה (Breaching)</strong> — חיל ההנדסה נכנס לפעולה כדי לפנות לנו את הדרך ולשבור את החסימות של האויב. זה אומר לנטרל מוקשים כדי ליצור שביל בטוח, להניח גשרים מעל נחלים, לפוצץ חומות, או להפעיל דחפורי ענק (בולדוזרים) כדי לשטח אזורים מלאים בסלעים. המטרה: לחדור את קווי ההגנה של האויב בשיא המהירות, עוד לפני שהוא יספיק להבין מה קורה.',
   },
   {
     id: 'counter',
-    label: 'שלילת ניידות',
+    label: 'שלילת ניידות (לעצור את האויב)',
     english: 'Counter-Mobility',
     icon: 'bolt',
     color: 'text-status-danger',
     bg: 'bg-status-danger/10',
     border: 'border-status-danger/40',
-    popupTitle: 'נועלים את המרחב לאויב',
+    popupTitle: 'לנעול לאויב את השטח',
     popupBody:
-      'הצד השני של המטבע: מיקוש נגדי נרחב, פיצוץ גשרים אסטרטגיים, יצירת מכתשים בכבישים, חסימת צירים נוחים. המטרה: <strong>לתעל</strong> את האויב בעל כורחו לתוך "שטחי השמדה" — אזורים שכבר מוכנים מראש לקליטת אש מסונכרנת מכל הכיוונים.',
+      'זה בדיוק הצד השני של המשימה — הפעם אנחנו אלה שחוסמים. אנחנו מפזרים לאויב המון מוקשים בדרך, מפוצצים לו גשרים חשובים, חופרים בורות ענקיים בכבישים או חוסמים מסלולי נסיעה נוחים. המטרה היא <strong>לנתב</strong> את הכוחות שלו (מבלי שהם ישימו לב) היישר לתוך "שטחי השמדה" — אזורים פתוחים שסימנו מראש כמארב, ושם יחכו להם הכוחות שלנו עם נשק מוכן מכל הכיוונים.',
   },
 ];
 
@@ -88,26 +89,22 @@ export function EngineeringScene() {
     <section id="scene-engineering" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="05.2"
-        eyebrow="הנדסה גיאוגרפית"
+        eyebrow="עיצוב השטח (הנדסה גיאוגרפית)"
         title={
           <>
-            <span className="gradient-text">הנדסה</span> הופכת שטח רגיל למבצר
+            איך <span className="gradient-text">הנדסה</span> הופכת שטח פתוח למבצר קטלני
           </>
         }
-        intro="הנדסה גיאוגרפית היא לא 'תוספת' — היא חצי מהמערך. שני המאמצים — קידום ניידות לכוחותינו, שלילת ניידות לאויב — רצים במקביל. מי ששולט בשניהם, שולט בקצב הקרב."
+        intro='הנדסה בשדה הקרב היא לא סתם "בונוס" נחמד, אלא חלק קריטי מהניצחון. שני דברים קורים פה באותו הזמן: מצד אחד אנחנו פותחים את הדרך לכוחות שלנו, ומצד שני אנחנו חוסמים את הדרך לאויב. מי שמצליח לשלוט בשני הדברים האלה בצורה הטובה ביותר — הוא זה שיכתיב את הקצב של כל הקרב.'
       />
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">העיקרון המנחה:</strong>{' '}
-            לעולם לא לסמוך על מכשול בודד. שילוב <strong className="text-fg">סינרגטי</strong> בין מכשול טבעי (קיים בשטח) למכשול מלאכותי (הנדסי) הופך כל נחל למלכודת, כל ואדי לקופסת הריגה. זה ההבדל בין "צבא בשטח" ל"שטח שמשרת את הצבא".
-          </div>
-        </div>
+      <div className="mb-6">
+        <InsightCard tone="cool" icon="spark" label="חוק הברזל בשטח">
+          לעולם אל תסמכו על מכשול אחד בלבד. השילוב החכם בין מה שהטבע נתן (כמו מצוק או נהר) למה שההנדסה מספקת (כמו מוקשים או חומות) הופך כל נחל תמים למלכודת, וכל עמק ל"קופסת הריגה" (אזור קטלני שקשה מאוד לצאת ממנו). זה בדיוק ההבדל בין צבא שסתם נמצא בשטח, לבין צבא שגורם לשטח לעבוד בשבילו.
+        </InsightCard>
       </div>
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start mb-12">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start mb-12">
         {/* Accordion */}
         <div className="space-y-3">
           {MODES.map((m) => {
@@ -172,7 +169,7 @@ export function EngineeringScene() {
                       className="overflow-hidden"
                     >
                       <div className={cn('px-4 pb-4 pt-1 border-t', m.border)}>
-                        <div className={cn('text-[10px] font-mono mt-3 mb-2 tracking-widest uppercase', m.color)}>
+                        <div className={cn('text-sm font-display font-semibold mt-3 mb-2 tracking-wider', m.color)}>
                           {m.english}
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight mb-2">
@@ -198,31 +195,24 @@ export function EngineeringScene() {
       </div>
 
       {/* Mobility vs Counter-Mobility comparison table */}
-      <div className="surface-elevated p-5 sm:p-6 rounded-2xl">
+      <div>
         <div className="mb-5">
           <h3 className="font-display font-bold text-lg leading-tight mb-1">
-            שני צדדים של אותו מטבע
+            שני צדדים לאותו המטבע
           </h3>
           <p className="text-sm text-fg-muted leading-relaxed">
-            חיל ההנדסה הצבאי מפעיל את שני המאמצים <strong className="text-fg">במקביל</strong> — פורץ נתיב לכוחותינו, סוגר נתיב לאויב. החלוקה הזו מסבירה למה ההנדסה היא לא יחידת תמיכה, אלא חיל קרבי.
+            חיל ההנדסה מבצע את שתי הפעולות האלו <strong className="text-fg">באותו הזמן</strong>: הוא גם סולל את הדרך קדימה עבורנו, וגם נועל אותה בפני האויב. המשימה הכפולה הזו, שמתבצעת בקו הראשון ותחת אש, מסבירה למה חיל ההנדסה הוא לא חיל של "בנאים" או יחידת עורפית, אלא כוח קרבי קדמי שמוביל את ההתקפה.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="surface p-5 border-r-4 border-r-status-ok rounded-xl bg-status-ok/5">
-            <div className="flex items-center gap-2 mb-3">
-              <Icon name="truck" size={20} className="text-status-ok" />
-              <div>
-                <div className="font-display font-bold text-status-ok">קידום ניידות</div>
-                <div className="text-[10px] font-mono text-fg-dim">Mobility · Breaching</div>
-              </div>
-            </div>
-            <ul className="space-y-2 text-sm">
+        <div className="grid md:grid-cols-2 gap-3 mb-3">
+          <InsightCard tone="ok" icon="truck" label="פילוס הדרך · Mobility" title="קידום ניידות">
+            <ul className="space-y-2">
               {[
-                'פילוס דרכים חדשות בטרשים',
-                'הצבת גשרי בייאלי (Bailey) על נחלים',
-                'פינוי שדות מוקשים בנתיב צר ומסומן',
-                'פריצה מבוקרת דרך קירות וגדרות',
+                'יישור סלעים ענקיים וסלילת שבילים חדשים',
+                'הנחת גשרים ניידים (מפלדה) מעל נחלים',
+                'נטרול מוקשים ליצירת שביל מעבר בטוח',
+                'פיצוץ מבוקר כדי לחדור דרך חומות וגדרות',
               ].map((t) => (
                 <li key={t} className="flex gap-2">
                   <Icon name="check" size={13} strokeWidth={2.5} className="text-status-ok shrink-0 mt-1" />
@@ -230,22 +220,15 @@ export function EngineeringScene() {
                 </li>
               ))}
             </ul>
-          </div>
+          </InsightCard>
 
-          <div className="surface p-5 border-r-4 border-r-status-danger rounded-xl bg-status-danger/5">
-            <div className="flex items-center gap-2 mb-3">
-              <Icon name="bolt" size={20} className="text-status-danger" />
-              <div>
-                <div className="font-display font-bold text-status-danger">שלילת ניידות</div>
-                <div className="text-[10px] font-mono text-fg-dim">Counter-Mobility · Denial</div>
-              </div>
-            </div>
-            <ul className="space-y-2 text-sm">
+          <InsightCard tone="hot" icon="bolt" label="חסימת האויב · Counter-Mobility" title="שלילת ניידות">
+            <ul className="space-y-2">
               {[
-                'מיקוש נגדי נרחב בצירים מרכזיים',
-                'פיצוץ גשרים וצמתים אסטרטגיים',
-                'יצירת מכתשים עמוקים בכבישים',
-                'חסימת מעברי ואדי ואוכפים בקיריות',
+                'פיזור שדות מוקשים במסלולי נסיעה חשובים',
+                'הריסת גשרים וצמתים כדי לתקוע את התקדמות האויב',
+                'חפירת בורות ענקיים ("מכתשים") בכביש כדי למנוע נסיעה',
+                'חסימת מעברים צרים (כמו ערוץ נחל או רווח בין הרים) בעזרת בניית קירות וחומות',
               ].map((t) => (
                 <li key={t} className="flex gap-2">
                   <Icon name="spark" size={13} strokeWidth={2.5} className="text-status-danger shrink-0 mt-1" />
@@ -253,16 +236,12 @@ export function EngineeringScene() {
                 </li>
               ))}
             </ul>
-          </div>
+          </InsightCard>
         </div>
 
-        <div className="mt-5 p-4 rounded-xl bg-bg-accent/40 border border-border flex gap-3 items-start">
-          <Icon name="eye" size={18} className="text-accent shrink-0 mt-0.5" />
-          <div className="text-xs leading-relaxed text-fg-muted">
-            <strong className="text-fg">סיור הנדסי קדמי:</strong> שני המאמצים נשענים על מידע מהשטח —
-            עומק נחלים, יכולת נשיאת גשרים ישנים, רמת לחות הקרקע, אפשרויות חפירה. מודיעין הנדסי גרוע = הפתעות אסון = אוגדה תקועה.
-          </div>
-        </div>
+        <InsightCard tone="accent" icon="eye" label="בדיקת השטח מראש (סיור הנדסי קדמי)">
+          אי אפשר לתכנן את כל זה בלי לראות את השטח בעיניים. כוחות סיור נשלחים קדימה כדי לבדוק: מה באמת העומק של הנחל? האם הגשר הישן יצליח להחזיק משקל של טנק? האם האדמה בוצית מדי? אם המודיעין ההנדסי שלנו גרוע, יחכו לנו הפתעות מסוכנות בשטח, ואלפי חיילים עלולים להיתקע במקום.
+        </InsightCard>
       </div>
     </section>
   );
@@ -330,7 +309,7 @@ function EngineeringStage({ mode }: { mode: Mode }) {
           {/* AT ditch */}
           <path d="M55 40 L80 42 L80 45 L55 43 Z" className="fill-fg/30 stroke-fg" strokeWidth="0.3" />
           <text x="67.5" y="48.5" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-            תעלת נ"ט
+            תעלה נגד טנקים (נ"ט)
           </text>
 
           {/* Wire entanglement */}
@@ -344,7 +323,7 @@ function EngineeringStage({ mode }: { mode: Mode }) {
             />
           ))}
           <text x="18" y="65" textAnchor="middle" className="fill-fg-muted font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">
-            גדר תלתלית
+            גדר תיל סבוכה
           </text>
         </motion.g>
 
@@ -389,17 +368,27 @@ function EngineeringStage({ mode }: { mode: Mode }) {
         {/* Start/end markers */}
         <g>
           <circle cx="6" cy="68" r="1.6" className="fill-accent-cool" />
-          <text x="6" y="73" textAnchor="middle" className="fill-accent-cool font-mono font-bold" fontSize="2.8">A</text>
+          <text x="6" y="73" textAnchor="middle" className="fill-accent-cool font-display font-bold font-bold" fontSize="2.8"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >A</text>
         </g>
         <g>
           <circle cx="92" cy="18" r="1.6" className="fill-accent-hot" />
-          <text x="92" y="15" textAnchor="middle" className="fill-accent-hot font-mono font-bold" fontSize="2.8">B</text>
+          <text x="92" y="15" textAnchor="middle" className="fill-accent-hot font-display font-bold font-bold" fontSize="2.8"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >B</text>
         </g>
       </svg>
 
       <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        אותו מרחב · 4 פרספקטיבות הנדסיות
+        אותו השטח בדיוק, מ-4 זוויות מבט שונות של ההנדסה
       </div>
     </div>
   );

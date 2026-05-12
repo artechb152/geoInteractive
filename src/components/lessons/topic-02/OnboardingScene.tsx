@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -119,7 +121,7 @@ export function OnboardingScene() {
         intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שקופים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {LAYERS.map((l, i) => {
             const isOn = i < step;
@@ -205,7 +207,7 @@ export function OnboardingScene() {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-accent/20">
-                        <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
+                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
                           מה השכבה הזו מוסיפה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -232,59 +234,21 @@ export function OnboardingScene() {
 
       <div className="grid sm:grid-cols-2 gap-4">
         {FACTS.map((f, i) => (
-          <motion.article
+          <IntelCard
             key={f.headline}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 relative overflow-hidden"
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
-            />
-            <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
-                <Icon name={f.icon} size={22} className={f.accent} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim" />
-                  {f.place}
-                </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
-                  {f.headline}
-                </h3>
-                <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-                  {f.lesson}
-                </p>
-              </div>
-            </div>
-          </motion.article>
+            place={f.place}
+            headline={f.headline}
+            lesson={f.lesson}
+            icon={f.icon}
+            accent={f.accent}
+          />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7 flex gap-4 sm:gap-5 items-center"
-      >
-        <div className="absolute -end-12 -top-12 size-40 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-        <div className="relative size-12 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-accent shrink-0 shadow-glow">
-          <Icon name="arrow-left" size={20} />
-        </div>
-        <div className="relative flex-1">
-          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">
-            עכשיו אתה מוכן
-          </div>
-          <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">
-            הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה":
-            <strong className="text-fg"> איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל</strong>.
-          </p>
-        </div>
-      </motion.div>
+      <ReadyCallout title="עכשיו אתה מוכן">
+        <p>הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה":
+            <strong className="text-fg"> איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל</strong>.</p>
+      </ReadyCallout>
     </section>
   );
 }
@@ -332,7 +296,12 @@ function LayeredMap({ enabled }: { enabled: Set<string> }) {
         {/* Borders */}
         <Layer show={enabled.has('borders')}>
           <line x1="50" y1="0" x2="48" y2="75" className="stroke-accent-hot" strokeWidth="0.4" strokeDasharray="2 1.5" />
-          <text x="52" y="12" className="fill-accent-hot/70 text-[2.5px] font-mono">גבול A↔B</text>
+          <text x="52" y="12" className="fill-accent-hot/70 text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >גבול A↔B</text>
         </Layer>
 
         {/* Operational */}
@@ -340,7 +309,12 @@ function LayeredMap({ enabled }: { enabled: Set<string> }) {
           {/* Friendly */}
           <g>
             <circle cx="20" cy="62" r="2" className="fill-accent-cool" />
-            <text x="20" y="68" textAnchor="middle" className="fill-accent-cool text-[2.5px] font-mono">כוח ידידותי</text>
+            <text x="20" y="68" textAnchor="middle" className="fill-accent-cool text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >כוח ידידותי</text>
           </g>
           {/* Threat */}
           <g>
@@ -349,7 +323,12 @@ function LayeredMap({ enabled }: { enabled: Set<string> }) {
               <animate attributeName="r" values="4;9;4" dur="2.2s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.6;0;0.6" dur="2.2s" repeatCount="indefinite" />
             </circle>
-            <text x="78" y="32" textAnchor="middle" className="fill-accent-hot text-[2.5px] font-mono">איום</text>
+            <text x="78" y="32" textAnchor="middle" className="fill-accent-hot text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >איום</text>
           </g>
         </Layer>
       </svg>
@@ -397,7 +376,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-[10px] font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

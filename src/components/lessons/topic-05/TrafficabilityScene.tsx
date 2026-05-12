@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -20,17 +21,17 @@ type VehicleMeta = {
 const VEHICLES: Record<Vehicle, VehicleMeta> = {
   wheeled: {
     id: 'wheeled',
-    label: 'כלי גלגלי',
+    label: 'רכב גלגלי (על גלגלים)',
     english: 'Wheeled',
-    example: 'משאית, רכב סיור, האמר',
+    example: `לדוגמה: משאית, ג'יפ סיור, האמר`,
     maxSlope: 30,
     icon: 'truck',
   },
   tracked: {
     id: 'tracked',
-    label: 'כלי זחלילי',
+    label: 'רכב זחלי (עם שרשראות)',
     english: 'Tracked',
-    example: 'טנק מערכה, נגמ"ש, ד"כ',
+    example: 'לדוגמה: טנק, נגמ"ש (רכב משוריין), או דחפור D9',
     maxSlope: 60,
     icon: 'tank',
   },
@@ -52,27 +53,27 @@ type SoilType = {
 const SOILS: SoilType[] = [
   {
     id: 'hard',
-    label: 'מסלע קשה',
-    english: 'גיר / דולומיט / בזלת',
+    label: 'אדמה סלעית קשה',
+    english: 'למשל: סלעי גיר, דולומיט או בזלת',
     icon: 'mountain',
     color: 'text-terrain-ridge',
     bg: 'bg-terrain-ridge/10',
     border: 'border-terrain-ridge/40',
-    desc: 'סלע יציב וקשה שיוצר נוף תלול ומחוספס: מצוקים, מדרגות סלע, טרשים בולטים.',
-    effect: 'יציבות מצוינת — לא שוקעים. אבל טרשים קורעים צמיגים וזחלים, ומצוקים חוסמים תנועה מלאה.',
-    tip: 'באזורים טרשיים — תנועה רגלית בלבד. כלי רכב חייבים לעקוף או לעשות פריצה הנדסית.',
+    desc: 'קרקע חזקה ויציבה שיוצרת נוף תלול ומחוספס. תמצאו בה מצוקים, "מדרגות" אבן טבעיות, ו"טרשים" (סלעים חדים שבולטים מהאדמה).',
+    effect: 'היתרון: האדמה יציבה ולכן רכבים לא ישקעו בה. החיסרון: סלעים חדים עלולים לקרוע צמיגים ואפילו שרשראות של טנקים, ומצוקים גבוהים פשוט יחסמו לכם את הדרך.',
+    tip: 'באזורים שמלאים בסלעים בולטים, מומלץ לנוע רק ברגל. רכבים יצטרכו לחפש מסלול עוקף, או לחכות שדחפורים של חיל ההנדסה יפנו להם את הדרך.',
   },
   {
     id: 'soft',
-    label: 'מסלע רך',
-    english: 'קרטון / חרסית',
+    label: 'אדמה סלעית רכה',
+    english: 'למשל: סלעי קירטון או אדמת חרסית',
     icon: 'layers',
     color: 'text-terrain-sand',
     bg: 'bg-terrain-sand/15',
     border: 'border-terrain-sand/40',
-    desc: 'סלע פריך שמייצר נוף מעוגל וגבעי. ניתן לעיבוד הנדסי קל. טראסות מדרוניות נפוצות.',
-    effect: 'עבירות טובה — קל לפלס דרכים, לחפור עמדות, לבנות סוללות.',
-    tip: 'אידיאלי לקידום ניידות הנדסי: בולדוזרים יכולים לחתוך מסלולים חדשים תוך שעות.',
+    desc: 'סלע חלש שמתפורר בקלות ויוצר נוף של גבעות עגולות ומתונות. קל מאוד לחפור בו ולשנות אותו, ולכן הרבה פעמים תראו באזורים האלה "טראסות" (מדרגות חקלאיות שנחצבו בהר).',
+    effect: 'שטח שנוח מאוד למעבר. האדמה הרכה מאפשרת לפלס דרכים בקלות, לחפור עמדות מסתור מתחת לאדמה ולבנות חומות עפר להגנה.',
+    tip: 'גן עדן לחיל ההנדסה: בולדוזרים (דחפורים כבדים) יכולים פשוט "לחתוך" את הגבעות ולפרוץ מסלולי נסיעה חדשים לגמרי תוך שעות בודדות.',
   },
   {
     id: 'sand',
@@ -82,21 +83,21 @@ const SOILS: SoilType[] = [
     color: 'text-accent',
     bg: 'bg-accent/10',
     border: 'border-accent/40',
-    desc: 'חול יבש פזיר, מאבד אחיזה. חול רטוב סמוך לקו המים — סיכון שקיעה חמור בעצירה.',
-    effect: 'גלגלים שוקעים. זחלילים מתפקדים, אבל עוצרים = חוזרים לאט. בעצירה במים: זחל אחד במים, אחד על חול רטוב.',
-    tip: 'תנועה רציפה היא הכלל. עצירה בחול רטוב = שקיעה. הסתמכו על מפת רוויה לפני התקדמות.',
+    desc: 'חול יבש גורם לגלגלים להחליק, "לפרפר" במקום ולאבד אחיזה. חול רטוב ליד הים מסוכן אפילו יותר – ברגע שתעצרו עליו עם רכב, הוא עלול לשקוע פנימה מיד.',
+    effect: 'רכבים רגילים פשוט ישקעו כאן. טנקים יצליחו לעבור, אבל כל עצירה מסכנת אותם. הטיפ לנהיגת טנק על חוף הים: סעו כך שזחל (שרשרת) אחד יהיה בתוך המים והשני על החול הרטוב, כדי לאזן ולמנוע שקיעה.',
+    tip: 'החוק הכי חשוב: לא לעצור לרגע! חייבים לשמור על נסיעה רציפה. לפני שנכנסים לשטח כזה, חובה לבדוק במפות מיוחדות איפה החול ספוג במים ואיפה בטוח לנסוע.',
   },
   {
     id: 'mud',
-    label: 'קרקע רוויה / לס',
+    label: 'אדמה בוצית / אדמת לס',
     english: 'Saturated / Loess',
     icon: 'fuel',
     color: 'text-status-warn',
     bg: 'bg-status-warn/10',
     border: 'border-status-warn/40',
-    desc: 'קרקע ספוגה במים אחרי סערה. הלחץ הסגולי שלה נמוך. רק"ם, משאיות ותותחים יכולים להתפורר אותה.',
-    effect: 'אחרי גשם — דרך עפר שעבדה אתמול נחסמת היום. הזחלים שוקעים, הגלגלים מתפוצצים, האספקה תקועה.',
-    tip: 'לחכות 24–48 שעות אחרי גשם לפני מבצע משוריין רחב. או — לתכנן ציר חלופי על תשתית קשיחה.',
+    desc: 'אדמה שספגה המון מים (אחרי גשם חזק). היא הופכת לחלשה ולא מסוגלת להחזיק עליה משקל. רכבים משוריינים כבדים (רק"ם), משאיות ותותחים פשוט ירסקו אותה וישקעו עמוק בבוץ.',
+    effect: 'אחרי גשם, שביל עפר שהיה נוח אתמול הופך למלכודת טובענית. טנקים שוקעים, גלגלים מסתחררים ומפרפרים במקום, ומשאיות האספקה פשוט נתקעות הרחק מאחור.',
+    tip: 'ההמלצה: חובה לחכות יום-יומיים אחרי סערה כדי שהאדמה תתייבש קצת, לפני שמכניסים אליה רכבים כבדים. אם המשימה דחופה, חייבים למצוא מסלול חלופי שעובר על כביש סלול או על אדמה סלעית קשה.',
   },
 ];
 
@@ -117,34 +118,30 @@ export function TrafficabilityScene() {
     <section id="scene-trafficability" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="05.1"
-        eyebrow="עבירות וניידות"
+        eyebrow="האם אפשר לעבור פה? (עבירות וניידות)"
         title={
           <>
-            <span className="gradient-text">30% או 60%</span>? ההבדל בין משימה לאסון
+            <span className="gradient-text">30% או 60%</span>? המספרים שעושים את ההבדל
           </>
         }
-        intro="עבירות היא לא תחושה — היא מתמטיקה. שני מספרים מגדירים את החיים שלך בשטח: השיפוע (כמה תלול) וסוג הקרקע (כמה מחזיקה). מספר שגוי = כלי שלא חוזר."
+        intro='היכולת שלנו לעבור בשטח היא לא עניין של "תחושת בטן", אלא חישוב מתמטי פשוט. שני נתונים יקבעו אם הרכב יעבור או ייתקע: כמה העלייה תלולה (השיפוע), ועד כמה האדמה יציבה. טעות קטנה בחישוב, והרכב שלכם פשוט לא יצליח לחזור.'
       />
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">מילון מהיר:</strong>
-            <ul className="mt-2 space-y-1 text-fg-muted">
-              <li>· <strong className="text-fg">עבירות (Trafficability)</strong> — היכולת הפיזית של מסת קרקע לתמוך במעבר רכב תחת לחץ סגולי נתון.</li>
-              <li>· <strong className="text-fg">מדרון פנים</strong> — טיפוס במעלה השיפוע (קדימה). שיפוע צד = תנועה באלכסון = סכנת התהפכות.</li>
-              <li>· <strong className="text-fg">לחץ סגולי</strong> — משקל הכלי חלקי שטח המגע שלו עם הקרקע. זחל גדול = פחות לחץ סגולי = פחות שקיעה.</li>
-            </ul>
-          </div>
-        </div>
+      <div className="mb-6">
+        <InsightCard tone="cool" icon="spark" label="כמה מושגים שחובה להכיר">
+          <ul className="space-y-2">
+            <li>· <strong className="text-fg">עבִירוּת הקרקע (Trafficability)</strong> — היכולת של האדמה לשאת משקל של כלי רכב כבד מבלי לקרוס, להתפורר או לשקוע בתוכה.</li>
+            <li>· <strong className="text-fg">מדרון פנים ושיפוע צד</strong> — "מדרון פנים" אומר שהרכב מטפס ישר בעלייה או בירידה, שזה המצב הבטוח יחסית. לעומת זאת, נסיעה באלכסון על הצלע של ההר נקראת "שיפוע צד", והיא מסוכנת מאוד כי הרכב עלול בקלות לאבד שיווי משקל ולהתהפך לתהום.</li>
+            <li>· <strong className="text-fg">לחץ סגולי (הלחץ על האדמה)</strong> — איך המשקל של הרכב מתפזר על הקרקע. תחשבו על הליכה בבוץ עם עקבים לעומת מגפי גומי רחבים. ככל שהגלגלים או השרשראות ("זחלים") של הרכב רחבים יותר, המשקל מתפזר על שטח גדול יותר, והלחץ יורד. בגלל זה לטנק יש פחות סיכוי לשקוע מאשר לג'יפ רגיל.</li>
+          </ul>
+        </InsightCard>
       </div>
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch mb-10">
         {/* Visualization */}
         <div className="surface-elevated p-5 rounded-2xl overflow-hidden">
-          <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase mb-3">
-            הדמיה · {meta.label} על שיפוע של {slope}%
+          <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
+            הדמיה: איך יתמודד {meta.label} בעלייה של {slope}%?
           </div>
           <VehicleOnSlope slope={slope} vehicle={vehicle} status={status} />
         </div>
@@ -153,8 +150,8 @@ export function TrafficabilityScene() {
         <div className="space-y-4">
           {/* Vehicle selector */}
           <div className="surface-elevated p-5">
-            <div className="text-xs font-mono text-fg-dim mb-3 tracking-widest uppercase">
-              סוג הכלי
+            <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
+              באיזה רכב אנחנו נוסעים?
             </div>
             <div className="grid grid-cols-2 gap-2">
               {(Object.values(VEHICLES)).map((v) => {
@@ -179,7 +176,7 @@ export function TrafficabilityScene() {
                     <div className="text-[10px] font-mono text-fg-dim">{v.english}</div>
                     <div className="text-xs text-fg-muted mt-1.5 leading-snug">{v.example}</div>
                     <div className={cn('mt-2 text-[10px] font-mono', isActive ? 'text-accent' : 'text-fg-dim')}>
-                      גבול: ~{v.maxSlope}%
+                      שיפוע מקסימלי: כ-{v.maxSlope}%
                     </div>
                   </button>
                 );
@@ -190,7 +187,7 @@ export function TrafficabilityScene() {
           {/* Slope slider */}
           <div className="surface-elevated p-5">
             <div className="flex items-baseline justify-between mb-2">
-              <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">שיפוע</div>
+              <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">רמת השיפוע (עד כמה תלול?)</div>
               <div className="text-[10px] font-mono text-fg-dim">≈ {slopeDegrees.toFixed(1)}°</div>
             </div>
             <div className="font-display font-bold text-4xl tabular-nums text-accent mb-3">
@@ -241,8 +238,8 @@ export function TrafficabilityScene() {
                 <div className="text-xs leading-relaxed">
                   {status === 'ok' && (
                     <>
-                      <strong className="text-status-ok">בטוח לתנועה.</strong>{' '}
-                      השיפוע נמצא בתוך מעטפת היכולת של הכלי. תנועה רציפה אפשרית.
+                      <strong className="text-status-ok">בטוח לנסיעה.</strong>{' '}
+                      תנועה אפשרית אבל עם איבוד אחיזה. הימנע משיפוע צד והאט.
                     </>
                   )}
                   {status === 'caution' && (
@@ -264,7 +261,7 @@ export function TrafficabilityScene() {
         </div>
       </div>
 
-      <SoftDivider text="טיב הקרקע — הגורם השני בעבירות" />
+      <SoftDivider text="סוג האדמה — החצי השני של המשוואה" />
 
       {/* Soil types */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
@@ -299,53 +296,34 @@ export function TrafficabilityScene() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25 }}
-            className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', s.border.replace('border-', 'border-r-'))}
+            className="mb-10"
           >
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <div className={cn('text-[10px] font-mono mb-1.5 tracking-widest uppercase', s.color)}>
-                  מה זה בעצם
-                </div>
-                <p className="text-sm text-fg leading-relaxed">{s.desc}</p>
-              </div>
-              <div>
-                <div className="text-[10px] font-mono text-fg-dim mb-1.5 tracking-widest uppercase">
-                  השפעה על תנועה
-                </div>
-                <p className="text-sm text-fg-muted leading-relaxed">{s.effect}</p>
-              </div>
-              <div>
-                <div className="text-[10px] font-mono text-accent mb-1.5 tracking-widest uppercase">
-                  טיפ מבצעי
-                </div>
-                <p className="text-sm text-fg leading-relaxed">{s.tip}</p>
-              </div>
+            <div className="grid md:grid-cols-3 gap-3">
+              <InsightCard tone="cool" label="במילים פשוטות">
+                {s.desc}
+              </InsightCard>
+              <InsightCard tone="warn" label="איך זה ישפיע על הנסיעה?">
+                {s.effect}
+              </InsightCard>
+              <InsightCard tone="accent" label="תכל'ס, מה עושים בשטח?">
+                {s.tip}
+              </InsightCard>
             </div>
           </motion.div>
         ))}
       </AnimatePresence>
 
       {/* Maneuver corridor concept */}
-      <div className="surface-elevated p-6 rounded-2xl border-r-4 border-r-accent">
-        <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-            <Icon name="compass" size={22} className="text-accent" />
-          </div>
-          <div className="flex-1">
-            <div className="text-xs font-mono text-accent mb-1 tracking-widest uppercase">
-              מסדרון תמרון (Mobility Corridor)
-            </div>
-            <h3 className="font-display font-bold text-lg mb-2 leading-tight">
-              נתיב רציף שמאפשר לאוגדה לזוז במלוא עוצמתה
-            </h3>
-            <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-              כשמשרשרים יחד שני המדדים — שיפוע + טיב קרקע — מקבלים את ה<strong className="text-fg">מסדרון</strong>:
-              נתיב ארוך נטול מכשולים שמאפשר תנועה מסונכרנת של כוח גדול (גדוד-אוגדה) ב<strong className="text-fg">היווצרות הגנה רב-כיוונית</strong>
-              {' '}— בלי להתפצל ובלי להתעכב. למתכנן יש 3 שאלות: רוחב המסדרון (האם סד"כ נכנס?), אורכו (האם מגיע לעומק?), ושלמותו (יש מכשולים באמצע?).
-            </p>
-          </div>
-        </div>
-      </div>
+      <InsightCard
+        tone="accent"
+        icon="compass"
+        label="מסדרון תמרון (המסלול המושלם)"
+        title="המסלול המהיר שמאפשר לצבא שלם לדהור קדימה"
+      >
+        כשמחברים את שני המדדים שלמדנו (גם העליות מתונות וגם האדמה יציבה) – אפשר למצוא ולשרטט במפה את ה<strong className="text-fg">"מסדרון"</strong>.
+        מדובר בנתיב ארוך ונוח, נקי ממכשולים, שדרכו אפשר להעביר כוח צבאי ענק (כמו אוגדה שלמה עם מאות רכבים) מבלי שהם יצטרכו להתפצל לצוותים קטנים או להתעכב בדרך. היתרון הגדול הוא שכל הכלים נשארים ביחד, וככה הם יכולים לאבטח אחד את השני מכל הכיוונים (הגנה של 360 מעלות).
+        כשמפקדים מתכננים את המסלול הזה, הם בודקים 3 שאלות קריטיות: רוחב (האם כל כמות הרכבים שלנו תצליח לעבור שם יחד?), אורך (האם הוא מביא אותנו מספיק עמוק אל היעד?), ורציפות (האם יש פתאום איזה נהר או צוק שתוקע אותנו באמצע הדרך?).
+      </InsightCard>
     </section>
   );
 }
@@ -395,7 +373,7 @@ function VehicleOnSlope({ slope, vehicle, status }: { slope: number; vehicle: Ve
           x="22"
           y="62"
           textAnchor="middle"
-          className="fill-accent font-mono font-bold"
+          className="fill-accent font-display font-bold font-bold"
           fontSize="3.2"
           paintOrder="stroke"
           stroke="#ffffff"
@@ -420,7 +398,7 @@ function VehicleOnSlope({ slope, vehicle, status }: { slope: number; vehicle: Ve
           y="18"
           textAnchor="middle"
           className={cn(
-            'font-mono font-bold',
+            'font-display font-bold font-bold',
             status === 'ok' && 'fill-status-ok',
             status === 'caution' && 'fill-status-warn',
             status === 'fail' && 'fill-status-danger'
@@ -431,7 +409,7 @@ function VehicleOnSlope({ slope, vehicle, status }: { slope: number; vehicle: Ve
           strokeWidth="1"
           strokeLinejoin="round"
         >
-          {status === 'ok' ? 'בטוח' : status === 'caution' ? 'גבולי' : 'לא עביר'}
+          {status === 'ok' ? 'בטוח' : status === 'caution' ? 'סכנת החלקה' : 'אין מעבר'}
         </text>
       </svg>
     </div>
@@ -472,7 +450,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

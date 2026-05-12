@@ -48,10 +48,10 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden pt-24 pb-16 md:pt-28 md:pb-24"
+      className="relative overflow-hidden pt-16 pb-8 md:pt-20 md:pb-12"
       aria-labelledby="hero-title"
     >
-      <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-[1.05fr_1fr] items-center gap-10 lg:gap-16">
+      <div className="relative max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.05fr_1fr] items-center gap-6 lg:gap-10">
         <motion.div
           initial="hidden"
           animate="show"
@@ -61,7 +61,7 @@ export function Hero() {
           }}
           className="relative z-10"
         >
-          <motion.div variants={fadeUp(!!reduce)} className="mb-6 inline-flex items-center gap-3 flex-wrap">
+          <motion.div variants={fadeUp(!!reduce)} className="mb-4 inline-flex items-center gap-3 flex-wrap">
             <span className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider uppercase text-accent-hover">
               <span className="size-2 rounded-full bg-accent animate-pulse" />
               SECTOR · 04
@@ -77,7 +77,7 @@ export function Hero() {
             variants={fadeUp(!!reduce)}
             className="font-display font-bold tracking-tight leading-[0.92]"
           >
-            <span className="block text-[clamp(1.25rem,2.4vw,2rem)] font-medium text-fg-muted mb-2 tracking-[0.04em]">
+            <span className="block text-[clamp(1rem,2vw,1.5rem)] font-medium text-fg-muted mb-2 tracking-[0.04em]">
               קוראים את
             </span>
 
@@ -87,7 +87,7 @@ export function Hero() {
                 className="absolute inset-0 select-none translate-x-1 translate-y-1 text-transparent"
                 style={{
                   WebkitTextStroke: '1px rgba(177,119,54,0.35)',
-                  fontSize: 'clamp(3rem, 10vw, 8rem)',
+                  fontSize: 'clamp(2.25rem, 7vw, 5rem)',
                   lineHeight: '0.92',
                 }}
               >
@@ -97,7 +97,7 @@ export function Hero() {
                 className="relative inline-block"
                 style={{
                   color: ORANGE,
-                  fontSize: 'clamp(3rem, 10vw, 8rem)',
+                  fontSize: 'clamp(2.25rem, 7vw, 5rem)',
                   lineHeight: '0.92',
                   textShadow: '0 10px 40px rgba(235,158,72,0.22)',
                 }}
@@ -106,23 +106,23 @@ export function Hero() {
               </span>
             </span>
 
-            <span className="block mt-3 text-[clamp(1.125rem,2.4vw,2.25rem)] font-medium text-fg-muted tracking-[0.02em]">
+            <span className="block mt-3 text-[clamp(1rem,2vw,1.625rem)] font-medium text-fg-muted tracking-[0.02em]">
               <span className="text-brand-dark">לפני</span> שצועדים בו.
             </span>
           </motion.h1>
 
           <motion.p
             variants={fadeUp(!!reduce)}
-            className="mt-7 max-w-xl text-base md:text-lg text-fg-muted leading-relaxed text-pretty"
+            className="mt-4 max-w-xl text-sm md:text-base text-fg-muted leading-relaxed text-pretty"
           >
             קורס אינטראקטיבי שמלמד איך המרחב הפיזי מעצב אסטרטגיה, תמרון ואיסוף מודיעין.
             סימולציות, תרגול ומשוב — מהבסיס ועד GEOINT מבצעי.
           </motion.p>
 
-          <motion.div variants={fadeUp(!!reduce)} className="mt-8 flex flex-wrap gap-3">
+          <motion.div variants={fadeUp(!!reduce)} className="mt-5 flex flex-wrap gap-2.5">
             <Link
               href={firstLessonHref}
-              className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-medium text-fg bg-accent hover:bg-accent-hover hover:text-bg-elevated transition-all duration-300 shadow-glow"
+              className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-fg bg-accent hover:bg-accent-hover hover:text-bg-elevated transition-all duration-300 shadow-glow"
             >
               <span>התחלת הקורס</span>
               <ArrowLeft
@@ -132,7 +132,7 @@ export function Hero() {
             </Link>
             <a
               href="#features"
-              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-md font-medium text-brand-dark border border-brand/40 hover:border-brand hover:bg-brand/10 transition-all duration-300"
+              className="group inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-brand-dark border border-brand/40 hover:border-brand hover:bg-brand/10 transition-all duration-300"
             >
               <span className="size-1.5 rounded-full bg-brand animate-pulse" aria-hidden />
               <span>מה לומדים בקורס</span>
@@ -141,15 +141,15 @@ export function Hero() {
 
           <motion.div
             variants={fadeUp(!!reduce)}
-            className="mt-10 grid grid-cols-3 max-w-lg gap-3 sm:gap-4"
+            className="mt-6 grid grid-cols-3 max-w-sm gap-2.5 sm:gap-3"
           >
             {STATS.map(({ value, label, Icon }) => (
               <div
                 key={label}
-                className="relative rounded-xl border border-border bg-bg-elevated px-3 py-3 sm:px-4 sm:py-4 overflow-hidden"
+                className="relative rounded-xl border border-border bg-bg-elevated px-3 py-2.5 sm:px-3.5 sm:py-3 overflow-hidden"
               >
                 <Icon className="size-3.5 text-fg-dim mb-1.5" aria-hidden />
-                <div className="font-display font-bold text-xl sm:text-2xl text-fg">{value}</div>
+                <div className="font-display font-bold text-lg sm:text-xl text-fg">{value}</div>
                 <div className="mt-0.5 text-[11px] sm:text-xs text-fg-muted leading-snug">
                   {label}
                 </div>
@@ -158,7 +158,7 @@ export function Hero() {
           </motion.div>
         </motion.div>
 
-        <div className="relative aspect-square w-full max-w-[460px] sm:max-w-[520px] mx-auto lg:mx-0 lg:justify-self-end">
+        <div className="relative aspect-square w-full max-w-[260px] sm:max-w-[310px] mx-auto lg:mx-0 lg:justify-self-end">
           <TerrainDiorama reduce={!!reduce} />
         </div>
       </div>

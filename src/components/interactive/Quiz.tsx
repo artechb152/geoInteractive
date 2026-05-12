@@ -28,14 +28,14 @@ export function Quiz({ questions }: { questions: Question[] }) {
   const passed = score >= Math.ceil(questions.length * 0.7);
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-4">
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="space-y-3">
         <div className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider text-fg-muted">
           <ListChecks className="size-4 text-brand-dark" aria-hidden />
           בדיקת ידע
         </div>
-        <h2 className="font-display font-bold tracking-tight text-balance leading-tight text-[clamp(1.5rem,2.6vw,2rem)]">
+        <h2 className="font-display font-bold tracking-tight text-balance leading-tight text-[clamp(1.25rem,2.2vw,1.625rem)]">
           בדקו את עצמכם.
         </h2>
         <p className="text-sm md:text-base text-fg-muted">
@@ -44,7 +44,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
       </header>
 
       {/* ── Questions ───────────────────────────────────────────────── */}
-      <ol className="space-y-4">
+      <ol className="space-y-3">
         {questions.map((q, i) => {
           const picked = answers[q.id];
           const isCorrect = picked === q.correctId;
@@ -52,16 +52,16 @@ export function Quiz({ questions }: { questions: Question[] }) {
             <li
               key={q.id}
               className={cn(
-                'relative rounded-2xl border bg-bg-elevated p-5 md:p-6 transition-colors duration-300 ease-snap',
+                'relative rounded-2xl border bg-bg-elevated p-3.5 md:p-4 transition-colors duration-300 ease-snap',
                 !submitted && 'border-border',
                 submitted && isCorrect && 'border-status-ok/40',
                 submitted && !isCorrect && 'border-status-danger/40',
               )}
             >
-              <div className="flex gap-3.5 items-start mb-4">
+              <div className="flex gap-3 items-start mb-3.5">
                 <span
                   className={cn(
-                    'grid place-items-center size-8 shrink-0 rounded-full font-display font-bold text-sm border transition-colors',
+                    'grid place-items-center size-7 shrink-0 rounded-full font-display font-bold text-xs border transition-colors',
                     !submitted && 'bg-bg-accent border-border text-fg-muted',
                     submitted && isCorrect && 'bg-status-ok/15 border-status-ok/40 text-status-ok',
                     submitted && !isCorrect && 'bg-status-danger/10 border-status-danger/40 text-status-danger',
@@ -70,12 +70,12 @@ export function Quiz({ questions }: { questions: Question[] }) {
                 >
                   {i + 1}
                 </span>
-                <p className="font-display font-semibold text-[15px] md:text-base leading-snug text-fg pt-0.5 text-balance">
+                <p className="font-display font-semibold text-sm md:text-[15px] leading-snug text-fg pt-0.5 text-balance">
                   {q.stem}
                 </p>
               </div>
 
-              <div className="space-y-2 pr-[3rem] md:pr-[3.5rem]">
+              <div className="space-y-1.5 pr-[2.75rem] md:pr-[3.25rem]">
                 {q.options.map((o) => {
                   const isPicked = picked === o.id;
                   const isAnswer = o.id === q.correctId;
@@ -86,7 +86,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       disabled={submitted}
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))}
                       className={cn(
-                        'w-full text-right px-4 py-3 rounded-xl border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
+                        'w-full text-right px-3.5 py-2.5 rounded-xl border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
                         !submitted && isPicked && 'border-brand-dark bg-brand/10 text-brand-dark font-medium',
                         !submitted && !isPicked && 'border-border hover:border-brand/40 hover:bg-brand/5 text-fg',
                         submitted && isAnswer && 'border-status-ok/50 bg-status-ok/10 text-status-ok font-medium',
@@ -127,7 +127,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                   >
                     <div
                       className={cn(
-                        'p-3.5 rounded-xl text-sm md:text-[15px] border flex gap-2.5 items-start leading-relaxed',
+                        'p-3 rounded-xl text-sm md:text-[15px] border flex gap-2.5 items-start leading-relaxed',
                         isCorrect
                           ? 'border-status-ok/30 bg-status-ok/5'
                           : 'border-status-warn/40 bg-status-warn/5',
@@ -162,13 +162,13 @@ export function Quiz({ questions }: { questions: Question[] }) {
       </ol>
 
       {/* ── Footer: submit / score ──────────────────────────────────── */}
-      <div className="rounded-2xl border border-border bg-bg-elevated p-5 md:p-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-border bg-bg-elevated p-3.5 md:p-4 flex flex-wrap items-center justify-between gap-4">
         {submitted ? (
           <>
             <div className="flex items-center gap-3">
               <span
                 className={cn(
-                  'grid place-items-center size-12 rounded-full',
+                  'grid place-items-center size-10 rounded-full',
                   passed ? 'bg-brand/15 text-brand-dark border border-brand/30' : 'bg-status-warn/15 text-status-warn border border-status-warn/30',
                 )}
                 aria-hidden
@@ -179,7 +179,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                 <div className="text-[11px] font-display font-semibold tracking-wider text-fg-dim uppercase">
                   ציון
                 </div>
-                <div className="font-display font-bold text-2xl text-fg leading-tight">
+                <div className="font-display font-bold text-xl text-fg leading-tight">
                   <span className={cn(passed ? 'text-brand-dark' : 'text-status-warn')}>{score}</span>
                   <span className="text-fg-dim font-medium">/{questions.length}</span>
                 </div>

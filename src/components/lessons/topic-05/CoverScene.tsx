@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -19,8 +20,8 @@ type Item = {
 const ITEMS: Item[] = [
   { id: 'boulder',   label: 'סלע בולדר ענק',         icon: 'mountain', correct: 'both',             hint: 'מסת אבן גדולה ועבה — עוצרת אש וגם מסתירה.' },
   { id: 'bush',      label: 'שיח עבות',              icon: 'wave',     correct: 'concealment-only', hint: 'מסתיר היטב מהעין — אבל ענפים לא עוצרים כדור.' },
-  { id: 'wall',      label: 'קיר בטון מבוצר',        icon: 'shield',   correct: 'both',             hint: 'מסת בטון = מחסה מלא + עוצר קו ראייה.' },
-  { id: 'fence',     label: 'גדר חוט',               icon: 'flag',     correct: 'neither',          hint: 'שקוף לעין ולכדור. רק סמן.' },
+  { id: 'wall',      label: 'קיר בטון מבוצר',        icon: 'shield',   correct: 'both',             hint: 'הבטון מספק הגנה מלאה שעוצרת קליעים וגם חוסם לחלוטין את הראייה של האויב.' },
+  { id: 'fence',     label: 'גדר תיל רגילה',               icon: 'flag',     correct: 'neither',          hint: 'היא שקופה – גם רואים דרכה וגם קליעים עוברים דרכה חלק. היא נועדה רק לסמן גבול, ולא מגינה או מסתירה.' },
   { id: 'log',       label: 'גזע עץ עבה',            icon: 'mountain', correct: 'cover-only',       hint: 'מסת עץ עוצרת כדורים, אבל קל לראות את החייל מסביב.' },
   { id: 'smoke',     label: 'מסך עשן',              icon: 'wave',     correct: 'concealment-only', hint: 'עיוורון לסנסור האופטי — אבל עשן לא בולם רסיס.' },
   { id: 'grass',     label: 'עשב גבוה / חורש סבוך', icon: 'layers',   correct: 'concealment-only', hint: 'מסתיר חזותית ותרמית — אש לא נעצרת.' },
@@ -37,22 +38,22 @@ const CATEGORIES: { id: Category; label: string; english: string; color: string;
 
 const TERRAIN_FEATURES: { feature: string; what: string; defender: string; attacker: string }[] = [
   {
-    feature: 'נקודת חנק (Chokepoint)',
-    what: 'הצרה טבעית או מלאכותית של חזית התנועה — מעבר צר בין הרים, צומת יחיד, ערוץ נחל סגור.',
-    defender: 'יכולת השמדת כוח גדול באמצעות כוח קטן וחוסם. שילוב מיקוש ואש.',
-    attacker: 'חיסרון מוחלט: כפייה של תנועה בטור, עיכוב לוגיסטי וחשיפה ארטילרית.',
+    feature: 'נקודת חנק (צוואר בקבוק)',
+    what: 'מקום שבו הדרך הופכת לפתע לצרה מאוד וכולם חייבים לעבור דרכו – כמו ואדי צר בין הרים, צומת יחיד, או גשר.',
+    defender: 'חלום למגן (מי שמחכה): בגלל שהמקום צר, מספיק כוח קטן עם מוקשים וירי ממוקד כדי לעצור ולהשמיד צבא שלם שנתקע שם בפקק.',
+    attacker: 'סיוט לתוקף (הצד שמנסה לעבור): הרכבים נדחפים לטור ארוך אחד אחרי השני, נוצר פקק שמעכב הכל, וכולם הופכים למטרה קלה להפצצות מבלי שיוכלו לברוח הצידה.',
   },
   {
-    feature: 'קו רכס / שטח שולט',
-    what: 'השטח המוגבה והמרכזי, שולט בתצפית ובאש על סביבתו הקרובה.',
-    defender: 'תצפית מעולה, ניהול אש לטווח ארוך, תנאי הגנה טבעיים.',
-    attacker: 'יתרון אם נכבש — אבל שחיקת כוח כבדה בטיפוס מול אש יורדת.',
+    feature: 'פסגת הר (שטח שולט)',
+    what: 'הנקודה הגבוהה ביותר באזור. מי שנמצא למעלה רואה הכל ויכול לירות על כולם למטה.',
+    defender: 'שליטה מוחלטת: אפשר לראות רחוק, לירות למרחקים בבטחה, ומאוד קשה לאויב לטפס אליכם ולהחזיר אש.',
+    attacker: 'לכבוש את הפסגה זה כמובן פרס עצום, אבל לטפס למעלה בעלייה תלולה כשמישהו יורֶה עליכם מלמעלה – יעלה בהמון נפגעים.',
   },
   {
-    feature: 'עמק מוקף / גיא',
-    what: 'שטח נמוך הכלוא בין שלוחות שולטות.',
-    defender: 'קופסת הריגה אידיאלית. תצפית שולטת מהשלוחות לעבר מרכז הגיא.',
-    attacker: 'יתרון: התגנבות והסתרה מהשמיים. חיסרון: מלכודת אש מאגפת.',
+    feature: 'עמק סגור שמוקף בהרים',
+    what: 'אזור נמוך שמוקף מכל עבר בהרים או גבעות גבוהות שצופים עליו.',
+    defender: 'המלכודת המושלמת (נקראת בצבא "קופסת הריגה"). מי שיושב בטוח למעלה על ההרים פשוט צופה על כל מרכז העמק ויכול לירות מכל כיוון על מי שלמטה.',
+    attacker: 'היתרון היחיד: קשה יותר לראות אתכם ממטוסים ורחפנים. החיסרון: אם האויב מחכה לכם למעלה – אתם לכודים באש מכל הכיוונים ואין לאן לברוח.',
   },
 ];
 
@@ -89,58 +90,36 @@ export function CoverScene() {
     <section id="scene-cover" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="05.3"
-        eyebrow="כיסוי והסתרה"
+        eyebrow="מחסה והסתרה"
         title={
           <>
-            <span className="gradient-text">Cover ≠ Concealment</span>. ההבדל הוא חיים.
+            <span className="gradient-text">הסתרה היא לא מחסה</span>. הטעות כאן יכולה לעלות בחיים.
           </>
         }
-        intro="זה ההבדל שמשנה הכל: הסתרה מונעת *גילוי*. מחסה עוצר *פגיעה*. כשמערבבים בין השניים — חוזרים בארון אלומיניום."
+        intro='זה ההבדל הכי חשוב שתלמדו: הסתרה רק מונעת מהאויב לראות אתכם. מחסה אשכרה עוצר את הפגיעה. מי שמתבלבל בין השניים בשטח ומתחבא מאחורי שיח בזמן ירי — מסכן את החיים שלו.'
       />
 
       {/* Comparison cards */}
-      <div className="grid md:grid-cols-2 gap-4 mb-10">
-        <div className="surface-elevated p-5 sm:p-6 border-r-4 border-r-status-warn rounded-2xl">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="size-12 rounded-xl bg-status-warn/15 border border-status-warn/40 flex items-center justify-center shrink-0">
-              <Icon name="shield" size={22} className="text-status-warn" />
-            </div>
-            <div>
-              <div className="font-display font-bold text-xl text-status-warn">מחסה (Cover)</div>
-              <div className="text-[10px] font-mono text-fg-dim">הגנה פיזית מאש</div>
-            </div>
-          </div>
-          <p className="text-sm text-fg leading-relaxed mb-3">
-            הגנה פיזית ממשית וקשיחה: תבליט הררי עבה, סלעי בולדרים, קירות מבוצרים, קפלי קרקע קשיחים.
-            <strong className="block mt-2 text-status-warn">בולם בפועל אש נשק קל, רסיסי ארטילריה, הדף קינטי.</strong>
-          </p>
-          <div className="text-[11px] text-fg-muted bg-bg-accent/40 border border-border rounded-lg p-2.5">
-            <strong className="text-fg">כלל אצבע:</strong> אם זה לא יעצור כדור — זה לא מחסה. נקודה.
-          </div>
-        </div>
+      <div className="grid md:grid-cols-2 gap-3 mb-10">
+        <InsightCard tone="warn" icon="shield" label="הגנה פיזית מפגיעה" title="מחסה (Cover)">
+          עצם קשיח וחזק שאתם מסתתרים מאחוריו: צלע של הר, סלעי ענק, קירות בטון עבים או שקעים עמוקים באדמה.
+          <strong className="block mt-2 text-status-warn">זה מה שבאמת מסוגל לעצור בגופו כדורי רובה, רסיסים של פצצות ואפילו להגן עליכם מהדף של פיצוץ קרוב.</strong>
+          <span className="block mt-3 text-[12px] text-fg-muted">
+            <strong className="text-fg">כלל ברזל:</strong> אם זה לא קשיח ועבה מספיק כדי לעצור כדור — זה לא מחסה. אל תסמכו על זה.
+          </span>
+        </InsightCard>
 
-        <div className="surface-elevated p-5 sm:p-6 border-r-4 border-r-terrain-sky rounded-2xl">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="size-12 rounded-xl bg-terrain-sky/15 border border-terrain-sky/40 flex items-center justify-center shrink-0">
-              <Icon name="eye" size={22} className="text-terrain-sky" />
-            </div>
-            <div>
-              <div className="font-display font-bold text-xl text-terrain-sky">הסתרה (Concealment)</div>
-              <div className="text-[10px] font-mono text-fg-dim">מניעת גילוי חזותי/תרמי</div>
-            </div>
-          </div>
-          <p className="text-sm text-fg leading-relaxed mb-3">
-            שימוש בתכסית טבעית או סביבה אזרחית — יערות מחט, מבנים נטושים, עשב גבוה, צללי עננים — למניעת חשיפה לעין, לתרמית או לרדאר.
-            <strong className="block mt-2 text-terrain-sky">לא מספקת הגנה בליסטית. כדור חודר שיח בקלות.</strong>
-          </p>
-          <div className="text-[11px] text-fg-muted bg-bg-accent/40 border border-border rounded-lg p-2.5">
-            <strong className="text-fg">כלל אצבע:</strong> מה שמסתיר אותך לא בהכרח יציל אותך. תכננו על שניהם.
-          </div>
-        </div>
+        <InsightCard tone="sky" icon="eye" label="להיעלם מעיני האויב והמצלמות" title="הסתרה (Concealment)">
+          שימוש חכם במה שהסביבה מציעה — יערות, מבנים נטושים, עשב גבוה או אפילו אזורים מוצלים — כדי שמצלמות החום, הרחפנים והעיניים של האויב לא יוכלו לגלות אתכם.
+          <strong className="block mt-2 text-terrain-sky">חשוב מאוד: הסתרה לא מגינה עליכם מנשק! אם יירו עליכם, הכדור יעבור דרך השיח בקלות ויפגע בכם.</strong>
+          <span className="block mt-3 text-[12px] text-fg-muted">
+            <strong className="text-fg">כלל ברזל:</strong> מה שמסתיר אתכם לא יציל אתכם אם מתחילים לירות. המטרה בשטח היא תמיד לחפש מקום שמספק גם וגם.
+          </span>
+        </InsightCard>
       </div>
 
       {/* Drag-and-drop classification exercise */}
-      <SoftDivider text="תרגול · סווגו את החפצים לקטגוריה הנכונה" />
+      <SoftDivider text="תרגול: מה נותן מחסה ומה רק הסתרה?" />
 
       <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
         <div>
@@ -217,34 +196,21 @@ export function CoverScene() {
       </div>
 
       {/* Terrain features that affect cover/concealment */}
-      <SoftDivider text="3 תצורות שטח שמשפיעות על מחסה והסתרה" />
+      <SoftDivider text="3 צורות שטח שמשנות את חוקי המשחק" />
 
       <div className="space-y-3">
-        {TERRAIN_FEATURES.map((tf, i) => (
-          <motion.div
-            key={tf.feature}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 rounded-xl"
-          >
-            <div className="grid md:grid-cols-[1fr_1fr_1fr] gap-4">
-              <div>
-                <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">תצורה</div>
-                <h4 className="font-display font-bold mb-2 leading-tight">{tf.feature}</h4>
-                <p className="text-xs text-fg-muted leading-relaxed">{tf.what}</p>
-              </div>
-              <div>
-                <div className="text-[10px] font-mono text-status-ok mb-1 tracking-widest uppercase">יתרון למגן</div>
-                <p className="text-sm text-fg leading-relaxed">{tf.defender}</p>
-              </div>
-              <div>
-                <div className="text-[10px] font-mono text-status-warn mb-1 tracking-widest uppercase">יתרון/חיסרון לתוקף</div>
-                <p className="text-sm text-fg-muted leading-relaxed">{tf.attacker}</p>
-              </div>
-            </div>
-          </motion.div>
+        {TERRAIN_FEATURES.map((tf) => (
+          <div key={tf.feature} className="grid md:grid-cols-[1fr_1fr_1fr] gap-3">
+            <InsightCard tone="accent" label="איך השטח נראה?" title={tf.feature}>
+              {tf.what}
+            </InsightCard>
+            <InsightCard tone="ok" label="למה זה מעולה למי שמתגונן?">
+              {tf.defender}
+            </InsightCard>
+            <InsightCard tone="warn" label="הסיוט (או היתרון) של התוקף">
+              {tf.attacker}
+            </InsightCard>
+          </div>
         ))}
       </div>
     </section>
@@ -287,14 +253,17 @@ function ItemPool({
         onDragEnd();
       }}
       className={cn(
-        'surface-elevated p-4 mb-6 rounded-2xl border-2 border-dashed transition-all',
-        isOver ? 'border-accent shadow-glow bg-accent/5' : 'border-border'
+        'bg-bg-elevated p-4 mb-6 rounded-xl border transition-colors duration-200',
+        isOver ? 'border-brand shadow-elevated' : 'border-border'
       )}
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">
-          {pool.length > 0 ? `חפצים למיון (${pool.length})` : '✓ כל החפצים מוינו'}
+        <div className="text-sm font-display font-semibold text-fg tracking-wider">
+          {pool.length > 0 ? `חפצים למיון · ${pool.length}` : '✓ כל החפצים מוינו'}
         </div>
+        {pool.length > 0 && (
+          <div className="text-xs text-fg-muted">גרור חפץ לאחת מהקטגוריות למטה</div>
+        )}
       </div>
 
       {pool.length === 0 ? (
@@ -340,8 +309,10 @@ function CategoryBin({
 }) {
   const [isOver, setIsOver] = useState(false);
 
+  const isWaitingForTap = selected != null && items.length === 0;
+
   return (
-    <div
+    <motion.div
       onDragOver={(e) => {
         e.preventDefault();
         setIsOver(true);
@@ -356,36 +327,64 @@ function CategoryBin({
       onClick={() => {
         if (selected) onAssign(selected);
       }}
+      animate={{ scale: isOver ? 1.015 : 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'surface-elevated rounded-2xl border-2 transition-all flex flex-col',
-        category.border,
-        isOver && 'shadow-glow scale-[1.01]',
-        selected != null && 'cursor-pointer hover:shadow-glow'
+        'relative bg-bg-elevated rounded-xl overflow-hidden flex flex-col transition-colors duration-200',
+        'border',
+        isOver
+          ? cn(category.border, 'shadow-elevated')
+          : isWaitingForTap
+            ? cn(category.border, 'cursor-pointer')
+            : 'border-border',
       )}
     >
-      <div className={cn('p-3 border-b-2', category.border, category.bg)}>
-        <div className={cn('font-display font-bold leading-tight', category.color)}>
-          {category.label}
-        </div>
-        <div className="text-[10px] font-mono text-fg-dim mt-0.5 flex items-center justify-between">
-          <span>{category.english}</span>
-          <span>{items.length}</span>
+      <div className="flex items-center gap-3 p-3 pr-4">
+        <span className={cn('grid place-items-center size-10 rounded-lg shrink-0', category.bg)}>
+          <Icon name={category.id === 'cover' ? 'shield' : 'eye'} size={20} className={category.color} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className={cn('font-display font-bold leading-tight', category.color)}>
+            {category.label}
+          </div>
+          <div className="text-[11px] text-fg-muted mt-0.5">
+            {items.length === 0
+              ? 'ריק · מחכה למיון'
+              : `${items.length} ${items.length === 1 ? 'חפץ' : 'חפצים'}`}
+          </div>
         </div>
       </div>
-      <div className="p-3 min-h-[120px]">
+      <div className="p-3 pt-0 min-h-[120px]">
         {items.length === 0 ? (
-          <div className={cn(
-            'h-full min-h-[100px] rounded-lg border-2 border-dashed flex items-center justify-center text-center px-3 transition-colors',
-            isOver
-              ? 'border-accent bg-accent/10'
-              : selected != null
-              ? 'border-accent/40 text-accent'
-              : 'border-border text-fg-dim'
-          )}>
-            <span className="text-xs font-mono tracking-widest uppercase">
-              {isOver ? 'שחרר כאן' : selected ? 'הקש כדי לשבץ' : 'גרור חפץ לכאן'}
+          <motion.div
+            animate={{
+              backgroundColor: isOver
+                ? 'rgba(116, 156, 117, 0.10)'
+                : isWaitingForTap
+                  ? 'rgba(235, 158, 72, 0.06)'
+                  : 'rgba(0, 0, 0, 0.015)',
+            }}
+            className="h-full min-h-[100px] rounded-lg flex flex-col items-center justify-center gap-2 transition-colors"
+          >
+            <motion.span
+              animate={{ rotate: isOver ? 90 : 0, scale: isOver ? 1.1 : 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+              className={cn(
+                'inline-flex',
+                isOver ? category.color : isWaitingForTap ? 'text-accent-hover' : 'text-fg-dim',
+              )}
+            >
+              <Icon name={isOver ? 'check' : 'arrow-left'} size={18} strokeWidth={2.5} />
+            </motion.span>
+            <span
+              className={cn(
+                'text-sm font-display font-semibold tracking-wider',
+                isOver ? category.color : isWaitingForTap ? 'text-accent-hover' : 'text-fg-muted',
+              )}
+            >
+              {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גרור לכאן'}
             </span>
-          </div>
+          </motion.div>
         ) : (
           <div className="space-y-2">
             {items.map((it) => {
@@ -410,7 +409,7 @@ function CategoryBin({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -501,7 +500,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

@@ -1,406 +1,395 @@
 'use client';
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-
 type EnergyType = 'oil' | 'gas' | 'solar' | 'hydrogen';
-
 type EnergySource = {
-  id: EnergyType;
-  label: string;
-  english: string;
-  icon: IconName;
-  geo: string;
-  vulnerability: string;
-  strategic: string;
-  color: string;
-  bg: string;
-  border: string;
+id: EnergyType;
+label: string;
+english: string;
+icon: IconName;
+geo: string;
+vulnerability: string;
+strategic: string;
+color: string;
+bg: string;
+border: string;
 };
-
 const ENERGY_SOURCES: EnergySource[] = [
-  {
-    id: 'oil',
-    label: 'נפט גולמי',
-    english: 'Crude Oil',
-    icon: 'oil',
-    geo: 'מרוכז ב~5 מדינות (סעודיה, רוסיה, ארה"ב, עיראק, איראן). נע בצינורות וטנקרים.',
-    vulnerability: 'תלות בנקודות חנק ימיות (הורמוז, מלאקה). מצרי באב אל-מנדב = 7% מהסחר העולמי.',
-    strategic: 'הנשק הגיאו-כלכלי הקלאסי. אמברגו 1973 הוכיח את כוחו. מי ששולט במחיר — שולט בכלכלה.',
-    color: 'text-status-warn',
-    bg: 'bg-status-warn/10',
-    border: 'border-status-warn/40',
-  },
-  {
-    id: 'gas',
-    label: 'גז טבעי',
-    english: 'Natural Gas',
-    icon: 'fuel',
-    geo: 'נע בעיקר בצינורות יבשתיים (Nord Stream, TurkStream). גם LNG בטנקרים אבל יקר.',
-    vulnerability: 'צינור = נקודת תורפה ארוכה. פיצוץ נורד סטרים 2022 ניתק את אירופה ממקור אחד ביום אחד.',
-    strategic: 'תלות גיאוגרפית עזה. רוסיה השתמשה בגז כמנוף על אירופה משנת 2000. מעבר ל-LNG דחוף.',
-    color: 'text-accent',
-    bg: 'bg-accent/10',
-    border: 'border-accent/40',
-  },
-  {
-    id: 'solar',
-    label: 'אנרגיה סולארית',
-    english: 'Solar / PV',
-    icon: 'star',
-    geo: 'מבוזרת. כל אזור מדברי = מועמד. ישראל, ספרד, סהרה, אוסטרליה — כל אחד פוטנציאל.',
-    vulnerability: 'תלות בייצור פאנלים (סין שולטת ב-80%). אזורי שטח גדולים = מטרה רכה לחבלה.',
-    strategic: 'הפחתת תלות בנקודות חנק. אבל ייצור פאנלים = שרשרת אספקה חדשה לדאוג ממנה.',
-    color: 'text-status-ok',
-    bg: 'bg-status-ok/10',
-    border: 'border-status-ok/40',
-  },
-  {
-    id: 'hydrogen',
-    label: '"עמקי מימן"',
-    english: 'Hydrogen Valleys',
-    icon: 'bolt',
-    geo: 'אזורים מתוכננים לייצור מימן בקנה מידה רחב. ישראל (נגב), אוסטרליה, צ\'ילה, סעודיה.',
-    vulnerability: 'תשתית חדשה — אבל הופכת לנקודה אסטרטגית בעצמה. ייבוא/ייצוא מימן בטנקרים מיוחדים.',
-    strategic: 'חלופה מבוזרת לנפט. ישראל יכולה להפוך ליצואנית מימן ירוק במקום צרכן נפט. שינוי מאזן.',
-    color: 'text-accent-cool',
-    bg: 'bg-accent-cool/10',
-    border: 'border-accent-cool/40',
-  },
+ {
+id: 'oil',
+label: 'נפט גולמי',
+english: 'Crude Oil',
+icon: 'oil',
+geo: 'מרוכז ב~5 מדינות (סעודיה, רוסיה, ארה"ב, עיראק, איראן). נע בצינורות וטנקרים.',
+vulnerability: 'תלות בנקודות חנק ימיות (הורמוז, מלאקה). מצרי באב אל-מנדב = 7% מהסחר העולמי.',
+strategic: 'הנשק הגיאו-כלכלי הקלאסי. אמברגו 1973 הוכיח את כוחו. מי ששולט במחיר — שולט בכלכלה.',
+color: 'text-status-warn',
+bg: 'bg-status-warn/10',
+border: 'border-status-warn/40',
+ },
+ {
+id: 'gas',
+label: 'גז טבעי',
+english: 'Natural Gas',
+icon: 'fuel',
+geo: 'נע בעיקר בצינורות יבשתיים (Nord Stream, TurkStream). גם LNG בטנקרים אבל יקר.',
+vulnerability: 'צינור = נקודת תורפה ארוכה. פיצוץ נורד סטרים 2022 ניתק את אירופה ממקור אחד ביום אחד.',
+strategic: 'תלות גיאוגרפית עזה. רוסיה השתמשה בגז כמנוף על אירופה משנת 2000. מעבר ל-LNG דחוף.',
+color: 'text-accent',
+bg: 'bg-accent/10',
+border: 'border-accent/40',
+ },
+ {
+id: 'solar',
+label: 'אנרגיה סולארית',
+english: 'Solar / PV',
+icon: 'star',
+geo: 'מבוזרת. כל אזור מדברי = מועמד. ישראל, ספרד, סהרה, אוסטרליה — כל אחד פוטנציאל.',
+vulnerability: 'תלות בייצור פאנלים (סין שולטת ב-80%). אזורי שטח גדולים = מטרה רכה לחבלה.',
+strategic: 'הפחתת תלות בנקודות חנק. אבל ייצור פאנלים = שרשרת אספקה חדשה לדאוג ממנה.',
+color: 'text-status-ok',
+bg: 'bg-status-ok/10',
+border: 'border-status-ok/40',
+ },
+ {
+id: 'hydrogen',
+label: '"עמקי מימן"',
+english: 'Hydrogen Valleys',
+icon: 'bolt',
+geo: 'אזורים מתוכננים לייצור מימן בקנה מידה רחב. ישראל (נגב), אוסטרליה, צ\'ילה, סעודיה.',
+vulnerability: 'תשתית חדשה — אבל הופכת לנקודה אסטרטגית בעצמה. ייבוא/ייצוא מימן בטנקרים מיוחדים.',
+strategic: 'חלופה מבוזרת לנפט. ישראל יכולה להפוך ליצואנית מימן ירוק במקום צרכן נפט. שינוי מאזן.',
+color: 'text-accent-cool',
+bg: 'bg-accent-cool/10',
+border: 'border-accent-cool/40',
+ },
 ];
-
 export function WaterEnergyScene() {
-  const [damClosure, setDamClosure] = useState(20); // % closed (0=open, 100=closed)
-  const [activeEnergy, setActiveEnergy] = useState<EnergyType>('oil');
+const [damClosure, setDamClosure] = useState(20); // % closed (0=open, 100=closed)
+const [activeEnergy, setActiveEnergy] = useState<EnergyType>('oil');
 
-  // Compute downstream effect
-  const downstreamFlow = 100 - damClosure;
-  const status: 'normal' | 'reduced' | 'critical' | 'crisis' =
-    damClosure < 25 ? 'normal' : damClosure < 50 ? 'reduced' : damClosure < 80 ? 'critical' : 'crisis';
+ // Compute downstream effect
+const downstreamFlow = 100 - damClosure;
+const status: 'normal' | 'reduced' | 'critical' | 'crisis' =
+damClosure < 25 ? 'normal' : damClosure < 50 ? 'reduced' : damClosure < 80 ? 'critical' : 'crisis';
+const statusMeta = {
+normal: { label: 'זרימה רגילה', color: 'text-status-ok', bg: 'bg-status-ok/10', msg: 'אספקת מים תקינה במדינה התלויה.' },
+reduced: { label: 'זרימה מופחתת', color: 'text-status-warn', bg: 'bg-status-warn/10', msg: 'אזהרה: חקלאות נפגעת. מצוקת מים אזורית.' },
+critical: { label: 'מצוקה חמורה', color: 'text-accent-hot', bg: 'bg-accent-hot/10', msg: 'משבר אזורי. כלכלה ויציבות פוליטית בסכנה.' },
+crisis: { label: 'משבר קיומי', color: 'text-status-danger', bg: 'bg-status-danger/10', msg: 'מיליוני אנשים ללא מי שתייה. סכנת מלחמה.' },
+ };
+const sm = statusMeta[status];
+const ePick = ENERGY_SOURCES.find((e) => e.id === activeEnergy)!;
+return (
+ <section id="scene-waterenergy" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <SceneHeader
+step="09.1"
+eyebrow="הידרו-פוליטיקה ואנרגיה"
+title={
+ <>
+ <span className="gradient-text">מים זה הנפט החדש</span>
+ </>
+ }
+intro="המאה ה-20 נלחמה על נפט. המאה ה-21 נלחמת על מים. מי ששולט במקור — שולט בגורלן של מדינות שלמות. ואנרגיה? עברה ממסחר לזירת עימות."
+ />
 
-  const statusMeta = {
-    normal:   { label: 'זרימה רגילה',   color: 'text-status-ok',     bg: 'bg-status-ok/10',     msg: 'אספקת מים תקינה במדינה התלויה.' },
-    reduced:  { label: 'זרימה מופחתת', color: 'text-status-warn',   bg: 'bg-status-warn/10',   msg: 'אזהרה: חקלאות נפגעת. מצוקת מים אזורית.' },
-    critical: { label: 'מצוקה חמורה',   color: 'text-accent-hot',    bg: 'bg-accent-hot/10',    msg: 'משבר אזורי. כלכלה ויציבות פוליטית בסכנה.' },
-    crisis:   { label: 'משבר קיומי',    color: 'text-status-danger', bg: 'bg-status-danger/10', msg: 'מיליוני אנשים ללא מי שתייה. סכנת מלחמה.' },
-  };
-  const sm = statusMeta[status];
+ <div className="p-5 mb-6">
+ <div className="flex gap-3 items-start">
+ <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
+ <div className="text-sm leading-relaxed">
+ <strong className="text-fg">הידרו-פוליטיקה (Hydropolitics)</strong> — המאבק הפוליטי-צבאי על שליטה במשאבי מים. ככל שמדינה תלויה יותר במקור מים חיצוני — היא חשופה יותר ללחץ.
+ <strong className="text-fg block mt-1.5">המקרה הקלאסי:</strong> מצרים תלויה ב-95% מהמים שלה בנילוס. אתיופיה בונה סכר במעלה הזרם. ההשלכה? קיומית.
+ </div>
+ </div>
+ </div>
 
-  const ePick = ENERGY_SOURCES.find((e) => e.id === activeEnergy)!;
+ {/* Dam simulator */}
+ <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
+ <div className="surface-elevated p-4 rounded-2xl">
+ <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+ סכר במעלה הנהר · השפעה על המורד
+ </div>
+ <div className={cn('chip', sm.bg, sm.color, 'border-current/40')}>
+ <Icon name={status === 'normal' ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
+ <span className="font-mono">{sm.label}</span>
+ </div>
+ </div>
 
-  return (
-    <section id="scene-waterenergy" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="09.1"
-        eyebrow="הידרו-פוליטיקה ואנרגיה"
-        title={
-          <>
-            <span className="gradient-text">מים זה הנפט החדש</span>
-          </>
-        }
-        intro="המאה ה-20 נלחמה על נפט. המאה ה-21 נלחמת על מים. מי ששולט במקור — שולט בגורלן של מדינות שלמות. ואנרגיה? עברה ממסחר לזירת עימות."
-      />
+ <DamSimulator closure={damClosure} status={status} />
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">הידרו-פוליטיקה (Hydropolitics)</strong> — המאבק הפוליטי-צבאי על שליטה במשאבי מים. ככל שמדינה תלויה יותר במקור מים חיצוני — היא חשופה יותר ללחץ.
-            <strong className="text-fg block mt-1.5">המקרה הקלאסי:</strong> מצרים תלויה ב-95% מהמים שלה בנילוס. אתיופיה בונה סכר במעלה הזרם. ההשלכה? קיומית.
-          </div>
-        </div>
-      </div>
+ <p className={cn('text-sm leading-relaxed mt-3', sm.color)}>{sm.msg}</p>
+ </div>
 
-      {/* Dam simulator */}
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
-        <div className="surface-elevated p-4 rounded-2xl">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase">
-              סכר במעלה הנהר · השפעה על המורד
-            </div>
-            <div className={cn('chip', sm.bg, sm.color, 'border-current/40')}>
-              <Icon name={status === 'normal' ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
-              <span className="font-mono">{sm.label}</span>
-            </div>
-          </div>
+ <div className="space-y-3">
+ <div className="surface-elevated p-5 rounded-2xl">
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
+ מידת סגירת הסכר
+ </div>
+ <div className="font-display font-bold text-3xl tabular-nums text-accent mb-3">
+ {damClosure}<span className="text-sm text-fg-muted ms-1">%</span>
+ </div>
+ <input
+type="range"
+min={0}
+max={100}
+step={5}
+value={damClosure}
+onChange={(e) => setDamClosure(Number(e.target.value))}
+className="w-full accent-accent"
+aria-label="סגירת סכר"
+ />
+ <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+ <span>פתוח</span>
+ <span>חלקי</span>
+ <span>סגור</span>
+ </div>
+ <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+ <div className="surface p-2 rounded-lg text-center">
+ <div className="text-[10px] font-mono text-fg-dim">זרימה במורד</div>
+ <div className="font-display font-bold text-lg text-accent tabular-nums">{downstreamFlow}%</div>
+ </div>
+ <div className="surface p-2 rounded-lg text-center">
+ <div className="text-[10px] font-mono text-fg-dim">מים במאגר</div>
+ <div className="font-display font-bold text-lg text-accent-cool tabular-nums">{damClosure}%</div>
+ </div>
+ </div>
+ </div>
 
-          <DamSimulator closure={damClosure} status={status} />
+ <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
+ <strong className="text-fg block mb-1">תרחיש:</strong>
+ סגירה ל-70% במשך 6 חודשים = מליוני אזרחים במדינת המורד ללא מים נקיים. מצוקה זו הובילה היסטורית למלחמות.
+ </div>
+ </div>
+ </div>
 
-          <p className={cn('text-sm leading-relaxed mt-3', sm.color)}>{sm.msg}</p>
-        </div>
+ <SoftDivider text="מקורות אנרגיה · גיאוגרפיה ואסטרטגיה" />
 
-        <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-2xl">
-            <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase mb-3">
-              מידת סגירת הסכר
-            </div>
-            <div className="font-display font-bold text-3xl tabular-nums text-accent mb-3">
-              {damClosure}<span className="text-sm text-fg-muted ms-1">%</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={damClosure}
-              onChange={(e) => setDamClosure(Number(e.target.value))}
-              className="w-full accent-accent"
-              aria-label="סגירת סכר"
-            />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
-              <span>פתוח</span>
-              <span>חלקי</span>
-              <span>סגור</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-              <div className="surface p-2 rounded-lg text-center">
-                <div className="text-[10px] font-mono text-fg-dim">זרימה במורד</div>
-                <div className="font-display font-bold text-lg text-accent tabular-nums">{downstreamFlow}%</div>
-              </div>
-              <div className="surface p-2 rounded-lg text-center">
-                <div className="text-[10px] font-mono text-fg-dim">מים במאגר</div>
-                <div className="font-display font-bold text-lg text-accent-cool tabular-nums">{damClosure}%</div>
-              </div>
-            </div>
-          </div>
+ {/* Energy source selector */}
+ <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+ {ENERGY_SOURCES.map((e) => {
+const isActive = activeEnergy === e.id;
+return (
+ <button
+key={e.id}
+onClick={() => setActiveEnergy(e.id)}
+className={cn(
+ 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
+isActive ? `${e.border} shadow-glow ${e.bg}` : 'hover:border-border-strong'
+ )}
+ >
+ <div className={cn('size-10 rounded-lg flex items-center justify-center border-2 shrink-0', e.border, e.bg)}>
+ <Icon name={e.icon} size={18} className={e.color} />
+ </div>
+ <div className="min-w-0">
+ <div className={cn('font-display font-bold text-sm leading-tight', isActive && e.color)}>
+ {e.label}
+ </div>
+ <div className="text-[10px] font-mono text-fg-dim">{e.english}</div>
+ </div>
+ </button>
+ );
+ })}
+ </div>
 
-          <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
-            <strong className="text-fg block mb-1">תרחיש:</strong>
-            סגירה ל-70% במשך 6 חודשים = מליוני אזרחים במדינת המורד ללא מים נקיים. מצוקה זו הובילה היסטורית למלחמות.
-          </div>
-        </div>
-      </div>
+ <AnimatePresence mode="wait">
+ <motion.div
+key={ePick.id}
+initial={{ opacity: 0, y: 8 }}
+animate={{ opacity: 1, y: 0 }}
+exit={{ opacity: 0, y: -8 }}
+transition={{ duration: 0.25 }}
+className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-6', ePick.border.replace('border-', 'border-r-'))}
+ >
+ <div className="flex items-center gap-3 mb-4">
+ <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', ePick.border, ePick.bg)}>
+ <Icon name={ePick.icon} size={22} className={ePick.color} />
+ </div>
+ <div>
+ <div className={cn('font-display font-bold text-xl leading-tight', ePick.color)}>{ePick.label}</div>
+ <div className="text-[10px] font-mono text-fg-dim mt-0.5">{ePick.english}</div>
+ </div>
+ </div>
 
-      <SoftDivider text="מקורות אנרגיה · גיאוגרפיה ואסטרטגיה" />
+ <div className="grid md:grid-cols-3 gap-4">
+ <div>
+ <div className={cn('text-sm font-display font-semibold mb-1.5 tracking-wider', ePick.color)}>פריסה גיאוגרפית</div>
+ <p className="text-sm text-fg leading-relaxed">{ePick.geo}</p>
+ </div>
+ <div>
+ <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">פגיעות מבצעית</div>
+ <p className="text-sm text-fg-muted leading-relaxed">{ePick.vulnerability}</p>
+ </div>
+ <div>
+ <div className="text-sm font-display font-semibold text-accent-hover mb-1.5 tracking-wider">ערך אסטרטגי</div>
+ <p className="text-sm text-fg leading-relaxed">{ePick.strategic}</p>
+ </div>
+ </div>
+ </motion.div>
+ </AnimatePresence>
 
-      {/* Energy source selector */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
-        {ENERGY_SOURCES.map((e) => {
-          const isActive = activeEnergy === e.id;
-          return (
-            <button
-              key={e.id}
-              onClick={() => setActiveEnergy(e.id)}
-              className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? `${e.border} shadow-glow ${e.bg}` : 'hover:border-border-strong'
-              )}
-            >
-              <div className={cn('size-10 rounded-lg flex items-center justify-center border-2 shrink-0', e.border, e.bg)}>
-                <Icon name={e.icon} size={18} className={e.color} />
-              </div>
-              <div className="min-w-0">
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && e.color)}>
-                  {e.label}
-                </div>
-                <div className="text-[10px] font-mono text-fg-dim">{e.english}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={ePick.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-6', ePick.border.replace('border-', 'border-r-'))}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', ePick.border, ePick.bg)}>
-              <Icon name={ePick.icon} size={22} className={ePick.color} />
-            </div>
-            <div>
-              <div className={cn('font-display font-bold text-xl leading-tight', ePick.color)}>{ePick.label}</div>
-              <div className="text-[10px] font-mono text-fg-dim mt-0.5">{ePick.english}</div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <div className={cn('text-[10px] font-mono mb-1.5 tracking-widest uppercase', ePick.color)}>פריסה גיאוגרפית</div>
-              <p className="text-sm text-fg leading-relaxed">{ePick.geo}</p>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono text-fg-dim mb-1.5 tracking-widest uppercase">פגיעות מבצעית</div>
-              <p className="text-sm text-fg-muted leading-relaxed">{ePick.vulnerability}</p>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono text-accent mb-1.5 tracking-widest uppercase">ערך אסטרטגי</div>
-              <p className="text-sm text-fg leading-relaxed">{ePick.strategic}</p>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="surface-elevated p-6 rounded-2xl border-r-4 border-r-accent">
-        <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-            <Icon name="spark" size={22} className="text-accent" />
-          </div>
-          <div className="flex-1">
-            <div className="text-xs font-mono text-accent mb-1 tracking-widest uppercase">
-              מגמת המאה ה-21
-            </div>
-            <h3 className="font-display font-bold text-lg mb-2 leading-tight">
-              מרכוז ➜ ביזור · מתלות לעצמאות אנרגטית
-            </h3>
-            <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-              במאה ה-20, אנרגיה הייתה <strong className="text-fg">מרוכזת גיאוגרפית</strong> (נפט במזרח התיכון, גז ברוסיה). זה ייצר תלות, ולחץ פוליטי.
-              מדינות מערביות מנסות לעבור ל<strong className="text-fg">ביזור</strong>: שדות סולאריים בכל אזור, "עמקי מימן" בנגב ובאוסטרליה, אגירת חשמל מקומית.
-              <strong className="text-fg block mt-1.5">המטרה:</strong> שאף מדינה אחת לא תוכל לזעזע אותך באמברגו או בפיצוץ צינור.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+ <div className="">
+ <div className="flex gap-4 items-start">
+ <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
+ <Icon name="spark" size={22} className="text-accent" />
+ </div>
+ <div className="flex-1">
+ <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ מגמת המאה ה-21
+ </div>
+ <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+ מרכוז ➜ ביזור · מתלות לעצמאות אנרגטית
+ </h3>
+ <p className="text-sm text-fg-muted leading-relaxed text-pretty">
+ במאה ה-20, אנרגיה הייתה <strong className="text-fg">מרוכזת גיאוגרפית</strong> (נפט במזרח התיכון, גז ברוסיה). זה ייצר תלות, ולחץ פוליטי.
+ מדינות מערביות מנסות לעבור ל<strong className="text-fg">ביזור</strong>: שדות סולאריים בכל אזור,"עמקי מימן" בנגב ובאוסטרליה, אגירת חשמל מקומית.
+ <strong className="text-fg block mt-1.5">המטרה:</strong> שאף מדינה אחת לא תוכל לזעזע אותך באמברגו או בפיצוץ צינור.
+ </p>
+ </div>
+ </div>
+ </div>
+ </section>
+ );
 }
-
 function DamSimulator({ closure, status }: { closure: number; status: 'normal' | 'reduced' | 'critical' | 'crisis' }) {
-  const reservoirHeight = 8 + (closure / 100) * 18;
-  const downstreamOpacity = (100 - closure) / 100;
+const reservoirHeight = 8 + (closure / 100) * 18;
+const downstreamOpacity = (100 - closure) / 100;
+return (
+ <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+ <svg viewBox="0 0 100 56" className="w-full h-full">
+ <defs>
+ <linearGradient id="sky-dam" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0%" stopColor="#dde6f0" />
+ <stop offset="100%" stopColor="#f0f4f9" />
+ </linearGradient>
+ <linearGradient id="reservoir" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0%" stopColor="var(--terrain-sky)" stopOpacity="0.6" />
+ <stop offset="100%" stopColor="var(--accent-cool)" stopOpacity="0.85" />
+ </linearGradient>
+ </defs>
 
-  return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="sky-dam" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#f0f4f9" />
-          </linearGradient>
-          <linearGradient id="reservoir" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--terrain-sky)" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="var(--accent-cool)" stopOpacity="0.85" />
-          </linearGradient>
-        </defs>
+ <rect x="0" y="0" width="100" height="56" fill="url(#sky-dam)" />
 
-        <rect x="0" y="0" width="100" height="56" fill="url(#sky-dam)" />
+ {/* Upstream country (mountainous) */}
+ <path d="M0 36 L10 22 L18 28 L28 18 L38 26 L45 30 L45 56 L0 56 Z" className="fill-terrain-ridge/30 stroke-terrain-ridge/60" strokeWidth="0.3" />
 
-        {/* Upstream country (mountainous) */}
-        <path d="M0 36 L10 22 L18 28 L28 18 L38 26 L45 30 L45 56 L0 56 Z" className="fill-terrain-ridge/30 stroke-terrain-ridge/60" strokeWidth="0.3" />
+ {/* Reservoir water (behind the dam) */}
+ <rect
+x="38"
+y={42 - reservoirHeight}
+width="10"
+height={reservoirHeight}
+fill="url(#reservoir)"
+ />
+ {/* Water surface waves */}
+ {[40, 43, 46].map((x, i) => (
+ <path
+key={i}
+d={`M${x} ${43 - reservoirHeight + i * 0.3} q 0.6 -0.7 1.2 0 t 1.2 0`}
+fill="none"
+className="stroke-terrain-sky"
+strokeWidth="0.15"
+opacity="0.5"
+ />
+ ))}
 
-        {/* Reservoir water (behind the dam) */}
-        <rect
-          x="38"
-          y={42 - reservoirHeight}
-          width="10"
-          height={reservoirHeight}
-          fill="url(#reservoir)"
-        />
-        {/* Water surface waves */}
-        {[40, 43, 46].map((x, i) => (
-          <path
-            key={i}
-            d={`M${x} ${43 - reservoirHeight + i * 0.3} q 0.6 -0.7 1.2 0 t 1.2 0`}
-            fill="none"
-            className="stroke-terrain-sky"
-            strokeWidth="0.15"
-            opacity="0.5"
-          />
-        ))}
+ {/* Dam structure */}
+ <rect x="47" y="20" width="3.5" height="22" rx="0.3" className="fill-terrain-ridge stroke-fg" strokeWidth="0.3" />
+ {/* Dam gates */}
+ <rect x="47.4" y="35" width="1.3" height="6" className="fill-fg/40" />
+ <rect x="49" y="35" width="1.3" height="6" className="fill-fg/40" />
+ <text
+x="48.8"
+y="16"
+textAnchor="middle"
+className="fill-terrain-ridge font-display font-bold"
+fontSize="3"
+paintOrder="stroke"
+stroke="#ffffff"
+strokeWidth="0.95"
+strokeLinejoin="round"
+ >
+ סכר
+ </text>
 
-        {/* Dam structure */}
-        <rect x="47" y="20" width="3.5" height="22" rx="0.3" className="fill-terrain-ridge stroke-fg" strokeWidth="0.3" />
-        {/* Dam gates */}
-        <rect x="47.4" y="35" width="1.3" height="6" className="fill-fg/40" />
-        <rect x="49" y="35" width="1.3" height="6" className="fill-fg/40" />
-        <text
-          x="48.8"
-          y="16"
-          textAnchor="middle"
-          className="fill-terrain-ridge font-display font-bold"
-          fontSize="3"
-          paintOrder="stroke"
-          stroke="#ffffff"
-          strokeWidth="0.95"
-          strokeLinejoin="round"
-        >
-          סכר
-        </text>
+ {/* Closure indicator on the dam */}
+ <rect x="47.4" y="35" width="2.9" height={6 * (closure / 100)} className="fill-status-danger/70" />
 
-        {/* Closure indicator on the dam */}
-        <rect x="47.4" y="35" width="2.9" height={6 * (closure / 100)} className="fill-status-danger/70" />
+ {/* Downstream river (becomes thinner as dam closes) */}
+ <motion.path
+d={`M50.5 ${42 - 1.5} Q 65 ${42 - 0.5} 80 ${42} Q 90 ${42 + 0.5} 100 ${42 + 0.5}`}
+fill="none"
+className={status === 'crisis' ? 'stroke-status-danger' : status === 'critical' ? 'stroke-accent-hot' : status === 'reduced' ? 'stroke-status-warn' : 'stroke-terrain-sky'}
+strokeWidth={Math.max(0.5, 3 * downstreamOpacity)}
+opacity={Math.max(0.3, downstreamOpacity)}
+ />
 
-        {/* Downstream river (becomes thinner as dam closes) */}
-        <motion.path
-          d={`M50.5 ${42 - 1.5} Q 65 ${42 - 0.5} 80 ${42} Q 90 ${42 + 0.5} 100 ${42 + 0.5}`}
-          fill="none"
-          className={status === 'crisis' ? 'stroke-status-danger' : status === 'critical' ? 'stroke-accent-hot' : status === 'reduced' ? 'stroke-status-warn' : 'stroke-terrain-sky'}
-          strokeWidth={Math.max(0.5, 3 * downstreamOpacity)}
-          opacity={Math.max(0.3, downstreamOpacity)}
-        />
+ {/* Downstream country (lower, dependent) */}
+ <path d="M55 56 L55 44 L65 44 L75 46 L85 45 L100 47 L100 56 Z" className="fill-terrain-sand/30 stroke-terrain-sand/60" strokeWidth="0.3" />
 
-        {/* Downstream country (lower, dependent) */}
-        <path d="M55 56 L55 44 L65 44 L75 46 L85 45 L100 47 L100 56 Z" className="fill-terrain-sand/30 stroke-terrain-sand/60" strokeWidth="0.3" />
+ {/* Cities / population markers downstream */}
+ {[68, 78, 88].map((x, i) => {
+const isWilting = closure > 50;
+return (
+ <g key={i}>
+ <rect x={x - 1.4} y={42 + 2} width="2.8" height="3" rx="0.3" className={isWilting ? 'fill-status-warn/70' : 'fill-fg/50'} />
+ <rect x={x - 1} y={42 + 2.4} width="0.6" height="1" className="fill-bg" />
+ <rect x={x - 0.1} y={42 + 2.4} width="0.6" height="1" className="fill-bg" />
+ <rect x={x + 0.5} y={42 + 2.4} width="0.6" height="1" className="fill-bg" />
+ </g>
+ );
+ })}
 
-        {/* Cities / population markers downstream */}
-        {[68, 78, 88].map((x, i) => {
-          const isWilting = closure > 50;
-          return (
-            <g key={i}>
-              <rect x={x - 1.4} y={42 + 2} width="2.8" height="3" rx="0.3" className={isWilting ? 'fill-status-warn/70' : 'fill-fg/50'} />
-              <rect x={x - 1} y={42 + 2.4} width="0.6" height="1" className="fill-bg" />
-              <rect x={x - 0.1} y={42 + 2.4} width="0.6" height="1" className="fill-bg" />
-              <rect x={x + 0.5} y={42 + 2.4} width="0.6" height="1" className="fill-bg" />
-            </g>
-          );
-        })}
+ {/* Crops / fields (wilting as water decreases) */}
+ {[60, 64, 72, 76, 82, 86, 92].map((x, i) => {
+const isWilting = closure > 30;
+return (
+ <line
+key={i}
+x1={x}
+y1="49"
+x2={x + 0.3}
+y2={47 + (isWilting ? 1.5 : 0)}
+className={isWilting ? 'stroke-status-warn' : 'stroke-status-ok'}
+strokeWidth="0.5"
+opacity={isWilting ? 0.5 : 0.8}
+ />
+ );
+ })}
 
-        {/* Crops / fields (wilting as water decreases) */}
-        {[60, 64, 72, 76, 82, 86, 92].map((x, i) => {
-          const isWilting = closure > 30;
-          return (
-            <line
-              key={i}
-              x1={x}
-              y1="49"
-              x2={x + 0.3}
-              y2={47 + (isWilting ? 1.5 : 0)}
-              className={isWilting ? 'stroke-status-warn' : 'stroke-status-ok'}
-              strokeWidth="0.5"
-              opacity={isWilting ? 0.5 : 0.8}
-            />
-          );
-        })}
+ {/* Labels */}
+ <text x="20" y="9" textAnchor="middle" className="fill-fg-dim font-display font-bold font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
+ מדינת המעלה
+ </text>
+ <text x="80" y="9" textAnchor="middle" className="fill-fg-dim font-display font-bold font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
+ מדינת המורד · תלויה
+ </text>
 
-        {/* Labels */}
-        <text x="20" y="9" textAnchor="middle" className="fill-fg-dim font-mono font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-          מדינת המעלה
-        </text>
-        <text x="80" y="9" textAnchor="middle" className="fill-fg-dim font-mono font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-          מדינת המורד · תלויה
-        </text>
-
-        {/* Flow indicator (animated water droplets when flow exists) */}
-        {downstreamOpacity > 0.2 && (
-          <motion.circle
-            r="0.7"
-            className="fill-terrain-sky"
-            animate={{ offsetDistance: ['0%', '100%'] }}
-            transition={{ duration: 4 / Math.max(0.3, downstreamOpacity), repeat: Infinity, ease: 'linear' }}
-            style={{
-              offsetPath: 'path("M50.5 40.5 Q 65 41.5 80 42 Q 90 42.5 100 42.5")',
-            }}
-          />
-        )}
-      </svg>
-    </div>
-  );
+ {/* Flow indicator (animated water droplets when flow exists) */}
+ {downstreamOpacity > 0.2 && (
+ <motion.circle
+r="0.7"
+className="fill-terrain-sky"
+animate={{ offsetDistance: ['0%', '100%'] }}
+transition={{ duration: 4 / Math.max(0.3, downstreamOpacity), repeat: Infinity, ease: 'linear' }}
+style={{
+offsetPath: 'path("M50.5 40.5 Q 65 41.5 80 42 Q 90 42.5 100 42.5")',
+ }}
+ />
+ )}
+ </svg>
+ </div>
+ );
 }
-
 function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
-    </div>
-  );
+return (
+ <div className="my-12 flex items-center gap-4">
+ <div className="h-px flex-1 bg-border-subtle" />
+ <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
+ <div className="h-px flex-1 bg-border-subtle" />
+ </div>
+ );
 }

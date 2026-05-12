@@ -247,7 +247,7 @@ function ComparisonMatrix() {
           <tr>
             <th
               scope="col"
-              className="hidden sm:table-cell pb-4 px-3 text-right text-xs font-mono text-fg-dim tracking-widest uppercase whitespace-nowrap align-bottom w-[110px]"
+              className="hidden sm:table-cell pb-4 px-3 text-right text-sm font-display font-semibold text-fg-muted tracking-wider whitespace-nowrap align-bottom w-[110px]"
             >
               ממד
             </th>
@@ -293,7 +293,7 @@ function ComparisonMatrix() {
             <tr key={row.key}>
               <th
                 scope="row"
-                className="hidden sm:table-cell py-4 px-3 text-right align-top text-xs font-mono text-fg-dim tracking-widest uppercase whitespace-nowrap border-t border-border-subtle"
+                className="hidden sm:table-cell py-4 px-3 text-right align-top text-sm font-display font-semibold text-fg-muted tracking-wider whitespace-nowrap border-t border-border-subtle"
               >
                 {row.label}
               </th>
@@ -304,7 +304,7 @@ function ComparisonMatrix() {
                     key={id}
                     className="py-4 px-3 text-right align-top leading-relaxed border-t border-border-subtle"
                   >
-                    <div className="sm:hidden text-[10px] font-mono text-fg-dim mb-1.5 tracking-widest uppercase">
+                    <div className="sm:hidden text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">
                       {row.label}
                     </div>
                     <span
@@ -384,7 +384,7 @@ function ScenarioPool({
   const [isOver, setIsOver] = useState(false);
 
   return (
-    <div
+    <motion.div
       onDragOver={(e) => {
         e.preventDefault();
         setIsOver(true);
@@ -397,19 +397,21 @@ function ScenarioPool({
         if (!Number.isNaN(idx)) onMoveScenario(idx, null);
         setIsOver(false);
       }}
+      animate={{ scale: isOver ? 1.005 : 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'surface-elevated p-4 mb-6 rounded-2xl border-2 border-dashed transition-all',
-        isOver ? 'border-accent shadow-glow bg-accent/5' : 'border-border'
+        'bg-bg-elevated p-4 mb-6 rounded-xl border transition-colors duration-200',
+        isOver ? 'border-brand shadow-elevated' : 'border-border',
       )}
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">
+        <div className="text-sm font-display font-semibold text-fg tracking-wider">
           {pool.length > 0
-            ? `אירועים למיון (${pool.length})`
-            : '✓ כל המשפטים סווגו לקטגוריות'}
+            ? `אירועים למיון · ${pool.length}`
+            : '✓ כל המשפטים סווגו'}
         </div>
         {pool.length > 0 && (
-          <div className="text-[10px] font-mono text-fg-dim">
+          <div className="text-xs text-fg-muted">
             גרור משפט לאחת מ־3 הקטגוריות למטה
           </div>
         )}
@@ -435,7 +437,7 @@ function ScenarioPool({
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -456,9 +458,10 @@ function CategoryBin({
 }) {
   const [isOver, setIsOver] = useState(false);
   const meta = LEVELS[level];
+  const isWaitingForTap = selectedScenario != null && scenariosInBin.length === 0;
 
   return (
-    <div
+    <motion.div
       onDragOver={(e) => {
         e.preventDefault();
         setIsOver(true);
@@ -476,53 +479,83 @@ function CategoryBin({
           onMoveScenario(selectedScenario, level);
         }
       }}
+      animate={{ scale: isOver ? 1.015 : 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'surface-elevated rounded-2xl border-2 transition-all flex flex-col',
-        meta.borderActive,
-        isOver && 'shadow-glow scale-[1.01]',
-        selectedScenario != null && 'cursor-pointer hover:shadow-glow'
+        'relative bg-bg-elevated rounded-xl overflow-hidden flex flex-col transition-colors duration-200',
+        'border',
+        isOver
+          ? cn(meta.borderActive, 'shadow-elevated')
+          : isWaitingForTap
+            ? cn(meta.borderActive, 'cursor-pointer')
+            : 'border-border',
       )}
     >
-      <div className={cn('flex items-center gap-2.5 p-3 border-b-2', meta.borderActive, meta.bgActive)}>
-        <div
+      {/* Header */}
+      <div className="flex items-center gap-3 p-3 pr-4">
+        <span
           className={cn(
-            'size-9 rounded-lg flex items-center justify-center border-2 shrink-0',
-            meta.borderActive,
-            'bg-bg-card'
+            'grid place-items-center size-10 rounded-lg shrink-0',
+            meta.bgActive,
           )}
         >
-          <Icon name={meta.zoomIcon} size={18} className={meta.text} />
-        </div>
+          <Icon name={meta.zoomIcon} size={20} className={meta.text} />
+        </span>
         <div className="flex-1 min-w-0">
           <div className={cn('font-display font-bold leading-tight', meta.text)}>
             {meta.label}
           </div>
-          <div className="text-[10px] font-mono text-fg-dim mt-0.5">
-            {scenariosInBin.length} {scenariosInBin.length === 1 ? 'משפט' : 'משפטים'}
+          <div className="text-[11px] text-fg-muted mt-0.5">
+            {scenariosInBin.length === 0
+              ? 'ריק · מחכה למיון'
+              : `${scenariosInBin.length} ${scenariosInBin.length === 1 ? 'משפט' : 'משפטים'}`}
           </div>
         </div>
       </div>
 
-      <div className="p-3 flex-1 min-h-[140px]">
+      {/* Body */}
+      <div className="p-3 pt-0 flex-1 min-h-[140px]">
         {scenariosInBin.length === 0 ? (
-          <div
-            className={cn(
-              'h-full min-h-[120px] rounded-xl border-2 border-dashed flex items-center justify-center text-center px-3 transition-colors',
-              isOver
-                ? 'border-accent bg-accent/10'
-                : selectedScenario != null
-                ? 'border-accent/40 text-accent'
-                : 'border-border text-fg-dim'
-            )}
+          <motion.div
+            animate={{
+              backgroundColor: isOver
+                ? 'rgba(116, 156, 117, 0.10)'
+                : isWaitingForTap
+                  ? 'rgba(235, 158, 72, 0.06)'
+                  : 'rgba(0, 0, 0, 0.015)',
+            }}
+            className="h-full min-h-[120px] rounded-lg flex flex-col items-center justify-center gap-2 transition-colors"
           >
-            <span className="text-xs font-mono tracking-widest uppercase">
-              {isOver
-                ? 'שחרר כאן'
-                : selectedScenario != null
-                ? `הקש כדי לשבץ כאן`
-                : 'גרור משפט לכאן'}
+            <motion.span
+              animate={{
+                rotate: isOver ? 90 : 0,
+                scale: isOver ? 1.1 : 1,
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+              className={cn(
+                'inline-flex',
+                isOver ? meta.text : isWaitingForTap ? 'text-accent-hover' : 'text-fg-dim',
+              )}
+            >
+              <Icon
+                name={isOver ? 'check' : 'arrow-left'}
+                size={18}
+                strokeWidth={2.5}
+              />
+            </motion.span>
+            <span
+              className={cn(
+                'text-sm font-display font-semibold tracking-wider',
+                isOver
+                  ? meta.text
+                  : isWaitingForTap
+                    ? 'text-accent-hover'
+                    : 'text-fg-muted',
+              )}
+            >
+              {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גרור לכאן'}
             </span>
-          </div>
+          </motion.div>
         ) : (
           <div className="space-y-2">
             {scenariosInBin.map(({ s, i }) => {
@@ -545,7 +578,7 @@ function CategoryBin({
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

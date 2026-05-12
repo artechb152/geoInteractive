@@ -45,20 +45,20 @@ export function SceneProgress() {
 
   return (
     <aside
-      className="hidden xl:flex fixed start-4 2xl:start-8 top-1/2 -translate-y-1/2 z-20 flex-col gap-1 pointer-events-auto"
+      className="hidden 2xl:flex fixed start-4 top-1/2 -translate-y-1/2 z-20 flex-col gap-0.5 pointer-events-auto"
       aria-label="ניווט סצנות"
     >
-      <div className="mb-3 ps-6">
-        <div className="text-xs font-mono text-fg-dim tracking-widest uppercase mb-1">
+      <div className="mb-2 ps-5">
+        <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-1">
           התקדמות
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="font-display font-bold text-2xl text-accent tabular-nums">
+          <span className="font-display font-bold text-xl text-accent tabular-nums">
             {active + 1}
           </span>
           <span className="text-fg-dim text-sm">/ {SCENES.length}</span>
         </div>
-        <div className="mt-2 h-0.5 w-20 rounded-full bg-bg-accent overflow-hidden">
+        <div className="mt-1.5 h-0.5 w-16 rounded-full bg-bg-accent overflow-hidden">
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-accent to-accent-cool"
             animate={{ width: `${pct}%` }}

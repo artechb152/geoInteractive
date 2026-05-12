@@ -38,8 +38,8 @@ const FAQS: { q: string; a: string }[] = [
 
 export function FAQ() {
   return (
-    <section id="faq" aria-labelledby="faq-title" className="relative py-20 md:py-28">
-      <div className="max-w-4xl mx-auto px-6">
+    <section id="faq" aria-labelledby="faq-title" className="relative py-10 md:py-14">
+      <div className="max-w-3xl mx-auto px-6">
         <Reveal className="max-w-2xl">
           <span className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider text-fg-muted mb-5">
             <span className="size-2 rounded-full bg-brand" aria-hidden />
@@ -47,13 +47,13 @@ export function FAQ() {
           </span>
           <h2
             id="faq-title"
-            className="font-display font-bold tracking-tight text-balance leading-[1.1] text-[clamp(1.875rem,4vw,3rem)]"
+            className="font-display font-bold tracking-tight text-balance leading-[1.1] text-[clamp(1.5rem,3vw,2.25rem)]"
           >
             כל מה שצריך לדעת
             <br className="hidden sm:block" />
             <span className="text-brand-dark">לפני שמתחילים</span>.
           </h2>
-          <p className="mt-5 text-base md:text-lg text-fg-muted leading-relaxed text-pretty">
+          <p className="mt-3 text-sm md:text-base text-fg-muted leading-relaxed text-pretty">
             אספנו את השאלות שמגיעות הכי הרבה לפני ההצטרפות לקורס.
           </p>
         </Reveal>
@@ -62,7 +62,7 @@ export function FAQ() {
           <AccordionPrimitive.Root
             type="single"
             collapsible
-            className="mt-12 flex flex-col gap-3"
+            className="mt-8 flex flex-col gap-2"
           >
             {FAQS.map((item, i) => (
               <AccordionPrimitive.Item
@@ -87,7 +87,7 @@ export function FAQ() {
                 <AccordionPrimitive.Header className="flex">
                   <AccordionPrimitive.Trigger
                     className={cn(
-                      'w-full px-5 py-5 md:px-6 md:py-6 text-right flex items-center gap-4',
+                      'w-full px-4 py-3.5 md:px-5 md:py-4 text-right flex items-center gap-4',
                       'transition-colors duration-200',
                       'hover:bg-bg-accent/40 focus-visible:outline-none focus-visible:bg-bg-accent/50',
                       'group-data-[state=open]:pb-3 group-data-[state=open]:hover:bg-transparent',
@@ -99,7 +99,7 @@ export function FAQ() {
 
                     <span
                       className={cn(
-                        'flex-1 min-w-0 font-display font-semibold text-base md:text-lg leading-snug text-balance',
+                        'flex-1 min-w-0 font-display font-semibold text-[15px] md:text-base leading-snug text-balance',
                         'text-fg transition-colors duration-200',
                         'group-data-[state=open]:text-brand-dark',
                       )}
@@ -130,7 +130,7 @@ export function FAQ() {
                     'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down',
                   )}
                 >
-                  <div className="px-5 md:px-6 pb-5 md:pb-6 pt-1 text-fg-muted leading-relaxed text-pretty">
+                  <div className="px-4 md:px-5 pb-3.5 md:pb-4 pt-1 text-fg-muted leading-relaxed text-pretty">
                     {/* Indent to align with question text, past the Q·NN gutter */}
                     <div className="pr-[3.25rem] md:pr-[3.5rem]">{item.a}</div>
                   </div>

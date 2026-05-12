@@ -77,7 +77,7 @@ export function HookScene() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.6, duration: 0.8 }}
-          className="mt-16 flex flex-col items-center gap-3 text-fg-dim text-[10px] font-mono tracking-widest uppercase"
+          className="mt-16 flex flex-col items-center gap-3 text-fg-muted text-sm font-display font-semibold tracking-wider"
         >
           <span>גלול להתחלת המשימה</span>
           <motion.div

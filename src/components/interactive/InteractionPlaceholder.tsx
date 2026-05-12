@@ -87,17 +87,17 @@ const META: Record<
 export function InteractionPlaceholder({ kind }: { kind: InteractionKind }) {
   const m = META[kind];
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="space-y-2">
         <div className="text-sm font-mono text-accent">תרגול אינטראקטיבי</div>
-        <h2 className="text-3xl font-bold text-balance">{m.title}</h2>
+        <h2 className="text-2xl font-bold text-balance">{m.title}</h2>
         <p className="text-fg-muted text-pretty leading-relaxed">{m.description}</p>
       </header>
 
       <div className="surface-elevated relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern bg-grid opacity-20" />
-        <div className="relative aspect-[16/9] flex flex-col items-center justify-center p-10 text-center">
-          <div className="text-7xl mb-4 opacity-80">{m.preview.split(' ')[0]}</div>
+        <div className="relative aspect-[16/9] flex flex-col items-center justify-center p-6 text-center">
+          <div className="text-6xl mb-3 opacity-80">{m.preview.split(' ')[0]}</div>
           <div className="text-fg-muted text-sm max-w-md">
             {m.preview.split(' ').slice(1).join(' ')}
           </div>

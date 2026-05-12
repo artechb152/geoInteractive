@@ -96,7 +96,7 @@ function CompletionBanner() {
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
+          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
             כל הכבוד · סיימת את שיעור ה-GIS — וגם את הקורס כולו!
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
@@ -120,7 +120,7 @@ function FinalCard() {
       <div className="absolute -start-20 -bottom-20 size-56 rounded-full bg-accent-cool/15 blur-3xl pointer-events-none" />
 
       <div className="relative">
-        <div className="text-xs font-mono text-accent mb-2 tracking-widest uppercase">
+        <div className="text-sm font-display font-semibold text-accent-hover mb-2 tracking-wider">
           הקורס הסתיים
         </div>
         <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3">

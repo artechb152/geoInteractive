@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
 type VegId = 'herbaceous' | 'batta' | 'griga' | 'forest';
-type Season = 'winter' | 'summer';
 
 type VegType = {
   id: VegId;
@@ -28,11 +28,11 @@ const VEGETATION: VegType[] = [
     label: 'עשבוני / חד־שנתי',
     english: 'Herbaceous / Annual',
     height: 'עד 0.3 מ\'',
-    winter: 'ירוק עז ובהיר אחרי נביטה — קל לזהות שטחים מסוקלים ושבילי מרעולים.',
-    summer: 'מתייבש לחלוטין. הצבע הופך לחום-זהוב והקרקע חשופה. סכנת שריפה.',
-    cover: 'אפס. גובה נמוך מדי לעצור אש או רסיסים.',
-    concealment: 'נמוכה. רק לשכיבה — בהליכה נחשפים מיד.',
-    mobility: 'מצוינת. אין מכשולים. רק"ם נע בחופשיות.',
+    winter: 'צבוע בירוק בהיר לאחר הנביטה. בעונה זו קל לזהות שטחים שנוקו מאבנים (מסוקלים) ושבילים צרים שנוצרו על ידי חיות או רועי צאן (מרעולים).',
+    summer: 'הצמחייה מתייבשת לחלוטין והופכת לזהובה-חומה. הקרקע נחשפת ויש סכנת שריפות גבוהה.',
+    cover: 'אפסי. הצמחייה נמוכה מדי ולא מסוגלת להגן פיזית מפני פגיעות אש או רסיסים.',
+    concealment: 'נמוכה. מספקת הסתרה רק כששוכבים על הקרקע — אדם שהולך או רץ ייחשף מיד.',
+    mobility: 'מצוינת. השטח פתוח ללא מכשולים, וכלים כבדים (כמו טנקים ונגמ"שים) יכולים לנוע בחופשיות.',
     density: 1,
   },
   {
@@ -40,11 +40,11 @@ const VEGETATION: VegType[] = [
     label: 'בתה',
     english: 'Batha',
     height: 'עד 0.5 מ\'',
-    winter: 'משלב עשבוני ובני־שיח נמוכים. שינוי עונתי בולט בצבע.',
-    summer: 'שיחים שורדים אך עשבים מתייבשים. רואים שבילים ומרעולים בבירור.',
-    cover: 'מינימלי. מסת השיחים קטנה מדי לעצור כדורים.',
-    concealment: 'בינונית. מספקת כיסוי לכריעה ולזחילה — לא להליכה זקופה.',
-    mobility: 'טובה. כלים זחליליים עוברים, גלגליים זקוקים לנתיב מוסדר.',
+    winter: 'שילוב של עשבים ושיחים נמוכים (עד חצי מטר). בעונה זו יש שינוי צבע בולט לירוק.',
+    summer: 'השיחים נשארים, אך העשבים סביבם מתייבשים. בעונה זו קל לזהות שבילי הליכה בשטח.',
+    cover: 'מינימלי. השיחים קטנים וחלשים מכדי לעצור קליעים, כך שאין הגנה אמיתית.',
+    concealment: 'בינונית. מסתירה אדם שזוחל או כורע ברך, אך לא אדם שעומד או הולך רגיל.',
+    mobility: 'טובה. רכבים עם שרשראות זחל (כמו טנקים) יעברו בקלות, אך רכבים על גלגלים יזדקקו לדרך מסודרת.',
     density: 2,
   },
   {
@@ -52,11 +52,11 @@ const VEGETATION: VegType[] = [
     label: 'גריגה',
     english: 'Garigue',
     height: '0.5–2 מ\'',
-    winter: 'ירוק כהה ועז. לעיתים פריחה בסוף החורף ובאביב.',
-    summer: 'חום-אפור-ירקרק. צפיפות נשמרת — תכסית פעילה כל השנה.',
-    cover: 'משתנה. שיחי סירה ואלון מצוי יכולים לעצור רסיסים קטנים, לא כדורי 5.56.',
-    concealment: 'גבוהה. עומד תקוע — אויב 20 מ\' מולך לא רואה אותך.',
-    mobility: 'מוגבלת. כלי רגלי איטי, רק"ם נצמד לשבילים. דורש פריצה הנדסית.',
+    winter: 'ירוק כהה ועז, ולעיתים יש פריחה מורגשת בסוף החורף ובאביב.',
+    summer: 'הצבע הופך לחום-אפור עם מעט ירוק. השיחים שומרים על הצפיפות שלהם, כך שההסתרה נשמרת לאורך כל השנה.',
+    cover: 'משתנה. שיחים חזקים מסוימים (כמו אלון מצוי) עשויים לעצור רסיסים קטנים, אך לא יגנו מפני ירי של נשק קל.',
+    concealment: 'גבוהה. הצמחייה מספיק סבוכה כך שאפילו ממרחק של 20 מטרים יהיה קשה מאוד להבחין בכם.',
+    mobility: 'מוגבלת. התנועה הרגלית קשה ואיטית, ורכבים כבדים חייבים להיצמד לשבילים קיימים או שיידרשו דחפורים כדי לפלס להם דרך.',
     density: 3,
   },
   {
@@ -64,11 +64,11 @@ const VEGETATION: VegType[] = [
     label: 'חורש (סגור / חצי-סגור / פתוח)',
     english: 'Forest / Maquis',
     height: 'מעל 2 מ\' (עד 5–6 מ\')',
-    winter: 'ירוק עד / נשירים: שלכת חלקית. החופה מתעבה כלפי האביב.',
-    summer: 'חופה מלאה — בחורש סגור, חופות נוגעות זו בזו, הקרקע מוסתרת לחלוטין.',
-    cover: 'גזעי עצים עבים = מחסה מקומי. כל גזע = "סלע" של חי"ר.',
-    concealment: 'מקסימלית. גילוי מהאוויר כמעט בלתי אפשרי בחורש סגור.',
-    mobility: 'איטית מאוד. נתיב צר לרק"ם, חי"ר תלוי בשבילים. נקודות חנק בכל פינה.',
+    winter: 'עצים ירוקי-עד נשארים ירוקים, בעוד עצים נשירים עומדים בשלכת. לקראת האביב, צמרות העצים (החופה) מתמלאות ונסגרות.',
+    summer: 'צמרות מלאות לחלוטין. ביער סגור, הענפים מתחברים זה לזה ומסתירים לגמרי את הקרקע ממי שמסתכל מלמעלה.',
+    cover: 'טובה נקודתית. גזעי העצים העבים יכולים לשמש כמחסה ולתפקד כמו סלע שאפשר להסתתר מאחוריו ולהתגונן מירי.',
+    concealment: 'גבוהה ביותר. בחורש סגור, כמעט בלתי אפשרי לזהות תנועה ממבט מהאוויר (רחפנים או מטוסים).',
+    mobility: 'איטית מאוד. יש מעט מאוד שבילים לרכבים, וכוחות רגליים חייבים לנוע בטור צפוף. השטח מלא בנקודות חנק — אזורים צרים שקל לאויב לארוב בהם.',
     density: 4,
   },
 ];
@@ -89,8 +89,8 @@ const AGRICULTURE: AgType[] = [
     label: 'גידולי שדה (גד״ש)',
     english: 'Field Crops',
     icon: 'layers',
-    desc: 'צמחייה נמוכה וצפופה, עונתיות גבוהה, שינויי צבע מהירים. עיבוד והשקיה אינטנסיביים.',
-    ops: 'בקיץ — חשוף לחלוטין. בחורף — בוץ עמוק, עבירות לקויה. תנועה רגלית קלה, רק"ם תלוי בעונה.',
+    desc: 'שדות של צמחייה נמוכה וצפופה (כמו חיטה או תירס) המשתנה מאוד בהתאם לעונות השנה, עם צבעים שמתחלפים מהר. שטחים אלו מושקים ומעובדים באופן קבוע.',
+    ops: 'בקיץ השטח עלול להיות קצור וחשוף לגמרי ללא הסתרה. בחורף, לעומת זאת, האדמה הופכת לבוץ עמוק שמקשה מאוד על תנועת רכבים. הליכה ברגל היא קלה יחסית, אך תנועת כלי רכב כבדים תלויה בעונה ובמצב הקרקע.',
     examples: 'חיטה, תירס, חמניות, כותנה',
   },
   {
@@ -98,8 +98,8 @@ const AGRICULTURE: AgType[] = [
     label: 'מטעים מודרניים',
     english: 'Modern Orchards',
     icon: 'mountain',
-    desc: 'נטיעה בשורות סדורות עם רווחים. השקיה ופעילות אנושית מתמשכת לאורך שנים. גובה 3–4 מ\'.',
-    ops: 'מרווחי שורה מאפשרים תנועת רכב — אבל גם תיעול. עלווה מסתירה מתצפית אווירית. בחורף (נשירים) — חשיפה.',
+    desc: 'עצים הנטועים בשורות ישרות ומסודרות עם רווחים קבועים ביניהן, ומגיעים לרוב לגובה של 3-4 מטרים. השטח דורש תחזוקה שוטפת ונוכחות חקלאים לאורך כל השנה.',
+    ops: 'הרווחים בין השורות נוחים לתנועת רכבים, אך הם "מתעלים" את התנועה — כלומר, מכריחים לנוע בנתיבים ישרים וצפויים מראש. העלים (העלווה) מספקים הסתרה טובה ממבט מהאוויר בקיץ, אך בחורף, כשהעצים עומדים בשלכת, השטח נחשף לגמרי.',
     examples: 'הדרים, פרדסים, נשירים, בננות',
   },
   {
@@ -107,21 +107,20 @@ const AGRICULTURE: AgType[] = [
     label: 'חקלאות מסורתית',
     english: 'Traditional',
     icon: 'star',
-    desc: 'פיזור פחות סדור, מרווחים גדולים. טיפוח והשקיה מצומצמים. גילים מבוגרים — עצים גדולים.',
-    ops: 'אפשרות מעבר בין עצים. גזעים עבים = מחסה. נוכחות אזרחית עונתית (מסיק בסתיו).',
+    desc: 'נטיעה פחות מסודרת עם מרווחים גדולים יותר בין העצים (כמו בוסתנים ועצי זית). העצים לרוב בוגרים וגדולים, אך מקבלים פחות השקיה וטיפול שוטף בהשוואה למטעים המודרניים.',
+    ops: 'המרווחים הגדולים מאפשרים תנועה נוחה יחסית בין העצים. הגזעים העבים יכולים לשמש כמחסה מצוין מפני ירי. חשוב לקחת בחשבון נוכחות של אזרחים בעונות ספציפיות, כמו למשל בזמן מסיק הזיתים בסתיו.',
     examples: 'זיתים, בוסתן, גפן ותאנה',
   },
 ];
 
 const AG_TRIANGLE = [
-  { label: 'הצמח', desc: 'מין, גובה, תפרוסת חופה, קוצניות, נשיר או ירוק־עד.', icon: 'mountain' as IconName, color: 'text-status-ok' },
-  { label: 'פעילות האדם', desc: 'יישור, ניקוי, שתילה, גיזום, איסוף — לוח הזמנים העונתי שמושך אזרחים לשטח.', icon: 'people' as IconName, color: 'text-accent' },
-  { label: 'ארגון השטח', desc: 'טרסות, חומות, סוללות סיקול, בזנ"טים, גדרות, דרכי שירות, השקיה — תיעול תנועה.', icon: 'layers' as IconName, color: 'text-accent-cool' },
+  { label: 'הצמח', desc: 'המאפיינים הפיזיים של הצמחייה - סוג העץ, גובהו, רוחב הצמרת שלו, האם הוא קוצני, והאם הוא משיר עלים בחורף או נשאר ירוק כל השנה.', icon: 'mountain' as IconName, color: 'text-status-ok' },
+  { label: 'פעילות האדם', desc: 'העבודות שמתבצעות בשטח, כמו יישור הקרקע, שתילה, גיזום או קטיף. פעולות אלו יוצרות לוח זמנים עונתי שמושך אזרחים לאזור.', icon: 'people' as IconName, color: 'text-accent' },
+  { label: 'ארגון השטח', desc: 'התשתיות הפיזיות - מדרגות חקלאיות (טרסות), חומות, ערימות אבנים שפונו מהשדה (סוללות סיקול), עמודי מתכת, גדרות וצינורות השקיה. כל אלו עלולים להגביל את התנועה ולהכתיב נתיבים ספציפיים.', icon: 'layers' as IconName, color: 'text-accent-cool' },
 ];
 
 export function VegetationScene() {
   const [active, setActive] = useState<VegId>('herbaceous');
-  const [season, setSeason] = useState<Season>('winter');
   const [activeAg, setActiveAg] = useState<string>(AGRICULTURE[0].id);
 
   const meta = VEGETATION.find((v) => v.id === active)!;
@@ -137,19 +136,16 @@ export function VegetationScene() {
             <span className="gradient-text">צומח וחקלאות</span> — השכבה שמשנה הכל
           </>
         }
-        intro="המורפולוגיה אומרת לך איפה אפשר ללכת. הצומח אומר לך מה מסתתר שם, מי מסתתר שם, ואיך הקרב יתנהל. אותה גבעה — עם או בלי חורש — היא שני שדות קרב שונים לחלוטין."
+        intro="צורת פני השטח (התבליט) קובעת איפה נוח להתקדם, אבל הצמחייה היא זו שקובעת מי ומה יכול להסתתר שם. אותה גבעה בדיוק תיראה ותתפקד אחרת לגמרי אם היא חולית וחשופה או אם יש עליה יער צפוף."
       />
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">5 גורמים מעצבים צומח טבעי:</strong>{' '}
-            תבליט (גובה ומפנה שלוחה), מסלע וקרקע, אקלים, פעילות האדם.
-            <strong className="text-fg block mt-1.5">מפנה צפוני</strong> מקבל פחות שמש → צומח צפוף וגבוה.{' '}
-            <strong className="text-fg">מפנה דרומי</strong> חשוף → צומח דליל וגווני קרקע בהירים. זה אומר לכם מאיזה צד לטפס.
-          </div>
-        </div>
+      <div className="mb-6">
+        <InsightCard tone="cool" icon="spark" label="5 גורמים משפיעים על התפתחות הצומח בטבע">
+          המבנה הטופוגרפי (גובה וכיוון המדרון), סוג הסלע והקרקע, האקלים, ופעילות האדם.
+          <span className="block mt-2">
+            <strong className="text-fg">למשל:</strong> מדרון שפונה צפונה (נקרא "מפנה צפוני") מקבל פחות שמש ישירה, ולכן הצמחייה בו תהיה צפופה וגבוהה יותר. לעומתו, מדרון שפונה דרומה יהיה חשוף יותר לשמש, ולכן הצמחייה בו תהיה דלילה ונמוכה. ההבנה הזו יכולה לעזור לכם להחליט, למשל, מאיזה צד קל יותר לטפס או להסתתר.
+          </span>
+        </InsightCard>
       </div>
 
       {/* 4 vegetation types */}
@@ -165,7 +161,7 @@ export function VegetationScene() {
                 isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
               )}
             >
-              <VegSilhouette density={v.density} season={season} />
+              <VegSilhouette density={v.density} />
               <div className="flex items-baseline justify-between">
                 <div className={cn('font-display font-bold leading-tight', isActive && 'text-accent')}>
                   {v.label}
@@ -178,76 +174,39 @@ export function VegetationScene() {
         })}
       </div>
 
-      {/* Season toggle */}
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">עונה:</span>
-        <div className="flex gap-1 p-1 bg-bg-card border border-border rounded-xl">
-          {(['winter', 'summer'] as Season[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSeason(s)}
-              className={cn(
-                'px-4 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                season === s ? 'bg-accent text-bg shadow-glow' : 'text-fg-muted hover:text-fg'
-              )}
-            >
-              {s === 'winter' ? 'חורף' : 'קיץ'}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${meta.id}-${season}`}
+          key={meta.id}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="surface-elevated p-6 rounded-2xl border-r-4 border-r-accent mb-12"
+          className="mb-12"
         >
-          <div className="flex items-baseline justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-baseline justify-between mb-3 flex-wrap gap-3">
             <h3 className="font-display font-bold text-xl leading-tight">{meta.label}</h3>
             <div className="text-xs font-mono text-fg-dim">{meta.english} · {meta.height}</div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4 mb-5">
-            <div className="surface p-4 rounded-xl bg-terrain-sky/5 border-terrain-sky/30">
-              <div className="text-[10px] font-mono text-terrain-sky mb-1.5 tracking-widest uppercase">
-                בחורף
-              </div>
-              <p className="text-sm text-fg leading-relaxed">{meta.winter}</p>
-            </div>
-            <div className="surface p-4 rounded-xl bg-terrain-sand/10 border-terrain-sand/30">
-              <div className="text-[10px] font-mono text-terrain-sand mb-1.5 tracking-widest uppercase">
-                בקיץ
-              </div>
-              <p className="text-sm text-fg leading-relaxed">{meta.summer}</p>
-            </div>
+          <div className="grid sm:grid-cols-2 gap-3 mb-3">
+            <InsightCard tone="sky" label="בחורף">
+              {meta.winter}
+            </InsightCard>
+            <InsightCard tone="sand" label="בקיץ">
+              {meta.summer}
+            </InsightCard>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-3 pt-4 border-t border-border-subtle">
-            <div>
-              <div className="text-[10px] font-mono text-status-warn mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
-                <Icon name="shield" size={11} />
-                מחסה
-              </div>
-              <p className="text-xs text-fg-muted leading-relaxed">{meta.cover}</p>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono text-terrain-sky mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
-                <Icon name="eye" size={11} />
-                הסתרה
-              </div>
-              <p className="text-xs text-fg-muted leading-relaxed">{meta.concealment}</p>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono text-accent mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
-                <Icon name="truck" size={11} />
-                ניידות
-              </div>
-              <p className="text-xs text-fg-muted leading-relaxed">{meta.mobility}</p>
-            </div>
+          <div className="grid sm:grid-cols-3 gap-3">
+            <InsightCard tone="warn" icon="shield" label="מחסה">
+              {meta.cover}
+            </InsightCard>
+            <InsightCard tone="sky" icon="eye" label="הסתרה">
+              {meta.concealment}
+            </InsightCard>
+            <InsightCard tone="accent" icon="truck" label="ניידות">
+              {meta.mobility}
+            </InsightCard>
           </div>
         </motion.div>
       </AnimatePresence>
@@ -256,8 +215,7 @@ export function VegetationScene() {
 
       {/* Agriculture types */}
       <p className="text-sm text-fg-muted leading-relaxed text-pretty mb-5 max-w-3xl">
-        שטחים חקלאיים הם <strong className="text-fg">תכסית מלאכותית</strong> — מאופיינים בדפוסי זריעה סדורים, קרקע מעובדת ותשתיות
-        (דרכי שירות, השקיה, גידור). הם משפיעים על ניידות, הסתרה ועל נוכחות אזרחית בשטח.
+        שטחים חקלאיים נחשבים ל<strong className="text-fg">"תכסית מלאכותית"</strong> — כלומר, כיסוי שטח שנוצר והונדס על ידי בני אדם. הם מאופיינים בנטיעות מסודרות, קרקע חרושה ותשתיות כמו צינורות השקיה, גדרות ודרכי גישה. המאפיינים האלה משפיעים מאוד על היכולת לנוע ולהסתתר בתוכם, וחשוב לזכור שהם מושכים אליהם אזרחים (חקלאים) שעובדים בשטח.
       </p>
 
       <div className="grid md:grid-cols-3 gap-3 mb-6">
@@ -299,21 +257,15 @@ export function VegetationScene() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="surface-elevated p-6 rounded-2xl border-r-4 border-r-accent-cool mb-12"
+          className="mb-12"
         >
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <div className="text-[10px] font-mono text-accent-cool mb-1.5 tracking-widest uppercase">
-                מה זה בעצם
-              </div>
-              <p className="text-sm text-fg leading-relaxed">{agMeta.desc}</p>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono text-accent mb-1.5 tracking-widest uppercase">
-                משמעות מבצעית
-              </div>
-              <p className="text-sm text-fg-muted leading-relaxed">{agMeta.ops}</p>
-            </div>
+          <div className="grid md:grid-cols-2 gap-3">
+            <InsightCard tone="cool" label="מה זה בעצם">
+              {agMeta.desc}
+            </InsightCard>
+            <InsightCard tone="accent" label="משמעות מבצעית">
+              {agMeta.ops}
+            </InsightCard>
           </div>
         </motion.div>
       </AnimatePresence>
@@ -322,50 +274,39 @@ export function VegetationScene() {
 
       {/* Triangle model */}
       <div className="grid md:grid-cols-3 gap-3 mb-6">
-        {AG_TRIANGLE.map((t, i) => (
-          <motion.div
-            key={t.label}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 rounded-xl"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="size-9 rounded-xl bg-bg-accent border border-border flex items-center justify-center">
-                <Icon name={t.icon} size={18} className={t.color} />
-              </div>
-              <div>
-                <div className={cn('text-[10px] font-mono mb-0.5 tracking-widest uppercase', t.color)}>
-                  שכבה {i + 1}
-                </div>
-                <div className="font-display font-bold leading-tight">{t.label}</div>
-              </div>
-            </div>
-            <p className="text-xs text-fg-muted leading-relaxed">{t.desc}</p>
-          </motion.div>
-        ))}
+        {AG_TRIANGLE.map((t, i) => {
+          const tone =
+            t.color === 'text-status-ok' ? 'ok'
+            : t.color === 'text-accent-cool' ? 'cool'
+            : 'accent';
+          return (
+            <InsightCard
+              key={t.label}
+              tone={tone}
+              icon={t.icon}
+              label={`שכבה ${i + 1}`}
+              title={t.label}
+            >
+              {t.desc}
+            </InsightCard>
+          );
+        })}
       </div>
 
-      <div className="surface-elevated p-5 rounded-2xl border-r-4 border-r-accent">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">השפעה משולבת על המבצע:</strong>{' '}
-            ניידות (איך נכנסים), הסתרה (מי רואה אותנו), תצפית (מה אנחנו רואים), והפרעה לאש (מה חוסם קו ירי).
-            <strong className="text-fg block mt-1.5">לדוגמה — פרדס בקיץ:</strong> ניידות גבוהה במרווחי השורות, הסתרה מהאוויר מצוינת, תצפית קרובה ולא רחוקה, מסך עלים שמעוות מסלול קליעים — אבל חקלאים נוכחים. כל מבצע שונה.
-          </div>
-        </div>
-      </div>
+      <InsightCard tone="accent" icon="spark" label="ההשפעה המשולבת על הפעילות בשטח">
+        השילוב של צמחייה, מבנה הקרקע ונוכחות אזרחים קובע איך נוכל להיכנס לשטח (ניידות), מי יוכל לראות אותנו (הסתרה), כמה רחוק נוכל לראות (תצפית), ומה יחסום או יסיט כדורים בזמן ירי (הפרעה לאש).
+        <span className="block mt-2">
+          <strong className="text-fg">לדוגמה — בפרדס בקיץ:</strong> יש אמנם נוחות תנועה בין שורות העצים והסתרה מעולה מהאוויר בזכות העלים, אך מנגד שדה הראייה מוגבל מאוד, ענפי העצים עלולים לשבש מסלול של ירי, ויש סיכוי גבוה להיתקל בחקלאים שעובדים שם. אין שטח שדומה למשנהו.
+        </span>
+      </InsightCard>
     </section>
   );
 }
 
-function VegSilhouette({ density, season }: { density: number; season: Season }) {
-  const colorWinter = ['#a3b18a', '#90a173', '#6d8254', '#3f5839'];
-  const colorSummer = ['#cdb98a', '#b5a675', '#a78c5e', '#8c7a4d'];
-  const color = season === 'winter' ? colorWinter[density - 1] : colorSummer[density - 1];
-  const groundColor = season === 'winter' ? '#dbe5d4' : '#e4d6b8';
+function VegSilhouette({ density }: { density: number }) {
+  const colors = ['#a3b18a', '#90a173', '#6d8254', '#3f5839'];
+  const color = colors[density - 1];
+  const groundColor = '#dbe5d4';
 
   return (
     <div className="aspect-[2/1] relative w-full">
@@ -446,7 +387,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

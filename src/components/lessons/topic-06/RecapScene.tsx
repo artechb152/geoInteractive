@@ -5,20 +5,20 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'קו ראייה (LOS)',           def: 'קו ישר בין נקודת תצפית (עין / חיישן) למטרה. הבסיס המתמטי לראייה בקרב.' },
-  { term: 'שבירת LOS',                def: 'חיתוך הקו ע"י תבליט (הר) או תכסית (עץ / בניין). המטרה הופכת מוסתרת.' },
-  { term: 'תבליט',                    def: 'פני הקרקע — רכס, גבעה, קפל. שובר LOS "קשה" וגיאומטרי.' },
-  { term: 'תכסית',                    def: 'מבנים וצמרות עצים. שובר LOS "רך" אבל יכול להיות זמני.' },
-  { term: 'קו נראות הדדית',           def: 'הקו שבו המטרה הופכת פתאום נראית. מתג, לא הדרגתיות.' },
-  { term: 'שטח מת (Dead Space)',     def: 'אזור שמוסתר מנקודת תצפית בגלל רכס או תכסית. מסתור אידיאלי.' },
-  { term: 'DEM',                      def: 'מודל גבהים ספרתי — ייצוג דיגיטלי תלת-ממדי של פני השטח לחישובי GIS.' },
-  { term: 'Viewshed',                 def: 'אלגוריתם שצובע כל פיקסל ירוק (מואר) או אדום (מת) מנקודה.' },
-  { term: 'Cumulative Viewshed',      def: 'כיסוי קולקטיבי של מספר תצפיתנים. מאתר "פערי כיסוי" — נתיבי חדירה.' },
-  { term: 'Least-Cost Path',          def: 'נתיב שעוקף רכסים תלולים ונצמד לשטחים מתים. "מודל הזרימה".' },
-  { term: 'Kill Chain',               def: '4 שלבים: איתור → נעילה → שיגור → פגיעה. כל אחד תלוי ב-LOS.' },
-  { term: 'נעילה ויזואלית',           def: 'חימוש מונחה לייזר/וידאו דורש קשר עין רציף מתחילת המעוף לסוף.' },
-  { term: 'BDA',                      def: 'Battle Damage Assessment — הערכת נזק אחרי הפגיעה. דורש LOS חדש.' },
-  { term: 'מרחב כיסוי רציף',          def: 'תא שטח שבו בכל רגע נתון מישהו רואה כל אובייקט בתוכו.' },
+  { term: 'קו ראייה (LOS)',           def: 'הקו הדמיוני והישר שמחבר בין התצפיתן למטרה. זה הבסיס לכל מה שאנחנו רואים (או לא רואים) בשטח.' },
+  { term: 'שבירת LOS / חסימת ראייה',    def: 'מצב שבו הר, עץ או בניין חותכים את קו הראייה שלנו, ומסתירים מאיתנו את המטרה לחלוטין.' },
+  { term: 'תבליט',                    def: 'תוואי השטח הטבעי (הרים, גבעות, עמקים). אלו המכשולים הקשים והקבועים ביותר שחוסמים לנו את הראייה.' },
+  { term: 'תכסית',                    def: 'כל מה שמכסה את הקרקע (בניינים, יערות, פרדסים). אלו מכשולים שיכולים להסתיר אותנו, ולפעמים אפשר גם לעקוף או להרוס אותם.' },
+  { term: 'קו נראות הדדית',           def: 'הנקודה המדויקת בפסגת הר שבה עוברים מהסתרה מוחלטת לחשיפה מלאה מול האויב. עובד ממש כמו מתג של אור.' },
+  { term: 'שטח מת (Dead Space)',     def: 'אזור שלגמרי מוסתר מהעיניים שלנו בגלל הר או בניין שמפריעים. המקום המושלם עבור האויב להתחבא בו.' },
+  { term: 'מודל גבהים (DEM)',        def: 'מפה תלת-ממדית בתוך המחשב, שבה לכל נקודה ופיקסל בשטח יש גובה משלו.' },
+  { term: 'ניתוח ראות (Viewshed)',   def: 'אלגוריתם שבודק מה אפשר לראות מנקודה מסוימת. צובע בירוק את מה שגלוי, ובאדום את מה שמוסתר.' },
+  { term: 'ראות מצטברת (Cumulative)', def: 'חיבור של כמה תצפיות יחד כדי לבדוק את כל הכיסוי שלנו, ולמצוא "אזורים עיוורים" שאף אחד לא מסתכל עליהם.' },
+  { term: 'מסלול חסכוני (Least-Cost Path)', def: 'המסלול שהכי קל פיזית ללכת בו, שגם מנצל "שטחים מתים" כדי שנוכל להתגנב בלי שיתפסו אותנו.' },
+  { term: 'שרשרת התקיפה (Kill Chain)', def: '4 שלבי חובה (איתור, נעילה, שיגור, בדיקת פגיעה) שכל אחד מהם חייב קו ראייה פתוח כדי להצליח.' },
+  { term: 'נעילה ויזואלית',           def: 'מצב שבו טיל חכם או מצלמה "ננעלים" על המטרה, וחייבים לראות אותה ברצף בלי שום הסתרה עד רגע הפגיעה.' },
+  { term: 'בדיקת תוצאות (BDA)',       def: 'השלב שלאחר התקיפה, שבו משיגים קו ראייה חדש (למשל עם רחפן) כדי לוודא שהמטרה באמת הושמדה.' },
+  { term: 'מרחב כיסוי רציף',          def: 'אזור שיש עליו מעקב מוחלט של מצלמות וחיישנים, כך שאי אפשר להתחבא בו או לחמוק ממנו.' },
 ];
 
 export function RecapScene() {
@@ -29,10 +29,10 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים שחובה להכיר, <span className="gradient-text">בדקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד. רחף כדי לראות את ההגדרה."
+        intro="ריכזנו עבורכם את כל המושגים המרכזיים שלמדנו, עם הגדרה אחת קצרה וברורה לכל מושג. עברו עם העכבר כדי לקרוא."
       />
 
       <CompletionBanner />
@@ -95,11 +95,11 @@ function CompletionBanner() {
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
-            כל הכבוד · סיימת את שיעור קווי הראייה
+          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+            כל הכבוד! · סיימתם את שיעור קווי הראייה
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה שדה קרב <span className="gradient-text">בעיניים של מתכנן Kill Chain</span>
+            עכשיו אתם מסתכלים על השטח ממש כמו <span className="gradient-text">מנתחי מודיעין</span>
           </div>
         </div>
       </div>
@@ -132,9 +132,9 @@ function NextStepCard() {
           <Icon name="spark" size={22} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">השלב הבא</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
           <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
-          <div className="text-xs text-fg-muted mt-0.5">ניתוח LOS וסימון שטחים מתים</div>
+          <div className="text-xs text-fg-muted mt-0.5">בואו ננתח יחד קווי ראייה ונסמן שטחים מתים</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
@@ -156,9 +156,9 @@ function NextStepCard() {
           <Icon name="check" size={22} strokeWidth={2.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">או</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
           <div className="font-display font-bold leading-tight">בדיקת ידע</div>
-          <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
+          <div className="text-xs text-fg-muted mt-0.5">כמה שאלות קצרות לוודא שהכל מובן</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>

@@ -1,9 +1,7 @@
 'use client';
-
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { Icon } from '@/components/Icon';
+import { InsightCard } from '@/components/lesson/InsightCard';
 import { cn } from '@/lib/utils';
 
 const GRID_W = 22;
@@ -26,7 +24,6 @@ function isVisibleFrom(ox: number, oy: number, tx: number, ty: number): boolean 
   const dy = ty - oy;
   const dist = Math.sqrt(dx * dx + dy * dy);
   const steps = Math.max(3, Math.ceil(dist * 3));
-
   for (let s = 1; s < steps; s++) {
     const t = s / steps;
     const x = ox + dx * t;
@@ -39,7 +36,6 @@ function isVisibleFrom(ox: number, oy: number, tx: number, ty: number): boolean 
 }
 
 type Observer = { x: number; y: number; color: string; label: string };
-
 const COLORS = ['accent-cool', 'accent', 'accent-hot'] as const;
 
 export function ViewshedScene() {
@@ -48,7 +44,6 @@ export function ViewshedScene() {
   ]);
   const [mode, setMode] = useState<'single' | 'cumulative'>('single');
   const [selectedIdx, setSelectedIdx] = useState(0);
-
   const visibleObservers = mode === 'single' ? observers.slice(0, 1) : observers;
 
   // Compute visibility map
@@ -103,24 +98,20 @@ export function ViewshedScene() {
     <section id="scene-viewshed" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="06.2"
-        eyebrow="ניתוח Viewshed אלגוריתמי"
+        eyebrow="ניתוח שטחים גלויים (Viewshed)"
         title={
           <>
-            <span className="gradient-text">מפת אור וצל</span> — מה שהמחשב יודע, ואתה לא
+            <span className="gradient-text">לתת למחשב</span> לעשות את העבודה הקשה
           </>
         }
-        intro="במקום לחשב LOS לכל מטרה בנפרד, מערכות GIS מחשבות לך מאות אלפי קווי ראייה בו-זמנית, וצובעות את המפה ירוק (מואר) או אדום (שטח מת). הזיזו את התצפיתן, ראו איך החישוב משתנה."
+        intro="במקום שנמתח קו ראייה (LOS) אחד בכל פעם, תוכנות מיפוי עושות את זה בשבילנו. הן מחשבות מיליוני קווי ראייה בשנייה, וצובעות את המפה: ירוק (שטח גלוי) ואדום (שטח מת שמוסתר מאיתנו). הזיזו את התצפיתן במפה ותראו איך הכל משתנה בלייב."
       />
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">איך זה עובד מתחת למכסה:</strong>{' '}
-            המערכת מקבלת <strong className="text-fg">DEM</strong> — מודל גבהים ספרתי (ייצוג תלת-ממדי של פני השטח כרשת פיקסלים, לכל פיקסל גובה).
-            לכל פיקסל היא בודקת: <em>האם הקו מהתצפיתן אליי לא נחתך?</em> אם כן — ירוק (מואר). אם לא — אדום (שטח מת).
-          </div>
-        </div>
+      <div className="mb-6">
+        <InsightCard tone="cool" icon="spark" label="איך הקסם הזה עובד מאחורי הקלעים?">
+          המערכת משתמשת במודל שנקרא <strong className="text-fg">DEM</strong> (מודל גבהים דיגיטלי) — זה בעצם ייצוג תלת-ממדי של השטח, שבו לכל פיקסל יש גובה משלו.
+          האלגוריתם פשוט שואל על כל פיקסל במפה: <em>"האם יש קו ראייה נקי אליי מהתצפיתן?"</em>. אם התשובה היא כן — הוא נצבע בירוק. אם משהו מסתיר — הוא נצבע באדום.
+        </InsightCard>
       </div>
 
       {/* Main viewshed map */}
@@ -128,12 +119,12 @@ export function ViewshedScene() {
         {/* Map */}
         <div className="surface-elevated p-4 rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div className="text-[10px] font-mono text-fg-dim tracking-widest uppercase">
-              מפת Viewshed · {mode === 'single' ? 'תצפיתן יחיד' : `${observers.length} תצפיתנים מצטברים`}
+            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+              מפת שטחים גלויים · {mode === 'single' ? 'תצפיתן אחד' : `${observers.length} תצפיתנים יחד`}
             </div>
             <div className="flex items-center gap-3 text-[10px] font-mono text-fg-dim">
               <span className="flex items-center gap-1">
-                <span className="size-2 bg-status-ok rounded-sm" /> מואר {coverage}%
+                <span className="size-2 bg-status-ok rounded-sm" /> גלוי {coverage}%
               </span>
               <span className="flex items-center gap-1">
                 <span className="size-2 bg-status-danger/40 rounded-sm" /> שטח מת {100 - coverage}%
@@ -147,7 +138,7 @@ export function ViewshedScene() {
             onCellClick={handleCellClick}
           />
           <div className="mt-3 text-[10px] text-fg-dim text-center">
-            לחץ על המפה כדי להזיז את <strong className="text-fg">{observers[selectedIdx]?.label}</strong>
+            לחצו על המפה כדי להזיז את <strong className="text-fg">{observers[selectedIdx]?.label}</strong>
           </div>
         </div>
 
@@ -155,7 +146,7 @@ export function ViewshedScene() {
         <div className="space-y-3">
           {/* Mode toggle */}
           <div className="surface p-4 rounded-xl">
-            <div className="text-xs font-mono text-fg-dim mb-2 tracking-widest uppercase">מצב ניתוח</div>
+            <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">סוג הניתוח</div>
             <div className="flex gap-1 p-1 bg-bg-card border border-border rounded-xl">
               {(['single', 'cumulative'] as const).map((m) => (
                 <button
@@ -166,21 +157,21 @@ export function ViewshedScene() {
                     mode === m ? 'bg-accent text-bg shadow-glow' : 'text-fg-muted hover:text-fg'
                   )}
                 >
-                  {m === 'single' ? 'תצפיתן יחיד' : 'מצטבר'}
+                  {m === 'single' ? 'תצפיתן בודד' : 'שילוב תצפיתנים'}
                 </button>
               ))}
             </div>
             <p className="text-[11px] text-fg-dim mt-2 leading-relaxed">
               {mode === 'single'
-                ? 'רואים את הכיסוי של תצפיתן יחיד — יחשפו אילו "עיניים בודדות" יוצרות פערים.'
-                : 'מאחדים את הכיסוי של כל התצפיתנים. השאלה: האם נשארו "כתמים מתים"?'}
+                ? 'מציג מה רואה תצפיתן אחד בלבד. מעולה כדי להבין איפה יש לו "שטחים מתים" שהוא לא מצליח לראות.'
+                : 'משלב את מה שכולם רואים יחד. המטרה שלנו: לוודא שאין אף "שטח מת" שאף אחד מהתצפיתנים לא רואה.'}
             </p>
           </div>
 
           {/* Observers list */}
           <div className="surface p-4 rounded-xl">
             <div className="flex items-baseline justify-between mb-2">
-              <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">תצפיתנים</div>
+              <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">רשימת תצפיתנים</div>
               <button
                 onClick={addObserver}
                 disabled={observers.length >= 3}
@@ -191,7 +182,7 @@ export function ViewshedScene() {
                     : 'border-accent/40 text-accent hover:bg-accent/5'
                 )}
               >
-                + הוסף
+                + הוספת תצפיתן
               </button>
             </div>
             <div className="space-y-1.5">
@@ -238,49 +229,46 @@ export function ViewshedScene() {
               })}
             </div>
             <div className="mt-3 text-[11px] text-fg-dim leading-relaxed">
-              לחץ על תצפיתן כדי לבחור אותו, ואז לחץ על המפה כדי להזיז אותו.
+              לחצו על שם של תצפיתן כדי לבחור בו, ואז לחצו בכל מקום במפה כדי להזיז אותו.
             </div>
           </div>
 
           <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
-            <strong className="text-fg block mb-1">תרגול:</strong>
-            במצב <em>מצטבר</em>, נסה לסדר 3 תצפיתנים כך שאף אזור על המפה לא ייצבע אדום.
-            (זו בדיוק העבודה של מי שתכנן את מערך התצפית בקו הגבול.)
+            <strong className="text-fg block mb-1">אתגר:</strong>
+            עברו למצב <em>שילוב תצפיתנים</em>, ונסו למקם 3 תצפיתנים על המפה כך שכמעט ולא יישארו אזורים אדומים.
+            (ספוילר: זו בדיוק העבודה של קציני איסוף שמתכננים איפה להציב מצלמות על קו הגבול!)
           </div>
         </div>
       </div>
 
       {/* Concept cards */}
-      <SoftDivider text="3 כלי ניתוח שעובדים יד ביד" />
+      <SoftDivider text="3 כלי הניתוח שכל חוקר שטח חייב להכיר" />
 
       <div className="grid md:grid-cols-3 gap-3 mb-10">
-        <ConceptCard
+        <InsightCard
+          tone="ok"
           icon="eye"
-          title="Viewshed"
-          subtitle="מודל האור"
-          body={`הכלי הקלאסי. נקודה אחת על המפה → סריקה של כל פיקסל → צביעת השטחים המוארים מול המתים. השימוש: בחירת מיקום למוצבים, ממסרים, מכ"מים — איפה הם 'יראו' הכי הרבה?`}
-          color="text-status-ok"
-          border="border-status-ok/40"
-          bg="bg-status-ok/5"
-        />
-        <ConceptCard
+          label="מה אפשר לראות מנקודה אחת?"
+          title="ניתוח ראות (Viewshed)"
+        >
+          הכלי הקלאסי ביותר. בוחרים נקודה במפה, והמחשב סורק את כל השטח וצובע מה גלוי ומה מוסתר. למה זה טוב? כדי להחליט איפה להקים מוצב צבאי, אנטנה סלולרית או מכ"ם — איפה נשיג את הראות הכי טובה?
+        </InsightCard>
+        <InsightCard
+          tone="cool"
           icon="layers"
-          title="Cumulative Viewshed"
-          subtitle="כיסוי קולקטיבי"
-          body="עשרות-מאות נקודות תצפית מקובצות לכדי 'מפת צפיפות'. אזורים בהירים = מכוסים היטב. אזורים חשוכים = עיוורון מודיעיני. בדיוק הניתוח שעושים כשמתכננים פריסת מצלמות וחיישנים לאורך גבול."
-          color="text-accent-cool"
-          border="border-accent-cool/40"
-          bg="bg-accent-cool/5"
-        />
-        <ConceptCard
+          label="כיסוי משותף של כמה נקודות"
+          title="ראות מצטברת (Cumulative)"
+        >
+          חיבור של כמה נקודות תצפית יחד. המפה מראה לנו איזה אזור "מכוסה" היטב על ידי מספר תצפיות, ואיפה יש לנו "עיוורון מודיעיני" שאף אחד לא רואה. זה בדיוק מה שעושים כשמתכננים פריסת מצלמות אבטחה סביב בסיס או לאורך גבול.
+        </InsightCard>
+        <InsightCard
+          tone="accent"
           icon="compass"
-          title="Least-Cost Path"
-          subtitle="מסלול בעלות מינימלית"
-          body="מודל הזרימה: מחשב את הנתיב הפיזי הקל והחסכוני ביותר באנרגיה, שעוקף רכסים תלולים ונצמד לשטחים מתים. השילוב Viewshed + LCP = מסלול חדירה שלא רואים אותו, וגם לא מתאמצים בו."
-          color="text-accent"
-          border="border-accent/40"
-          bg="bg-accent/5"
-        />
+          label="איך להגיע בלי להתאמץ ולהיתפס?"
+          title="מסלול חסכוני (Least-Cost Path)"
+        >
+          האלגוריתם מחשב את הנתיב הפיזי הכי קל להליכה, שעוקף עליות קשות ונשאר בתוך "שטחים מתים". כשמשלבים את זה עם ניתוח ראות, מקבלים את המסלול המושלם — נתיב התגנבות קל להליכה שאף אחד גם לא יכול לראות.
+        </InsightCard>
       </div>
     </section>
   );
@@ -337,10 +325,12 @@ function ViewshedMap({
             const here = terrainHeight(x, y);
             const right = terrainHeight(x + 1, y);
             const down = terrainHeight(x, y + 1);
+
             // If height crosses a contour level (every 2 units), draw an edge
             const level = Math.floor(here / 2);
             const levelRight = Math.floor(right / 2);
             const levelDown = Math.floor(down / 2);
+
             return (
               <g key={`c-${x}-${y}`}>
                 {level !== levelRight && (
@@ -401,7 +391,7 @@ function ViewshedMap({
                 y={cy - 2.5}
                 textAnchor="middle"
                 className={cn(
-                  'font-mono font-bold',
+                  'font-display font-bold font-bold',
                   obs.color === 'accent-cool' && 'fill-accent-cool',
                   obs.color === 'accent' && 'fill-accent',
                   obs.color === 'accent-hot' && 'fill-accent-hot'
@@ -422,49 +412,13 @@ function ViewshedMap({
   );
 }
 
-function ConceptCard({
-  icon,
-  title,
-  subtitle,
-  body,
-  color,
-  border,
-  bg,
-}: {
-  icon: 'eye' | 'layers' | 'compass';
-  title: string;
-  subtitle: string;
-  body: string;
-  color: string;
-  border: string;
-  bg: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      className={cn('surface p-5 rounded-xl', border, bg)}
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <div className={cn('size-10 rounded-xl flex items-center justify-center border-2', border)}>
-          <Icon name={icon} size={18} className={color} />
-        </div>
-        <div>
-          <div className={cn('font-display font-bold leading-tight', color)}>{title}</div>
-          <div className="text-[10px] font-mono text-fg-dim mt-0.5">{subtitle}</div>
-        </div>
-      </div>
-      <p className="text-xs text-fg leading-relaxed">{body}</p>
-    </motion.div>
-  );
-}
-
 function SoftDivider({ text }: { text: string }) {
   return (
-    <div className="my-12 flex items-center gap-4">
+    <div className="my-10 flex items-center gap-3">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold tracking-wider text-fg-muted">
+        {text}
+      </span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

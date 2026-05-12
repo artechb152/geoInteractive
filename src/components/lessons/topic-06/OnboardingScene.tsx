@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -19,64 +21,64 @@ type Step = {
 const STEPS: Step[] = [
   {
     id: 'observer',
-    label: 'איפה אני יושב ומאיפה אני רואה',
+    label: 'מאיפה אני מסתכל?',
     icon: 'eye',
-    popupTitle: 'נקודת התצפית — נקודת המוצא של כל ניתוח',
+    popupTitle: 'נקודת התצפית — המקום שבו הכל מתחיל',
     popupBody:
-      'קו ראייה (Line of Sight) מתחיל תמיד מ<strong>נקודה</strong>: עין של תצפיתן, עדשת מצלמה, חיישן רדאר או רחפן. גובה הנקודה הוא קריטי — מטר אחד גובה נוסף יכול לחשוף שטחים שלמים. לכן ב-1973 הסורים והישראלים נלחמו בעיקר על פסגות, ולא בעמקים: מי שיש לו את הגובה — יש לו את העיניים.',
+      'כל ניתוח של השטח מתחיל בנקודה אחת: העין של התצפיתן, המצלמה או הרחפן. הקו הדמיוני שיוצא מהנקודה הזו נקרא <strong>"קו ראייה"</strong> (Line of Sight, או בקיצור LOS). גובה הנקודה הוא קריטי — מטר אחד נוסף לגובה יכול לחשוף בפנינו שטחים ענקיים שקודם הוסתרו. זו הסיבה שבמלחמות צבאות נלחמים בחירוף נפש על פסגות הרים: מי ששולט בגובה, שולט במה שאפשר לראות.',
   },
   {
     id: 'visible',
-    label: 'מה מואר לי',
+    label: 'מה גלוי לעין שלי?',
     icon: 'crosshair',
-    popupTitle: 'שטחים חשופים — היכן האויב חשוף לאש',
+    popupTitle: 'השטחים הגלויים — איפה האויב חשוף',
     popupBody:
-      'מכל נקודת תצפית, כל קו ראייה הוא קו ישר. השטחים שמהם <strong>כל קו ישר עד הנקודה לא נחתך</strong> על ידי תכסית או תבליט — אלו השטחים החשופים. הם הקלאסיים לטיפול: אם רואים אותך, יורים בך. כל שטח חשוף בעמדה שלך הוא "ירוק" במפת הViewshed.',
+      'קו הראייה שלנו הוא תמיד קו ישר. אם הקו הזה לא נתקע בדרך בשום מכשול — כמו "תבליט" (הרים וגבעות) או "תכסית" (מבנים ועצים) — השטח נחשב לגלוי. הכלל ברור: אם אתה יכול לראות את האויב, אתה גם יכול לפגוע בו. במפות ניתוח שטח (שנקראות <strong>מפות Viewshed</strong>), כל השטחים שגלויים לעין מסומנים בדרך כלל בירוק, כדי שנבין מיד על איזה אזור אנחנו שולטים.',
   },
   {
     id: 'dead',
-    label: 'מה חבוי ממני',
+    label: 'מה מוסתר ממני?',
     icon: 'shield',
-    popupTitle: 'שטחים מתים — איפה האויב מסתתר ממני',
+    popupTitle: '"שטחים מתים" — איפה האויב מתחבא',
     popupBody:
-      'שטחים שמוסתרים מהעין שלך בגלל רכס, בניין, יער או צילו של הר נקראים <strong>"שטחים מתים"</strong> (Dead Space). זה גם המקום שבו האויב יבחר להתחפר, להחביא תותחים ולהקים מפקדה. ניתוח טוב של שטחים מתים = ניתוח טוב של מקומות שצריך לרגל בהם פיזית, כי הסנסור לא יראה.',
+      'כל שטח שמוסתר מעינינו בגלל מכשול (כמו הר, בניין או יער סמיך) נקרא <strong>"שטח מת"</strong> (Dead Space). אלו בדיוק המקומות שהאויב יחפש כדי להתחפר ולהקים מפקדות, כי הוא יודע שלא נראה אותו. ניתוח חכם של השטח מאפשר לנו למפות את השטחים המתים האלה, כדי שנדע לאן לשלוח סיור פיזי או רחפן מיוחד שיבדוק מה מסתתר שם מלמעלה.',
   },
   {
     id: 'intervisibility',
-    label: 'הקו שבו אני מואר פתאום',
+    label: 'הרגע שבו אני נחשף פתאום',
     icon: 'bolt',
-    popupTitle: 'קו הנראות ההדדית — רגע החשיפה',
+    popupTitle: 'קו נראות הדדית — מאפס למאה בשנייה',
     popupBody:
-      'בכל רכס יש <strong>קו דק</strong> שבו אתה עובר ממצב של "אני בצל הרכס" למצב של "האויב משני הצד רואה אותי לחלוטין". זו לא הדרגתיות — זה מתג. במלחמת יום הכיפורים, טנקים סורים שעלו מעבר לרכס הסיני בגולן חצו את הקו הזה — ובדיוק שם, באותה שנייה, ה-105 מ"מ של המגנים פגעו בהם. תכנון נכון של חציית הקו = תכנון של רגע החשיפה.',
+      'כשמטפסים על הר, יש קו דק מאוד שבו עוברים ממצב של הסתרה מוחלטת למצב שבו האויב ממול רואה אותנו לחלוטין. אין כאן הדרגתיות — זה <strong>עובד כמו מתג של אור</strong> (לכן הוא נקרא קו נראות הדדית). במלחמת יום הכיפורים, טנקים סוריים טיפסו על הרכסים בגולן וברגע שחצו את הקו הזה — הם ספגו אש מידית מכוחות צה"ל. תכנון מסלול חכם מחייב אותנו לדעת בדיוק מתי אנחנו עומדים לחצות את הקו הזה ולהיחשף.',
   },
 ];
 
 const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
   {
-    headline: 'תצפית אחת ששלטה על מדינה שלמה',
-    place: 'הר חרמון · "השוסי" 1967–היום',
-    lesson: 'תצפית "השוסי" על פסגת החרמון רואה את דמשק, את לבנון ואת כל הצפון. לכן ב-1973 חזית הקרבות הראשונה הייתה עליה. מי שמחזיק את הגובה — מחזיק את העיניים של המלחמה. כל פעולת אויב באזור עוברת תחת עינו.',
+    headline: 'התצפית שרואה מדינה שלמה',
+    place: 'הר חרמון · מוצב החרמון (1967–היום)',
+    lesson: 'מוצבי צה"ל על פסגות החרמון מאפשרים תצפית עמוקה לתוך סוריה, לבנון וכל צפון הארץ. בגלל הגובה העצום הזה, במלחמת יום הכיפורים הקרבות הראשונים והקשים ביותר היו על השליטה בהר. הכלל פשוט: מי שמחזיק בנקודה הכי גבוהה — מחזיק ב"עיניים" של המערכה ורואה כל תנועה.',
     icon: 'mountain',
     accent: 'text-accent',
   },
   {
-    headline: 'הטנק חצה את הרכס — ומיד פגע בו טיל',
-    place: 'הגולן · יום הכיפורים 1973',
-    lesson: 'מאות טנקים סורים נמחקו ברגע שעלו מעבר לקו הנראות ההדדית של הרכסים. מעמדות הירי הישראליות, הם הופיעו "פתאום" וקטנים — אבל הם פשוט חצו את הקו. שנייה לפני: בלתי נראים. שנייה אחרי: ירוק מואר על המסך.',
+    headline: 'חציית הרכס הגורלית',
+    place: 'רמת הגולן · מלחמת יום הכיפורים 1973',
+    lesson: 'מאות טנקים סוריים הושמדו ברגע אחד: הם חצו את קו הרכס ונחשפו. שנייה קודם לכן הם היו מוסתרים ובלתי נראים. ברגע שחצו את "קו הנראות ההדדית", הם הפכו באופן פתאומי למטרות גלויות לחלוטין עבור כוחות צה"ל שהמתינו להם מעבר לרכס.',
     icon: 'bolt',
     accent: 'text-accent-hot',
   },
   {
-    headline: 'הענן הגיע — והטיל נפל בשדה ריק',
-    place: 'מבצעי מקוונים · שנות ה-2000',
-    lesson: 'טילים מונחי לייזר ווידאו דורשים נעילה רציפה על המטרה. ב-2003 ב-Iraq, מספר תקיפות אבדו ברגע האחרון כי ענן או עשן שבר את ה-LOS בין הכטב"ם למטרה. החימוש עף לפי האחרון נתון שראה — ופספס. LOS = הצלחה.',
+    headline: 'כשהענן הסתיר את המטרה',
+    place: 'מלחמות מודרניות · שנות ה-2000',
+    lesson: 'טילים "חכמים" שמונחים בעזרת מצלמה או לייזר דורשים קו ראייה (LOS) רציף אל המטרה עד רגע הפגיעה. במלחמות בעיראק בשנות ה-2000, היו מקרים שבהם ענן או עשן פתאומי חסמו את הראייה של הטיל. כתוצאה מכך נשבר קו הראייה, הטיל איבד את המטרה ופגע בשטח ריק. המסקנה? ללא קו ראייה נקי, אי אפשר לפגוע.',
     icon: 'plane',
     accent: 'text-accent-cool',
   },
   {
-    headline: 'שטחים מתים בעיר — צלפים בלתי נראים',
-    place: 'סטלינגרד · 1942–43',
-    lesson: 'בקרב סטלינגרד, צלפים סובייטים בנו עמדות בתוך חורבות בניינים — ניצול מושלם של "שטחים מתים" שנוצרו מקפלי הריסות. הגרמנים יצרו פטרולים יקרים כי הם לא יכלו לראות מאיפה האש. שטח מת בעיר = ארובה גרמנית.',
+    headline: 'מלכודת השטחים המתים בתוך העיר',
+    place: 'קרב סטלינגרד · 1942–1943',
+    lesson: 'בקרבות רחוב, מבנים והריסות יוצרים המון "שטחים מתים" שקשה לראות מבחוץ. בקרב סטלינגרד (במלחמת העולם השנייה), צלפים רוסים ניצלו את ההריסות כדי להקים עמדות מסתור קטלניות. החיילים הגרמנים ספגו אבדות כבדות כי הם פשוט לא הצליחו לראות מאין יורים עליהם. שטח מת בעיר הוא המקום המושלם למארב.',
     icon: 'capital',
     accent: 'text-status-warn',
   },
@@ -102,13 +104,13 @@ export function OnboardingScene() {
         eyebrow="לפני שמתחילים"
         title={
           <>
-            <span className="gradient-text">לראות ולא להיראות</span> — בסיס שדה הקרב
+            <span className="gradient-text">לראות ולא להיראות</span> — חוק הברזל של שדה הקרב
           </>
         }
-        intro="כל מה שקורה בקרב מתחיל מתשובה לשאלה אחת: אני רואה אותו או לא? בוא נראה איך אותה גבעה משתנה מ-4 פרספקטיבות — מה אני רואה, מה הוא רואה, ואיפה הקו שמשנה הכל."
+        intro="הכל מתחיל ונגמר בשאלה אחת פשוטה: האם אני רואה את האויב, או שהוא מוסתר ממני? בואו נבין איך ניתוח של גבעה אחת פשוטה יכול ללמד אותנו מה אנחנו רואים, מה האויב רואה משם, ואיפה בדיוק עובר הקו שבו הכל מתהפך."
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -190,7 +192,7 @@ export function OnboardingScene() {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-accent/20">
-                        <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
+                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
                           למה זה משנה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -214,59 +216,25 @@ export function OnboardingScene() {
         </div>
       </div>
 
-      <SoftDivider text="ראייה בקרב — ההבדל בין חיים למוות" />
+      <SoftDivider text="העיניים של שדה הקרב — ההבדל בין חיים למוות" />
 
       <div className="grid sm:grid-cols-2 gap-4">
         {HISTORICAL.map((h, i) => (
-          <motion.article
+          <IntelCard
             key={h.headline}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 relative overflow-hidden"
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
-            />
-            <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
-                <Icon name={h.icon} size={22} className={h.accent} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim" />
-                  {h.place}
-                </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
-                  {h.headline}
-                </h3>
-                <p className="text-sm text-fg-muted leading-relaxed text-pretty">{h.lesson}</p>
-              </div>
-            </div>
-          </motion.article>
+            place={h.place}
+            headline={h.headline}
+            lesson={h.lesson}
+            icon={h.icon}
+            accent={h.accent}
+          />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7 flex gap-4 sm:gap-5 items-center"
-      >
-        <div className="absolute -end-12 -top-12 size-40 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-        <div className="relative size-12 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-accent shrink-0 shadow-glow">
-          <Icon name="arrow-left" size={20} />
-        </div>
-        <div className="relative flex-1">
-          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">עכשיו אתה מוכן</div>
-          <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">
-            הבנת שראייה היא לא רק "מסתכלים" — היא ניתוח. בשלוש הסצנות הבאות נצלול:
-            <strong className="text-fg"> איך מחשבים LOS ידני, איך אלגוריתם מחשב Viewshed שלם, ולמה כל זה קריטי ל-Kill Chain</strong>.
-          </p>
-        </div>
-      </motion.div>
+      <ReadyCallout title="עכשיו אתם מוכנים!">
+        <p>הבנתם שלראות את השטח זה לא רק "לפתוח עיניים" — אלא דורש ניתוח והבנה. בסצנות הבאות נלמד: 
+            <strong className="text-fg"> איך מחשבים קו ראייה (LOS) בעצמנו, איך תוכנות יכולות לייצר מפה שחושפת בפנינו את כל האזורים הגלויים (Viewshed), ואיך כל זה מאפשר לנו לסגור מעגל ולפגוע במטרה (Kill Chain)</strong>.</p>
+      </ReadyCallout>
     </section>
   );
 }
@@ -357,7 +325,7 @@ function SightStage({ view }: { view: View }) {
             strokeWidth="1.3"
             strokeLinejoin="round"
           >
-            שטחים מוארים
+            שטחים גלויים
           </text>
         </motion.g>
 
@@ -406,7 +374,7 @@ function SightStage({ view }: { view: View }) {
             strokeWidth="0.8"
             strokeLinejoin="round"
           >
-            כאן האויב מסתתר
+            האויב יכול להסתתר כאן
           </text>
         </motion.g>
 
@@ -479,7 +447,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

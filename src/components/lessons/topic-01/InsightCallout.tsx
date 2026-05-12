@@ -47,7 +47,7 @@ export function InsightCallout({
     >
       <Icon name={icon} size={22} className={cn('shrink-0 mt-0.5', t.text)} />
       <div className="flex-1 min-w-0">
-        <div className={cn('text-xs font-mono mb-1.5 tracking-widest uppercase', t.text)}>
+        <div className={cn('text-sm font-display font-semibold mb-1.5 tracking-wider', t.text)}>
           {eyebrow}
         </div>
         <div className="text-fg leading-relaxed text-pretty text-sm sm:text-base">

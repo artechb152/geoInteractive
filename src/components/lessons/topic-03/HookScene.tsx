@@ -133,8 +133,12 @@ function BackdropCompass() {
               x={x}
               y={y + 1}
               textAnchor="middle"
-              className="fill-fg-dim text-[3px] font-mono opacity-50"
-            >
+              className="fill-fg-dim text-[3px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >
               {m.label}
             </text>
           );

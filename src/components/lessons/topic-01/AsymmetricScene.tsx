@@ -1,618 +1,534 @@
 'use client';
-
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-
 type Pillar = {
-  id: string;
-  label: string;
-  icon: IconName;
-  oneLiner: string;
-  detail: string;
-  color: string;
+id: string;
+label: string;
+icon: IconName;
+oneLiner: string;
+detail: string;
+color: string;
 };
-
 const PILLARS: Pillar[] = [
-  {
-    id: 'persistence',
-    label: 'ספיגה והתמדה',
-    icon: 'hourglass',
-    oneLiner: 'הזמן עובד לטובתם. המטרה היא פשוט לשרוד את המכות.',
-    detail: "ארגון טרור מבין מראש שהוא לא יכול להשמיד צבא של מדינה, אז המטרה שלו היא פשוט לא להפסיד. מבחינתו, כל יום שבו הוא נשאר בחיים וממשיך לירות – נחשב לניצחון. הוא מנצל את העובדה שלמדינה יש 'שעון חול': המלחמה עולה לה מיליארדים, חיילי המילואים נשחקים, ויש לחץ בינלאומי. החלש פשוט מנסה להישאר על הרגליים עד שהחזק יקרוס מבפנים.",
-    color: 'text-accent-cool',
-  },
-  {
-    id: 'deterrence',
-    label: 'הרתעה אסימטרית',
-    icon: 'megaphone',
-    oneLiner: 'עוקפים את החזית – תוקפים את האזרחים בעורף במקום את החיילים.',
-    detail: "כשהצד החלש לא מצליח לחדור שריון של טנק או להפיל מטוסי קרב, הוא פשוט 'מדלג' עליהם. במקום להילחם מול הצבא פנים אל פנים, הוא יורה טילים זולים ורחפנים ישירות על הערים של המדינה החזקה. המטרה היא לשתק את הכלכלה, לזרוע פאניקה ולגרום לאזרחים המפוחדים ללחוץ על הממשלה שלהם לעצור את המלחמה מיד.",
-    color: 'text-accent-hot',
-  },
-  {
-    id: 'attrition',
-    label: 'התשה',
-    icon: 'shield',
-    oneLiner: 'להפוך את המלחמה לבוץ יקר, מתסכל וחסר תועלת.',
-    detail: `הצד החלש עובד בשיטת 'עקיצות קטנות': צלף יורה מהחלון ונעלם לפיר של מנהרה, או מטען חבלה קטן שמתפוצץ משום מקום. הלוחמים גורמים למדינה החזקה להוציא מאות אלפי דולרים על פצצות נגד מטרות ריקות או כטב"מים מפלסטיק. הטפטוף המעצבן והבלתי פוסק הזה נועד לייאש את הצבא החזק ולגרום לו להרגיש שהוא מנסה להילחם ברוחות רפאים.`,
-    color: 'text-accent-intel',
-  },
+ {
+id: 'persistence',
+label: 'ספיגה והתמדה',
+icon: 'hourglass',
+oneLiner: 'הזמן עובד לטובתם. המטרה היא פשוט לשרוד את המכות.',
+detail:"ארגון טרור מבין מראש שהוא לא יכול להשמיד צבא של מדינה, אז המטרה שלו היא פשוט לא להפסיד. מבחינתו, כל יום שבו הוא נשאר בחיים וממשיך לירות – נחשב לניצחון. הוא מנצל את העובדה שלמדינה יש 'שעון חול': המלחמה עולה לה מיליארדים, חיילי המילואים נשחקים, ויש לחץ בינלאומי. החלש פשוט מנסה להישאר על הרגליים עד שהחזק יקרוס מבפנים.",
+color: 'text-accent-cool',
+ },
+ {
+id: 'deterrence',
+label: 'הרתעה אסימטרית',
+icon: 'megaphone',
+oneLiner: 'עוקפים את החזית – תוקפים את האזרחים בעורף במקום את החיילים.',
+detail:"כשהצד החלש לא מצליח לחדור שריון של טנק או להפיל מטוסי קרב, הוא פשוט 'מדלג' עליהם. במקום להילחם מול הצבא פנים אל פנים, הוא יורה טילים זולים ורחפנים ישירות על הערים של המדינה החזקה. המטרה היא לשתק את הכלכלה, לזרוע פאניקה ולגרום לאזרחים המפוחדים ללחוץ על הממשלה שלהם לעצור את המלחמה מיד.",
+color: 'text-accent-hot',
+ },
+ {
+id: 'attrition',
+label: 'התשה',
+icon: 'shield',
+oneLiner: 'להפוך את המלחמה לבוץ יקר, מתסכל וחסר תועלת.',
+detail: `הצד החלש עובד בשיטת 'עקיצות קטנות': צלף יורה מהחלון ונעלם לפיר של מנהרה, או מטען חבלה קטן שמתפוצץ משום מקום. הלוחמים גורמים למדינה החזקה להוציא מאות אלפי דולרים על פצצות נגד מטרות ריקות או כטב"מים מפלסטיק. הטפטוף המעצבן והבלתי פוסק הזה נועד לייאש את הצבא החזק ולגרום לו להרגיש שהוא מנסה להילחם ברוחות רפאים.`,
+color: 'text-accent-intel',
+ },
 ];
-
 const TRAITS: { icon: IconName; title: string; desc: string }[] = [
-  {
-    icon: 'mask',
-    title: 'הסתרה והסוואה',
-    desc: "החוק הראשון הוא לא לבלוט. אין להם מדים, אין שיירות ג'יפים מאורגנות ואין בסיסים מסודרים במדבר. הלוחמים מתלבשים כמו אזרחים רגילים ונבלעים בסביבה. למה? כי הם מבינים שברגע שמטוס קרב או רחפן מזהה אותם – ייקח בדיוק 10 שניות להשמיד אותם.",
-  },
-  {
-    icon: 'people',
-    title: 'להתערבב עם אזרחים',
-    desc: 'במקום שדה קרב פתוח, הם ממקמים מפקדות ומשגרי טילים בתוך בתי חולים, בתי ספר ושכונות מגורים צפופות. זה תוקע את הצבא החזק בדילמה אכזרית: האם לתקוף ולחטוף אש מהעולם על פגיעה בחפים מפשע, או פשוט לוותר על חיסול המטרה ולתת למחבלים לברוח?',
-  },
-  {
-    icon: 'eye',
-    title: 'להיות "שקטים" טכנולוגית',
-    desc: 'איך מתחבאים מצבא שקולט כל שיחת טלפון ורואה הכל מהחלל? יורדים מהרדאר. הצד החלש עוזב את הסמארטפונים ועובר להעביר פתקים מנייר דרך שליחים ברגל. בנוסף, נמנעים מנסיעה ברכבים שפולטים חום שלוויינים יכולים לקלוט. הרי אי אפשר לעשות מתקפת סייבר על פתק נייר.',
-  },
-  {
-    icon: 'bolt',
-    title: 'לפגוע בזול בנשק יקר',
-    desc: 'מתמטיקה פשוטה: למה לפתח תעשיית נשק אם אפשר לקנות רחפן צעצוע ב-300 דולר, לחבר לו רימון, ולשתק טנק טכנולוגי שעולה 5 מיליון דולר? האסטרטגיה היא כלכלית נטו – להכריח את הצד החזק לבזבז הון עתק וטילי יירוט יקרים על איומים שעולים גרושים.',
-  },
-  {
-    icon: 'megaphone',
-    title: 'דעת הקהל היא שדה הקרב האמיתי',
-    desc: 'הסמארטפון קטלני לא פחות מרובה. הצד החלש מתעד בניינים הרוסים ואזרחים פגועים ומפיץ ברשתות כדי לזעזע את העולם. הם יודעים שלחץ בינלאומי וסרטונים ויראליים שמגיעים לאו"ם, יבלמו ויעצרו את הצבא החזק הרבה לפני שייגמרו לו הטילים במחסנים.',
-  },
+ {
+icon: 'mask',
+title: 'הסתרה והסוואה',
+desc:"החוק הראשון הוא לא לבלוט. אין להם מדים, אין שיירות ג'יפים מאורגנות ואין בסיסים מסודרים במדבר. הלוחמים מתלבשים כמו אזרחים רגילים ונבלעים בסביבה. למה? כי הם מבינים שברגע שמטוס קרב או רחפן מזהה אותם – ייקח בדיוק 10 שניות להשמיד אותם.",
+ },
+ {
+icon: 'people',
+title: 'להתערבב עם אזרחים',
+desc: 'במקום שדה קרב פתוח, הם ממקמים מפקדות ומשגרי טילים בתוך בתי חולים, בתי ספר ושכונות מגורים צפופות. זה תוקע את הצבא החזק בדילמה אכזרית: האם לתקוף ולחטוף אש מהעולם על פגיעה בחפים מפשע, או פשוט לוותר על חיסול המטרה ולתת למחבלים לברוח?',
+ },
+ {
+icon: 'eye',
+title: 'להיות"שקטים" טכנולוגית',
+desc: 'איך מתחבאים מצבא שקולט כל שיחת טלפון ורואה הכל מהחלל? יורדים מהרדאר. הצד החלש עוזב את הסמארטפונים ועובר להעביר פתקים מנייר דרך שליחים ברגל. בנוסף, נמנעים מנסיעה ברכבים שפולטים חום שלוויינים יכולים לקלוט. הרי אי אפשר לעשות מתקפת סייבר על פתק נייר.',
+ },
+ {
+icon: 'bolt',
+title: 'לפגוע בזול בנשק יקר',
+desc: 'מתמטיקה פשוטה: למה לפתח תעשיית נשק אם אפשר לקנות רחפן צעצוע ב-300 דולר, לחבר לו רימון, ולשתק טנק טכנולוגי שעולה 5 מיליון דולר? האסטרטגיה היא כלכלית נטו – להכריח את הצד החזק לבזבז הון עתק וטילי יירוט יקרים על איומים שעולים גרושים.',
+ },
+ {
+icon: 'megaphone',
+title: 'דעת הקהל היא שדה הקרב האמיתי',
+desc: 'הסמארטפון קטלני לא פחות מרובה. הצד החלש מתעד בניינים הרוסים ואזרחים פגועים ומפיץ ברשתות כדי לזעזע את העולם. הם יודעים שלחץ בינלאומי וסרטונים ויראליים שמגיעים לאו"ם, יבלמו ויעצרו את הצבא החזק הרבה לפני שייגמרו לו הטילים במחסנים.',
+ },
 ];
-
 export function AsymmetricScene() {
-  const [days, setDays] = useState(60);
+return (
+ <section id="scene-asymmetric" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <SceneHeader
+step="01.3"
+eyebrow="לחימה אסימטרית"
+title={
+ <>
+ כשצבא ענק נלחם בכוח קטן — <span className="gradient-text">הכללים משתנים</span>
+ </>
+ }
+intro={`פעם, מלחמות היו פשוטות כמו בסרטים: צבא מול צבא, טנק מול טנק. היום המציאות נראית כמו 'באג' במשחק: מעצמות ענק עם טכנולוגיה מטורפת (כמו ארה"ב או ישראל) מוצאות את עצמן נלחמות מול ארגוני טרור קטנים. הפער העצום הזה בכוח יוצר מלחמה עם חוקים חדשים לגמרי, שבהם הצד החלש פשוט חייב לשבור את כל הכללים כדי לשרוד.`}
+ />
 
-  return (
-    <section id="scene-asymmetric" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="01.3"
-        eyebrow="לחימה אסימטרית"
-        title={
-          <>
-            כשצבא ענק נלחם בכוח קטן — <span className="gradient-text">הכללים משתנים</span>
-          </>
-        }
-        intro={`פעם, מלחמות היו פשוטות כמו בסרטים: צבא מול צבא, טנק מול טנק. היום המציאות נראית כמו 'באג' במשחק: מעצמות ענק עם טכנולוגיה מטורפת (כמו ארה"ב או ישראל) מוצאות את עצמן נלחמות מול ארגוני טרור קטנים. הפער העצום הזה בכוח יוצר מלחמה עם חוקים חדשים לגמרי, שבהם הצד החלש פשוט חייב לשבור את כל הכללים כדי לשרוד.`}
-      />
+ <div className="p-5 mb-6">
+ <div className="flex gap-3 items-start">
+ <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
+ <div className="text-sm leading-relaxed">
+ <strong className="text-fg">מילון קצר:</strong>
+ <ul className="mt-2 space-y-1 text-fg-muted">
+ <li>· <strong className="text-fg">צד חזק (צבא סדיר)</strong> — המדינה. גוף שיש לו צבא מאורגן, חיילים במדים, שרשרת פיקוד מסודרת, מטוסי קרב, טנקים ותקציבי עתק.</li>
+ <li>· <strong className="text-fg">צד חלש (לא-סדיר)</strong> — ארגון ללא מדינה (טרור או גרילה). חבורה של לוחמים בלי מדים, שנטמעים בכוונה בתוך אוכלוסייה אזרחית ברחוב ומשתמשים בנשק פשוט וזול.</li>
+ <li>· <strong className="text-fg">אסימטריה</strong> — בשתי מילים –"לא כוחות". המילה 'סימטרי' אומרת ששני הצדדים שווים. 'אסימטרי' זה מצב של חוסר שוויון קיצוני, שבו צד אחד חזק משמעותית מהשני על הנייר – מה שמשנה לגמרי את כל אופי הלחימה.</li>
+ </ul>
+ </div>
+ </div>
+ </div>
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">מילון קצר:</strong>
-            <ul className="mt-2 space-y-1 text-fg-muted">
-              <li>· <strong className="text-fg">צד חזק (צבא סדיר)</strong> — המדינה. גוף שיש לו צבא מאורגן, חיילים במדים, שרשרת פיקוד מסודרת, מטוסי קרב, טנקים ותקציבי עתק.</li>
-              <li>· <strong className="text-fg">צד חלש (לא-סדיר)</strong> —   ארגון ללא מדינה (טרור או גרילה). חבורה של לוחמים בלי מדים, שנטמעים בכוונה בתוך אוכלוסייה אזרחית ברחוב ומשתמשים בנשק פשוט וזול.</li>
-              <li>· <strong className="text-fg">אסימטריה</strong> — בשתי מילים – "לא כוחות". המילה 'סימטרי' אומרת ששני הצדדים שווים. 'אסימטרי' זה מצב של חוסר שוויון קיצוני, שבו צד אחד חזק משמעותית מהשני על הנייר – מה שמשנה לגמרי את כל אופי הלחימה.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+ <GapVisual />
 
-      <GapVisual />
+ <div className="my-12">
+ <div className="mb-5">
+ <h3 className="text-xl font-bold mb-1">3 עמודי האסטרטגיה של הצד החלש</h3>
+ </div>
 
-      <div className="my-12">
-        <div className="mb-5">
-          <h3 className="text-xl font-bold mb-1">3 עמודי האסטרטגיה של הצד החלש</h3>
-        </div>
+ <div className="grid gap-3 md:grid-cols-3">
+ {PILLARS.map((p, i) => (
+ <motion.div
+key={p.id}
+initial={{ opacity: 0, y: 18 }}
+whileInView={{ opacity: 1, y: 0 }}
+viewport={{ once: true }}
+transition={{ delay: i * 0.1 }}
+className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
+ >
+ <div className="flex items-start gap-3 mb-3 relative">
+ <div className="size-10 rounded-xl border border-border bg-bg-accent flex items-center justify-center shrink-0">
+ <Icon name={p.icon} size={20} className={p.color} />
+ </div>
+ <div className="min-w-0 flex-1">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
+ עמוד {i + 1} · האסטרטגיה של החלש
+ </div>
+ <h4 className="font-display font-bold leading-tight text-lg">{p.label}</h4>
+ </div>
+ </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
-          {PILLARS.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
-            >
-              <div className="flex items-start gap-3 mb-3 relative">
-                <div className="size-10 rounded-xl border border-border bg-bg-accent flex items-center justify-center shrink-0">
-                  <Icon name={p.icon} size={20} className={p.color} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-mono text-fg-dim mb-0.5 tracking-widest uppercase">
-                    עמוד {i + 1} · האסטרטגיה של החלש
-                  </div>
-                  <h4 className="font-display font-bold leading-tight text-lg">{p.label}</h4>
-                </div>
-              </div>
+ <p className="text-sm leading-relaxed text-fg-muted mb-3">
+ {p.oneLiner}
+ </p>
+ <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">
+ {p.detail}
+ </p>
+ </motion.div>
+ ))}
+ </div>
+ </div>
 
-              <p className="text-sm leading-relaxed text-fg-muted mb-3">
-                {p.oneLiner}
-              </p>
-              <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">
-                {p.detail}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+ <TimeAsymmetry />
 
-<div className="surface-elevated p-6 md:p-8 my-12">
-        <div className="mb-6">
-          <h3 className="text-xl font-bold mb-1">למה הזמן הוא הנשק הסודי של הצד החלש?</h3>
-          <p className="text-fg-muted text-sm">גררו את ציר הזמן וראו איך כל יום שעובר שוחק את היתרון של המעצמה — ומחזק את הצד החלש</p>
-        </div>
+ <div className="my-12">
+ <div className="mb-5">
+ <h3 className="text-xl font-bold mb-1">5 טקטיקות של הצד החלש</h3>
+ <p className="text-fg-muted text-sm">איך הוא משתמש במרחב, באוכלוסייה ובטכנולוגיה כדי לשרוד מול ענק</p>
+ </div>
 
-        <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
-          <div>
-            <div className="text-xs font-mono text-fg-dim mb-1 tracking-widest uppercase">
-              כמה זמן המלחמה כבר נמשכת
-            </div>
-            <div className="font-display font-bold text-5xl md:text-6xl tabular-nums">
-              {days}
-              <span className="text-2xl text-fg-muted ms-1">ימים</span>
-            </div>
-          </div>
-          <span className={cn(
-            'chip border',
-            days < 60 ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
-            : days < 180 ? 'border-status-warn/40 bg-status-warn/10 text-status-warn'
-            : 'border-status-danger/40 bg-status-danger/10 text-status-danger'
-          )}>
-            {days < 60
-              ? 'ימי החסד — הציבור מאוחד והתקשורת תומכת'
-              : days < 180
-              ? 'המלחמה נתקעת — חללים, חובות וסדקים בקונצנזוס'
-              : 'הציבור נשבר — דרישה ציבורית לצאת בכל מחיר'}
-          </span>
-        </div>
+ <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+ {TRAITS.map((t, i) => (
+ <motion.div
+key={t.title}
+initial={{ opacity: 0, y: 14 }}
+whileInView={{ opacity: 1, y: 0 }}
+viewport={{ once: true }}
+transition={{ delay: i * 0.06 }}
+className="surface p-5 relative overflow-hidden"
+ >
+ <div className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
+ <div className="relative flex items-start justify-between mb-3">
+ <div className="size-11 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center">
+ <Icon name={t.icon} size={22} className="text-accent" />
+ </div>
+ <span className="font-mono text-xs text-fg-dim">
+ {String(i + 1).padStart(2, '0')}
+ </span>
+ </div>
+ <h4 className="font-display font-semibold mb-1.5 leading-tight">{t.title}</h4>
+ <p className="text-sm text-fg-muted leading-relaxed">{t.desc}</p>
+ </motion.div>
+ ))}
+ </div>
+ </div>
 
-        <input
-          type="range"
-          min={1}
-          max={365}
-          step={1}
-          value={days}
-          onChange={(e) => setDays(Number(e.target.value))}
-          className="w-full accent-accent"
-          aria-label="ימים"
-        />
-        <div className="flex justify-between text-xs font-mono text-fg-dim mt-1 mb-6">
-          <span>יום 1</span>
-          <span>3 חודשים</span>
-          <span>חצי שנה</span>
-          <span>שנה</span>
-        </div>
+ <motion.div
+initial={{ opacity: 0 }}
+whileInView={{ opacity: 1 }}
+viewport={{ once: true }}
+className="surface-elevated p-6 flex gap-4 items-start"
+ >
+ <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
+ <div>
+ <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ המסקנה: זורקים את ספר החוקים הישן לפח
+ </div>
+ <p className="text-fg leading-relaxed text-pretty">
+צבא מסורתי התאמן במשך שנים להילחם"ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם באויב שנעלם מתחת לאדמה ויורה מתוך גן ילדים – כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים. </p>
+ </div>
+ </motion.div>
+ </section>
+ );
+}
+type CompareRow = {
+label: string;
+strong: string;
+strongExample: string;
+weak: string;
+weakExample: string;
+};
+const COMPARE_ROWS: CompareRow[] = [
+ {
+label: 'מי זה בדרך כלל',
+strong: 'מדינה ריבונית (ארה"ב, רוסיה, ישראל).',
+strongExample: '',
+weak: 'ארגון או מיליציה בלי מדינה (חמאס, חיזבאללה, החות\'ים).',
+weakExample: '',
+ },
+ {
+label: 'תקציב שנתי',
+strong: 'עשרות ומאות מיליארדי דולרים מתקציב המדינה.',
+strongExample: '',
+weak: 'מיליונים בודדים (שוק שחור, תרומות והברחות).',
+weakExample: '',
+ },
+ {
+label: 'סוגי הנשק',
+strong: 'טכנולוגיית קצה חכמה – מטוסי חמקן (F-35 שעולה 80 מיליון $), טנקים, לוויינים מדוייקים.',
+strongExample: '',
+weak: 'נשק מדף ואלתורים – רובי קלצ\'ניקוב, מטענים ורחפני צעצוע מאמזון עם רימון מחובר.',
+weakExample: '',
+ },
+ {
+label: 'מי הלוחמים',
+strong: 'חיילים מקצועיים במדים, יחידות מובחרות שעברו מסלול אימונים ארוך.',
+strongExample: '',
+weak: 'אזרחים בלי מדים. בלתי אפשרי להבדיל בינם לבין עובר אורח תמים ברחוב.',
+weakExample: '',
+ },
+ {
+label: 'איפה הם נמצאים',
+strong: 'במטרות גלויות על המפה – בסיסים מסודרים, שדות תעופה ומחנות ענק.',
+strongExample: '',
+weak: 'מתחת לאדמה במנהרות, או מתחבאים בתוך בתי חולים, בתי ספר ודירות מסתור צפופות.',
+weakExample: '',
+ },
+ {
+label: 'מה המטרה',
+strong: 'נוק-אאוט. להשמיד את כוח האויב לחלוטין ולהכריע את המלחמה כמה שיותר מהר.',
+strongExample: '',
+weak: 'רק לשרוד. מבינים שלא ינצחו, אז המטרה היא \'לא להפסיד\', למשוך זמן ולייאש את החזק.',
+weakExample: '',
+ },
+];
+function GapVisual() {
+return (
+ <div className="surface-elevated overflow-hidden">
+ {/* Header row */}
+ <div className="grid grid-cols-[1.2fr_1fr_1fr] border-b border-border-strong">
+ <div className="p-4 bg-bg-accent/40">
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">השוואה</div>
+ </div>
+ <div className="p-4 bg-accent-hot/10 border-r border-border-strong">
+ <div className="flex items-center gap-2 mb-1">
+ <Icon name="tank" size={20} className="text-accent-hot" />
+ <div className="font-display font-bold text-base">צד חזק</div>
+ </div>
+ <div className="text-xs text-accent-hot font-mono">מדינה · צבא סדיר</div>
+ </div>
+ <div className="p-4 bg-accent-cool/10 border-r border-border-strong">
+ <div className="flex items-center gap-2 mb-1">
+ <Icon name="mask" size={20} className="text-accent-cool" />
+ <div className="font-display font-bold text-base">צד חלש</div>
+ </div>
+ <div className="text-xs text-accent-cool font-mono">ארגון לא־סדיר · גרילה</div>
+ </div>
+ </div>
 
-        <div className="grid sm:grid-cols-3 gap-4">
-          <CostCard days={days} />
-          <SupportCard days={days} />
-          <SurvivalCard days={days} />
-        </div>
+ {/* Comparison rows */}
+ {COMPARE_ROWS.map((row, i) => (
+ <motion.div
+key={row.label}
+initial={{ opacity: 0, y: 10 }}
+whileInView={{ opacity: 1, y: 0 }}
+viewport={{ once: true, amount: 0.2 }}
+transition={{ delay: i * 0.05 }}
+className={cn(
+ 'grid grid-cols-[1.2fr_1fr_1fr] border-b border-border-subtle last:border-b-0',
+i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent'
+ )}
+ >
+ <div className="p-4 bg-bg-accent/30 flex items-center">
+ <div className="text-sm font-medium">{row.label}</div>
+ </div>
+ <div className="p-4 border-r border-border-subtle">
+ <div className="text-sm text-fg leading-snug mb-1">{row.strong}</div>
+ <div className="text-xs text-fg-dim leading-relaxed">{row.strongExample}</div>
+ </div>
+ <div className="p-4 border-r border-border-subtle">
+ <div className="text-sm text-fg leading-snug mb-1">{row.weak}</div>
+ <div className="text-xs text-fg-dim leading-relaxed">{row.weakExample}</div>
+ </div>
+ </motion.div>
+ ))}
 
-        <WarTimeline currentDays={days} />
-
-        <div className="mt-6 surface p-5 border-r-4 border-r-accent">
-          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">
-            התובנה
-          </div>
-          <p className="text-sm text-fg leading-relaxed text-pretty">
-            למעצמה יש שעון עצר שלא רואים — אבל שומעים בכל מקום: מלחמה ארוכה שורפת מיליארדים, מערערת את הכלכלה, ומפיצה לוויות לתוך כל סלון בארץ. בלוח הזמנים של המעצמה יש בחירות, יש בורסה, ויש דעת קהל בינלאומית. אצל ארגון טרור — אין כלום מזה: אין לו דדליין, אין לו אופוזיציה ואין לו בוחר שמתלונן על המחיר. הוא צריך לשרוד עוד יום, ועוד יום, עד שהענק שמולו פשוט מתעייף ועוזב.
-            {/* ארה"ב באפגניסטן 20 שנה / וייטנאם הן הדוגמאות הקנוניות לדפוס הזה */}
-            <strong className="text-fg block mt-2">ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20. במלחמת התשה לא מנצח מי שחזק יותר — אלא מי שמצמץ אחרון.</strong>
-          </p>
-        </div>
-      </div>
-          
-      <div className="my-12">
-        <div className="mb-5">
-          <h3 className="text-xl font-bold mb-1">5 טקטיקות של הצד החלש</h3>
-          <p className="text-fg-muted text-sm">איך הוא משתמש במרחב, באוכלוסייה ובטכנולוגיה כדי לשרוד מול ענק</p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {TRAITS.map((t, i) => (
-            <motion.div
-              key={t.title}
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06 }}
-              className="surface p-5 relative overflow-hidden"
-            >
-              <div className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
-              <div className="relative flex items-start justify-between mb-3">
-                <div className="size-11 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center">
-                  <Icon name={t.icon} size={22} className="text-accent" />
-                </div>
-                <span className="font-mono text-xs text-fg-dim">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              </div>
-              <h4 className="font-display font-semibold mb-1.5 leading-tight">{t.title}</h4>
-              <p className="text-sm text-fg-muted leading-relaxed">{t.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="surface-elevated p-6 border-r-4 border-r-accent flex gap-4 items-start"
-      >
-        <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
-        <div>
-          <div className="text-xs font-mono text-accent mb-1 tracking-widest uppercase">
-            המסקנה: זורקים את ספר החוקים הישן לפח
-          </div>
-          <p className="text-fg leading-relaxed text-pretty">
-צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם באויב שנעלם מתחת לאדמה ויורה מתוך גן ילדים – כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.          </p>
-        </div>
-      </motion.div>
-    </section>
-  );
+ {/* Footer */}
+ <div className="grid grid-cols-[1.2fr_1fr_1fr] bg-bg-accent/30">
+ <div className="p-4 flex items-center gap-2 border-r border-border-subtle">
+ <Icon name="scale" size={18} className="text-accent" />
+ <span className="text-sm font-display font-semibold text-accent-hover tracking-wider">פער אסימטרי</span>
+ </div>
+ <div className="p-4 col-span-2 text-xs text-fg-muted leading-relaxed border-r border-border-subtle">
+על הנייר, הצד החזק אמור למחוץ את הצד החלש ביום אחד. בדיוק בגלל זה הצד החלש בורח מקרב"ראש בראש" בשטח פתוח. במקום זה, הוא גורר את הצבא הגדול למגרש שלו: סמטאות צפופות ומנהרות – המקום היחיד שבו המטוסים והטנקים מאבדים את היתרון הטכנולוגי שלהם. </div>
+ </div>
+ </div>
+ );
 }
 
-type CompareRow = {
-  label: string;
-  strong: string;
-  strongExample: string;
-  weak: string;
-  weakExample: string;
-};
+// ────────────────────────────────────────────────────────────────────────────
+// TimeAsymmetry — "why is time the secret weapon of the weak side?"
+// Reframed as a count of *fronts*. The strong side fights 5 in parallel
+// (the enemy + 4 internal pressures that can each force them to stop).
+// The weak side fights only 1 (survival). Static comparison, no metaphor.
+// ────────────────────────────────────────────────────────────────────────────
 
-const COMPARE_ROWS: CompareRow[] = [
+const OPPONENTS: {
+  title: string;
+  desc: string;
+  icon: IconName;
+  strongActive: boolean;
+  weakActive: boolean;
+}[] = [
   {
-    label: 'מי זה בדרך כלל',
-    strong: 'מדינה ריבונית (ארה"ב, רוסיה, ישראל).',
-    strongExample: '',
-    weak: 'ארגון או מיליציה בלי מדינה (חמאס, חיזבאללה, החות\'ים).',
-    weakExample: '',
+    title: 'האויב בשטח',
+    desc: 'לוחמי גרילה, מנהרות, רקטות — היריב הצבאי המוצהר.',
+    icon: 'mask',
+    strongActive: true,
+    weakActive: true,
   },
   {
-    label: 'תקציב שנתי',
-    strong: 'עשרות ומאות מיליארדי דולרים מתקציב המדינה.',
-    strongExample: '',
-    weak: 'מיליונים בודדים (שוק שחור, תרומות והברחות).',
-    weakExample: '',
+    title: 'משרד האוצר',
+    desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.',
+    icon: 'fuel',
+    strongActive: true,
+    weakActive: false,
   },
   {
-    label: 'סוגי הנשק',
-    strong: 'טכנולוגיית קצה חכמה – מטוסי חמקן (F-35 שעולה 80 מיליון $), טנקים, לוויינים מדוייקים.',
-    strongExample: '',
-    weak: 'נשק מדף ואלתורים – רובי קלצ\'ניקוב, מטענים ורחפני צעצוע מאמזון עם רימון מחובר.',
-    weakExample: '',
+    title: 'דעת הקהל',
+    desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.',
+    icon: 'megaphone',
+    strongActive: true,
+    weakActive: false,
   },
   {
-    label: 'מי הלוחמים',
-    strong: 'חיילים מקצועיים במדים, יחידות מובחרות שעברו מסלול אימונים ארוך.',
-    strongExample: '',
-    weak: 'אזרחים בלי מדים. בלתי אפשרי להבדיל בינם לבין עובר אורח תמים ברחוב.',
-    weakExample: '',
+    title: 'הפוליטיקה הפנימית',
+    desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.',
+    icon: 'capital',
+    strongActive: true,
+    weakActive: false,
   },
   {
-    label: 'איפה הם נמצאים',
-    strong: 'במטרות גלויות על המפה – בסיסים מסודרים, שדות תעופה ומחנות ענק.',
-    strongExample: '',
-    weak: 'מתחת לאדמה במנהרות, או מתחבאים בתוך בתי חולים, בתי ספר ודירות מסתור צפופות.',
-    weakExample: '',
-  },
-  {
-    label: 'מה המטרה',
-    strong: 'נוק-אאוט. להשמיד את כוח האויב לחלוטין ולהכריע את המלחמה כמה שיותר מהר.',
-    strongExample: '',
-    weak: 'רק לשרוד. מבינים שלא ינצחו, אז המטרה היא \'לא להפסיד\', למשוך זמן ולייאש את החזק.',
-    weakExample: '',
+    title: 'הבמה הבינלאומית',
+    desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".',
+    icon: 'globe',
+    strongActive: true,
+    weakActive: false,
   },
 ];
 
-function GapVisual() {
+function TimeAsymmetry() {
   return (
-    <div className="surface-elevated overflow-hidden">
-      {/* Header row */}
-      <div className="grid grid-cols-[1.2fr_1fr_1fr] border-b border-border-strong">
-        <div className="p-4 bg-bg-accent/40">
-          <div className="text-xs font-mono text-fg-dim tracking-widest uppercase">השוואה</div>
-        </div>
-        <div className="p-4 bg-accent-hot/10 border-r border-border-strong">
-          <div className="flex items-center gap-2 mb-1">
-            <Icon name="tank" size={20} className="text-accent-hot" />
-            <div className="font-display font-bold text-base">צד חזק</div>
-          </div>
-          <div className="text-xs text-accent-hot font-mono">מדינה · צבא סדיר</div>
-        </div>
-        <div className="p-4 bg-accent-cool/10 border-r border-border-strong">
-          <div className="flex items-center gap-2 mb-1">
-            <Icon name="mask" size={20} className="text-accent-cool" />
-            <div className="font-display font-bold text-base">צד חלש</div>
-          </div>
-          <div className="text-xs text-accent-cool font-mono">ארגון לא־סדיר · גרילה</div>
-        </div>
+    <div className="my-12">
+      <div className="mb-5">
+        <h3 className="text-xl font-bold mb-1">למה הזמן הוא הנשק הסודי של הצד החלש?</h3>
+        <p className="text-fg-muted text-sm">
+          המעצמה לא נלחמת רק באויב שמולה — היא לוחמת בו-זמנית בעוד 4 חזיתות פנימיות שכופות עליה לסיים. ארגון הטרור — בחזית אחת בלבד.
+        </p>
       </div>
 
-      {/* Comparison rows */}
-      {COMPARE_ROWS.map((row, i) => (
+      {/* Two hero stat cards: 5 vs 1 */}
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
         <motion.div
-          key={row.label}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ delay: i * 0.05 }}
-          className={cn(
-            'grid grid-cols-[1.2fr_1fr_1fr] border-b border-border-subtle last:border-b-0',
-            i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent'
-          )}
+          viewport={{ once: true }}
+          className="surface-elevated p-5 sm:p-6 relative overflow-hidden"
         >
-          <div className="p-4 bg-bg-accent/30 flex items-center">
-            <div className="text-sm font-medium">{row.label}</div>
-          </div>
-          <div className="p-4 border-r border-border-subtle">
-            <div className="text-sm text-fg leading-snug mb-1">{row.strong}</div>
-            <div className="text-xs text-fg-dim leading-relaxed">{row.strongExample}</div>
-          </div>
-          <div className="p-4 border-r border-border-subtle">
-            <div className="text-sm text-fg leading-snug mb-1">{row.weak}</div>
-            <div className="text-xs text-fg-dim leading-relaxed">{row.weakExample}</div>
+          <div aria-hidden className="absolute -top-12 -end-12 size-40 rounded-full bg-accent-hot/10 blur-3xl pointer-events-none" />
+          <div className="relative flex items-start gap-4">
+            <div className="grid place-items-center size-12 rounded-xl bg-accent-hot/10 border border-accent-hot/30 shrink-0">
+              <Icon name="tank" size={22} className="text-accent-hot" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-display font-semibold tracking-wider text-accent-hot mb-1">
+                צד חזק · מדינה
+              </div>
+              <div className="flex items-baseline gap-2">
+                <div className="font-display font-bold text-5xl tabular-nums text-accent-hot leading-none">
+                  5
+                </div>
+                <div className="text-sm text-fg-muted leading-tight">
+                  חזיתות פעילות
+                  <br />
+                  בו-זמנית
+                </div>
+              </div>
+              <div className="text-xs text-fg-muted mt-3 leading-relaxed">
+                צריך לנצח <strong className="text-fg">בכל אחת מהן</strong> — אחרת המלחמה נגמרת מבפנים.
+              </div>
+            </div>
           </div>
         </motion.div>
-      ))}
 
-      {/* Footer */}
-      <div className="grid grid-cols-[1.2fr_1fr_1fr] bg-bg-accent/30">
-        <div className="p-4 flex items-center gap-2 border-r border-border-subtle">
-          <Icon name="scale" size={18} className="text-accent" />
-          <span className="text-xs font-mono text-accent tracking-widest uppercase">פער אסימטרי</span>
-        </div>
-        <div className="p-4 col-span-2 text-xs text-fg-muted leading-relaxed border-r border-border-subtle">
-על הנייר, הצד החזק אמור למחוץ את הצד החלש ביום אחד. בדיוק בגלל זה הצד החלש בורח מקרב "ראש בראש" בשטח פתוח. במקום זה, הוא גורר את הצבא הגדול למגרש שלו: סמטאות צפופות ומנהרות – המקום היחיד שבו המטוסים והטנקים מאבדים את היתרון הטכנולוגי שלהם.        </div>
-      </div>
-    </div>
-  );
-}
-
-function CostCard({ days }: { days: number }) {
-  // Iraq war: ~$2T over 8y → ~$685M/day; we model 0.7B/day so 60d≈$42B, 365d≈$255B
-  const billions = Math.round(15 + (days / 365) * 240);
-  const cap = 260;
-  const context =
-    billions < 50
-      ? 'בערך כל תקציב הביטחון השנתי של ישראל'
-      : billions < 130
-      ? 'יותר מתקציב הבריאות השנתי של מדינה בינונית'
-      : 'מספיק כדי לבנות מאות בתי חולים — או לכסות 5 שנות הוצאות חינוך';
-
-  return (
-    <div className="surface p-5 relative overflow-hidden">
-      <div aria-hidden className="absolute -top-12 -end-12 size-32 rounded-full bg-accent-hot/15 blur-3xl pointer-events-none" />
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <div className="size-9 rounded-xl bg-accent-hot/10 border border-accent-hot/30 flex items-center justify-center">
-            <Icon name="fuel" size={18} className="text-accent-hot" />
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.1 }}
+          className="surface-elevated p-5 sm:p-6 relative overflow-hidden"
+        >
+          <div aria-hidden className="absolute -top-12 -end-12 size-40 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
+          <div className="relative flex items-start gap-4">
+            <div className="grid place-items-center size-12 rounded-xl bg-accent-cool/10 border border-accent-cool/30 shrink-0">
+              <Icon name="mask" size={22} className="text-accent-cool" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-display font-semibold tracking-wider text-accent-cool mb-1">
+                צד חלש · ארגון לא-סדיר
+              </div>
+              <div className="flex items-baseline gap-2">
+                <div className="font-display font-bold text-5xl tabular-nums text-accent-cool leading-none">
+                  1
+                </div>
+                <div className="text-sm text-fg-muted leading-tight">
+                  חזית אחת
+                  <br />
+                  (לשרוד)
+                </div>
+              </div>
+              <div className="text-xs text-fg-muted mt-3 leading-relaxed">
+                צריך רק <strong className="text-fg">לא לאבד אותה</strong> — וזה מספיק לניצחון.
+              </div>
+            </div>
           </div>
-          <span className="chip border-accent-hot/30 bg-accent-hot/10 text-accent-hot text-xs">↑ עולה</span>
+        </motion.div>
+      </div>
+
+      {/* The opponent table */}
+      <div className="surface-elevated overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto] border-b border-border-strong">
+          <div className="p-3 sm:p-4 bg-bg-accent/40">
+            <div className="text-xs font-display font-semibold text-fg-muted tracking-wider">
+              מי באמת יכול להכריח אותך לסיים את המלחמה?
+            </div>
+          </div>
+          <div className="px-3 sm:px-4 py-3 bg-accent-hot/10 border-r border-border-strong text-center min-w-[68px] sm:min-w-[88px]">
+            <div className="text-xs font-display font-semibold tracking-wider text-accent-hot">
+              חזק
+            </div>
+          </div>
+          <div className="px-3 sm:px-4 py-3 bg-accent-cool/10 border-r border-border-strong text-center min-w-[68px] sm:min-w-[88px]">
+            <div className="text-xs font-display font-semibold tracking-wider text-accent-cool">
+              חלש
+            </div>
+          </div>
         </div>
-        <div className="text-xs font-mono text-fg-dim mb-2 tracking-widest uppercase leading-tight">
-          ההוצאה הצבאית של המעצמה
-        </div>
-        <div className="font-display font-bold tabular-nums text-accent-hot leading-none mb-1">
-          <span className="text-4xl md:text-5xl">${billions}</span>
-          <span className="text-xl text-fg-muted ms-1">מיליארד</span>
-        </div>
-        <div className="text-xs text-fg-muted mb-4">מצטבר מתחילת המלחמה</div>
-        <div className="h-2 rounded-full bg-bg-accent overflow-hidden mb-3">
+
+        {OPPONENTS.map((o, i) => (
           <motion.div
-            className="h-full rounded-full bg-gradient-to-l from-accent-hot to-accent-hot/60"
-            animate={{ width: `${Math.min(100, (billions / cap) * 100)}%` }}
-            transition={{ duration: 0.4 }}
-          />
-        </div>
-        <div className="text-xs text-fg-dim leading-relaxed">{context}</div>
-      </div>
-    </div>
-  );
-}
-
-function SupportCard({ days }: { days: number }) {
-  const support = Math.max(15, Math.round(85 - (days / 365) * 60));
-  const filled = Math.round(support / 10);
-  const context =
-    support > 70
-      ? 'הציבור עוד מאוחד — התקשורת תומכת והבנקים שקטים'
-      : support > 45
-      ? 'התקשורת מתחילה לבקר. הפגנות בערים גדלות'
-      : 'דרישה ציבורית רחבה לסיים את המלחמה — מיד';
-
-  return (
-    <div className="surface p-5 relative overflow-hidden">
-      <div aria-hidden className="absolute -top-12 -end-12 size-32 rounded-full bg-status-warn/15 blur-3xl pointer-events-none" />
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <div className="size-9 rounded-xl bg-status-warn/10 border border-status-warn/30 flex items-center justify-center">
-            <Icon name="megaphone" size={18} className="text-status-warn" />
-          </div>
-          <span className="chip border-status-warn/30 bg-status-warn/10 text-status-warn text-xs">↓ יורד</span>
-        </div>
-        <div className="text-xs font-mono text-fg-dim mb-2 tracking-widest uppercase leading-tight">
-          תמיכת הציבור במלחמה
-        </div>
-        <div className="font-display font-bold tabular-nums text-status-warn leading-none mb-1">
-          <span className="text-4xl md:text-5xl">{support}</span>
-          <span className="text-xl text-fg-muted ms-1">%</span>
-        </div>
-        <div className="text-xs text-fg-muted mb-4">סקרים בקרב אזרחי הצד החזק</div>
-        <div className="grid grid-cols-10 gap-1 mb-3" aria-hidden>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className={cn(
-                'h-6 rounded-sm flex items-center justify-center transition-colors',
-                i < filled ? 'bg-status-warn/80 text-bg' : 'bg-bg-accent border border-border-subtle text-fg-dim'
+            key={o.title}
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ delay: i * 0.06 }}
+            className={cn(
+              'grid grid-cols-[1fr_auto_auto] border-b border-border-subtle last:border-b-0',
+              i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
+            )}
+          >
+            <div className="p-3 sm:p-4 flex items-center gap-3 min-w-0">
+              <div className="size-10 rounded-lg border border-border bg-bg-accent flex items-center justify-center shrink-0">
+                <Icon name={o.icon} size={18} className="text-accent" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-display font-semibold text-sm leading-tight">
+                  {o.title}
+                </div>
+                <div className="text-xs text-fg-muted leading-snug mt-0.5">
+                  {o.desc}
+                </div>
+              </div>
+            </div>
+            <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[68px] sm:min-w-[88px]">
+              {o.strongActive ? (
+                <span className="inline-flex items-center justify-center size-7 rounded-full bg-accent-hot/15 text-accent-hot border border-accent-hot/40">
+                  <Icon name="check" size={14} strokeWidth={3} />
+                </span>
+              ) : (
+                <span className="inline-flex items-center justify-center size-7 rounded-full bg-bg-accent text-fg-dim border border-border-subtle font-mono text-sm leading-none">
+                  —
+                </span>
               )}
-              animate={{ opacity: i < filled ? 1 : 0.4 }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="3.5" />
-                <path d="M5 21a7 7 0 0 1 14 0" />
-              </svg>
-            </motion.div>
-          ))}
-        </div>
-        <div className="text-xs text-fg-dim leading-relaxed">{context}</div>
-      </div>
-    </div>
-  );
-}
-
-function SurvivalCard({ days }: { days: number }) {
-  const context =
-    days < 30
-      ? 'בקרבות הראשונים. הפסד פחות חשוב מהעובדה שעוד יורים.'
-      : days < 180
-      ? 'התבסס במנהרות, התרגל לתקיפות. כבר אי אפשר לחסל אותו במכה.'
-      : 'הוכיח לכל ארגון בעולם שאפשר לעמוד מול מעצמה. ניצחון תעמולתי.';
-
-  return (
-    <div className="surface p-5 relative overflow-hidden">
-      <div aria-hidden className="absolute -top-12 -end-12 size-32 rounded-full bg-accent-intel/15 blur-3xl pointer-events-none" />
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <div className="size-9 rounded-xl bg-accent-intel/10 border border-accent-intel/30 flex items-center justify-center">
-            <Icon name="hourglass" size={18} className="text-accent-intel" />
-          </div>
-          <span className="chip border-accent-intel/30 bg-accent-intel/10 text-accent-intel text-xs">✓ עומד</span>
-        </div>
-        <div className="text-xs font-mono text-fg-dim mb-2 tracking-widest uppercase leading-tight">
-          ימי שרידות של הצד החלש
-        </div>
-        <div className="font-display font-bold tabular-nums text-accent-intel leading-none mb-1">
-          <span className="text-4xl md:text-5xl">{days}</span>
-          <span className="text-xl text-fg-muted ms-1">ימים</span>
-        </div>
-        <div className="text-xs text-fg-muted mb-4">הוא לא צריך לנצח — מספיק לא למות</div>
-        {/* Day tally — small dashes by week */}
-        <div className="flex flex-wrap gap-[3px] mb-3" aria-hidden>
-          {Array.from({ length: Math.min(52, Math.ceil(days / 7)) }).map((_, i) => (
-            <motion.span
-              key={i}
-              className="h-3 w-1 rounded-sm bg-accent-intel/70"
-              initial={{ opacity: 0, scaleY: 0 }}
-              animate={{ opacity: 1, scaleY: 1 }}
-              transition={{ delay: i * 0.005, duration: 0.2 }}
-            />
-          ))}
-          {days > 52 * 7 && (
-            <span className="text-xs font-mono text-accent-intel ms-1">+{Math.floor((days - 52 * 7) / 7)} שבועות</span>
-          )}
-        </div>
-        <div className="text-xs text-fg-dim leading-relaxed">{context}</div>
-      </div>
-    </div>
-  );
-}
-
-const WARS: { name: string; days: number; meta: string; color: string }[] = [
-  { name: 'ששת הימים',          days: 6,    meta: 'ישראל · 1967',         color: 'bg-fg-muted' },
-  { name: 'יום הכיפורים',       days: 19,   meta: 'ישראל · 1973',         color: 'bg-fg-muted' },
-  { name: 'לבנון השנייה',        days: 34,   meta: 'ישראל · 2006',         color: 'bg-fg-muted' },
-  { name: 'מלחמת המפרץ',         days: 42,   meta: "ארה\"ב · 1991",         color: 'bg-fg-muted' },
-  { name: 'חרבות ברזל',          days: 470,  meta: 'ישראל · מ-2023',       color: 'bg-accent-hot' },
-  { name: 'ברה"מ באפגניסטן',    days: 3340, meta: '~9 שנים · 1979–89',     color: 'bg-fg-muted' },
-  { name: 'וייטנאם',              days: 3650, meta: "ארה\"ב · ~10 שנים",     color: 'bg-fg-muted' },
-  { name: 'אפגניסטן',             days: 7300, meta: "ארה\"ב · ~20 שנים",     color: 'bg-fg-muted' },
-];
-
-function WarTimeline({ currentDays }: { currentDays: number }) {
-  // Sort short → long so the user sees what they've already "outlasted" first.
-  const sorted = [...WARS].sort((a, b) => a.days - b.days);
-  const passedCount = sorted.filter((w) => currentDays >= w.days).length;
-
-  return (
-    <div className="mt-8 surface-elevated p-5 sm:p-6 relative overflow-hidden">
-      <div aria-hidden className="absolute inset-0 topo-bg opacity-10 pointer-events-none" />
-      <div className="relative">
-        <div className="flex items-baseline justify-between gap-4 flex-wrap mb-1">
-          <div>
-            <div className="flex items-center gap-2">
-              <Icon name="clock" size={14} className="text-accent" />
-              <div className="text-xs font-mono text-accent tracking-widest uppercase">
-                ב-{currentDays} ימים — בכמה מלחמות בהיסטוריה כבר היית עומד?
-              </div>
             </div>
-            <p className="text-sm text-fg-muted mt-1">
-              לכל מלחמה, כמה אחוז ממשך הזמן שלה כבר עבר עליך.
-            </p>
-          </div>
-          <div className="text-end">
-            <div className="font-display font-bold text-3xl tabular-nums text-accent leading-none">
-              {passedCount}<span className="text-fg-muted text-xl">/{sorted.length}</span>
+            <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[68px] sm:min-w-[88px]">
+              {o.weakActive ? (
+                <span className="inline-flex items-center justify-center size-7 rounded-full bg-accent-cool/15 text-accent-cool border border-accent-cool/40">
+                  <Icon name="check" size={14} strokeWidth={3} />
+                </span>
+              ) : (
+                <span className="inline-flex items-center justify-center size-7 rounded-full bg-bg-accent text-fg-dim border border-border-subtle font-mono text-sm leading-none">
+                  —
+                </span>
+              )}
             </div>
-            <div className="text-xs text-fg-muted mt-1">מלחמות שכבר עברת</div>
+          </motion.div>
+        ))}
+
+        {/* Totals footer */}
+        <div className="grid grid-cols-[1fr_auto_auto] bg-bg-accent/30 border-t border-border-strong">
+          <div className="p-3 sm:p-4 flex items-center gap-2">
+            <Icon name="scale" size={18} className="text-accent" />
+            <span className="text-sm font-display font-semibold text-accent-hover tracking-wider">
+              סך החזיתות
+            </span>
+          </div>
+          <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[68px] sm:min-w-[88px]">
+            <div className="font-display font-bold text-2xl tabular-nums text-accent-hot leading-none">
+              5
+            </div>
+          </div>
+          <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[68px] sm:min-w-[88px]">
+            <div className="font-display font-bold text-2xl tabular-nums text-accent-cool leading-none">
+              1
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="mt-6 space-y-3">
-          {sorted.map((w) => {
-            const passed = currentDays >= w.days;
-            const pct = Math.min(100, (currentDays / w.days) * 100);
-            const isCurrent = w.color === 'bg-accent-hot'; // חרבות ברזל highlight
-            return (
-              <div key={w.name} className="flex items-center gap-3 sm:gap-4">
-                {/* Name + meta — first → RIGHT in RTL */}
-                <div className="w-28 sm:w-44 shrink-0 text-end">
-                  <div
-                    className={cn(
-                      'text-sm font-medium leading-tight',
-                      isCurrent ? 'text-accent-hot' : 'text-fg'
-                    )}
-                  >
-                    {w.name}
-                  </div>
-                  <div className="text-xs font-mono text-fg-dim">{w.meta}</div>
-                </div>
-
-                {/* Progress bar — middle */}
-                <div className="flex-1 h-3 rounded-full bg-bg-accent border border-border-subtle overflow-hidden relative">
-                  <motion.div
-                    className={cn(
-                      'h-full rounded-full',
-                      passed
-                        ? 'bg-gradient-to-l from-status-ok to-status-ok/70'
-                        : 'bg-gradient-to-l from-accent to-accent/60'
-                    )}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </div>
-
-                {/* Status — last → LEFT in RTL */}
-                <div className="w-24 sm:w-28 shrink-0 flex items-center gap-1.5 text-xs justify-start">
-                  {passed ? (
-                    <>
-                      <Icon name="check" size={12} className="text-status-ok" strokeWidth={3} />
-                      <span className="text-status-ok font-medium font-mono tabular-nums">
-                        עברת ({w.days}d)
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-fg-muted font-mono tabular-nums">
-                      {currentDays}/{w.days}d
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 mt-4">
+        <div className="text-sm font-display font-semibold text-accent-hover mb-1.5 tracking-wider">
+          התובנה
         </div>
-
-        <div className="mt-5 text-xs text-fg-dim leading-relaxed">
-          <strong className="text-fg">איך לקרוא:</strong> כל פס מציג מלחמה אמיתית.
-          הירוקים — כבר נמשכו פחות זמן ממה שעבר בסימולציה. הכתומים — עדיין בעיצומם בנקודת זמן זו.
-        </div>
+        <p className="text-sm text-fg leading-relaxed text-pretty">
+          המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. הצד החלש, לעומת זאת, נלחם רק בחזית אחת. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.
+          <strong className="text-fg block mt-2">
+            ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20 — לא כי הפסידה בקרבות, אלא כי קרסה ב-4 החזיתות האחרות.
+          </strong>
+        </p>
       </div>
     </div>
   );

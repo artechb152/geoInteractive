@@ -96,7 +96,7 @@ function CompletionBanner() {
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
+          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
             כל הכבוד · סיימת את שיעור ה-GEOINT
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
@@ -133,7 +133,7 @@ function NextStepCard() {
           <Icon name="spark" size={22} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">השלב הבא</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
           <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
           <div className="text-xs text-fg-muted mt-0.5">הצלבת סנסורים וזיהוי הונאה</div>
         </div>
@@ -157,7 +157,7 @@ function NextStepCard() {
           <Icon name="check" size={22} strokeWidth={2.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">או</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
           <div className="font-display font-bold leading-tight">בדיקת ידע</div>
           <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
         </div>

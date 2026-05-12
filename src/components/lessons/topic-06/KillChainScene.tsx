@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
@@ -28,23 +27,23 @@ const STAGES: StageData[] = [
     label: 'איתור',
     english: 'Find / Detect',
     icon: 'eye',
-    question: 'איפה האויב?',
-    losRole: 'סנסור (תצפיתן, רחפן, לוויין) חייב LOS כדי <strong>לראות</strong> את המטרה ולסווג אותה. בלי קו ראייה — אין מטרה.',
-    failure: 'תצפית חוסמה ע"י ערפל בוקר. סוללת רקטות שיוצרת חתימה תרמית אבל לא חזותית — נשארת בלתי מסווגת.',
-    fix: 'הצלבת סנסורים: SAR (רדאר) רואה דרך ענן, אופטיקה רגילה לא. ESM (חיתוך תקשורת) משלים. סנסור מצליב סנסור.',
+    question: 'איפה המטרה?',
+    losRole: 'התצפיתן, הרחפן או הלוויין חייבים קו ראייה (LOS) נקי כדי לראות את המטרה ולהבין מהי. בלי קו ראייה — המטרה פשוט לא קיימת מבחינתנו.',
+    failure: 'תצפית בעין שנחסמת בגלל ערפל בוקר כבד, או סוללת טילים שמוסתרת היטב בתוך יער ולא ניתן לאמת אותה.',
+    fix: 'שילוב של כלים שונים. למשל: רדאר (מכ"ם) שיכול "לראות" דרך עננים, או חיישנים שקולטים שידורי קשר. אם כלי אחד מתעוור, השני משלים אותו.',
     color: 'text-terrain-sky',
     bg: 'bg-terrain-sky/10',
     border: 'border-terrain-sky/40',
   },
   {
     id: 'fix',
-    label: 'נעילה',
+    label: 'נעילה / מעקב',
     english: 'Fix / Track',
     icon: 'crosshair',
-    question: 'איפה היא תהיה כשהחימוש יגיע?',
-    losRole: 'הסנסור חייב להמשיך לראות את המטרה כדי <strong>לעדכן</strong> את המיקום ולחשב את נקודת הפגיעה. LOS רציף — לא מבזק.',
-    failure: 'כטב"ם שמעקב אחרי טנק. הטנק נכנס לפרדס סבוך. LOS נשבר. כשהוא יוצא בצד השני, נעלם מהמסך — נעילה אבדה.',
-    fix: 'מספר סנסורים שעוקבים במקביל. אם אחד מאבד — השני נכנס. או — חישוב מסלול חזוי על סמך הנתון האחרון, עד חזרת LOS.',
+    question: 'איפה המטרה תהיה כשהטיל יגיע?',
+    losRole: 'אנחנו חייבים לשמור על קו ראייה רציף כדי לעקוב אחרי המטרה ולעדכן את המיקום שלה בכל שנייה, ולא רק לקבל תמונה אחת שלה.',
+    failure: 'רחפן עוקב אחרי רכב נמלט. הרכב נכנס לתוך מנהרה או חורשה סבוכה. קו הראייה נשבר, והרכב אבד לנו.',
+    fix: 'שימוש בכמה אמצעי מעקב במקביל מכיוונים שונים. בנוסף, אלגוריתמים שמנסים "לנחש" לאן המטרה נסעה לפי המהירות והכיוון האחרונים שלה, עד שהיא מופיעה שוב.',
     color: 'text-accent',
     bg: 'bg-accent/10',
     border: 'border-accent/40',
@@ -54,23 +53,23 @@ const STAGES: StageData[] = [
     label: 'שיגור',
     english: 'Engage / Launch',
     icon: 'bolt',
-    question: 'באיזה חימוש לפגוע?',
-    losRole: 'חימושים מונחי לייזר / וידאו <strong>דורשים LOS רציף</strong> מהמטוס/הקת"ק לאורך כל מעוף הטיל. חימוש GPS לא — אבל פחות מדויק.',
-    failure: 'תקיפת לייזר בעיראק 2003: ענן נכנס בין המטוס למטרה ברגע השיגור. הלייזר איבד את הסימון. הטיל נפל בשדה ריק.',
-    fix: 'תכנון תאורת מטרה ע"י <strong>קת"ק שני</strong> מזווית שונה, או חימוש GPS חלופי כאשר ה-LOS האופטי לא בטוח.',
+    question: 'איך פוגעים?',
+    losRole: 'טילים "חכמים" שמונחים בעזרת קרן לייזר או מצלמת וידאו דורשים קו ראייה רציף מהרגע שירינו ועד הפגיעה. טילים שמבוססים על מיקום (GPS) לא צריכים קו ראייה, אבל הם פחות מדויקים מול מטרות זזות.',
+    failure: 'בעיראק (2003) שוגר טיל מונחה לייזר. שנייה אחרי השיגור, ענן עבר והסתיר את המטרה. קרן הלייזר נשברה, והטיל נפל בשדה ריק.',
+    fix: 'מיקום כוח נוסף בזווית אחרת שיכול "להאיר" את המטרה בלייזר, או בחירה מראש בטיל מבוסס GPS כשמזג האוויר בעייתי.',
     color: 'text-accent-hot',
     bg: 'bg-accent-hot/10',
     border: 'border-accent-hot/40',
   },
   {
     id: 'hit',
-    label: 'פגיעה ובדיקת תוצאה',
+    label: 'בדיקת תוצאות',
     english: 'Hit / BDA',
     icon: 'target',
-    question: 'האם פגענו?',
-    losRole: 'הערכת נזק (BDA - Battle Damage Assessment) דורשת LOS חדש על המטרה <strong>אחרי</strong> הפגיעה — סנסור שונה לרוב, מאוחר יותר.',
-    failure: 'תקיפה בלילה על מתחם. עשן ואבק הסתירו את הנזק. ב-BDA למחרת התברר שהפצצה פספסה ב-20 מטר ולא פגעה בכלל.',
-    fix: 'תכנון מראש של <strong>מסלולי BDA</strong> — רחפן שעובר אחרי, סנסור SAR שעובד בכל מזג אוויר, או OSINT (תמונות לוויין מסחריות).',
+    question: 'האם באמת פגענו?',
+    losRole: 'בסוף כל תקיפה חובה לבדוק מה קרה. זה דורש להשיג קו ראייה חדש על המטרה <strong>אחרי</strong> הפגיעה, בדרך כלל ממצלמה אחרת שמגיעה מאוחר יותר.',
+    failure: 'בוצעה תקיפה בלילה. ענן ענק של אבק ועשן הסתיר את המקום. רק בבוקר, כשהאבק שקע, ראו שהפצצה פספסה את הבניין ב-20 מטרים.',
+    fix: 'תכנון מראש: שולחים רחפן אחר שיצלם דקות אחרי התקיפה, משתמשים ברדאר שרואה דרך עשן, או אפילו בודקים תמונות לוויין אזרחיות מגוגל מפות (לזה קוראים OSINT).',
     color: 'text-status-ok',
     bg: 'bg-status-ok/10',
     border: 'border-status-ok/40',
@@ -86,32 +85,32 @@ export function KillChainScene() {
     <section id="scene-killchain" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="06.3"
-        eyebrow="LOS ו-Kill Chain"
+        eyebrow="שרשרת התקיפה (Kill Chain) וקו הראייה"
         title={
           <>
-            <span className="gradient-text">שרשרת התקיפה</span> — וההלולאה שמחזיקה אותה
+            <span className="gradient-text">השרשרת שמחזיקה</span> את כל המבצע
           </>
         }
-        intro="כל תקיפה מבצעית היא שרשרת של 4 שלבים. כל שלב מחובר בחוט אחד — קו הראייה. אם החוט נקטע באמצע, השרשרת קורסת. בוא נראה איפה ולמה."
+        intro="כל תקיפה מורכבת משרשרת של 4 שלבים. כל שלב מחובר לשני בעזרת חוט דק אחד — קו הראייה (LOS). אם החוט הזה נחתך באמצע, כל השרשרת קורסת. בואו נבין איך זה עובד."
       />
 
-      <div className="surface-elevated p-5 mb-6 border-r-4 border-r-accent-cool">
+      <div className="p-5 mb-6">
         <div className="flex gap-3 items-start">
           <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
           <div className="text-sm leading-relaxed">
-            <strong className="text-fg">Kill Chain</strong> (שרשרת התקיפה) — תהליך 4 שלבי שמתחיל באיתור המטרה ומסתיים בהשמדתה.
-            <strong className="text-fg block mt-1.5">הסוד:</strong> כל שלב תלוי בשלב שלפניו. LOS שבור בשלב 2 = הכל מתבטל. ניתוח גיאוגרפי טוב = ניתוח של LOS בכל אחד מ-4 השלבים, מראש.
+            <strong className="text-fg">שרשרת התקיפה (Kill Chain)</strong> — תהליך חובה של 4 שלבים שמתחיל ברגע שמחפשים את המטרה, ומסתיים רק כשווידאנו שהיא הושמדה.
+            <strong className="text-fg block mt-1.5">הסוד:</strong> אי אפשר לדלג על שלבים! אם איבדנו קו ראייה (LOS) בשלב 2, השלבים הבאים מתבטלים. לכן, מנתח שטח חכם בודק מראש שיש לו קו ראייה בכל אחד מהשלבים.
           </div>
         </div>
       </div>
 
       {/* Chain visualization — 4 stages connected */}
       <div className="surface-elevated p-5 sm:p-6 rounded-2xl mb-6">
-        <div className="text-[10px] font-mono text-fg-dim mb-4 tracking-widest uppercase text-center">
-          לחץ על שלב כדי לראות את התלות שלו ב-LOS
+        <div className="text-sm font-display font-semibold text-fg-muted mb-4 tracking-wider text-center">
+          לחצו על שלב כדי לראות את התלות שלו בקו הראייה
         </div>
 
-        <div className="flex flex-row-reverse items-center justify-between gap-2 sm:gap-4 relative">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 relative">
           {STAGES.map((s, i) => {
             const isActive = active === s.id;
             const isPassed = activeIdx > i;
@@ -181,7 +180,7 @@ export function KillChainScene() {
               <Icon name={meta.icon} size={22} className={meta.color} />
             </div>
             <div className="flex-1">
-              <div className={cn('text-[10px] font-mono mb-0.5 tracking-widest uppercase', meta.color)}>
+              <div className={cn('text-sm font-display font-semibold mb-0.5 tracking-wider', meta.color)}>
                 שלב {activeIdx + 1}: {meta.english}
               </div>
               <h3 className="font-display font-bold text-xl leading-tight mb-1">{meta.label}</h3>
@@ -191,9 +190,9 @@ export function KillChainScene() {
 
           <div className="grid md:grid-cols-3 gap-4">
             <div className="surface p-4 rounded-xl bg-bg-accent/20">
-              <div className={cn('text-[10px] font-mono mb-2 tracking-widest uppercase flex items-center gap-1.5', meta.color)}>
+              <div className={cn('text-sm font-display font-semibold mb-2 tracking-wider flex items-center gap-1.5', meta.color)}>
                 <Icon name="eye" size={11} />
-                תפקיד LOS
+                למה צריך פה קו ראייה?
               </div>
               <p
                 className="text-sm text-fg leading-relaxed"
@@ -201,14 +200,14 @@ export function KillChainScene() {
               />
             </div>
             <div className="surface p-4 rounded-xl bg-status-danger/5 border-status-danger/30">
-              <div className="text-[10px] font-mono text-status-danger mb-2 tracking-widest uppercase flex items-center gap-1.5">
+              <div className="text-sm font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
                 <Icon name="spark" size={11} />
-                מה קורה כש-LOS נשבר
+                מה קורה כשקו הראייה נשבר
               </div>
               <p className="text-sm text-fg-muted leading-relaxed">{meta.failure}</p>
             </div>
             <div className="surface p-4 rounded-xl bg-status-ok/5 border-status-ok/30">
-              <div className="text-[10px] font-mono text-status-ok mb-2 tracking-widest uppercase flex items-center gap-1.5">
+              <div className="text-sm font-display font-semibold text-status-ok mb-2 tracking-wider flex items-center gap-1.5">
                 <Icon name="check" size={11} strokeWidth={2.5} />
                 איך מתמודדים
               </div>
@@ -227,17 +226,17 @@ export function KillChainScene() {
       <div className="surface-elevated p-6 rounded-2xl">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-center">
           <div>
-            <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
+            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
               מרחב הכיסוי הרציף
             </div>
             <h3 className="font-display font-bold text-xl mb-3 leading-tight">
-              תא שטח שבכל רגע נתון <span className="gradient-text">מישהו רואה אותו</span>
+              האזור שבו <span className="gradient-text">אי אפשר להתחבא</span>
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty mb-3">
-              זה מושג שמתאר תא שטח (אווירי וקרקעי) שבו מתקיים בכל רגע <strong className="text-fg">כיסוי חיישני מלא</strong> — לוויינים, רחפנים, האזנות, תצפיות. בתוך התא, אויב או רכב לא יכול לחמוק ממעקב.
+              מדובר בשטח שבו יש כיסוי מלא ורציף של אמצעי איסוף שונים — תצפיתנים, רחפנים או לוויינים. כל עוד המטרה בתוך האזור הזה, אי אפשר לפספס אותה ויש עליה קו ראייה (LOS) קבוע.
             </p>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-              <strong className="text-fg">הסיבה לסנכרון:</strong> אם המטרה יוצאת מגבולות התא — נדרש מעבר מיידי לרשת המודיעין השכנה, אחרת מאבדים מגע. ניתוח גיאוגרפי טוב = הגדרת התא, גבולותיו, ומי "מקבל" את המטרה במעבר.
+              <strong className="text-fg">למה זה כל כך קריטי?</strong> כי ברגע שהמטרה יוצאת מהשטח הזה, חייבים להעביר את ה"משמורת" עליה לאמצעי מעקב באזור הבא (למשל, למצלמה אחרת בהמשך הכביש). מנתח שטח מעולה ידע בדיוק איפה הכיסוי שלו נגמר ומי אחראי "לקבל" את המטרה כדי שהיא לא תיעלם.
             </p>
           </div>
 
@@ -250,27 +249,38 @@ export function KillChainScene() {
 }
 
 function CoverageCellViz() {
+  // 3 sensors with overlapping coverage zones. Geometry chosen so:
+  //  - all three sensor ellipses overlap pairwise (sensor 1∩2, sensor 2∩3)
+  //  - the union forms a roughly horizontal "band" of continuous coverage
+  //  - there's room beneath the band for a dead-zone adjacent to (touching)
+  //    the lower edge of the coverage envelope.
+  const sensors = [
+    { id: 'obs',  x: 26, y: 28, rx: 18, ry: 14, name: 'תצפית' },
+    { id: 'uav',  x: 50, y: 30, rx: 20, ry: 15, name: 'כטב"ם' },
+    { id: 'sat',  x: 74, y: 27, rx: 18, ry: 14, name: 'לוויין' },
+  ];
+
   return (
     <div className="aspect-[4/3] relative">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
-          <radialGradient id="cell-1" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="var(--status-ok)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="var(--status-ok)" stopOpacity="0" />
+          {/* Coverage fill — same brand colour for all three sensors. Combined
+              with mix-blend-mode: multiply, overlapping zones naturally darken,
+              which is exactly the "stronger tracking where two sensors see" idea. */}
+          <radialGradient id="cov-fill" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgb(116, 156, 117)" stopOpacity="0.45" />
+            <stop offset="100%" stopColor="rgb(116, 156, 117)" stopOpacity="0.05" />
           </radialGradient>
-          <radialGradient id="cell-2" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id="cell-3" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="var(--accent-cool)" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="var(--accent-cool)" stopOpacity="0" />
-          </radialGradient>
+          {/* Diagonal hatch for the dead zone — clearly different texture */}
+          <pattern id="dead-hatch" patternUnits="userSpaceOnUse" width="3" height="3" patternTransform="rotate(45)">
+            <rect width="3" height="3" className="fill-status-danger/12" />
+            <line x1="0" y1="0" x2="0" y2="3" className="stroke-status-danger/65" strokeWidth="0.5" />
+          </pattern>
         </defs>
 
         <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
-        {/* Grid */}
+        {/* Subtle grid */}
         {Array.from({ length: 11 }).map((_, i) => (
           <g key={i}>
             <line x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle" strokeWidth="0.1" />
@@ -278,28 +288,65 @@ function CoverageCellViz() {
           </g>
         ))}
 
-        {/* Sensor coverage circles (overlapping) */}
-        <ellipse cx="28" cy="32" rx="22" ry="18" fill="url(#cell-1)" />
-        <ellipse cx="58" cy="40" rx="24" ry="20" fill="url(#cell-2)" />
-        <ellipse cx="78" cy="28" rx="20" ry="17" fill="url(#cell-3)" />
+        {/* (1) Coverage fills — multiply blending makes overlaps darker, so the
+            learner SEES that overlap regions have stronger coverage. */}
+        <g style={{ mixBlendMode: 'multiply' }}>
+          {sensors.map((s) => (
+            <ellipse key={s.id} cx={s.x} cy={s.y} rx={s.rx} ry={s.ry} fill="url(#cov-fill)" />
+          ))}
+        </g>
 
-        {/* Sensor markers */}
-        {[
-          { x: 28, y: 32, name: 'תצפית', color: 'fill-status-ok stroke-status-ok' },
-          { x: 58, y: 40, name: 'כטב"ם', color: 'fill-accent stroke-accent' },
-          { x: 78, y: 28, name: 'לוויין', color: 'fill-accent-cool stroke-accent-cool' },
-        ].map((s) => (
-          <g key={s.name}>
-            <circle cx={s.x} cy={s.y} r="1.6" className={s.color} />
+        {/* (2) Per-sensor dashed outline — makes each sensor's individual reach
+            visible AS a distinct shape, so the merged blob can be decomposed. */}
+        {sensors.map((s) => (
+          <ellipse
+            key={`outline-${s.id}`}
+            cx={s.x} cy={s.y} rx={s.rx} ry={s.ry}
+            fill="none"
+            className="stroke-brand-dark/35"
+            strokeWidth="0.35"
+            strokeDasharray="1.2 0.9"
+          />
+        ))}
+
+        {/* (3) Envelope outline — wraps the union of all three sensor circles.
+            This is the boundary the body text refers to: outside this line,
+            you can hide. */}
+        <path
+          d="M 6 28 Q 10 13 26 13 Q 50 11 74 13 Q 90 14 94 28 Q 92 43 74 43 Q 50 47 26 43 Q 8 42 6 28 Z"
+          fill="none"
+          className="stroke-brand-dark/60"
+          strokeWidth="0.55"
+          strokeDasharray="1.4 0.8"
+        />
+
+        {/* (4) Coverage label — anchored above the band, doesn't compete with content inside */}
+        <text
+          x="50" y="8"
+          textAnchor="middle"
+          className="fill-brand-dark font-display font-bold"
+          fontSize="3.2"
+          paintOrder="stroke"
+          stroke="#ffffff"
+          strokeWidth="1"
+          strokeLinejoin="round"
+        >
+          אזור כיסוי רציף — אי אפשר להתחבא
+        </text>
+
+        {/* (5) Sensor markers + names — large enough to read, in the centre of
+            each sensor's own zone. */}
+        {sensors.map((s) => (
+          <g key={`sensor-${s.id}`}>
+            <circle cx={s.x} cy={s.y} r="1.8" className="fill-brand-dark stroke-bg-elevated" strokeWidth="0.5" />
             <text
-              x={s.x}
-              y={s.y - 3.5}
+              x={s.x} y={s.y - 2.8}
               textAnchor="middle"
-              className={cn('font-mono font-bold', s.color.split(' ')[0])}
+              className="fill-fg font-display font-bold"
               fontSize="3"
               paintOrder="stroke"
               stroke="#ffffff"
-              strokeWidth="1"
+              strokeWidth="1.1"
               strokeLinejoin="round"
             >
               {s.name}
@@ -307,36 +354,136 @@ function CoverageCellViz() {
           </g>
         ))}
 
-        {/* Moving target */}
-        <motion.g
-          animate={{ x: [0, 60, 0] }}
-          transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
-        >
-          <circle cx="18" cy="55" r="1.5" className="fill-accent-hot" />
-          <circle cx="18" cy="55" r="3" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
-            <animate attributeName="r" values="2;5;2" dur="1.5s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.8;0;0.8" dur="1.5s" repeatCount="indefinite" />
-          </circle>
-        </motion.g>
+        {/* (6) Hand-off annotations — placed at the two overlap regions
+            (sensor 1∩2 around x=38, sensor 2∩3 around x=62). Made small but
+            with a stroke-outlined arrow icon for clarity. */}
+        {[
+          { x: 38, y: 30, label: '⇄ מעבר' },
+          { x: 62, y: 30, label: '⇄ מעבר' },
+        ].map((h, i) => (
+          <text
+            key={i}
+            x={h.x} y={h.y}
+            textAnchor="middle"
+            className="fill-accent-hover font-display font-bold"
+            fontSize="2.6"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          >
+            {h.label}
+          </text>
+        ))}
 
-        {/* Dead zone */}
-        <rect x="6" y="60" width="16" height="11" rx="1" className="fill-status-danger/15 stroke-status-danger/50" strokeWidth="0.4" strokeDasharray="1 0.6" />
+        {/* (7) Dead zone — adjacent to (touching) the lower edge of the coverage
+            envelope, NOT floating separately. */}
+        <rect
+          x="6" y="55"
+          width="34" height="15"
+          rx="1.5"
+          fill="url(#dead-hatch)"
+          className="stroke-status-danger/70"
+          strokeWidth="0.55"
+        />
         <text
-          x="14"
-          y="67.5"
+          x="23" y="60.5"
           textAnchor="middle"
           className="fill-status-danger font-display font-bold"
-          fontSize="3"
+          fontSize="2.8"
           paintOrder="stroke"
           stroke="#ffffff"
           strokeWidth="1"
           strokeLinejoin="round"
         >
-          פער כיסוי
+          שטח מת
         </text>
+        <text
+          x="23" y="64"
+          textAnchor="middle"
+          className="fill-status-danger/85 font-display font-semibold"
+          fontSize="2"
+          paintOrder="stroke"
+          stroke="#ffffff"
+          strokeWidth="0.7"
+          strokeLinejoin="round"
+        >
+          (אפשר להתחבא)
+        </text>
+
+        {/* (8) Tracked target — inside the coverage band. Pulsing red dot with
+            label "מזוהה ✓". Demonstrates the state when target is in coverage. */}
+        <g>
+          <circle cx="60" cy="38" r="3.2" fill="none" className="stroke-accent-hot/60" strokeWidth="0.35">
+            <animate attributeName="r" values="2.5;5;2.5" dur="1.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="60" cy="38" r="1.7" className="fill-accent-hot stroke-bg-elevated" strokeWidth="0.4" />
+          <rect x="49" y="40.5" width="22" height="5" rx="2.5" className="fill-bg-elevated stroke-accent-hot/50" strokeWidth="0.35" />
+          <text
+            x="60" y="44.1"
+            textAnchor="middle"
+            className="fill-accent-hot font-display font-bold"
+            fontSize="2.6"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.8"
+            strokeLinejoin="round"
+          >
+            מטרה · מזוהה ✓
+          </text>
+        </g>
+
+        {/* (9) Escape arrow — from tracked target, crossing the envelope, into
+            the dead zone. The dashed curve visualizes "the moment custody is lost". */}
+        <defs>
+          <marker id="escape-head" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
+            <polygon points="0 0, 4 2, 0 4" className="fill-fg-dim" />
+          </marker>
+        </defs>
+        <path
+          d="M 55 41 Q 38 50 25 56"
+          fill="none"
+          className="stroke-fg-dim"
+          strokeWidth="0.45"
+          strokeDasharray="1.2 1"
+          strokeLinecap="round"
+          markerEnd="url(#escape-head)"
+        />
+
+        {/* (10) Lost target — inside dead zone. Ghosted (low opacity) gray dot
+            with strike-through label "אבד". Same target, different state. */}
+        <g opacity="0.55">
+          <circle cx="23" cy="67" r="1.7" fill="none" className="stroke-fg-dim" strokeWidth="0.5" strokeDasharray="0.8 0.5" />
+          <rect x="13" y="69" width="20" height="5" rx="2.5" className="fill-bg-elevated stroke-fg-dim" strokeWidth="0.35" strokeDasharray="0.8 0.5" />
+          <text
+            x="23" y="72.6"
+            textAnchor="middle"
+            className="fill-fg-dim font-display font-bold"
+            fontSize="2.6"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.8"
+            strokeLinejoin="round"
+          >
+            אותה מטרה · אבד ✗
+          </text>
+        </g>
       </svg>
 
-      <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
+      {/* Top-corner legend — explains the two regions */}
+      <div className="absolute top-2 start-2 flex flex-col gap-1 text-[10px]">
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-bg-elevated/85 backdrop-blur border border-brand/30">
+          <span className="size-1.5 rounded-full bg-brand-dark" />
+          <span className="text-fg-muted">כיסוי רציף</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-bg-elevated/85 backdrop-blur border border-status-danger/30">
+          <span className="size-1.5 rounded-full bg-status-danger" />
+          <span className="text-fg-muted">שטח מת</span>
+        </span>
+      </div>
+
+      <div className="absolute top-3 end-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
         3 סנסורים · כיסוי מצטבר
       </div>
@@ -348,7 +495,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

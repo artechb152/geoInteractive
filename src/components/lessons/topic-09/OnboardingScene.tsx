@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -108,7 +110,7 @@ export function OnboardingScene() {
         intro="בעבר משאבים נמדדו בשווי כספי. היום הם נמדדים בכוח לחץ. בארבע שכבות נראה איך נפט בקרקע, מים בנילוס או צינור גז במים הופכים לכלי שינוי במאזן הכוחות העולמי."
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -190,7 +192,7 @@ export function OnboardingScene() {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-accent/20">
-                        <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
+                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
                           למה זה משנה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -218,55 +220,21 @@ export function OnboardingScene() {
 
       <div className="grid sm:grid-cols-2 gap-4">
         {HISTORICAL.map((h, i) => (
-          <motion.article
+          <IntelCard
             key={h.headline}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 relative overflow-hidden"
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
-            />
-            <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
-                <Icon name={h.icon} size={22} className={h.accent} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim" />
-                  {h.place}
-                </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
-                  {h.headline}
-                </h3>
-                <p className="text-sm text-fg-muted leading-relaxed text-pretty">{h.lesson}</p>
-              </div>
-            </div>
-          </motion.article>
+            place={h.place}
+            headline={h.headline}
+            lesson={h.lesson}
+            icon={h.icon}
+            accent={h.accent}
+          />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7 flex gap-4 sm:gap-5 items-center"
-      >
-        <div className="absolute -end-12 -top-12 size-40 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-        <div className="relative size-12 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-accent shrink-0 shadow-glow">
-          <Icon name="arrow-left" size={20} />
-        </div>
-        <div className="relative flex-1">
-          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">עכשיו אתה מוכן</div>
-          <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">
-            הבנת שמשאב הוא לא רק כסף — הוא נשק. בשלוש הסצנות הבאות נצלול:
-            <strong className="text-fg"> איך מים ואנרגיה נהפכים לכלי לחץ, איזה מיצרים שולטים בעולם, ולמה דוקטרינת מהן בת 130 שנה עדיין רלוונטית</strong>.
-          </p>
-        </div>
-      </motion.div>
+      <ReadyCallout title="עכשיו אתה מוכן">
+        <p>הבנת שמשאב הוא לא רק כסף — הוא נשק. בשלוש הסצנות הבאות נצלול:
+            <strong className="text-fg"> איך מים ואנרגיה נהפכים לכלי לחץ, איזה מיצרים שולטים בעולם, ולמה דוקטרינת מהן בת 130 שנה עדיין רלוונטית</strong>.</p>
+      </ReadyCallout>
     </section>
   );
 }
@@ -294,12 +262,12 @@ function ResourceFlowStage({ view }: { view: View }) {
         <line x1="55" y1="0" x2="55" y2="75" className="stroke-fg-dim" strokeWidth="0.3" strokeDasharray="1 0.8" />
 
         {/* Upstream region (left) — "Source" */}
-        <text x="22" y="10" textAnchor="middle" className="fill-fg-dim font-mono" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
+        <text x="22" y="10" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
           מקור (מעלה)
         </text>
 
         {/* Downstream region (right) — "Dependent" */}
-        <text x="78" y="10" textAnchor="middle" className="fill-fg-dim font-mono" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
+        <text x="78" y="10" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
           תלוי (מורד)
         </text>
 
@@ -409,7 +377,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

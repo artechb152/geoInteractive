@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -19,64 +21,64 @@ type Step = {
 const STEPS: Step[] = [
   {
     id: 'access',
-    label: 'האם בכלל אפשר לעבור?',
+    label: 'האם אנחנו בכלל יכולים לעבור פה?',
     icon: 'truck',
-    popupTitle: 'עבירות — שאלת הבסיס של כל תמרון',
+    popupTitle: 'עבִירוּת: השאלה הראשונה לפני שזזים',
     popupBody:
-      'לפני שמתכננים מסלול, מפקד שואל שאלה אחת פשוטה: האם הכלים שלי יכולים פיזית לעבור כאן? התשובה תלויה בשני דברים — שיפוע הקרקע (כמה תלול?) וטיב המסלע והקרקע (סלע קשה? חול? בוץ?). כלי גלגלי ייעצר בשיפוע של 30%, כלי זחלילי יגיע עד 60%. חול רטוב יבלע משאית; טרשים יקרעו צמיגים. אם השטח לא עביר — אין משימה.',
+      `לפני שמתכננים מסלול, צריך לשאול שאלה פיזית פשוטה: האם אנחנו והרכבים שלנו מסוגלים בכלל לעבור פה? היכולת הזאת נקראת "עבירות", והיא תלויה בשני דברים עיקריים: עד כמה השטח תלול (השיפוע), ומה סוג האדמה (סלע קשה? חול שוקע? בוץ?). למשל, ג'יפ או משאית ייעצרו בעלייה של 30%, בזמן שטנק (שנע על שרשראות/זחלים) יצליח לטפס גם שיפוע של 60%. מעבר לזה, חול רטוב עלול לבלוע משאית פנימה, ושטח "טרשי" (מלא בסלעים חדים שבולטים החוצה) יקרע לה את הצמיגים. השורה התחתונה: אם השטח לא עביר — אי אפשר לבצע את המשימה.`,
   },
   {
     id: 'obstacles',
-    label: 'מה חוסם אותי בדרך?',
+    label: 'מה יעצור אותנו בדרך?',
     icon: 'shield',
-    popupTitle: 'מכשולים — טבעיים והנדסיים',
+    popupTitle: 'מכשולים: כשהטבע והאויב משלבים כוחות',
     popupBody:
-      'גם בשטח עביר, האויב מציב מכשולים מלאכותיים על מכשולים טבעיים: שדה מוקשים על גדת נחל, גשר מפוצץ, תעלת נ"ט בקצה ואדי. השילוב הסינרגטי הזה הופך את השטח מ"רגיל" ל"מבצר". המתמרן מפעיל פעולת קידום ניידות (Breaching) — פריצת דרך, השלכת גשר, פינוי מוקשים — כדי להגיע ליעד.',
+      'גם אם האדמה נוחה לנסיעה, האויב תמיד ינסה לעצור אותנו. לרוב הוא ייקח מכשול שהטבע יצר (כמו נחל שקשה לחצות) ויוסיף עליו מלכודות משלו: הוא יכול לפזר שדה מוקשים בדיוק על גדת הנחל, לפוצץ גשר, או לחפור תעלה עמוקה שנועדה לעצור טנקים (תעלת נ"ט). השילוב הזה הופך שטח פתוח למעין "מבצר". כדי להתגבר על זה, חיל ההנדסה מפעיל כלים כבדים כדי לפרוץ את הדרך מחדש (פעולה שנקראת בשפה הצבאית "קידום ניידות") — למשל באמצעות נטרול מוקשים, פריצת דרכים חדשות או הנחת גשרים ניידים.',
   },
   {
     id: 'cover',
-    label: 'איפה אני יכול לחיות?',
+    label: 'איפה אפשר להסתתר מאש?',
     icon: 'mountain',
-    popupTitle: 'מחסה (Cover) — מה באמת עוצר אש',
+    popupTitle: 'מחסה (Cover): מה באמת יכול לעצור כדור?',
     popupBody:
-      'בקרב, חשיפה לאש = מוות. מפקד מתכנן מסלול שמדלג ממחסה למחסה: סלע ענק, קפל קרקע עמוק, קיר עבה. המחסה חייב להיות פיזית מספיק קשה כדי לעצור כדורים, רסיסים והדפים. שיח לא מספיק. גזע עץ דק לא מספיק. רק חומר קשיח שנפח לו די מסת חומר.',
+      'בזמן לחימה, מי שנמצא בשטח פתוח וחשוף נמצא בסכנת חיים. לכן, מתכננים מסלול שמדלג בין נקודות "מחסה": סלע ענק, שקע עמוק באדמה, או קיר בטון עבה. מחסה אמיתי חייב להיות עשוי מחומר חזק ועבה מספיק כדי לעצור פיזית כדורים, רסיסים והדף של פיצוץ. להתחבא מאחורי שיח זה ממש לא מחסה. גם גזע עץ דק לא יעזור. רק עצם קשיח וגדול מספיק באמת יספק הגנה וישמור עליכם בחיים.',
   },
   {
     id: 'concealment',
-    label: 'מה מסתיר אותי מהעין?',
+    label: 'מה מסתיר אותנו מהעיניים של האויב?',
     icon: 'eye',
-    popupTitle: 'הסתרה (Concealment) — מה מטעה את החוש',
+    popupTitle: 'הסתרה (Concealment): להיות רואים ואינם נראים',
     popupBody:
-      'הסתרה מונעת *גילוי* — לא פגיעה. שיח עבות, חורש סגור, ערפל, צללי עננים, מבנים נטושים — כולם יכולים להסתיר אותך מעין האויב ומסנסור התרמי שלו, אבל אף אחד מהם לא יעצור כדור. שילוב חכם של הסתרה + מחסה הוא הכלי החזק ביותר: לא רואים אותך, ואם רואים — לא יכולים לפגוע בך.',
+'בניגוד למחסה, הסתרה לא מגינה עלינו מפני פגיעה – היא רק מונעת מהאויב לגלות אותנו. שיח גדול, יער צפוף, ערפל, צל ואפילו קירות דקים במבנה נטוש, יכולים להעלים אותנו מהעין (ואפילו ממצלמות תרמיות שמזהות חום גוף), אבל אף אחד מהם לא יעצור כדור שנירה לעברנו. השילוב המושלם הוא "הסתרה + מחסה": ככה קשה מאוד למצוא אותנו, ואם במקרה התגלינו וירו עלינו – אנחנו מוגנים פיזית מאש.',
   },
 ];
 
 const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
   {
-    headline: 'הצבא חצה תעלה ענקית בלילה אחד',
-    place: 'תעלת סואץ · יום הכיפורים 1973',
-    lesson: 'חיל ההנדסה של צה"ל בנה גשרים צפים על תעלת סואץ בלילה — מכשול הנדסי בשילוב מכשול טבעי (תעלת מים רחבה ועמוקה). המעבר הזה הפך את עומק הקרקע המצרי מסגור לפתוח, וזיכה את צה"ל ביוזמה האסטרטגית.',
+    headline: 'לחצות תעלה ענקית בלילה אחד',
+    place: 'תעלת סואץ · מלחמת יום הכיפורים 1973 ',
+    lesson: 'תעלת סואץ היא תעלת מים עמוקה ורחבה שהיוותה מכשול טבעי עצום. כדי להעביר את הטנקים של צה"ל לתוך מצרים, חיל ההנדסה יצא למבצע מורכב תחת אש ובחסות החשיכה, ובנה גשרים צפים מעל המים. ההתגברות על המכשול הזה פתחה לכוחותינו את הדרך לעומק מצרים, אפשרה לנו לעבור להתקפה ושינתה לחלוטין את מהלך המלחמה.',
     icon: 'wave',
     accent: 'text-accent-cool',
   },
   {
-    headline: 'גדרות שדה הפכו טנקים לבלתי שמישים',
-    place: 'נורמנדי · קיץ 1944',
-    lesson: 'בבוקאז\' הצרפתי, גדרות שדה בנויות מאדמה ושיחים עבים (Bocage) חצו את הנוף. הטנקים האמריקאים לא יכלו לפרוץ אותן — לחלקם הותקנו "מזלגות" מאולתרים. כל חלקה חקלאית הפכה למבצר. הסתרה? כן. מחסה? כן. גם וגם.',
+    headline: 'השיחים שעצרו טנקים ענקיים',
+    place: 'נורמנדי (צרפת) · קיץ 1944',
+    lesson: `באזור הלחימה בנורמנדי, השדות החקלאיים הופרדו בגדרות שנקראות "בוקאז'" – חומות של אדמה דחוסה שמעליהן צמחו שיחים סבוכים וקוצניים. הטנקים האמריקאים פשוט לא הצליחו לעבור דרכן! כל חלקה חקלאית קטנה הפכה למבצר טבעי, כי הגדרות האלו סיפקו לגרמנים גם מניעת ראייה ("הסתרה" בזכות השיחים) וגם הגנה פיזית ("מחסה" שעוצר כדורים בזכות סוללות האדמה). לבסוף, האמריקאים נאלצו לאלתר ולרתך "מזלגות" פלדה לקדמת הטנקים כדי לעקור את השיחים.`,
     icon: 'mountain',
     accent: 'text-terrain-ridge',
   },
   {
-    headline: 'הג\'ונגל הסתיר — אבל לא הגן',
-    place: 'וייטנאם · 1965–1973',
-    lesson: 'חיילים אמריקאים השתמשו בצמחיית הג\'ונגל הסבוכה בתור הסתרה. אבל בקליבר נמוך, ענפים ועלים לא עצרו כלום. הוייטקונג ירה דרך הצמחייה ופגע — כי הסתרה אינה מחסה. הלקח הקטלני: לסמוך רק על מה שעוצר כדור.',
+    headline: `הג'ונגל שנתן אשליה של ביטחון`,
+    place: 'מלחמת וייטנאם · 1965–1973',
+    lesson: `חיילים אמריקאים סמכו על צמחיית הג'ונגל הצפופה כדי להסתתר. הבעיה התחילה כשהתברר שגם מול קליעים של נשק קל, עלים וענפים לא עוצרים כלום. הלוחמים המקומיים (הוייטקונג) פשוט ירו בצרורות עיוורים לתוך הצמחייה ופגעו בהם בקלות. זה הוכיח בדרך הקשה שהסתרה היא ממש לא מחסה. הלקח: בשדה הקרב, מותר לסמוך רק על עצמים שיכולים פיזית לעצור כדור.`,
     icon: 'eye',
     accent: 'text-status-warn',
   },
   {
-    headline: 'בונקרי חזבאללה: מחסה + הסתרה',
-    place: 'דרום לבנון · 2006',
-    lesson: 'חזבאללה בנו בונקרי בטון עמוקים בתוך חורש ים-תיכוני סבוך. הצמחייה הסתירה את הפתחים מצילום אווירי; הבטון מתחת ספג פצצות. שילוב מושלם של תכסית טבעית + מחסה מלאכותי. צה"ל גילה בונקרים רק כשנכנס פיזית.',
+    headline: 'השילוב הקטלני: בונקרים בתוך יערות סבוכים',
+    place: 'דרום לבנון · מלחמת לבנון השנייה (2006)',
+    lesson: 'חיזבאללה בנה בונקרים תת-קרקעיים עמוקים ויצוקים מבטון, ומיקם אותם בדיוק בתוך יערות וצמחייה צפופה. העצים והשיחים מנעו ממטוסים ורחפנים לזהות את הפתחים מלמעלה ("הסתרה"), והבטון העבה שמתחת לאדמה הגן על המחבלים מפני ההפצצות ("מחסה"). זה היה שילוב מושלם של טבע והנדסה, שבגללו צה"ל הצליח לגלות את רוב העמדות האלה רק כשחיילים ממש הגיעו אליהן ברגל.',
     icon: 'shield',
     accent: 'text-status-danger',
   },
@@ -99,16 +101,16 @@ export function OnboardingScene() {
     <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="05.0"
-        eyebrow="לפני שמתחילים"
+        eyebrow="רגע לפני שמתחילים"
         title={
           <>
-            <span className="gradient-text">איך מפקד "חושב" תנועה דרך השטח?</span>
+            <span className="gradient-text">איך מפקד "קורא" את השטח?</span>
           </>
         }
-        intro="לא כל שטח נראה אותו דבר למפקד. הוא לא רואה רק נוף — הוא רואה שאלות. בוא נראה איך מפקד מנתח שטח לתנועה ב-4 שכבות שאלה — מהבסיסית ביותר ועד הקטלנית ביותר."
+        intro='עבור רובנו השטח הוא סתם "נוף", אבל מפקד צבאי מסתכל עליו כעל חידה שצריך לפתור. בואו נראה איך מנתחים תא שטח לקראת תנועה (מושג שנקרא בשפה הצבאית "תמרון"), דרך 4 שאלות מפתח – החל מהשאלה הבסיסית ביותר ("האם בכלל אפשר לעבור פה?") ועד לשאלות של חיים ומוות.'
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -190,9 +192,8 @@ export function OnboardingScene() {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-accent/20">
-                        <div className="text-xs font-mono text-accent mt-3 mb-2 tracking-widest uppercase">
-                          למה זה משנה
-                        </div>
+                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
+למה זה חשוב?                        </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
                           {s.popupTitle}
                         </h4>
@@ -213,59 +214,24 @@ export function OnboardingScene() {
         </div>
       </div>
 
-      <SoftDivider text="כל סיפור גדול בלחימה — הוא סיפור של תמרון" />
+      <SoftDivider text="מאחורי כל קרב היסטורי גדול, עומד ניתוח נכון של השטח" />
 
       <div className="grid sm:grid-cols-2 gap-4">
         {HISTORICAL.map((h, i) => (
-          <motion.article
+          <IntelCard
             key={h.headline}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 relative overflow-hidden"
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
-            />
-            <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
-                <Icon name={h.icon} size={22} className={h.accent} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim" />
-                  {h.place}
-                </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
-                  {h.headline}
-                </h3>
-                <p className="text-sm text-fg-muted leading-relaxed text-pretty">{h.lesson}</p>
-              </div>
-            </div>
-          </motion.article>
+            place={h.place}
+            headline={h.headline}
+            lesson={h.lesson}
+            icon={h.icon}
+            accent={h.accent}
+          />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7 flex gap-4 sm:gap-5 items-center"
-      >
-        <div className="absolute -end-12 -top-12 size-40 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-        <div className="relative size-12 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-accent shrink-0 shadow-glow">
-          <Icon name="arrow-left" size={20} />
-        </div>
-        <div className="relative flex-1">
-          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">עכשיו אתה מוכן</div>
-          <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">
-            הבנת ש"תמרון" זה לא רק "ללכת" — זה רצף של החלטות. בארבע הסצנות הבאות נצלול לעומק:
-            <strong className="text-fg"> מה הופך שטח לעביר, איך פורצים מכשולים, איך שורדים בשטח חשוף, ואיך הצמחייה משנה הכל</strong>.
-          </p>
-        </div>
-      </motion.div>
+      <ReadyCallout title="עכשיו אתם מוכנים">
+        <p>עכשיו בטח הבנתם שתנועה צבאית בשטח ("תמרון") היא הרבה יותר מסתם "ללכת ממקום למקום" – זה פאזל שלם של החלטות קריטיות. בחלקים הבאים של הקורס נצלול לעומק ונגלה: מה הופך אדמה לנוחה למעבר, איך חיל ההנדסה מתגבר על מכשולים בדרך, איך שורדים במקום פתוח וחשוף, ואיך עצים וצמחייה משנים את כל חוקי המשחק.</p>
+      </ReadyCallout>
     </section>
   );
 }
@@ -428,7 +394,7 @@ function ManeuverStage({ view }: { view: View }) {
                 strokeWidth="0.8"
                 strokeLinejoin="round"
               >
-                סלע
+                סלע (נקודת מחסה)
               </text>
             </g>
           ))}
@@ -471,14 +437,14 @@ function ManeuverStage({ view }: { view: View }) {
             strokeWidth="1"
             strokeLinejoin="round"
           >
-            חורש סגור · הסתרה
+            יער צפוף · הסתרה
           </text>
         </motion.g>
       </svg>
 
       <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        4 שכבות לקראת תמרון מוצלח
+        4 שכבות לתנועה חכמה בשטח
       </div>
     </div>
   );
@@ -488,7 +454,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-xs font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

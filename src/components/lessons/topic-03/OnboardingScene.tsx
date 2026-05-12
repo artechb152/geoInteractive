@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -104,7 +106,7 @@ export function OnboardingScene() {
         intro="דמיין שאתה צריך להוביל קבוצה ממקום A למקום B — בלילה, בשטח שאתה לא מכיר. בוא נראה ביחד מה זה אומר בפועל, צעד אחר צעד."
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = phase === s.id;
@@ -190,14 +192,14 @@ export function OnboardingScene() {
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-3">
                         <div className="mt-3">
-                          <div className="text-xs font-mono text-accent-cool mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
+                          <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
                             <Icon name="eye" size={14} />
                             מה אתה עושה בשלב הזה
                           </div>
                           <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
                         </div>
                         <div className="pt-2 border-t border-border-subtle">
-                          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase flex items-center gap-1.5">
+                          <div className="text-sm font-display font-semibold text-accent-hover mb-1.5 tracking-wider flex items-center gap-1.5">
                             <Icon name="spark" size={14} />
                             ולמה זה משנה
                           </div>
@@ -221,59 +223,21 @@ export function OnboardingScene() {
 
       <div className="grid sm:grid-cols-2 gap-4">
         {HISTORICAL.map((h, i) => (
-          <motion.article
+          <IntelCard
             key={h.headline}
-            initial={{ opacity: 0, y: 18 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.08 }}
-            className="surface p-5 relative overflow-hidden"
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-bl from-bg-elevated via-bg-card to-bg-card opacity-100"
-            />
-            <div className="relative flex items-start gap-4">
-              <div className="size-12 rounded-xl bg-bg-elevated border border-border-strong flex items-center justify-center shrink-0">
-                <Icon name={h.icon} size={22} className={h.accent} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-mono text-fg-dim mb-1.5 tracking-widest uppercase flex items-center gap-2">
-                  <span className="size-1 rounded-full bg-fg-dim" />
-                  {h.place}
-                </div>
-                <h3 className="font-display font-bold text-lg leading-tight mb-2 text-balance">
-                  {h.headline}
-                </h3>
-                <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-                  {h.lesson}
-                </p>
-              </div>
-            </div>
-          </motion.article>
+            place={h.place}
+            headline={h.headline}
+            lesson={h.lesson}
+            icon={h.icon}
+            accent={h.accent}
+          />
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7 flex gap-4 sm:gap-5 items-center"
-      >
-        <div className="absolute -end-12 -top-12 size-40 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
-        <div className="relative size-12 rounded-full bg-accent/15 border border-accent/40 flex items-center justify-center text-accent shrink-0 shadow-glow">
-          <Icon name="arrow-left" size={20} />
-        </div>
-        <div className="relative flex-1">
-          <div className="text-xs font-mono text-accent mb-1.5 tracking-widest uppercase">
-            עכשיו אתה מוכן
-          </div>
-          <p className="text-fg leading-relaxed text-pretty text-sm sm:text-base">
-            הבנת ש"ניווט" זה תהליך שלם — לא רק קריאת מפה. בשלוש הסצנות הבאות נלמד את הכלים בפועל:
-            <strong className="text-fg"> איך מחשבים אזימוט, איך מתכננים מסלול, ואיך מנווטים בשטח אויב</strong>.
-          </p>
-        </div>
-      </motion.div>
+      <ReadyCallout title="עכשיו אתה מוכן">
+        <p>הבנת ש"ניווט" זה תהליך שלם — לא רק קריאת מפה. בשלוש הסצנות הבאות נלמד את הכלים בפועל:
+            <strong className="text-fg"> איך מחשבים אזימוט, איך מתכננים מסלול, ואיך מנווטים בשטח אויב</strong>.</p>
+      </ReadyCallout>
     </section>
   );
 }
@@ -301,7 +265,12 @@ function MissionStage({ phase }: { phase: Phase }) {
 
         {/* Terrain — hills, anchor landmarks */}
         <path d="M55 30 L62 18 L70 32 Z" className="fill-terrain-ridge/40 stroke-terrain-ridge" strokeWidth="0.3" />
-        <text x="62" y="36" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-mono">גבעה</text>
+        <text x="62" y="36" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >גבעה</text>
 
         {/* Trees */}
         {[
@@ -309,20 +278,45 @@ function MissionStage({ phase }: { phase: Phase }) {
         ].map(([x, y], i) => (
           <circle key={i} cx={x} cy={y} r="1.2" className="fill-terrain-olive/60" />
         ))}
-        <text x="84" y="68" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-mono">דקלים</text>
+        <text x="84" y="68" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >דקלים</text>
 
         {/* Start point A */}
         <g>
           <circle cx="15" cy="60" r="2.5" className="fill-accent-cool" />
-          <text x="15" y="56" textAnchor="middle" className="fill-accent-cool text-[3.5px] font-mono font-bold">A</text>
-          <text x="15" y="68" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-mono">מוצא</text>
+          <text x="15" y="56" textAnchor="middle" className="fill-accent-cool text-[3.5px] font-display font-bold font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >A</text>
+          <text x="15" y="68" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >מוצא</text>
         </g>
 
         {/* End point B */}
         <g>
           <circle cx="88" cy="20" r="2.5" className="fill-accent-hot" />
-          <text x="88" y="16" textAnchor="middle" className="fill-accent-hot text-[3.5px] font-mono font-bold">B</text>
-          <text x="88" y="28" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-mono">יעד</text>
+          <text x="88" y="16" textAnchor="middle" className="fill-accent-hot text-[3.5px] font-display font-bold font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >B</text>
+          <text x="88" y="28" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >יעד</text>
         </g>
 
         {/* Phase-specific overlays */}
@@ -351,8 +345,18 @@ function PhaseOverlay({ phase }: { phase: Phase }) {
         <line x1="15" y1="60" x2="40" y2="40" className="stroke-fg-dim/40" strokeWidth="0.3" strokeDasharray="0.8 0.8" />
         <line x1="40" y1="40" x2="50" y2="50" className="stroke-fg-dim/40" strokeWidth="0.3" strokeDasharray="0.8 0.8" />
         <line x1="50" y1="50" x2="88" y2="20" className="stroke-fg-dim/40" strokeWidth="0.3" strokeDasharray="0.8 0.8" />
-        <text x="50" y="38" className="fill-accent text-[2.5px] font-mono">ישיר</text>
-        <text x="35" y="48" className="fill-fg-dim text-[2.5px] font-mono">עוקף</text>
+        <text x="50" y="38" className="fill-accent text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >ישיר</text>
+        <text x="35" y="48" className="fill-fg-dim text-[2.5px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >עוקף</text>
       </motion.g>
 
       {/* Start: Show azimuth */}
@@ -365,8 +369,18 @@ function PhaseOverlay({ phase }: { phase: Phase }) {
         <line x1="15" y1="60" x2="88" y2="20" className="stroke-accent" strokeWidth="0.6" />
         {/* Compass arc */}
         <path d="M 25 60 A 10 10 0 0 1 22 53" fill="none" className="stroke-accent" strokeWidth="0.4" />
-        <text x="29" y="55" className="fill-accent text-[3px] font-mono font-bold">47°</text>
-        <text x="22" y="64" className="fill-accent text-[2.2px] font-mono">אזימוט</text>
+        <text x="29" y="55" className="fill-accent text-[3px] font-display font-bold font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >47°</text>
+        <text x="22" y="64" className="fill-accent text-[2.2px] font-display font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >אזימוט</text>
       </motion.g>
 
       {/* Travel: Walking with checkpoints */}
@@ -381,7 +395,12 @@ function PhaseOverlay({ phase }: { phase: Phase }) {
         <circle cx="50" cy="40" r="2" className="fill-accent">
           <animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite" />
         </circle>
-        <text x="50" y="36" textAnchor="middle" className="fill-accent text-[2.5px] font-mono font-bold">אתה כאן</text>
+        <text x="50" y="36" textAnchor="middle" className="fill-accent text-[2.5px] font-display font-bold font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >אתה כאן</text>
 
         {/* Visual reference lines to landmarks */}
         <line x1="50" y1="40" x2="62" y2="25" className="stroke-accent-cool/50" strokeWidth="0.2" strokeDasharray="0.5 0.5" />
@@ -400,7 +419,12 @@ function PhaseOverlay({ phase }: { phase: Phase }) {
           <animate attributeName="r" values="4;9;4" dur="2s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
         </circle>
-        <text x="76" y="13" className="fill-status-ok text-[2.5px] font-mono font-bold">✓ הגעה</text>
+        <text x="76" y="13" className="fill-status-ok text-[2.5px] font-display font-bold font-bold"
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      >✓ הגעה</text>
       </motion.g>
     </>
   );
@@ -410,7 +434,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-[10px] font-mono text-fg-dim tracking-widest uppercase">{text}</span>
+      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

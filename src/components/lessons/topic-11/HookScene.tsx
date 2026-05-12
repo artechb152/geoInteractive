@@ -133,7 +133,7 @@ function BackdropMap() {
             <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" />
           </circle>
-          <text x="48" y="46" textAnchor="middle" className="fill-accent font-mono font-bold" fontSize="2.4" paintOrder="stroke" stroke="#0a0f1a" strokeWidth="0.8" strokeLinejoin="round" opacity="0.7">
+          <text x="48" y="46" textAnchor="middle" className="fill-accent font-display font-bold font-bold" fontSize="2.4" paintOrder="stroke" stroke="#0a0f1a" strokeWidth="0.8" strokeLinejoin="round" opacity="0.7">
             לב המדינה
           </text>
         </motion.g>

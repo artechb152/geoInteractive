@@ -107,8 +107,8 @@ export function Features() {
   const reduce = useReducedMotion();
 
   return (
-    <section id="features" aria-labelledby="features-title" className="relative py-20 md:py-28">
-      <div className="max-w-6xl mx-auto px-6">
+    <section id="features" aria-labelledby="features-title" className="relative py-10 md:py-14">
+      <div className="max-w-5xl mx-auto px-6">
         <Reveal className="max-w-2xl">
           <span className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider text-fg-muted mb-5">
             <span className="size-2 rounded-full bg-accent" aria-hidden />
@@ -116,12 +116,12 @@ export function Features() {
           </span>
           <h2
             id="features-title"
-            className="font-display font-bold tracking-tight text-balance leading-[1.1] text-[clamp(1.875rem,4vw,3rem)]"
+            className="font-display font-bold tracking-tight text-balance leading-[1.1] text-[clamp(1.5rem,3vw,2.25rem)]"
           >
             שלוש דרכים בהן הקורס משנה <br className="hidden sm:block" />
             <span className="gradient-text">איך אתה קורא את השטח</span>
           </h2>
-          <p className="mt-5 text-base md:text-lg text-fg-muted leading-relaxed text-pretty">
+          <p className="mt-3 text-sm md:text-base text-fg-muted leading-relaxed text-pretty">
             לא קורס תיאורטי. כל ציר משלב לימוד, סימולציה ותרגול אינטראקטיבי —
             מהבסיס הגיאוגרפי, דרך פענוח מודיעיני, ועד יישום מבצעי בשטח.
           </p>
@@ -133,7 +133,7 @@ export function Features() {
           whileInView="show"
           viewport={{ once: true, margin: '-15% 0px -10% 0px' }}
           variants={reduce ? undefined : stagger.container}
-          className="mt-12 grid gap-5 md:gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="mt-8 grid gap-3.5 md:gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {FEATURES.map((f, i) => {
             const s = toneStyles[f.tone];
@@ -145,7 +145,7 @@ export function Features() {
               >
                 <div
                   className={cn(
-                    'surface-elevated relative h-full overflow-hidden p-6 md:p-7',
+                    'surface-elevated relative h-full overflow-hidden p-4 md:p-5',
                     'transition-all duration-300 ease-snap',
                     'group-hover:-translate-y-1',
                     s.hoverBorder,

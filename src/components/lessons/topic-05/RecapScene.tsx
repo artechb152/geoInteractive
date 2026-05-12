@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
@@ -41,31 +42,10 @@ export function RecapScene() {
       <CompletionBanner />
 
       <div className="grid sm:grid-cols-2 gap-3">
-        {TERMS.map((t, i) => (
-          <motion.div
-            key={t.term}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.04, duration: 0.4 }}
-            whileHover={{ x: -4 }}
-            className="surface p-5 group hover:border-accent/40 hover:shadow-elevated transition-all duration-300 relative overflow-hidden"
-          >
-            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 group-hover:bg-accent/10 blur-2xl transition-colors pointer-events-none" />
-            <div className="relative flex items-start gap-3">
-              <span className="font-mono text-xs text-accent mt-1 shrink-0">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="font-display font-bold mb-1 leading-tight group-hover:text-accent transition-colors">
-                  {t.term}
-                </div>
-                <div className="text-sm text-fg-muted opacity-70 group-hover:opacity-100 transition-opacity leading-relaxed">
-                  {t.def}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+        {TERMS.map((t) => (
+          <InsightCard key={t.term} tone="accent" title={t.term}>
+            {t.def}
+          </InsightCard>
         ))}
       </div>
 
@@ -98,7 +78,7 @@ function CompletionBanner() {
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-[10px] font-mono text-accent mb-1 tracking-widest uppercase">
+          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
             כל הכבוד · סיימת את שיעור הניידות והתמרון
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
@@ -135,7 +115,7 @@ function NextStepCard() {
           <Icon name="spark" size={22} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">השלב הבא</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
           <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
           <div className="text-xs text-fg-muted mt-0.5">ניתוח עבירות וסיווג מחסה/הסתרה</div>
         </div>
@@ -159,7 +139,7 @@ function NextStepCard() {
           <Icon name="check" size={22} strokeWidth={2.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-mono text-fg-dim mb-0.5 tracking-widest uppercase">או</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
           <div className="font-display font-bold leading-tight">בדיקת ידע</div>
           <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
         </div>
