@@ -36,7 +36,7 @@ export function RecapScene() {
             {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד. רחף כדי לראות את ההגדרה."
+        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
       />
 
       <CompletionBanner />

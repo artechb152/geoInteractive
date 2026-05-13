@@ -29,7 +29,7 @@ export function RecapScene() {
             12 מושגים, <span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד. רחף כדי לראות את ההסבר."
+        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
       />
 
       <div className="grid sm:grid-cols-2 gap-3">

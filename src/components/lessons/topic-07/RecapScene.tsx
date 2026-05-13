@@ -5,19 +5,19 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'מיקרו-אקלים',         def: 'שונות אקלימית בשטח מצומצם בגלל הטופוגרפיה. עמק לוכד לחות, רכס פתוח.' },
-  { term: 'תחזית אזורית',         def: 'נקודת התחלה — לא נקודת סיום. תכנון מבצעי דורש רזולוציה מקומית.' },
-  { term: 'WBGT',                  def: 'Wet-Bulb Globe Temp — שילוב טמפ׳+לחות+רוח. המדד לשחיקת כוח לוחם.' },
-  { term: 'עומס חום',              def: 'שתיית מים עד 1.5 ל\'/שעה, מכות חום, ירידה ביכולת קבלת החלטות.' },
-  { term: 'היפותרמיה',            def: 'חום גוף &lt; 35°C. אובדן כושר מנטלי לפני שהחייל מבחין בסכנה.' },
-  { term: 'Wind Chill',            def: 'טמפ׳ מורגשת = טמפ׳ אוויר − פקטור רוח. ב-30 קמ"ש זה ירידה דרמטית.' },
-  { term: 'בליעה אטמוספרית',       def: 'אדי מים, אבק וגשם בולעים גלים אלקטרומגנטיים — סנסור מתעוור.' },
-  { term: 'Thermal Crossover',     def: 'רגע שבו חתימת המטרה מתמזגת עם הרקע. הטנק "נעלם" מה-IR.' },
-  { term: 'הצלבת סנסורים',          def: 'ביטוח: כשהאופטי מת, הראדאר עוד עובד. SAR + IR + ESM יחד.' },
-  { term: 'תקרת ענן',              def: 'גובה אטמוספרי שמעליו מתחיל כיסוי עננים. קובע באיזה גובה פלטפורמות יכולות לעבוד.' },
-  { term: 'MANPADS',               def: 'טילי כתף קצרי טווח עד ~5,000 מ׳. הסיבה שכטב"מים אסטרטגיים טסים גבוה.' },
-  { term: 'פלטפורמה אסטרטגית',     def: 'מל"ט MALE / לוויין — מעל תקרת ענן רוב הזמן, מחוץ לאיום קצר טווח.' },
-  { term: 'פלטפורמה טקטית',         def: 'מסוק / מל"ט קטן — דיוק גבוה, גובה נמוך, חשוף ל-MANPADS וירי קל.' },
+  { term: 'מיקרו-אקלים (אקלים מקומי)',  def: 'מזג אוויר שמשתנה באזור קטן בגלל צורת השטח. למשל: עמק שלוכד לחות לעומת הר פתוח.' },
+  { term: 'תחזית אזורית',        def: 'תמונת המצב הכללית. אי אפשר להסתמך רק עליה, חייבים לרדת לפרטים הקטנים של השטח עצמו.' },
+  { term: 'עומס חום/קור (WBGT)',  def: 'השילוב של טמפרטורה, לחות ורוח. המדד שקובע כמה מהר הגוף יתעייף או יקרוס בשטח.' },
+  { term: 'עומס חום כבד',        def: 'מצב שמחייב לשתות עד 1.5 ליטר בשעה כדי למנוע מכת חום ואובדן שיקול דעת.' },
+  { term: 'היפותרמיה (מכת קור)', def: 'חום הגוף צונח מתחת ל-35 מעלות. פוגע במוח וביכולת ההחלטה עוד לפני שמרגישים בסכנה.' },
+  { term: 'אפקט מקרר הרוח (Wind Chill)', def: 'הטמפרטורה שהגוף מרגיש בפועל כשיש רוח. רוח חזקה גורמת לקור להרגיש הרבה יותר גרוע.' },
+  { term: 'בליעה אטמוספרית',     def: 'מצב שבו אדי מים, גשם או אבק חוסמים ("בולעים") את השדר של החיישנים ומעוורים אותם.' },
+  { term: 'היעלמות תרמית (Thermal Crossover)', def: 'השעות שבהן המטרה (כמו טנק) והאדמה באותה טמפרטורה, ומצלמות החום פשוט לא רואות כלום.' },
+  { term: 'הצלבת חיישנים',       def: 'השימוש בכמה סוגי טכנולוגיות יחד. כשהמצלמה מתעוורת בגלל עננים, המכ"ם מחפה עליה.' },
+  { term: 'תקרת ענן',            def: 'קו הגובה שבו מתחילים עננים שמסתירים את הקרקע. קובע אילו כלי טיס יכולים לעבוד בבטחה.' },
+  { term: 'MANPADS (טילי נ"מ)',  def: 'טילי כתף קטלניים שמגיעים עד לגובה של כ-5 ק"מ. הסכנה הגדולה של כלי טיס שחודרים את העננים.' },
+  { term: 'כלי טיס אסטרטגיים',   def: 'לוויינים ומל"טים ענקיים. לרוב חגים הרחק מעל העננים ומוגנים מטילי כתף.' },
+  { term: 'כלי טיס טקטיים',      def: 'מסוקים ורחפנים קטנים. טסים נמוך ומספקים דיוק גבוה, אבל חשופים לאש מהקרקע.' },
 ];
 
 export function RecapScene() {
@@ -28,10 +28,10 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים, <span className="gradient-text">דקה של קריאה</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד. רחף כדי לראות את ההגדרה."
+        intro="כל המושגים החשובים שלמדנו בחלק הזה, מסוכמים במשפט אחד פשוט לכל אחד. עברו עליהם כדי לוודא שהכל יושב טוב בראש."
       />
 
       <CompletionBanner />
@@ -45,19 +45,19 @@ export function RecapScene() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.04, duration: 0.4 }}
             whileHover={{ x: -4 }}
-            className="surface p-5 group hover:border-accent/40 hover:shadow-elevated transition-all duration-300 relative overflow-hidden"
+            className="surface p-5 relative overflow-hidden"
           >
-            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 group-hover:bg-accent/10 blur-2xl transition-colors pointer-events-none" />
+            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
             <div className="relative flex items-start gap-3">
               <span className="font-mono text-xs text-accent mt-1 shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="font-display font-bold mb-1 leading-tight group-hover:text-accent transition-colors">
+                <div className="font-display font-bold mb-1 leading-tight">
                   {t.term}
                 </div>
                 <div
-                  className="text-sm text-fg-muted opacity-70 group-hover:opacity-100 transition-opacity leading-relaxed"
+                  className="text-sm text-fg-muted leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: t.def }}
                 />
               </div>
@@ -96,10 +96,10 @@ function CompletionBanner() {
         </div>
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור האקלים והמזג אוויר
+            כל הכבוד · סיימתם את שיעור אקלים ומזג אוויר!
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה אוויר <span className="gradient-text">כפרמטר פעיל</span>, לא כרקע
+            מעכשיו אתם מבינים שמזג אוויר הוא <span className="gradient-text">כלי נשק פעיל</span>, לא רק תפאורה.
           </div>
         </div>
       </div>
@@ -134,7 +134,7 @@ function NextStepCard() {
         <div className="flex-1 min-w-0">
           <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
           <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
-          <div className="text-xs text-fg-muted mt-0.5">ניתוח מזג אוויר וקבלת החלטות פלטפורמה</div>
+          <div className="text-xs text-fg-muted mt-0.5">בואו ננתח מזג אוויר ונקבל החלטות בשטח</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
@@ -157,8 +157,8 @@ function NextStepCard() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
-          <div className="font-display font-bold leading-tight">בדיקת ידע</div>
-          <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
+          <div className="font-display font-bold leading-tight">בחינת ידע</div>
+          <div className="text-xs text-fg-muted mt-0.5">כמה שאלות קצרות כדי לסגור פינה</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>

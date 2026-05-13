@@ -33,7 +33,7 @@ export function RecapScene() {
             {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד. רחף כדי לראות את ההגדרה."
+        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
       />
 
       <CompletionBanner />
@@ -47,18 +47,18 @@ export function RecapScene() {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.04, duration: 0.4 }}
             whileHover={{ x: -4 }}
-            className="surface p-5 group hover:border-accent/40 hover:shadow-elevated transition-all duration-300 relative overflow-hidden"
+            className="surface p-5 relative overflow-hidden"
           >
-            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 group-hover:bg-accent/10 blur-2xl transition-colors pointer-events-none" />
+            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
             <div className="relative flex items-start gap-3">
               <span className="font-mono text-xs text-accent mt-1 shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="font-display font-bold mb-1 leading-tight group-hover:text-accent transition-colors">
+                <div className="font-display font-bold mb-1 leading-tight">
                   {t.term}
                 </div>
-                <div className="text-sm text-fg-muted opacity-70 group-hover:opacity-100 transition-opacity leading-relaxed">
+                <div className="text-sm text-fg-muted leading-relaxed">
                   {t.def}
                 </div>
               </div>
