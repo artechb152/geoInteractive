@@ -32,6 +32,8 @@ const INNER_REPLACEMENTS = [
   // misleading "hover to see" instruction in intros
   [' רחף כדי לראות את ההגדרה.', ''],
   [' רחף כדי לראות את ההסבר.', ''],
+  // Framer-Motion hover slide on the term card (missed by Tailwind sweep)
+  ['            whileHover={{ x: -4 }}\n', ''],
 ];
 
 let changed = 0;

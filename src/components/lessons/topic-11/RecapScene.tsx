@@ -43,7 +43,6 @@ export function RecapScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.04, duration: 0.4 }}
-            whileHover={{ x: -4 }}
             className="surface p-5 relative overflow-hidden"
           >
             <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />

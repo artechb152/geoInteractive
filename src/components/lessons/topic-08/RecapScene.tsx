@@ -5,20 +5,20 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'LOC',                  def: 'Lines of Communication — מערכת הקווים המקשרת בין הדרג הלוחם לעורף.' },
-  { term: 'MSR',                  def: 'Main Supply Route — הציר הראשי, נושא את מסת האספקה. יעד מודיעין עליון.' },
-  { term: 'ASR',                  def: 'Alternate Supply Route — נתיב משני, ממופה מראש. מופעל כש-MSR לא שמיש.' },
-  { term: 'נקודת חנק',            def: 'הצרה בציר. שילוב מארב + מיקוש = כוח גדול נחסם בכוח קטן.' },
-  { term: 'הבטן הלוגיסטית',       def: 'העומק הגיאוגרפי של יחידות התמך. מתארכת ככל שמעמיקים חדירה.' },
-  { term: 'Push Logistics',       def: 'דחיפת ציוד מהעורף לחזית באופן רציף. תזרים גבוה, חשיפה גבוהה.' },
-  { term: 'Pull Logistics',       def: 'אספקה לפי דרישה מהחזית. תזרים נמוך אבל חכם.' },
-  { term: 'ציידי לוגיסטיקה',      def: 'כוחות אויב קלים שמטיילים בעורף וחוטפים משאיות. 20 חיילים יכולים לשתק אוגדה.' },
-  { term: 'נמל מים עמוקים',       def: 'נמל עם תשתית "שוקע" שקולטת נושאות מטוסים. גורם משנה משחק אסטרטגי.' },
-  { term: 'מיקוש ימי',            def: 'דרך זולה לנטרל נמל. מיקוש תעלת כניסה = שיתוק נמל ענק.' },
-  { term: 'מסוף היברידי',          def: 'Intermodal Hub — מפגש של ים + רכבת + כביש + אוויר. יעד אסטרטגי לאומי.' },
-  { term: 'מרכז כובד תשתיתי',      def: 'תקיפה בודדת על צומת חיוני = השלכה כלכלית-צבאית רחבת היקף.' },
-  { term: 'גשר אחד רחוק מדי',     def: 'מבצע "Market Garden" 1944. כש-LOC נקטע באמצע — כל הכוח קורס.' },
-  { term: 'רומל ב-1942',          def: 'הקרב ניצח שנתיים, אבל בלי דלק במזרח התיכון — נסוג 1,500 ק"מ.' },
+  { term: 'LOC (קווי אספקה)',         def: 'העורק הראשי שמחבר בין החיילים בשטח לבין בסיסי האספקה בעורף.' },
+  { term: 'MSR (ציר ראשי)',           def: 'הדרך המרכזית שדרכה עובר רוב הציוד. המטרה מספר אחת של האויב.' },
+  { term: 'ASR (ציר חלופי)',          def: 'תוכנית המגירה שלנו. כביש משני שמופעל רק כשהציר הראשי נחסם.' },
+  { term: 'נקודת חנק (Choke Point)',  def: 'מקום צר במסלול. קל מאוד לאויב לחסום שם כוח גדול בעזרת מעט לוחמים ומוקשים.' },
+  { term: 'הבטן הלוגיסטית',           def: 'האזור שמאחורי הכוחות, שם נוסעות משאיות האספקה. ככל שנתקדם, ה"בטן" הזו תתארך ותהיה חשופה יותר.' },
+  { term: 'דחיפה (Push Logistics)',   def: 'שליחת ציוד לחזית כל הזמן מראש ("כמו סרט נע"). שפע של ציוד, אבל המון משאיות שחשופות לפגיעה.' },
+  { term: 'משיכה (Pull Logistics)',   def: 'החיילים מזמינים רק מה שחסר להם באותו רגע. חסכוני ובטוח יותר, אבל דורש תקשורת מעולה.' },
+  { term: 'ציידי לוגיסטיקה',          def: 'חוליות אויב שמסתננות מאחורי הקווים שלנו רק כדי לתקוף משאיות אספקה חסרות מגן.' },
+  { term: 'נמל מים עמוקים',           def: 'נמל ענק שמתאים לספינות כבדות. שליטה בו מאפשרת רצף אספקה שמנצח מלחמות.' },
+  { term: 'מיקוש ימי',                def: 'הדרך הזולה והיעילה ביותר לשתק נמל שלם. מוקש אחד בתעלת הכניסה וכל הספינות נתקעות.' },
+  { term: 'מרכז תחבורה משולב (היברידי)', def: '"תחנה מרכזית" שמשלבת שדה תעופה, נמל ים, רכבת וכביש. פגיעה בו משתקת מדינה שלמה.' },
+  { term: 'מרכז כובד (COG)',          def: 'הנקודה הרגישה ביותר (כמו נמל או צומת מרכזי). פגיעה בה תגרום לאפקט דומינו צבאי וכלכלי.' },
+  { term: 'גשר אחד רחוק מדי',         def: 'מושג שמתאר שאפתנות יתר. כשקו האספקה נמתח מעבר ליכולת שלו, כל המבצע קורס (מבצע מרקט גארדן, 1944).' },
+  { term: 'רומל ב-1942',              def: 'הגנרל הגרמני שניצח בקרבות, אבל הפסיד במערכה כי פשוט נגמר לטנקים שלו הדלק.' },
 ];
 
 export function RecapScene() {
@@ -29,10 +29,10 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים שחייבים להכיר ב<span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
+        intro="ריכזנו עבורכם את כל המושגים המרכזיים שעברנו עליהם בשיעור, בהגדרה אחת קצרה, חדה וברורה."
       />
 
       <CompletionBanner />
@@ -45,7 +45,6 @@ export function RecapScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.04, duration: 0.4 }}
-            whileHover={{ x: -4 }}
             className="surface p-5 relative overflow-hidden"
           >
             <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
@@ -96,10 +95,10 @@ function CompletionBanner() {
         </div>
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור הלוגיסטיקה
+            כל הכבוד! · סיימתם את שיעור הלוגיסטיקה
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה מלחמה <span className="gradient-text">בעיניים של ראש לוגיסטיקה</span>
+            עכשיו אתם רואים את שדה הקרב <span className="gradient-text">בעיניים של מפקד לוגיסטיקה</span>
           </div>
         </div>
       </div>
@@ -134,7 +133,7 @@ function NextStepCard() {
         <div className="flex-1 min-w-0">
           <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
           <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
-          <div className="text-xs text-fg-muted mt-0.5">תכנון MSR/ASR ובחירת יעדים</div>
+          <div className="text-xs text-fg-muted mt-0.5">בואו לתכנן צירי אספקה ולבחור יעדים בשטח</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
@@ -158,7 +157,7 @@ function NextStepCard() {
         <div className="flex-1 min-w-0">
           <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
           <div className="font-display font-bold leading-tight">בדיקת ידע</div>
-          <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
+          <div className="text-xs text-fg-muted mt-0.5">חידון קצר לסיכום החומר</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
