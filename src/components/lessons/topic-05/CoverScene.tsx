@@ -341,7 +341,19 @@ function CategoryBin({
     >
       <div className="flex items-center gap-3 p-3 pr-4">
         <span className={cn('grid place-items-center size-10 rounded-lg shrink-0', category.bg)}>
-          <Icon name={category.id === 'cover' ? 'shield' : 'eye'} size={20} className={category.color} />
+          <Icon
+            name={
+              category.id === 'cover-only'
+                ? 'shield'
+                : category.id === 'concealment-only'
+                  ? 'eye'
+                  : category.id === 'both'
+                    ? 'check'
+                    : 'flag'
+            }
+            size={20}
+            className={category.color}
+          />
         </span>
         <div className="flex-1 min-w-0">
           <div className={cn('font-display font-bold leading-tight', category.color)}>

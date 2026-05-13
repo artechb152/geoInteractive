@@ -8,6 +8,7 @@ import {
   animate,
   useReducedMotion,
   type AnimationPlaybackControls,
+  type MotionValue,
 } from 'framer-motion';
 import {
   ArrowLeft,
@@ -32,12 +33,13 @@ const STATS = [
   { value: '100%', label: 'סימולציות וניתוח שטח', Icon: Sparkles },
 ];
 
-const VIEWS = {
+type ViewSpec = { x: number; y: number; label: string };
+const VIEWS: Record<'iso' | 'top' | 'side' | 'front', ViewSpec> = {
   iso: { x: -22, y: 34, label: 'ISO' },
   top: { x: -86, y: 0, label: 'TOP' },
   side: { x: -6, y: 80, label: 'SIDE' },
   front: { x: -8, y: 0, label: 'FRONT' },
-} as const;
+};
 
 type ViewKey = keyof typeof VIEWS;
 
@@ -199,7 +201,7 @@ const CONTOURS: Contour[] = [
 
 const LAYER_THICKNESS = 22;
 const BASE_Z = 20;
-const SHEETS_PER_LAYER = 5;
+const SHEETS_PER_LAYER: number = 5;
 
 function lerpHex(a: string, b: string, t: number) {
   const parse = (h: string) => {
@@ -464,7 +466,7 @@ function BasePlatform() {
   );
 }
 
-function GroundShadow({ rotX }: { rotX: ReturnType<typeof useMotionValue> }) {
+function GroundShadow({ rotX }: { rotX: MotionValue<number> }) {
   return (
     <motion.div
       aria-hidden
