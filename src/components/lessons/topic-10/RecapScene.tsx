@@ -5,20 +5,20 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'MOUT',                  def: 'Military Operations in Urban Terrain — דוקטרינת לחימה בעיר.' },
-  { term: 'שבירת קווי ראייה',     def: 'בעיר, LOS יורד מקילומטרים למטרים בודדים. יתרון של טנקים וחיל אוויר מצטמצם.' },
-  { term: 'גריד עירוני',           def: 'תבנית רחובות סדורה. קווי אש ארוכים בשדרות, חשיפה ל-Enfilade.' },
-  { term: 'קסבה / סמטאות',         def: 'מבנה מעוקל ולא-סדור. LOS קצר, בלבול ניווט, מארבים פוטנציאליים.' },
-  { term: 'Enfilade',              def: 'ירי לאורך ציר תנועה. אחת הסכנות הגדולות בעיר גריד.' },
-  { term: 'הממד האנכי',           def: 'בניינים גבוהים = "גבעות בטון". יתרון תצפית, צלפים, נ"ט מלמעלה.' },
-  { term: 'תת-קרקע',               def: 'מנהרות וביוב. GPS-Denied, סנסור אווירי עיוור, נתיב נסתר לאיגוף.' },
-  { term: 'GPS-Denied',            def: 'מרחב שבו אותות לוויין לא מגיעים. דורש ניווט עם מצפן וזיכרון.' },
-  { term: 'קרב תלת-ממדי',          def: 'איום מ-3 כיוונים: אופקי, אנכי (מעל), תת-קרקעי (מתחת).' },
-  { term: 'אתר רגיש',              def: 'בית חולים, מסגד, בית ספר, או"ם. מוגן במשפט הבינלאומי.' },
-  { term: 'Dual-Use',              def: 'תשתית אזרחית שמשמשת גם צבאית. מגדל מים שגם תצפית — מתי מותר לתקוף?' },
-  { term: 'ROE',                   def: 'Rules of Engagement — מתי, איפה, על מי מותר לפתוח באש.' },
-  { term: 'ציר הומניטרי',          def: 'חלון זמן ומרחב מוסכם לפינוי אזרחים והכנסת סיוע. עצירת אש זמנית.' },
-  { term: 'ניצול ציני',             def: 'מיקום תשתית צבאית סמוך לאתר אזרחי כדי להקשות על תקיפה.' },
+  { term: 'MOUT',                  def: 'ראשי תיבות של לוחמה בשטח בנוי (לש"ב). האופן שבו צבא מנהל קרב בתוך עיר צפופה.' },
+  { term: 'שבירת קווי ראייה',     def: 'בעיר אי אפשר לראות רחוק. הקרב הופך למפגש פנים-אל-פנים, והיתרון של מטוסי קרב וטנקים צונח משמעותית.' },
+  { term: 'גריד עירוני',           def: 'עיר שמתוכננת כמו לוח שחמט. קל לנווט בה, אבל הרחובות הישרים והארוכים חושפים את החיילים למלכודות אש מרחוק.' },
+  { term: 'קסבה / סמטאות',         def: 'מבוך של רחובות עקומים וצפופים. קל מאוד ללכת לאיבוד, וכל סיבוב פינה עלול להסתיר מארב מטווח אפס.' },
+  { term: 'Enfilade',              def: '"אש לאורך הציר" (אנפילייד) – מצב קטלני שבו צלף יושב בקצה רחוב ישר ופוגע בכל מי שמנסה לעבור בו.' },
+  { term: 'הממד האנכי',           def: 'מגדלים בעיר שמשמשים כ"גבעות בטון". מי ששולט בגג מקבל תצפית מעולה ויכול לירות טילי נ"ט על טנקים מלמעלה.' },
+  { term: 'תת-קרקע',               def: 'עולם המנהרות והביוב. אזור שהמטוסים לא יכולים לראות וה-GPS לא קולט בו, ומשמש את האויב לתנועה חשאית ממתחת לרגליים.' },
+  { term: 'GPS-Denied',            def: '"אזור ללא קליטה" – מקומות (כמו מנהרות או סמטאות צפופות) שבהם ה-GPS מת, וחייבים לנווט לפי מפות מודפסות וזיכרון.' },
+  { term: 'קרב תלת-ממדי',          def: 'לחימה מכל הכיוונים במקביל: פנים-אל-פנים ברחוב, אש מגגות הבניינים מעל, ומחבלים שקופצים ממנהרות למטה.' },
+  { term: 'אתר רגיש',              def: 'בתי חולים, בתי ספר, מסגדים ומתקני או"ם. מוסדות שזוכים להגנה מיוחדת ואסור לתקוף אותם סתם כך ללא הצדקה מובהקת.' },
+  { term: 'Dual-Use',              def: '"שימוש כפול" – תשתית אזרחית (כמו רשת חשמל) שהאויב מנצל גם לצרכים צבאיים, מה שיוצר דילמה משפטית אם מותר להרוס אותה.' },
+  { term: 'ROE',                   def: 'הוראות פתיחה באש (Rules of Engagement). החוקים הנוקשים שקובעים לחייל בדיוק מתי, איפה ועל מי מותר לו לירות.' },
+  { term: 'ציר הומניטרי',          def: 'כביש מאובטח שנפתח לזמן קצוב. מאפשר לאזרחים לברוח מאזור הלחימה ולהכניס אליהם אוכל, מים ותרופות.' },
+  { term: 'ניצול ציני',            def: 'טקטיקה שבה האויב ממקם מפקדות ונשק בכוונה ליד אזרחים (מגן אנושי), כדי שהצבא יימנע מלתקוף אותו.' },
 ];
 
 export function RecapScene() {
@@ -32,7 +32,7 @@ export function RecapScene() {
             {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
+        intro="הנה כל המושגים המרכזיים שעברנו עליהם, מתומצתים לשורה אחת נטולת בולשיט כדי שישבו טוב בראש."
       />
 
       <CompletionBanner />
@@ -95,10 +95,10 @@ function CompletionBanner() {
         </div>
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור הלחימה האורבנית
+            כל הכבוד · סיימת את שיעור הלוחמה בשטח בנוי
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה עיר <span className="gradient-text">כקוביית רוביק תלת-ממדית</span>
+            מעכשיו אתה מבין שעיר היא לא רק רחובות, אלא <span className="gradient-text">קוביית רוביק תלת-ממדית</span>
           </div>
         </div>
       </div>
@@ -132,8 +132,8 @@ function NextStepCard() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
-          <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
-          <div className="text-xs text-fg-muted mt-0.5">ניווט אורבני וסיווג אתרים</div>
+          <div className="font-display font-bold leading-tight">תרגול בשטח</div>
+          <div className="text-xs text-fg-muted mt-0.5">בואו נראה איך אתם מנווטים ומסווגים מטרות</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
@@ -156,8 +156,8 @@ function NextStepCard() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
-          <div className="font-display font-bold leading-tight">בדיקת ידע</div>
-          <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
+          <div className="font-display font-bold leading-tight">בוחן פתע קצר</div>
+          <div className="text-xs text-fg-muted mt-0.5">כמה שאלות מהירות לסיכום</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
