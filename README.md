@@ -14,9 +14,9 @@ npm run build        # מפיק תיקיית out/ סטטית (להטמעה ב-LM
 
 ```
 .
-├── content/              # תוכן הקורס מפוצל לפי נושא (topic-01.md ... topic-13.md)
+├── content/              # תוכן הקורס מפוצל לפי נושא (topic-01.md ... topic-12.md)
 ├── docs/
-│   ├── instructional-briefs.md   # תכנון הדרכה לכל 13 השיעורים
+│   ├── instructional-briefs.md   # תכנון הדרכה לכל 12 השיעורים
 │   ├── design-system.md          # פלטה, רכיבים, עקרונות
 │   └── scorm-packaging.md        # הוראות חבילת SCORM ל-LMS
 ├── src/

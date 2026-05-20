@@ -5,12 +5,12 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const SCENES = [
-  { id: 'hook',       label: 'פתיחה' },
-  { id: 'onboarding', label: 'לפני שמתחילים' },
-  { id: 'geoint',     label: '12.1 · GEOINT' },
-  { id: 'platforms',  label: '12.2 · פלטפורמות' },
-  { id: 'deception',  label: '12.3 · OSINT והונאה' },
-  { id: 'recap',      label: 'סיכום' },
+  { id: 'hook',         label: 'פתיחה' },
+  { id: 'onboarding',   label: 'לפני שמתחילים' },
+  { id: 'basics',       label: '12.1 · שכבות וסוגי נתונים' },
+  { id: 'costsurface',  label: '12.2 · משטח עלות' },
+  { id: 'network',      label: '12.3 · רשתות ו-Buffers' },
+  { id: 'recap',        label: 'סיכום' },
 ];
 
 export function SceneProgress() {

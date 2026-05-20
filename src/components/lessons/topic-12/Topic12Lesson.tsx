@@ -2,9 +2,9 @@
 
 import { HookScene } from './HookScene';
 import { OnboardingScene } from './OnboardingScene';
-import { GEOINTScene } from './GEOINTScene';
-import { PlatformsScene } from './PlatformsScene';
-import { DeceptionScene } from './DeceptionScene';
+import { BasicsScene } from './BasicsScene';
+import { CostSurfaceScene } from './CostSurfaceScene';
+import { NetworkScene } from './NetworkScene';
 import { RecapScene } from './RecapScene';
 import { SceneProgress } from './SceneProgress';
 import { SceneDivider } from './SceneDivider';
@@ -17,12 +17,12 @@ export function Topic12Lesson() {
         <HookScene />
         <SceneDivider next="12.0 · לפני שמתחילים" />
         <OnboardingScene />
-        <SceneDivider next="12.1 · GEOINT" />
-        <GEOINTScene />
-        <SceneDivider next="12.2 · פלטפורמות" />
-        <PlatformsScene />
-        <SceneDivider next="12.3 · OSINT והונאה" />
-        <DeceptionScene />
+        <SceneDivider next="12.1 · שכבות וסוגי נתונים" />
+        <BasicsScene />
+        <SceneDivider next="12.2 · משטח עלות" />
+        <CostSurfaceScene />
+        <SceneDivider next="12.3 · רשתות ו-Buffers" />
+        <NetworkScene />
         <SceneDivider next="12.4 · סיכום" />
         <RecapScene />
       </div>

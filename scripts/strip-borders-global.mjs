@@ -45,12 +45,9 @@ const FILES = [
   'src/components/lessons/topic-11/BordersScene.tsx',
   'src/components/lessons/topic-11/BufferScene.tsx',
   'src/components/lessons/topic-11/DepthScene.tsx',
-  'src/components/lessons/topic-12/DeceptionScene.tsx',
-  'src/components/lessons/topic-12/GEOINTScene.tsx',
-  'src/components/lessons/topic-12/PlatformsScene.tsx',
-  'src/components/lessons/topic-13/BasicsScene.tsx',
-  'src/components/lessons/topic-13/CostSurfaceScene.tsx',
-  'src/components/lessons/topic-13/NetworkScene.tsx',
+  'src/components/lessons/topic-12/BasicsScene.tsx',
+  'src/components/lessons/topic-12/CostSurfaceScene.tsx',
+  'src/components/lessons/topic-12/NetworkScene.tsx',
 ];
 
 let totalFiles = 0;

@@ -79,7 +79,7 @@ const reset = () => setDisabled(new Set());
 return (
  <section id="scene-network" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
-step="13.3"
+step="12.3"
 eyebrow="ניתוח רשתות ומעגלי השפעה"
 title={
  <>

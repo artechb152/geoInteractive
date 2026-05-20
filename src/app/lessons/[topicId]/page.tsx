@@ -18,7 +18,6 @@ import { Topic09Lesson } from '@/components/lessons/topic-09/Topic09Lesson';
 import { Topic10Lesson } from '@/components/lessons/topic-10/Topic10Lesson';
 import { Topic11Lesson } from '@/components/lessons/topic-11/Topic11Lesson';
 import { Topic12Lesson } from '@/components/lessons/topic-12/Topic12Lesson';
-import { Topic13Lesson } from '@/components/lessons/topic-13/Topic13Lesson';
 
 const customLearn: Record<string, () => React.ReactNode> = {
   'topic-01': () => <Topic01Lesson />,
@@ -33,7 +32,6 @@ const customLearn: Record<string, () => React.ReactNode> = {
   'topic-10': () => <Topic10Lesson />,
   'topic-11': () => <Topic11Lesson />,
   'topic-12': () => <Topic12Lesson />,
-  'topic-13': () => <Topic13Lesson />,
 };
 
 export function generateStaticParams() {

@@ -5,21 +5,21 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'GEOINT',              def: 'Geospatial Intelligence — מודיעין מרחבי. אינטגרציה של תמונה, סנסור, וגאו-עיגון.' },
-  { term: 'IMINT',               def: 'Imagery Intelligence — מודיעין חזותי. מצלמות, אופטיקה. תלוי באור ובמזג אוויר.' },
-  { term: 'SIGINT',              def: 'Signals Intelligence — האזנה לתקשורת אויב. לוכד כוונה, לא רק מיקום.' },
-  { term: 'HUMINT',              def: 'Human Intelligence — סוכנים ומקורות אנושיים. איטי ויקר אבל עם הקשר.' },
-  { term: 'OSINT',               def: 'Open Source — לוויינים מסחריים, רשתות חברתיות. דמוקרטיזציה של מודיעין.' },
-  { term: 'Georeferencing',      def: 'הצמדת כל פיסת מידע לקואורדינטה מדויקת. בלי זה אין GEOINT.' },
-  { term: 'SAR',                 def: 'Synthetic Aperture Radar — רואה דרך עננים, חושך, רשתות הסוואה.' },
-  { term: 'LEO',                 def: 'Low Earth Orbit — 300-800 ק"מ. לוויינים ברזולוציה סופר-גבוהה.' },
-  { term: 'Swarm Constellation',  def: 'מאות ננו-לוויינים זולים. Revisit Time גבוה (תמונה כל שעה).' },
-  { term: 'Revisit Time',         def: 'תדירות חזרה של לוויין לאתר. גבוה = מעקב רציף. נמוך = פערים גדולים.' },
-  { term: 'רוק"ק',                def: 'רום קרוב לקרקע — שכבת אוויר נמוכה לרחפנים. מתחת לרדאר נ"מ.' },
-  { term: 'פוטוגרמטריה',          def: 'יצירת מודל תלת-ממדי ממאות תמונות דו-ממדיות. לתכנון תקיפה ואימון.' },
-  { term: 'Sensor Fusion',        def: 'הצלבת מקורות. הפער בין SAR לאופטי = ההונאה מתגלה.' },
-  { term: 'Deception',            def: 'הונאה: טנקים מתנפחים, גופי חימום, שיבוש GPS. נגד-מודיעין.' },
-  { term: 'יחידה 9900',           def: 'יחידת המודיעין הגיאוגרפי של צה"ל. הפרדיגמה: מפה כשכבת בסיס.' },
+  { term: 'GIS',                    def: 'Geographic Information System — מערכת לעיגון, ניתוח והצגת מידע גיאוגרפי.' },
+  { term: 'שכבות (Layers)',         def: 'כל סוג מידע = שקף נפרד. Overlay של שכבות = תמונה רב-ממדית.' },
+  { term: 'Georeferencing',         def: 'הצמדת כל פיסת מידע לקואורדינטה. הבסיס לכל GIS.' },
+  { term: 'ראסטר (Raster)',         def: 'רשת פיקסלים. כל פיקסל ערך אחד. מתאים לרציפות (גובה, טמפ׳).' },
+  { term: 'וקטור (Vector)',         def: 'אובייקטים גיאומטריים: נקודות/קווים/פוליגונים. עם טבלת תכונות.' },
+  { term: 'DTM',                    def: 'Digital Terrain Model — מודל גובה ספרתי. ראסטר ערכי גובה.' },
+  { term: 'Attribute Table',        def: 'טבלת תכונות לכל אובייקט וקטורי. מאפשר שאילתות חכמות.' },
+  { term: 'Shapefile / GDB',        def: 'קבצי GIS לוקליים. למשתמש אחד, ניתוח עצמאי.' },
+  { term: 'SDE',                    def: 'Spatial Database Engine — שרת מרכזי. כמה משתמשים על אותה שכבה.' },
+  { term: 'Viewshed',               def: 'אלגוריתם שמחשב אילו תאי שטח נצפים מנקודה. "מקור אור" וירטואלי.' },
+  { term: 'Cost Surface',           def: 'ראסטר בו כל פיקסל קיבל "ציון קושי לתנועה". משקלל איומים ושטח.' },
+  { term: 'Least-Cost Path',        def: 'אלגוריתם למציאת המסלול הזול ביותר. "כמו מים זורמים".' },
+  { term: 'Network Analysis',       def: 'ניתוח טופולוגי של רשתות. מזהה "נקודות כשל" — צמתים קריטיים.' },
+  { term: 'Buffer',                 def: 'טבעת מסביב לאובייקט. למשל "Kill Box" סביב סוללת טילים.' },
+  { term: 'Targeting',              def: 'בחירת נקודת תקיפה דרך GIS. צומת קריטי = אפקט דומינו.' },
 ];
 
 export function RecapScene() {
@@ -66,7 +66,7 @@ export function RecapScene() {
         ))}
       </div>
 
-      <NextStepCard />
+      <FinalCard />
     </section>
   );
 }
@@ -96,10 +96,10 @@ function CompletionBanner() {
         </div>
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור ה-GEOINT
+            כל הכבוד · סיימת את שיעור ה-GIS — וגם את הקורס כולו!
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה את העולם <span className="gradient-text">בעיניים של מנתח מודיעין</span>
+            עכשיו אתה רואה את העולם <span className="gradient-text">כשכבות של מודיעין</span>
           </div>
         </div>
       </div>
@@ -107,61 +107,30 @@ function CompletionBanner() {
   );
 }
 
-function NextStepCard() {
+function FinalCard() {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="mt-10 grid sm:grid-cols-2 gap-3"
+      className="mt-10 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/15 via-bg-elevated to-bg-elevated p-7 sm:p-8"
     >
-      <a
-        href="#"
-        onClick={(e) => {
-          e.preventDefault();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setTimeout(() => {
-            const tabs = document.querySelectorAll('[role="tab"]');
-            const practiceTab = Array.from(tabs).find((t) => t.textContent?.includes('תרגול'));
-            (practiceTab as HTMLElement | undefined)?.click();
-          }, 400);
-        }}
-        className="group surface p-5 sm:p-6 hover:border-accent/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
-      >
-        <div className="size-12 rounded-xl bg-accent/10 border border-accent/40 flex items-center justify-center text-accent shrink-0 group-hover:scale-110 transition-transform">
-          <Icon name="spark" size={22} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
-          <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
-          <div className="text-xs text-fg-muted mt-0.5">הצלבת סנסורים וזיהוי הונאה</div>
-        </div>
-        <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
-      </a>
+      <div className="absolute -end-20 -top-20 size-56 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
+      <div className="absolute -start-20 -bottom-20 size-56 rounded-full bg-accent-cool/15 blur-3xl pointer-events-none" />
 
-      <a
-        href="#"
-        onClick={(e) => {
-          e.preventDefault();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setTimeout(() => {
-            const tabs = document.querySelectorAll('[role="tab"]');
-            const checkTab = Array.from(tabs).find((t) => t.textContent?.includes('בדיקת ידע'));
-            (checkTab as HTMLElement | undefined)?.click();
-          }, 400);
-        }}
-        className="group surface p-5 sm:p-6 hover:border-accent/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
-      >
-        <div className="size-12 rounded-xl bg-accent-cool/10 border border-accent-cool/40 flex items-center justify-center text-accent-cool shrink-0 group-hover:scale-110 transition-transform">
-          <Icon name="check" size={22} strokeWidth={2.5} />
+      <div className="relative">
+        <div className="text-sm font-display font-semibold text-accent-hover mb-2 tracking-wider">
+          הקורס הסתיים
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
-          <div className="font-display font-bold leading-tight">בדיקת ידע</div>
-          <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
-        </div>
-        <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
-      </a>
+        <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3">
+          13 שיעורים. <span className="gradient-text">דרך חשיבה אחת.</span>
+        </h3>
+        <p className="text-fg-muted leading-relaxed text-pretty">
+          סיימת מסע של 13 שיעורים בגיאוגרפיה צבאית — מרמות המלחמה ועד GIS יישומי.
+          עכשיו אתה רואה כל מפה כמו מתכנן: שכבות, איומים, מסלולים, ונקודות תורפה.
+          זה לא הסוף — זה הקרקע. כל מבצע שתפגוש מהיום ייראה לך אחרת.
+        </p>
+      </div>
     </motion.div>
   );
 }

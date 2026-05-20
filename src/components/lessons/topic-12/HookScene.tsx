@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { Icon, type IconName } from '@/components/Icon';
 
 const STATS: { value: string; label: string; icon: IconName }[] = [
-  { value: '9+',  label: 'לוויינים מעלינו בכל רגע',    icon: 'satellite' },
-  { value: '~30', label: 'ס"מ — רזולוציית לוויין',   icon: 'eye' },
-  { value: 'SAR', label: 'רואה דרך עננים וערפל',     icon: 'bolt' },
-  { value: '~50', label: 'דקות',                       icon: 'clock' },
+  { value: '4+',   label: 'שכבות GIS בסיסיות',         icon: 'layers' },
+  { value: '2',    label: 'מודלים (ראסטר/וקטור)',     icon: 'globe' },
+  { value: '1',    label: 'גשר = אפקט דומינו',         icon: 'crosshair' },
+  { value: '~55',  label: 'דקות',                       icon: 'clock' },
 ];
 
 export function HookScene() {
@@ -16,7 +16,7 @@ export function HookScene() {
       id="scene-hook"
       className="min-h-[88vh] relative flex items-center justify-center overflow-hidden"
     >
-      <BackdropSatellites />
+      <BackdropGrid />
 
       <motion.div
         initial={{ opacity: 0, y: 28 }}
@@ -25,21 +25,22 @@ export function HookScene() {
         className="relative z-10 text-center max-w-4xl px-6"
       >
         <div className="chip border-accent/40 bg-accent/10 text-accent mb-8 mx-auto w-fit">
-          <Icon name="satellite" size={14} className="text-accent" />
-          <span className="font-mono text-[11px]">שיעור 12</span>
+          <Icon name="layers" size={14} className="text-accent" />
+          <span className="font-mono text-[11px]">שיעור 13</span>
           <span className="text-fg-dim">·</span>
-          <span>GEOINT וחישה מרחוק</span>
+          <span>GIS יישומי לניתוח מבצעי</span>
         </div>
 
         <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
-          9 לוויינים <span className="gradient-text">מסתכלים</span>
+          המפה שמסבירה
           <br />
-          עליך. עכשיו.
+          איזה גשר <span className="gradient-text">תפוצץ</span>.
         </h1>
 
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
-          תמונה בוורוד? סנסור תרמי. עננים? SAR חודר. רחפן? רואה מתחת לרדאר.
-          וכל זה — הצלב על מפה אחת בזמן אמת. בשיעור הזה נלמד את המודיעין שמשנה מלחמות.
+          לחיצה אחת על "Show Layers". בחירה שנייה: "Cost Surface". המפה מחזירה מסלול
+          שעוקף 3 מארבים, חוסך 12 ק"מ דלק, ומגיע ליעד שעה לפני האויב. זה לא קסם —
+          זה GIS מבצעי.
         </p>
 
         <motion.div
@@ -92,7 +93,7 @@ export function HookScene() {
   );
 }
 
-function BackdropSatellites() {
+function BackdropGrid() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
       <svg
@@ -100,93 +101,61 @@ function BackdropSatellites() {
         preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 w-full h-full"
       >
-        {/* Earth curve at the bottom */}
-        <motion.ellipse
-          cx="50"
-          cy="120"
-          rx="80"
-          ry="40"
-          className="fill-terrain-sand/10 stroke-terrain-sand/30"
-          strokeWidth="0.2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
-          transition={{ duration: 1.5 }}
-        />
-
-        {/* Orbital paths */}
-        {[
-          { ry: 35, opacity: 0.15, dur: 30 },
-          { ry: 45, opacity: 0.12, dur: 45 },
-          { ry: 55, opacity: 0.09, dur: 60 },
-        ].map((o, i) => (
-          <ellipse
-            key={i}
-            cx="50"
-            cy="80"
-            rx="60"
-            ry={o.ry}
-            fill="none"
-            className="stroke-accent-cool"
-            strokeWidth="0.15"
-            strokeDasharray="2 1.5"
-            opacity={o.opacity}
-          />
+        {/* Grid lines */}
+        {Array.from({ length: 11 }).map((_, i) => (
+          <line key={`x${i}`} x1={i * 10} y1="0" x2={i * 10} y2="100" className="stroke-accent" strokeWidth="0.08" opacity="0.2" />
+        ))}
+        {Array.from({ length: 11 }).map((_, i) => (
+          <line key={`y${i}`} x1="0" y1={i * 10} x2="100" y2={i * 10} className="stroke-accent" strokeWidth="0.08" opacity="0.2" />
         ))}
 
-        {/* Satellites orbiting */}
-        {[
-          { delay: 0, dur: 24 },
-          { delay: 3, dur: 28 },
-          { delay: 8, dur: 32 },
-          { delay: 12, dur: 36 },
-          { delay: 5, dur: 30, ring: 1 },
-          { delay: 9, dur: 38, ring: 1 },
-          { delay: 14, dur: 42, ring: 2 },
-        ].map((s, i) => {
-          const ring = s.ring || 0;
-          const ry = 35 + ring * 10;
+        {/* Cost heatmap (random colored cells) */}
+        {Array.from({ length: 100 }).map((_, i) => {
+          const x = i % 10;
+          const y = Math.floor(i / 10);
+          const cost = (Math.sin(x * 0.7) + Math.cos(y * 0.5) + 2) / 4;
           return (
-            <motion.g
+            <motion.rect
               key={i}
-              animate={{ rotate: 360 }}
-              transition={{ duration: s.dur, repeat: Infinity, ease: 'linear', delay: s.delay }}
-              style={{ transformOrigin: '50px 80px' }}
-            >
-              <g transform={`translate(${50 + 60} ${80})`}>
-                <rect x="-1" y="-0.5" width="2" height="1" className="fill-accent" />
-                {/* Solar panels */}
-                <rect x="-3" y="-0.4" width="1.5" height="0.8" className="fill-accent-cool" opacity="0.7" />
-                <rect x="1.5" y="-0.4" width="1.5" height="0.8" className="fill-accent-cool" opacity="0.7" />
-                {/* Beam to ground */}
-                <line x1="0" y1="0.5" x2="0" y2="40" className="stroke-accent" strokeWidth="0.1" strokeDasharray="0.5 0.4" opacity="0.4" />
-              </g>
-              <ellipse cx="50" cy="80" rx="60" ry={ry} fill="none" stroke="transparent" />
-            </motion.g>
+              x={x * 10}
+              y={y * 10}
+              width="10"
+              height="10"
+              className={cost > 0.7 ? 'fill-status-danger' : cost > 0.5 ? 'fill-status-warn' : cost > 0.3 ? 'fill-status-ok' : 'fill-accent-cool'}
+              opacity={cost * 0.12}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: cost * 0.12 }}
+              transition={{ duration: 1, delay: 0.3 + (i % 10) * 0.03 }}
+            />
           );
         })}
 
-        {/* Cone of view from a satellite */}
-        <motion.polygon
-          points="50,5 32,55 68,55"
-          className="fill-accent"
-          opacity="0.05"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.06 }}
-          transition={{ duration: 2, delay: 1 }}
+        {/* Animated path */}
+        <motion.path
+          d="M 10 80 L 20 70 L 30 65 L 45 55 L 55 45 L 70 35 L 85 25 L 95 18"
+          fill="none"
+          className="stroke-accent"
+          strokeWidth="0.4"
+          strokeDasharray="2 1"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 0.7 }}
+          transition={{ duration: 3, delay: 1 }}
         />
 
-        {/* Ground target */}
-        <motion.g
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 1.8 }}
-        >
-          <circle cx="50" cy="55" r="1.5" className="fill-accent-hot" />
-          <circle cx="50" cy="55" r="3" fill="none" className="stroke-accent-hot/50" strokeWidth="0.2">
-            <animate attributeName="r" values="2;5;2" dur="2.5s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.7;0;0.7" dur="2.5s" repeatCount="indefinite" />
-          </circle>
-        </motion.g>
+        {/* Start and end points */}
+        <motion.circle cx="10" cy="80" r="1.5" className="fill-accent-cool" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.2 }} />
+        <motion.circle cx="95" cy="18" r="1.5" className="fill-accent-hot" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.8 }} />
+
+        {/* Moving "blip" along path */}
+        <motion.circle
+          r="0.8"
+          className="fill-accent"
+          animate={{ offsetDistance: ['0%', '100%'] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+          style={{
+            offsetPath: 'path("M 10 80 L 20 70 L 30 65 L 45 55 L 55 45 L 70 35 L 85 25 L 95 18")',
+          }}
+        />
       </svg>
 
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />

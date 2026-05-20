@@ -84,7 +84,7 @@ return next;
 return (
  <section id="scene-basics" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
-step="13.1"
+step="12.1"
 eyebrow="GIS Basics — שכבות וסוגי נתונים"
 title={
  <>

@@ -143,7 +143,7 @@ const savings = Math.round(((directDist - lcp.total) / directDist) * 100);
 return (
  <section id="scene-costsurface" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
-step="13.2"
+step="12.2"
 eyebrow="משטח עלות ונתיב בעלות מינימלית"
 title={
  <>
