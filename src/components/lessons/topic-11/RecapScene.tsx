@@ -5,18 +5,18 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'עומק אסטרטגי',         def: 'המרחק הגיאוגרפי מהחזית למרכזי החיים. קובע כמה זמן יש לקבל החלטות.' },
-  { term: 'מדינה צרה',             def: 'עומק קטן = חוסר אפשרות לסגת. דורש דוקטרינה התקפית מקדימה.' },
-  { term: 'נסיגה אסטרטגית',        def: 'עומק רחב מאפשר לסגת מסודר, לארגן קווי הגנה חדשים, ולשחוק את האויב.' },
-  { term: 'אזור חיץ',              def: 'רצועה מפורזת בין מדינות עוינות. סופגת מכה ראשונה, נותנת התרעה.' },
-  { term: 'DMZ',                   def: 'Demilitarized Zone — אזור חיץ פעיל. דוגמה: גבול שתי הקוריאות מ-1953.' },
-  { term: 'גדר חכמה',              def: 'גדר עם חיישנים שמזהים חיתוך, טיפוס, ופעילות לידה. החלפת עומק טכנולוגית.' },
-  { term: 'חיישנים סייסמיים',      def: 'חיישנים בקרקע שמזהים רעידות מצעדים, רכבים, ומנהרות. כיסוי 24/7.' },
-  { term: 'גבול טבעי',             def: 'מתבסס על מכשול גיאוגרפי (הר, נהר, חוף). יציב והגנתי מאוד.' },
-  { term: 'גבול מלאכותי',          def: 'מצויר על מפה לפי קווים שרירותיים או הסכם. נוטה לחיכוך מתמיד.' },
-  { term: 'סייקס-פיקו',            def: 'הסכם 1916. דיפלומטים בריטיים-צרפתיים שירטטו את גבולות המזרח התיכון בסרגל.' },
-  { term: 'מכשול אורוגרפי',         def: 'רכס הרים כגבול. הימלאיה, אלפים — גבולות יציבים אלפי שנים.' },
-  { term: 'דוקטרינה התקפית',       def: 'אסטרטגיה למדינה ללא עומק — להעביר את המלחמה לשטח האויב.' },
+  { term: 'עומק אסטרטגי',        def: 'המרחק הפיזי מאזור הלחימה ועד לערי הבירה והאזרחים. ככל שיש יותר עומק – יש יותר זמן להגיב.' },
+  { term: 'מדינה צרה',            def: 'מדינה בלי עומק אסטרטגי (כמו ישראל). אי אפשר לסגת לאחור, ולכן חייבים לתקוף ראשונים ולהעביר את הלחימה החוצה.' },
+  { term: 'נסיגה אסטרטגית',        def: 'נשק יום הדין של מדינות ענק (כמו רוסיה): נסיגה מכוונת לאחור כדי למשוך את האויב פנימה, לעייף אותו ולנתק את קווי האספקה שלו.' },
+  { term: 'אזור חיץ',              def: 'שטח ריק מצבא (מפורז) שמפריד בין שתי מדינות אויבות. המטרה: למנוע חיכוך יומיומי ולתת התרעה מוקדמת בזמן פלישה.' },
+  { term: 'DMZ',                   def: 'ראשי תיבות של "אזור מפורז" (Demilitarized Zone). הדוגמה המפורסמת ביותר היא שטח ההפרדה המתוח בין צפון לדרום קוריאה.' },
+  { term: 'גדר חכמה',              def: 'מכשול פיזי שמשולבת בו טכנולוגיה (חיישני נגיעה ומצלמות). טכנולוגיה שמנסה להוות תחליף וירטואלי במקומות שבהם אין עומק אמיתי.' },
+  { term: 'חיישנים סייסמיים',      def: 'סנסורים שקבורים באדמה ויודעים לזהות רעידות קלות - מצעדים של מחבלים, דרך רכבים ועד חפירת מנהרות, 24 שעות ביממה.' },
+  { term: 'גבול טבעי',             def: 'קו גבול שנקבע על בסיס מכשול גיאוגרפי אמיתי (כמו רכס הרים גבוה או נהר רחב). נחשב לגבול היציב והבטוח ביותר.' },
+  { term: 'גבול מלאכותי',          def: 'קו דמיוני ששורטט על המפה בלי שום קשר לטופוגרפיה בשטח או לעמים שחיים שם. מתכון כמעט בטוח לסכסוכים אלימים.' },
+  { term: 'סייקס-פיקו',            def: 'הסכם מ-1916 שבו דיפלומטים אירופאים שרטטו את גבולות המזרח התיכון עם סרגל. הפך לסמל הרסני לסכנות של גבולות מלאכותיים.' },
+  { term: 'מכשול אורוגרפי',        def: 'המונח המקצועי לרכס הרים שמשמש כגבול. לדוגמה: הרי ההימלאיה או האלפים, שמפרידים בהצלחה בין עמים במשך אלפי שנים.' },
+  { term: 'דוקטרינה התקפית',       def: 'תפיסת הפעלה צבאית שאומרת: "ההגנה הטובה ביותר היא התקפה". חובה במדינות שאין להן שטח לספוג בו מכה.' },
 ];
 
 export function RecapScene() {
@@ -30,7 +30,7 @@ export function RecapScene() {
             {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
+        intro="כל המושגים המרכזיים שלמדנו בשיעור."
       />
 
       <CompletionBanner />
@@ -93,10 +93,10 @@ function CompletionBanner() {
         </div>
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור הגבולות והעומק
+            כל הכבוד! סיימת את שיעור הגבולות והעומק המרחבי
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה צורת מדינה <span className="gradient-text">כגורל אסטרטגי</span>
+            עכשיו אתה מבין שצורה של מדינה היא לא סתם ציור – אלא <span className="gradient-text">גורל אסטרטגי</span>
           </div>
         </div>
       </div>
@@ -129,9 +129,9 @@ function NextStepCard() {
           <Icon name="spark" size={22} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא</div>
-          <div className="font-display font-bold leading-tight">תרגול אינטראקטיבי</div>
-          <div className="text-xs text-fg-muted mt-0.5">תכנון דוקטרינה לפי עומק וצורת גבול</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא:</div>
+          <div className="font-display font-bold leading-tight">מעבדת תרגול</div>
+          <div className="text-xs text-fg-muted mt-0.5">בוא לתרגל תכנון תפיסת ביטחון בהתאם לעומק ולגבולות</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
@@ -153,9 +153,9 @@ function NextStepCard() {
           <Icon name="check" size={22} strokeWidth={2.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או</div>
-          <div className="font-display font-bold leading-tight">בדיקת ידע</div>
-          <div className="text-xs text-fg-muted mt-0.5">שאלות קצרות לסיכום</div>
+          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או שאפשר:</div>
+          <div className="font-display font-bold leading-tight">בוחן פתע (בקטנה)</div>
+          <div className="text-xs text-fg-muted mt-0.5">כמה שאלות קצרות כדי לוודא שהכל יושב טוב</div>
         </div>
         <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
       </a>
