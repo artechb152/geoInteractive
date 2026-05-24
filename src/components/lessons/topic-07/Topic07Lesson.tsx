@@ -10,11 +10,11 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',       label: 'פתיחה',                Comp: HookScene },
-  { id: 'onboarding', label: '07.0 · לפני שמתחילים', Comp: OnboardingScene },
-  { id: 'climate',    label: '07.1 · מיקרו-אקלים',   Comp: ClimateScene },
-  { id: 'sensors',    label: '07.2 · בליעה ו-IR',    Comp: SensorsScene },
-  { id: 'platforms',  label: '07.3 · תקרת ענן',      Comp: PlatformsScene },
-  { id: 'recap',      label: '07.4 · סיכום',         Comp: RecapScene },
+  { id: 'onboarding', label: 'לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'climate',    label: 'מיקרו-אקלים',   Comp: ClimateScene },
+  { id: 'sensors',    label: 'בליעה ו-IR',    Comp: SensorsScene },
+  { id: 'platforms',  label: 'תקרת ענן',      Comp: PlatformsScene },
+  { id: 'recap',      label: 'סיכום',         Comp: RecapScene },
 ];
 
 export function Topic07Lesson() {

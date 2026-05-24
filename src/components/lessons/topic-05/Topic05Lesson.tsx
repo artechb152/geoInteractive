@@ -11,12 +11,12 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',           label: 'פתיחה',                Comp: HookScene },
-  { id: 'onboarding',     label: '05.0 · לפני שמתחילים', Comp: OnboardingScene },
-  { id: 'trafficability', label: '05.1 · עבירות',        Comp: TrafficabilityScene },
-  { id: 'engineering',    label: '05.2 · הנדסה',         Comp: EngineeringScene },
-  { id: 'cover',          label: '05.3 · מחסה והסתרה',   Comp: CoverScene },
-  { id: 'vegetation',     label: '05.4 · תכסית וצומח',   Comp: VegetationScene },
-  { id: 'recap',          label: '05.5 · סיכום',         Comp: RecapScene },
+  { id: 'onboarding',     label: 'לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'trafficability', label: 'עבירות',        Comp: TrafficabilityScene },
+  { id: 'engineering',    label: 'הנדסה',         Comp: EngineeringScene },
+  { id: 'cover',          label: 'מחסה והסתרה',   Comp: CoverScene },
+  { id: 'vegetation',     label: 'תכסית וצומח',   Comp: VegetationScene },
+  { id: 'recap',          label: 'סיכום',         Comp: RecapScene },
 ];
 
 export function Topic05Lesson() {

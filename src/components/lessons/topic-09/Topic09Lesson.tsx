@@ -10,11 +10,11 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',        label: 'פתיחה',                Comp: HookScene },
-  { id: 'onboarding',  label: '09.0 · לפני שמתחילים', Comp: OnboardingScene },
-  { id: 'waterenergy', label: '09.1 · מים ואנרגיה',   Comp: WaterEnergyScene },
-  { id: 'chokepoints', label: '09.2 · נקודות חנק',    Comp: ChokepointsScene },
-  { id: 'mahan',       label: '09.3 · דוקטרינת מהן',  Comp: MahanScene },
-  { id: 'recap',       label: '09.4 · סיכום',         Comp: RecapScene },
+  { id: 'onboarding',  label: 'לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'waterenergy', label: 'מים ואנרגיה',   Comp: WaterEnergyScene },
+  { id: 'chokepoints', label: 'נקודות חנק',    Comp: ChokepointsScene },
+  { id: 'mahan',       label: 'דוקטרינת מהן',  Comp: MahanScene },
+  { id: 'recap',       label: 'סיכום',         Comp: RecapScene },
 ];
 
 export function Topic09Lesson() {

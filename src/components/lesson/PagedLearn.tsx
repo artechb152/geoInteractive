@@ -3,19 +3,21 @@
 /**
  * PagedLearn — replaces the long-scroll lesson layout with a paged one.
  *
- *   - One sub-scene is rendered at a time. Scrolling stays *inside* the
- *     active scene; users move between sub-topics with Next/Prev buttons
- *     at the bottom or by clicking the side scene-pager.
- *   - Active scene is persisted in `window.location.hash` (`#scene-<id>`)
- *     so a refresh keeps the user on the same sub-topic and links can
- *     deep-link into a specific scene.
- *   - Any descendant can advance/rewind the lesson by dispatching a
- *     `learn:next` / `learn:prev` custom event on `window`. Useful for
- *     the hook scene's "click to start" affordance.
+ *   - One sub-topic is rendered at a time. Scrolling stays *inside* the
+ *     active sub-topic; users move between them with Next/Prev buttons
+ *     at the bottom or by clicking the side TOC.
+ *   - Active sub-topic is persisted in `window.location.hash`
+ *     (`#scene-<id>`) so a refresh keeps the user on the same one and
+ *     links can deep-link into a specific sub-topic.
+ *   - Fires a `learn:scene-change` CustomEvent on mount and on every
+ *     navigation. LessonShell listens to this to decide when to show
+ *     the move-to-next-lesson footer (only on the recap).
+ *   - Any descendant can advance/rewind by dispatching `learn:next` /
+ *     `learn:prev` on `window`. Used by the hook scene's
+ *     "לחץ כדי להתחיל" button without prop drilling.
  *
  * Props:
- *   scenes — ordered list of sub-scenes (id is used for the URL hash,
- *            label appears in the side pager + bottom nav cards).
+ *   scenes — ordered list (id = URL-hash slug, label = TOC text).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,7 +31,19 @@ export type PagedScene = {
   Comp: React.ComponentType;
 };
 
+export type SceneChangeDetail = {
+  id: string;
+  idx: number;
+  isFirst: boolean;
+  isLast: boolean;
+  total: number;
+};
+
 const easeSnap = [0.22, 1, 0.36, 1] as const;
+
+function emitChange(detail: SceneChangeDetail) {
+  window.dispatchEvent(new CustomEvent<SceneChangeDetail>('learn:scene-change', { detail }));
+}
 
 export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const [idx, setIdx] = useState(0);
@@ -40,9 +54,16 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   useEffect(() => {
     const fromHash = () => {
       const raw = window.location.hash.replace('#scene-', '');
-      if (!raw) return;
+      if (!raw) {
+        setIdx(0);
+        emitChange({ id: scenes[0].id, idx: 0, isFirst: true, isLast: scenes.length === 1, total: scenes.length });
+        return;
+      }
       const i = scenes.findIndex((s) => s.id === raw);
-      if (i >= 0) setIdx(i);
+      if (i >= 0) {
+        setIdx(i);
+        emitChange({ id: scenes[i].id, idx: i, isFirst: i === 0, isLast: i === scenes.length - 1, total: scenes.length });
+      }
     };
     fromHash();
     window.addEventListener('hashchange', fromHash);
@@ -53,11 +74,9 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
     (i: number) => {
       if (i < 0 || i >= scenes.length) return;
       setIdx(i);
-      // Update the hash silently (no history entry, no jump-scroll).
       const { pathname, search } = window.location;
       history.replaceState(null, '', `${pathname}${search}#scene-${scenes[i].id}`);
-      // After the new scene mounts, scroll its container into view so the
-      // user lands at the top of the sub-topic rather than mid-scroll.
+      emitChange({ id: scenes[i].id, idx: i, isFirst: i === 0, isLast: i === scenes.length - 1, total: scenes.length });
       setTimeout(() => {
         rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 60);
@@ -65,7 +84,7 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
     [scenes],
   );
 
-  // Bridge: let any child trigger nav via custom events without prop drilling.
+  // Allow any child to trigger nav via custom events (no prop drilling).
   useEffect(() => {
     const next = () => goto(idx + 1);
     const prev = () => goto(idx - 1);
@@ -82,8 +101,14 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const isLast = idx === scenes.length - 1;
 
   return (
-    <div ref={rootRef} className="relative scroll-mt-28">
-      <ScenePager scenes={scenes} active={idx} onGoto={goto} />
+    <div className="relative scroll-mt-28" ref={rootRef}>
+      {/* Mobile / tablet sub-topic strip (everything below 2xl gets this) */}
+      <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} />
+
+      {/* Desktop TOC — fixed to the right edge, shown only at 2xl+ where
+          there's enough viewport gap outside the content column. The
+          content's max-w-6xl is preserved (no grid shrink). */}
+      <ScenePagerDesktop scenes={scenes} active={idx} onGoto={goto} />
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
@@ -97,12 +122,19 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Scene-level prev/next — these advance between sub-scenes of THIS
-          lesson. The page-level prev/next (in LessonShell footer) moves
-          between *lessons*, and renders below this block. */}
+      {/* Sub-topic prev/next. The page-level (lesson→lesson) nav lives
+          in LessonShell's footer and is shown only on the recap. */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <PrevButton disabled={isFirst} label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label} onClick={() => goto(idx - 1)} />
-        <NextButton disabled={isLast} label={isLast ? '— סיום השיעור —' : scenes[idx + 1].label} onClick={() => goto(idx + 1)} />
+        <PrevButton
+          disabled={isFirst}
+          label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
+          onClick={() => goto(idx - 1)}
+        />
+        <NextButton
+          disabled={isLast}
+          label={isLast ? '— סיום השיעור —' : scenes[idx + 1].label}
+          onClick={() => goto(idx + 1)}
+        />
       </div>
     </div>
   );
@@ -120,7 +152,7 @@ function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: st
           ? 'border-border-subtle bg-bg-elevated/30 opacity-40 cursor-not-allowed'
           : 'border-border bg-bg-elevated hover:border-brand/40 hover:shadow-elevated cursor-pointer',
       )}
-      aria-label="הסצנה הקודמת"
+      aria-label="תת הנושא הקודם"
     >
       <ArrowRight
         className={cn(
@@ -131,7 +163,7 @@ function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: st
       />
       <div className="min-w-0 flex-1 text-right">
         <div className="text-[11px] font-display font-semibold tracking-wider text-fg-dim uppercase">
-          הסצנה הקודמת
+          תת הנושא הקודם
         </div>
         <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
           {label}
@@ -153,7 +185,7 @@ function NextButton({ disabled, label, onClick }: { disabled: boolean; label: st
           ? 'border-border-subtle bg-bg-elevated/30 opacity-40 cursor-not-allowed'
           : 'border-accent/40 bg-accent/10 hover:bg-accent hover:border-accent shadow-glow cursor-pointer',
       )}
-      aria-label="הסצנה הבאה"
+      aria-label="תת הנושא הבא"
     >
       <ArrowLeft
         className={cn(
@@ -171,7 +203,7 @@ function NextButton({ disabled, label, onClick }: { disabled: boolean; label: st
             disabled ? 'text-fg-dim' : 'text-accent-hover group-hover:text-fg/80',
           )}
         >
-          הסצנה הבאה
+          תת הנושא הבא
         </div>
         <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
           {label}
@@ -181,13 +213,13 @@ function NextButton({ disabled, label, onClick }: { disabled: boolean; label: st
   );
 }
 
-/**
- * ScenePager — the persistent scene-list nav.
- * - xl+ : vertical column docked to the page edge, labels always visible.
- * - <xl : horizontal scrollable strip of pills rendered just above the
- *         active scene's content so it stays inside the readable column.
- */
-function ScenePager({
+/* ────── Desktop TOC — fixed to viewport's right edge ──────────────
+   Shown only at 2xl (≥1536px) where the gap between content's
+   max-w-6xl and viewport edge is wide enough to fit a 170px panel
+   without overlapping the reading column. `start-2` in RTL = 8px from
+   the right edge of the viewport. The card has its own bg+border so
+   it stays visually separated from whatever scrolls behind it. */
+function ScenePagerDesktop({
   scenes,
   active,
   onGoto,
@@ -197,27 +229,15 @@ function ScenePager({
   onGoto: (i: number) => void;
 }) {
   return (
-    <>
-      {/* Desktop */}
-      <aside
-        className="hidden xl:flex fixed start-4 top-1/2 -translate-y-1/2 z-20 flex-col gap-0.5 pointer-events-auto max-w-[220px]"
-        aria-label="ניווט סצנות בשיעור"
-      >
-        <div className="mb-3 ps-2">
-          <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] mb-1 uppercase">
-            סצנה
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="font-display font-bold text-2xl text-accent tabular-nums leading-none">
-              {String(active + 1).padStart(2, '0')}
-            </span>
-            <span className="text-fg-dim text-sm">
-              / {String(scenes.length).padStart(2, '0')}
-            </span>
-          </div>
+    <aside
+      className="hidden 2xl:block fixed start-2 top-32 z-20 w-[170px]"
+      aria-label="ניווט תתי-נושא"
+    >
+      <div className="rounded-xl border border-border bg-bg-elevated/95 backdrop-blur-md shadow-elevated p-3">
+        <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-1.5 mb-2">
+          תוכן השיעור
         </div>
-
-        <div className="flex flex-col gap-0.5 bg-bg/60 backdrop-blur-sm rounded-lg p-1.5 border border-border-subtle">
+        <div className="flex flex-col gap-0.5">
           {scenes.map((s, i) => {
             const isActive = i === active;
             const isPassed = i < active;
@@ -228,30 +248,23 @@ function ScenePager({
                 onClick={() => onGoto(i)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'group flex items-start gap-2.5 px-2 py-1.5 rounded-md transition-all cursor-pointer text-right',
-                  isActive ? 'bg-accent/12' : 'hover:bg-bg-accent',
+                  'group flex items-center gap-2 px-2 py-1.5 rounded-md transition-all cursor-pointer text-right',
+                  isActive
+                    ? 'bg-accent/15 text-fg'
+                    : 'hover:bg-bg-accent text-fg-muted',
                 )}
               >
                 <span
                   className={cn(
-                    'font-mono text-[10px] mt-1 w-4 text-end shrink-0 transition-colors',
-                    isActive
-                      ? 'text-accent font-bold'
-                      : isPassed
-                        ? 'text-fg-muted'
-                        : 'text-fg-dim',
+                    'size-1.5 rounded-full shrink-0 transition-colors',
+                    isActive ? 'bg-accent shadow-glow' : isPassed ? 'bg-fg-muted' : 'bg-border-strong',
                   )}
-                >
-                  {String(i + 1).padStart(2, '0')}
-                </span>
+                  aria-hidden
+                />
                 <span
                   className={cn(
-                    'text-xs leading-snug transition-colors',
-                    isActive
-                      ? 'text-fg font-semibold'
-                      : isPassed
-                        ? 'text-fg-muted'
-                        : 'text-fg-dim group-hover:text-fg-muted',
+                    'text-[12.5px] leading-snug transition-colors truncate',
+                    isActive && 'font-semibold',
                   )}
                 >
                   {s.label}
@@ -260,40 +273,59 @@ function ScenePager({
             );
           })}
         </div>
-      </aside>
 
-      {/* Mobile / tablet */}
-      <div className="xl:hidden -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-6 pb-2 overflow-x-auto">
-        <div className="flex gap-1.5 min-w-max" role="tablist" aria-label="ניווט סצנות">
-          {scenes.map((s, i) => {
-            const isActive = i === active;
-            const isPassed = i < active;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                onClick={() => onGoto(i)}
-                aria-selected={isActive}
-                aria-label={`סצנה ${i + 1}: ${s.label}`}
-                className={cn(
-                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border',
-                  isActive
-                    ? 'bg-accent text-bg font-bold border-accent shadow-glow'
-                    : isPassed
-                      ? 'bg-bg-accent text-fg-muted border-border'
-                      : 'bg-bg-elevated text-fg-dim border-border hover:text-fg',
-                )}
-              >
-                <span className="font-mono text-[10px] opacity-70">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span>{s.label}</span>
-              </button>
-            );
-          })}
+        <div className="mt-3 pt-3 border-t border-border-subtle px-1.5">
+          <div className="h-1 rounded-full bg-bg-accent overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-l from-accent to-accent-cool"
+              animate={{ width: `${((active + 1) / scenes.length) * 100}%` }}
+              transition={{ duration: 0.4 }}
+            />
+          </div>
         </div>
       </div>
-    </>
+    </aside>
+  );
+}
+
+/* ────── Mobile / tablet — horizontal scrollable pill strip ───────── */
+function ScenePagerMobile({
+  scenes,
+  active,
+  onGoto,
+}: {
+  scenes: PagedScene[];
+  active: number;
+  onGoto: (i: number) => void;
+}) {
+  return (
+    <div className="xl:hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6 pb-2 overflow-x-auto">
+      <div className="flex gap-1.5 min-w-max" role="tablist" aria-label="ניווט תתי-נושא">
+        {scenes.map((s, i) => {
+          const isActive = i === active;
+          const isPassed = i < active;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              onClick={() => onGoto(i)}
+              aria-selected={isActive}
+              aria-label={`תת נושא: ${s.label}`}
+              className={cn(
+                'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border',
+                isActive
+                  ? 'bg-accent text-bg font-bold border-accent shadow-glow'
+                  : isPassed
+                    ? 'bg-bg-accent text-fg-muted border-border'
+                    : 'bg-bg-elevated text-fg-dim border-border hover:text-fg',
+              )}
+            >
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

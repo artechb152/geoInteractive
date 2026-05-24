@@ -11,12 +11,12 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',        label: 'פתיחה',                Comp: HookScene },
-  { id: 'onboarding',  label: '02.0 · לפני שמתחילים', Comp: OnboardingScene },
-  { id: 'topography',  label: '02.1 · טופוגרפיה',     Comp: TopographyScene },
-  { id: 'scale',       label: '02.2 · קנה מידה',      Comp: ScaleScene },
-  { id: 'coordinates', label: '02.3 · קואורדינטות',   Comp: CoordinatesScene },
-  { id: 'contours',    label: '02.4 · קווי גובה',     Comp: ContoursScene },
-  { id: 'recap',       label: '02.5 · סיכום',         Comp: RecapScene },
+  { id: 'onboarding',  label: 'לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'topography',  label: 'טופוגרפיה',     Comp: TopographyScene },
+  { id: 'scale',       label: 'קנה מידה',      Comp: ScaleScene },
+  { id: 'coordinates', label: 'קואורדינטות',   Comp: CoordinatesScene },
+  { id: 'contours',    label: 'קווי גובה',     Comp: ContoursScene },
+  { id: 'recap',       label: 'סיכום',         Comp: RecapScene },
 ];
 
 export function Topic02Lesson() {

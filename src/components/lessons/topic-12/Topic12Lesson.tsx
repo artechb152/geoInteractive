@@ -10,11 +10,11 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',        label: 'פתיחה',                     Comp: HookScene },
-  { id: 'onboarding',  label: '12.0 · לפני שמתחילים',      Comp: OnboardingScene },
-  { id: 'basics',      label: '12.1 · שכבות וסוגי נתונים', Comp: BasicsScene },
-  { id: 'costsurface', label: '12.2 · משטח עלות',          Comp: CostSurfaceScene },
-  { id: 'network',     label: '12.3 · רשתות ו-Buffers',    Comp: NetworkScene },
-  { id: 'recap',       label: '12.4 · סיכום',              Comp: RecapScene },
+  { id: 'onboarding',  label: 'לפני שמתחילים',      Comp: OnboardingScene },
+  { id: 'basics',      label: 'שכבות וסוגי נתונים', Comp: BasicsScene },
+  { id: 'costsurface', label: 'משטח עלות',          Comp: CostSurfaceScene },
+  { id: 'network',     label: 'רשתות ו-Buffers',    Comp: NetworkScene },
+  { id: 'recap',       label: 'סיכום',              Comp: RecapScene },
 ];
 
 export function Topic12Lesson() {

@@ -10,11 +10,11 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',       label: 'פתיחה',                 Comp: HookScene },
-  { id: 'onboarding', label: '01.0 · לפני שמתחילים',  Comp: OnboardingScene },
-  { id: 'levels',     label: '01.1 · רמות מלחמה',     Comp: LevelsScene },
-  { id: 'mdo',        label: '01.2 · MDO',            Comp: MDOScene },
-  { id: 'asymmetric', label: '01.3 · לחימה אסימטרית', Comp: AsymmetricScene },
-  { id: 'recap',      label: '01.4 · סיכום',          Comp: RecapScene },
+  { id: 'onboarding', label: 'לפני שמתחילים',  Comp: OnboardingScene },
+  { id: 'levels',     label: 'רמות מלחמה',     Comp: LevelsScene },
+  { id: 'mdo',        label: 'MDO',            Comp: MDOScene },
+  { id: 'asymmetric', label: 'לחימה אסימטרית', Comp: AsymmetricScene },
+  { id: 'recap',      label: 'סיכום',          Comp: RecapScene },
 ];
 
 export function Topic01Lesson() {
