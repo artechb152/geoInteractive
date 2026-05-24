@@ -180,28 +180,39 @@ function fadeUp(reduce: boolean) {
 
 type Contour = { d: string; top: string; side: string };
 
+// Each contour declares the colour at its TOP face and at its SIDE
+// (the vertical wall under that top). To make adjacent layers fuse into
+// one continuous mountain when seen from the side, the wall of layer N
+// should start from the top colour of layer N-1 (no jump at the seam).
+// We achieve this by letting PrismLayer interpolate from `side` (at the
+// bottom of the layer) to `top` (at the top), and then pick each
+// layer's `side` to equal the previous layer's `top`.
 const CONTOURS: Contour[] = [
   // Base — warm sand cream, page-aware
   { d: 'M 60 280 Q 80 200, 140 180 T 280 180 Q 360 200, 360 280 Q 340 340, 260 350 T 100 340 Q 50 320, 60 280 Z', top: '#f7e0b8', side: '#d8b97e' },
-  // Deeper sand
-  { d: 'M 80 270 Q 100 200, 150 185 T 270 185 Q 340 205, 345 275 Q 325 330, 250 340 T 110 330 Q 70 310, 80 270 Z', top: '#e8cc97', side: '#bf9d5f' },
+  // Deeper sand  (starts where layer 0's top ended)
+  { d: 'M 80 270 Q 100 200, 150 185 T 270 185 Q 340 205, 345 275 Q 325 330, 250 340 T 110 330 Q 70 310, 80 270 Z', top: '#e8cc97', side: '#f7e0b8' },
   // Sand → sage transition
-  { d: 'M 100 260 Q 120 200, 160 190 T 260 190 Q 320 210, 325 265 Q 310 320, 240 330 T 130 320 Q 95 305, 100 260 Z', top: '#c8c389', side: '#959058' },
+  { d: 'M 100 260 Q 120 200, 160 190 T 260 190 Q 320 210, 325 265 Q 310 320, 240 330 T 130 320 Q 95 305, 100 260 Z', top: '#c8c389', side: '#e8cc97' },
   // Light sage
-  { d: 'M 120 255 Q 138 205, 170 195 T 250 195 Q 300 215, 305 255 Q 295 305, 230 318 T 145 308 Q 115 295, 120 255 Z', top: '#9bb389', side: '#6c8559' },
+  { d: 'M 120 255 Q 138 205, 170 195 T 250 195 Q 300 215, 305 255 Q 295 305, 230 318 T 145 308 Q 115 295, 120 255 Z', top: '#9bb389', side: '#c8c389' },
   // Brand sage
-  { d: 'M 138 250 Q 155 215, 180 205 T 240 205 Q 280 225, 285 250 Q 280 295, 220 305 T 160 297 Q 132 285, 138 250 Z', top: '#749C75', side: '#5B7C5C' },
+  { d: 'M 138 250 Q 155 215, 180 205 T 240 205 Q 280 225, 285 250 Q 280 295, 220 305 T 160 297 Q 132 285, 138 250 Z', top: '#749C75', side: '#9bb389' },
   // Sage → orange transition
-  { d: 'M 155 245 Q 170 225, 195 215 T 230 215 Q 260 235, 263 250 Q 258 285, 215 292 T 175 287 Q 150 275, 155 245 Z', top: '#b08c50', side: '#7e6332' },
+  { d: 'M 155 245 Q 170 225, 195 215 T 230 215 Q 260 235, 263 250 Q 258 285, 215 292 T 175 287 Q 150 275, 155 245 Z', top: '#b08c50', side: '#749C75' },
   // Primary orange
-  { d: 'M 175 245 Q 188 233, 205 228 T 222 228 Q 240 240, 240 252 Q 236 275, 213 280 T 188 278 Q 170 268, 175 245 Z', top: '#EB9E48', side: '#B17736' },
+  { d: 'M 175 245 Q 188 233, 205 228 T 222 228 Q 240 240, 240 252 Q 236 275, 213 280 T 188 278 Q 170 268, 175 245 Z', top: '#EB9E48', side: '#b08c50' },
   // Peak — warmed-up orange
-  { d: 'M 192 245 Q 200 240, 212 238 T 218 238 Q 226 246, 224 254 Q 220 270, 208 273 T 196 270 Q 187 264, 192 245 Z', top: '#f5b865', side: '#d18540' },
+  { d: 'M 192 245 Q 200 240, 212 238 T 218 238 Q 226 246, 224 254 Q 220 270, 208 273 T 196 270 Q 187 264, 192 245 Z', top: '#f5b865', side: '#EB9E48' },
 ];
 
 const LAYER_THICKNESS = 22;
 const BASE_Z = 20;
-const SHEETS_PER_LAYER: number = 5;
+// Sheet density per layer — at 22 viewBox units of layer thickness, 22
+// sheets means ~1 unit (sub-pixel at typical render sizes) between sheets.
+// That fills the visible gaps from the side view so each layer reads as
+// a solid coloured wall instead of horizontal stripes.
+const SHEETS_PER_LAYER: number = 22;
 
 function lerpHex(a: string, b: string, t: number) {
   const parse = (h: string) => {
