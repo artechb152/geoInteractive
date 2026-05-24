@@ -326,7 +326,11 @@ function TerrainDiorama({ reduce }: { reduce: boolean }) {
 
   return (
     <div className="absolute inset-0">
-      <ViewControls onSnap={snapTo} onReset={reset} />
+      {/* FRONT / SIDE / TOP / ISO view-switcher removed from the landing
+          page. The component is still defined below so it can be brought
+          back with a single line. To restore:
+            <ViewControls onSnap={snapTo} onReset={reset} />
+      */}
       <DragHint />
 
       <motion.div

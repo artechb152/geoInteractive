@@ -7,10 +7,12 @@ import { Menu, X, Compass, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { lessons } from '@/lib/lessons';
 
-const NAV_LINKS = [
-  { href: '#features', label: 'מה לומדים' },
-  { href: '#faq', label: 'שאלות נפוצות' },
-];
+// Hidden while the Features and FAQ sections are off the landing page.
+// To restore: put these entries back and they'll re-render in both the
+// desktop nav and the mobile menu.
+//   { href: '#features', label: 'מה לומדים' },
+//   { href: '#faq', label: 'שאלות נפוצות' },
+const NAV_LINKS: { href: string; label: string }[] = [];
 
 const FIRST_LESSON_HREF = `/lessons/${lessons[0].id}/`;
 
@@ -80,6 +82,9 @@ export function Navbar() {
           ))}
         </ul>
 
+        {/* Top-left "התחלת הקורס" button removed — the Hero already has
+            a primary CTA centred on the page, so this one was duplicate.
+            To restore, uncomment:
         <div className="hidden md:flex items-center gap-2">
           <Link
             href={FIRST_LESSON_HREF}
@@ -92,6 +97,7 @@ export function Navbar() {
             />
           </Link>
         </div>
+        */}
 
         <button
           type="button"
