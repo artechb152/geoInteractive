@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>03 · Topographic Atlas — גיאוגרפיה צבאית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --parchment:#F2E9D0;
+    --parchment-2:#EBE0C0;
+    --sepia:#6B4A1F;
+    --sepia-2:#A07C49;
+    --sage:#6E8B62;
+    --red:#B23A2C;
+    --ink:#2D2418;
+    --rule:rgba(107,74,31,.35);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--parchment);
+    color:var(--ink);
+    font-family:'Assistant',system-ui,sans-serif;
+    font-size:16.5px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(107,74,31,.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(178,58,44,.04) 0%, transparent 60%);
+  }
+  .serif{font-family:'Cormorant Garamond',serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;position:relative}
+  a{color:inherit}
+
+  /* CONTOUR BACKGROUND */
+  .contour-bg{
+    position:absolute;inset:0;pointer-events:none;opacity:.22;z-index:0;
+  }
+
+  /* NAV */
+  .nav{padding:18px 0;border-bottom:1px solid var(--rule);background:var(--parchment);position:relative;z-index:5}
+  .nav-row{display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink)}
+  .compass{
+    width:46px;height:46px;border:1.5px solid var(--sepia);border-radius:50%;
+    position:relative;display:grid;place-items:center;background:var(--parchment-2);
+  }
+  .compass::before,.compass::after{
+    content:"";position:absolute;width:1.5px;background:var(--sepia);
+  }
+  .compass::before{height:38px}
+  .compass::after{width:38px;height:1.5px}
+  .compass .arrow{
+    position:absolute;width:0;height:0;
+    border-left:6px solid transparent;border-right:6px solid transparent;
+    border-bottom:18px solid var(--red);top:4px;
+  }
+  .compass .n{
+    position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+    font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--sepia);
+  }
+  .brand-text .name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;line-height:1;letter-spacing:.005em}
+  .brand-text .sub{font-size:11px;letter-spacing:.18em;color:var(--sepia-2);text-transform:uppercase;margin-top:2px;font-family:'Assistant',sans-serif}
+  .nav-cta{
+    padding:10px 22px;background:var(--sepia);color:var(--parchment);
+    border:1px solid var(--sepia);text-decoration:none;font-weight:600;font-size:14px;
+    border-radius:2px;transition:all .15s;
+  }
+  .nav-cta:hover{background:var(--red);border-color:var(--red)}
+
+  /* HERO */
+  .hero{padding:80px 0 100px;position:relative;border-bottom:1px solid var(--rule);overflow:hidden}
+  .hero-content{position:relative;z-index:2;max-width:780px}
+  .latlong{
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--sepia);
+    margin-bottom:18px;letter-spacing:.04em;
+  }
+  .latlong::before{content:"⊕  "}
+  .hero h1{
+    font-family:'Cormorant Garamond',serif;font-weight:700;
+    font-size:clamp(46px,7vw,92px);
+    line-height:1.02;letter-spacing:-.015em;margin:0 0 28px;color:var(--ink);
+  }
+  .hero h1 em{font-style:italic;color:var(--red);font-weight:600}
+  .hero p{
+    font-family:'Cormorant Garamond',serif;font-size:clamp(20px,2vw,26px);
+    line-height:1.45;color:#5a4a30;max-width:60ch;margin:0 0 36px;font-weight:500;
+  }
+  .hero p strong{font-weight:700;color:var(--sepia)}
+  .ctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;padding:13px 24px;font-size:15px;
+    font-weight:600;text-decoration:none;border-radius:2px;transition:all .15s;
+  }
+  .btn-primary{background:var(--sepia);color:var(--parchment);border:1px solid var(--sepia)}
+  .btn-primary:hover{background:var(--red);border-color:var(--red)}
+  .btn-line{background:transparent;color:var(--sepia);border:1px solid var(--sepia)}
+  .btn-line:hover{background:var(--sepia);color:var(--parchment)}
+  .btn svg{width:14px;height:14px}
+
+  .scale{
+    display:flex;align-items:center;gap:14px;margin-top:46px;
+    font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--sepia);font-size:15px;
+  }
+  .scale-bar{
+    display:flex;height:14px;border:1px solid var(--sepia);
+  }
+  .scale-bar > div{width:30px;border-right:1px solid var(--sepia)}
+  .scale-bar > div:nth-child(odd){background:var(--sepia)}
+  .scale-bar > div:last-child{border-right:0}
+
+  /* SECTIONS */
+  section{padding:88px 0;border-bottom:1px solid var(--rule);position:relative;overflow:hidden}
+  .sec-head{display:flex;align-items:end;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-bottom:48px;position:relative;z-index:2}
+  .sec-eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:18px;color:var(--sage);margin-bottom:6px}
+  .sec-title{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(34px,4.5vw,52px);line-height:1.05;margin:0;letter-spacing:-.01em}
+  .sec-deck{color:var(--sepia);max-width:48ch;font-size:16.5px;margin:0;font-family:'Cormorant Garamond',serif;font-style:italic}
+
+  /* PILLARS */
+  .pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:28px;position:relative;z-index:2}
+  @media (max-width:760px){.pillars{grid-template-columns:1fr}}
+  .pillar{
+    background:var(--parchment-2);border:1px solid var(--rule);
+    padding:30px 28px;border-radius:3px;position:relative;
+    transition:transform .2s;
+  }
+  .pillar:hover{transform:translateY(-3px)}
+  .pillar::before{
+    content:"";position:absolute;top:0;right:0;width:6px;height:60%;
+    background:linear-gradient(180deg, var(--red) 0%, var(--sepia) 100%);
+  }
+  .pillar h3{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:26px;margin:0 0 8px;letter-spacing:-.01em;line-height:1.1}
+  .pillar h3 .pre{display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:15px;color:var(--sage);margin-bottom:4px}
+  .pillar p{color:#5a4a30;margin:0;font-size:15.5px;font-family:'Assistant',sans-serif}
+
+  /* LESSONS — cartographic plate */
+  .plate{
+    background:var(--parchment-2);border:1px solid var(--sepia);
+    padding:34px 28px;border-radius:3px;
+    position:relative;z-index:2;
+  }
+  .plate-head{
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:22px;
+    font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--sepia);font-size:16px;
+  }
+  .lessons-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 36px}
+  @media (max-width:760px){.lessons-grid{grid-template-columns:1fr}}
+  .l-row{display:flex;align-items:baseline;gap:14px;padding:14px 0;border-bottom:1px dotted var(--rule)}
+  .l-num{
+    font-family:'Cormorant Garamond',serif;font-weight:700;font-style:italic;font-size:22px;color:var(--red);
+    min-width:36px;
+  }
+  .l-name{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:18px;flex:1;letter-spacing:-.005em}
+  .l-meta{font-size:12px;color:var(--sepia);letter-spacing:.04em;font-family:'Assistant',sans-serif}
+  .l-meta b{color:var(--ink)}
+
+  /* QUOTE */
+  .quote{padding:84px 0;background:var(--parchment-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);text-align:center;position:relative;overflow:hidden}
+  .quote q{
+    quotes:none;display:block;
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;
+    font-size:clamp(24px,3.2vw,38px);line-height:1.4;color:var(--ink);
+    max-width:30ch;margin:0 auto;position:relative;z-index:2;
+  }
+  .quote q::before, .quote q::after{
+    color:var(--sage);font-size:72px;line-height:0;vertical-align:-22px;
+  }
+  .quote q::before{content:"„ ";margin-left:4px}
+  .quote q::after{content:" “";margin-right:4px}
+  .attrib{margin-top:24px;font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--sepia);font-size:16px}
+
+  /* CTA */
+  .final{padding:100px 0;text-align:center;background:var(--parchment);position:relative;overflow:hidden;border-bottom:1px solid var(--rule)}
+  .final h2{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(38px,5vw,68px);line-height:1.05;margin:0 auto 22px;max-width:18ch;letter-spacing:-.015em}
+  .final h2 em{color:var(--red);font-style:italic;font-weight:600}
+  .final p{color:var(--sepia);max-width:50ch;margin:0 auto 32px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px}
+
+  /* FOOTER */
+  footer{padding:34px 0;background:var(--parchment);font-size:13px;color:var(--sepia);font-family:'Cormorant Garamond',serif;font-style:italic}
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center}
+  .compass-mini{
+    width:24px;height:24px;border:1px solid var(--sepia);border-radius:50%;
+    display:inline-block;vertical-align:-7px;margin-left:8px;position:relative;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#">
+      <div class="compass">
+        <div class="n">N</div>
+        <div class="arrow"></div>
+      </div>
+      <div class="brand-text">
+        <div class="name">גיאוגרפיה צבאית</div>
+        <div class="sub">Atlas · Edition I</div>
+      </div>
+    </a>
+    <a class="nav-cta" href="#">התחלת המסע ←</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <svg class="contour-bg" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="#6B4A1F" stroke-width="0.6">
+      <path d="M 100 400 Q 300 350 500 380 T 900 360 T 1200 380"/>
+      <path d="M 100 420 Q 300 370 500 400 T 900 380 T 1200 400"/>
+      <path d="M 100 440 Q 300 390 500 420 T 900 400 T 1200 420"/>
+      <path d="M 200 460 Q 400 430 600 450 T 1000 430 T 1200 450"/>
+      <path d="M 200 480 Q 400 450 600 470 T 1000 450 T 1200 470"/>
+      <path d="M 300 500 Q 500 470 700 490 T 1100 470 T 1200 490"/>
+      <path d="M 300 520 Q 500 490 700 510 T 1100 490 T 1200 510"/>
+      <ellipse cx="950" cy="180" rx="160" ry="60"/>
+      <ellipse cx="950" cy="180" rx="120" ry="40"/>
+      <ellipse cx="950" cy="180" rx="80" ry="25"/>
+      <ellipse cx="950" cy="180" rx="40" ry="14"/>
+    </g>
+  </svg>
+  <div class="wrap hero-content">
+    <div class="latlong">31°47′N · 35°13′E · המסה הפותחת</div>
+    <h1>20 שנה באפגניסטן.<br/><em>בלי קרב שהפסידו.</em></h1>
+    <p>
+      המלחמה המודרנית אינה מוכרעת ביחס כוחות — אלא ב-<strong>5 ממדים</strong>,
+      ב-<strong>3 רמות פיקוד</strong>, ובצד השלישי שכולם שוכחים: <strong>הזמן</strong>.
+      מסע בן 12 שיעורים מאות-לאות של מפה ועד GIS מבצעי.
+    </p>
+    <div class="ctas">
+      <a class="btn btn-primary" href="#">התחלת המסע
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4l-6 4 6 4"/></svg>
+      </a>
+      <a class="btn btn-line" href="#lessons">לוח התוכן</a>
+    </div>
+    <div class="scale">
+      <span>סולם הקורס:</span>
+      <div class="scale-bar"><div></div><div></div><div></div><div></div></div>
+      <span>בסיס &nbsp;·&nbsp; בינוני &nbsp;·&nbsp; מתקדם</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-eyebrow">— Plate I</div>
+        <h2 class="sec-title">ארבעה חבלים של הקורס</h2>
+      </div>
+      <p class="sec-deck">מהקטן בסביבת הלוחם ועד הגיאו-פוליטיקה של מעצמות.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar"><h3><span class="pre">— Plate Ia</span>מפה ושטח</h3><p>קרטוגרפיה, קואורדינטות, קווי גובה, וזיהוי תבניות נוף בשטח אמיתי.</p></div>
+      <div class="pillar"><h3><span class="pre">— Plate Ib</span>תמרון בשטח</h3><p>עבירות, כיסוי והסתרה, קווי ראייה — הקרקע ככלי עבודה.</p></div>
+      <div class="pillar"><h3><span class="pre">— Plate Ic</span>מודיעין וסנסורים</h3><p>אופטי, IR, מכ"ם, פלטפורמות איסוף ומזג אוויר מבצעי.</p></div>
+      <div class="pillar"><h3><span class="pre">— Plate Id</span>אסטרטגיה רחבה</h3><p>לוגיסטיקה, גיאו-כלכלה, גבולות, עומק ולחימה אסימטרית.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="lessons">
+  <svg class="contour-bg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="#6B4A1F" stroke-width="0.5" opacity="0.6">
+      <circle cx="200" cy="700" r="200"/>
+      <circle cx="200" cy="700" r="160"/>
+      <circle cx="200" cy="700" r="120"/>
+      <circle cx="200" cy="700" r="80"/>
+      <circle cx="1000" cy="100" r="160"/>
+      <circle cx="1000" cy="100" r="120"/>
+      <circle cx="1000" cy="100" r="80"/>
+    </g>
+  </svg>
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-eyebrow">— Plate II</div>
+        <h2 class="sec-title">לוח התוכן · 12 שיעורים</h2>
+      </div>
+      <p class="sec-deck">כל שיעור הוא יחידה עצמאית; ביחד הם מרכיבים אטלס מבצעי.</p>
+    </div>
+    <div class="plate">
+      <div class="plate-head"><span>סולם · 1:1 (פלייטים בקנה מידה קורס)</span><span>Edition I, 2026</span></div>
+      <div class="lessons-grid">
+        <div class="l-row"><div class="l-num">I.</div><div class="l-name">מבוא: מרחב, כוח, אסטרטגיה</div><div class="l-meta"><b>35′</b> · בסיס</div></div>
+        <div class="l-row"><div class="l-num">II.</div><div class="l-name">יסודות קרטוגרפיה</div><div class="l-meta"><b>50′</b> · בסיס</div></div>
+        <div class="l-row"><div class="l-num">III.</div><div class="l-name">ניווטים</div><div class="l-meta"><b>45′</b> · בסיס</div></div>
+        <div class="l-row"><div class="l-num">IV.</div><div class="l-name">טופוגרפיה ומורפולוגיה</div><div class="l-meta"><b>40′</b> · בינוני</div></div>
+        <div class="l-row"><div class="l-num">V.</div><div class="l-name">ניידות ותמרון</div><div class="l-meta"><b>55′</b> · בינוני</div></div>
+        <div class="l-row"><div class="l-num">VI.</div><div class="l-name">קווי ראייה · LOS</div><div class="l-meta"><b>45′</b> · בינוני</div></div>
+        <div class="l-row"><div class="l-num">VII.</div><div class="l-name">אקלים ומזג אוויר</div><div class="l-meta"><b>30′</b> · בינוני</div></div>
+        <div class="l-row"><div class="l-num">VIII.</div><div class="l-name">לוגיסטיקה ותשתיות</div><div class="l-meta"><b>40′</b> · בינוני</div></div>
+        <div class="l-row"><div class="l-num">IX.</div><div class="l-name">משאבים וגיאו-כלכלה</div><div class="l-meta"><b>35′</b> · מתקדם</div></div>
+        <div class="l-row"><div class="l-num">X.</div><div class="l-name">לחימה אורבנית</div><div class="l-meta"><b>50′</b> · מתקדם</div></div>
+        <div class="l-row"><div class="l-num">XI.</div><div class="l-name">גבולות ועומק אסטרטגי</div><div class="l-meta"><b>30′</b> · בינוני</div></div>
+        <div class="l-row"><div class="l-num">XII.</div><div class="l-name">GIS יישומי לניתוח מבצעי</div><div class="l-meta"><b>55′</b> · מתקדם</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="quote">
+  <div class="wrap">
+    <q>אחרי השיעור על קווי ראייה ראיתי את הנוף אחרת לגמרי — כל גבעה הפכה למשתנה במשוואה.</q>
+    <div class="attrib">— לוחם · יחידה מיוחדת · אחרי שיעור VI</div>
+  </div>
+</div>
+
+<div class="final">
+  <svg class="contour-bg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="#6B4A1F" stroke-width="0.5">
+      <ellipse cx="600" cy="200" rx="500" ry="120"/>
+      <ellipse cx="600" cy="200" rx="400" ry="90"/>
+      <ellipse cx="600" cy="200" rx="300" ry="60"/>
+      <ellipse cx="600" cy="200" rx="200" ry="40"/>
+      <ellipse cx="600" cy="200" rx="100" ry="20"/>
+    </g>
+  </svg>
+  <div class="wrap" style="position:relative;z-index:2">
+    <h2>הכללים השתנו.<br/><em>כדאי לדעת אותם.</em></h2>
+    <p>12 שיעורים. ~8 שעות. אינטראקטיבי, מבוסס סימולציות, בקצב שלך.</p>
+    <a class="btn btn-primary" href="#">פתח את האטלס
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4l-6 4 6 4"/></svg>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>Edition I · 2026 · גיאוגרפיה צבאית — אטלס מבצעי בעברית</div>
+    <div>סולם 1:1 · קנה מידה מלא · עברית · RTL</div>
+  </div>
+</footer>
+
+</body>
+</html>

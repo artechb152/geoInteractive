@@ -6,26 +6,17 @@ import { DepthScene } from './DepthScene';
 import { BufferScene } from './BufferScene';
 import { BordersScene } from './BordersScene';
 import { RecapScene } from './RecapScene';
-import { SceneProgress } from './SceneProgress';
-import { SceneDivider } from './SceneDivider';
+import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+
+const SCENES: PagedScene[] = [
+  { id: 'hook',       label: 'פתיחה',                    Comp: HookScene },
+  { id: 'onboarding', label: '11.0 · לפני שמתחילים',     Comp: OnboardingScene },
+  { id: 'depth',      label: '11.1 · עומק אסטרטגי',      Comp: DepthScene },
+  { id: 'buffer',     label: '11.2 · אזורי חיץ',         Comp: BufferScene },
+  { id: 'borders',    label: '11.3 · טיפולוגיית גבולות', Comp: BordersScene },
+  { id: 'recap',      label: '11.4 · סיכום',             Comp: RecapScene },
+];
 
 export function Topic11Lesson() {
-  return (
-    <>
-      <SceneProgress />
-      <div className="space-y-20 md:space-y-28 pb-12">
-        <HookScene />
-        <SceneDivider next="11.0 · לפני שמתחילים" />
-        <OnboardingScene />
-        <SceneDivider next="11.1 · עומק אסטרטגי" />
-        <DepthScene />
-        <SceneDivider next="11.2 · אזורי חיץ" />
-        <BufferScene />
-        <SceneDivider next="11.3 · טיפולוגיית גבולות" />
-        <BordersScene />
-        <SceneDivider next="11.4 · סיכום" />
-        <RecapScene />
-      </div>
-    </>
-  );
+  return <PagedLearn scenes={SCENES} />;
 }

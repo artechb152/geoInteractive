@@ -6,26 +6,17 @@ import { GeologyScene } from './GeologyScene';
 import { LandformsScene } from './LandformsScene';
 import { TacticalTerrainScene } from './TacticalTerrainScene';
 import { RecapScene } from './RecapScene';
-import { SceneProgress } from './SceneProgress';
-import { SceneDivider } from './SceneDivider';
+import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+
+const SCENES: PagedScene[] = [
+  { id: 'hook',            label: 'פתיחה',                Comp: HookScene },
+  { id: 'onboarding',      label: '04.0 · לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'geology',         label: '04.1 · גיאולוגיה',     Comp: GeologyScene },
+  { id: 'landforms',       label: '04.2 · תבניות נוף',    Comp: LandformsScene },
+  { id: 'tacticalterrain', label: '04.3 · שטח טקטי',      Comp: TacticalTerrainScene },
+  { id: 'recap',           label: '04.4 · סיכום',         Comp: RecapScene },
+];
 
 export function Topic04Lesson() {
-  return (
-    <>
-      <SceneProgress />
-      <div className="space-y-20 md:space-y-28 pb-12">
-        <HookScene />
-        <SceneDivider next="04.0 · לפני שמתחילים" />
-        <OnboardingScene />
-        <SceneDivider next="04.1 · גיאולוגיה" />
-        <GeologyScene />
-        <SceneDivider next="04.2 · תבניות נוף" />
-        <LandformsScene />
-        <SceneDivider next="04.3 · שטח טקטי" />
-        <TacticalTerrainScene />
-        <SceneDivider next="04.4 · סיכום" />
-        <RecapScene />
-      </div>
-    </>
-  );
+  return <PagedLearn scenes={SCENES} />;
 }

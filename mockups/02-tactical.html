@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>02 · Tactical Console — גיאוגרפיה צבאית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#F5F4EE;
+    --bone-2:#EDEBE2;
+    --olive:#4A5C2E;
+    --olive-dim:#7a8a5d;
+    --amber:#C57E0E;
+    --ink:#14140F;
+    --grid:rgba(20,20,15,.06);
+    --grid-strong:rgba(20,20,15,.14);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bone);
+    color:var(--ink);
+    font-family:'Heebo',system-ui,sans-serif;
+    font-size:15.5px;
+    line-height:1.65;
+    background-image:
+      linear-gradient(to left, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size:32px 32px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:500}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  a{color:inherit}
+  .label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--olive-dim);font-weight:500}
+
+  /* NAV */
+  .nav{
+    background:var(--bone);
+    border-bottom:1px solid var(--ink);
+    padding:14px 0;
+    position:relative;
+  }
+  .nav::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;
+    background:repeating-linear-gradient(to left, var(--ink) 0 12px, transparent 12px 24px);
+  }
+  .nav-row{display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .brand{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--ink)}
+  .logo{
+    width:36px;height:36px;border:1.5px solid var(--ink);position:relative;display:grid;place-items:center;
+  }
+  .logo::before{content:"";position:absolute;inset:5px;border:1px dashed var(--olive);border-radius:50%}
+  .logo::after{content:"";position:absolute;width:10px;height:1.5px;background:var(--amber);transform:rotate(45deg)}
+  .brand-name{font-family:'Heebo',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em}
+  .brand-sub{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--olive-dim);text-transform:uppercase}
+  .telemetry{display:flex;gap:14px;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 10px;background:var(--bone-2);border:1px solid var(--ink);
+    letter-spacing:.1em;text-transform:uppercase;font-weight:600;
+  }
+  .pill .dot{width:6px;height:6px;background:var(--olive);border-radius:50%;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .nav-cta{
+    background:var(--ink);color:var(--bone);
+    border:1.5px solid var(--ink);
+    padding:9px 18px;text-decoration:none;
+    font-family:'Heebo',sans-serif;font-weight:700;font-size:14px;
+    transition:background .15s;
+  }
+  .nav-cta:hover{background:var(--olive);border-color:var(--olive)}
+
+  /* HERO */
+  .hero{padding:72px 0 96px;position:relative;border-bottom:1.5px solid var(--ink)}
+  .hero::before{
+    content:"";position:absolute;top:24px;right:28px;
+    font-family:'JetBrains Mono',monospace;color:var(--olive-dim);
+    font-size:11px;letter-spacing:.12em;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:48px;align-items:start}
+  @media (max-width:880px){.hero-grid{grid-template-columns:1fr}}
+  .hero-meta{display:flex;gap:14px;align-items:center;margin-bottom:24px}
+  .h-pill{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;
+    padding:5px 12px;background:var(--ink);color:var(--bone);text-transform:uppercase;
+  }
+  .h-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--olive);text-transform:uppercase}
+  .hero h1{
+    font-family:'Heebo',sans-serif;font-weight:800;
+    font-size:clamp(40px,6vw,82px);
+    line-height:1;letter-spacing:-.025em;margin:0 0 28px;
+  }
+  .hero h1 .marked{
+    background:linear-gradient(transparent 60%, rgba(197,126,14,.25) 60%);
+    padding:0 4px;
+  }
+  .hero p{
+    font-size:18px;color:#3a3a30;max-width:54ch;margin:0 0 36px;line-height:1.6;
+  }
+  .ctas{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 22px;font-weight:700;font-size:14.5px;
+    text-decoration:none;letter-spacing:.02em;transition:all .15s;
+    font-family:'Heebo',sans-serif;
+  }
+  .btn-primary{background:var(--ink);color:var(--bone);border:1.5px solid var(--ink)}
+  .btn-primary:hover{background:var(--olive);border-color:var(--olive)}
+  .btn-line{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn-line:hover{background:var(--ink);color:var(--bone)}
+
+  /* TELEMETRY PANEL */
+  .panel{
+    background:var(--bone-2);
+    border:1.5px solid var(--ink);
+    padding:24px;
+    position:relative;
+  }
+  .panel::before{
+    content:"OP / OVERVIEW";
+    position:absolute;top:-10px;right:18px;
+    background:var(--bone);padding:2px 10px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--olive);
+  }
+  .panel-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed rgba(20,20,15,.16);font-family:'JetBrains Mono',monospace;font-size:13px}
+  .panel-row:last-child{border-bottom:0}
+  .panel-row .k{color:var(--olive-dim);text-transform:uppercase;letter-spacing:.12em;font-size:11px}
+  .panel-row .v{color:var(--ink);font-weight:700}
+
+  /* SECTION HEADERS */
+  section{padding:84px 0;border-bottom:1.5px solid var(--ink);position:relative}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:40px;gap:20px;flex-wrap:wrap}
+  .sec-num{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--olive);letter-spacing:.18em;text-transform:uppercase}
+  .sec-title{font-family:'Heebo',sans-serif;font-weight:800;font-size:clamp(28px,3.5vw,42px);letter-spacing:-.02em;margin:0}
+  .sec-deck{color:#5a5a4f;max-width:60ch;margin:8px 0 0;font-size:16px}
+
+  /* PILLARS */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media (max-width:980px){.pillars{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.pillars{grid-template-columns:1fr}}
+  .pillar{
+    background:var(--bone);
+    border:1.5px solid var(--ink);
+    padding:22px;
+    position:relative;
+    transition:transform .15s,background .15s;
+  }
+  .pillar:hover{background:var(--bone-2);transform:translateY(-2px)}
+  .pillar .p-id{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--amber);
+    letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px;font-weight:600;
+  }
+  .pillar h3{font-family:'Heebo',sans-serif;font-weight:800;font-size:19px;margin:0 0 8px;letter-spacing:-.01em}
+  .pillar p{margin:0;font-size:14.5px;color:#5a5a4f;line-height:1.55}
+  .pillar::after{
+    content:"";position:absolute;bottom:8px;left:8px;width:16px;height:16px;
+    border-bottom:1.5px solid var(--olive);border-left:1.5px solid var(--olive);
+  }
+
+  /* LESSONS TABLE */
+  .lessons-table{
+    border:1.5px solid var(--ink);background:var(--bone);font-family:'JetBrains Mono',monospace;font-size:13px;
+  }
+  .lt-head, .lt-row{
+    display:grid;
+    grid-template-columns:60px 1fr 90px 110px;
+    align-items:center;
+    padding:10px 16px;
+  }
+  .lt-head{background:var(--ink);color:var(--bone);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+  .lt-row{border-top:1px solid rgba(20,20,15,.12);transition:background .15s}
+  .lt-row:hover{background:var(--bone-2)}
+  .lt-id{color:var(--olive);font-weight:700}
+  .lt-title{font-family:'Heebo',sans-serif;font-weight:600;font-size:14.5px;color:var(--ink)}
+  .lt-time{color:#5a5a4f;font-size:12px;text-align:center}
+  .lt-level{text-align:end}
+  .lt-level .b{display:inline-block;padding:3px 10px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--ink)}
+  .lt-level .b.base{background:var(--bone-2)}
+  .lt-level .b.mid{background:var(--bone)}
+  .lt-level .b.adv{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+
+  /* QUOTE */
+  .quote{padding:80px 0;background:var(--bone-2);border-bottom:1.5px solid var(--ink)}
+  .quote-grid{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
+  @media (max-width:780px){.quote-grid{grid-template-columns:1fr}}
+  .quote-corner{
+    width:120px;height:120px;border:1.5px solid var(--ink);position:relative;background:var(--bone);
+    display:grid;place-items:center;
+  }
+  .quote-corner::before{
+    content:'״';font-family:'Heebo',sans-serif;font-weight:800;font-size:120px;color:var(--olive);
+    line-height:0.5;
+  }
+  .quote q{
+    quotes:none;display:block;
+    font-family:'Heebo',sans-serif;font-weight:600;font-size:clamp(22px,2.6vw,30px);
+    line-height:1.35;letter-spacing:-.01em;color:var(--ink);
+    max-width:48ch;
+  }
+  .quote-meta{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--olive);letter-spacing:.18em;text-transform:uppercase}
+  .quote-meta b{color:var(--ink);font-weight:700}
+
+  /* CTA */
+  .final{padding:96px 0;text-align:center;border-bottom:1.5px solid var(--ink);background:var(--bone)}
+  .final .label{margin-bottom:18px}
+  .final h2{font-family:'Heebo',sans-serif;font-weight:800;font-size:clamp(36px,5vw,62px);margin:0 auto 18px;letter-spacing:-.025em;line-height:1.05;max-width:18ch}
+  .final p{color:#5a5a4f;max-width:50ch;margin:0 auto 32px}
+
+  /* FOOTER */
+  footer{padding:24px 0;background:var(--ink);color:var(--bone)}
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#">
+      <div class="logo"></div>
+      <div>
+        <div class="brand-name">גיאוגרפיה צבאית</div>
+        <div class="brand-sub">OP · MIL-GEO · v1.0</div>
+      </div>
+    </a>
+    <div class="telemetry">
+      <span class="pill"><span class="dot"></span>LIVE · 12 שיעורים</span>
+      <a class="nav-cta" href="#">[ התחלת הקורס ]</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="hero-meta">
+        <span class="h-pill">// MISSION BRIEF</span>
+        <span class="h-tag">SECTOR 01 · INTRO</span>
+      </div>
+      <h1>20 שנה באפגניסטן. בלי <span class="marked">קרב שהפסידו.</span></h1>
+      <p>
+        המלחמה המודרנית לא מוכרעת ביחס כוחות. היא מוכרעת ב-5 ממדים, 3 רמות פיקוד, ובצד השלישי שכולם שוכחים: הזמן. קורס מבצעי, אינטראקטיבי, בעברית.
+      </p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#">[ התחלת הקורס ]
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M11 4l-6 4 6 4"/></svg>
+        </a>
+        <a class="btn btn-line" href="#lessons">// מה לומדים</a>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-row"><span class="k">Lessons</span><span class="v">12</span></div>
+      <div class="panel-row"><span class="k">Total Duration</span><span class="v">~8h</span></div>
+      <div class="panel-row"><span class="k">Dimensions</span><span class="v">5 · MDO</span></div>
+      <div class="panel-row"><span class="k">Levels</span><span class="v">BASE → ADV</span></div>
+      <div class="panel-row"><span class="k">Format</span><span class="v">Interactive · SIM</span></div>
+      <div class="panel-row"><span class="k">Language</span><span class="v">HE · RTL</span></div>
+      <div class="panel-row"><span class="k">Status</span><span class="v" style="color:var(--olive)">● READY</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">// MODULE GROUPS</div>
+        <h2 class="sec-title">ארבעה תחומי הקורס</h2>
+        <p class="sec-deck">חלוקה אופרטיבית של 12 השיעורים לפי דומיין — מהמיקרו של הלוחם ועד גיאו-פוליטיקה.</p>
+      </div>
+    </div>
+    <div class="pillars">
+      <div class="pillar"><div class="p-id">PILLAR · 01</div><h3>מפה ושטח</h3><p>קרטוגרפיה, קואורדינטות, קווי גובה, זיהוי תבניות נוף.</p></div>
+      <div class="pillar"><div class="p-id">PILLAR · 02</div><h3>תמרון בשטח</h3><p>עבירות, כיסוי והסתרה, קווי ראייה, מסדרונות תנועה.</p></div>
+      <div class="pillar"><div class="p-id">PILLAR · 03</div><h3>מודיעין · סנסורים</h3><p>אופטי, IR, SAR, פלטפורמות איסוף, אקלים מבצעי.</p></div>
+      <div class="pillar"><div class="p-id">PILLAR · 04</div><h3>אסטרטגיה</h3><p>לוגיסטיקה, גיאו-כלכלה, גבולות, עומק, אסימטריה.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="lessons">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">// LESSON MANIFEST</div>
+        <h2 class="sec-title">תוכן הקורס · 12 שיעורים</h2>
+      </div>
+    </div>
+    <div class="lessons-table">
+      <div class="lt-head"><div>ID</div><div>שיעור</div><div>זמן</div><div>רמה</div></div>
+      <div class="lt-row"><div class="lt-id">L-01</div><div class="lt-title">מבוא: מרחב, כוח, אסטרטגיה</div><div class="lt-time">35m</div><div class="lt-level"><span class="b base">BASE</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-02</div><div class="lt-title">יסודות קרטוגרפיה</div><div class="lt-time">50m</div><div class="lt-level"><span class="b base">BASE</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-03</div><div class="lt-title">ניווטים</div><div class="lt-time">45m</div><div class="lt-level"><span class="b base">BASE</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-04</div><div class="lt-title">טופוגרפיה ומורפולוגיית שטח</div><div class="lt-time">40m</div><div class="lt-level"><span class="b mid">MID</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-05</div><div class="lt-title">ניידות ותמרון</div><div class="lt-time">55m</div><div class="lt-level"><span class="b mid">MID</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-06</div><div class="lt-title">קווי ראייה · LOS</div><div class="lt-time">45m</div><div class="lt-level"><span class="b mid">MID</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-07</div><div class="lt-title">אקלים ומזג אוויר</div><div class="lt-time">30m</div><div class="lt-level"><span class="b mid">MID</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-08</div><div class="lt-title">לוגיסטיקה ותשתיות</div><div class="lt-time">40m</div><div class="lt-level"><span class="b mid">MID</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-09</div><div class="lt-title">משאבים וגיאו-כלכלה</div><div class="lt-time">35m</div><div class="lt-level"><span class="b adv">ADV</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-10</div><div class="lt-title">לחימה אורבנית</div><div class="lt-time">50m</div><div class="lt-level"><span class="b adv">ADV</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-11</div><div class="lt-title">גבולות ועומק אסטרטגי</div><div class="lt-time">30m</div><div class="lt-level"><span class="b mid">MID</span></div></div>
+      <div class="lt-row"><div class="lt-id">L-12</div><div class="lt-title">GIS יישומי לניתוח מבצעי</div><div class="lt-time">55m</div><div class="lt-level"><span class="b adv">ADV</span></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="quote">
+  <div class="wrap quote-grid">
+    <div class="quote-corner"></div>
+    <div>
+      <q>אחרי השיעור על קווי ראייה ראיתי את הנוף אחרת לגמרי — כל גבעה הפכה למשתנה אחר במשוואה.</q>
+      <div class="quote-meta">// <b>לוחם · יחידה מיוחדת</b> · POST-LESSON-06</div>
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="wrap">
+    <div class="label">// END OF BRIEF · BEGIN OPERATION</div>
+    <h2>הכללים השתנו. הצטרף.</h2>
+    <p>12 שיעורים. ~8 שעות. אינטראקטיבי, מבוסס סימולציות, בקצב שלך.</p>
+    <a class="btn btn-primary" href="#">[ התחלת הקורס ]
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M11 4l-6 4 6 4"/></svg>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>// © 2026 · MIL-GEO · ALL RIGHTS RESERVED</div>
+    <div>SYSTEM v1.0 · HE/RTL · ● ONLINE</div>
+  </div>
+</footer>
+
+</body>
+</html>

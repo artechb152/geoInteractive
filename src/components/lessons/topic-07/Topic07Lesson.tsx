@@ -6,26 +6,17 @@ import { ClimateScene } from './ClimateScene';
 import { SensorsScene } from './SensorsScene';
 import { PlatformsScene } from './PlatformsScene';
 import { RecapScene } from './RecapScene';
-import { SceneProgress } from './SceneProgress';
-import { SceneDivider } from './SceneDivider';
+import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+
+const SCENES: PagedScene[] = [
+  { id: 'hook',       label: 'פתיחה',                Comp: HookScene },
+  { id: 'onboarding', label: '07.0 · לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'climate',    label: '07.1 · מיקרו-אקלים',   Comp: ClimateScene },
+  { id: 'sensors',    label: '07.2 · בליעה ו-IR',    Comp: SensorsScene },
+  { id: 'platforms',  label: '07.3 · תקרת ענן',      Comp: PlatformsScene },
+  { id: 'recap',      label: '07.4 · סיכום',         Comp: RecapScene },
+];
 
 export function Topic07Lesson() {
-  return (
-    <>
-      <SceneProgress />
-      <div className="space-y-20 md:space-y-28 pb-12">
-        <HookScene />
-        <SceneDivider next="07.0 · לפני שמתחילים" />
-        <OnboardingScene />
-        <SceneDivider next="07.1 · מיקרו-אקלים" />
-        <ClimateScene />
-        <SceneDivider next="07.2 · בליעה ו-IR" />
-        <SensorsScene />
-        <SceneDivider next="07.3 · תקרת ענן" />
-        <PlatformsScene />
-        <SceneDivider next="07.4 · סיכום" />
-        <RecapScene />
-      </div>
-    </>
-  );
+  return <PagedLearn scenes={SCENES} />;
 }

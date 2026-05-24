@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>06 · Brutalist Journal — גיאוגרפיה צבאית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#EEEAE2;
+    --bone-2:#E3DFD4;
+    --jet:#0A0A0A;
+    --hot:#FF4D1F;
+    --concrete:#9C9A93;
+    --ink:#0A0A0A;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bone);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Hebrew','IBM Plex Sans',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Archivo Black','IBM Plex Sans Hebrew',sans-serif;font-weight:400;letter-spacing:-.02em}
+  .mono{font-family:'IBM Plex Mono',monospace;font-weight:500}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 24px;border-inline:1.5px solid var(--ink)}
+  a{color:inherit}
+
+  /* NAV */
+  .nav{
+    border-bottom:1.5px solid var(--ink);background:var(--bone);
+    position:sticky;top:0;z-index:30;
+  }
+  .nav-row{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;padding:14px 0}
+  .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink)}
+  .logo{
+    width:42px;height:42px;background:var(--jet);position:relative;
+    display:grid;place-items:center;
+  }
+  .logo::before{content:"";width:22px;height:1.5px;background:var(--hot);transform:rotate(45deg);position:absolute}
+  .logo::after{content:"";width:1.5px;height:22px;background:var(--hot);position:absolute;left:50%;transform:translateX(-50%)}
+  .brand-text .name{font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:-.01em;line-height:1}
+  .brand-text .sub{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;margin-top:3px;color:#555;text-transform:uppercase}
+  .nav-meta{
+    text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    letter-spacing:.18em;text-transform:uppercase;color:#555;
+  }
+  .nav-meta b{color:var(--ink)}
+  .nav-cta{
+    padding:11px 22px;background:var(--hot);color:#fff;border:1.5px solid var(--hot);
+    font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.04em;text-decoration:none;
+    transition:all .15s;
+  }
+  .nav-cta:hover{background:var(--ink);border-color:var(--ink)}
+
+  /* HERO */
+  .hero{padding:64px 24px 0;border-bottom:1.5px solid var(--ink);position:relative}
+  .hero-meta{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1.5px solid var(--ink);
+    margin-bottom:32px;
+  }
+  .hero-meta > div{
+    padding:14px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    letter-spacing:.18em;text-transform:uppercase;
+    border-inline-start:1.5px solid var(--ink);
+  }
+  .hero-meta > div:first-child{border-inline-start:0}
+  .hero-meta b{display:block;color:var(--hot);margin-bottom:4px;font-weight:700}
+  .hero-grid{display:grid;grid-template-columns:3fr 1.4fr;gap:0;border-bottom:1.5px solid var(--ink)}
+  @media (max-width:880px){.hero-grid{grid-template-columns:1fr}}
+  .hero-main{padding:0 24px 48px 0;border-inline-end:1.5px solid var(--ink)}
+  @media (max-width:880px){.hero-main{border-inline-end:0;border-bottom:1.5px solid var(--ink);padding:0 0 32px}}
+  .hero-side{padding:32px 0 32px 24px}
+  @media (max-width:880px){.hero-side{padding:32px 0}}
+
+  .hero h1{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(48px,9vw,138px);
+    line-height:.86;letter-spacing:-.04em;
+    margin:0 0 32px;text-transform:none;
+  }
+  .hero h1 .hot{color:var(--hot)}
+  .hero h1 .strike{text-decoration:line-through;text-decoration-thickness:6px;text-decoration-color:var(--hot)}
+  .hero p{font-size:19px;color:var(--ink);max-width:54ch;margin:0 0 32px;line-height:1.55;font-weight:500}
+  .hero p b{background:var(--hot);color:#fff;padding:1px 6px;font-weight:700}
+  .ctas{display:flex;gap:0;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;padding:18px 26px;
+    font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.02em;
+    text-decoration:none;border:1.5px solid var(--ink);transition:all .15s;
+  }
+  .btn-primary{background:var(--ink);color:var(--bone);margin-inline-end:-1.5px}
+  .btn-primary:hover{background:var(--hot);border-color:var(--hot)}
+  .btn-line{background:var(--bone);color:var(--ink)}
+  .btn-line:hover{background:var(--ink);color:var(--bone)}
+
+  .hero-side .label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#555;margin-bottom:14px;border-bottom:1.5px solid var(--ink);padding-bottom:8px}
+  .stat-line{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1.5px solid var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px}
+  .stat-line:last-child{border-bottom:0}
+  .stat-line .k{text-transform:uppercase;letter-spacing:.12em;color:#555;font-size:11px}
+  .stat-line .v{font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-.03em}
+
+  /* SECTIONS */
+  section{padding:0;border-bottom:1.5px solid var(--ink)}
+  .sec-head{
+    display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:end;
+    padding:24px;border-bottom:1.5px solid var(--ink);background:var(--bone-2);
+  }
+  .sec-num{
+    font-family:'Archivo Black',sans-serif;font-size:78px;line-height:.88;letter-spacing:-.04em;color:var(--hot);
+  }
+  .sec-title{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,3.6vw,42px);line-height:1.02;letter-spacing:-.025em;margin:0}
+  .sec-deck{margin:6px 0 0;color:#444;font-size:15.5px;max-width:50ch}
+
+  /* PILLARS */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr)}
+  @media (max-width:960px){.pillars{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.pillars{grid-template-columns:1fr}}
+  .pillar{
+    padding:28px 24px;border-inline-start:1.5px solid var(--ink);background:var(--bone);
+    transition:background .15s;
+  }
+  .pillar:hover{background:var(--bone-2)}
+  .pillar:first-child{border-inline-start:0}
+  .p-id{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--hot);font-weight:700;margin-bottom:16px}
+  .pillar h3{font-family:'Archivo Black',sans-serif;font-size:22px;margin:0 0 8px;letter-spacing:-.02em;line-height:1.05}
+  .pillar p{margin:0;color:#444;font-size:14.5px;line-height:1.5}
+
+  /* LESSONS */
+  .lessons-table{background:var(--bone)}
+  .lt-row{
+    display:grid;grid-template-columns:80px 1fr auto auto;gap:0;align-items:stretch;
+    border-bottom:1.5px solid var(--ink);
+    transition:background .12s;
+  }
+  .lt-row:last-child{border-bottom:0}
+  .lt-row:hover{background:var(--bone-2)}
+  .lt-row > div{padding:20px 16px;border-inline-start:1.5px solid var(--ink);display:flex;align-items:center}
+  .lt-row > div:first-child{border-inline-start:0}
+  .lt-id{font-family:'Archivo Black',sans-serif;font-size:30px;color:var(--hot);letter-spacing:-.04em;justify-content:center}
+  .lt-title{font-family:'Archivo Black',sans-serif;font-size:20px;letter-spacing:-.02em;line-height:1.05}
+  .lt-time{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#444;min-width:80px;justify-content:center}
+  .lt-lvl{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;min-width:120px;justify-content:center}
+  .lt-lvl.base{background:var(--bone-2)}
+  .lt-lvl.mid{background:var(--bone)}
+  .lt-lvl.adv{background:var(--hot);color:#fff}
+
+  /* QUOTE */
+  .quote{padding:0;background:var(--ink);color:var(--bone);border-bottom:1.5px solid var(--ink)}
+  .quote-inner{padding:80px 24px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+  @media (max-width:780px){.quote-inner{grid-template-columns:1fr}}
+  .quote q{
+    quotes:none;display:block;font-family:'Archivo Black',sans-serif;
+    font-size:clamp(28px,4vw,52px);letter-spacing:-.025em;line-height:1.05;
+    color:var(--bone);max-width:22ch;margin:0;
+  }
+  .quote q::before{content:"// ";color:var(--hot)}
+  .attrib{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--concrete);text-align:end}
+  .attrib b{color:var(--hot);display:block;font-size:14px;margin-bottom:6px}
+
+  /* FINAL */
+  .final{padding:0;border-bottom:1.5px solid var(--ink);background:var(--hot);color:#fff}
+  .final-inner{padding:96px 24px;text-align:center}
+  .final h2{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(48px,7vw,110px);
+    line-height:.92;letter-spacing:-.035em;margin:0 auto 22px;max-width:14ch;
+  }
+  .final h2 .invert{background:#fff;color:var(--hot);padding:0 8px;display:inline-block}
+  .final p{color:rgba(255,255,255,.92);max-width:54ch;margin:0 auto 36px;font-size:18px;font-weight:500}
+  .final .btn{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .final .btn:hover{background:#fff;color:var(--hot)}
+
+  /* FOOTER */
+  footer{background:var(--bone);padding:18px 24px}
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#444}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#">
+      <div class="logo"></div>
+      <div class="brand-text">
+        <div class="name">גיאוגרפיה צבאית</div>
+        <div class="sub">№ 01 · Vol. I · 2026</div>
+      </div>
+    </a>
+    <div class="nav-meta">EDITION 01 · <b>12 LESSONS</b> · ~8H · HE/RTL</div>
+    <a class="nav-cta" href="#">→ START</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-meta">
+      <div><b>SECTION</b>MASTHEAD</div>
+      <div><b>DATE</b>2026 · 05</div>
+      <div><b>RUNTIME</b>~8 HOURS</div>
+      <div><b>LANG</b>HE · RTL</div>
+    </div>
+
+    <div class="hero-grid">
+      <div class="hero-main">
+        <h1>
+          20 שנה<br/>באפגניסטן.<br/>
+          בלי קרב<br/><span class="hot">שהפסידו.</span>
+        </h1>
+        <p>
+          המלחמה המודרנית <b>לא מוכרעת ביחס כוחות</b>. היא מוכרעת ב-5 ממדים,
+          3 רמות פיקוד, ובצד השלישי שכולם שוכחים: <b>הזמן</b>.
+        </p>
+        <div class="ctas">
+          <a class="btn btn-primary" href="#">▶ התחלת הקורס</a>
+          <a class="btn btn-line" href="#lessons">// מה לומדים</a>
+        </div>
+      </div>
+      <aside class="hero-side">
+        <div class="label">// COURSE STATS</div>
+        <div class="stat-line"><span class="k">Lessons</span><span class="v">12</span></div>
+        <div class="stat-line"><span class="k">Duration</span><span class="v">~8h</span></div>
+        <div class="stat-line"><span class="k">Dimensions</span><span class="v">5</span></div>
+        <div class="stat-line"><span class="k">Levels</span><span class="v">3</span></div>
+        <div class="stat-line"><span class="k">Sim Scenes</span><span class="v">38</span></div>
+      </aside>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">01.</div>
+      <div>
+        <h2 class="sec-title">ארבעה תחומי הקורס</h2>
+        <p class="sec-deck">מהקטן בסביבת הלוחם ועד הגיאו-פוליטיקה של מעצמות.</p>
+      </div>
+    </div>
+    <div class="pillars">
+      <div class="pillar"><div class="p-id">P / 01</div><h3>מפה ושטח</h3><p>קרטוגרפיה, קואורדינטות, קווי גובה, וזיהוי תבניות נוף בשטח אמיתי.</p></div>
+      <div class="pillar"><div class="p-id">P / 02</div><h3>תמרון בשטח</h3><p>עבירות, כיסוי והסתרה, קווי ראייה — הקרקע ככלי עבודה.</p></div>
+      <div class="pillar"><div class="p-id">P / 03</div><h3>מודיעין וסנסורים</h3><p>אופטי, IR, מכ"ם, פלטפורמות איסוף, אקלים מבצעי.</p></div>
+      <div class="pillar"><div class="p-id">P / 04</div><h3>אסטרטגיה</h3><p>לוגיסטיקה, גיאו-כלכלה, גבולות, עומק, לחימה אסימטרית.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="lessons">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">02.</div>
+      <div>
+        <h2 class="sec-title">תוכן הקורס · 12 שיעורים</h2>
+        <p class="sec-deck">כל שיעור עומד בפני עצמו. ביחד — מפקד שרואה את השטח אחרת.</p>
+      </div>
+    </div>
+    <div class="lessons-table">
+      <div class="lt-row"><div class="lt-id">01</div><div class="lt-title">מבוא: מרחב, כוח, אסטרטגיה</div><div class="lt-time">35M</div><div class="lt-lvl base">BASE</div></div>
+      <div class="lt-row"><div class="lt-id">02</div><div class="lt-title">יסודות קרטוגרפיה</div><div class="lt-time">50M</div><div class="lt-lvl base">BASE</div></div>
+      <div class="lt-row"><div class="lt-id">03</div><div class="lt-title">ניווטים</div><div class="lt-time">45M</div><div class="lt-lvl base">BASE</div></div>
+      <div class="lt-row"><div class="lt-id">04</div><div class="lt-title">טופוגרפיה ומורפולוגיית שטח</div><div class="lt-time">40M</div><div class="lt-lvl mid">MID</div></div>
+      <div class="lt-row"><div class="lt-id">05</div><div class="lt-title">ניידות ותמרון</div><div class="lt-time">55M</div><div class="lt-lvl mid">MID</div></div>
+      <div class="lt-row"><div class="lt-id">06</div><div class="lt-title">קווי ראייה · LOS</div><div class="lt-time">45M</div><div class="lt-lvl mid">MID</div></div>
+      <div class="lt-row"><div class="lt-id">07</div><div class="lt-title">אקלים ומזג אוויר</div><div class="lt-time">30M</div><div class="lt-lvl mid">MID</div></div>
+      <div class="lt-row"><div class="lt-id">08</div><div class="lt-title">לוגיסטיקה ותשתיות</div><div class="lt-time">40M</div><div class="lt-lvl mid">MID</div></div>
+      <div class="lt-row"><div class="lt-id">09</div><div class="lt-title">משאבים וגיאו-כלכלה</div><div class="lt-time">35M</div><div class="lt-lvl adv">ADV</div></div>
+      <div class="lt-row"><div class="lt-id">10</div><div class="lt-title">לחימה אורבנית</div><div class="lt-time">50M</div><div class="lt-lvl adv">ADV</div></div>
+      <div class="lt-row"><div class="lt-id">11</div><div class="lt-title">גבולות ועומק אסטרטגי</div><div class="lt-time">30M</div><div class="lt-lvl mid">MID</div></div>
+      <div class="lt-row"><div class="lt-id">12</div><div class="lt-title">GIS יישומי לניתוח מבצעי</div><div class="lt-time">55M</div><div class="lt-lvl adv">ADV</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="quote">
+  <div class="wrap">
+    <div class="quote-inner">
+      <q>אחרי שיעור 06 ראיתי את הנוף אחרת לגמרי.</q>
+      <div class="attrib"><b>לוחם · יחידה מיוחדת</b>POST-LESSON-06 · 2026</div>
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="wrap">
+    <div class="final-inner">
+      <h2>הכללים <span class="invert">השתנו</span>. כדאי לדעת אותם.</h2>
+      <p>12 שיעורים. ~8 שעות. סימולציות ותרגול ניתוח שטח, בקצב שלך.</p>
+      <a class="btn" href="#">▶ התחל עכשיו</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>© 2026 · גיאוגרפיה צבאית · ALL RIGHTS RESERVED</div>
+    <div>№ 01 · VOL. I · HE/RTL</div>
+  </div>
+</footer>
+
+</body>
+</html>

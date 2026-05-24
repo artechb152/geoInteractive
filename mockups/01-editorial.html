@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>01 · The Atlantic — גיאוגרפיה צבאית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;800;900&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#FAF7EE;
+    --paper:#F2EDDF;
+    --ink:#1A1A1A;
+    --rust:#B5462C;
+    --stone:#6F6A60;
+    --rule:#1A1A1A;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ivory);
+    color:var(--ink);
+    font-family:'Heebo',system-ui,sans-serif;
+    font-size:17px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Frank Ruhl Libre',serif;font-weight:700;letter-spacing:-.01em}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  a{color:inherit}
+
+  /* NAV */
+  .nav{
+    border-bottom:1px solid var(--ink);
+    padding:18px 0;
+    background:var(--ivory);
+  }
+  .nav-row{display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand .mono{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:22px;
+    letter-spacing:-.01em;
+  }
+  .brand .sub{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--stone)}
+  .nav-cta{
+    border:1px solid var(--ink);
+    padding:9px 18px;
+    text-decoration:none;
+    color:var(--ink);
+    font-weight:600;
+    font-size:14px;
+    letter-spacing:.02em;
+    transition:background .15s,color .15s;
+  }
+  .nav-cta:hover{background:var(--ink);color:var(--ivory)}
+
+  /* MASTHEAD */
+  .masthead{
+    padding:88px 0 96px;
+    border-bottom:1px solid var(--ink);
+    background:
+      radial-gradient(circle at 80% 20%, rgba(181,70,44,.06) 0%, transparent 60%),
+      var(--ivory);
+  }
+  .kicker{
+    font-size:12px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--rust);
+    margin-bottom:24px;
+    font-weight:700;
+  }
+  .kicker::before{content:"— ";color:var(--ink)}
+  .hero-title{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:clamp(48px,7.2vw,98px);
+    line-height:.96;
+    letter-spacing:-.022em;
+    max-width:14ch;
+    margin:0 0 28px;
+  }
+  .hero-title em{font-style:italic;color:var(--rust);font-weight:800}
+  .lede{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:400;
+    font-size:clamp(20px,2vw,26px);
+    line-height:1.5;
+    color:var(--ink);
+    max-width:60ch;
+    margin:0 0 40px;
+  }
+  .lede strong{font-weight:700}
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 22px;
+    font-size:15px;
+    font-weight:600;
+    text-decoration:none;
+    border:1px solid var(--ink);
+    transition:all .15s;
+  }
+  .btn-primary{background:var(--ink);color:var(--ivory)}
+  .btn-primary:hover{background:var(--rust);border-color:var(--rust)}
+  .btn-ghost{background:transparent;color:var(--ink)}
+  .btn-ghost:hover{background:var(--ink);color:var(--ivory)}
+  .btn svg{width:16px;height:16px}
+
+  /* BYLINE */
+  .byline{
+    display:flex;flex-wrap:wrap;gap:32px;
+    margin-top:54px;
+    padding-top:24px;
+    border-top:1px solid #d8d2c1;
+    font-size:13px;
+    color:var(--stone);
+  }
+  .byline b{font-weight:700;color:var(--ink);display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px}
+
+  /* SECTIONS */
+  section{padding:88px 0;border-bottom:1px solid #d8d2c1}
+  .sec-head{
+    display:grid;
+    grid-template-columns:1fr 2fr;
+    gap:32px;
+    margin-bottom:48px;
+    align-items:end;
+  }
+  @media (max-width:780px){.sec-head{grid-template-columns:1fr}}
+  .sec-num{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:84px;
+    line-height:.9;
+    color:var(--rust);
+  }
+  .sec-title{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:800;
+    font-size:clamp(28px,3.6vw,42px);
+    line-height:1.08;
+    letter-spacing:-.015em;
+    margin:0;
+  }
+  .sec-deck{color:var(--stone);max-width:60ch;font-size:17px;margin-top:12px}
+
+  /* PILLARS */
+  .pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#d8d2c1;border:1px solid #d8d2c1}
+  @media (max-width:780px){.pillars{grid-template-columns:1fr}}
+  .pillar{background:var(--ivory);padding:32px 28px;display:flex;flex-direction:column;gap:10px}
+  .pillar .p-num{font-family:'Frank Ruhl Libre',serif;font-size:34px;font-weight:900;color:var(--rust);line-height:1}
+  .pillar h3{font-family:'Frank Ruhl Libre',serif;font-size:24px;font-weight:800;margin:4px 0 0;letter-spacing:-.01em}
+  .pillar p{color:var(--stone);margin:0;font-size:15.5px}
+
+  /* LESSONS */
+  .lessons-list{counter-reset:l;border-top:1px solid var(--ink)}
+  .l-row{
+    counter-increment:l;
+    display:grid;
+    grid-template-columns:56px 1fr auto auto;
+    gap:20px;align-items:baseline;
+    padding:24px 0;
+    border-bottom:1px solid #d8d2c1;
+    transition:padding .2s;
+  }
+  .l-row:hover{padding-inline-start:8px}
+  .l-num{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:26px;
+    color:var(--rust);
+  }
+  .l-num::before{content:counter(l,decimal-leading-zero)}
+  .l-title{font-family:'Frank Ruhl Libre',serif;font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .l-time{color:var(--stone);font-size:14px;font-family:'Heebo',sans-serif}
+  .l-chip{
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:4px 10px;border:1px solid var(--ink);font-weight:600;
+  }
+  .l-chip.adv{background:var(--rust);color:var(--ivory);border-color:var(--rust)}
+  .l-chip.mid{background:transparent;color:var(--ink)}
+  .l-chip.base{background:var(--ink);color:var(--ivory);border-color:var(--ink)}
+
+  /* QUOTE */
+  .quote{
+    padding:96px 0;
+    text-align:center;
+    background:var(--paper);
+    border-top:1px solid var(--ink);
+    border-bottom:1px solid var(--ink);
+  }
+  .quote-mark{
+    font-family:'Frank Ruhl Libre',serif;
+    font-size:140px;
+    line-height:0;
+    color:var(--rust);
+    margin-top:48px;
+    margin-bottom:24px;
+    user-select:none;
+  }
+  .quote q{
+    quotes:none;
+    font-family:'Frank Ruhl Libre',serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:clamp(24px,3vw,38px);
+    line-height:1.35;
+    display:block;
+    max-width:30ch;
+    margin:0 auto;
+    color:var(--ink);
+  }
+  .attrib{margin-top:28px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--stone)}
+  .attrib b{color:var(--ink);font-weight:700}
+
+  /* CTA */
+  .final{
+    padding:96px 0 108px;
+    text-align:center;
+    background:var(--ivory);
+  }
+  .final h2{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:clamp(36px,5vw,64px);
+    line-height:1.05;
+    letter-spacing:-.018em;
+    max-width:18ch;
+    margin:0 auto 24px;
+  }
+  .final p{color:var(--stone);max-width:54ch;margin:0 auto 36px;font-size:17px}
+
+  /* FOOTER */
+  footer{
+    border-top:1px solid var(--ink);
+    padding:36px 0;
+    font-size:13px;
+    color:var(--stone);
+    background:var(--ivory);
+  }
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#" style="text-decoration:none">
+      <div>
+        <div class="mono">גיאוגרפיה צבאית</div>
+        <div class="sub">EST · 2026 · Vol. I</div>
+      </div>
+    </a>
+    <a class="nav-cta" href="#">התחלת הקורס ←</a>
+  </div>
+</nav>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="kicker">המסה הפותחת · שיעור 01</div>
+    <h1 class="hero-title">20 שנה באפגניסטן. <em>בלי קרב שהפסידו.</em></h1>
+    <p class="lede">
+      המלחמה המודרנית אינה מוכרעת ביחס כוחות. היא מוכרעת ב-<strong>5 ממדים</strong>,
+      ב-<strong>3 רמות פיקוד</strong>, ובצד השלישי שכולם שוכחים: <strong>הזמן</strong>.
+      קורס אחד שלוקח אותך מקריאת מפה ועד GIS מבצעי.
+    </p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="#">התחלת הקורס
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4l-6 4 6 4"/></svg>
+      </a>
+      <a class="btn btn-ghost" href="#lessons">מה לומדים</a>
+    </div>
+
+    <div class="byline">
+      <div><b>היקף</b>12 שיעורים · 8 שעות</div>
+      <div><b>רמה</b>בסיס → מתקדם</div>
+      <div><b>פורמט</b>אינטראקטיבי · סימולציות · ניתוח שטח</div>
+      <div><b>שפה</b>עברית · RTL</div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">I.</div>
+      <div>
+        <h2 class="sec-title">ארבעה עמודי המקצוע</h2>
+        <p class="sec-deck">מה שמרכיב <em style="color:var(--rust);font-style:normal">גיאוגרפיה צבאית</em> — מהקטן בסביבת הלוחם ועד הגיאו-פוליטיקה של מעצמות.</p>
+      </div>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="p-num">01</div>
+        <h3>מפה ושטח</h3>
+        <p>קרטוגרפיה, קואורדינטות, קווי גובה וזיהוי תבניות נוף בשטח אמיתי.</p>
+      </div>
+      <div class="pillar">
+        <div class="p-num">02</div>
+        <h3>תמרון בשטח</h3>
+        <p>עבירות, כיסוי והסתרה, קווי ראייה — איך הופכים את הקרקע לכלי.</p>
+      </div>
+      <div class="pillar">
+        <div class="p-num">03</div>
+        <h3>מודיעין וסנסורים</h3>
+        <p>סנסורים אופטיים, IR, מכ"ם, פלטפורמות איסוף ומזג אוויר מבצעי.</p>
+      </div>
+      <div class="pillar">
+        <div class="p-num">04</div>
+        <h3>אסטרטגיה רחבה</h3>
+        <p>לוגיסטיקה, גיאו-כלכלה, גבולות, עומק ולחימה אסימטרית.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lessons">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">II.</div>
+      <div>
+        <h2 class="sec-title">תוכן הקורס · 12 שיעורים</h2>
+        <p class="sec-deck">כל שיעור עומד בפני עצמו, וביחד הם בונים מפקד שרואה את השטח אחרת.</p>
+      </div>
+    </div>
+    <div class="lessons-list">
+      <div class="l-row"><div class="l-num"></div><div class="l-title">מבוא: מרחב, כוח, אסטרטגיה</div><div class="l-time">35 דק׳</div><div class="l-chip base">בסיס</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">יסודות קרטוגרפיה</div><div class="l-time">50 דק׳</div><div class="l-chip base">בסיס</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">ניווטים: אזימוט ותכנון ציר</div><div class="l-time">45 דק׳</div><div class="l-chip base">בסיס</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">טופוגרפיה ומורפולוגיית שטח</div><div class="l-time">40 דק׳</div><div class="l-chip mid">בינוני</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">ניידות ותמרון</div><div class="l-time">55 דק׳</div><div class="l-chip mid">בינוני</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">קווי ראייה ותצפית · LOS</div><div class="l-time">45 דק׳</div><div class="l-chip mid">בינוני</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">אקלים, מזג אוויר ועונתיות</div><div class="l-time">30 דק׳</div><div class="l-chip mid">בינוני</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">תשתיות וגיאוגרפיה לוגיסטית</div><div class="l-time">40 דק׳</div><div class="l-chip mid">בינוני</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">משאבים, אנרגיה וגיאו-כלכלה</div><div class="l-time">35 דק׳</div><div class="l-chip adv">מתקדם</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">לחימה אורבנית</div><div class="l-time">50 דק׳</div><div class="l-chip adv">מתקדם</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">גבולות, עומק ואזורי חיץ</div><div class="l-time">30 דק׳</div><div class="l-chip mid">בינוני</div></div>
+      <div class="l-row"><div class="l-num"></div><div class="l-title">GIS יישומי לניתוח מבצעי</div><div class="l-time">55 דק׳</div><div class="l-chip adv">מתקדם</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="quote">
+  <div class="wrap">
+    <div class="quote-mark">״</div>
+    <q>אחרי השיעור על קווי ראייה ראיתי את הנוף אחרת לגמרי — כל גבעה הפכה למשתנה אחר במשוואה.</q>
+    <div class="attrib"><b>לוחם · יחידה מיוחדת</b> &nbsp;·&nbsp; אחרי שיעור 06</div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="wrap">
+    <div class="kicker">סוף המסה הפותחת · התחלה</div>
+    <h2>הכללים השתנו. <em style="color:var(--rust);font-style:normal">כדאי לדעת אותם.</em></h2>
+    <p>12 שיעורים, סימולציות, ותרגול ניתוח שטח. הכל בעברית, אינטראקטיבי, ובקצב שלך.</p>
+    <a class="btn btn-primary" href="#">התחלת הקורס
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4l-6 4 6 4"/></svg>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>© 2026 · גיאוגרפיה צבאית · כל הזכויות שמורות</div>
+    <div>Vol. I · No. 1 · עברית</div>
+  </div>
+</footer>
+
+</body>
+</html>

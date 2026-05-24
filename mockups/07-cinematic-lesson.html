@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>07 · Cinematic · שיעור 01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;0,900;1,400;1,500&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --linen:#ECE6D8;--linen-2:#E0D8C5;
+    --olive:#3D4B27;--olive-soft:#7d8a64;
+    --rust:#BC4A21;--rust-deep:#8a3514;
+    --smoke:#1F1E1A;--ink:#1F1E1A;--rule:rgba(31,30,26,.18);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--linen);color:var(--ink);font-family:'Heebo',sans-serif;font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .serif{font-family:'Playfair Display',serif}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  a{color:inherit}
+
+  /* TOPBAR */
+  .topbar{padding:14px 0;border-bottom:1px solid var(--rule);background:var(--linen);position:sticky;top:0;z-index:30}
+  .tb-row{display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .crumb{font-family:'Playfair Display',serif;font-style:italic;color:var(--olive);font-size:15px}
+  .crumb b{color:var(--ink);font-family:'Heebo',sans-serif;font-style:normal;font-weight:600;font-size:14px}
+  .crumb a{text-decoration:none;color:var(--rust)}
+  .progress{display:flex;align-items:center;gap:12px;font-family:'Playfair Display',serif;font-style:italic;color:var(--olive);font-size:14px}
+  .reel{
+    width:34px;height:34px;border-radius:50%;border:1.5px solid var(--olive);position:relative;
+    display:grid;place-items:center;background:var(--linen-2);
+  }
+  .reel .c{width:8px;height:8px;background:var(--rust);border-radius:50%}
+  .tabs{display:flex;border-top:1px solid var(--rule);gap:0}
+  .tab{padding:11px 22px;font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--olive);text-decoration:none;border-inline-start:1px solid var(--rule)}
+  .tab:first-child{border-inline-start:0}
+  .tab.active{color:var(--rust);font-weight:700;background:var(--linen-2)}
+
+  /* HERO — letterbox film */
+  .lhead{background:var(--smoke);color:var(--linen);padding:72px 0 88px;position:relative;overflow:hidden}
+  .lhead::before,.lhead::after{content:"";position:absolute;left:0;right:0;height:30px;background:#000}
+  .lhead::before{top:0}
+  .lhead::after{bottom:0}
+  .lh-content{padding:40px 0;position:relative}
+  .lh-meta{display:flex;gap:24px;flex-wrap:wrap;color:var(--olive-soft);font-family:'Playfair Display',serif;font-style:italic;font-size:13.5px;letter-spacing:.04em;margin-bottom:30px}
+  .lh-meta span:not(:last-child)::after{content:" /";color:var(--rust);margin-inline-start:14px;font-style:normal}
+  .lhead h1{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(42px,7vw,108px);line-height:.94;letter-spacing:-.015em;margin:0 0 28px;max-width:16ch}
+  .lhead h1 em{font-style:italic;color:var(--rust);font-weight:700}
+  .lhead .deck{font-family:'Playfair Display',serif;font-style:italic;font-weight:500;font-size:clamp(20px,2vw,26px);line-height:1.5;color:rgba(236,230,216,.85);max-width:50ch;margin:0 0 36px}
+  .timecodes{display:flex;gap:32px;flex-wrap:wrap;padding-top:24px;border-top:1px solid rgba(236,230,216,.2)}
+  .tc{display:flex;flex-direction:column;gap:2px;font-family:'Playfair Display',serif;font-style:italic;color:var(--olive-soft);font-size:13px}
+  .tc b{font-family:'Heebo',sans-serif;font-style:normal;color:var(--linen);font-weight:700;font-size:20px}
+
+  /* SECTIONS */
+  section{padding:80px 0;border-bottom:1px solid var(--rule);background:var(--linen)}
+  .sec-head{margin-bottom:36px;max-width:60ch}
+  .sec-cap{font-family:'Playfair Display',serif;font-style:italic;color:var(--rust);font-size:15px;margin-bottom:8px}
+  .sec-cap::before{content:"— "}
+  .sec-title{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(28px,3.8vw,46px);line-height:1.04;letter-spacing:-.012em;margin:0 0 10px}
+  .sec-deck{color:#4d4738;font-family:'Playfair Display',serif;font-style:italic;font-size:17px;margin:0;font-weight:500}
+
+  /* LEVELS — film acts */
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--rule)}
+  @media (max-width:780px){.levels{grid-template-columns:1fr}}
+  .level{padding:30px 26px;border-inline-start:1px solid var(--rule);background:var(--linen);transition:background .15s}
+  .level:hover{background:var(--linen-2)}
+  .level:first-child{border-inline-start:0}
+  .l-frame{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .l-num{font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:24px;color:var(--rust);width:46px;height:46px;border:1.5px solid var(--rust);display:grid;place-items:center;border-radius:50%}
+  .l-cap{font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--olive)}
+  .level h3{font-family:'Playfair Display',serif;font-weight:700;font-size:24px;margin:0 0 4px;letter-spacing:-.012em}
+  .level .role{font-family:'Playfair Display',serif;font-style:italic;color:var(--olive);font-size:14px;margin-bottom:8px}
+  .level p{margin:0;color:#4d4738;font-size:15px;line-height:1.55}
+
+  /* MDO — five frames */
+  .mdo{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--rule)}
+  @media (max-width:980px){.mdo{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.mdo{grid-template-columns:1fr}}
+  .dim{padding:24px 18px;border-inline-start:1px solid var(--rule);background:var(--linen);text-align:center;min-height:180px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:space-between;transition:background .15s}
+  .dim:hover{background:var(--linen-2)}
+  .dim:first-child{border-inline-start:0}
+  .d-roman{font-family:'Playfair Display',serif;font-weight:700;font-style:italic;font-size:32px;color:var(--rust)}
+  .dim h4{font-family:'Playfair Display',serif;font-weight:700;font-size:22px;margin:0;letter-spacing:-.005em}
+  .dim p{margin:0;color:#4d4738;font-size:13.5px;line-height:1.5}
+
+  /* ASYM — letterboxed compare */
+  .asym-wrap{background:var(--smoke);color:var(--linen);position:relative;overflow:hidden;border-bottom:1px solid var(--rule)}
+  .asym-wrap::before,.asym-wrap::after{content:"";position:absolute;left:0;right:0;height:24px;background:#000}
+  .asym-wrap::before{top:0}
+  .asym-wrap::after{bottom:0}
+  .asym-inner{padding:64px 0}
+  .asym-wrap .sec-head{margin-bottom:36px;max-width:60ch}
+  .asym-wrap .sec-cap{color:var(--rust)}
+  .asym-wrap .sec-title{color:var(--linen)}
+  .asym-wrap .sec-deck{color:rgba(236,230,216,.7)}
+  .asym{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid rgba(236,230,216,.18)}
+  @media (max-width:780px){.asym{grid-template-columns:1fr}}
+  .asym-col{padding:32px 28px;background:var(--smoke)}
+  .asym-col:first-child{border-inline-end:1px solid rgba(236,230,216,.18)}
+  .asym-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid rgba(236,230,216,.18)}
+  .asym-h h3{font-family:'Playfair Display',serif;font-weight:700;font-style:italic;color:var(--rust);font-size:24px;margin:0}
+  .asym-h .nat{font-family:'Playfair Display',serif;font-style:italic;color:var(--olive-soft);font-size:13px}
+  .asym-col ul{margin:0;padding:0;list-style:none}
+  .asym-col li{padding:8px 0;border-top:1px dotted rgba(236,230,216,.15);font-family:'Playfair Display',serif;font-size:17px;color:var(--linen);font-weight:500;line-height:1.5}
+  .asym-col li:first-child{border-top:0}
+  .asym-col li b{color:var(--rust);font-style:italic;font-weight:700;margin-inline-end:8px;font-size:17px}
+
+  /* INSIGHT */
+  .insight{padding:0;background:var(--linen);position:relative;overflow:hidden;border-bottom:1px solid var(--rule)}
+  .insight-inner{padding:88px 0;text-align:center}
+  .insight blockquote{margin:0 auto;max-width:34ch;font-family:'Playfair Display',serif;font-weight:500;font-style:italic;font-size:clamp(26px,3.6vw,42px);line-height:1.32;color:var(--ink)}
+  .insight blockquote::before{content:"„ ";color:var(--rust)}
+  .insight blockquote::after{content:" “";color:var(--rust)}
+  .insight cite{display:block;margin-top:26px;font-family:'Playfair Display',serif;font-style:italic;color:var(--olive);font-size:15px}
+
+  /* LNAV */
+  .lnav{padding:30px 0;background:var(--linen);border-bottom:1px solid var(--rule)}
+  .lnav-row{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center}
+  .lnav-prev,.lnav-next{font-family:'Playfair Display',serif;text-decoration:none;display:flex;flex-direction:column;gap:2px}
+  .lnav-prev{opacity:.42;pointer-events:none}
+  .lnav-next{text-align:end}
+  .ln-l{font-style:italic;color:var(--olive);font-size:14px}
+  .ln-t{font-family:'Playfair Display',serif;font-weight:700;font-size:22px;letter-spacing:-.005em;color:var(--ink)}
+  .lnav-next .ln-l::after{content:" →";color:var(--rust)}
+  .lnav-prev .ln-l::before{content:"← "}
+  .lnav-home{text-decoration:none;padding:12px 22px;background:var(--smoke);color:var(--linen);font-family:'Playfair Display',serif;font-style:italic;font-size:14px;border:1px solid var(--smoke);transition:all .15s}
+  .lnav-home:hover{background:var(--rust);border-color:var(--rust)}
+
+  footer{padding:34px 0;background:var(--linen);font-family:'Playfair Display',serif;font-style:italic;color:var(--olive);font-size:14px}
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center}
+  .foot-row b{font-family:'Heebo',sans-serif;font-style:normal;color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap tb-row">
+    <div class="crumb"><a href="07-cinematic.html">הסרט</a> &nbsp;·&nbsp; <b>REEL I · שיעור 01</b></div>
+    <div class="progress"><div class="reel"><div class="c"></div></div><span>Reel 01 / 12 — Scene 001</span></div>
+  </div>
+  <div class="wrap"><div class="tabs">
+    <a class="tab active" href="#">למידה</a>
+    <a class="tab" href="#">תרגול</a>
+    <a class="tab" href="#">בדיקת ידע</a>
+  </div></div>
+</div>
+
+<header class="lhead">
+  <div class="wrap lh-content">
+    <div class="lh-meta">
+      <span>REEL 01 / 12</span>
+      <span>SCENE 001 — INTRO</span>
+      <span>RUN ~35′</span>
+      <span>BASE</span>
+    </div>
+    <h1>20 שנה באפגניסטן. <em>בלי קרב שהפסידו.</em></h1>
+    <p class="deck">המלחמה המודרנית אינה מוכרעת ביחס כוחות. היא מוכרעת ב-5 ממדים, 3 רמות פיקוד, ובצד השלישי שכולם שוכחים: הזמן.</p>
+    <div class="timecodes">
+      <div class="tc"><span>שיעור</span><b>01 / 12</b></div>
+      <div class="tc"><span>זמן ריצה</span><b>~35′</b></div>
+      <div class="tc"><span>רמה</span><b>בסיס</b></div>
+      <div class="tc"><span>סצנות</span><b>5 + סיכום</b></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-cap">SCENE I · LEVELS</div>
+      <h2 class="sec-title">שלוש רמות המלחמה</h2>
+      <p class="sec-deck">אותה מלחמה — שלוש מצלמות שונות שמסתכלות עליה.</p>
+    </div>
+    <div class="levels">
+      <div class="level"><div class="l-frame"><div class="l-num">I</div><span class="l-cap">— ACT ONE</span></div><h3>אסטרטגית</h3><div class="role">מטכ"ל · דרג מדיני</div><p>זירות, בריתות, חלוקת משאבים. החלטות לדורות.</p></div>
+      <div class="level"><div class="l-frame"><div class="l-num">II</div><span class="l-cap">— ACT TWO</span></div><h3>אופרטיבית</h3><div class="role">פיקוד מרחב · גיס</div><p>גשר בין אסטרטגיה לטקטיקה. צורות קרב.</p></div>
+      <div class="level"><div class="l-frame"><div class="l-num">III</div><span class="l-cap">— ACT THREE</span></div><h3>טקטית</h3><div class="role">דרג קרבי</div><p>Micro-geography — מטרים ושניות בשטח.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-cap">SCENE II · MDO</div>
+      <h2 class="sec-title">חמשת ממדי הלחימה</h2>
+      <p class="sec-deck">חמישה ממדים פעילים בו-זמנית. עליונות באחד לבדו כבר לא מספיקה.</p>
+    </div>
+    <div class="mdo">
+      <div class="dim"><div class="d-roman">I</div><h4>יבשה</h4><p>מגפיים על הקרקע. החזקה בשטח.</p></div>
+      <div class="dim"><div class="d-roman">II</div><h4>אוויר</h4><p>איסוף, תקיפה, ניוד מהיר.</p></div>
+      <div class="dim"><div class="d-roman">III</div><h4>ים</h4><p>SLOC, פרויקציה, נמלים.</p></div>
+      <div class="dim"><div class="d-roman">IV</div><h4>חלל</h4><p>לוויינים, GPS, תקשורת.</p></div>
+      <div class="dim"><div class="d-roman">V</div><h4>סייבר</h4><p>שיבוש, איסוף, השפעה.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="asym-wrap">
+  <div class="wrap asym-inner">
+    <div class="sec-head">
+      <div class="sec-cap">SCENE III · ASYMMETRY</div>
+      <h2 class="sec-title">לחימה אסימטרית</h2>
+      <p class="sec-deck">מעצמה ענקית מול ארגון קטן ללא מדינה. הצד החלש משבר את כל הכללים כדי לשרוד.</p>
+    </div>
+    <div class="asym">
+      <div class="asym-col">
+        <div class="asym-h"><h3>צד חזק · מדינה</h3><span class="nat">Civitas Maior</span></div>
+        <ul>
+          <li><b>$</b>תקציבים עצומים, נשק מתקדם, חיילים מקצועיים במדים.</li>
+          <li><b>5</b>חזיתות פעילות: שדה, אוצר, ציבור, פוליטיקה, או"ם.</li>
+          <li><b>!</b>חייב לנצח בכולן — אחרת המלחמה נגמרת מבפנים.</li>
+        </ul>
+      </div>
+      <div class="asym-col">
+        <div class="asym-h"><h3>צד חלש · לא-סדיר</h3><span class="nat">Sine Patria</span></div>
+        <ul>
+          <li><b>∅</b>בלי מדים. בלי תקציב. בלי דדליין.</li>
+          <li><b>1</b>חזית אחת בלבד: לשרוד עוד יום.</li>
+          <li><b>↻</b>הזמן עובד לטובתו. הוא רק צריך לא לאבד.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="insight">
+  <div class="wrap insight-inner">
+    <blockquote>במלחמת התשה לא מנצח מי שחזק יותר — אלא מי שיש לו פחות חורים בשעון.</blockquote>
+    <cite>— ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20</cite>
+  </div>
+</div>
+
+<div class="lnav">
+  <div class="wrap lnav-row">
+    <div class="lnav-prev">
+      <span class="ln-l">הקודם</span>
+      <span class="ln-t">— זה הסרט הראשון —</span>
+    </div>
+    <a class="lnav-home" href="07-cinematic.html">↩ אינדקס הסרטים</a>
+    <a class="lnav-next" href="#">
+      <span class="ln-l">REEL II · השיעור הבא</span>
+      <span class="ln-t">יסודות קרטוגרפיה</span>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>© 2026 · גיאוגרפיה צבאית — <b>סרט בעברית</b></div>
+    <div>Reel 01 / 12 · HE / RTL</div>
+  </div>
+</footer>
+
+</body>
+</html>

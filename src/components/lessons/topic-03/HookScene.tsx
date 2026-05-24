@@ -71,7 +71,7 @@ export function HookScene() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4, duration: 0.6 }}
-          onClick={() => document.getElementById('scene-onboarding')?.scrollIntoView({ behavior: 'smooth' })}
+          onClick={() => window.dispatchEvent(new CustomEvent('learn:next'))}
           className="mt-14 group flex flex-col items-center gap-3 text-fg-dim text-xs hover:text-accent transition-colors mx-auto cursor-pointer"
           aria-label="התחל את השיעור"
         >

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>06 · Brutalist · שיעור 01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:#EEEAE2;--bone-2:#E3DFD4;--jet:#0A0A0A;
+    --hot:#FF4D1F;--concrete:#9C9A93;--ink:#0A0A0A;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bone);color:var(--ink);font-family:'IBM Plex Sans Hebrew','IBM Plex Sans',sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .display{font-family:'Archivo Black',sans-serif;letter-spacing:-.02em}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 24px;border-inline:1.5px solid var(--ink)}
+  a{color:inherit}
+
+  /* TOPBAR */
+  .topbar{border-bottom:1.5px solid var(--ink);background:var(--bone);position:sticky;top:0;z-index:30}
+  .tb-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:24px;padding:12px 0}
+  .crumb{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#555}
+  .crumb a{text-decoration:none;color:var(--hot);font-weight:700}
+  .crumb b{color:var(--ink);font-weight:700}
+  .progress{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+  .bar-track{display:inline-block;vertical-align:middle;width:160px;height:8px;border:1.5px solid var(--ink);background:var(--bone-2);margin:0 10px}
+  .bar-track > div{height:100%;background:var(--hot);width:8.3%}
+  .progress b{color:var(--hot);font-weight:700}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);border-top:1.5px solid var(--ink)}
+  .tab{padding:14px 0;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:.04em;text-decoration:none;color:#555;text-align:center;border-inline-start:1.5px solid var(--ink)}
+  .tab:first-child{border-inline-start:0}
+  .tab.active{background:var(--ink);color:var(--bone)}
+
+  /* LHEAD */
+  .lhead{padding:48px 24px;border-bottom:1.5px solid var(--ink);position:relative}
+  .lhead-meta{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1.5px solid var(--ink);
+    margin-bottom:36px;background:var(--bone);
+  }
+  .lhead-meta > div{padding:12px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;border-inline-start:1.5px solid var(--ink)}
+  .lhead-meta > div:first-child{border-inline-start:0}
+  .lhead-meta b{display:block;color:var(--hot);font-weight:700;margin-bottom:4px}
+  .lhead h1{font-family:'Archivo Black',sans-serif;font-size:clamp(44px,7.5vw,110px);line-height:.9;letter-spacing:-.035em;margin:0 0 28px}
+  .lhead h1 .hot{color:var(--hot)}
+  .lhead p{font-size:18px;color:var(--ink);max-width:54ch;margin:0;font-weight:500;line-height:1.5}
+  .lhead p b{background:var(--hot);color:#fff;padding:1px 6px;font-weight:700}
+
+  /* SECTIONS */
+  section{border-bottom:1.5px solid var(--ink)}
+  .sec-head{
+    display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:end;
+    padding:24px;border-bottom:1.5px solid var(--ink);background:var(--bone-2);
+  }
+  .sec-num{font-family:'Archivo Black',sans-serif;font-size:68px;line-height:.88;letter-spacing:-.04em;color:var(--hot)}
+  .sec-title{font-family:'Archivo Black',sans-serif;font-size:clamp(26px,3.4vw,40px);line-height:1.02;letter-spacing:-.025em;margin:0}
+  .sec-deck{margin:6px 0 0;color:#444;font-size:15px;max-width:50ch}
+
+  /* LEVELS */
+  .levels{display:grid;grid-template-columns:repeat(3,1fr)}
+  @media (max-width:780px){.levels{grid-template-columns:1fr}}
+  .level{padding:26px 22px;border-inline-start:1.5px solid var(--ink);background:var(--bone);transition:background .12s}
+  .level:hover{background:var(--bone-2)}
+  .level:first-child{border-inline-start:0}
+  .l-id{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--hot);font-weight:700;margin-bottom:14px}
+  .level h3{font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-.02em;margin:0 0 4px;line-height:1.05}
+  .level .role{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#555;letter-spacing:.06em;margin-bottom:10px}
+  .level p{margin:0;color:#333;font-size:14.5px;line-height:1.5}
+
+  /* MDO */
+  .mdo{display:grid;grid-template-columns:repeat(5,1fr)}
+  @media (max-width:960px){.mdo{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.mdo{grid-template-columns:1fr}}
+  .dim{padding:24px 18px;border-inline-start:1.5px solid var(--ink);background:var(--bone);min-height:170px;display:flex;flex-direction:column;justify-content:space-between;transition:background .12s}
+  .dim:hover{background:var(--bone-2)}
+  .dim:first-child{border-inline-start:0}
+  .d-num{font-family:'Archivo Black',sans-serif;font-size:40px;color:var(--hot);letter-spacing:-.04em;line-height:.85}
+  .dim h4{font-family:'Archivo Black',sans-serif;font-size:18px;margin:6px 0;letter-spacing:-.015em}
+  .dim p{font-size:13px;color:#444;margin:0;line-height:1.45}
+
+  /* ASYM — 2 panel */
+  .asym{display:grid;grid-template-columns:1fr 1fr;border-bottom:1.5px solid var(--ink)}
+  @media (max-width:780px){.asym{grid-template-columns:1fr}}
+  .asym-col{padding:32px 28px;background:var(--bone)}
+  .asym-col:first-child{border-inline-end:1.5px solid var(--ink);background:var(--bone-2)}
+  .asym-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
+  .asym-h h3{font-family:'Archivo Black',sans-serif;font-size:22px;margin:0;letter-spacing:-.02em}
+  .asym-h .badge{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;padding:4px 9px;background:var(--ink);color:var(--bone);font-weight:700}
+  .asym-h .badge.h{background:var(--hot)}
+  .asym-col ul{margin:0;padding:0;list-style:none;font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:1.65}
+  .asym-col li{padding:6px 0;display:flex;gap:10px}
+  .asym-col li::before{content:"/";color:var(--hot);font-weight:700;font-family:'Archivo Black',sans-serif}
+
+  /* INSIGHT */
+  .insight{padding:0;background:var(--hot);color:#fff;border-bottom:1.5px solid var(--ink)}
+  .insight-inner{padding:64px 28px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+  @media (max-width:780px){.insight-inner{grid-template-columns:1fr}}
+  .insight blockquote{margin:0;font-family:'Archivo Black',sans-serif;font-size:clamp(26px,3.8vw,46px);letter-spacing:-.025em;line-height:1.05;color:#fff;max-width:24ch}
+  .insight blockquote::before{content:"// ";color:var(--ink)}
+  .insight cite{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.85);font-style:normal;text-align:end;display:block}
+
+  /* LNAV */
+  .lnav{border-bottom:1.5px solid var(--ink);background:var(--bone)}
+  .lnav-row{display:grid;grid-template-columns:1fr auto 1fr}
+  .lnav-prev,.lnav-next{padding:24px;text-decoration:none;display:flex;flex-direction:column;gap:4px;border-inline-start:1.5px solid var(--ink);transition:background .12s}
+  .lnav-prev{opacity:.4;pointer-events:none}
+  .lnav-prev{border-inline-start:0}
+  .lnav-next:hover{background:var(--hot);color:#fff}
+  .lnav-next{text-align:end}
+  .ln-l{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#555;font-weight:700}
+  .lnav-next .ln-l{color:var(--hot)}
+  .lnav-next:hover .ln-l{color:var(--ink)}
+  .ln-t{font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:-.015em}
+  .lnav-home{padding:24px 22px;border-inline-start:1.5px solid var(--ink);text-decoration:none;font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:.04em;color:#fff;background:var(--ink);display:grid;place-items:center;transition:background .12s}
+  .lnav-home:hover{background:var(--hot)}
+
+  footer{padding:18px 24px;background:var(--bone);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#444}
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap tb-row">
+    <div class="crumb">// <a href="06-brutalist.html">COURSE</a> &nbsp;/&nbsp; <b>LESSON 01 — INTRO</b></div>
+    <div class="progress">L-01<span class="bar-track"><div></div></span><b>1/12</b></div>
+    <div></div>
+  </div>
+  <div class="wrap"><div class="tabs">
+    <a class="tab active" href="#">LEARN</a>
+    <a class="tab" href="#">DRILL</a>
+    <a class="tab" href="#">TEST</a>
+  </div></div>
+</div>
+
+<header class="lhead">
+  <div class="wrap" style="padding:0">
+    <div class="lhead-meta">
+      <div><b>LESSON</b>01 / 12</div>
+      <div><b>RUN</b>~35 MIN</div>
+      <div><b>LEVEL</b>BASE</div>
+      <div><b>SCENES</b>5 + RECAP</div>
+    </div>
+    <h1>20 שנה<br/>באפגניסטן.<br/><span class="hot">בלי קרב.</span></h1>
+    <p>המלחמה המודרנית <b>לא מוכרעת ביחס כוחות</b>. היא מוכרעת ב-5 ממדים, 3 רמות פיקוד, ובצד השלישי שכולם שוכחים: <b>הזמן</b>.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap" style="padding:0">
+    <div class="sec-head">
+      <div class="sec-num">01.</div>
+      <div>
+        <h2 class="sec-title">שלוש רמות המלחמה</h2>
+        <p class="sec-deck">אותה מלחמה — שלוש "מצלמות" שונות שמסתכלות עליה.</p>
+      </div>
+    </div>
+    <div class="levels">
+      <div class="level"><div class="l-id">L / 01 · STRATEGIC</div><h3>אסטרטגית</h3><div class="role">מטכ"ל · דרג מדיני</div><p>זירות, בריתות, חלוקת משאבים. החלטות לדורות.</p></div>
+      <div class="level"><div class="l-id">L / 02 · OPERATIONAL</div><h3>אופרטיבית</h3><div class="role">פיקוד מרחב · גיס</div><p>גשר בין אסטרטגיה לטקטיקה.</p></div>
+      <div class="level"><div class="l-id">L / 03 · TACTICAL</div><h3>טקטית</h3><div class="role">דרג קרבי</div><p>Micro-geography — מטרים ושניות.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap" style="padding:0">
+    <div class="sec-head">
+      <div class="sec-num">02.</div>
+      <div>
+        <h2 class="sec-title">חמשת ממדי הלחימה · MDO</h2>
+        <p class="sec-deck">חמישה ממדים פעילים בו-זמנית. עליונות באחד לבדו כבר לא מספיקה.</p>
+      </div>
+    </div>
+    <div class="mdo">
+      <div class="dim"><div><div class="d-num">01</div><h4>יבשה</h4></div><p>מגפיים על הקרקע. החזקה בשטח.</p></div>
+      <div class="dim"><div><div class="d-num">02</div><h4>אוויר</h4></div><p>איסוף, תקיפה, ניוד מהיר.</p></div>
+      <div class="dim"><div><div class="d-num">03</div><h4>ים</h4></div><p>SLOC, פרויקציה, נמלים.</p></div>
+      <div class="dim"><div><div class="d-num">04</div><h4>חלל</h4></div><p>לוויינים, GPS, תקשורת.</p></div>
+      <div class="dim"><div><div class="d-num">05</div><h4>סייבר</h4></div><p>שיבוש, איסוף, השפעה.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap" style="padding:0">
+    <div class="sec-head">
+      <div class="sec-num">03.</div>
+      <div>
+        <h2 class="sec-title">לחימה אסימטרית</h2>
+        <p class="sec-deck">מעצמה ענקית מול ארגון קטן ללא מדינה — חוקי המשחק נכתבים מחדש.</p>
+      </div>
+    </div>
+    <div class="asym">
+      <div class="asym-col">
+        <div class="asym-h"><h3>צד חזק · מדינה</h3><span class="badge h">SIDE A</span></div>
+        <ul>
+          <li>תקציבים עצומים, נשק מתקדם, מדים.</li>
+          <li>5 חזיתות בו-זמנית: שדה · אוצר · ציבור · פוליטיקה · או"ם.</li>
+          <li>חייב לנצח בכולן — אחרת המלחמה נגמרת מבפנים.</li>
+        </ul>
+      </div>
+      <div class="asym-col">
+        <div class="asym-h"><h3>צד חלש · לא-סדיר</h3><span class="badge">SIDE B</span></div>
+        <ul>
+          <li>בלי מדים. בלי תקציב. בלי דדליין.</li>
+          <li>חזית אחת בלבד: לשרוד עוד יום.</li>
+          <li>הזמן עובד לטובתו. הוא רק צריך לא לאבד.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="insight">
+  <div class="wrap" style="padding:0">
+    <div class="insight-inner">
+      <blockquote>פחות חורים בשעון = ניצחון.</blockquote>
+      <cite>// VIETNAM-10Y · AFGHANISTAN-20Y</cite>
+    </div>
+  </div>
+</div>
+
+<div class="lnav">
+  <div class="wrap" style="padding:0">
+    <div class="lnav-row">
+      <div class="lnav-prev">
+        <span class="ln-l">// PREV</span>
+        <span class="ln-t">— TOP OF COURSE —</span>
+      </div>
+      <a class="lnav-home" href="06-brutalist.html">[ ↩ COURSE ]</a>
+      <a class="lnav-next" href="#">
+        <span class="ln-l">// NEXT · L-02 →</span>
+        <span class="ln-t">יסודות קרטוגרפיה</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row" style="padding:0">
+    <div>© 2026 · גיאוגרפיה צבאית · L-01 OF 12</div>
+    <div>VOL. I · HE/RTL</div>
+  </div>
+</footer>
+
+</body>
+</html>

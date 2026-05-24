@@ -6,26 +6,17 @@ import { BasicsScene } from './BasicsScene';
 import { CostSurfaceScene } from './CostSurfaceScene';
 import { NetworkScene } from './NetworkScene';
 import { RecapScene } from './RecapScene';
-import { SceneProgress } from './SceneProgress';
-import { SceneDivider } from './SceneDivider';
+import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+
+const SCENES: PagedScene[] = [
+  { id: 'hook',        label: 'פתיחה',                     Comp: HookScene },
+  { id: 'onboarding',  label: '12.0 · לפני שמתחילים',      Comp: OnboardingScene },
+  { id: 'basics',      label: '12.1 · שכבות וסוגי נתונים', Comp: BasicsScene },
+  { id: 'costsurface', label: '12.2 · משטח עלות',          Comp: CostSurfaceScene },
+  { id: 'network',     label: '12.3 · רשתות ו-Buffers',    Comp: NetworkScene },
+  { id: 'recap',       label: '12.4 · סיכום',              Comp: RecapScene },
+];
 
 export function Topic12Lesson() {
-  return (
-    <>
-      <SceneProgress />
-      <div className="space-y-20 md:space-y-28 pb-12">
-        <HookScene />
-        <SceneDivider next="12.0 · לפני שמתחילים" />
-        <OnboardingScene />
-        <SceneDivider next="12.1 · שכבות וסוגי נתונים" />
-        <BasicsScene />
-        <SceneDivider next="12.2 · משטח עלות" />
-        <CostSurfaceScene />
-        <SceneDivider next="12.3 · רשתות ו-Buffers" />
-        <NetworkScene />
-        <SceneDivider next="12.4 · סיכום" />
-        <RecapScene />
-      </div>
-    </>
-  );
+  return <PagedLearn scenes={SCENES} />;
 }

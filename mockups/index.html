@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>מוקאפים · 7 עיצובים לאתר גיאוגרפיה צבאית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Heebo',system-ui,sans-serif;
+    background:#F4F1EA;
+    color:#1A1A1A;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1400px;margin:0 auto;padding:56px 28px 80px}
+  header h1{
+    font-size:clamp(28px,3.6vw,44px);
+    font-weight:800;
+    letter-spacing:-.02em;
+    margin:0 0 8px;
+  }
+  header p{color:#5b5750;max-width:62ch;font-size:17px;margin:0 0 8px}
+  header .meta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:#8a8478;letter-spacing:.06em;
+    text-transform:uppercase;margin-top:24px;
+  }
+  .legend{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
+  .legend span{
+    display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#5b5750;
+    padding:3px 11px;background:#fff;border:1px solid #e6e1d4;border-radius:99px;
+  }
+  .legend span::before{content:"";width:8px;height:8px;border-radius:50%}
+  .legend .l1::before{background:#1A1A1A}
+  .legend .l2::before{background:#c9a857}
+
+  .stack{margin-top:40px;display:flex;flex-direction:column;gap:36px}
+  .card{
+    background:#fff;border:1px solid #e6e1d4;border-radius:20px;overflow:hidden;
+    display:grid;grid-template-columns:340px 1fr;gap:0;
+    transition:border-color .2s, transform .2s, box-shadow .2s;
+  }
+  @media (max-width:880px){.card{grid-template-columns:1fr}}
+  .card:hover{
+    border-color:#c9a857;transform:translateY(-2px);
+    box-shadow:0 14px 30px -18px rgba(20,15,5,.18);
+  }
+  .body{padding:28px 28px;border-inline-end:1px solid #e6e1d4;display:flex;flex-direction:column;gap:14px}
+  @media (max-width:880px){.body{border-inline-end:0;border-bottom:1px solid #e6e1d4}}
+  .num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:#9a8d68;letter-spacing:.16em;text-transform:uppercase;
+  }
+  .name{font-size:24px;font-weight:800;letter-spacing:-.01em;margin:0}
+  .desc{color:#5b5750;font-size:14.5px;margin:0}
+  .swatches{display:flex;gap:6px;margin-top:auto;padding-top:8px}
+  .sw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.08)}
+  .open-row{display:flex;gap:8px;flex-wrap:wrap}
+  .open{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 14px;background:#1A1A1A;color:#fff;border-radius:10px;
+    font-weight:600;font-size:13.5px;text-decoration:none;transition:background .15s;
+  }
+  .open:hover{background:#3a3835}
+  .open.alt{background:#c9a857}
+  .open.alt:hover{background:#b6943f}
+  .open svg{width:13px;height:13px}
+
+  .previews{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media (max-width:560px){.previews{grid-template-columns:1fr}}
+  .pv{
+    position:relative;aspect-ratio:16/10;overflow:hidden;background:#faf8f2;
+    border-inline-start:1px solid #e6e1d4;
+  }
+  .pv:first-child{border-inline-start:0}
+  @media (max-width:560px){.pv{border-inline-start:0;border-top:1px solid #e6e1d4}.pv:first-child{border-top:0}}
+  .pv iframe{
+    position:absolute;inset:0;width:200%;height:200%;border:0;
+    transform:scale(.5);transform-origin:top right;pointer-events:none;
+  }
+  .pv-tag{
+    position:absolute;top:10px;right:10px;z-index:2;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(6px);
+    padding:5px 11px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#1A1A1A;
+    border-radius:99px;border:1px solid rgba(0,0,0,.05);
+  }
+
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid #e6e1d4;color:#8a8478;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="meta">Design exploration · 7 directions · ×2 pages</div>
+    <h1>7 כיווני עיצוב לאתר <em style="font-style:normal;color:#B5462C">גיאוגרפיה צבאית</em></h1>
+    <p>אותו תוכן בדיוק מאורגן ב-7 שפות עיצוב שונות. כל כיוון מוצג בשני מסכים — <b>דף הנחיתה</b> ו<b>שיעור 01</b> — כדי שתראה איך השפה עובדת גם בקליק הראשון וגם בתוך השיעור.</p>
+    <div class="legend">
+      <span class="l1">דף נחיתה</span>
+      <span class="l2">שיעור 01</span>
+    </div>
+  </header>
+
+  <div class="stack">
+
+    <div class="card">
+      <div class="body">
+        <div class="num">01 / Editorial</div>
+        <h2 class="name">The Atlantic</h2>
+        <p class="desc">סריאל ערוץ ארוך, סריפים גדולים, רווחים נדיבים, כתב-עת איכותי.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#FAF7EE"></div>
+          <div class="sw" style="background:#1A1A1A"></div>
+          <div class="sw" style="background:#B5462C"></div>
+          <div class="sw" style="background:#6F6A60"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="01-editorial.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="01-editorial-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="01-editorial.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="01-editorial-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="num">02 / Tactical</div>
+        <h2 class="name">Tactical Console</h2>
+        <p class="desc">חדר מבצעים ב-light mode — מונוטייפ, גרידים, צ׳יפי טלמטריה.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#F5F4EE"></div>
+          <div class="sw" style="background:#4A5C2E"></div>
+          <div class="sw" style="background:#C57E0E"></div>
+          <div class="sw" style="background:#14140F"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="02-tactical.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="02-tactical-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="02-tactical.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="02-tactical-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="num">03 / Cartographic</div>
+        <h2 class="name">Topographic Atlas</h2>
+        <p class="desc">אסתטיקת מפה וינטג׳ית — קווי גובה, מצפן, סולמות, נייר מצהיב.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#F2E9D0"></div>
+          <div class="sw" style="background:#6B4A1F"></div>
+          <div class="sw" style="background:#6E8B62"></div>
+          <div class="sw" style="background:#B23A2C"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="03-atlas.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="03-atlas-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="03-atlas.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="03-atlas-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="num">04 / Modern SaaS</div>
+        <h2 class="name">Soft Studio</h2>
+        <p class="desc">SaaS חם — כרטיסים רכים, צללים עדינים, גרדיאנט סגייז וקורל.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#FBFAF7"></div>
+          <div class="sw" style="background:#7BA084"></div>
+          <div class="sw" style="background:#E58968"></div>
+          <div class="sw" style="background:#2C3640"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="04-soft.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="04-soft-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="04-soft.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="04-soft-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="num">05 / Press grid</div>
+        <h2 class="name">Bento Press</h2>
+        <p class="desc">גריד בנטו א-סימטרי בסגנון Apple Newsroom — מספרים ענקיים, מודולים.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#F8F6F1"></div>
+          <div class="sw" style="background:#0B1A2B"></div>
+          <div class="sw" style="background:#C99A3E"></div>
+          <div class="sw" style="background:#DDE0DA"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="05-bento.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="05-bento-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="05-bento.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="05-bento-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="num">06 / Brutalist</div>
+        <h2 class="name">Brutalist Journal</h2>
+        <p class="desc">עיתון מפגש בית-ספר לעיצוב ברלינאי — גבולות 1px קשיחים, ללא צללים.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#EEEAE2"></div>
+          <div class="sw" style="background:#0A0A0A"></div>
+          <div class="sw" style="background:#FF4D1F"></div>
+          <div class="sw" style="background:#9C9A93"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="06-brutalist.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="06-brutalist-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="06-brutalist.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="06-brutalist-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="body">
+        <div class="num">07 / Cinematic</div>
+        <h2 class="name">Cinematic Documentary</h2>
+        <p class="desc">סרט דוקומנטרי פריים-אחרי-פריים — letterbox, ציטוטים גדולים.</p>
+        <div class="swatches">
+          <div class="sw" style="background:#ECE6D8"></div>
+          <div class="sw" style="background:#3D4B27"></div>
+          <div class="sw" style="background:#BC4A21"></div>
+          <div class="sw" style="background:#1F1E1A"></div>
+        </div>
+        <div class="open-row">
+          <a class="open" href="07-cinematic.html" target="_blank">דף נחיתה <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+          <a class="open alt" href="07-cinematic-lesson.html" target="_blank">שיעור 01 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v8h8V5"/><path d="M7 7l4-4"/></svg></a>
+        </div>
+      </div>
+      <div class="previews">
+        <div class="pv"><div class="pv-tag">דף נחיתה</div><iframe src="07-cinematic.html" loading="lazy"></iframe></div>
+        <div class="pv"><div class="pv-tag" style="background:#c9a857;color:#fff">שיעור 01</div><iframe src="07-cinematic-lesson.html" loading="lazy"></iframe></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    כל המוקאפים — HTML+CSS עצמאי, light mode, RTL. כל קלף מציג את אותה שפה ב-2 מסכים: דף נחיתה (שחור) ושיעור 01 (זהב).
+    פתח כל אחד במסך מלא כדי להתרשם.
+  </footer>
+</div>
+</body>
+</html>

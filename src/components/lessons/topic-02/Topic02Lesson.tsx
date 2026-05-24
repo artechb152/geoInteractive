@@ -7,28 +7,18 @@ import { ScaleScene } from './ScaleScene';
 import { CoordinatesScene } from './CoordinatesScene';
 import { ContoursScene } from './ContoursScene';
 import { RecapScene } from './RecapScene';
-import { SceneProgress } from './SceneProgress';
-import { SceneDivider } from './SceneDivider';
+import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+
+const SCENES: PagedScene[] = [
+  { id: 'hook',        label: 'פתיחה',                Comp: HookScene },
+  { id: 'onboarding',  label: '02.0 · לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'topography',  label: '02.1 · טופוגרפיה',     Comp: TopographyScene },
+  { id: 'scale',       label: '02.2 · קנה מידה',      Comp: ScaleScene },
+  { id: 'coordinates', label: '02.3 · קואורדינטות',   Comp: CoordinatesScene },
+  { id: 'contours',    label: '02.4 · קווי גובה',     Comp: ContoursScene },
+  { id: 'recap',       label: '02.5 · סיכום',         Comp: RecapScene },
+];
 
 export function Topic02Lesson() {
-  return (
-    <>
-      <SceneProgress />
-      <div className="space-y-20 md:space-y-28 pb-12">
-        <HookScene />
-        <SceneDivider next="02.0 · לפני שמתחילים" />
-        <OnboardingScene />
-        <SceneDivider next="02.1 · טופוגרפיה" />
-        <TopographyScene />
-        <SceneDivider next="02.2 · קנה מידה" />
-        <ScaleScene />
-        <SceneDivider next="02.3 · קואורדינטות" />
-        <CoordinatesScene />
-        <SceneDivider next="02.4 · קווי גובה" />
-        <ContoursScene />
-        <SceneDivider next="02.5 · סיכום" />
-        <RecapScene />
-      </div>
-    </>
-  );
+  return <PagedLearn scenes={SCENES} />;
 }

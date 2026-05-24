@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>07 · Cinematic Documentary — גיאוגרפיה צבאית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;0,900;1,400;1,500&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --linen:#ECE6D8;
+    --linen-2:#E0D8C5;
+    --olive:#3D4B27;
+    --olive-soft:#7d8a64;
+    --rust:#BC4A21;
+    --rust-deep:#8a3514;
+    --smoke:#1F1E1A;
+    --ink:#1F1E1A;
+    --rule:rgba(31,30,26,.18);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--linen);
+    color:var(--ink);
+    font-family:'Heebo',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Playfair Display',serif}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  a{color:inherit}
+
+  /* TOP BAR */
+  .nav{padding:16px 0;border-bottom:1px solid var(--rule);background:var(--linen)}
+  .nav-row{display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink)}
+  .reel{
+    width:42px;height:42px;border-radius:50%;border:1.5px solid var(--olive);position:relative;
+    display:grid;place-items:center;background:var(--linen-2);
+  }
+  .reel::before, .reel::after, .reel span{
+    position:absolute;width:7px;height:7px;background:var(--olive);border-radius:50%;
+  }
+  .reel::before{top:4px}
+  .reel::after{bottom:4px}
+  .reel span:nth-child(1){right:4px}
+  .reel span:nth-child(2){left:4px}
+  .reel .center{width:10px;height:10px;background:var(--rust);position:static}
+  .brand-text .name{font-family:'Playfair Display',serif;font-weight:700;font-size:22px;line-height:1;letter-spacing:.005em}
+  .brand-text .sub{font-size:10.5px;letter-spacing:.22em;color:var(--olive);text-transform:uppercase;margin-top:4px;font-weight:600}
+  .nav-meta{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--olive);font-weight:600}
+  .nav-cta{
+    padding:10px 22px;background:var(--smoke);color:var(--linen);
+    border:1px solid var(--smoke);text-decoration:none;font-size:14px;font-weight:600;
+    transition:all .15s;
+  }
+  .nav-cta:hover{background:var(--rust);border-color:var(--rust)}
+
+  /* HERO — letterbox film frame */
+  .hero{
+    background:var(--smoke);color:var(--linen);
+    padding:80px 0 96px;position:relative;overflow:hidden;
+  }
+  .hero::before,.hero::after{
+    content:"";position:absolute;left:0;right:0;height:36px;background:#000;
+  }
+  .hero::before{top:0}
+  .hero::after{bottom:0}
+  .hero-inner{padding:48px 0;position:relative}
+  .hero-meta{
+    display:flex;align-items:center;gap:28px;color:var(--olive-soft);
+    font-family:'Playfair Display',serif;font-style:italic;font-size:14px;letter-spacing:.05em;
+    margin-bottom:36px;
+  }
+  .hero-meta span:not(:last-child)::after{content:" /";color:var(--rust);margin-inline-start:14px;font-style:normal}
+  .hero h1{
+    font-family:'Playfair Display',serif;font-weight:900;
+    font-size:clamp(48px,8vw,118px);
+    line-height:.94;letter-spacing:-.015em;margin:0 0 36px;max-width:18ch;
+  }
+  .hero h1 em{font-style:italic;color:var(--rust);font-weight:700}
+  .hero p.lede{
+    font-family:'Playfair Display',serif;font-style:italic;font-weight:500;
+    font-size:clamp(20px,2vw,28px);line-height:1.5;color:rgba(236,230,216,.9);
+    max-width:48ch;margin:0 0 40px;
+  }
+  .ctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;padding:14px 24px;
+    font-size:14.5px;font-weight:600;text-decoration:none;
+    transition:all .15s;border:1px solid;letter-spacing:.02em;
+  }
+  .btn-primary{background:var(--rust);color:#fff;border-color:var(--rust)}
+  .btn-primary:hover{background:var(--rust-deep);border-color:var(--rust-deep)}
+  .btn-line{background:transparent;color:var(--linen);border-color:rgba(236,230,216,.4)}
+  .btn-line:hover{background:rgba(236,230,216,.1);border-color:var(--linen)}
+
+  .timestamp{
+    margin-top:48px;display:flex;gap:36px;flex-wrap:wrap;
+    font-family:'Playfair Display',serif;font-style:italic;color:var(--olive-soft);font-size:14px;
+  }
+  .timestamp div{display:flex;flex-direction:column;gap:2px}
+  .timestamp b{font-family:'Heebo',sans-serif;font-weight:700;color:var(--linen);font-style:normal;font-size:22px;letter-spacing:-.015em}
+
+  /* SCENE STRIP */
+  .strip{
+    background:var(--linen-2);padding:24px 0;border-bottom:1px solid var(--rule);
+    overflow:hidden;
+  }
+  .strip-row{display:flex;gap:40px;align-items:center;font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--olive);white-space:nowrap}
+  .strip-row span::before{content:"● ";color:var(--rust);font-style:normal}
+
+  /* SECTIONS */
+  section{padding:96px 0;border-bottom:1px solid var(--rule);background:var(--linen)}
+  .sec-head{margin-bottom:48px;max-width:60ch}
+  .sec-cap{font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--rust);margin-bottom:10px}
+  .sec-cap::before{content:"— "}
+  .sec-title{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(34px,4.5vw,54px);line-height:1.04;letter-spacing:-.015em;margin:0 0 14px}
+  .sec-deck{color:#4d4738;font-size:17.5px;font-family:'Playfair Display',serif;font-style:italic;margin:0;font-weight:500}
+
+  /* PILLARS — scene cards */
+  .pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border:1px solid var(--rule)}
+  @media (max-width:780px){.pillars{grid-template-columns:1fr}}
+  .pillar{
+    padding:32px 28px;border-inline-start:1px solid var(--rule);border-top:1px solid var(--rule);
+    background:var(--linen);position:relative;
+    transition:background .15s;
+  }
+  .pillar:hover{background:var(--linen-2)}
+  .pillar:nth-child(odd){border-inline-start:0}
+  .pillar:nth-child(-n+2){border-top:0}
+  .p-frame{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .p-num{
+    font-family:'Playfair Display',serif;font-style:italic;font-weight:700;font-size:24px;color:var(--rust);
+    width:46px;height:46px;border:1.5px solid var(--rust);display:grid;place-items:center;border-radius:50%;
+  }
+  .p-cap{font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--olive);letter-spacing:.05em}
+  .pillar h3{font-family:'Playfair Display',serif;font-weight:700;font-size:28px;margin:0 0 8px;letter-spacing:-.012em;line-height:1.1}
+  .pillar p{color:#4d4738;margin:0;font-size:15.5px;line-height:1.55}
+
+  /* LESSONS — film index */
+  .lessons-wrap{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--rule);border-bottom:0}
+  @media (max-width:780px){.lessons-wrap{grid-template-columns:1fr}}
+  .l-row{
+    display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:baseline;
+    padding:22px 28px;border-bottom:1px solid var(--rule);border-inline-start:1px solid var(--rule);
+    transition:background .15s;
+  }
+  .l-row:nth-child(odd){border-inline-start:0}
+  .l-row:hover{background:var(--linen-2)}
+  .l-num{font-family:'Playfair Display',serif;font-weight:700;font-size:22px;font-style:italic;color:var(--rust);min-width:42px}
+  .l-title{font-family:'Playfair Display',serif;font-weight:700;font-size:19px;letter-spacing:-.005em}
+  .l-time{font-family:'Playfair Display',serif;font-style:italic;font-size:13.5px;color:var(--olive);white-space:nowrap}
+  .l-time .dur{color:var(--ink);font-style:normal;font-weight:600;font-family:'Heebo',sans-serif;font-size:13px;margin-inline-start:6px}
+
+  /* QUOTE — film cell */
+  .quote-wrap{padding:0;background:var(--smoke);color:var(--linen);position:relative;overflow:hidden}
+  .quote-wrap::before,.quote-wrap::after{content:"";position:absolute;left:0;right:0;height:32px;background:#000}
+  .quote-wrap::before{top:0}
+  .quote-wrap::after{bottom:0}
+  .quote-inner{padding:124px 0;text-align:center;position:relative}
+  .quote q{
+    quotes:none;display:block;
+    font-family:'Playfair Display',serif;font-weight:500;font-style:italic;
+    font-size:clamp(28px,3.8vw,46px);line-height:1.3;color:var(--linen);
+    max-width:30ch;margin:0 auto;
+  }
+  .quote q::before{content:"„ ";color:var(--rust)}
+  .quote q::after{content:" “";color:var(--rust)}
+  .attrib{
+    margin-top:34px;font-family:'Playfair Display',serif;font-style:italic;font-size:14px;
+    color:var(--olive-soft);letter-spacing:.05em;
+  }
+  .attrib b{font-family:'Heebo',sans-serif;font-style:normal;color:var(--linen);font-weight:600}
+
+  /* FINAL CTA */
+  .final{padding:100px 0;text-align:center;background:var(--linen)}
+  .final .sec-cap{display:block;text-align:center;margin-bottom:14px}
+  .final h2{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(40px,5.5vw,80px);line-height:1.02;margin:0 auto 22px;max-width:18ch;letter-spacing:-.02em}
+  .final h2 em{color:var(--rust);font-style:italic;font-weight:700}
+  .final p{color:#4d4738;max-width:50ch;margin:0 auto 36px;font-family:'Playfair Display',serif;font-style:italic;font-size:21px}
+
+  /* FOOTER */
+  footer{padding:34px 0;background:var(--linen);font-family:'Playfair Display',serif;font-style:italic;color:var(--olive);font-size:14px}
+  .foot-row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center}
+  .foot-row b{font-family:'Heebo',sans-serif;font-style:normal;color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#">
+      <div class="reel"><span></span><span></span><div class="center"></div></div>
+      <div class="brand-text">
+        <div class="name">גיאוגרפיה צבאית</div>
+        <div class="sub">a documentary course</div>
+      </div>
+    </a>
+    <div class="nav-meta">REEL · 12 · 2026 EDITION</div>
+    <a class="nav-cta" href="#">צפה בקורס ←</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-meta">
+      <span>REEL 01 / 12</span>
+      <span>SCENE 001</span>
+      <span>RUN ~8H</span>
+      <span>HE / RTL</span>
+    </div>
+    <h1>20 שנה באפגניסטן. <em>בלי קרב שהפסידו.</em></h1>
+    <p class="lede">המלחמה המודרנית אינה מוכרעת ביחס כוחות. היא מוכרעת ב-5 ממדים, ב-3 רמות פיקוד, ובצד השלישי שכולם שוכחים: הזמן.</p>
+    <div class="ctas">
+      <a class="btn btn-primary" href="#">צפה בקורס
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4l-6 4 6 4"/></svg>
+      </a>
+      <a class="btn btn-line" href="#lessons">דפדף ברצועות</a>
+    </div>
+    <div class="timestamp">
+      <div><span>שיעורים</span><b>12</b></div>
+      <div><span>משך כולל</span><b>~8 ש׳</b></div>
+      <div><span>ממדים</span><b>5</b></div>
+      <div><span>סצנות אינטראקטיביות</span><b>38</b></div>
+    </div>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="wrap">
+    <div class="strip-row">
+      <span>קרטוגרפיה</span>
+      <span>קווי גובה</span>
+      <span>תמרון</span>
+      <span>קווי ראייה</span>
+      <span>סנסורים</span>
+      <span>אקלים מבצעי</span>
+      <span>לוגיסטיקה</span>
+      <span>גיאו-כלכלה</span>
+      <span>לחימה אורבנית</span>
+      <span>גבולות ועומק</span>
+      <span>GIS</span>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-cap">REEL I · המבוא לקורס</div>
+      <h2 class="sec-title">ארבעה תחומים — סרט אחד</h2>
+      <p class="sec-deck">כל פרק עומד בפני עצמו. ביחד הם מספרים את הסיפור של גיאוגרפיה צבאית — מהמיקרו של הלוחם ועד למעצמות.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="p-frame"><div class="p-num">I</div><span class="p-cap">— ACT ONE</span></div>
+        <h3>מפה ושטח</h3>
+        <p>קרטוגרפיה, קואורדינטות, קווי גובה, וזיהוי תבניות נוף בשטח אמיתי.</p>
+      </div>
+      <div class="pillar">
+        <div class="p-frame"><div class="p-num">II</div><span class="p-cap">— ACT TWO</span></div>
+        <h3>תמרון בשטח</h3>
+        <p>עבירות, כיסוי והסתרה, קווי ראייה — הקרקע ככלי עבודה.</p>
+      </div>
+      <div class="pillar">
+        <div class="p-frame"><div class="p-num">III</div><span class="p-cap">— ACT THREE</span></div>
+        <h3>מודיעין וסנסורים</h3>
+        <p>אופטי, IR, מכ"ם, פלטפורמות איסוף ומזג אוויר מבצעי.</p>
+      </div>
+      <div class="pillar">
+        <div class="p-frame"><div class="p-num">IV</div><span class="p-cap">— FINALE</span></div>
+        <h3>אסטרטגיה רחבה</h3>
+        <p>לוגיסטיקה, גיאו-כלכלה, גבולות, עומק ולחימה אסימטרית.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lessons">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-cap">REEL II · אינדקס הסרטים</div>
+      <h2 class="sec-title">12 פרקים</h2>
+      <p class="sec-deck">סדר הצפייה מומלץ — אך כל פרק עומד בפני עצמו ואפשר להתחיל מכל מקום.</p>
+    </div>
+    <div class="lessons-wrap">
+      <div class="l-row"><div class="l-num">I.</div><div class="l-title">מבוא: מרחב, כוח, אסטרטגיה</div><div class="l-time">בסיס<span class="dur">· 35′</span></div></div>
+      <div class="l-row"><div class="l-num">II.</div><div class="l-title">יסודות קרטוגרפיה</div><div class="l-time">בסיס<span class="dur">· 50′</span></div></div>
+      <div class="l-row"><div class="l-num">III.</div><div class="l-title">ניווטים</div><div class="l-time">בסיס<span class="dur">· 45′</span></div></div>
+      <div class="l-row"><div class="l-num">IV.</div><div class="l-title">טופוגרפיה ומורפולוגיה</div><div class="l-time">בינוני<span class="dur">· 40′</span></div></div>
+      <div class="l-row"><div class="l-num">V.</div><div class="l-title">ניידות ותמרון</div><div class="l-time">בינוני<span class="dur">· 55′</span></div></div>
+      <div class="l-row"><div class="l-num">VI.</div><div class="l-title">קווי ראייה · LOS</div><div class="l-time">בינוני<span class="dur">· 45′</span></div></div>
+      <div class="l-row"><div class="l-num">VII.</div><div class="l-title">אקלים ומזג אוויר</div><div class="l-time">בינוני<span class="dur">· 30′</span></div></div>
+      <div class="l-row"><div class="l-num">VIII.</div><div class="l-title">לוגיסטיקה ותשתיות</div><div class="l-time">בינוני<span class="dur">· 40′</span></div></div>
+      <div class="l-row"><div class="l-num">IX.</div><div class="l-title">משאבים וגיאו-כלכלה</div><div class="l-time">מתקדם<span class="dur">· 35′</span></div></div>
+      <div class="l-row"><div class="l-num">X.</div><div class="l-title">לחימה אורבנית</div><div class="l-time">מתקדם<span class="dur">· 50′</span></div></div>
+      <div class="l-row"><div class="l-num">XI.</div><div class="l-title">גבולות ועומק אסטרטגי</div><div class="l-time">בינוני<span class="dur">· 30′</span></div></div>
+      <div class="l-row"><div class="l-num">XII.</div><div class="l-title">GIS יישומי לניתוח מבצעי</div><div class="l-time">מתקדם<span class="dur">· 55′</span></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="quote-wrap">
+  <div class="wrap">
+    <div class="quote-inner">
+      <q>אחרי השיעור על קווי ראייה ראיתי את הנוף אחרת לגמרי — כל גבעה הפכה למשתנה במשוואה.</q>
+      <div class="attrib">— <b>לוחם · יחידה מיוחדת</b> · אחרי REEL VI</div>
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="wrap">
+    <div class="sec-cap">סוף הטריילר · התחלת הסרט</div>
+    <h2>הכללים השתנו. <em>כדאי לדעת אותם.</em></h2>
+    <p>12 פרקים. ~8 שעות. סימולציות, תרגול ניתוח שטח, בקצב שלך.</p>
+    <a class="btn btn-primary" href="#">▶ פתח את הסרט הראשון
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4l-6 4 6 4"/></svg>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-row">
+    <div>© 2026 · גיאוגרפיה צבאית — <b>סרט בעברית</b></div>
+    <div>Reel · 01 / 12 · HE / RTL</div>
+  </div>
+</footer>
+
+</body>
+</html>

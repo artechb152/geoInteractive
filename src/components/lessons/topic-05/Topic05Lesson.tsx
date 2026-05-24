@@ -7,28 +7,18 @@ import { EngineeringScene } from './EngineeringScene';
 import { CoverScene } from './CoverScene';
 import { VegetationScene } from './VegetationScene';
 import { RecapScene } from './RecapScene';
-import { SceneProgress } from './SceneProgress';
-import { SceneDivider } from './SceneDivider';
+import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+
+const SCENES: PagedScene[] = [
+  { id: 'hook',           label: 'פתיחה',                Comp: HookScene },
+  { id: 'onboarding',     label: '05.0 · לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'trafficability', label: '05.1 · עבירות',        Comp: TrafficabilityScene },
+  { id: 'engineering',    label: '05.2 · הנדסה',         Comp: EngineeringScene },
+  { id: 'cover',          label: '05.3 · מחסה והסתרה',   Comp: CoverScene },
+  { id: 'vegetation',     label: '05.4 · תכסית וצומח',   Comp: VegetationScene },
+  { id: 'recap',          label: '05.5 · סיכום',         Comp: RecapScene },
+];
 
 export function Topic05Lesson() {
-  return (
-    <>
-      <SceneProgress />
-      <div className="space-y-20 md:space-y-28 pb-12">
-        <HookScene />
-        <SceneDivider next="05.0 · לפני שמתחילים" />
-        <OnboardingScene />
-        <SceneDivider next="05.1 · עבירות" />
-        <TrafficabilityScene />
-        <SceneDivider next="05.2 · הנדסה" />
-        <EngineeringScene />
-        <SceneDivider next="05.3 · מחסה והסתרה" />
-        <CoverScene />
-        <SceneDivider next="05.4 · תכסית וצומח" />
-        <VegetationScene />
-        <SceneDivider next="05.5 · סיכום" />
-        <RecapScene />
-      </div>
-    </>
-  );
+  return <PagedLearn scenes={SCENES} />;
 }
