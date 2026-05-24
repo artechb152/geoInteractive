@@ -98,9 +98,9 @@ export function OnboardingScene() {
       <SceneHeader
         step="03.0"
         eyebrow="לפני שמתחילים"
-        title={
+ title={
           <>
-            ניווט זה לא רק <span className="gradient-text">להסתכל במפה</span>
+          ניווט מבצעי: הרבה מעבר ל<span className="gradient-text">קריאת מפה</span>
           </>
         }
         intro="דמיין שאתה צריך להוביל קבוצה ממקום A למקום B — בלילה, בשטח שאתה לא מכיר. בוא נראה ביחד מה זה אומר בפועל, צעד אחר צעד."

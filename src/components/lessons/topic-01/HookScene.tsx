@@ -31,10 +31,10 @@ export function HookScene() {
           <span>מבוא · מרחב, כוח, אסטרטגיה</span>
         </div>
 
-        <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
-          20 שנה באפגניסטן.
+<h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
+          המרחב איננו רק זירת הפעולה.
           <br />
-          <span className="gradient-text">בלי קרב שהפסידו.</span>
+          <span className="gradient-text">הוא המימד המערכתי שמכריע אותה.</span>
         </h1>
 
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">

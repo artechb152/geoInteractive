@@ -31,12 +31,12 @@ export function HookScene() {
           <span>ניווטים</span>
         </div>
 
-        <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
-          לילה. בלי <span className="gradient-text">GPS</span>.
+<h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
+          להגיע ליעד בדיוק מושלם,
           <br />
-          איך תגיע <span className="gradient-text">בדיוק לשם</span>?
+          <span className="gradient-text">גם כשהטכנולוגיה מפסיקה לעבוד.</span>
         </h1>
-
+        
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
           לוויינים נופלים. רחפנים מאבדים אות. האויב משבש את ה-GPS.
           ניווט הוא לא רק טכניקה — זאת היכולת שמחזירה את הכוח שלך הביתה.

@@ -33,10 +33,10 @@ export function HookScene() {
         </div>
 
         {/* Impact Title */}
-        <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
+<h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
           טעות של <span className="gradient-text">מילימטר</span> במפה.
           <br />
-          חיים שלמים בשטח.
+          יכולה לעלות בחיי אדם בשטח.
         </h1>
 
         {/* Narrative Copy */}
