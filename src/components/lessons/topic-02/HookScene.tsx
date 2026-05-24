@@ -33,10 +33,10 @@ export function HookScene() {
         </div>
 
         {/* Impact Title */}
-        <h1 className="text-[clamp(2.5rem,8vw,6rem)] font-black tracking-tighter text-balance leading-[0.95] mb-8">
+        <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
           טעות של <span className="gradient-text">מילימטר</span> במפה.
           <br />
-          <span className="text-white">חיים שלמים</span> בשטח.
+          חיים שלמים בשטח.
         </h1>
 
         {/* Narrative Copy */}
@@ -63,11 +63,12 @@ export function HookScene() {
                 hidden: { opacity: 0, y: 12 },
                 visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
               }}
-              className="surface px-4 py-6 text-center border border-white/5 rounded-xl bg-white/2"
+              whileHover={{ y: -2 }}
+              className="surface px-3 py-4 text-center group hover:border-accent/40 hover:shadow-glow transition-all duration-300"
             >
-              <Icon name={s.icon} size={20} className="text-accent mx-auto mb-3" />
-              <div className="font-display font-bold text-3xl tabular-nums text-fg">{s.value}</div>
-              <div className="text-[10px] font-mono text-fg-dim uppercase tracking-widest mt-1">{s.label}</div>
+              <Icon name={s.icon} size={18} className="text-accent mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <div className="font-display font-bold text-2xl tabular-nums">{s.value}</div>
+              <div className="text-[11px] text-fg-dim mt-0.5">{s.label}</div>
             </motion.div>
           ))}
         </motion.div>

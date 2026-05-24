@@ -26,7 +26,7 @@ export function HookScene() {
       >
         <div className="chip border-accent/40 bg-accent/10 text-accent mb-8 mx-auto w-fit">
           <Icon name="layers" size={14} className="text-accent" />
-          <span className="font-mono text-[11px]">שיעור 13</span>
+          <span className="font-mono text-[11px]">שיעור 12</span>
           <span className="text-fg-dim">·</span>
           <span>GIS יישומי לניתוח מבצעי</span>
         </div>

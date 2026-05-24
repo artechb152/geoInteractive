@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { Icon, type IconName } from '@/components/Icon';
 
 const STATS: { value: string; label: string; icon: IconName }[] = [
-  { value: '5',  label: 'ממדי לחימה',     icon: 'layers' },
-  { value: '3',  label: 'רמות מלחמה',      icon: 'pyramid' },
-  { value: '4',  label: 'מושגי יסוד',      icon: 'spark' },
-  { value: '~35', label: 'דקות',          icon: 'clock' },
+  { value: '5',   label: 'ממדי לחימה',           icon: 'layers' },
+  { value: '3',   label: 'רמות מלחמה',           icon: 'pyramid' },
+  { value: '20',  label: 'שנים — אפגניסטן',      icon: 'hourglass' },
+  { value: '~35', label: 'דקות',                 icon: 'clock' },
 ];
 
 export function HookScene() {
@@ -32,14 +32,15 @@ export function HookScene() {
         </div>
 
         <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
-          האם המרחב הוא <span className="gradient-text">רק רקע</span>
+          20 שנה באפגניסטן.
           <br />
-          למלחמה — או <span className="gradient-text">השחקן הראשי</span>?
+          <span className="gradient-text">בלי קרב שהפסידו.</span>
         </h1>
 
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
-          בשיעור הזה תגלה למה הר, מדבר ונהר יכולים לקבוע גורל של אימפריה —
-          וגם בעידן הסייבר, זה לא משתנה.
+          המלחמה המודרנית לא מוכרעת ביחס כוחות — היא מוכרעת ב-5 ממדים,
+          3 רמות פיקוד, ובצד השלישי שכולם שוכחים: הזמן. בשיעור הזה תבין
+          איך המרחב הופך לשחקן הראשי, ולמה רחפן של 300 דולר מפיל מטוס של 80 מיליון.
         </p>
 
         <motion.div
@@ -58,11 +59,12 @@ export function HookScene() {
                 hidden: { opacity: 0, y: 12 },
                 visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
               }}
-              className="surface px-3 py-4 text-center"
+              whileHover={{ y: -2 }}
+              className="surface px-3 py-4 text-center group hover:border-accent/40 hover:shadow-glow transition-all duration-300"
             >
-              <Icon name={s.icon} size={18} className="text-accent mx-auto mb-2" />
+              <Icon name={s.icon} size={18} className="text-accent mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <div className="font-display font-bold text-2xl tabular-nums">{s.value}</div>
-              <div className="text-xs text-fg-dim mt-0.5">{s.label}</div>
+              <div className="text-[11px] text-fg-dim mt-0.5">{s.label}</div>
             </motion.div>
           ))}
         </motion.div>
