@@ -23,7 +23,7 @@ const WEATHER: WeatherData[] = [
   { id: 'fog', label: 'ערפל', english: 'Fog', icon: 'wave', color: 'text-fg-dim', bg: 'bg-fg-dim/10', border: 'border-fg-dim/40' },
   { id: 'rain', label: 'גשם כבד', english: 'Heavy Rain', icon: 'wave', color: 'text-accent-cool', bg: 'bg-accent-cool/10', border: 'border-accent-cool/40' },
   { id: 'sandstorm', label: 'סופת חול', english: 'Sandstorm', icon: 'bolt', color: 'text-accent', bg: 'bg-accent/10', border: 'border-accent/40' },
-  { id: 'snow', label: 'שלג / קרח', english: 'Snow', icon: 'shield', color: 'text-terrain-sky', bg: 'bg-terrain-sky/10', border: 'border-terrain-sky/40' },
+  { id: 'snow', label: 'שלג / קרח', english: 'Snow', icon: 'spark', color: 'text-terrain-sky', bg: 'bg-terrain-sky/10', border: 'border-terrain-sky/40' },
 ];
 
 type Sensor = {
@@ -55,7 +55,7 @@ const SENSORS: Sensor[] = [
     id: 'ir',
     label: 'תרמי IR',
     english: 'Thermal Infrared',
-    icon: 'fuel',
+    icon: 'bolt',
     effect: { clear: 90, fog: 35, rain: 30, sandstorm: 45, snow: 75 },
     notes: {
       clear: 'מעולה ליום וללילה. מטרות שפולטות חום (כמו כלי רכב ואנשים) פשוט זוהרות על המסך.',

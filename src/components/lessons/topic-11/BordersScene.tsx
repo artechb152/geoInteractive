@@ -80,7 +80,7 @@ const BORDERS: Border[] = [
     label: 'מדבר',
     english: 'Desert',
     category: 'natural',
-    icon: 'fuel',
+    icon: 'hourglass',
     stability: 3,
     defensibility: 3,
     desc: 'מרחב פתוח לחלוטין ועוין למחיה. מחייב כל כוח צבאי להביא איתו אספקה אדירה של מים ודלק (לוגיסטיקה כבדה).',

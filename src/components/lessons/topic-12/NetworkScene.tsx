@@ -138,7 +138,7 @@ disabled.size > 0
  : 'border-border text-fg-dim cursor-not-allowed opacity-50'
  )}
  >
- <Icon name="spark" size={12} />
+ <Icon name="arrow-left" size={12} />
  אפס נזק ({disabled.size})
  </button>
  </div>

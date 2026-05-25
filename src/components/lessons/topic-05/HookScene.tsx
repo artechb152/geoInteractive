@@ -18,7 +18,7 @@ export function HookScene() {
         className="relative z-10 text-center max-w-4xl px-6"
       >
         <div className="inline-flex items-center gap-2.5 mb-10 mx-auto px-4 py-2 rounded-full border border-accent/50 bg-accent/12 shadow-glow w-fit">
-          <Icon name="target" size={16} className="text-accent" />
+          <Icon name="compass" size={16} className="text-accent" />
           <span className="font-display font-bold text-sm text-accent-hover tracking-wider">שיעור 05</span>
           <span className="text-fg-dim text-sm" aria-hidden>·</span>
           <span className="text-sm font-display font-semibold text-fg">ניידות ותמרון: עבירות, כיסוי והסתרה</span>
