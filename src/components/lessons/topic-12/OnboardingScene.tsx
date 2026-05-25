@@ -120,10 +120,10 @@ export function OnboardingScene() {
               <div
                 key={s.id}
                 className={cn(
-                  'surface overflow-hidden transition-colors',
+                  'surface overflow-hidden transition-all duration-300 ease-snap',
                   active
-                    ? 'border-accent shadow-glow bg-accent/5'
-                    : 'hover:border-border-strong',
+                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   passed && !active && 'opacity-80'
                 )}
               >
@@ -137,33 +137,33 @@ export function OnboardingScene() {
                   {active && (
                     <motion.span
                       layoutId="t13-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
                     />
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
-                      active ? 'bg-accent text-bg shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      active ? 'bg-accent text-fg border-accent shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
                       <Icon name="check" size={16} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-mono text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-sm font-bold">{i + 1}</span>
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium leading-tight', active && 'text-accent')}>{s.label}</div>
+                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
                   </div>
                   <Icon
                     name={s.icon}
                     size={20}
-                    className={cn('transition-colors shrink-0', active ? 'text-accent' : 'text-fg-dim')}
+                    className={cn('transition-colors shrink-0', active ? 'text-brand-dark' : 'text-fg-dim')}
                   />
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-accent' : 'text-fg-dim')}
+                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
                       width="18"
@@ -191,8 +191,9 @@ export function OnboardingScene() {
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-4 pt-1 border-t border-accent/20">
-                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                        <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                           למה זה משנה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -211,7 +212,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
           <GISStage view={view} />
         </div>
       </div>

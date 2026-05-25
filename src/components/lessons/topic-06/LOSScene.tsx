@@ -85,7 +85,7 @@ export function LOSScene() {
  <div className="flex gap-3 items-start">
  <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
  <div className="text-sm leading-relaxed">
- <strong className="text-fg">מילון מבצעי קצר:</strong>
+ <strong className="text-fg">מילון קצר:</strong>
  <ul className="mt-2 space-y-1 text-fg-muted">
  <li>· <strong className="text-fg">LOS (Line of Sight)</strong> — קו הראייה. הקו הדמיוני והישר שמחבר בין התצפיתן (או המצלמה) לבין המטרה.</li>
  <li>· <strong className="text-fg">חסימת / שבירת LOS</strong> — מצב שבו הר (תבליט) או בניין (תכסית) חותכים את קו הראייה ומסתירים את המטרה.</li>

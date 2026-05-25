@@ -131,10 +131,10 @@ title={
               <div
                 key={l.id}
                 className={cn(
-                  'surface overflow-hidden transition-colors',
+                  'surface overflow-hidden transition-all duration-300 ease-snap',
                   isExpanded
-                    ? 'border-accent shadow-glow bg-accent/5'
-                    : 'hover:border-border-strong',
+                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   isPassed && 'opacity-80'
                 )}
               >
@@ -148,19 +148,19 @@ title={
                   {isExpanded && (
                     <motion.span
                       layoutId="t2-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
                     />
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isExpanded ? 'bg-accent text-bg shadow-glow' : isPassed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
                     )}
                   >
                     {isPassed ? (
                       <Icon name="check" size={16} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-mono text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-sm font-bold">{i + 1}</span>
                     )}
                   </span>
 
@@ -206,7 +206,7 @@ title={
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-4 pt-1 border-t border-accent/20">
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
                         <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
                           מה השכבה הזו מוסיפה
                         </div>
@@ -225,7 +225,7 @@ title={
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
           <LayeredMap enabled={enabled} />
         </div>
       </div>

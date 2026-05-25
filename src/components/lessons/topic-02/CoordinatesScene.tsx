@@ -59,7 +59,7 @@ title={
  <div className="flex gap-3 items-start">
  <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
  <div className="text-sm leading-relaxed">
- <strong className="text-fg">מילון מבצעי קצר:</strong>
+ <strong className="text-fg">מילון קצר:</strong>
  <ul className="mt-3 space-y-2 text-fg-muted">
  <li className="flex gap-2">
  <span className="text-accent-cool font-bold">·</span>

@@ -216,7 +216,7 @@ title={
         </Accordion>
 
         {/* Visualization — second child → LEFT in RTL */}
-        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
           <TerrainStage feature={step} />
         </div>
       </div>
