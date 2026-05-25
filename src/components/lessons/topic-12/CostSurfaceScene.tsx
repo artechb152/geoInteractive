@@ -169,7 +169,7 @@ intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל
  <div className="surface-elevated p-4 rounded-2xl">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
- משטח עלות חי · A → B
+ משטח עלות חי · A ← B
  </div>
  <div className="chip border-status-ok/40 bg-status-ok/10 text-status-ok">
  <Icon name="check" size={12} strokeWidth={2.5} />

@@ -325,7 +325,7 @@ function MissionStage({ phase }: { phase: Phase }) {
 
       <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        משימה: A → B · 8 ק"מ · לילה
+        משימה: A ← B · 8 ק"מ · לילה
       </div>
     </div>
   );

@@ -245,7 +245,7 @@ export function WaterEnergyScene() {
               מריכוזיות לביזור · ממעמד של תלות לעצמאות אנרגטית
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">
-              מרכוז ➜ ביזור · מתלות לעצמאות אנרגטית
+              מרכוז ← ביזור · מתלות לעצמאות אנרגטית
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">
               במאה ה-20, האנרגיה הייתה <strong className="text-fg">מרוכזת מבחינה גיאוגרפית</strong> (נפט במזרח התיכון, גז ברוסיה). הריכוזיות הזו יצרה תלות מוחלטת ופתח לסחיטה פוליטית.

@@ -103,7 +103,7 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
  <div className="surface-elevated p-4 rounded-2xl mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
- רשת דרכים · בסיס (A) → חזית (I)
+ רשת דרכים · בסיס (A) ← חזית (I)
  </div>
  <div className={cn(
  'chip',

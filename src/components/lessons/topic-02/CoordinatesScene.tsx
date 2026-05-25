@@ -209,7 +209,7 @@ dangerLevel === 'danger' && 'text-status-danger',
  <strong className="text-fg block mb-1 underline">איך זה קורה בפועל?</strong>
  חייל א׳ מודד נ"צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM.
  <br/><br/>
- <strong>התוצאה:</strong> בלי תרגום נכון → הקואורדינטה תתפרש כמיקום אחר לגמרי.
+ <strong>התוצאה:</strong> בלי תרגום נכון ← הקואורדינטה תתפרש כמיקום אחר לגמרי.
  </div>
  </div>
 
