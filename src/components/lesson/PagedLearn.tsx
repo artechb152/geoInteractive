@@ -101,13 +101,16 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const isLast = idx === scenes.length - 1;
 
   return (
-    <div className="relative scroll-mt-28" ref={rootRef}>
-      {/* Mobile / tablet sub-topic strip (everything below 2xl gets this) */}
+    // xl+: reserve 210px on the right (start-side in RTL) for the fixed
+    // TOC. Content shifts slightly left to make room; the TOC stays
+    // pinned to the viewport so it never overlaps the reading column.
+    <div className="relative scroll-mt-28 xl:ps-[210px]" ref={rootRef}>
+      {/* Mobile / tablet sub-topic strip (everything below xl gets this) */}
       <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} />
 
-      {/* Desktop TOC — fixed to the right edge, shown only at 2xl+ where
-          there's enough viewport gap outside the content column. The
-          content's max-w-6xl is preserved (no grid shrink). */}
+      {/* Desktop TOC — fixed to the viewport's right edge, always
+          visible on xl+. Doesn't scroll with the content. The ps-[210px]
+          above guarantees zero overlap with the active sub-topic. */}
       <ScenePagerDesktop scenes={scenes} active={idx} onGoto={goto} />
 
       <AnimatePresence mode="wait" initial={false}>
@@ -214,11 +217,11 @@ function NextButton({ disabled, label, onClick }: { disabled: boolean; label: st
 }
 
 /* ────── Desktop TOC — fixed to viewport's right edge ──────────────
-   Shown only at 2xl (≥1536px) where the gap between content's
-   max-w-6xl and viewport edge is wide enough to fit a 170px panel
-   without overlapping the reading column. `start-2` in RTL = 8px from
-   the right edge of the viewport. The card has its own bg+border so
-   it stays visually separated from whatever scrolls behind it. */
+   Shown at xl+ (≥1280px). The PagedLearn root adds `xl:ps-[210px]` so
+   the active sub-topic shifts left by exactly the column the TOC
+   occupies — no overlap. `start-3` in RTL = 12px from the right edge
+   of the viewport. The panel is `position: fixed` so it doesn't move
+   with the page scroll; its own card has bg+border for separation. */
 function ScenePagerDesktop({
   scenes,
   active,
@@ -230,7 +233,7 @@ function ScenePagerDesktop({
 }) {
   return (
     <aside
-      className="hidden 2xl:block fixed start-2 top-32 z-20 w-[170px]"
+      className="hidden xl:block fixed start-3 top-32 z-20 w-[190px] max-h-[calc(100vh-160px)] overflow-y-auto"
       aria-label="ניווט תתי-נושא"
     >
       <div className="rounded-xl border border-border bg-bg-elevated/95 backdrop-blur-md shadow-elevated p-3">
