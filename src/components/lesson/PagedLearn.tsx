@@ -101,12 +101,13 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const isLast = idx === scenes.length - 1;
 
   return (
-    // xl+: reserve enough on the right (start-side in RTL) for the
-    // fixed TOC. 150px keeps a comfortable ~28px gap from the TOC at
-    // 1280-wide viewports and ~100px+ on larger desktops, while letting
-    // the active sub-topic extend further right than the previous
-    // 210px reservation did.
-    <div className="relative scroll-mt-28 xl:ps-[150px]" ref={rootRef}>
+    // xl+: reserve a tight 100px on the right (start in RTL) for the
+    // fixed TOC. Combined with a narrower (160px) TOC anchored almost
+    // flush to the viewport edge (`start-2`), this still leaves
+    // ~10-15px of clear gap at the minimum xl breakpoint (1280px) and
+    // ~80px+ on standard desktops, while letting the active sub-topic
+    // extend much further right than before.
+    <div className="relative scroll-mt-28 xl:ps-[100px]" ref={rootRef}>
       {/* Mobile / tablet sub-topic strip (everything below xl gets this) */}
       <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} />
 
@@ -235,7 +236,7 @@ function ScenePagerDesktop({
 }) {
   return (
     <aside
-      className="hidden xl:block fixed start-3 top-32 z-20 w-[190px] max-h-[calc(100vh-160px)] overflow-y-auto"
+      className="hidden xl:block fixed start-2 top-32 z-20 w-[160px] max-h-[calc(100vh-160px)] overflow-y-auto"
       aria-label="ניווט תתי-נושא"
     >
       <div className="rounded-xl border border-border bg-bg-elevated/95 backdrop-blur-md shadow-elevated p-3">
