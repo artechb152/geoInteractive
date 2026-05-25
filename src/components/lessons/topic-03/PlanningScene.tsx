@@ -217,7 +217,7 @@ const stepLength = 1.5; // אורך צמד צעדים ממוצע
 const paces = Math.round(distance / stepLength);
 return (
  <div className="surface-elevated p-6 sm:p-8">
- <h3 className="text-xl font-bold mb-4 text-center">ספירת צעדים — איך מודדים מרחק בלי GPS?</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-4 text-center">ספירת צעדים — איך מודדים מרחק בלי GPS?</h3>
  <p className="text-sm text-fg-muted text-center mb-8 max-w-2xl mx-auto">
  השיטה הכי פשוטה והכי בטוחה: סופרים כמה 'צעדים כפולים' (כל פעם שרגל ימין פוגשת את הקרקע) אתם עושים.
  זהו 'מד המרחק' האנושי שלכם. גללו את הסרגל כדי לראות כמה צעדים תצטרכו לעשות.

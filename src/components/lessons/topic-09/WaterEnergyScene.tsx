@@ -244,7 +244,7 @@ export function WaterEnergyScene() {
             <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
               מריכוזיות לביזור · ממעמד של תלות לעצמאות אנרגטית
             </div>
-            <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+            <h3 className="font-display font-bold text-lg leading-tight mb-2">
               מרכוז ➜ ביזור · מתלות לעצמאות אנרגטית
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">

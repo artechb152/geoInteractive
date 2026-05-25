@@ -172,7 +172,7 @@ export function EngineeringScene() {
                         <div className={cn('text-sm font-display font-semibold mt-3 mb-2 tracking-wider', m.color)}>
                           {m.english}
                         </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight mb-2">
+                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
                           {m.popupTitle}
                         </h4>
                         <p
@@ -197,7 +197,7 @@ export function EngineeringScene() {
       {/* Mobility vs Counter-Mobility comparison table */}
       <div>
         <div className="mb-5">
-          <h3 className="font-display font-bold text-lg leading-tight mb-1">
+          <h3 className="font-display font-bold text-xl leading-tight mb-1">
             שני צדדים לאותו המטבע
           </h3>
           <p className="text-sm text-fg-muted leading-relaxed">

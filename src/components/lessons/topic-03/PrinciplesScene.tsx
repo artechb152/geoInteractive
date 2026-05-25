@@ -270,7 +270,7 @@ const meta = NORTHS[active];
 return (
  <div className="surface-elevated p-6 sm:p-8">
  <div className="mb-6">
- <h3 className="text-xl font-bold mb-1">הצפון הוא לא אחד: הכירו את שלושת הצפונים</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">הצפון הוא לא אחד: הכירו את שלושת הצפונים</h3>
  <p className="text-fg-muted text-sm">
  זה נשמע מבלבל, אבל בשטח יש 3 סוגי"צפון". כדי לא ללכת לאיבוד, אתם חייבים להכיר את ההבדלים ביניהם.
  </p>
@@ -415,7 +415,7 @@ return (
  <div className="surface-elevated p-6 sm:p-8">
  <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 items-start">
  <div>
- <h3 className="text-xl font-bold mb-2">למה אסור לסמוך רק על ה-GPS?</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-2">למה אסור לסמוך רק על ה-GPS?</h3>
  <p className="text-fg-muted text-sm leading-relaxed">
  היום הכל עובד על GPS, וזו בדיוק הבעיה. זה נוח, עד שמישהו מחליט לכבות לכם את האור.
  <br /><br />

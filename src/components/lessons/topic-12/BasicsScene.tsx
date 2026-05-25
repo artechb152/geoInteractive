@@ -259,7 +259,7 @@ queriedSensitive
  <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
  ארכיטקטורת עבודה
  </div>
- <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+ <h3 className="font-display font-bold text-lg leading-tight mb-2">
  איך שומרים ומנהלים את הנתונים?
  </h3>
  <div className="grid sm:grid-cols-2 gap-3 mt-3">

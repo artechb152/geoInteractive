@@ -229,7 +229,7 @@ export function KillChainScene() {
             <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
               מרחב הכיסוי הרציף
             </div>
-            <h3 className="font-display font-bold text-xl mb-3 leading-tight">
+            <h3 className="font-display font-bold text-xl leading-tight mb-3">
               האזור שבו <span className="gradient-text">אי אפשר להתחבא</span>
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty mb-3">

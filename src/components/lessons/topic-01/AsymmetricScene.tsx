@@ -96,7 +96,7 @@ title={
 
  <div className="my-12">
  <div className="mb-5">
- <h3 className="text-xl font-bold mb-1">3 עמודי האסטרטגיה של הצד החלש</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">3 עמודי האסטרטגיה של הצד החלש</h3>
  </div>
 
  <div className="grid gap-3 md:grid-cols-3">
@@ -117,7 +117,7 @@ className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  עמוד {i + 1} · האסטרטגיה של החלש
  </div>
- <h4 className="font-display font-bold leading-tight text-lg">{p.label}</h4>
+ <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">{p.label}</h4>
  </div>
  </div>
 
@@ -136,7 +136,7 @@ className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
 
  <div className="my-12">
  <div className="mb-5">
- <h3 className="text-xl font-bold mb-1">5 טקטיקות של הצד החלש</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">5 טקטיקות של הצד החלש</h3>
  <p className="text-fg-muted text-sm">איך הוא משתמש במרחב, באוכלוסייה ובטכנולוגיה כדי לשרוד מול ענק</p>
  </div>
 
@@ -354,7 +354,7 @@ function TimeAsymmetry() {
   return (
     <div className="my-12">
       <div className="mb-5">
-        <h3 className="text-xl font-bold mb-1">למה הזמן הוא הנשק הסודי של הצד החלש?</h3>
+        <h3 className="font-display font-bold text-xl leading-tight mb-1">למה הזמן הוא הנשק הסודי של הצד החלש?</h3>
         <p className="text-fg-muted text-sm">
           המעצמה לא נלחמת רק באויב שמולה — היא לוחמת בו-זמנית בעוד 4 חזיתות פנימיות שכופות עליה לסיים. ארגון הטרור — בחזית אחת בלבד.
         </p>

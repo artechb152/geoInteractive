@@ -184,7 +184,7 @@ export function LOCScene() {
             <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
               השורה התחתונה
             </div>
-            <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+            <h3 className="font-display font-bold text-lg leading-tight mb-2">
               הציר הראשי נועד למהירות, הציר החלופי נועד להישרדות.
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">

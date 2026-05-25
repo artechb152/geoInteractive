@@ -32,7 +32,7 @@
 
  <div className="my-12">
  <div className="mb-5">
- <h3 className="text-xl font-bold mb-1">3 סוגי הסלעים</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">3 סוגי הסלעים</h3>
  <p className="text-fg-muted text-sm">
  כל הסלעים בעולם נכנסים לאחת משלוש הקבוצות האלה. כל קבוצה — אופי שונה והשלכות צבאיות שונות.
  </p>
@@ -77,7 +77,7 @@
 
  <div className="my-12">
  <div className="mb-5">
- <h3 className="text-xl font-bold mb-1">2 כוחות שמעצבים כל הר בכוכב הזה</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">2 כוחות שמעצבים כל הר בכוכב הזה</h3>
  <p className="text-fg-muted text-sm">
  הנוף לא קיים סתם ככה. הוא נוצר מ-2 סוגי כוחות: כוחות שדוחפים מבפנים (יוצרים הרים), וכוחות
  שמבלים מבחוץ (חורצים גיאיות).

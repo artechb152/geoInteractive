@@ -197,7 +197,7 @@ export function BordersScene() {
                   <Icon name={meta.icon} size={22} className={meta.color} />
                 </div>
                 <div>
-                  <div className={cn('font-display font-bold text-xl leading-tight', meta.color)}>{meta.label}</div>
+                  <div className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</div>
                   <div className="text-[10px] font-mono text-fg-dim">{meta.english} · {meta.category === 'natural' ? 'טבעי' : 'מלאכותי'}</div>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export function BordersScene() {
             <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">
               סייקס-פיקו · שיעור כואב בהיסטוריה
             </div>
-            <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+            <h3 className="font-display font-bold text-lg leading-tight mb-2">
               איך שני דיפלומטים בפריז יצרו 100 שנה של מלחמות
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">

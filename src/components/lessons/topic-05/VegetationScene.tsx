@@ -184,7 +184,7 @@ export function VegetationScene() {
           className="mb-12"
         >
           <div className="flex items-baseline justify-between mb-3 flex-wrap gap-3">
-            <h3 className="font-display font-bold text-xl leading-tight">{meta.label}</h3>
+            <h3 className="font-display font-bold text-2xl leading-tight">{meta.label}</h3>
             <div className="text-xs font-mono text-fg-dim">{meta.english} · {meta.height}</div>
           </div>
 

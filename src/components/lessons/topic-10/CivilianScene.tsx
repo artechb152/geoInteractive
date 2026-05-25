@@ -205,7 +205,7 @@ className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.r
  <Icon name={meta.icon} size={22} className={meta.color} />
  </div>
  <div>
- <h3 className={cn('font-display font-bold text-xl leading-tight', meta.color)}>{meta.label}</h3>
+ <h3 className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</h3>
  </div>
  </div>
 

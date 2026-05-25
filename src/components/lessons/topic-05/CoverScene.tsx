@@ -123,7 +123,7 @@ export function CoverScene() {
 
       <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
         <div>
-          <h3 className="text-xl font-bold mb-1">תרגול גרירה</h3>
+          <h3 className="font-display font-bold text-xl leading-tight mb-1">תרגול גרירה</h3>
           <p className="text-fg-muted text-sm">
             גרור (או הקש בנייד) כל חפץ לקטגוריה הנכונה. אחרי שכל ה־{ITEMS.length} ימוינו — לחץ "בדוק תשובות".
           </p>

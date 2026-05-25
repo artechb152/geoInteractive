@@ -416,7 +416,7 @@ const meta = slopes.find((s) => s.id === active)!;
 return (
  <div className="surface-elevated p-6 sm:p-8">
  <div className="mb-6">
- <h3 className="text-xl font-bold mb-1">4 סוגי מדרונות — איך השלוחות בנויות בפועל</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">4 סוגי מדרונות — איך השלוחות בנויות בפועל</h3>
  <p className="text-fg-muted text-sm">
  אפילו שלוחה"פשוטה" יכולה להיות מורכבת ממקטעי שיפוע שונים. ההבחנה ביניהם משנה לחלוטין את קצב התנועה ואת קווי הראייה.
  </p>

@@ -141,7 +141,7 @@ title={
             <SVGPyramidStatic />
           </div>
           <div className="flex-1">
-            <h3 className="font-display font-bold text-lg leading-tight mb-1.5">
+            <h3 className="font-display font-bold text-xl leading-tight mb-1">
               שלוש הרמות במבט אחד
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">
@@ -157,7 +157,7 @@ title={
       <div className="mt-12">
         <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
           <div>
-            <h3 className="text-xl font-bold mb-1">תרגול גרירה</h3>
+            <h3 className="font-display font-bold text-xl leading-tight mb-1">תרגול גרירה</h3>
             <p className="text-fg-muted text-sm">
               גרור (או הקש בנייד) כל משפט לקטגוריה המתאימה. אחרי שכל ה־{SCENARIOS.length} ימוינו — לחץ "בדוק תשובות".
             </p>

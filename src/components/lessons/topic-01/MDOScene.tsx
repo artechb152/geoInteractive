@@ -358,7 +358,7 @@ accent: 'text-accent',
 return (
  <div className="mt-12">
  <div className="mb-5">
- <h3 className="text-xl font-bold mb-1">איך זה נראה בעולם האמיתי</h3>
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">איך זה נראה בעולם האמיתי</h3>
  <p className="text-fg-muted text-sm">3 דוגמאות עכשוויות שבהן ראינו MDO בפועל</p>
  </div>
  <div className="grid md:grid-cols-3 gap-4">
@@ -379,7 +379,7 @@ className="surface p-5"
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  {c.year}
  </div>
- <h4 className="font-display font-bold text-base leading-tight">{c.title}</h4>
+ <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">{c.title}</h4>
  </div>
  </div>
  <p className="text-sm text-fg-muted leading-relaxed text-pretty">{c.desc}</p>

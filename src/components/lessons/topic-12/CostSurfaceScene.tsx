@@ -260,7 +260,7 @@ showDirect
  <div className="flex-1">
  <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">"כמו מים זורמים"
  </div>
- <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+ <h3 className="font-display font-bold text-lg leading-tight mb-2">
  הנתיב הזול לא תמיד הוא הקצר
  </h3>
  <p className="text-sm text-fg-muted leading-relaxed text-pretty">

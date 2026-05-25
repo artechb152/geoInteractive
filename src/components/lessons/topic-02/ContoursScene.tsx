@@ -143,7 +143,7 @@ title={
                 <div className="p-2 bg-accent/10 rounded-lg">
                     <Icon name="mountain" size={24} className="text-accent" />
                 </div>
-                <h3 className="text-xl font-bold">{shape.label}</h3>
+                <h3 className="font-display font-bold text-2xl leading-tight">{shape.label}</h3>
               </div>
               <p className="text-sm text-fg-muted leading-relaxed font-medium">
                 {shape.desc}

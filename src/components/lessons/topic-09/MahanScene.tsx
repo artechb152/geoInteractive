@@ -238,7 +238,7 @@ export function MahanScene() {
             <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
               שורה תחתונה לדור שלך
             </div>
-            <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+            <h3 className="font-display font-bold text-lg leading-tight mb-2">
               העולם של 2050 ייקבע במים, לא ביבשה
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty">

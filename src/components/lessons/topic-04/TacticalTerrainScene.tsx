@@ -113,7 +113,7 @@ isActive ? 'border-accent bg-accent/15 shadow-glow' : 'border-border bg-bg-accen
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  סוג {i + 1}
  </div>
- <h4 className={cn('font-display font-bold text-lg leading-tight', isActive && 'text-accent')}>
+ <h4 className={cn('font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2', isActive && 'text-accent')}>
  {t.label}
  </h4>
  <div className="text-[10px] font-mono text-fg-dim mt-0.5">{t.english}</div>
@@ -138,7 +138,7 @@ className={cn('surface-elevated p-6 sm:p-7 border-r-4 mb-6', meta.borderColor)}
  >
  <div className="flex items-center gap-3 mb-4">
  <Icon name={meta.icon} size={22} className={meta.color} />
- <h3 className={cn('text-2xl font-bold', meta.color)}>{meta.label}</h3>
+ <h3 className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</h3>
  <span className="font-mono text-xs text-fg-dim">{meta.english}</span>
  </div>
 

@@ -239,7 +239,7 @@ export function LOSScene() {
  <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
  קו הנראות ההדדית
  </div>
- <h3 className="font-display font-bold text-lg mb-2 leading-tight">
+ <h3 className="font-display font-bold text-lg leading-tight mb-2">
  הגבול הדק שבין הסתרה מלאה לחשיפה קטלנית
  </h3>
  <p className="text-sm text-fg-muted leading-relaxed text-pretty">
