@@ -1,12 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { createContext, useState } from 'react';
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, BookOpen, Crosshair, ListChecks, Check } from 'lucide-react';
 import type { Lesson } from '@/lib/lessons';
-import type { SceneChangeDetail } from '@/components/lesson/PagedLearn';
 import { cn } from '@/lib/utils';
+
+/**
+ * Carries the prev/next lesson info down to PagedLearn. PagedLearn
+ * uses `next` to render the recap sub-topic's "next" slot as a link
+ * to the next lesson (replacing the old per-recap "השיעור הבא" card
+ * + the lesson-level prev/next footer that used to render below).
+ */
+export type LessonNavInfo = {
+  prev?: { id: string; shortTitle: string };
+  next?: { id: string; shortTitle: string };
+};
+
+export const LessonNavContext = createContext<LessonNavInfo>({});
 
 type Tab = 'learn' | 'practice' | 'check';
 
@@ -34,27 +46,13 @@ export function LessonShell({
   check: React.ReactNode;
 }) {
   const [tab, setTab] = useState<Tab>('learn');
-  // Move-between-lessons nav is only shown once the learner reaches the
-  // recap sub-topic. PagedLearn fires `learn:scene-change` whenever the
-  // active sub-topic changes; we listen for the `isLast` flag and show
-  // the footer accordingly. Other tabs (practice, check) always show it
-  // because they're not paged.
-  const [onLastSubTopic, setOnLastSubTopic] = useState(false);
   const reduce = useReducedMotion();
 
-  useEffect(() => {
-    const onChange = (e: Event) => {
-      const detail = (e as CustomEvent<SceneChangeDetail>).detail;
-      if (detail) setOnLastSubTopic(detail.isLast);
-    };
-    window.addEventListener('learn:scene-change', onChange);
-    return () => window.removeEventListener('learn:scene-change', onChange);
-  }, []);
-
-  // When switching tabs away from `learn` (or back to it), recompute
-  // visibility: practice + check should always show the lesson nav;
-  // `learn` shows it only if PagedLearn says we're on the recap.
-  const showLessonNav = tab !== 'learn' || onLastSubTopic;
+  // On the `learn` tab the recap sub-topic now renders a "next lesson"
+  // link inline via PagedLearn (consuming LessonNavContext), so the
+  // footer below would be a duplicate. It's only useful on the
+  // practice / check tabs (which aren't paged).
+  const showLessonNav = tab !== 'learn';
 
   const content = tab === 'learn' ? learn : tab === 'practice' ? practice : check;
 
@@ -145,20 +143,22 @@ export function LessonShell({
       {/* ── Main content with cross-fade between tabs ────────────────── */}
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={tab}
-              id={`lesson-panel-${tab}`}
-              role="tabpanel"
-              aria-labelledby={`lesson-tab-${tab}`}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: easeSnap }}
-            >
-              {content}
-            </motion.div>
-          </AnimatePresence>
+          <LessonNavContext.Provider value={{ prev, next }}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={tab}
+                id={`lesson-panel-${tab}`}
+                role="tabpanel"
+                aria-labelledby={`lesson-tab-${tab}`}
+                initial={reduce ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: easeSnap }}
+              >
+                {content}
+              </motion.div>
+            </AnimatePresence>
+          </LessonNavContext.Provider>
         </div>
       </main>
 

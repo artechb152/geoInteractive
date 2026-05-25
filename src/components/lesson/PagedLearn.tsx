@@ -20,9 +20,11 @@
  *   scenes — ordered list (id = URL-hash slug, label = TOC text).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { LessonNavContext } from '@/components/lesson/LessonShell';
 import { cn } from '@/lib/utils';
 
 export type PagedScene = {
@@ -49,6 +51,10 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const [idx, setIdx] = useState(0);
   const reduce = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
+  // Pulled from LessonShell so the recap can replace its "next sub-
+  // topic" slot with a real "next lesson" link (or "סיום הקורס" on
+  // the final lesson).
+  const { next: nextLesson } = useContext(LessonNavContext);
 
   // Sync from hash on mount + on hashchange (browser back/forward).
   useEffect(() => {
@@ -132,9 +138,12 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Sub-topic prev/next. The page-level (lesson→lesson) nav lives
-          in LessonShell's footer and is shown only on the recap.
-          Hidden on the hook sub-topic — it has its own primary CTA. */}
+      {/* Sub-topic prev/next.
+          - Hidden entirely on the hook (it has its own primary CTA).
+          - On the recap (`isLast`), the "next sub-topic" slot is
+            replaced with a real "next LESSON" link (or "סיום הקורס"
+            on the last lesson), because there's no further sub-topic
+            in this lesson. */}
       {!isHook && (
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <PrevButton
@@ -142,11 +151,15 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
             label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
             onClick={() => goto(idx - 1)}
           />
-          <NextButton
-            disabled={isLast}
-            label={isLast ? '— סיום השיעור —' : scenes[idx + 1].label}
-            onClick={() => goto(idx + 1)}
-          />
+          {isLast ? (
+            <NextLessonLink next={nextLesson} />
+          ) : (
+            <NextButton
+              disabled={false}
+              label={scenes[idx + 1].label}
+              onClick={() => goto(idx + 1)}
+            />
+          )}
         </div>
       )}
     </div>
@@ -183,6 +196,60 @@ function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: st
         </div>
       </div>
     </button>
+  );
+}
+
+/**
+ * Renders in the recap's "next sub-topic" slot. Either:
+ *   - a link to the next lesson (when one exists), OR
+ *   - a link back to the syllabus marked "סיום הקורס" (last lesson).
+ *
+ * Visual treatment matches NextButton so the slot reads the same way
+ * regardless of whether it's a sub-topic next or a lesson next.
+ */
+function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } }) {
+  if (next) {
+    return (
+      <Link
+        href={`/lessons/${next.id}/`}
+        className="group rounded-xl border p-3.5 transition-all flex items-center gap-3 flex-row-reverse border-accent/40 bg-accent/10 hover:bg-accent hover:border-accent shadow-glow cursor-pointer"
+        aria-label="לשיעור הבא"
+      >
+        <ArrowLeft
+          className="size-5 shrink-0 text-accent-hover group-hover:text-fg group-hover:-translate-x-0.5 transition-all"
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1 text-left">
+          <div className="text-[11px] font-display font-semibold tracking-wider uppercase text-accent-hover group-hover:text-fg/80">
+            השיעור הבא
+          </div>
+          <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
+            {next.shortTitle}
+          </div>
+        </div>
+      </Link>
+    );
+  }
+  // No next lesson — this is the last lesson of the course.
+  return (
+    <Link
+      href="/"
+      className="group rounded-xl border p-3.5 transition-all flex items-center gap-3 flex-row-reverse border-brand/40 bg-brand/10 hover:bg-brand hover:border-brand-dark shadow-glow cursor-pointer"
+      aria-label="סיום הקורס"
+    >
+      <Check
+        className="size-5 shrink-0 text-brand-dark group-hover:text-bg-elevated transition-colors"
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1 text-left">
+        <div className="text-[11px] font-display font-semibold tracking-wider uppercase text-brand-dark group-hover:text-bg-elevated/80">
+          סיום הקורס
+        </div>
+        <div className="text-sm md:text-[15px] font-display font-semibold text-fg group-hover:text-bg-elevated truncate transition-colors">
+          חזרה לסילבוס
+        </div>
+      </div>
+    </Link>
   );
 }
 

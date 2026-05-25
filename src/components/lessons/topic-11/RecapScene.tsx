@@ -62,8 +62,6 @@ export function RecapScene() {
           </motion.div>
         ))}
       </div>
-
-      <NextStepCard />
     </section>
   );
 }
@@ -100,65 +98,6 @@ function CompletionBanner() {
           </div>
         </div>
       </div>
-    </motion.div>
-  );
-}
-
-function NextStepCard() {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-      className="mt-10 grid sm:grid-cols-2 gap-3"
-    >
-      <a
-        href="#"
-        onClick={(e) => {
-          e.preventDefault();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setTimeout(() => {
-            const tabs = document.querySelectorAll('[role="tab"]');
-            const practiceTab = Array.from(tabs).find((t) => t.textContent?.includes('תרגול'));
-            (practiceTab as HTMLElement | undefined)?.click();
-          }, 400);
-        }}
-        className="group surface p-5 sm:p-6 hover:border-accent/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
-      >
-        <div className="size-12 rounded-xl bg-accent/10 border border-accent/40 flex items-center justify-center text-accent shrink-0 group-hover:scale-110 transition-transform">
-          <Icon name="spark" size={22} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">השלב הבא:</div>
-          <div className="font-display font-bold leading-tight">מעבדת תרגול</div>
-          <div className="text-xs text-fg-muted mt-0.5">בוא לתרגל תכנון תפיסת ביטחון בהתאם לעומק ולגבולות</div>
-        </div>
-        <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
-      </a>
-
-      <a
-        href="#"
-        onClick={(e) => {
-          e.preventDefault();
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          setTimeout(() => {
-            const tabs = document.querySelectorAll('[role="tab"]');
-            const checkTab = Array.from(tabs).find((t) => t.textContent?.includes('בדיקת ידע'));
-            (checkTab as HTMLElement | undefined)?.click();
-          }, 400);
-        }}
-        className="group surface p-5 sm:p-6 hover:border-accent/50 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4"
-      >
-        <div className="size-12 rounded-xl bg-accent-cool/10 border border-accent-cool/40 flex items-center justify-center text-accent-cool shrink-0 group-hover:scale-110 transition-transform">
-          <Icon name="check" size={22} strokeWidth={2.5} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">או שאפשר:</div>
-          <div className="font-display font-bold leading-tight">בוחן פתע (בקטנה)</div>
-          <div className="text-xs text-fg-muted mt-0.5">כמה שאלות קצרות כדי לוודא שהכל יושב טוב</div>
-        </div>
-        <Icon name="arrow-left" size={18} className="text-fg-dim group-hover:text-accent transition-colors shrink-0" />
-      </a>
     </motion.div>
   );
 }
