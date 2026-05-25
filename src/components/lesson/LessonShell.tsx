@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { createContext, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
+import { recordLessonVisit } from '@/lib/last-visit';
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, BookOpen, Crosshair, ListChecks, Check } from 'lucide-react';
 import type { Lesson } from '@/lib/lessons';
@@ -48,6 +49,16 @@ export function LessonShell({
   const [tab, setTab] = useState<Tab>('learn');
   const reduce = useReducedMotion();
 
+  // Record the visit so the landing page's "continue" button can return
+  // the user here. PagedLearn refines this with the active sub-topic.
+  useEffect(() => {
+    recordLessonVisit({
+      topicId: lesson.id,
+      topicNumber: lesson.number,
+      topicShortTitle: lesson.shortTitle,
+    });
+  }, [lesson.id, lesson.number, lesson.shortTitle]);
+
   // On the `learn` tab the recap sub-topic now renders a "next lesson"
   // link inline via PagedLearn (consuming LessonNavContext), so the
   // footer below would be a duplicate. It's only useful on the
@@ -60,10 +71,10 @@ export function LessonShell({
     <div className="min-h-screen flex flex-col">
       {/* ── Sticky header ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-xl border-b border-border-subtle">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1 flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center gap-4">
           <Link
             href="/"
-            className="group inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-brand-dark transition-colors shrink-0"
+            className="group inline-flex items-center gap-1.5 text-xs text-fg-muted hover:text-brand-dark transition-colors shrink-0"
           >
             <ArrowRight
               className="size-3.5 transition-transform group-hover:translate-x-0.5"
@@ -73,16 +84,17 @@ export function LessonShell({
             <span className="sm:hidden">סילבוס</span>
           </Link>
 
-          <span className="h-5 w-px bg-border-subtle" aria-hidden />
+          <span className="h-4 w-px bg-border-subtle" aria-hidden />
 
-          <div className="flex-1 min-w-0">
-            <div className="inline-flex items-center gap-2.5 text-xs font-display font-semibold tracking-wider text-fg-muted">
+          <div className="flex-1 min-w-0 flex items-center gap-2.5">
+            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-wider text-fg-muted shrink-0">
               <span className="size-1.5 rounded-full bg-accent" aria-hidden />
               שיעור {String(lesson.number).padStart(2, '0')}
               <span className="text-fg-dim/60">·</span>
               <span className="text-fg-dim">{lesson.duration} דק'</span>
             </div>
-            <h1 className="font-display font-bold tracking-tight truncate text-base md:text-lg text-fg">
+            <span className="h-4 w-px bg-border-subtle hidden sm:block" aria-hidden />
+            <h1 className="font-display font-bold tracking-tight truncate text-sm md:text-base text-fg">
               {lesson.shortTitle}
             </h1>
           </div>
@@ -107,7 +119,7 @@ export function LessonShell({
                   id={`lesson-tab-${key}`}
                   onClick={() => setTab(key)}
                   className={cn(
-                    'relative inline-flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium transition-colors',
+                    'relative inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 text-sm font-medium transition-colors',
                     active
                       ? 'text-brand-dark'
                       : 'text-fg-muted hover:text-fg',

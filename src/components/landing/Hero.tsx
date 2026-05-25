@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { lessons, totalDuration } from '@/lib/lessons';
 import { cn } from '@/lib/utils';
+import { ContinueLearningButton } from './ContinueLearningButton';
 
 const easeSnap = [0.22, 1, 0.36, 1] as const;
 const ORANGE = '#EB9E48';
@@ -121,7 +122,8 @@ export function Hero() {
             סימולציות, תרגול ומשוב — מהבסיס ועד GEOINT מבצעי.
           </motion.p>
 
-          <motion.div variants={fadeUp(!!reduce)} className="mt-5 flex flex-wrap gap-2.5">
+          <motion.div variants={fadeUp(!!reduce)} className="mt-5 flex flex-wrap items-center gap-2.5">
+            <ContinueLearningButton />
             <Link
               href={firstLessonHref}
               className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-fg bg-accent hover:bg-accent-hover hover:text-bg-elevated transition-all duration-300 shadow-glow"

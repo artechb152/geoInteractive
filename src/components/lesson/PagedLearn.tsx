@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { LessonNavContext } from '@/components/lesson/LessonShell';
+import { recordSceneVisit } from '@/lib/last-visit';
 import { cn } from '@/lib/utils';
 
 export type PagedScene = {
@@ -47,6 +48,29 @@ function emitChange(detail: SceneChangeDetail) {
   window.dispatchEvent(new CustomEvent<SceneChangeDetail>('learn:scene-change', { detail }));
 }
 
+/**
+ * Pulls the current `topic-XX` from the URL so PagedLearn can persist
+ * the active sub-topic without prop-drilling the lesson id through
+ * every topic component.
+ */
+function currentTopicIdFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  const m = window.location.pathname.match(/\/lessons\/([^/]+)/);
+  return m?.[1] ?? null;
+}
+
+function persistScene(scenes: PagedScene[], i: number) {
+  const topicId = currentTopicIdFromUrl();
+  if (!topicId) return;
+  recordSceneVisit({
+    topicId,
+    sceneId: scenes[i].id,
+    sceneLabel: scenes[i].label,
+    sceneIdx: i,
+    sceneTotal: scenes.length,
+  });
+}
+
 export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const [idx, setIdx] = useState(0);
   const reduce = useReducedMotion();
@@ -63,12 +87,14 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
       if (!raw) {
         setIdx(0);
         emitChange({ id: scenes[0].id, idx: 0, isFirst: true, isLast: scenes.length === 1, total: scenes.length });
+        persistScene(scenes, 0);
         return;
       }
       const i = scenes.findIndex((s) => s.id === raw);
       if (i >= 0) {
         setIdx(i);
         emitChange({ id: scenes[i].id, idx: i, isFirst: i === 0, isLast: i === scenes.length - 1, total: scenes.length });
+        persistScene(scenes, i);
       }
     };
     fromHash();
@@ -83,6 +109,7 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
       const { pathname, search } = window.location;
       history.replaceState(null, '', `${pathname}${search}#scene-${scenes[i].id}`);
       emitChange({ id: scenes[i].id, idx: i, isFirst: i === 0, isLast: i === scenes.length - 1, total: scenes.length });
+      persistScene(scenes, i);
       setTimeout(() => {
         rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 60);
