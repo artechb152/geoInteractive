@@ -101,10 +101,12 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const isLast = idx === scenes.length - 1;
 
   return (
-    // xl+: reserve 210px on the right (start-side in RTL) for the fixed
-    // TOC. Content shifts slightly left to make room; the TOC stays
-    // pinned to the viewport so it never overlaps the reading column.
-    <div className="relative scroll-mt-28 xl:ps-[210px]" ref={rootRef}>
+    // xl+: reserve enough on the right (start-side in RTL) for the
+    // fixed TOC. 150px keeps a comfortable ~28px gap from the TOC at
+    // 1280-wide viewports and ~100px+ on larger desktops, while letting
+    // the active sub-topic extend further right than the previous
+    // 210px reservation did.
+    <div className="relative scroll-mt-28 xl:ps-[150px]" ref={rootRef}>
       {/* Mobile / tablet sub-topic strip (everything below xl gets this) */}
       <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} />
 
