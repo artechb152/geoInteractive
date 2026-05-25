@@ -99,6 +99,10 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const ActiveScene = scenes[idx].Comp;
   const isFirst = idx === 0;
   const isLast = idx === scenes.length - 1;
+  // The hook sub-topic ships its own large CTA ("לחץ כדי להתחיל")
+  // that fires `learn:next`, so the bottom prev/next pair would just
+  // duplicate it. Hide them on the hook only.
+  const isHook = scenes[idx].id === 'hook';
 
   return (
     // xl+: reserve a tight 100px on the right (start in RTL) for the
@@ -129,19 +133,22 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
       </AnimatePresence>
 
       {/* Sub-topic prev/next. The page-level (lesson→lesson) nav lives
-          in LessonShell's footer and is shown only on the recap. */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <PrevButton
-          disabled={isFirst}
-          label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
-          onClick={() => goto(idx - 1)}
-        />
-        <NextButton
-          disabled={isLast}
-          label={isLast ? '— סיום השיעור —' : scenes[idx + 1].label}
-          onClick={() => goto(idx + 1)}
-        />
-      </div>
+          in LessonShell's footer and is shown only on the recap.
+          Hidden on the hook sub-topic — it has its own primary CTA. */}
+      {!isHook && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <PrevButton
+            disabled={isFirst}
+            label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
+            onClick={() => goto(idx - 1)}
+          />
+          <NextButton
+            disabled={isLast}
+            label={isLast ? '— סיום השיעור —' : scenes[idx + 1].label}
+            onClick={() => goto(idx + 1)}
+          />
+        </div>
+      )}
     </div>
   );
 }
