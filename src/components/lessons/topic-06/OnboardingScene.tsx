@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="הכל מתחיל ונגמר בשאלה אחת פשוטה: האם אני רואה את האויב, או שהוא מוסתר ממני? בואו נבין איך ניתוח של גבעה אחת פשוטה יכול ללמד אותנו מה אנחנו רואים, מה האויב רואה משם, ואיפה בדיוק עובר הקו שבו הכל מתהפך."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <SightStage view={view} />
         </div>
       </div>
@@ -245,7 +245,7 @@ function SightStage({ view }: { view: View }) {
   const showIntervisibility = view === 'intervisibility';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-6" x1="0" y1="0" x2="0" y2="1">

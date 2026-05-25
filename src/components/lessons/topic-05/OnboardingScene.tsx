@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro='עבור רובנו השטח הוא סתם "נוף", אבל מפקד צבאי מסתכל עליו כעל חידה שצריך לפתור. בואו נראה איך מנתחים תא שטח לקראת תנועה (מושג שנקרא בשפה הצבאית "תמרון"), דרך 4 שאלות מפתח – החל מהשאלה הבסיסית ביותר ("האם בכלל אפשר לעבור פה?") ועד לשאלות של חיים ומוות.'
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -209,7 +209,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <ManeuverStage view={view} />
         </div>
       </div>
@@ -242,7 +242,7 @@ function ManeuverStage({ view }: { view: View }) {
   const showConcealment = view === 'concealment';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-5" x1="0" y1="0" x2="0" y2="1">

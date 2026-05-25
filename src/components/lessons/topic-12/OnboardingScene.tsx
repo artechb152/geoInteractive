@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="מפה רגילה היא רק ציור. GIS הופך אותה לסביבת קבלת החלטות שמחשבת איומים, מציעה מסלולים, ומזהה נקודות תורפה. בוא נראה את ה-4 שלבים מההצילום למסקנה."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <GISStage view={view} />
         </div>
       </div>
@@ -245,7 +245,7 @@ function GISStage({ view }: { view: View }) {
   const showDecision = view === 'decision';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-13" x1="0" y1="0" x2="0" y2="1">

@@ -131,7 +131,7 @@ title={
                 intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר, תזרימו נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid lg:grid-cols-[2fr_3fr] gap-6">
         {/* Accordion — first child → RIGHT in RTL (text on right) */}
         <Accordion
           type="single"
@@ -216,7 +216,7 @@ title={
         </Accordion>
 
         {/* Visualization — second child → LEFT in RTL */}
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <TerrainStage feature={step} />
         </div>
       </div>
@@ -247,8 +247,8 @@ title={
 
 function TerrainStage({ feature }: { feature: Feature }) {
   return (
-    <div className="aspect-[4/3] relative">
-      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="none">
+    <div className="relative w-full h-full">
+      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f3f5f9" />

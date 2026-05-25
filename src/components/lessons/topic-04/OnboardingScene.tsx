@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="תייר רואה נוף יפה; מפקד רואה הזדמנויות ומכשולים. כדי להבין את שדה הקרב, עלינו לקלף את השכבות של פני השטח (המורפולוגיה). בוא נראה איך אותו הר משתנה ב-4 שלבים — מהמבט התמים ועד לניתוח הצבאי שיכריע את הקרב."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         {/* Accordion list — first child → RIGHT in RTL (text on right) */}
         <div className="space-y-3">
           {STEPS.map((s, i) => {
@@ -212,7 +212,7 @@ export function OnboardingScene() {
         </div>
 
         {/* Visualization — second child → LEFT in RTL */}
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <TerrainStage view={view} />
         </div>
       </div>
@@ -252,7 +252,7 @@ function TerrainStage({ view }: { view: View }) {
   ];
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-4" x1="0" y1="0" x2="0" y2="1">

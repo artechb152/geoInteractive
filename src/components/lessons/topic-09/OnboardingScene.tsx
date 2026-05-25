@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="פעם, ערכו של משאב (כמו נפט או מים) נמדד רק בכסף. היום הוא נמדד בכוח שהוא מעניק למי ששולט בו. בחלק זה נראה בארבעה שלבים פשוטים איך באר נפט, נהר או צינור גז הופכים לכלים שמשנים את יחסי הכוחות בעולם."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <ResourceFlowStage view={view} />
         </div>
       </div>
@@ -250,7 +250,7 @@ function ResourceFlowStage({ view }: { view: View }) {
   const showGlobal = view === 'global';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-9" x1="0" y1="0" x2="0" y2="1">

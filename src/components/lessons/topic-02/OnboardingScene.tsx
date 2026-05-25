@@ -121,7 +121,7 @@ title={
                 intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שקופים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {LAYERS.map((l, i) => {
             const isOn = i < step;
@@ -225,7 +225,7 @@ title={
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <LayeredMap enabled={enabled} />
         </div>
       </div>
@@ -255,8 +255,8 @@ title={
 
 function LayeredMap({ enabled }: { enabled: Set<string> }) {
   return (
-    <div className="aspect-[4/3] relative">
-      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="none">
+    <div className="relative w-full h-full">
+      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f3f5f9" />

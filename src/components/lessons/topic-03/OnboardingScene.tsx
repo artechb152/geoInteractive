@@ -106,7 +106,7 @@ export function OnboardingScene() {
         intro="דמיין שאתה צריך להוביל קבוצה ממקום A למקום B — בלילה, בשטח שאתה לא מכיר. בוא נראה ביחד מה זה אומר בפועל, צעד אחר צעד."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = phase === s.id;
@@ -214,7 +214,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <MissionStage phase={phase} />
         </div>
       </div>
@@ -244,8 +244,8 @@ export function OnboardingScene() {
 
 function MissionStage({ phase }: { phase: Phase }) {
   return (
-    <div className="aspect-[4/3] relative">
-      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="none">
+    <div className="relative w-full h-full">
+      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="ground-3" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f3f5f9" />

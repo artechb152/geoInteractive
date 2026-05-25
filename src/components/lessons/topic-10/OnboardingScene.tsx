@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="הלחימה בעיר היא לא לחימה ברחוב שטוח, אלא בתוך 'קוביית רוביק' תלת-ממדית שמלאה באיומים מכל כיוון. מפקד שלא יבין זאת – ייקלע מהר מאוד לאסון. בואו נפרק את העיר ל-4 שכבות ונראה איך אותו רחוב בדיוק נראה שונה לגמרי, תלוי מי מסתכל עליו."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <CityStage view={view} />
         </div>
       </div>
@@ -245,7 +245,7 @@ function CityStage({ view }: { view: View }) {
   const showUnderground = view === 'underground';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="sky-10" x1="0" y1="0" x2="0" y2="1">

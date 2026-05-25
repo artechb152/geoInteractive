@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="המלחמות הגדולות בהיסטוריה כמעט ולא הוכרעו רק בזכות קרבות גבורה חזיתיים, אלא בגלל לוגיסטיקה. בואו נראה איך הכל עובד: מבסיס האם המוגן שבעורף, דרך נתיבי האספקה הגיאוגרפיים, ועד ללוחם שנמצא בקצה המסלול בחזית. כל פגיעה, אפילו הקטנה ביותר, בשרשרת הזו – עלולה להפיל את המערכה כולה."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <SupplyChainStage view={view} />
         </div>
       </div>
@@ -246,7 +246,7 @@ function SupplyChainStage({ view }: { view: View }) {
   const showTail = view === 'tail';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-8" x1="0" y1="0" x2="0" y2="1">

@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="כל מדינה קיימת קודם כל במרחב הפיזי. הצורה הגיאוגרפית שלה – עוד לפני פוליטיקה, היסטוריה או טכנולוגיה – היא הגורם המרכזי שקובע כיצד ניתן להגן עליה ואיך יופעל הצבא שלה. בואו נפרק את הגיאוגרפיה של המדינה ל-4 שכבות בסיסיות: מהצורה הכללית ועד למרחב ההגנה שלה."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <CountryStage view={view} />
         </div>
       </div>
@@ -245,7 +245,7 @@ function CountryStage({ view }: { view: View }) {
   const showDepth = view === 'depth';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="ground-11" x1="0" y1="0" x2="0" y2="1">

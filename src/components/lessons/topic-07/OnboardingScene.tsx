@@ -110,7 +110,7 @@ export function OnboardingScene() {
         intro="באותו אזור בדיוק, בהפרש של 12 שעות בלבד, המציאות בשטח יכולה להשתנות לחלוטין. בחלק זה נלמד לנתח את מזג האוויר ב-4 רמות שונות: החל מהתחזית הכללית של האזור, ועד להבנה איך האוויר והאטמוספירה הם כוח פיזיקלי של ממש שעלול לשבש מערכות טכנולוגיות וחיישנים."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -211,7 +211,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated relative overflow-hidden sticky top-6">
+        <div className="surface-elevated relative overflow-hidden min-h-[280px]">
           <WeatherStage view={view} />
         </div>
       </div>
@@ -247,7 +247,7 @@ function WeatherStage({ view }: { view: View }) {
   const showBeams = view === 'atmosphere';
 
   return (
-    <div className="aspect-[4/3] relative">
+    <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
           <linearGradient id="sky-7" x1="0" y1="0" x2="0" y2="1">
