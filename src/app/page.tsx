@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
+import { RecapDemosTeaser } from '@/components/landing/RecapDemosTeaser';
 // Temporarily hidden from the landing page. To restore: uncomment the
 // imports below and the matching <Features /> / <FAQ /> in the JSX.
 // import { Features } from '@/components/landing/Features';
@@ -12,6 +13,7 @@ export default function HomePage() {
 
       <main className="relative">
         <Hero />
+        <RecapDemosTeaser />
         {/* Hidden — restore by uncommenting the imports above and these lines:
         <Features />
         <FAQ />
