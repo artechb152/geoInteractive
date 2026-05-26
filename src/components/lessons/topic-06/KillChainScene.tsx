@@ -21,6 +21,16 @@ type StageData = {
   border: string;
 };
 
+// All four stages share the same palette — one *active* tone, since the
+// stages are types of activity (sense → track → act → verify), not
+// outcomes. The active tone is the site's primary brand accent (orange),
+// which matches the convention every other selector in the course uses
+// for its active state (LOCScene's disruption picker, ContoursScene's
+// shape picker, the hero CTA).
+const STAGE_COLOR = 'text-accent';
+const STAGE_BG = 'bg-accent/8';
+const STAGE_BORDER = 'border-accent/35';
+
 const STAGES: StageData[] = [
   {
     id: 'find',
@@ -31,9 +41,9 @@ const STAGES: StageData[] = [
     losRole: 'התצפיתן, הרחפן או הלוויין חייבים קו ראייה (LOS) נקי כדי לראות את המטרה ולהבין מהי. בלי קו ראייה — המטרה פשוט לא קיימת מבחינתנו.',
     failure: 'תצפית בעין שנחסמת בגלל ערפל בוקר כבד, או סוללת טילים שמוסתרת היטב בתוך יער ולא ניתן לאמת אותה.',
     fix: 'שילוב של כלים שונים. למשל: רדאר (מכ"ם) שיכול "לראות" דרך עננים, או חיישנים שקולטים שידורי קשר. אם כלי אחד מתעוור, השני משלים אותו.',
-    color: 'text-terrain-sky',
-    bg: 'bg-terrain-sky/10',
-    border: 'border-terrain-sky/40',
+    color: STAGE_COLOR,
+    bg: STAGE_BG,
+    border: STAGE_BORDER,
   },
   {
     id: 'fix',
@@ -44,9 +54,9 @@ const STAGES: StageData[] = [
     losRole: 'אנחנו חייבים לשמור על קו ראייה רציף כדי לעקוב אחרי המטרה ולעדכן את המיקום שלה בכל שנייה, ולא רק לקבל תמונה אחת שלה.',
     failure: 'רחפן עוקב אחרי רכב נמלט. הרכב נכנס לתוך מנהרה או חורשה סבוכה. קו הראייה נשבר, והרכב אבד לנו.',
     fix: 'שימוש בכמה אמצעי מעקב במקביל מכיוונים שונים. בנוסף, אלגוריתמים שמנסים "לנחש" לאן המטרה נסעה לפי המהירות והכיוון האחרונים שלה, עד שהיא מופיעה שוב.',
-    color: 'text-accent',
-    bg: 'bg-accent/10',
-    border: 'border-accent/40',
+    color: STAGE_COLOR,
+    bg: STAGE_BG,
+    border: STAGE_BORDER,
   },
   {
     id: 'engage',
@@ -57,9 +67,9 @@ const STAGES: StageData[] = [
     losRole: 'טילים "חכמים" שמונחים בעזרת קרן לייזר או מצלמת וידאו דורשים קו ראייה רציף מהרגע שירינו ועד הפגיעה. טילים שמבוססים על מיקום (GPS) לא צריכים קו ראייה, אבל הם פחות מדויקים מול מטרות זזות.',
     failure: 'בעיראק (2003) שוגר טיל מונחה לייזר. שנייה אחרי השיגור, ענן עבר והסתיר את המטרה. קרן הלייזר נשברה, והטיל נפל בשדה ריק.',
     fix: 'מיקום כוח נוסף בזווית אחרת שיכול "להאיר" את המטרה בלייזר, או בחירה מראש בטיל מבוסס GPS כשמזג האוויר בעייתי.',
-    color: 'text-accent-hot',
-    bg: 'bg-accent-hot/10',
-    border: 'border-accent-hot/40',
+    color: STAGE_COLOR,
+    bg: STAGE_BG,
+    border: STAGE_BORDER,
   },
   {
     id: 'hit',
@@ -70,9 +80,9 @@ const STAGES: StageData[] = [
     losRole: 'בסוף כל תקיפה חובה לבדוק מה קרה. זה דורש להשיג קו ראייה חדש על המטרה <strong>אחרי</strong> הפגיעה, בדרך כלל ממצלמה אחרת שמגיעה מאוחר יותר.',
     failure: 'בוצעה תקיפה בלילה. ענן ענק של אבק ועשן הסתיר את המקום. רק בבוקר, כשהאבק שקע, ראו שהפצצה פספסה את הבניין ב-20 מטרים.',
     fix: 'תכנון מראש: שולחים רחפן אחר שיצלם דקות אחרי התקיפה, משתמשים ברדאר שרואה דרך עשן, או אפילו בודקים תמונות לוויין אזרחיות מגוגל מפות (לזה קוראים OSINT).',
-    color: 'text-status-ok',
-    bg: 'bg-status-ok/10',
-    border: 'border-status-ok/40',
+    color: STAGE_COLOR,
+    bg: STAGE_BG,
+    border: STAGE_BORDER,
   },
 ];
 
@@ -121,24 +131,18 @@ export function KillChainScene() {
                   onClick={() => setActive(s.id)}
                   className={cn(
                     'group flex flex-col items-center gap-2 relative w-full p-2 sm:p-3 rounded-xl transition-all',
-                    isActive && `${s.border} ${s.bg} shadow-glow`,
+                    isActive && `${s.border} ${s.bg}`,
                     !isActive && 'hover:bg-bg-accent/40'
                   )}
                 >
-                  <div
+                  <Icon
+                    name={s.icon}
+                    size={36}
                     className={cn(
-                      'size-12 sm:size-14 rounded-2xl flex items-center justify-center border-2 transition-all',
-                      isActive ? `${s.border} ${s.bg}` : isPassed ? 'border-status-ok/40 bg-status-ok/10' : 'border-border bg-bg-accent'
+                      'transition-all',
+                      isActive ? s.color : isPassed ? 'text-brand-dark/70' : 'text-fg-dim'
                     )}
-                  >
-                    <Icon
-                      name={s.icon}
-                      size={22}
-                      className={cn(
-                        isActive ? s.color : isPassed ? 'text-status-ok' : 'text-fg-dim'
-                      )}
-                    />
-                  </div>
+                  />
                   <div className={cn('font-display font-bold text-xs sm:text-sm leading-tight text-center', isActive && s.color)}>
                     {s.label}
                   </div>
@@ -176,9 +180,6 @@ export function KillChainScene() {
           className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
         >
           <div className="flex items-start gap-4 mb-5">
-            <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', meta.border, meta.bg)}>
-              <Icon name={meta.icon} size={22} className={meta.color} />
-            </div>
             <div className="flex-1">
               <div className={cn('text-sm font-display font-semibold mb-0.5 tracking-wider', meta.color)}>
                 שלב {activeIdx + 1}: {meta.english}
@@ -199,16 +200,16 @@ export function KillChainScene() {
                 dangerouslySetInnerHTML={{ __html: meta.losRole }}
               />
             </div>
-            <div className="surface p-4 rounded-xl bg-status-danger/5 border-status-danger/30">
-              <div className="text-sm font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
-                <Icon name="spark" size={11} />
+            <div className="surface p-4 rounded-xl bg-bg-accent/20">
+              <div className="text-sm font-display font-semibold text-fg mb-2 tracking-wider flex items-center gap-1.5">
+                <Icon name="spark" size={11} className="text-fg-muted" />
                 מה קורה כשקו הראייה נשבר
               </div>
               <p className="text-sm text-fg-muted leading-relaxed">{meta.failure}</p>
             </div>
-            <div className="surface p-4 rounded-xl bg-status-ok/5 border-status-ok/30">
-              <div className="text-sm font-display font-semibold text-status-ok mb-2 tracking-wider flex items-center gap-1.5">
-                <Icon name="check" size={11} strokeWidth={2.5} />
+            <div className="surface p-4 rounded-xl bg-bg-accent/20">
+              <div className="text-sm font-display font-semibold text-fg mb-2 tracking-wider flex items-center gap-1.5">
+                <Icon name="check" size={11} strokeWidth={2.5} className="text-fg-muted" />
                 איך מתמודדים
               </div>
               <p
@@ -226,11 +227,11 @@ export function KillChainScene() {
       <div className="surface-elevated p-6 rounded-2xl">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-center">
           <div>
-            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
               מרחב הכיסוי הרציף
             </div>
             <h3 className="font-display font-bold text-xl leading-tight mb-3">
-              האזור שבו <span className="gradient-text">אי אפשר להתחבא</span>
+              האזור שבו <span className="text-accent">אי אפשר להתחבא</span>
             </h3>
             <p className="text-sm text-fg-muted leading-relaxed text-pretty mb-3">
               מדובר בשטח שבו יש כיסוי מלא ורציף של אמצעי איסוף שונים — תצפיתנים, רחפנים או לוויינים. כל עוד המטרה בתוך האזור הזה, אי אפשר לפספס אותה ויש עליה קו ראייה (LOS) קבוע.

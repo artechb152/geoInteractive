@@ -102,7 +102,7 @@ export function DepthScene() {
         eyebrow="עומק אסטרטגי"
         title={
           <>
-            <span className="gradient-text">עומק = זמן</span>. זמן = ניצחון.
+            <span className="text-accent-hover">עומק = זמן</span>. זמן = ניצחון.
           </>
         }
         intro={`כל קילומטר של מרחק בין קו החזית לבין מרכזי האוכלוסייה הוא למעשה עוד שעה של זמן חסד לקבלת החלטות. בואו נשחק עם המרחק ונראה איך אותה מתקפת אויב נראית כשיש למדינה רק 14 ק"מ של עומק, לעומת 4,000 ק"מ.`}
@@ -123,7 +123,7 @@ export function DepthScene() {
       {/* Main interactive */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Visualization */}
-        <div className="surface-elevated p-4 rounded-2xl">
+        <div className="surface-elevated p-4 rounded-2xl flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מבט חתך: מהגבול ועד ללב המדינה
@@ -134,7 +134,9 @@ export function DepthScene() {
             </div>
           </div>
 
-          <DepthVisualization depth={depth} doctrine={doctrine} />
+          <div className="flex-1 min-h-0 flex">
+            <DepthVisualization depth={depth} doctrine={doctrine} />
+          </div>
 
           <div className="mt-3 grid grid-cols-3 gap-2">
             <div className="surface p-2 rounded-lg text-center">
@@ -279,8 +281,8 @@ function DepthVisualization({
   const enemyProgress = 0.15; // enemy has advanced 15% into depth
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
+    <div className="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden" style={{ backgroundColor: '#e2e8f0' }}>
+      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         <defs>
           <linearGradient id="depth-bg" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#dde6f0" />

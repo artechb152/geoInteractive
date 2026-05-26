@@ -29,7 +29,7 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים, <span className="text-accent-hover">דקה אחת</span>
           </>
         }
         intro="הנה כל המושגים המרכזיים שעברנו עליהם, מתומצתים לשורה אחת נטולת בולשיט כדי שישבו טוב בראש."
@@ -87,16 +87,16 @@ function CompletionBanner() {
             transition={{ repeat: Infinity, duration: 3 }}
             className="size-14 rounded-full bg-accent/20 absolute inset-0"
           />
-          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg shadow-glow">
+          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg-elevated">
             <Icon name="check" size={28} strokeWidth={3} />
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
             כל הכבוד · סיימת את שיעור הלוחמה בשטח בנוי
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            מעכשיו אתה מבין שעיר היא לא רק רחובות, אלא <span className="gradient-text">קוביית רוביק תלת-ממדית</span>
+            מעכשיו אתה מבין שעיר היא לא רק רחובות, אלא <span className="text-accent-hover">קוביית רוביק תלת-ממדית</span>
           </div>
         </div>
       </div>

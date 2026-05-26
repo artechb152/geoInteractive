@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v3 · 04 — עמוד אטלס / Atlas Plate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --paper:#EDE8DA;
+    --paper-2:#E2DCC8;
+    --paper-3:#F5F0E2;
+    --ink:#1A1410;
+    --ink-2:#3A2F22;
+    --ink-3:#7A6B58;
+    --contour:#4D4538;
+    --contour-soft:#9A9080;
+    --amber:#DB8F2E;
+    --amber-soft:rgba(219,143,46,.18);
+  }
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink)}
+  body{
+    font-family:'Heebo','Outfit',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:geometricPrecision;
+    overflow-x:hidden;
+  }
+  /* paper texture overlay */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      radial-gradient(ellipse at 20% 10%,rgba(180,140,80,.06),transparent 60%),
+      radial-gradient(ellipse at 80% 90%,rgba(180,140,80,.08),transparent 60%);
+    mix-blend-mode:multiply;
+  }
+
+  /* sticky nav strip */
+  .nav{
+    position:sticky;top:0;z-index:30;
+    display:grid;grid-template-columns:auto 1fr auto;
+    align-items:center;gap:24px;
+    padding:14px 28px;
+    background:rgba(237,232,218,.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--ink);
+  }
+  @media (max-width:780px){.nav{padding:12px 18px;gap:12px}}
+  .nav .brand{
+    font-family:'Outfit',sans-serif;font-weight:900;
+    font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink);display:flex;align-items:center;gap:8px;
+  }
+  .nav .brand .dia{
+    width:14px;height:14px;background:var(--amber);
+    transform:rotate(45deg);display:inline-block;
+  }
+  .nav .coord{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--ink-2);letter-spacing:.12em;text-align:center;
+    direction:ltr;
+  }
+  .nav .coord b{color:var(--amber)}
+  .nav .links{
+    display:flex;gap:18px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  }
+  .nav .links a{color:var(--ink-2);text-decoration:none;border-bottom:1.5px solid transparent;padding-bottom:2px;transition:all .15s}
+  .nav .links a:hover{color:var(--amber);border-color:var(--amber)}
+  @media (max-width:780px){.nav .links{display:none}.nav .coord{display:none}}
+
+  /* MAP CANVAS — sticky background contour relief */
+  .map-canvas{
+    position:relative;min-height:120vh;
+    overflow:hidden;
+    background:var(--paper);
+    border-bottom:1px solid var(--ink);
+  }
+  .map-canvas .relief{
+    position:absolute;inset:0;width:100%;height:100%;
+    pointer-events:none;
+  }
+  .relief .c{fill:none;stroke:var(--contour);stroke-width:.7;stroke-linejoin:round}
+  .relief .ci{fill:none;stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round}
+  .relief .cs{fill:none;stroke:var(--contour-soft);stroke-width:.45;stroke-linejoin:round}
+  .relief .grid{stroke:var(--ink);stroke-width:.3;stroke-dasharray:1 5;opacity:.4}
+  .relief .water{fill:#7FA0B6;opacity:.32}
+  .relief .amber-route{
+    fill:none;stroke:var(--amber);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+    filter:drop-shadow(0 1px 0 rgba(219,143,46,.3));
+  }
+  .relief text{font-family:'JetBrains Mono',monospace;fill:var(--ink-2)}
+
+  /* CORNER NEATLINE */
+  .neatline{position:absolute;inset:0;pointer-events:none}
+  .neatline .corner{
+    position:absolute;font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;color:var(--ink);letter-spacing:.08em;
+    background:var(--paper);padding:3px 8px;border:1px solid var(--ink);
+  }
+  .neatline .corner.tl{top:14px;right:14px}    /* RTL: top-right is visual top-left */
+  .neatline .corner.tr{top:14px;left:14px}
+  .neatline .corner.bl{bottom:14px;right:14px}
+  .neatline .corner.br{bottom:14px;left:14px}
+
+  /* FLOATING TITLE CARTOUCHE — pinned to upper-left visually (RTL: upper-right) */
+  .cartouche{
+    position:absolute;top:80px;right:48px;z-index:10;
+    max-width:520px;
+    background:var(--paper-3);
+    border:1.5px solid var(--ink);
+    padding:30px 30px;
+    box-shadow:6px 6px 0 var(--paper-2);
+  }
+  @media (max-width:780px){.cartouche{top:60px;right:18px;left:18px;max-width:none;padding:22px 20px}}
+  .cartouche .head{
+    display:flex;justify-content:space-between;
+    border-bottom:1px solid var(--ink);padding-bottom:8px;margin-bottom:18px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.18em;color:var(--ink-2);text-transform:uppercase;
+  }
+  .cartouche h1{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(36px,4.6vw,60px);line-height:.95;letter-spacing:-.025em;
+    margin:0 0 14px;color:var(--ink);
+  }
+  .cartouche h1 em{font-style:normal;color:var(--amber)}
+  .cartouche h1 .latin{
+    display:block;font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:.3em;letter-spacing:.06em;color:var(--ink-3);text-transform:uppercase;
+    margin-bottom:10px;line-height:1;direction:ltr;
+  }
+  .cartouche p{
+    font-size:15px;line-height:1.65;color:var(--ink-2);
+    max-width:42ch;margin:0 0 22px;font-weight:500;
+  }
+  .cta{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'Heebo',sans-serif;font-weight:700;font-size:14px;
+    padding:12px 18px;background:var(--ink);color:var(--paper);
+    text-decoration:none;border:0;border-radius:0;transition:transform .12s,background .15s;
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn.amber{background:var(--amber);color:var(--ink)}
+  .btn.amber:hover{background:#C77E1E}
+  .btn .ar{
+    width:14px;height:14px;background:currentColor;transform:scaleX(-1);
+    -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>') center/contain no-repeat;
+            mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>') center/contain no-repeat;
+  }
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+  .btn.ghost:hover{background:var(--ink);color:var(--paper)}
+
+  /* FLOATING META PANELS — small info cards pinned to the map */
+  .pin{
+    position:absolute;z-index:10;
+    background:var(--paper-3);
+    border:1px solid var(--ink);
+    padding:10px 14px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink);letter-spacing:.06em;
+    box-shadow:2px 2px 0 var(--paper-2);
+    line-height:1.55;
+  }
+  .pin .k{
+    display:block;font-size:9px;letter-spacing:.18em;
+    color:var(--ink-3);text-transform:uppercase;margin-bottom:3px;
+  }
+  .pin .v{font-weight:700;color:var(--ink);direction:ltr;text-align:start}
+  .pin .v.amber{color:var(--amber)}
+  .pin::before{
+    content:"";position:absolute;
+    width:8px;height:8px;background:var(--amber);
+    border:1.5px solid var(--ink);border-radius:50%;
+    box-shadow:0 0 0 2px rgba(219,143,46,.15);
+  }
+
+  /* specific pin positions */
+  .pin-1{bottom:18%;left:14%}
+  .pin-1::before{top:-6px;right:-6px}
+  .pin-2{top:54%;left:30%}
+  .pin-2::before{bottom:-6px;right:-6px}
+  .pin-3{bottom:32%;left:48%}
+  .pin-3::before{top:-6px;left:-6px}
+  @media (max-width:880px){.pin-1,.pin-2,.pin-3{display:none}}
+
+  /* SECTION: AXES — as 3 floating "feature plates" overlapping the map */
+  .axes{
+    padding:120px 36px 100px;
+    position:relative;z-index:5;
+    border-bottom:1px solid var(--ink);
+    background:linear-gradient(180deg,transparent 0,var(--paper) 80px,var(--paper) 100%);
+  }
+  @media (max-width:780px){.axes{padding:80px 22px 60px}}
+  .axes-h{
+    max-width:1240px;margin:0 auto 48px;
+    display:flex;justify-content:space-between;align-items:end;
+    border-bottom:1px solid var(--ink);padding-bottom:18px;
+  }
+  .axes-h h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(32px,4.2vw,52px);margin:0;letter-spacing:-.02em;line-height:1;
+  }
+  .axes-h .meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;direction:ltr;
+  }
+  .feature-grid{
+    max-width:1240px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  }
+  @media (max-width:880px){.feature-grid{grid-template-columns:1fr;gap:18px}}
+  .feature{
+    background:var(--paper-3);border:1.5px solid var(--ink);
+    padding:0;display:flex;flex-direction:column;
+    transition:transform .15s;
+    box-shadow:6px 6px 0 var(--paper-2);
+  }
+  .feature:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--paper-2)}
+  .feature .head{
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px solid var(--ink);padding:10px 18px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.14em;color:var(--ink-2);text-transform:uppercase;
+    background:var(--paper-2);
+  }
+  .feature .head .n{color:var(--amber);font-weight:700;font-size:13px;letter-spacing:.08em}
+  .feature .vig{
+    aspect-ratio:9/5;background:var(--paper);position:relative;overflow:hidden;
+    border-bottom:1px solid var(--ink);
+  }
+  .feature .vig svg{position:absolute;inset:0;width:100%;height:100%}
+  .feature .body{padding:22px 22px 20px}
+  .feature h3{
+    font-family:'Heebo',sans-serif;font-weight:800;font-size:22px;
+    margin:0 0 10px;color:var(--ink);line-height:1.15;letter-spacing:-.01em;
+  }
+  .feature p{font-size:15px;color:var(--ink-2);margin:0;line-height:1.65;font-weight:500}
+  .feature .foot{
+    padding:10px 22px;border-top:1px solid var(--paper-2);
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase;
+    display:flex;justify-content:space-between;
+  }
+
+  /* INDEX OF FEATURES (topics on the map) */
+  .index{
+    padding:80px 36px 80px;
+    background:var(--paper);border-bottom:1px solid var(--ink);
+  }
+  @media (max-width:780px){.index{padding:60px 22px 50px}}
+  .index-wrap{max-width:1240px;margin:0 auto}
+  .index-h{
+    display:flex;justify-content:space-between;align-items:end;
+    border-bottom:1px solid var(--ink);padding-bottom:18px;margin-bottom:36px;
+  }
+  .index-h h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(32px,4.2vw,52px);margin:0;letter-spacing:-.02em;line-height:1;
+  }
+  .index-h .meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;direction:ltr;
+  }
+  .index-table{
+    border:1.5px solid var(--ink);background:var(--paper-3);
+  }
+  .index-row{
+    display:grid;
+    grid-template-columns:60px 1.2fr 1fr 110px 140px;
+    align-items:center;
+    border-bottom:1px solid var(--paper-2);
+    padding:12px 0;
+    transition:background .15s;
+    cursor:pointer;
+  }
+  .index-row:last-child{border-bottom:0}
+  .index-row:hover{background:var(--paper-2)}
+  .index-row > *{padding:0 14px;border-inline-start:1px solid var(--paper-2)}
+  .index-row > *:first-child{border-inline-start:0}
+  .index-row .n{
+    font-family:'Outfit',sans-serif;font-weight:900;font-size:18px;
+    color:var(--amber);text-align:center;letter-spacing:-.02em;
+  }
+  .index-row .title{
+    font-family:'Heebo',sans-serif;font-weight:600;font-size:16px;color:var(--ink);
+  }
+  .index-row .feat{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2);
+    letter-spacing:.06em;direction:ltr;text-align:start;
+  }
+  .index-row .grid-ref{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);
+    letter-spacing:.1em;text-align:center;direction:ltr;
+  }
+  .index-row .bear{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);
+    letter-spacing:.06em;text-align:start;direction:ltr;
+  }
+  .index-row .bear b{color:var(--amber);font-weight:700}
+  @media (max-width:780px){
+    .index-row{grid-template-columns:50px 1fr;}
+    .index-row .feat,.index-row .grid-ref,.index-row .bear{display:none}
+  }
+
+  /* REGISTER FEATURE — pinned card style */
+  .register{
+    padding:100px 36px;background:var(--paper);
+    position:relative;border-bottom:1px solid var(--ink);overflow:hidden;
+  }
+  @media (max-width:780px){.register{padding:70px 22px}}
+  .register::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      radial-gradient(ellipse 50% 80% at 80% 50%,rgba(219,143,46,.06),transparent 70%);
+    pointer-events:none;
+  }
+  .register-wrap{
+    position:relative;max-width:1140px;margin:0 auto;
+    display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;
+  }
+  @media (max-width:880px){.register-wrap{grid-template-columns:1fr;gap:30px}}
+  .register .lbl{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.22em;color:var(--amber);text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .register h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(36px,5vw,64px);line-height:.96;margin:0 0 16px;
+    color:var(--ink);letter-spacing:-.025em;
+  }
+  .register p{font-size:17px;color:var(--ink-2);max-width:48ch;margin:0;line-height:1.65}
+
+  .reg-card{
+    background:var(--paper-3);border:1.5px solid var(--ink);
+    padding:0;box-shadow:8px 8px 0 var(--paper-2);
+  }
+  .reg-card .h{
+    background:var(--ink);color:var(--paper);
+    padding:10px 18px;display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.16em;text-transform:uppercase;
+  }
+  .reg-card form{padding:22px 22px;display:grid;gap:14px}
+  .reg-card label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase;display:block;margin-bottom:6px;
+  }
+  .reg-card input{
+    width:100%;background:var(--paper);border:1.5px solid var(--ink);
+    padding:13px 14px;font-family:'Heebo',sans-serif;font-size:15px;
+    color:var(--ink);outline:none;border-radius:0;
+  }
+  .reg-card input:focus{background:var(--paper-2)}
+  .reg-card button{
+    background:var(--amber);color:var(--ink);border:0;
+    padding:14px 14px;font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+    transition:filter .15s;
+  }
+  .reg-card button:hover{filter:brightness(1.05)}
+  .reg-card .meta{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;
+    text-align:center;
+  }
+
+  footer{
+    padding:24px 36px;background:var(--paper);border-top:1px solid var(--ink);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase;
+  }
+
+  /* feature vignettes */
+  .fv-c{fill:none;stroke:var(--contour);stroke-width:.7}
+  .fv-cs{fill:none;stroke:var(--contour-soft);stroke-width:.5}
+  .fv-amber{fill:none;stroke:var(--amber);stroke-width:1.6}
+</style>
+</head>
+<body>
+
+<!-- STICKY NAV -->
+<nav class="nav">
+  <div class="brand"><span class="dia"></span> GEO · ATLAS</div>
+  <div class="coord">SHEET · <b>26-01</b> · 36RXV · CONT 20m</div>
+  <div class="links">
+    <a href="#axes">צירים</a>
+    <a href="#index">12 שיעורים</a>
+    <a href="#register">הרשמה</a>
+  </div>
+</nav>
+
+<!-- MAP CANVAS -->
+<section class="map-canvas">
+
+  <!-- NEATLINE CORNERS -->
+  <div class="neatline">
+    <span class="corner tl">32°50'N · 35°25'E</span>
+    <span class="corner tr">32°50'N · 35°40'E</span>
+    <span class="corner bl">32°40'N · 35°25'E</span>
+    <span class="corner br">32°40'N · 35°40'E</span>
+  </div>
+
+  <!-- FULL-BLEED RELIEF -->
+  <svg class="relief" viewBox="0 0 1600 1200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+
+    <!-- subtle grid -->
+    <g class="grid">
+      <line x1="0" y1="200" x2="1600" y2="200"/>
+      <line x1="0" y1="400" x2="1600" y2="400"/>
+      <line x1="0" y1="600" x2="1600" y2="600"/>
+      <line x1="0" y1="800" x2="1600" y2="800"/>
+      <line x1="0" y1="1000" x2="1600" y2="1000"/>
+      <line x1="200" y1="0" x2="200" y2="1200"/>
+      <line x1="400" y1="0" x2="400" y2="1200"/>
+      <line x1="600" y1="0" x2="600" y2="1200"/>
+      <line x1="800" y1="0" x2="800" y2="1200"/>
+      <line x1="1000" y1="0" x2="1000" y2="1200"/>
+      <line x1="1200" y1="0" x2="1200" y2="1200"/>
+      <line x1="1400" y1="0" x2="1400" y2="1200"/>
+    </g>
+
+    <!-- water body -->
+    <path class="water" d="M -40,1080 C 200,1050 400,1070 620,1060 C 840,1050 1080,1075 1300,1058 C 1440,1048 1540,1052 1640,1048 L 1640,1240 L -40,1240 Z"/>
+
+    <!-- ridge complex left -->
+    <g class="cs">
+      <path d="M 50,900 C 200,820 380,780 550,760 C 720,742 900,754 1080,772 C 1260,790 1400,796 1560,786"/>
+      <path d="M 60,850 C 220,770 400,730 580,710 C 760,692 920,706 1100,728 C 1280,750 1410,754 1560,742"/>
+      <path d="M 80,800 C 240,718 420,678 600,656 C 780,634 940,650 1120,670"/>
+      <path d="M 120,748 C 280,668 460,628 640,610 C 820,592 970,608 1140,624"/>
+    </g>
+
+    <g class="c">
+      <!-- big ridge -->
+      <path d="M 80,860 C 240,780 420,740 600,720 C 780,704 940,720 1120,740 C 1300,760 1440,766 1580,756"/>
+      <path d="M 100,820 C 270,740 460,700 640,680 C 820,664 980,680 1160,704 C 1300,720 1420,724 1580,716"/>
+      <path d="M 140,780 C 320,700 510,660 690,640 C 860,624 1020,640 1180,664"/>
+      <path d="M 180,738 C 360,660 550,620 720,600 C 880,584 1040,602 1200,628"/>
+      <path d="M 240,700 C 400,624 580,586 740,568 C 900,552 1040,568 1200,594"/>
+      <path d="M 300,668 C 440,604 620,568 760,552 C 900,536 1040,552 1200,576"/>
+      <path d="M 360,640 C 480,588 640,556 780,544 C 900,532 1020,548 1180,568"/>
+      <path d="M 420,616 C 520,576 670,546 800,536"/>
+      <path d="M 480,594 C 560,562 690,536 800,530"/>
+      <path d="M 540,572 C 600,548 700,530 790,524"/>
+      <path d="M 600,552 C 640,536 720,526 790,522"/>
+      <path d="M 640,536 C 680,524 730,520 780,520"/>
+    </g>
+    <g class="ci">
+      <path d="M 80,860 C 240,780 420,740 600,720 C 780,704 940,720 1120,740 C 1300,760 1440,766 1580,756"/>
+      <path d="M 160,754 C 340,676 530,636 700,618 C 860,600 1020,618 1180,640"/>
+      <path d="M 380,628 C 500,580 660,548 800,536"/>
+    </g>
+
+    <!-- second ridge (right side) -->
+    <g class="cs">
+      <path d="M 880,330 C 1000,280 1140,260 1280,266 C 1380,272 1460,288 1560,302"/>
+      <path d="M 900,300 C 1020,250 1160,234 1300,240 C 1400,246 1480,264 1560,280"/>
+    </g>
+    <g class="c">
+      <path d="M 900,360 C 1020,300 1180,278 1320,288 C 1420,294 1500,312 1580,326"/>
+      <path d="M 960,318 C 1080,266 1220,246 1340,256 C 1440,264 1500,284 1580,300"/>
+      <path d="M 1020,286 C 1140,240 1260,224 1360,236 C 1450,246 1500,266 1580,286"/>
+      <path d="M 1080,256 C 1180,218 1280,206 1360,222"/>
+      <path d="M 1140,228 C 1220,200 1300,194 1360,214"/>
+    </g>
+
+    <!-- AMBER ROUTE across map -->
+    <path class="amber-route" d="M 80,1100 C 200,1060 320,1000 380,900 C 430,820 500,760 600,700 C 720,628 840,580 960,540 C 1080,500 1180,460 1260,400 C 1340,340 1420,300 1520,260"/>
+
+    <!-- WAYPOINT DIAMONDS along route -->
+    <g stroke="var(--amber)" stroke-width="1.6" fill="rgba(219,143,46,.15)">
+      <polygon points="380,900 388,908 380,916 372,908"/>
+      <polygon points="600,700 608,708 600,716 592,708"/>
+      <polygon points="960,540 968,548 960,556 952,548"/>
+      <polygon points="1260,400 1268,408 1260,416 1252,408"/>
+    </g>
+    <!-- destination -->
+    <g transform="translate(1520,260)">
+      <circle r="22" fill="none" stroke="rgba(219,143,46,.25)" stroke-width=".5"/>
+      <polygon points="0,-12 12,0 0,12 -12,0" fill="none" stroke="#DB8F2E" stroke-width="1.6"/>
+      <polygon points="0,-6 6,0 0,6 -6,0" fill="rgba(219,143,46,.3)"/>
+    </g>
+
+    <!-- elevation labels -->
+    <g font-size="11" letter-spacing="0.05em">
+      <text x="660" y="615">580</text>
+      <text x="780" y="555">700</text>
+      <text x="790" y="525">742</text>
+      <text x="1240" y="245">620</text>
+    </g>
+  </svg>
+
+  <!-- TITLE CARTOUCHE (asymmetric pin) -->
+  <div class="cartouche">
+    <div class="head">
+      <span>קורס יסוד · גיאוגרפיה צבאית</span>
+      <span>SHEET 01 / 12</span>
+    </div>
+    <h1>
+      <span class="latin">Reading the Terrain · Map-First Course</span>
+      קוראים את <em>השטח</em>,<br>לפני שצועדים בו.
+    </h1>
+    <p>קורס אינטראקטיבי שמלמד איך המרחב הפיזי מעצב אסטרטגיה, תמרון ואיסוף מודיעין. כל שיעור מתחיל מהמפה ומסיים במסקנה מבצעית.</p>
+    <div class="cta">
+      <a class="btn amber" href="#register">פתיחת הקורס <span class="ar"></span></a>
+      <a class="btn ghost" href="#index">12 שיעורים</a>
+    </div>
+  </div>
+
+  <!-- META PINS scattered on the map -->
+  <div class="pin pin-1">
+    <span class="k">OBJ · BRAVO</span>
+    <span class="v amber">742 m AMSL</span>
+  </div>
+  <div class="pin pin-2">
+    <span class="k">CONTOUR</span>
+    <span class="v">20 m · 1:50,000</span>
+  </div>
+  <div class="pin pin-3">
+    <span class="k">ROUTE · ALPHA</span>
+    <span class="v">8.4 km · +482 m Δ</span>
+  </div>
+</section>
+
+<!-- AXES -->
+<section class="axes" id="axes">
+  <div class="axes-h">
+    <h2>שלושה צירים, שיטה אחת.</h2>
+    <div class="meta">Three Axes · Section I—III</div>
+  </div>
+
+  <div class="feature-grid">
+    <article class="feature">
+      <div class="head"><span>FEATURE I · TERRAIN</span><span class="n">01</span></div>
+      <div class="vig">
+        <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice">
+          <g class="fv-cs">
+            <path d="M -20,180 C 80,160 160,150 240,144 C 320,138 380,138 400,140"/>
+            <path d="M -20,160 C 80,138 160,128 240,122 C 320,116 380,116 400,118"/>
+          </g>
+          <g class="fv-c">
+            <path d="M -20,142 C 80,118 170,108 250,100 C 320,94 380,96 400,98"/>
+            <path d="M 0,122 C 100,98 190,88 260,82 C 320,78 380,80 400,82"/>
+            <path d="M 30,104 C 130,80 220,72 280,68 C 330,66 380,68 400,70"/>
+            <path d="M 70,90 C 170,68 250,62 310,60 C 350,58 380,60 400,62"/>
+            <path d="M 110,80 C 210,60 280,54 330,54"/>
+            <path d="M 150,72 C 240,56 290,52 320,52"/>
+          </g>
+          <path class="fv-amber" d="M 30,200 C 100,160 180,130 240,100 C 290,80 330,68 360,60"/>
+          <circle cx="240" cy="100" r="3" fill="#DB8F2E"/>
+          <circle cx="320" cy="60" r="3" fill="#DB8F2E"/>
+        </svg>
+      </div>
+      <div class="body">
+        <h3>שטח · קווי גובה ועבירות</h3>
+        <p>קריאת קווי-גובה, אינטר-ויזיביליות, שיפועים והשפעת תכסית. תרגול על שטח אמיתי, לא תרשים.</p>
+      </div>
+      <div class="foot"><span>Topics 02·04·05</span><span>GRID · B-3</span></div>
+    </article>
+
+    <article class="feature">
+      <div class="head"><span>FEATURE II · GEOINT</span><span class="n">02</span></div>
+      <div class="vig">
+        <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice">
+          <g class="fv-c">
+            <circle cx="180" cy="100" r="72"/>
+            <circle cx="180" cy="100" r="50" stroke-dasharray="3 4"/>
+            <circle cx="180" cy="100" r="30"/>
+            <circle cx="180" cy="100" r="14" stroke-dasharray="2 3"/>
+          </g>
+          <line x1="180" y1="14" x2="180" y2="30" class="fv-c"/>
+          <line x1="180" y1="170" x2="180" y2="186" class="fv-c"/>
+          <line x1="94" y1="100" x2="110" y2="100" class="fv-c"/>
+          <line x1="250" y1="100" x2="266" y2="100" class="fv-c"/>
+          <polygon points="180,92 188,100 180,108 172,100" fill="rgba(219,143,46,.18)" stroke="#DB8F2E" stroke-width="1.4"/>
+          <circle cx="180" cy="100" r="2.5" fill="#DB8F2E"/>
+        </svg>
+      </div>
+      <div class="body">
+        <h3>חישה מרחוק · GEOINT</h3>
+        <p>פענוח לוויינים, הבחנה בין סימן לתעתוע, מיזוג מקורות — שיטה לפני כלים.</p>
+      </div>
+      <div class="foot"><span>Topics 06·07·12</span><span>GRID · D-2</span></div>
+    </article>
+
+    <article class="feature">
+      <div class="head"><span>FEATURE III · OPS</span><span class="n">03</span></div>
+      <div class="vig">
+        <svg viewBox="0 0 360 200" preserveAspectRatio="xMidYMid slice">
+          <g class="fv-c">
+            <line x1="40"  y1="170" x2="160" y2="100" stroke-width="1.2"/>
+            <line x1="160" y1="100" x2="280" y2="130" stroke-width="1.2"/>
+            <line x1="160" y1="100" x2="230" y2="40"  stroke-width="1.2"/>
+            <line x1="230" y1="40"  x2="320" y2="30" stroke-width="1.2" stroke-dasharray="4 3"/>
+          </g>
+          <g fill="#4D4538">
+            <circle cx="40"  cy="170" r="5"/>
+            <circle cx="280" cy="130" r="5"/>
+            <circle cx="230" cy="40"  r="5"/>
+            <circle cx="320" cy="30"  r="5"/>
+          </g>
+          <polygon points="160,92 168,100 160,108 152,100" fill="rgba(219,143,46,.18)" stroke="#DB8F2E" stroke-width="1.4"/>
+          <circle cx="160" cy="100" r="2.5" fill="#DB8F2E"/>
+        </svg>
+      </div>
+      <div class="body">
+        <h3>יישום מבצעי · קבלת החלטות</h3>
+        <p>הערכת איום מרחבית, kill-chain, אצירת LOC, מקרי בוחן מקצה-לקצה תחת שעון.</p>
+      </div>
+      <div class="foot"><span>Topics 06·08·09·10</span><span>GRID · E-4</span></div>
+    </article>
+  </div>
+</section>
+
+<!-- INDEX OF FEATURES -->
+<section class="index" id="index">
+  <div class="index-wrap">
+    <div class="index-h">
+      <h2>אינדקס תכונות הקורס.</h2>
+      <div class="meta">Index of Features · 12 named items</div>
+    </div>
+
+    <div class="index-table">
+      <div class="index-row"><span class="n">01</span><span class="title">מבוא: מרחב, כוח ורמות מלחמה</span><span class="feat">Foundation · MDO</span><span class="grid-ref">A-2</span><span class="bear"><b>Bearing 000°</b> · Start</span></div>
+      <div class="index-row"><span class="n">02</span><span class="title">קרטוגרפיה וקריאת מפות</span><span class="feat">Cartography · UTM</span><span class="grid-ref">A-4</span><span class="bear">Bearing 042° · 1.2 km</span></div>
+      <div class="index-row"><span class="n">03</span><span class="title">התמצאות, אזימוט וציר תנועה</span><span class="feat">Navigation · GPS-denied</span><span class="grid-ref">B-1</span><span class="bear">Bearing 088° · 1.6 km</span></div>
+      <div class="index-row"><span class="n">04</span><span class="title">טופוגרפיה ומורפולוגיית שטח</span><span class="feat">Terrain · Key</span><span class="grid-ref">B-3</span><span class="bear">Bearing 124° · 2.1 km</span></div>
+      <div class="index-row"><span class="n">05</span><span class="title">ניידות, כיסוי והסתרה</span><span class="feat">Mobility · Cover</span><span class="grid-ref">C-1</span><span class="bear">Bearing 160° · 2.5 km</span></div>
+      <div class="index-row"><span class="n">06</span><span class="title">קווי-ראייה (LOS · Viewshed)</span><span class="feat">LOS · Kill-chain</span><span class="grid-ref">C-3</span><span class="bear"><b>Bearing 200°</b> · 3.0 km</span></div>
+      <div class="index-row"><span class="n">07</span><span class="title">אקלים, מזג-אוויר ועונתיות</span><span class="feat">WX · Sensors</span><span class="grid-ref">D-1</span><span class="bear">Bearing 240° · 3.6 km</span></div>
+      <div class="index-row"><span class="n">08</span><span class="title">תשתיות ולוגיסטיקה (LOC · MSR)</span><span class="feat">Logistics · MSR/ASR</span><span class="grid-ref">D-3</span><span class="bear">Bearing 280° · 4.2 km</span></div>
+      <div class="index-row"><span class="n">09</span><span class="title">משאבים, אנרגיה וגיאו-כלכלה</span><span class="feat">Geo-econ · SLOC</span><span class="grid-ref">E-1</span><span class="bear">Bearing 312° · 4.8 km</span></div>
+      <div class="index-row"><span class="n">10</span><span class="title">לחימה בשטח בנוי (Urban · MOUT)</span><span class="feat">Urban · Vertical</span><span class="grid-ref">E-3</span><span class="bear"><b>Bearing 342°</b> · 5.4 km</span></div>
+      <div class="index-row"><span class="n">11</span><span class="title">גבולות, עומק אסטרטגי, אזורי חיץ</span><span class="feat">Borders · Buffer</span><span class="grid-ref">F-1</span><span class="bear">Bearing 014° · 6.2 km</span></div>
+      <div class="index-row"><span class="n">12</span><span class="title">GIS יישומי לניתוח מבצעי</span><span class="feat">GIS · Capstone</span><span class="grid-ref">F-3</span><span class="bear"><b>OBJ · BRAVO</b> · 742 m</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- REGISTER -->
+<section class="register" id="register">
+  <div class="register-wrap">
+    <div>
+      <div class="lbl">Beta Cohort · 7/26</div>
+      <h2>הרשמו לסיור הראשון.</h2>
+      <p>גישה ראשונה לכל 12 תכונות הקורס, השפעה ישירה על פיתוח השיעורים הבאים, ללא עלות בתקופת הבטא.</p>
+    </div>
+    <div class="reg-card">
+      <div class="h"><span>Register · Feature Access</span><span>QF-22</span></div>
+      <form onsubmit="event.preventDefault()">
+        <div>
+          <label>EMAIL · כתובת מבצעית</label>
+          <input type="email" placeholder="name@unit.example" required />
+        </div>
+        <button type="submit">↙ אישור והרשמה</button>
+        <div class="meta">12 שיעורים · גישה לא מוגבלת · ללא עלות בבטא</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>גיאוגרפיה צבאית · GEO · ATLAS · 2026</span>
+  <span>WGS·84 · UTM 36N · IL · v1·BETA</span>
+</footer>
+
+</body>
+</html>

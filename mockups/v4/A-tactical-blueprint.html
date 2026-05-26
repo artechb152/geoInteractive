@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v4 · A — תכנית הנדסית טקטית / Tactical Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Newsreader:opsz,wght@6..72,500;6..72,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --bp:#0F3050;          /* blueprint indigo */
+    --bp-2:#13395D;
+    --bp-3:#1A4D7A;
+    --bp-deep:#0A2238;
+    --paper:#E8EFF5;       /* blueprint paper white-cyan */
+    --paper-2:#C7D8E4;
+    --paper-3:#9CB6CA;
+    --cyan:#5FC8F2;        /* drawing line cyan */
+    --cyan-soft:rgba(95,200,242,.35);
+    --orange:#EB9E48;       /* brand orange, kept */
+    --orange-soft:rgba(235,158,72,.18);
+    --red:#FF5340;          /* warning / spec */
+    --dim:rgba(232,239,245,.55);
+  }
+  html,body{margin:0;padding:0;background:var(--bp);color:var(--paper)}
+  body{
+    font-family:'Heebo',system-ui,sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:geometricPrecision;
+    overflow-x:hidden;
+  }
+  /* paper grid overlay (faint, like real blueprint paper) */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(232,239,245,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(232,239,245,.04) 1px,transparent 1px);
+    background-size:32px 32px;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse at 50% 50%,transparent 30%,rgba(0,0,0,.35) 100%);
+  }
+
+  /* DRAWING SHEET BORDER */
+  .sheet{
+    position:relative;z-index:1;
+    border:2px solid var(--paper);
+    margin:18px;
+    background:transparent;
+  }
+  /* tick marks on borders */
+  .sheet::before,.sheet::after{
+    content:"";position:absolute;left:0;right:0;height:14px;
+    background-image:repeating-linear-gradient(90deg,
+      var(--paper) 0,var(--paper) 1px,transparent 1px,transparent 80px);
+  }
+  .sheet::before{top:-14px;background-position:0 bottom}
+  .sheet::after{bottom:-14px;background-position:0 top}
+
+  /* DRAWING HEADER STRIP */
+  .header{
+    display:grid;
+    grid-template-columns:auto 1fr auto auto;
+    align-items:center;gap:0;
+    border-bottom:2px solid var(--paper);
+  }
+  .header > div{
+    padding:14px 22px;border-inline-start:2px solid var(--paper);
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    letter-spacing:.14em;text-transform:uppercase;
+  }
+  .header > div:first-child{border-inline-start:0}
+  .header .brand{
+    font-family:'Newsreader',serif;font-weight:700;font-size:18px;
+    letter-spacing:.005em;text-transform:none;color:var(--paper);
+    display:flex;align-items:center;gap:10px;
+  }
+  .header .brand::before{
+    content:"";display:inline-block;width:18px;height:18px;
+    border:2px solid var(--paper);border-radius:50%;position:relative;
+  }
+  .header .ttl{
+    color:var(--paper);font-weight:500;font-size:11px;
+    text-align:center;letter-spacing:.18em;
+  }
+  .header .ttl b{color:var(--cyan)}
+  .header .nav{
+    display:flex;gap:18px;
+    font-size:10.5px;color:var(--dim);
+  }
+  .header .nav a{color:var(--paper);text-decoration:none;transition:color .15s}
+  .header .nav a:hover{color:var(--cyan)}
+  .header .rev{
+    color:var(--paper);font-weight:700;
+    background:var(--orange);color:var(--bp-deep);padding:6px 12px;
+  }
+  @media (max-width:880px){
+    .header{grid-template-columns:1fr auto}
+    .header .ttl,.header .nav{display:none}
+  }
+
+  /* HERO DRAWING */
+  .hero{
+    position:relative;
+    padding:36px 24px;
+    border-bottom:2px solid var(--paper);
+    display:grid;grid-template-columns:1.2fr .8fr;gap:0;
+    min-height:78vh;
+  }
+  @media (max-width:980px){.hero{grid-template-columns:1fr;min-height:auto}}
+
+  .hero-drawing{
+    position:relative;
+    border:1px solid var(--cyan-soft);
+    background:var(--bp);
+    padding:20px;
+    min-height:60vh;
+  }
+  @media (max-width:980px){.hero-drawing{min-height:50vh}}
+  .hero-drawing svg{width:100%;height:100%;display:block}
+
+  /* drawing strokes */
+  .ln{stroke:var(--paper);stroke-width:1.4;fill:none;stroke-linecap:square}
+  .ln-thin{stroke:var(--paper);stroke-width:.8;fill:none}
+  .ln-dim{stroke:var(--dim);stroke-width:.6;fill:none}
+  .ln-dash{stroke:var(--paper);stroke-width:.9;fill:none;stroke-dasharray:6 4}
+  .ln-center{stroke:var(--cyan);stroke-width:.8;fill:none;stroke-dasharray:10 3 2 3}
+  .ln-cyan{stroke:var(--cyan);stroke-width:1.2;fill:none}
+  .ln-orange{stroke:var(--orange);stroke-width:1.8;fill:none;stroke-linecap:round}
+  .ln-red{stroke:var(--red);stroke-width:1.4;fill:none;stroke-dasharray:3 3}
+  .fl-paper{fill:var(--paper)}
+  .fl-cyan{fill:var(--cyan)}
+  .fl-orange{fill:var(--orange)}
+  .tx{font-family:'JetBrains Mono',monospace;fill:var(--paper);font-size:9.5px;letter-spacing:.06em}
+  .tx-c{font-family:'JetBrains Mono',monospace;fill:var(--cyan);font-size:9px;letter-spacing:.06em}
+  .tx-o{font-family:'JetBrains Mono',monospace;fill:var(--orange);font-size:9.5px;letter-spacing:.08em;font-weight:700}
+  .tx-r{font-family:'JetBrains Mono',monospace;fill:var(--red);font-size:9px;letter-spacing:.08em}
+
+  /* TITLE BLOCK (right column = visual left in RTL) */
+  .title-block{
+    border:1px solid var(--cyan-soft);
+    background:var(--bp);
+    padding:0;
+    display:flex;flex-direction:column;
+    border-inline-start:0;
+  }
+  @media (max-width:980px){
+    .title-block{border-inline-start:1px solid var(--cyan-soft);border-top:0;margin-top:24px}
+  }
+  .tb-row{
+    display:grid;grid-template-columns:120px 1fr;
+    border-bottom:1px solid var(--cyan-soft);
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.1em;color:var(--paper-3);
+  }
+  .tb-row .k{
+    background:var(--bp-deep);color:var(--cyan);
+    padding:10px 14px;text-transform:uppercase;letter-spacing:.16em;
+    border-inline-end:1px solid var(--cyan-soft);font-weight:500;
+  }
+  .tb-row .v{padding:10px 14px;color:var(--paper);font-weight:700;direction:ltr;text-align:start}
+  .tb-row .v.orange{color:var(--orange)}
+  .tb-row .v.cyan{color:var(--cyan)}
+
+  /* hero TITLE inside title-block */
+  .tb-title{
+    padding:36px 30px;border-bottom:1px solid var(--cyan-soft);
+    background:var(--bp-2);
+  }
+  .tb-title .super{
+    font-family:'Newsreader',serif;font-style:italic;
+    font-weight:500;font-size:14px;color:var(--cyan);
+    margin-bottom:14px;
+    text-transform:uppercase;letter-spacing:.1em;
+  }
+  .tb-title h1{
+    font-family:'Heebo',sans-serif;font-weight:800;
+    font-size:clamp(34px,4.5vw,52px);line-height:1;letter-spacing:-.025em;
+    margin:0 0 18px;color:var(--paper);
+  }
+  .tb-title h1 em{font-style:normal;color:var(--orange)}
+  .tb-title p{
+    font-family:'Newsreader',serif;font-size:16px;color:var(--paper-2);
+    line-height:1.65;margin:0 0 22px;max-width:38ch;font-weight:500;
+  }
+  .tb-cta{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;
+    padding:13px 20px;background:var(--orange);color:var(--bp-deep);
+    text-decoration:none;border:1.5px solid var(--orange);
+    letter-spacing:.14em;text-transform:uppercase;
+    transition:transform .12s,filter .15s;
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+  .btn.ghost{background:transparent;color:var(--paper);border-color:var(--paper)}
+  .btn.ghost:hover{background:var(--paper);color:var(--bp-deep)}
+
+  /* SECTION HEADINGS BAR */
+  .section-bar{
+    display:grid;grid-template-columns:auto 1fr auto;
+    gap:0;
+    border-top:2px solid var(--paper);
+    border-bottom:2px solid var(--paper);
+  }
+  .section-bar > div{
+    padding:14px 22px;
+    border-inline-start:2px solid var(--paper);
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--paper);
+  }
+  .section-bar > div:first-child{border-inline-start:0;background:var(--bp-deep)}
+  .section-bar .sec-n{font-weight:700;font-size:13px;color:var(--orange)}
+  .section-bar .sec-t{
+    font-family:'Newsreader',serif;font-weight:700;font-size:20px;
+    text-transform:none;letter-spacing:.005em;color:var(--paper);
+  }
+  .section-bar .sec-meta{color:var(--paper-3)}
+
+  /* AXES — engineering schematic diagrams */
+  .axes-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+    border-bottom:2px solid var(--paper);
+  }
+  @media (max-width:880px){.axes-grid{grid-template-columns:1fr}}
+  .axes-cell{
+    border-inline-start:2px solid var(--paper);padding:0;
+    display:flex;flex-direction:column;
+  }
+  .axes-cell:first-child{border-inline-start:0}
+  @media (max-width:880px){
+    .axes-cell{border-inline-start:0;border-bottom:2px solid var(--paper)}
+    .axes-cell:last-child{border-bottom:0}
+  }
+  .axes-cell .ax-h{
+    padding:14px 22px;border-bottom:1px solid var(--cyan-soft);
+    display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;
+    background:var(--bp-deep);color:var(--paper-3);
+  }
+  .axes-cell .ax-h .n{color:var(--orange);font-weight:700;font-size:13px}
+  .axes-cell .ax-d{
+    aspect-ratio:6/5;border-bottom:1px solid var(--cyan-soft);
+    background:var(--bp);position:relative;overflow:hidden;
+  }
+  .axes-cell .ax-d svg{position:absolute;inset:0;width:100%;height:100%;padding:18px}
+  .axes-cell .ax-b{padding:24px 24px;flex:1}
+  .axes-cell h3{
+    font-family:'Heebo',sans-serif;font-weight:800;font-size:22px;
+    color:var(--paper);margin:0 0 10px;line-height:1.15;letter-spacing:-.005em;
+  }
+  .axes-cell p{
+    font-family:'Newsreader',serif;font-size:16px;color:var(--paper-2);
+    line-height:1.6;margin:0;font-weight:500;
+  }
+  .axes-cell .ax-foot{
+    padding:10px 24px;border-top:1px solid var(--cyan-soft);
+    display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.14em;color:var(--paper-3);text-transform:uppercase;
+  }
+  .axes-cell .ax-foot b{color:var(--cyan);font-weight:700}
+
+  /* SHEET INDEX — 12 sheets table */
+  .sheets-table{
+    background:var(--bp-deep);
+  }
+  .st-head{
+    display:grid;grid-template-columns:80px 1fr 160px 160px;
+    background:var(--bp);
+    border-bottom:1.5px solid var(--paper);
+  }
+  .st-head > div{
+    padding:12px 18px;border-inline-start:1px solid var(--cyan-soft);
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.16em;color:var(--cyan);text-transform:uppercase;font-weight:700;
+  }
+  .st-head > div:first-child{border-inline-start:0}
+  .st-row{
+    display:grid;grid-template-columns:80px 1fr 160px 160px;
+    border-bottom:1px solid var(--bp-3);
+    transition:background .15s;cursor:pointer;
+  }
+  .st-row:hover{background:var(--bp)}
+  .st-row > div{
+    padding:13px 18px;border-inline-start:1px solid var(--bp-3);
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    color:var(--paper);
+  }
+  .st-row > div:first-child{
+    border-inline-start:0;text-align:center;color:var(--orange);font-weight:700;font-size:13px;
+  }
+  .st-row > div:nth-child(2){
+    font-family:'Heebo',sans-serif;font-size:15.5px;font-weight:600;
+  }
+  .st-row > div:nth-child(3){color:var(--cyan);letter-spacing:.06em;direction:ltr;text-align:start}
+  .st-row > div:nth-child(4){color:var(--paper-3);letter-spacing:.06em;direction:ltr;text-align:start}
+  @media (max-width:780px){
+    .st-head{grid-template-columns:60px 1fr}
+    .st-head > div:nth-child(n+3){display:none}
+    .st-row{grid-template-columns:60px 1fr}
+    .st-row > div:nth-child(n+3){display:none}
+  }
+
+  /* APPROVAL BLOCK — sign-off panel */
+  .approval{
+    display:grid;grid-template-columns:1.2fr .8fr;gap:0;
+    border-top:2px solid var(--paper);
+  }
+  @media (max-width:880px){.approval{grid-template-columns:1fr}}
+  .approval > div{
+    padding:48px 36px;border-inline-start:2px solid var(--paper);
+  }
+  .approval > div:first-child{border-inline-start:0;background:var(--bp-deep)}
+  .approval h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(34px,5vw,56px);line-height:1.02;letter-spacing:-.02em;
+    margin:0 0 16px;color:var(--paper);
+  }
+  .approval h2 em{font-style:normal;color:var(--orange)}
+  .approval .super{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.22em;color:var(--cyan);text-transform:uppercase;margin-bottom:12px;
+  }
+  .approval p{
+    font-family:'Newsreader',serif;font-size:17px;color:var(--paper-2);
+    margin:0 0 22px;max-width:46ch;line-height:1.6;font-weight:500;
+  }
+  .approval .req-form{display:grid;gap:14px}
+  .approval label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.16em;color:var(--cyan);text-transform:uppercase;
+    display:block;margin-bottom:6px;
+  }
+  .approval input{
+    width:100%;background:transparent;border:1.5px solid var(--paper);
+    padding:14px 14px;color:var(--paper);font-family:'Heebo',sans-serif;font-size:15px;
+    outline:none;border-radius:0;
+  }
+  .approval input:focus{border-color:var(--orange)}
+  .approval input::placeholder{color:var(--paper-3)}
+  .approval button{
+    background:var(--orange);color:var(--bp-deep);border:0;
+    padding:15px 14px;font-family:'JetBrains Mono',monospace;font-weight:700;
+    font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;
+  }
+  .approval .signoff{
+    margin-top:18px;
+    border-top:1px solid var(--cyan-soft);padding-top:14px;
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--paper-3);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .approval .signoff b{color:var(--paper);display:block;font-size:11px;margin-bottom:3px}
+
+  /* DOC FOOTER */
+  .doc-foot{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    border-top:2px solid var(--paper);
+  }
+  .doc-foot > div{
+    padding:10px 18px;border-inline-start:2px solid var(--paper);
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.16em;color:var(--paper-3);text-transform:uppercase;
+  }
+  .doc-foot > div:first-child{border-inline-start:0}
+  .doc-foot b{color:var(--paper)}
+  @media (max-width:680px){.doc-foot{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<article class="sheet">
+
+  <!-- HEADER STRIP -->
+  <div class="header">
+    <div class="brand">GEO · TACTICAL DRAWINGS</div>
+    <div class="ttl">SHEET · <b>D-26-01</b> · קורס יסוד / גיאוגרפיה צבאית · 12 SHEETS</div>
+    <div class="nav">
+      <a href="#axes">AXES</a><a href="#sheets">SHEETS</a><a href="#approve">APPROVE</a>
+    </div>
+    <div class="rev">REV · 03</div>
+  </div>
+
+  <!-- HERO DRAWING -->
+  <section class="hero">
+
+    <!-- LEFT: Engineering drawing (a terrain ELEVATION PROFILE — cross-section view) -->
+    <div class="hero-drawing">
+      <svg viewBox="0 0 700 540" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <!-- centerline + frame ticks -->
+        <g class="ln-center">
+          <line x1="0" y1="270" x2="700" y2="270"/>
+        </g>
+
+        <!-- drawing border -->
+        <g class="ln-dim">
+          <rect x="20" y="20" width="660" height="500" fill="none"/>
+        </g>
+
+        <!-- title strip inside drawing -->
+        <g>
+          <line x1="20" y1="50" x2="680" y2="50" class="ln-thin"/>
+          <text x="32" y="42" class="tx-c">DRAWING TITLE — TERRAIN ELEVATION PROFILE · OBJ ALPHA → OBJ BRAVO</text>
+          <text x="556" y="42" class="tx-c">SCALE 1 : 25,000 H · 1 : 500 V</text>
+        </g>
+
+        <!-- TERRAIN CROSS-SECTION (profile, side view) -->
+        <!-- ground line -->
+        <path class="ln" d="M 40,470 L 80,460 L 120,430 L 160,380 L 200,360 L 240,400 L 290,440 L 340,420 L 390,360 L 430,300 L 470,260 L 510,220 L 550,200 L 590,210 L 630,250 L 660,280"/>
+
+        <!-- ground hatching (slope shading) -->
+        <g class="ln-dim">
+          <line x1="40" y1="470" x2="48" y2="490"/>
+          <line x1="80" y1="460" x2="88" y2="480"/>
+          <line x1="120" y1="430" x2="128" y2="450"/>
+          <line x1="160" y1="380" x2="168" y2="400"/>
+          <line x1="200" y1="360" x2="208" y2="380"/>
+          <line x1="240" y1="400" x2="248" y2="420"/>
+          <line x1="290" y1="440" x2="298" y2="460"/>
+          <line x1="340" y1="420" x2="348" y2="440"/>
+          <line x1="390" y1="360" x2="398" y2="380"/>
+          <line x1="430" y1="300" x2="438" y2="320"/>
+          <line x1="470" y1="260" x2="478" y2="280"/>
+          <line x1="510" y1="220" x2="518" y2="240"/>
+          <line x1="550" y1="200" x2="558" y2="220"/>
+          <line x1="590" y1="210" x2="598" y2="230"/>
+          <line x1="630" y1="250" x2="638" y2="270"/>
+        </g>
+
+        <!-- observation post -->
+        <g transform="translate(80,460)">
+          <line x1="0" y1="0" x2="0" y2="-22" class="ln-cyan"/>
+          <polygon points="-5,-22 5,-22 0,-30" class="fl-cyan"/>
+          <text x="-22" y="-40" class="tx-c">OP-1</text>
+          <text x="-22" y="-30" class="tx-c">PERS</text>
+        </g>
+
+        <!-- vehicle position -->
+        <g transform="translate(240,400)">
+          <rect x="-10" y="-12" width="20" height="10" class="ln-cyan" fill="none"/>
+          <text x="-18" y="-22" class="tx-c">VEH-2</text>
+        </g>
+
+        <!-- OBJECTIVE (peak) -->
+        <g transform="translate(550,200)">
+          <polygon points="-10,-12 10,-12 0,-26" class="ln-orange" fill="none"/>
+          <text x="-30" y="-34" class="tx-o">OBJ · BRAVO</text>
+          <text x="-30" y="-22" class="tx-o">+742 m</text>
+        </g>
+
+        <!-- LINE OF SIGHT (cyan, from OP to OBJ) -->
+        <line x1="80" y1="450" x2="550" y2="184" class="ln-cyan" stroke-dasharray="4 3"/>
+        <text x="270" y="290" class="tx-c">LOS · 087° T · 4.8 km · clear</text>
+
+        <!-- HIDDEN line (mask behind hill) -->
+        <line x1="240" y1="394" x2="390" y2="354" class="ln-red"/>
+        <text x="260" y="375" class="tx-r">MASKED · 220°</text>
+
+        <!-- dimension lines (showing elevation deltas) -->
+        <g class="ln-thin">
+          <line x1="80" y1="490" x2="80" y2="510"/>
+          <line x1="550" y1="490" x2="550" y2="510"/>
+          <line x1="80" y1="505" x2="550" y2="505"/>
+          <polygon points="80,505 88,502 88,508" class="fl-paper"/>
+          <polygon points="550,505 542,502 542,508" class="fl-paper"/>
+          <text x="280" y="500" class="tx" text-anchor="middle">DISTANCE = 8.4 km</text>
+        </g>
+
+        <!-- elevation dimension -->
+        <g class="ln-thin">
+          <line x1="660" y1="280" x2="688" y2="280"/>
+          <line x1="660" y1="200" x2="688" y2="200"/>
+          <line x1="680" y1="280" x2="680" y2="200"/>
+          <polygon points="680,200 677,208 683,208" class="fl-paper"/>
+          <polygon points="680,280 677,272 683,272" class="fl-paper"/>
+          <text x="688" y="245" class="tx">ΔH = +482 m</text>
+        </g>
+
+        <!-- station markers along path -->
+        <g>
+          <circle cx="80"  cy="450" r="3" class="fl-cyan"/>
+          <circle cx="240" cy="394" r="3" class="fl-cyan"/>
+          <circle cx="390" cy="354" r="3" class="fl-cyan"/>
+          <circle cx="550" cy="184" r="4" class="fl-orange"/>
+        </g>
+
+        <!-- elevation scale on left -->
+        <g class="ln-thin">
+          <line x1="22" y1="200" x2="32" y2="200"/>
+          <line x1="22" y1="270" x2="32" y2="270"/>
+          <line x1="22" y1="350" x2="32" y2="350"/>
+          <line x1="22" y1="430" x2="32" y2="430"/>
+          <text x="34" y="204" class="tx">740</text>
+          <text x="34" y="274" class="tx">540</text>
+          <text x="34" y="354" class="tx">340</text>
+          <text x="34" y="434" class="tx">140</text>
+        </g>
+
+        <!-- callouts: leader lines to features -->
+        <g class="ln-thin">
+          <line x1="120" y1="430" x2="160" y2="500"/>
+          <text x="162" y="503" class="tx">RIDGE · 87m</text>
+        </g>
+        <g class="ln-thin">
+          <line x1="430" y1="300" x2="470" y2="125"/>
+          <line x1="430" y1="125" x2="470" y2="125"/>
+          <text x="430" y="122" class="tx" text-anchor="end">SADDLE · 432m</text>
+        </g>
+
+        <!-- magnetic north -->
+        <g transform="translate(640,75)">
+          <line x1="0" y1="-22" x2="0" y2="22" class="ln-thin"/>
+          <polygon points="-5,-22 5,-22 0,-32" class="fl-paper"/>
+          <text x="-6" y="-38" class="tx">N true</text>
+          <line x1="0" y1="-22" x2="-5" y2="-30" class="ln-cyan"/>
+          <text x="6" y="-26" class="tx-c">4.2° E</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- RIGHT: TITLE BLOCK (engineering drawing style) -->
+    <aside class="title-block">
+      <div class="tb-title">
+        <div class="super">Reading the Terrain · Course Drawing</div>
+        <h1>
+          קוראים את <em>השטח</em>,<br>לפני שצועדים בו.
+        </h1>
+        <p>קורס אינטראקטיבי המבוסס על תכניות שטח, חתכי-גובה והליכי הנדסה מבצעית. 12 גיליונות מבסיס תכנון ועד GEOINT מבצעי.</p>
+        <div class="tb-cta">
+          <a class="btn" href="#approve">↙ פתיחת הגיליון</a>
+          <a class="btn ghost" href="#sheets">SHEETS · 12</a>
+        </div>
+      </div>
+
+      <div class="tb-row"><span class="k">PROJECT</span><span class="v">GEO-IL · COURSE</span></div>
+      <div class="tb-row"><span class="k">DRAWING NO.</span><span class="v cyan">D-26-01 / 12</span></div>
+      <div class="tb-row"><span class="k">SCALE</span><span class="v">1 : 25,000 H · 1 : 500 V</span></div>
+      <div class="tb-row"><span class="k">DATUM</span><span class="v">WGS·84 · UTM 36N</span></div>
+      <div class="tb-row"><span class="k">DRAFTSMAN</span><span class="v">מטה ההוראה</span></div>
+      <div class="tb-row"><span class="k">APPROVED</span><span class="v orange">PENDING · COHORT 7/26</span></div>
+      <div class="tb-row"><span class="k">REVISION</span><span class="v">03 · 25 MAY 26</span></div>
+    </aside>
+  </section>
+
+  <!-- AXES SECTION -->
+  <div class="section-bar" id="axes">
+    <div><span class="sec-n">§ A</span></div>
+    <div><span class="sec-t">שלושה צירים, שלוש תכניות.</span></div>
+    <div class="sec-meta">SHEETS A-1 → A-3</div>
+  </div>
+
+  <div class="axes-grid">
+
+    <article class="axes-cell">
+      <div class="ax-h"><span>SHEET A-1 · TERRAIN</span><span class="n">01</span></div>
+      <div class="ax-d">
+        <svg viewBox="0 0 280 200" preserveAspectRatio="xMidYMid meet">
+          <!-- elevation profile -->
+          <path class="ln" d="M 20,170 L 50,160 L 80,130 L 110,90 L 150,70 L 200,110 L 240,140 L 260,150"/>
+          <!-- hatching -->
+          <g class="ln-dim">
+            <line x1="20" y1="170" x2="26" y2="184"/>
+            <line x1="50" y1="160" x2="56" y2="174"/>
+            <line x1="80" y1="130" x2="86" y2="144"/>
+            <line x1="110" y1="90" x2="116" y2="104"/>
+            <line x1="150" y1="70" x2="156" y2="84"/>
+            <line x1="200" y1="110" x2="206" y2="124"/>
+            <line x1="240" y1="140" x2="246" y2="154"/>
+          </g>
+          <!-- LOS -->
+          <line x1="50" y1="160" x2="150" y2="64" class="ln-cyan" stroke-dasharray="3 2"/>
+          <circle cx="50" cy="160" r="3" class="fl-cyan"/>
+          <polygon points="142,60 158,60 150,46" class="ln-orange" fill="none"/>
+          <text x="160" y="60" class="tx-o">OBJ</text>
+          <!-- dim line -->
+          <g class="ln-thin">
+            <line x1="50" y1="184" x2="150" y2="184"/>
+            <polygon points="50,184 56,181 56,187" class="fl-paper"/>
+            <polygon points="150,184 144,181 144,187" class="fl-paper"/>
+            <text x="100" y="181" class="tx" text-anchor="middle">4.2 km</text>
+          </g>
+        </svg>
+      </div>
+      <div class="ax-b">
+        <h3>שטח · חתכי גובה וניתוח עבירות</h3>
+        <p>חתכי קרקע, חישוב שיפועים, אינטר-ויזיביליות וסיווג Key Terrain — בכלים של מהנדס שדה, לא במונחים מופשטים.</p>
+      </div>
+      <div class="ax-foot"><span>SHEET A-1</span><span><b>TOPICS</b> · 02 · 04 · 05</span></div>
+    </article>
+
+    <article class="axes-cell">
+      <div class="ax-h"><span>SHEET A-2 · GEOINT</span><span class="n">02</span></div>
+      <div class="ax-d">
+        <svg viewBox="0 0 280 200" preserveAspectRatio="xMidYMid meet">
+          <!-- reticle / target view -->
+          <g class="ln">
+            <circle cx="140" cy="100" r="68" fill="none"/>
+          </g>
+          <g class="ln-cyan">
+            <circle cx="140" cy="100" r="44" fill="none" stroke-dasharray="3 3"/>
+            <circle cx="140" cy="100" r="22" fill="none"/>
+          </g>
+          <!-- crosshairs -->
+          <line x1="140" y1="20" x2="140" y2="50" class="ln-thin"/>
+          <line x1="140" y1="150" x2="140" y2="180" class="ln-thin"/>
+          <line x1="55" y1="100" x2="85" y2="100" class="ln-thin"/>
+          <line x1="195" y1="100" x2="225" y2="100" class="ln-thin"/>
+          <!-- target -->
+          <polygon points="140,92 148,100 140,108 132,100" class="ln-orange" fill="none"/>
+          <circle cx="140" cy="100" r="2" class="fl-orange"/>
+          <!-- dimension callout -->
+          <g class="ln-thin">
+            <line x1="208" y1="100" x2="248" y2="100"/>
+            <text x="232" y="96" class="tx">R = 68 px</text>
+          </g>
+        </svg>
+      </div>
+      <div class="ax-b">
+        <h3>חישה מרחוק · GEOINT</h3>
+        <p>פענוח לוויינים, הבחנה בין סימן לתעתוע, מיזוג מקורות (IMINT · SIGINT · OSINT). שיטה לפני כלים, אנליסט לפני מערכת.</p>
+      </div>
+      <div class="ax-foot"><span>SHEET A-2</span><span><b>TOPICS</b> · 06 · 07 · 12</span></div>
+    </article>
+
+    <article class="axes-cell">
+      <div class="ax-h"><span>SHEET A-3 · OPS</span><span class="n">03</span></div>
+      <div class="ax-d">
+        <svg viewBox="0 0 280 200" preserveAspectRatio="xMidYMid meet">
+          <!-- LOC network schematic -->
+          <g class="ln-thin">
+            <rect x="20" y="160" width="20" height="14" class="ln" fill="none"/>
+            <rect x="120" y="100" width="22" height="16" class="ln" fill="none"/>
+            <rect x="220" y="130" width="20" height="14" class="ln" fill="none"/>
+            <rect x="160" y="40"  width="22" height="16" class="ln" fill="none"/>
+          </g>
+          <g class="ln">
+            <line x1="40"  y1="167" x2="120" y2="108"/>
+            <line x1="142" y1="108" x2="220" y2="137"/>
+            <line x1="131" y1="100" x2="160" y2="56"/>
+          </g>
+          <g class="ln-orange">
+            <line x1="40"  y1="167" x2="120" y2="108"/>
+          </g>
+          <!-- labels -->
+          <text x="20" y="184" class="tx">DEPOT</text>
+          <text x="120" y="98" class="tx">HUB</text>
+          <text x="220" y="160" class="tx">FWD</text>
+          <text x="160" y="36" class="tx-o">OBJ</text>
+          <!-- dim -->
+          <g class="ln-thin">
+            <line x1="40" y1="190" x2="120" y2="190"/>
+            <text x="80" y="186" class="tx" text-anchor="middle">MSR · 4.6 km</text>
+          </g>
+        </svg>
+      </div>
+      <div class="ax-b">
+        <h3>יישום מבצעי · קבלת החלטות</h3>
+        <p>הערכת איום מרחבית, kill-chain, אצירת LOC וצירי תנועה, מקרי בוחן מקצה-לקצה תחת אילוצי זמן ומידע חסר.</p>
+      </div>
+      <div class="ax-foot"><span>SHEET A-3</span><span><b>TOPICS</b> · 06 · 08 · 09 · 10</span></div>
+    </article>
+
+  </div>
+
+  <!-- SHEET INDEX -->
+  <div class="section-bar" id="sheets">
+    <div><span class="sec-n">§ B</span></div>
+    <div><span class="sec-t">אינדקס גיליונות · 12 שיעורים.</span></div>
+    <div class="sec-meta">SHEET INDEX · B-1 → B-12</div>
+  </div>
+
+  <div class="sheets-table">
+    <div class="st-head">
+      <div>SHEET</div><div>TITLE</div><div>DRAWING NO.</div><div>CLASS</div>
+    </div>
+    <div class="st-row"><div>B-01</div><div>מבוא: מרחב, כוח ורמות מלחמה</div><div>D-26-01.01</div><div>FOUNDATION</div></div>
+    <div class="st-row"><div>B-02</div><div>קרטוגרפיה וקריאת מפות</div><div>D-26-01.02</div><div>CARTO</div></div>
+    <div class="st-row"><div>B-03</div><div>התמצאות, אזימוט וציר תנועה</div><div>D-26-01.03</div><div>NAV</div></div>
+    <div class="st-row"><div>B-04</div><div>טופוגרפיה ומורפולוגיית שטח</div><div>D-26-01.04</div><div>TERRAIN</div></div>
+    <div class="st-row"><div>B-05</div><div>ניידות, כיסוי והסתרה</div><div>D-26-01.05</div><div>MOBILITY</div></div>
+    <div class="st-row"><div>B-06</div><div>קווי-ראייה (LOS · Viewshed)</div><div>D-26-01.06</div><div>LOS</div></div>
+    <div class="st-row"><div>B-07</div><div>אקלים, מזג-אוויר ועונתיות</div><div>D-26-01.07</div><div>WX</div></div>
+    <div class="st-row"><div>B-08</div><div>תשתיות ולוגיסטיקה (LOC · MSR)</div><div>D-26-01.08</div><div>LOG</div></div>
+    <div class="st-row"><div>B-09</div><div>משאבים, אנרגיה וגיאו-כלכלה</div><div>D-26-01.09</div><div>GEO-ECON</div></div>
+    <div class="st-row"><div>B-10</div><div>לחימה בשטח בנוי (Urban · MOUT)</div><div>D-26-01.10</div><div>URBAN</div></div>
+    <div class="st-row"><div>B-11</div><div>גבולות, עומק אסטרטגי, אזורי חיץ</div><div>D-26-01.11</div><div>BORDERS</div></div>
+    <div class="st-row"><div>B-12</div><div>GIS יישומי לניתוח מבצעי</div><div>D-26-01.12</div><div>CAPSTONE</div></div>
+  </div>
+
+  <!-- APPROVAL BLOCK -->
+  <section class="approval" id="approve">
+    <div>
+      <div class="super">SECTION § C · APPROVAL & ROSTER</div>
+      <h2>אישור והרשמה.<br><em>קוהורט 7/26</em>.</h2>
+      <p>הרשמה משמשת כחתימת מתכשר על תכנית ההוראה. גישה ראשונה לכל 12 הגיליונות, השפעה ישירה על פיתוח השיעורים הבאים, ללא עלות בתקופת הבטא.</p>
+
+      <div class="signoff">
+        <div>
+          <b>DRAFTSMAN</b>
+          מטה ההוראה · ענף הגיאוגרפיה
+        </div>
+        <div>
+          <b>CHECKED</b>
+          מערך פיתוח קורסי IL-G
+        </div>
+        <div>
+          <b>APPROVED</b>
+          תקף החל מ-25 MAY 2026
+        </div>
+        <div>
+          <b>REVISION</b>
+          R-03 · 12 SHEETS · A1 SIZE
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <form class="req-form" onsubmit="event.preventDefault()">
+        <div>
+          <label>FIELD 01 · NAME (אופציונלי)</label>
+          <input type="text" placeholder="שם / יחידה" />
+        </div>
+        <div>
+          <label>FIELD 02 · EMAIL — כתובת מבצעית</label>
+          <input type="email" placeholder="name@unit.example" required />
+        </div>
+        <button type="submit">↙ אישור והרשמה · SIGN</button>
+        <div class="signoff" style="margin-top:14px">
+          <div><b>SHEETS</b>12 · DRAWING SET</div>
+          <div><b>COST</b>0 · BETA COHORT</div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- DOC FOOTER -->
+  <div class="doc-foot">
+    <div>DOC · <b>D-26-01</b></div>
+    <div><b>REV</b> 03 · 25 MAY 2026</div>
+    <div><b>SHEETS</b> 12 · A1</div>
+    <div><b>AUTH</b> · מטה ההוראה · IL</div>
+  </div>
+
+</article>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Check, Mail, Clock, Layers, Sparkles, Loader2 } from 'lucide-react';
+import { Check, Mail, Clock, Layers, Sparkles, Loader2 } from 'lucide-react';
 import { Reveal } from './Reveal';
 import { cn } from '@/lib/utils';
 import { lessons } from '@/lib/lessons';
@@ -42,7 +42,7 @@ export function LeadCTA() {
     <section id="lead" aria-labelledby="lead-title" className="relative py-20 md:py-28">
       <div className="max-w-5xl mx-auto px-6">
         <Reveal>
-          <div className="relative overflow-hidden rounded-3xl bg-brand-dark text-bg-elevated shadow-elevated">
+          <div className="relative overflow-hidden rounded-3xl bg-brand-dark text-bg-elevated">
             <DecorativeTopo />
 
             <div className="relative grid lg:grid-cols-[1.1fr_1fr] gap-10 p-7 md:p-10 lg:p-14">
@@ -59,7 +59,7 @@ export function LeadCTA() {
                 >
                   הקדימו את התור.
                   <br className="hidden sm:block" />
-                  <span className="text-accent">קבלו גישה ראשונים</span>.
+                  <span className="text-accent-hover">קבלו גישה ראשונים</span>.
                 </h2>
 
                 <p className="mt-4 text-base md:text-lg text-bg-elevated/75 leading-relaxed text-pretty max-w-lg">
@@ -73,9 +73,7 @@ export function LeadCTA() {
                       key={label}
                       className="flex items-center gap-3 text-sm md:text-[15px] text-bg-elevated/90"
                     >
-                      <span className="grid place-items-center size-7 shrink-0 rounded-full bg-bg-elevated/12 border border-bg-elevated/20">
-                        <Icon className="size-3.5 text-accent" aria-hidden />
-                      </span>
+                      <Icon className="size-5 shrink-0 text-accent" aria-hidden />
                       <span>{label}</span>
                     </li>
                   ))}
@@ -93,7 +91,7 @@ export function LeadCTA() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.3, ease: easeSnap }}
-                      className="rounded-2xl bg-bg-elevated p-5 md:p-6 text-fg shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)]"
+                      className="rounded-2xl bg-bg-elevated p-5 md:p-6 text-fg"
                       noValidate
                     >
                       <label
@@ -145,7 +143,7 @@ export function LeadCTA() {
                           <p
                             id={`${id}-error`}
                             role="alert"
-                            className="text-xs text-accent-hover"
+                            className="text-xs text-accent"
                           >
                             {errorMsg}
                           </p>
@@ -157,9 +155,9 @@ export function LeadCTA() {
                         disabled={status === 'submitting'}
                         className={cn(
                           'group mt-3 inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-lg font-medium',
-                          'text-fg bg-accent hover:bg-accent-hover hover:text-bg-elevated',
+                          'text-bg-elevated bg-accent hover:bg-accent-hover',
                           'disabled:opacity-60 disabled:cursor-not-allowed',
-                          'transition-all shadow-glow',
+                          'transition-all',
                         )}
                       >
                         {status === 'submitting' ? (
@@ -168,13 +166,7 @@ export function LeadCTA() {
                             <span>שולח...</span>
                           </>
                         ) : (
-                          <>
-                            <span>הצטרפו לגישה המוקדמת</span>
-                            <ArrowLeft
-                              className="size-4 transition-transform group-hover:-translate-x-1"
-                              aria-hidden
-                            />
-                          </>
+                          <span>הצטרפו לגישה המוקדמת</span>
                         )}
                       </button>
 
@@ -190,13 +182,13 @@ export function LeadCTA() {
                       transition={{ duration: 0.45, ease: easeSnap }}
                       role="status"
                       aria-live="polite"
-                      className="rounded-2xl bg-bg-elevated p-7 md:p-8 text-fg shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)] text-center"
+                      className="rounded-2xl bg-bg-elevated p-7 md:p-8 text-fg text-center"
                     >
                       <motion.div
                         initial={{ scale: 0.6, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ duration: 0.45, ease: easeSnap, delay: 0.1 }}
-                        className="grid place-items-center size-14 mx-auto mb-4 rounded-full bg-brand/15 text-brand-dark border-2 border-brand/30"
+                        className="grid place-items-center size-14 mx-auto mb-4 rounded-full bg-accent/15 text-accent border-2 border-accent/30"
                       >
                         <Check className="size-7" strokeWidth={2.5} aria-hidden />
                       </motion.div>

@@ -23,8 +23,9 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { LessonNavContext } from '@/components/lesson/LessonShell';
+import type { LessonNavInfo } from '@/components/lesson/LessonShell';
 import { recordSceneVisit } from '@/lib/last-visit';
 import { cn } from '@/lib/utils';
 
@@ -77,8 +78,9 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const rootRef = useRef<HTMLDivElement>(null);
   // Pulled from LessonShell so the recap can replace its "next sub-
   // topic" slot with a real "next lesson" link (or "סיום הקורס" on
-  // the final lesson).
-  const { next: nextLesson } = useContext(LessonNavContext);
+  // the final lesson). `current` headlines the TOC sidebar since the
+  // lesson title was removed from the secondary header.
+  const { current: currentLesson, next: nextLesson } = useContext(LessonNavContext);
 
   // Sync from hash on mount + on hashchange (browser back/forward).
   useEffect(() => {
@@ -138,20 +140,18 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   const isHook = scenes[idx].id === 'hook';
 
   return (
-    // xl+: reserve a tight 100px on the right (start in RTL) for the
-    // fixed TOC. Combined with a narrower (160px) TOC anchored almost
-    // flush to the viewport edge (`start-2`), this still leaves
-    // ~10-15px of clear gap at the minimum xl breakpoint (1280px) and
-    // ~80px+ on standard desktops, while letting the active sub-topic
-    // extend much further right than before.
-    <div className="relative scroll-mt-28 xl:ps-[100px]" ref={rootRef}>
+    // xl+: the TOC is now a full-height drawer flush to the viewport
+    // start (right in RTL). Width is 160px, so 180px of padding-start
+    // leaves a clear 20px gap between the TOC's inner edge and the
+    // first column of lesson content.
+    <div className="relative scroll-mt-28 xl:ps-[180px]" ref={rootRef}>
       {/* Mobile / tablet sub-topic strip (everything below xl gets this) */}
-      <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} />
+      <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} lesson={currentLesson} />
 
       {/* Desktop TOC — fixed to the viewport's right edge, always
           visible on xl+. Doesn't scroll with the content. The ps-[210px]
           above guarantees zero overlap with the active sub-topic. */}
-      <ScenePagerDesktop scenes={scenes} active={idx} onGoto={goto} />
+      <ScenePagerDesktop scenes={scenes} active={idx} onGoto={goto} lesson={currentLesson} />
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
@@ -172,7 +172,7 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
             on the last lesson), because there's no further sub-topic
             in this lesson. */}
       {!isHook && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <PrevButton
             disabled={isFirst}
             label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
@@ -182,7 +182,6 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
             <NextLessonLink next={nextLesson} />
           ) : (
             <NextButton
-              disabled={false}
               label={scenes[idx + 1].label}
               onClick={() => goto(idx + 1)}
             />
@@ -193,6 +192,11 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
   );
 }
 
+/**
+ * Prev/Next pair at the bottom of every sub-topic. Both follow the site's
+ * "regular button" pattern: pill-shaped, accent fill on primary (Next),
+ * outline on ghost (Prev). No eyebrow, no card — just a clean button row.
+ */
 function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: string; onClick: () => void }) {
   return (
     <button
@@ -200,38 +204,38 @@ function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: st
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'group rounded-xl border p-3.5 text-right transition-all flex items-center gap-3',
+        'inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] transition-colors',
         disabled
-          ? 'border-border-subtle bg-bg-elevated/30 opacity-40 cursor-not-allowed'
-          : 'border-border bg-bg-elevated hover:border-brand/40 hover:shadow-elevated cursor-pointer',
+          ? 'border border-border-subtle text-fg-dim opacity-40 cursor-not-allowed'
+          : 'border border-accent/40 text-accent hover:bg-accent/10 cursor-pointer',
       )}
       aria-label="תת הנושא הקודם"
     >
-      <ArrowRight
-        className={cn(
-          'size-5 shrink-0 text-fg-dim',
-          !disabled && 'group-hover:text-brand-dark group-hover:translate-x-0.5 transition-all',
-        )}
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1 text-right">
-        <div className="text-[11px] font-display font-semibold tracking-wider text-fg-dim uppercase">
-          תת הנושא הקודם
-        </div>
-        <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
-          {label}
-        </div>
-      </div>
+      <span className="truncate max-w-[18rem]">{disabled ? label : `הקודם · ${label}`}</span>
+    </button>
+  );
+}
+
+function NextButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] bg-accent text-bg-elevated hover:bg-accent-hover transition-colors cursor-pointer"
+      aria-label="תת הנושא הבא"
+    >
+      <span className="truncate max-w-[20rem]">הבא · {label}</span>
     </button>
   );
 }
 
 /**
  * Renders in the recap's "next sub-topic" slot. Either:
- *   - a link to the next lesson (when one exists), OR
- *   - a link back to the syllabus marked "סיום הקורס" (last lesson).
+ *   - a primary orange button linking to the next lesson, OR
+ *   - a primary orange button back to the syllabus marked "סיום הקורס"
+ *     (last lesson of the course).
  *
- * Visual treatment matches NextButton so the slot reads the same way
+ * Visual treatment matches NextButton so the row reads the same way
  * regardless of whether it's a sub-topic next or a lesson next.
  */
 function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } }) {
@@ -239,108 +243,60 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
     return (
       <Link
         href={`/lessons/${next.id}/`}
-        className="group rounded-xl border p-3.5 transition-all flex items-center gap-3 flex-row-reverse border-accent/40 bg-accent/10 hover:bg-accent hover:border-accent shadow-glow cursor-pointer"
+        className="inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] bg-accent text-bg-elevated hover:bg-accent-hover transition-colors cursor-pointer"
         aria-label="לשיעור הבא"
       >
-        <ArrowLeft
-          className="size-5 shrink-0 text-accent-hover group-hover:text-fg group-hover:-translate-x-0.5 transition-all"
-          aria-hidden
-        />
-        <div className="min-w-0 flex-1 text-left">
-          <div className="text-[11px] font-display font-semibold tracking-wider uppercase text-accent-hover group-hover:text-fg/80">
-            השיעור הבא
-          </div>
-          <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
-            {next.shortTitle}
-          </div>
-        </div>
+        <span className="truncate max-w-[22rem]">השיעור הבא · {next.shortTitle}</span>
       </Link>
     );
   }
-  // No next lesson — this is the last lesson of the course.
   return (
     <Link
       href="/"
-      className="group rounded-xl border p-3.5 transition-all flex items-center gap-3 flex-row-reverse border-brand/40 bg-brand/10 hover:bg-brand hover:border-brand-dark shadow-glow cursor-pointer"
+      className="inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] bg-accent text-bg-elevated hover:bg-accent-hover transition-colors cursor-pointer"
       aria-label="סיום הקורס"
     >
-      <Check
-        className="size-5 shrink-0 text-brand-dark group-hover:text-bg-elevated transition-colors"
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1 text-left">
-        <div className="text-[11px] font-display font-semibold tracking-wider uppercase text-brand-dark group-hover:text-bg-elevated/80">
-          סיום הקורס
-        </div>
-        <div className="text-sm md:text-[15px] font-display font-semibold text-fg group-hover:text-bg-elevated truncate transition-colors">
-          חזרה לסילבוס
-        </div>
-      </div>
+      <span>סיום הקורס · חזרה לסילבוס</span>
     </Link>
   );
 }
 
-function NextButton({ disabled, label, onClick }: { disabled: boolean; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'group rounded-xl border p-3.5 transition-all flex items-center gap-3 flex-row-reverse',
-        disabled
-          ? 'border-border-subtle bg-bg-elevated/30 opacity-40 cursor-not-allowed'
-          : 'border-accent/40 bg-accent/10 hover:bg-accent hover:border-accent shadow-glow cursor-pointer',
-      )}
-      aria-label="תת הנושא הבא"
-    >
-      <ArrowLeft
-        className={cn(
-          'size-5 shrink-0',
-          disabled
-            ? 'text-fg-dim'
-            : 'text-accent-hover group-hover:text-fg group-hover:-translate-x-0.5 transition-all',
-        )}
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1 text-left">
-        <div
-          className={cn(
-            'text-[11px] font-display font-semibold tracking-wider uppercase transition-colors',
-            disabled ? 'text-fg-dim' : 'text-accent-hover group-hover:text-fg/80',
-          )}
-        >
-          תת הנושא הבא
-        </div>
-        <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
-          {label}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-/* ────── Desktop TOC — fixed to viewport's right edge ──────────────
-   Shown at xl+ (≥1280px). The PagedLearn root adds `xl:ps-[210px]` so
-   the active sub-topic shifts left by exactly the column the TOC
-   occupies — no overlap. `start-3` in RTL = 12px from the right edge
-   of the viewport. The panel is `position: fixed` so it doesn't move
-   with the page scroll; its own card has bg+border for separation. */
+/* ────── Desktop TOC — full-height drawer flush to the viewport edge.
+   Shown at xl+ (≥1280px). Sits below the global Navbar (top-12 ≈ 48px)
+   and the secondary lesson tabs strip, extending to the bottom of the
+   viewport. Rectangular (no rounded corners), with a single inner
+   border that separates it from the lesson content column. The
+   PagedLearn root adds `xl:ps-[180px]` so content sits clear of the
+   drawer. The top of the drawer now headlines the active lesson
+   (number + short title), since both were removed from the secondary
+   header. */
 function ScenePagerDesktop({
   scenes,
   active,
   onGoto,
+  lesson,
 }: {
   scenes: PagedScene[];
   active: number;
   onGoto: (i: number) => void;
+  lesson?: LessonNavInfo['current'];
 }) {
   return (
     <aside
-      className="hidden xl:block fixed start-2 top-32 z-20 w-[160px] max-h-[calc(100vh-160px)] overflow-y-auto"
+      className="hidden xl:flex flex-col fixed start-0 top-12 bottom-0 z-20 w-[160px] overflow-y-auto bg-bg-elevated border-e border-border"
       aria-label="ניווט תתי-נושא"
     >
-      <div className="rounded-xl border border-border bg-bg-elevated/95 backdrop-blur-md shadow-elevated p-3">
+      <div className="p-3 pt-10 flex-1 flex flex-col">
+        {lesson && (
+          <div className="px-1.5 mb-4 pb-1.5 border-b border-border-subtle">
+            <div className="font-display font-bold text-accent text-base mb-1.5">
+              שיעור {lesson.number}
+            </div>
+            <div className="font-display font-bold text-sm text-fg leading-tight text-balance">
+              {lesson.shortTitle}
+            </div>
+          </div>
+        )}
         <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-1.5 mb-2">
           תוכן השיעור
         </div>
@@ -348,6 +304,9 @@ function ScenePagerDesktop({
           {scenes.map((s, i) => {
             const isActive = i === active;
             const isPassed = i < active;
+            // Dot colour: orange for everything you've already reached
+            // (current + passed) → black for what's still ahead.
+            const reached = isActive || isPassed;
             return (
               <button
                 key={s.id}
@@ -364,7 +323,7 @@ function ScenePagerDesktop({
                 <span
                   className={cn(
                     'size-1.5 rounded-full shrink-0 transition-colors',
-                    isActive ? 'bg-accent shadow-glow' : isPassed ? 'bg-fg-muted' : 'bg-border-strong',
+                    reached ? 'bg-accent' : 'bg-fg',
                   )}
                   aria-hidden
                 />
@@ -384,7 +343,7 @@ function ScenePagerDesktop({
         <div className="mt-3 pt-3 border-t border-border-subtle px-1.5">
           <div className="h-1 rounded-full bg-bg-accent overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-l from-accent to-accent-cool"
+              className="h-full rounded-full bg-accent"
               animate={{ width: `${((active + 1) / scenes.length) * 100}%` }}
               transition={{ duration: 0.4 }}
             />
@@ -395,19 +354,31 @@ function ScenePagerDesktop({
   );
 }
 
-/* ────── Mobile / tablet — horizontal scrollable pill strip ───────── */
+/* ────── Mobile / tablet — lesson title + horizontal scrollable pill strip ───────── */
 function ScenePagerMobile({
   scenes,
   active,
   onGoto,
+  lesson,
 }: {
   scenes: PagedScene[];
   active: number;
   onGoto: (i: number) => void;
+  lesson?: LessonNavInfo['current'];
 }) {
   return (
-    <div className="xl:hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6 pb-2 overflow-x-auto">
-      <div className="flex gap-1.5 min-w-max" role="tablist" aria-label="ניווט תתי-נושא">
+    <div className="xl:hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      {lesson && (
+        <div className="mb-4 pb-3 border-b border-border-subtle">
+          <div className="text-[10px] font-display font-semibold text-accent tracking-[0.2em] uppercase mb-0.5">
+            שיעור {lesson.number}
+          </div>
+          <h1 className="font-display font-bold text-lg sm:text-xl text-fg leading-tight text-balance">
+            {lesson.shortTitle}
+          </h1>
+        </div>
+      )}
+      <div className="flex gap-1.5 min-w-max overflow-x-auto pb-2" role="tablist" aria-label="ניווט תתי-נושא">
         {scenes.map((s, i) => {
           const isActive = i === active;
           const isPassed = i < active;
@@ -422,7 +393,7 @@ function ScenePagerMobile({
               className={cn(
                 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border',
                 isActive
-                  ? 'bg-accent text-bg font-bold border-accent shadow-glow'
+                  ? 'bg-accent text-bg-elevated font-bold border-accent'
                   : isPassed
                     ? 'bg-bg-accent text-fg-muted border-border'
                     : 'bg-bg-elevated text-fg-dim border-border hover:text-fg',

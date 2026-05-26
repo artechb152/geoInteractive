@@ -107,7 +107,7 @@ export function ThreeDimScene() {
         eyebrow="ממד אנכי ותת-קרקע"
         title={
           <>
-            הקרב <span className="gradient-text">התלת-ממדי</span>
+            הקרב <span className="text-accent-hover">התלת-ממדי</span>
           </>
         }
         intro="בעיר, הסכנה לא מחכה לכם רק 'ממול'. היא יכולה להגיע מ-30 קומות מעל, או מ-20 מטרים מתחת לאדמה. צבא שרוצה לנצח חייב להילחם בשלושת הממדים במקביל — אחרת, הוא פשוט מתעלם מרוב האיומים בשטח ונועד להיכשל."
@@ -147,12 +147,10 @@ export function ThreeDimScene() {
               onClick={() => setActiveDim(d.id)}
               className={cn(
                 'surface p-4 text-right transition-all rounded-xl flex items-center gap-3',
-                isActive ? `${d.border} shadow-glow ${d.bg}` : 'hover:border-border-strong'
+                isActive ? `${d.border} ${d.bg}` : 'hover:border-border-strong'
               )}
             >
-              <div className={cn('size-10 rounded-xl flex items-center justify-center border-2 shrink-0', d.border, d.bg)}>
-                <Icon name={d.icon} size={18} className={d.color} />
-              </div>
+              <Icon name={d.icon} size={28} className={cn(d.color, 'shrink-0')} />
               <div className="min-w-0">
                 <div className={cn('font-display font-bold text-sm leading-tight', isActive && d.color)}>
                   {d.label}
@@ -178,7 +176,7 @@ export function ThreeDimScene() {
             <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', meta.color)}>
               {meta.english} · {meta.altitude}
             </div>
-            <h3 className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</h3>
+            <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -227,11 +225,9 @@ export function ThreeDimScene() {
       {/* Key insight: combined threat */}
       <div className="">
         <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-            <Icon name="spark" size={22} className="text-accent" />
-          </div>
+          <Icon name="spark" size={32} className="text-accent shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
               עקרון השילוב
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">

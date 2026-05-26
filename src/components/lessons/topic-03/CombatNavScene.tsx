@@ -73,14 +73,14 @@ key={m.id}
 className={cn(
  'surface overflow-hidden transition-colors relative',
 isActive
- ? 'border-accent shadow-glow bg-accent/5'
+ ? 'border-brand-dark bg-brand/5'
  : 'hover:border-border-strong hover:bg-bg-accent/30'
  )}
  >
  {isActive && (
  <motion.span
 layoutId="t3-combat-bar"
-className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
  />
  )}
  <button
@@ -92,7 +92,7 @@ className="w-full p-4 text-right flex items-center gap-3"
  <span
 className={cn(
  'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
-isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
+isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  )}
  >
  <span className="font-mono text-sm font-bold">{i + 1}</span>
@@ -101,7 +101,7 @@ isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  טכניקה {i + 1}
  </div>
- <div className={cn('font-display font-bold leading-tight', isActive ? 'text-accent' : 'text-fg')}>
+ <div className={cn('font-display font-bold leading-tight', isActive ? 'text-brand-dark' : 'text-fg')}>
  {m.label}
  </div>
  <div className="text-xs font-mono text-fg-dim mt-0.5">{m.english}</div>
@@ -109,7 +109,7 @@ isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
  <motion.span
 animate={{ rotate: isActive ? 180 : 0 }}
 transition={{ duration: 0.25 }}
-className={cn('shrink-0 inline-flex', isActive ? 'text-accent' : 'text-fg-dim')}
+className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
  >
  <svg
 width="18"
@@ -137,9 +137,9 @@ exit={{ height: 0, opacity: 0 }}
 transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
 className="overflow-hidden"
  >
- <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-3">
+ <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
  <div className="mt-3">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
  מה זה ולמה זה עובד
  </div>
  <p className="text-sm text-fg leading-relaxed">{m.detail}</p>
@@ -427,7 +427,7 @@ className="mt-6 surface-elevated p-6 flex gap-4 items-start"
  >
  <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  המסקנה
  </div>
  <p className="text-fg leading-relaxed text-pretty">

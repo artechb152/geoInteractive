@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { Mountain, ScanEye, Crosshair, ArrowLeft } from 'lucide-react';
+import { Mountain, ScanEye, Crosshair } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { Reveal, stagger } from './Reveal';
 import { cn } from '@/lib/utils';
@@ -67,14 +67,14 @@ const toneStyles: Record<
 > = {
   // Pillar 1 — primary orange (accent)
   gold: {
-    chip: 'border-accent/40 bg-accent/10 text-accent-hover',
+    chip: 'border-accent/40 bg-accent/10 text-accent',
     iconWrap: 'bg-accent/10 border-accent/30',
-    iconColor: 'text-accent-hover',
+    iconColor: 'text-accent',
     hoverBorder: 'group-hover:border-accent/60',
-    hoverShadow: 'group-hover:shadow-glow',
+    hoverShadow: '',
     dot: 'bg-accent',
-    bullet: 'text-accent-hover',
-    arrow: 'text-accent-hover',
+    bullet: 'text-accent',
+    arrow: 'text-accent',
     glow: 'from-accent/15',
   },
   // Pillar 2 — brand sage
@@ -83,7 +83,7 @@ const toneStyles: Record<
     iconWrap: 'bg-brand/10 border-brand/30',
     iconColor: 'text-brand-dark',
     hoverBorder: 'group-hover:border-brand/60',
-    hoverShadow: 'group-hover:shadow-glow-brand',
+    hoverShadow: '',
     dot: 'bg-brand',
     bullet: 'text-brand-dark',
     arrow: 'text-brand-dark',
@@ -95,7 +95,7 @@ const toneStyles: Record<
     iconWrap: 'bg-brand-dark/10 border-brand-dark/30',
     iconColor: 'text-brand-dark',
     hoverBorder: 'group-hover:border-fg/40',
-    hoverShadow: 'group-hover:[box-shadow:0_0_40px_-10px_rgba(91,124,92,0.45)]',
+    hoverShadow: '',
     dot: 'bg-brand-dark',
     bullet: 'text-brand-dark',
     arrow: 'text-brand-dark',
@@ -119,7 +119,7 @@ export function Features() {
             className="font-display font-bold tracking-tight text-balance leading-[1.1] text-[clamp(1.5rem,3vw,2.25rem)]"
           >
             שלוש דרכים בהן הקורס משנה <br className="hidden sm:block" />
-            <span className="gradient-text">איך אתה קורא את השטח</span>
+            <span className="text-accent-hover">איך אתה קורא את השטח</span>
           </h2>
           <p className="mt-3 text-sm md:text-base text-fg-muted leading-relaxed text-pretty">
             לא קורס תיאורטי. כל ציר משלב לימוד, סימולציה ותרגול אינטראקטיבי —
@@ -166,14 +166,7 @@ export function Features() {
                   </div>
 
                   <div className="relative flex items-start gap-3 mb-3">
-                    <span
-                      className={cn(
-                        'grid place-items-center size-10 shrink-0 rounded-xl border',
-                        s.iconWrap,
-                      )}
-                    >
-                      <f.Icon className={cn('size-5', s.iconColor)} aria-hidden />
-                    </span>
+                    <f.Icon className={cn('size-8 shrink-0', s.iconColor)} aria-hidden />
                     <div className="flex-1 min-w-0">
                       <span className={cn('chip mb-1.5 font-mono text-[10px] tracking-wider', s.chip)}>
                         <span className={cn('size-1 rounded-full', s.dot)} aria-hidden />
@@ -213,7 +206,6 @@ export function Features() {
                       )}
                     >
                       פירוט
-                      <ArrowLeft className="size-3.5" aria-hidden />
                     </span>
                   </div>
                 </div>

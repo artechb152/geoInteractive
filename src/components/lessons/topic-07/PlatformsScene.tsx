@@ -119,7 +119,7 @@ export function PlatformsScene() {
         eyebrow="תקרת ענן ובחירת פלטפורמה"
         title={
           <>
-            <span className="gradient-text">תקרה אחת</span>. שינוי כל מערך האיסוף.
+            <span className="text-accent-hover">תקרה אחת</span>. שינוי כל מערך האיסוף.
           </>
         }
         intro="עננים נמוכים יכולים להפוך מטוסי קרב מתקדמים ויקרים לכלים חסרי תועלת שכמעט ולא רואים כלום. שחקו עם גובה העננים, ותראו אילו כלי טיס נשארים בטוחים מעליהם, ואילו חייבים לרדת מתחתיהם ולסכן את עצמם באש האויב רק כדי לראות את המטרה."
@@ -236,15 +236,10 @@ export function PlatformsScene() {
               onClick={() => setScenario(sc.id as typeof scenario)}
               className={cn(
                 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
+                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
               )}
             >
-              <div className={cn(
-                'size-9 rounded-lg flex items-center justify-center border-2 shrink-0',
-                isActive ? 'border-accent/40 bg-accent/15' : 'border-border bg-bg-accent'
-              )}>
-                <Icon name={sc.icon} size={16} className={isActive ? 'text-accent' : 'text-fg-dim'} />
-              </div>
+              <Icon name={sc.icon} size={26} className={cn('shrink-0', isActive ? 'text-accent' : 'text-fg-dim')} />
               <div>
                 <div className={cn('font-display font-bold text-sm leading-tight', isActive && 'text-accent')}>
                   {sc.label}
@@ -275,18 +270,11 @@ export function PlatformsScene() {
                   className={cn(
                     'surface p-3 rounded-xl flex items-start gap-3 transition-all',
                     isRecommended
-                      ? 'border-status-ok/50 bg-status-ok/5 shadow-glow'
+                      ? 'border-status-ok/50 bg-status-ok/5'
                       : 'opacity-50'
                   )}
                 >
-                  <div
-                    className={cn(
-                      'size-10 rounded-xl flex items-center justify-center border-2 shrink-0',
-                      isRecommended ? 'border-status-ok/40 bg-status-ok/10' : 'border-border bg-bg-accent'
-                    )}
-                  >
-                    <Icon name={p.icon} size={18} className={isRecommended ? 'text-status-ok' : 'text-fg-dim'} />
-                  </div>
+                  <Icon name={p.icon} size={28} className={cn('shrink-0', isRecommended ? 'text-status-ok' : 'text-fg-dim')} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <div className={cn('font-display font-bold leading-tight', isRecommended && 'text-status-ok')}>
@@ -318,7 +306,7 @@ function AltitudeMap({ ceiling, platforms }: { ceiling: number; platforms: Platf
   const manpadsCeilingY = altToY(5000);
 
   return (
-    <div className="aspect-[3/4] sm:aspect-[5/4] relative rounded-2xl overflow-hidden ring-1 ring-black/5 shadow-elevated">
+    <div className="aspect-[3/4] sm:aspect-[5/4] relative rounded-2xl overflow-hidden ring-1 ring-black/5">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
         <defs>
           {/* Atmospheric sky gradient — deep stratosphere → warm haze → cream */}

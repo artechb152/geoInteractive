@@ -88,7 +88,7 @@ export function InfrastructureScene() {
         eyebrow="מרכזי העצבים: נמלים וצמתים"
         title={
           <>
-            <span className="gradient-text">צומת אחד</span>. ארבעה ממדים של תחבורה.
+            <span className="text-accent-hover">צומת אחד</span>. ארבעה ממדים של תחבורה.
           </>
         }
         intro="התשתיות האסטרטגיות של המדינה הן הנקודות שבהן נפגשים כל כלי התחבורה: ספינות, רכבות, משאיות ומטוסים. מי ששולט בצומת כזה מחזיק את המדינה בכיס שלו, ופגיעה בו יוצרת משבר לאומי מיידי."
@@ -107,17 +107,30 @@ export function InfrastructureScene() {
       {/* Main visualization + controls */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Hub map */}
-        <div className="surface-elevated p-4 rounded-2xl overflow-hidden">
+        <div className="surface-elevated bg-bg-accent/30 p-4 rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+            <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
               צומת לוגיסטי לאומי · 4 ממדים
             </div>
-            <div className={cn(
-              'chip',
-              destroyed ? 'border-status-danger/40 bg-status-danger/10 text-status-danger' : 'border-status-ok/40 bg-status-ok/10 text-status-ok'
-            )}>
-              <Icon name={destroyed ? 'spark' : 'check'} size={12} strokeWidth={2.5} />
-              <span className="font-mono">יכולת העברה שנותרה: {remainingCapacity}%</span>
+            <div
+              className={cn(
+                'inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                destroyed
+                  ? 'border-status-danger/40 bg-status-danger/8 text-status-danger'
+                  : 'border-brand/35 bg-brand/8 text-brand-dark',
+              )}
+            >
+              <span
+                className={cn(
+                  'size-1.5 rounded-full',
+                  destroyed ? 'bg-status-danger' : 'bg-brand',
+                )}
+                aria-hidden
+              />
+              <span className="font-mono tabular-nums">
+                יכולת העברה שנותרה · {remainingCapacity}%
+              </span>
             </div>
           </div>
 
@@ -137,14 +150,12 @@ export function InfrastructureScene() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="surface-elevated p-5 rounded-2xl"
+              className="surface-elevated p-5 rounded-2xl border-r-4 border-r-brand/40"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0 border-current/40 bg-current/10', meta.color)}>
-                  <Icon name={meta.icon} size={22} className={meta.color} />
-                </div>
+                <Icon name={meta.icon} size={32} className="text-brand-dark shrink-0" />
                 <div>
-                  <div className={cn('font-display font-bold text-lg leading-tight', meta.color)}>{meta.label}</div>
+                  <div className="font-display font-bold text-lg leading-tight text-fg">{meta.label}</div>
                   <div className="text-[10px] font-mono text-fg-dim">{meta.english}</div>
                 </div>
               </div>
@@ -152,11 +163,11 @@ export function InfrastructureScene() {
               <div className="mb-3">
                 <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">המשקל היחסי במאמץ</div>
                 <div className="flex items-baseline gap-2">
-                  <div className={cn('font-display font-bold text-3xl tabular-nums', meta.color)}>{meta.capacity}%</div>
+                  <div className="font-display font-bold text-3xl tabular-nums text-accent">{meta.capacity}%</div>
                   <div className="text-xs text-fg-muted">מתוך סך האספקה הכללית</div>
                 </div>
                 <div className="mt-2 h-1.5 bg-bg-accent rounded-full overflow-hidden">
-                  <motion.div className={cn('h-full', meta.color, 'bg-current')} animate={{ width: `${meta.capacity}%` }} transition={{ duration: 0.4 }} />
+                  <motion.div className="h-full bg-accent" animate={{ width: `${meta.capacity}%` }} transition={{ duration: 0.4 }} />
                 </div>
               </div>
 
@@ -181,8 +192,8 @@ export function InfrastructureScene() {
                 className={cn(
                   'w-full mt-4 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all',
                   destroyed === selected
-                    ? 'bg-status-ok text-bg shadow-glow hover:scale-[0.99]'
-                    : 'bg-status-danger text-bg shadow-glow hover:scale-[1.02] active:scale-[0.98]'
+                    ? 'bg-status-ok text-bg hover:scale-[0.99]'
+                    : 'bg-status-danger text-bg hover:scale-[1.02] active:scale-[0.98]'
                 )}
               >
                 <Icon name={destroyed === selected ? 'check' : 'bolt'} size={14} strokeWidth={2.5} />
@@ -218,9 +229,7 @@ export function InfrastructureScene() {
           className=""
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="size-12 rounded-xl bg-terrain-sky/15 border border-terrain-sky/40 flex items-center justify-center shrink-0">
-              <Icon name="ship" size={22} className="text-terrain-sky" />
-            </div>
+            <Icon name="ship" size={32} className="text-terrain-sky shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-terrain-sky leading-tight">נמל מים עמוקים</div>
               <div className="text-[10px] font-mono text-fg-dim">Deep-Water Port</div>
@@ -245,9 +254,7 @@ export function InfrastructureScene() {
           className=""
         >
           <div className="flex items-center gap-3 mb-3">
-            <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-              <Icon name="layers" size={22} className="text-accent" />
-            </div>
+            <Icon name="layers" size={32} className="text-accent shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-accent leading-tight">מרכז תחבורה משולב (היברידי)</div>
               <div className="text-[10px] font-mono text-fg-dim">Intermodal Hub</div>
@@ -257,7 +264,7 @@ export function InfrastructureScene() {
             דמיינו מקום אחד שבו נפגשים שדה תעופה, קווי רכבת כבדה וכבישים מהירים. הקסם כאן הוא שאפשר להעביר את הארגז מהמטוס ישר לרכבת, ומשם למשאית - כמעט באפס זמן ומאמץ.
           </p>
           <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
-            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">השפעת פגיעה</div>
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">השפעת פגיעה</div>
             <p className="text-xs text-fg-muted leading-relaxed">
               פגיעה מדויקת בנקודה הזו לא רק מונעת מאוכל ודלק להגיע לחיילים בחזית, אלא תוקעת את הכלכלה של המדינה כולה. מקומות כאלה נחשבים ל"מרכז הכובד" של המדינה – הבטן הרכה שחייבים להגן עליה בכל מחיר.
             </p>
@@ -284,28 +291,45 @@ function HubMap({
   const hubY = 40;
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[260px] rounded-xl overflow-hidden">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="hub-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f0f4f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#hub-bg)" />
+        {/* Map-paper grid — matches LOCMap / ContoursScene ShapeMap so all
+            diagrams in the course read as one family. */}
+        {Array.from({ length: 11 }).map((_, i) => (
+          <line
+            key={`v-${i}`}
+            x1={i * 10}
+            y1="0"
+            x2={i * 10}
+            y2="75"
+            className="stroke-border-subtle/30"
+            strokeWidth="0.1"
+          />
+        ))}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <line
+            key={`h-${i}`}
+            x1="0"
+            y1={i * 10}
+            x2="100"
+            y2={i * 10}
+            className="stroke-border-subtle/30"
+            strokeWidth="0.1"
+          />
+        ))}
 
         {/* Sea on left */}
-        <rect x="0" y="40" width="22" height="35" className="fill-terrain-sky/20" />
-        <path d="M0 42 Q 10 41 22 43 L22 75 L0 75 Z" className="fill-terrain-sky/30" />
+        <rect x="0" y="40" width="22" height="35" className="fill-terrain-sky/15" />
+        <path d="M0 42 Q 10 41 22 43 L22 75 L0 75 Z" className="fill-terrain-sky/22" />
         {[3, 8, 13, 18].map((x, i) => (
-          <path key={i} d={`M${x} ${50 + i * 4} q 1 -1.5 2 0 t 2 0`} fill="none" className="stroke-terrain-sky" strokeWidth="0.18" opacity="0.5" />
+          <path key={i} d={`M${x} ${50 + i * 4} q 1 -1.5 2 0 t 2 0`} fill="none" className="stroke-terrain-sky" strokeWidth="0.18" opacity="0.45" />
         ))}
         <text x="11" y="72" textAnchor="middle" className="fill-terrain-sky font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">ים</text>
 
         {/* Connection lines from each node to the central hub */}
         {nodes.map((n) => {
           const isDestroyed = destroyed === n.id;
+          const isSelected = selected === n.id;
           return (
             <line
               key={`line-${n.id}`}
@@ -313,10 +337,16 @@ function HubMap({
               y1={n.position.y}
               x2={hubX}
               y2={hubY}
-              className={isDestroyed ? 'stroke-status-danger' : 'stroke-fg-dim'}
-              strokeWidth="0.6"
+              className={cn(
+                isDestroyed
+                  ? 'stroke-status-danger'
+                  : isSelected
+                    ? 'stroke-accent'
+                    : 'stroke-fg-dim',
+              )}
+              strokeWidth={isSelected && !isDestroyed ? '0.7' : '0.5'}
               strokeDasharray={isDestroyed ? '1.5 1' : undefined}
-              opacity={isDestroyed ? 0.5 : 0.4}
+              opacity={isDestroyed ? 0.55 : isSelected ? 0.7 : 0.35}
             />
           );
         })}
@@ -329,7 +359,10 @@ function HubMap({
           <text x={hubX} y={hubY + 9} textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">צומת מרכזי</text>
         </g>
 
-        {/* Each node */}
+        {/* Each node — categorical identity comes from the letter + the
+            label below; the 4 stages share one neutral palette so the
+            ACTIVE/DESTROYED states (the only ones that carry meaning)
+            stand out. */}
         {nodes.map((n) => {
           const isSelected = selected === n.id;
           const isDestroyed = destroyed === n.id;
@@ -353,19 +386,27 @@ function HubMap({
                 cy={n.position.y}
                 r="4"
                 className={cn(
-                  isDestroyed ? 'fill-status-danger/30 stroke-status-danger' :
-                    isSelected ? `${n.color.replace('text-', 'fill-')} stroke-current` :
-                      'fill-bg-card stroke-fg-dim',
-                  n.color
+                  isDestroyed
+                    ? 'fill-status-danger/25 stroke-status-danger'
+                    : isSelected
+                      ? 'fill-accent stroke-accent-hover'
+                      : 'fill-bg-elevated stroke-brand-dark/45',
                 )}
                 strokeWidth="0.6"
               />
-              {/* Icon foreground (use foreignObject for icon would be complex; use letter abbreviation) */}
+              {/* Icon foreground (letter abbreviation) */}
               <text
                 x={n.position.x}
                 y={n.position.y + 1.3}
                 textAnchor="middle"
-                className={cn(isDestroyed ? 'fill-status-danger' : isSelected ? 'fill-bg' : n.color, 'font-display font-bold')}
+                className={cn(
+                  'font-display font-bold',
+                  isDestroyed
+                    ? 'fill-status-danger'
+                    : isSelected
+                      ? 'fill-bg'
+                      : 'fill-brand-dark',
+                )}
                 fontSize="3.5"
               >
                 {n.id === 'port' ? 'P' : n.id === 'rail' ? 'R' : n.id === 'road' ? 'H' : 'A'}
@@ -382,7 +423,14 @@ function HubMap({
                 x={n.position.x}
                 y={n.position.y + 8.5}
                 textAnchor="middle"
-                className={cn('font-display font-bold', isDestroyed ? 'fill-status-danger' : n.color)}
+                className={cn(
+                  'font-display font-bold',
+                  isDestroyed
+                    ? 'fill-status-danger'
+                    : isSelected
+                      ? 'fill-accent-hover'
+                      : 'fill-fg',
+                )}
                 fontSize="2.6"
                 paintOrder="stroke"
                 stroke="#ffffff"

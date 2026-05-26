@@ -71,7 +71,7 @@ whileHover={{ x: -3 }}
 whileTap={{ scale: 0.98 }}
 className={cn(
  'w-full surface p-4 text-right transition-all flex items-start gap-3 relative overflow-hidden',
-isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong',
+isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong',
 passed && !isActive && 'opacity-80'
  )}
  >
@@ -84,7 +84,7 @@ className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
  <span
 className={cn(
  'size-8 rounded-lg flex items-center justify-center shrink-0 transition-all',
-isActive ? 'bg-accent text-bg shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
+isActive ? 'bg-accent text-bg-elevated' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
  )}
  >
  {passed && !isActive ? (
@@ -93,19 +93,19 @@ isActive ? 'bg-accent text-bg shadow-glow' : passed ? 'bg-status-ok/15 text-stat
  <span className="font-mono text-xs font-bold">{i + 1}</span>
  )}
  </span>
+ <Icon name={c.icon} size={18} className={cn('shrink-0 mt-0.5', isActive ? 'text-accent' : 'text-fg-dim')} />
  <div className="flex-1 min-w-0 text-right">
  <div className={cn('text-sm font-medium leading-tight', isActive && 'text-accent')}>
  {c.label}
  </div>
  <div className="text-xs text-fg-muted mt-0.5 leading-relaxed">{c.feature}</div>
  </div>
- <Icon name={c.icon} size={18} className={cn('shrink-0 mt-0.5', isActive ? 'text-accent' : 'text-fg-dim')} />
  </motion.button>
  );
  })}
  </div>
 
- <div className="surface-elevated relative overflow-hidden">
+ <div className="surface-elevated bg-bg relative overflow-hidden">
  <RouteMap activeStep={active} />
  </div>
  </div>
@@ -121,8 +121,8 @@ const POINTS = [
  { x: 88, y: 22 }, // target
  ];
 return (
- <div className="aspect-[4/3] relative">
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="none">
+ <div className="relative w-full h-full min-h-[360px] bg-bg">
+ <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
  <rect x="0" y="0" width="100" height="75" className="fill-bg" />
 
  {/* Grid */}

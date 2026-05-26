@@ -30,7 +30,7 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים, <span className="text-accent-hover">דקה אחת</span>
           </>
         }
         intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
@@ -90,16 +90,16 @@ function CompletionBanner() {
             transition={{ repeat: Infinity, duration: 3 }}
             className="size-14 rounded-full bg-accent/20 absolute inset-0"
           />
-          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg shadow-glow">
+          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg-elevated">
             <Icon name="check" size={28} strokeWidth={3} />
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
             כל הכבוד · סיימת את שיעור ה-GIS — וגם את הקורס כולו!
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה את העולם <span className="gradient-text">כשכבות של מודיעין</span>
+            עכשיו אתה רואה את העולם <span className="text-accent-hover">כשכבות של מודיעין</span>
           </div>
         </div>
       </div>
@@ -119,11 +119,11 @@ function FinalCard() {
       <div className="absolute -start-20 -bottom-20 size-56 rounded-full bg-accent-cool/15 blur-3xl pointer-events-none" />
 
       <div className="relative">
-        <div className="text-sm font-display font-semibold text-accent-hover mb-2 tracking-wider">
+        <div className="text-sm font-display font-semibold text-accent mb-2 tracking-wider">
           הקורס הסתיים
         </div>
         <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3">
-          13 שיעורים. <span className="gradient-text">דרך חשיבה אחת.</span>
+          13 שיעורים. <span className="text-accent-deep">דרך חשיבה אחת.</span>
         </h3>
         <p className="text-fg-muted leading-relaxed text-pretty">
           סיימת מסע של 13 שיעורים בגיאוגרפיה צבאית — מרמות המלחמה ועד GIS יישומי.

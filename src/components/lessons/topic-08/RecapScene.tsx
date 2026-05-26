@@ -29,7 +29,7 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים שחייבים להכיר ב<span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים שחייבים להכיר ב<span className="text-accent-hover">דקה אחת</span>
           </>
         }
         intro="ריכזנו עבורכם את כל המושגים המרכזיים שעברנו עליהם בשיעור, בהגדרה אחת קצרה, חדה וברורה."
@@ -87,16 +87,16 @@ function CompletionBanner() {
             transition={{ repeat: Infinity, duration: 3 }}
             className="size-14 rounded-full bg-accent/20 absolute inset-0"
           />
-          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg shadow-glow">
+          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg-elevated">
             <Icon name="check" size={28} strokeWidth={3} />
           </div>
         </div>
         <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
             כל הכבוד! · סיימתם את שיעור הלוגיסטיקה
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתם רואים את שדה הקרב <span className="gradient-text">בעיניים של מפקד לוגיסטיקה</span>
+            עכשיו אתם רואים את שדה הקרב <span className="text-accent-hover">בעיניים של מפקד לוגיסטיקה</span>
           </div>
         </div>
       </div>

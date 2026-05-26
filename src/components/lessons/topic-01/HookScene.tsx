@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Icon, type IconName } from '@/components/Icon';
+import { Icon } from '@/components/Icon';
 
 export function HookScene() {
   return (
@@ -17,9 +17,9 @@ export function HookScene() {
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 text-center max-w-4xl px-6"
       >
-        <div className="inline-flex items-center gap-2.5 mb-10 mx-auto px-4 py-2 rounded-full border border-accent/50 bg-accent/12 shadow-glow w-fit">
+        <div className="inline-flex items-center gap-2.5 mb-10 mx-auto px-4 py-2 rounded-full border border-accent/50 bg-accent/12 w-fit">
           <Icon name="globe" size={16} className="text-accent" />
-          <span className="font-display font-bold text-sm text-accent-hover tracking-wider">שיעור 01</span>
+          <span className="font-display font-bold text-sm text-accent tracking-wider">שיעור 01</span>
           <span className="text-fg-dim text-sm" aria-hidden>·</span>
           <span className="text-sm font-display font-semibold text-fg">מבוא · מרחב, כוח, אסטרטגיה</span>
         </div>
@@ -28,7 +28,7 @@ export function HookScene() {
 <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
           המרחב איננו רק זירת הפעולה.
           <br />
-          <span className="gradient-text">הוא המימד המערכתי שמכריע אותה.</span>
+          <span className="gradient-text text-accent">הוא המימד המערכתי שמכריע אותה.</span>
         </h1>
 
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
@@ -45,13 +45,10 @@ export function HookScene() {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('learn:next'))}
-            className="group inline-flex items-center gap-3 px-7 py-3.5 rounded-xl bg-accent text-fg font-display font-semibold text-base hover:bg-accent-hover transition-all duration-200 shadow-glow"
+            className="inline-flex items-center gap-3 px-7 py-3.5 rounded-xl bg-accent text-bg-elevated font-display font-semibold text-base hover:bg-accent-hover transition-all duration-200"
             aria-label="התחל את השיעור"
           >
             <span>לחץ כדי להתחיל</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-1" aria-hidden>
-              <path d="M11 4l-6 4 6 4" />
-            </svg>
           </button>
         </motion.div>
       </motion.div>
@@ -107,7 +104,7 @@ function BackdropConstellation() {
           />
         ))}
         <motion.div
-          className="absolute size-2.5 rounded-full bg-accent shadow-glow"
+          className="absolute size-2.5 rounded-full bg-accent"
           animate={{ scale: [1, 1.5, 1] }}
           transition={{ repeat: Infinity, duration: 2.5 }}
         />

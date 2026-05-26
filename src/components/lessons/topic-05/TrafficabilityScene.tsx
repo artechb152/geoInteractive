@@ -139,11 +139,13 @@ export function TrafficabilityScene() {
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch mb-10">
         {/* Visualization */}
-        <div className="surface-elevated p-5 rounded-2xl overflow-hidden">
+        <div className="surface-elevated p-5 rounded-2xl overflow-hidden flex flex-col">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
             הדמיה: איך יתמודד {meta.label} בעלייה של {slope}%?
           </div>
-          <VehicleOnSlope slope={slope} vehicle={vehicle} status={status} />
+          <div className="flex-1 min-h-[260px]">
+            <VehicleOnSlope slope={slope} vehicle={vehicle} status={status} />
+          </div>
         </div>
 
         {/* Controls */}
@@ -163,7 +165,7 @@ export function TrafficabilityScene() {
                     className={cn(
                       'p-3 rounded-xl border-2 text-right transition-all',
                       isActive
-                        ? 'border-accent bg-accent/5 shadow-glow'
+                        ? 'border-accent bg-accent/5'
                         : 'border-border hover:border-border-strong'
                     )}
                   >
@@ -273,12 +275,10 @@ export function TrafficabilityScene() {
               onClick={() => setActiveSoil(s.id)}
               className={cn(
                 'surface p-4 text-right transition-all rounded-xl flex flex-col items-start',
-                isActive ? `${s.border} shadow-glow ${s.bg}` : 'hover:border-border-strong'
+                isActive ? `${s.border} ${s.bg}` : 'hover:border-border-strong'
               )}
             >
-              <div className={cn('size-10 rounded-xl flex items-center justify-center mb-3 border-2', s.border, s.bg)}>
-                <Icon name={s.icon} size={20} className={s.color} />
-              </div>
+              <Icon name={s.icon} size={32} className={cn('mb-3', s.color)} />
               <div className={cn('font-display font-bold leading-tight', isActive && s.color)}>
                 {s.label}
               </div>
@@ -340,17 +340,10 @@ function VehicleOnSlope({ slope, vehicle, status }: { slope: number; vehicle: Ve
     status === 'ok' ? 'fill-status-ok stroke-status-ok' : status === 'caution' ? 'fill-status-warn stroke-status-warn' : 'fill-status-danger stroke-status-danger';
 
   return (
-    <div className="aspect-[16/9] relative">
-      <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="sky-tr" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#eef2f7" />
-            <stop offset="100%" stopColor="#f7f9fc" />
-          </linearGradient>
-        </defs>
-
+    <div className="relative w-full h-full min-h-[260px]">
+      <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Sky */}
-        <rect x="0" y="0" width="100" height="75" fill="url(#sky-tr)" />
+        <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
         {/* Slope plane */}
         <polygon

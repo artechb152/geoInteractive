@@ -158,7 +158,7 @@ export function VegetationScene() {
               onClick={() => setActive(v.id)}
               className={cn(
                 'surface p-4 text-right transition-all rounded-xl flex flex-col gap-2',
-                isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
+                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
               )}
             >
               <VegSilhouette density={v.density} />
@@ -227,16 +227,11 @@ export function VegetationScene() {
               onClick={() => setActiveAg(a.id)}
               className={cn(
                 'surface p-4 text-right transition-all rounded-xl',
-                isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
+                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
               )}
             >
               <div className="flex items-center gap-3 mb-2">
-                <div className={cn(
-                  'size-10 rounded-xl flex items-center justify-center border-2',
-                  isActive ? 'border-accent/40 bg-accent/15' : 'border-border bg-bg-accent'
-                )}>
-                  <Icon name={a.icon} size={18} className={isActive ? 'text-accent' : 'text-fg-dim'} />
-                </div>
+                <Icon name={a.icon} size={28} className={cn('shrink-0', isActive ? 'text-accent' : 'text-fg-dim')} />
                 <div>
                   <div className={cn('font-display font-bold text-sm leading-tight', isActive && 'text-accent')}>
                     {a.label}

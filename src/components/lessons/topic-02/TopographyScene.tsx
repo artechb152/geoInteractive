@@ -81,7 +81,7 @@ return (
 key={v.id}
 className={cn(
  'surface overflow-hidden transition-colors',
-isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
+isActive ? 'border-brand-dark bg-brand/5' : 'hover:border-border-strong'
  )}
  >
  <button
@@ -90,26 +90,18 @@ onClick={() => setView(v.id)}
 aria-expanded={isActive}
 className="w-full p-4 text-right flex items-center gap-3"
  >
- <span
-className={cn(
- 'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors',
-isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
- )}
- >
- <Icon name={v.icon} size={18} />
- </span>
  <div className="flex-1 min-w-0">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  תצוגה {String(i + 1).padStart(2, '0')}
  </div>
- <div className={cn('font-medium text-sm leading-tight', isActive && 'text-accent')}>
+ <div className={cn('font-medium text-sm leading-tight', isActive && 'text-brand-dark')}>
  {v.label}
  </div>
  </div>
  <motion.span
 animate={{ rotate: isActive ? 180 : 0 }}
 transition={{ duration: 0.25 }}
-className={cn('shrink-0 inline-flex', isActive ? 'text-accent' : 'text-fg-dim')}
+className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
  >
  <svg
 width="18"
@@ -137,7 +129,7 @@ exit={{ height: 0, opacity: 0 }}
 transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
 className="overflow-hidden"
  >
- <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-4">
+ <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-4">
  <div>
  <div className="text-sm font-display font-semibold text-accent-cool mt-3 mb-1.5 tracking-wider">
  במילים פשוטות
@@ -190,9 +182,9 @@ aria-hidden
  </div>
 
  <div className="surface p-3 flex gap-2.5 items-start">
- <Icon name="spark" size={18} className="text-accent shrink-0 mt-0.5" />
+ <Icon name="spark" size={18} className="text-brand-dark shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
  למה זה חשוב
  </div>
  <p className="text-sm text-fg leading-relaxed text-pretty">{v.whyItMatters}</p>

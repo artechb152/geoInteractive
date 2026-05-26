@@ -124,7 +124,7 @@ export function BufferScene() {
         eyebrow="אזורי חיץ וטכנולוגיה"
         title={
           <>
-            איך <span className="gradient-text">טכנולוגיה מנסה להחליף</span> מרחק וגיאוגרפיה?
+            איך <span className="text-accent-hover">טכנולוגיה מנסה להחליף</span> מרחק וגיאוגרפיה?
           </>
         }
         intro={`מדינה צרה לא יכולה להרשות לעצמה אזור הפרדה של 100 ק"מ. במקום זה, היא משתמשת במודיעין וסנסורים: גדרות חכמות, חיישני קרקע ומערכות רדאר. הטכנולוגיה מנסה לקנות את מה שהגיאוגרפיה לא נותנת — זמן התרעה. הדליקו וכיבו את השכבות כדי לראות איך זה עובד.`}
@@ -165,12 +165,10 @@ export function BufferScene() {
               onClick={() => toggleLayer(l.id)}
               className={cn(
                 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? `${l.border} shadow-glow ${l.bg}` : 'hover:border-border-strong opacity-70'
+                isActive ? `${l.border} ${l.bg}` : 'hover:border-border-strong opacity-70'
               )}
             >
-              <div className={cn('size-9 rounded-lg flex items-center justify-center border-2 shrink-0', l.border, l.bg)}>
-                <Icon name={l.icon} size={16} className={l.color} />
-              </div>
+              <Icon name={l.icon} size={26} className={cn(l.color, 'shrink-0')} />
               <div className="min-w-0">
                 <div className={cn('font-display font-bold text-sm leading-tight', isActive && l.color)}>
                   {l.label}
@@ -192,9 +190,7 @@ export function BufferScene() {
             className={cn('surface-elevated p-5 rounded-2xl border-r-4', l.border.replace('border-', 'border-r-'), l.bg)}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className={cn('size-11 rounded-xl flex items-center justify-center border-2 shrink-0', l.border)}>
-                <Icon name={l.icon} size={20} className={l.color} />
-              </div>
+              <Icon name={l.icon} size={30} className={cn(l.color, 'shrink-0')} />
               <div>
                 <div className={cn('font-display font-bold leading-tight', l.color)}>{l.label}</div>
                 <div className="text-[10px] font-mono text-fg-dim">{l.english}</div>
@@ -233,9 +229,7 @@ export function BufferScene() {
             className="surface p-5 rounded-xl"
           >
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="size-10 rounded-xl bg-bg-accent border border-border flex items-center justify-center shrink-0">
-                <Icon name={e.icon} size={18} className="text-accent" />
-              </div>
+              <Icon name={e.icon} size={28} className="text-accent shrink-0" />
               <div>
                 <div className="font-display font-bold leading-tight">{e.name}</div>
                 <div className="text-[10px] font-mono text-fg-dim">{e.english}</div>

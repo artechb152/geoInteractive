@@ -79,7 +79,7 @@ export function FlashcardsDemo() {
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-fg font-semibold hover:bg-accent-hover transition-colors shadow-glow"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
         >
           <RotateCcw className="size-4" aria-hidden /> סבב נוסף
         </button>
@@ -123,15 +123,15 @@ export function FlashcardsDemo() {
                 aria-pressed={flipped}
                 aria-label={flipped ? 'הצג מושג' : 'הפוך לראות הגדרה'}
                 className={cn(
-                  'w-full h-full rounded-2xl border p-8 text-center flex flex-col items-center justify-center gap-3 transition-all shadow-elevated cursor-pointer hover:shadow-glow',
+                  'w-full h-full rounded-2xl border p-8 text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer',
                   flipped
-                    ? 'border-brand/40 bg-bg-elevated'
+                    ? 'border-accent-hover/40 bg-bg-elevated'
                     : 'border-accent/40 bg-accent/5',
                 )}
               >
                 {flipped ? (
                   <>
-                    <div className="text-[11px] font-display font-semibold tracking-wider text-brand-dark uppercase">
+                    <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase">
                       הגדרה
                     </div>
                     <div className="font-display font-semibold text-lg md:text-xl leading-snug text-fg max-w-md text-balance">
@@ -141,7 +141,7 @@ export function FlashcardsDemo() {
                   </>
                 ) : (
                   <>
-                    <div className="text-[11px] font-display font-semibold tracking-wider text-accent-hover uppercase">
+                    <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase">
                       מושג
                     </div>
                     <div className="font-display font-bold text-3xl md:text-4xl leading-tight text-fg max-w-md text-balance">
@@ -163,15 +163,15 @@ export function FlashcardsDemo() {
             <button
               type="button"
               onClick={markReview}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-bg-elevated text-fg font-semibold hover:border-brand/40 hover:bg-brand/5 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-accent/40 bg-bg-elevated text-accent font-semibold hover:bg-accent/10 transition-colors"
             >
-              <RefreshCw className="size-4 text-fg-dim" aria-hidden />
+              <RefreshCw className="size-4 text-accent" aria-hidden />
               צריך לחזור
             </button>
             <button
               type="button"
               onClick={markKnown}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-fg font-semibold hover:bg-accent-hover transition-colors shadow-glow"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
             >
               <Check className="size-4" aria-hidden />
               ידעתי

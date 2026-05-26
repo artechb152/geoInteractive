@@ -98,10 +98,11 @@ export function LOSScene() {
  {/* Main interactive */}
  <div className="grid lg:grid-cols-[1.6fr_1fr] gap-6 items-stretch mb-12">
  {/* Visualization */}
- <div className="surface-elevated p-4 rounded-2xl overflow-hidden">
+ <div className="surface-elevated p-4 rounded-2xl overflow-hidden flex flex-col">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-2">
  תצוגה צדדית · הזיזו את הפרמטרים מימין
  </div>
+ <div className="flex-1 min-h-[260px]">
  <LOSProfile
  observerX={observerX}
  obsEyeY={obsEyeY}
@@ -112,6 +113,7 @@ export function LOSScene() {
  isBlocked={isBlocked}
  intervisCrossX={intervisCrossX}
  />
+ </div>
  </div>
 
  {/* Controls */}
@@ -212,9 +214,7 @@ export function LOSScene() {
  className={cn('surface-elevated p-5 rounded-2xl border-r-4', b.bg, b.border.replace('border-', 'border-r-'))}
  >
  <div className="flex items-center gap-3 mb-3">
- <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', b.border, b.bg)}>
- <Icon name={b.id === 'terrain' ? 'mountain' : 'layers'} size={22} className={b.color} />
- </div>
+ <Icon name={b.id === 'terrain' ? 'mountain' : 'layers'} size={32} className={cn('shrink-0', b.color)} />
  <div>
  <div className={cn('font-display font-bold text-lg leading-tight', b.color)}>{b.label}</div>
  <div className="text-[10px] font-mono text-fg-dim">{b.english}</div>
@@ -232,11 +232,9 @@ export function LOSScene() {
  {/* Intervisibility line callout */}
  <div className="surface-elevated p-6 rounded-2xl">
  <div className="flex gap-4 items-start">
- <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
- <Icon name="bolt" size={22} className="text-accent" />
- </div>
+ <Icon name="bolt" size={32} className="text-accent shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  קו הנראות ההדדית
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -280,16 +278,9 @@ function LOSProfile({
 
  // SVG y range: 0 (top) to 75 (bottom). groundY = 60.
  return (
- <div className="aspect-[16/9] relative">
- <svg viewBox="0 0 100 75" className="w-full h-full">
- <defs>
- <linearGradient id="sky-los" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor="#eef2f7" />
- <stop offset="100%" stopColor="#f7f9fc" />
- </linearGradient>
- </defs>
-
- <rect x="0" y="0" width="100" height="75" fill="url(#sky-los)" />
+ <div className="relative w-full h-full min-h-[260px]">
+ <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+ <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
  {/* Ground */}
  <path

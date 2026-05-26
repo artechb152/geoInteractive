@@ -70,7 +70,16 @@ const ROUTES: RouteData[] = [
 
 export function LOCScene() {
   const [disruption, setDisruption] = useState<Disruption>('none');
-  const meta = DISRUPTIONS.find((d) => d.id === disruption)!;
+  const [expandedId, setExpandedId] = useState<Disruption | null>('none');
+
+  const handleClick = (id: Disruption) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setDisruption(id);
+      setExpandedId(id);
+    }
+  };
 
   return (
     <section id="scene-loc" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,7 +88,7 @@ export function LOCScene() {
         eyebrow="קווי אספקה: כשהתוכנית משתבשת"
         title={
           <>
-            <span className="gradient-text">ציר אספקה אחד</span> הוא הימור.
+            <span className="text-accent-hover">ציר אספקה אחד</span> הוא הימור.
             <br />
             שני צירים - זו תוכנית פעולה.
           </>
@@ -92,53 +101,113 @@ export function LOCScene() {
         <strong className="text-fg block mt-1.5">כלל ברזל:</strong> אם הציר הראשי נחסם ורק אז התחלת לחפש ציר חלופי – כבר איחרת את המועד.
       </InsightCard>
 
-      {/* Map visualization */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
-            מפת השטח: מהעורף לחזית
-          </div>
-          <div className={cn('chip', meta.color, 'border-current/40')}>
-            <Icon name={meta.icon} size={12} strokeWidth={2.5} />
-            <span className="font-mono">{meta.label}</span>
-          </div>
+      {/* Disruption picker (left) + live map (right) — same pattern as
+          the OnboardingScene of every lesson: 2fr/3fr split, vertical
+          expandable cards on the start side, the diagram on the end. */}
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 mb-12">
+        <div className="space-y-3">
+          {DISRUPTIONS.map((d) => {
+            const active = disruption === d.id;
+            const expanded = expandedId === d.id;
+            return (
+              <div
+                key={d.id}
+                className={cn(
+                  'surface overflow-hidden transition-all duration-300 ease-snap',
+                  active
+                    ? 'border-brand/45 bg-bg-elevated'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleClick(d.id)}
+                  aria-expanded={expanded}
+                  aria-controls={`t8-loc-panel-${d.id}`}
+                  className="w-full p-4 text-right flex items-center gap-3 relative"
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="t8-loc-bar"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      active
+                        ? 'bg-brand-dark text-bg-elevated border-brand-dark'
+                        : 'bg-bg-accent text-fg-muted border-border',
+                    )}
+                  >
+                    <Icon name={d.icon} size={16} strokeWidth={2.5} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display font-semibold leading-tight text-fg">
+                      {d.label}
+                    </div>
+                    <div className="text-[10px] font-mono text-fg-dim mt-0.5">
+                      {d.msrEffect === 'open'
+                        ? 'MSR פתוח'
+                        : d.msrEffect === 'partial'
+                          ? 'MSR מסוכן / איטי'
+                          : 'MSR חסום'}
+                    </div>
+                  </div>
+                  <motion.span
+                    animate={{ rotate: expanded ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn(
+                      'shrink-0 inline-flex',
+                      expanded ? 'text-brand-dark' : 'text-fg-dim',
+                    )}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {expanded && (
+                    <motion.div
+                      key={`t8-loc-panel-${d.id}`}
+                      id={`t8-loc-panel-${d.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                        <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                          <span className="size-1.5 rounded-full bg-brand" aria-hidden />
+                          מה קורה במצב הזה
+                        </div>
+                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                          {d.desc}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
 
-        <LOCMap disruption={disruption} />
-
-        <p className="text-sm text-fg-muted leading-relaxed mt-3">{meta.desc}</p>
-      </div>
-
-      {/* Disruption selector */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-12">
-        {DISRUPTIONS.map((d) => {
-          const isActive = disruption === d.id;
-          return (
-            <button
-              key={d.id}
-              onClick={() => setDisruption(d.id)}
-              className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
-              )}
-            >
-              <div className={cn(
-                'size-9 rounded-lg flex items-center justify-center border-2 shrink-0',
-                isActive ? 'border-accent/40 bg-accent/15' : 'border-border bg-bg-accent'
-              )}>
-                <Icon name={d.icon} size={16} className={isActive ? d.color : 'text-fg-dim'} />
-              </div>
-              <div>
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && d.color)}>
-                  {d.label}
-                </div>
-                <div className="text-[10px] font-mono text-fg-dim">
-                  {d.msrEffect === 'open' ? 'MSR פתוח' : d.msrEffect === 'partial' ? 'MSR מסוכן / איטי' : 'MSR חסום'}
-                </div>
-              </div>
-            </button>
-          );
-        })}
+        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
+          <LOCMap disruption={disruption} />
+        </div>
       </div>
 
       <SoftDivider text="ראש בראש: הציר הראשי מול הציר החלופי" />
@@ -154,9 +223,7 @@ export function LOCScene() {
             className={cn('surface-elevated p-5 rounded-2xl border-r-4', r.bg, r.border.replace('border-', 'border-r-'))}
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', r.border, r.bg)}>
-                <Icon name={r.id === 'msr' ? 'truck' : 'compass'} size={22} className={r.color} />
-              </div>
+              <Icon name={r.id === 'msr' ? 'truck' : 'compass'} size={32} className={cn(r.color, 'shrink-0')} />
               <div>
                 <div className={cn('font-display font-bold text-lg leading-tight', r.color)}>{r.label}</div>
                 <div className="text-[10px] font-mono text-fg-dim">{r.english}</div>
@@ -177,11 +244,9 @@ export function LOCScene() {
       {/* Key insight callout */}
       <div className="">
         <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-            <Icon name="spark" size={22} className="text-accent" />
-          </div>
+          <Icon name="spark" size={32} className="text-accent shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
               השורה התחתונה
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -205,21 +270,24 @@ function LOCMap({ disruption }: { disruption: Disruption }) {
   const asrActive = disruption !== 'none';
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="loc-ground" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="56" fill="url(#loc-ground)" />
+    <div className="relative w-full h-full min-h-[220px] rounded-xl overflow-hidden">
+      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+        {/* Subtle map-paper grid — matches other diagrams (ContoursScene
+            ShapeMap, KillChainScene CoverageCellViz) so all maps in the
+            course read as one family. */}
+        {Array.from({ length: 11 }).map((_, i) => (
+          <g key={`v-${i}`}>
+            <line x1={i * 10} y1="0" x2={i * 10} y2="56" className="stroke-border-subtle/30" strokeWidth="0.1" />
+          </g>
+        ))}
+        {Array.from({ length: 7 }).map((_, i) => (
+          <line key={`h-${i}`} x1="0" y1={i * 8} x2="100" y2={i * 8} className="stroke-border-subtle/30" strokeWidth="0.1" />
+        ))}
 
         {/* Terrain hints */}
-        <path d="M0 42 L25 38 L45 41 L60 36 L80 40 L100 38 L100 56 L0 56 Z" className="fill-terrain-sand/20" />
+        <path d="M0 42 L25 38 L45 41 L60 36 L80 40 L100 38 L100 56 L0 56 Z" className="fill-terrain-sand/25" />
         {/* River (potential ASR cross point) */}
-        <path d="M0 12 Q 35 14 55 18 T 100 22" fill="none" className="stroke-terrain-sky/60" strokeWidth="1.4" />
+        <path d="M0 12 Q 35 14 55 18 T 100 22" fill="none" className="stroke-terrain-sky/55" strokeWidth="1.4" />
 
         {/* Front line zone */}
         <rect x="82" y="0" width="18" height="56" className="fill-status-danger/8" />

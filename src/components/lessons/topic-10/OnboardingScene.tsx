@@ -104,7 +104,7 @@ export function OnboardingScene() {
         eyebrow="לפני שמתחילים"
         title={
           <>
-            העיר כ<span className="gradient-text">מרחב לחימה תלת-ממדי</span>
+            העיר כ<span className="text-accent-hover">מרחב לחימה תלת-ממדי</span>
           </>
         }
         intro="הלחימה בעיר היא לא לחימה ברחוב שטוח, אלא בתוך 'קוביית רוביק' תלת-ממדית שמלאה באיומים מכל כיוון. מפקד שלא יבין זאת – ייקלע מהר מאוד לאסון. בואו נפרק את העיר ל-4 שכבות ונראה איך אותו רחוב בדיוק נראה שונה לגמרי, תלוי מי מסתכל עליו."
@@ -122,7 +122,7 @@ export function OnboardingScene() {
                 className={cn(
                   'surface overflow-hidden transition-all duration-300 ease-snap',
                   active
-                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    ? 'border-brand/45 bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   passed && !active && 'opacity-80'
                 )}
@@ -143,7 +143,7 @@ export function OnboardingScene() {
                   <span
                     className={cn(
                       'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active ? 'bg-accent text-fg border-accent shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
+                      active ? 'bg-brand-dark text-bg-elevated border-brand-dark' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
@@ -155,11 +155,6 @@ export function OnboardingScene() {
                   <div className="flex-1 min-w-0">
                     <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
                   </div>
-                  <Icon
-                    name={s.icon}
-                    size={20}
-                    className={cn('transition-colors shrink-0', active ? 'text-brand-dark' : 'text-fg-dim')}
-                  />
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
@@ -193,7 +188,7 @@ export function OnboardingScene() {
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
                         <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
-                          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+                          <span className="size-1.5 rounded-full bg-brand" aria-hidden />
                           למה זה משנה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -232,7 +227,7 @@ export function OnboardingScene() {
         ))}
       </div>
 
-      <ReadyCallout title="עכשיו אתה מוכן">
+      <ReadyCallout title="עכשיו אתם מוכנים">
         <p>עכשיו כשהבנו שהעיר היא לא משטח ישר אלא "קוביית רוביק", אפשר לצלול פנימה! בחלקים הבאים נגלה:
             <strong className="text-fg"> למה רחובות ישרים מסוכנים באותה מידה כמו סמטאות צפופות, איך מנהלים קרב ב-360 מעלות, ולמה נוכחות של אזרחים היא האתגר הכי גדול של הצבא</strong>.</p>
       </ReadyCallout>

@@ -88,7 +88,7 @@ step="12.1"
 eyebrow="GIS Basics — שכבות וסוגי נתונים"
 title={
  <>
- <span className="gradient-text">שכבות</span> + <span className="gradient-text">ראסטר/וקטור</span> = GIS
+ <span className="text-accent-hover">שכבות</span> + <span className="text-accent-hover">ראסטר/וקטור</span> = GIS
  </>
  }
 intro="כל GIS בנוי משכבות. כל שכבה היא 'שקף שקוף'. ויש שני אופנים שהמחשב רואה את העולם — ראסטר (פיקסלים) או וקטור (אובייקטים). ההבדל הזה הוא הכל."
@@ -115,12 +115,10 @@ key={l.id}
 onClick={() => toggleLayer(l.id)}
 className={cn(
  'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-isActive ? `${l.border} shadow-glow ${l.bg}` : 'hover:border-border-strong opacity-70'
+isActive ? `${l.border} ${l.bg}` : 'hover:border-border-strong opacity-70'
  )}
  >
- <div className={cn('size-10 rounded-lg flex items-center justify-center border-2 shrink-0', l.border, l.bg)}>
- <Icon name={l.icon} size={18} className={l.color} />
- </div>
+ <Icon name={l.icon} size={28} className={cn(l.color, 'shrink-0')} />
  <div className="min-w-0">
  <div className={cn('font-display font-bold text-sm leading-tight', isActive && l.color)}>
  {l.label}
@@ -159,7 +157,7 @@ key={m}
 onClick={() => setModel(m)}
 className={cn(
  'px-4 py-1.5 rounded-lg text-xs font-medium transition-colors',
-model === m ? 'bg-accent text-bg shadow-glow' : 'text-fg-muted hover:text-fg'
+model === m ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
  )}
  >
  {m === 'raster' ? '◧ ראסטר' : '◢ וקטור'}
@@ -171,15 +169,15 @@ model === m ? 'bg-accent text-bg shadow-glow' : 'text-fg-muted hover:text-fg'
  <RasterVectorCompare model={model} />
 
  <div className="mt-4 grid sm:grid-cols-2 gap-3">
- <div className={cn('surface p-4 rounded-xl', model === 'raster' ? 'border-accent shadow-glow' : 'opacity-60')}>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">ראסטר</div>
+ <div className={cn('surface p-4 rounded-xl', model === 'raster' ? 'border-accent' : 'opacity-60')}>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">ראסטר</div>
  <div className="font-display font-bold mb-2 leading-tight">רשת פיקסלים · ערך אחד לכל תא</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  <strong className="text-fg">דוגמה:</strong> DTM (מודל גבהים), צילום לוויין, מפת טמפ׳. רזולוציה תלויה בגודל הפיקסל — קטן יותר = מדויק יותר אבל קובץ גדול.
  </p>
  </div>
- <div className={cn('surface p-4 rounded-xl', model === 'vector' ? 'border-accent shadow-glow' : 'opacity-60')}>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">וקטור</div>
+ <div className={cn('surface p-4 rounded-xl', model === 'vector' ? 'border-accent' : 'opacity-60')}>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">וקטור</div>
  <div className="font-display font-bold mb-2 leading-tight">אובייקטים גיאומטריים · עם טבלת תכונות</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  <strong className="text-fg">דוגמה:</strong> כבישים (קווים), מבנים (פוליגונים), אנטנות (נקודות). כל אובייקט = שורה בטבלה עם <strong className="text-fg">תכונות נשאלות</strong>.
@@ -236,7 +234,7 @@ onClick={() => setQueriedSensitive(!queriedSensitive)}
 className={cn(
  'px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',
 queriedSensitive
- ? 'bg-status-warn text-bg shadow-glow'
+ ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
  )}
  >
@@ -252,11 +250,9 @@ queriedSensitive
  {/* Architecture callout */}
  <div className="">
  <div className="flex gap-4 items-start">
- <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
- <Icon name="satellite" size={22} className="text-accent" />
- </div>
+ <Icon name="satellite" size={32} className="text-accent shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  ארכיטקטורת עבודה
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -269,7 +265,7 @@ queriedSensitive
  <p className="text-xs text-fg-muted leading-relaxed">קבצים על המחשב האישי. מתאים לניתוח עצמאי ופשוט. אין סנכרון.</p>
  </div>
  <div className="surface p-3 rounded-lg">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">רשתי</div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">רשתי</div>
  <div className="font-display font-bold text-sm mb-1">SDE — Spatial DB Engine</div>
  <p className="text-xs text-fg-muted leading-relaxed">שרת מרכזי. קמ"ן בחטיבה וקמ"ן באוגדה עובדים על אותה שכבה בו-זמנית. תמונה אחידה.</p>
  </div>

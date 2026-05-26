@@ -177,7 +177,7 @@ export function CoverScene() {
           className={cn(
             'px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2',
             allAssigned
-              ? 'bg-accent text-bg shadow-glow hover:scale-105 active:scale-95'
+              ? 'bg-accent text-bg-elevated hover:scale-105 active:scale-95'
               : 'bg-bg-accent text-fg-dim border border-border cursor-not-allowed'
           )}
         >
@@ -254,7 +254,7 @@ function ItemPool({
       }}
       className={cn(
         'bg-bg-elevated p-4 mb-6 rounded-xl border transition-colors duration-200',
-        isOver ? 'border-brand shadow-elevated' : 'border-border'
+        isOver ? 'border-brand' : 'border-border'
       )}
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -333,28 +333,26 @@ function CategoryBin({
         'relative bg-bg-elevated rounded-xl overflow-hidden flex flex-col transition-colors duration-200',
         'border',
         isOver
-          ? cn(category.border, 'shadow-elevated')
+          ? category.border
           : isWaitingForTap
             ? cn(category.border, 'cursor-pointer')
             : 'border-border',
       )}
     >
       <div className="flex items-center gap-3 p-3 pr-4">
-        <span className={cn('grid place-items-center size-10 rounded-lg shrink-0', category.bg)}>
-          <Icon
-            name={
-              category.id === 'cover-only'
-                ? 'shield'
-                : category.id === 'concealment-only'
-                  ? 'eye'
-                  : category.id === 'both'
-                    ? 'check'
-                    : 'flag'
-            }
-            size={20}
-            className={category.color}
-          />
-        </span>
+        <Icon
+          name={
+            category.id === 'cover-only'
+              ? 'shield'
+              : category.id === 'concealment-only'
+                ? 'eye'
+                : category.id === 'both'
+                  ? 'check'
+                  : 'flag'
+          }
+          size={28}
+          className={cn('shrink-0', category.color)}
+        />
         <div className="flex-1 min-w-0">
           <div className={cn('font-display font-bold leading-tight', category.color)}>
             {category.label}
@@ -378,20 +376,19 @@ function CategoryBin({
             }}
             className="h-full min-h-[100px] rounded-lg flex flex-col items-center justify-center gap-2 transition-colors"
           >
-            <motion.span
-              animate={{ rotate: isOver ? 90 : 0, scale: isOver ? 1.1 : 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-              className={cn(
-                'inline-flex',
-                isOver ? category.color : isWaitingForTap ? 'text-accent-hover' : 'text-fg-dim',
-              )}
-            >
-              <Icon name={isOver ? 'check' : 'arrow-left'} size={18} strokeWidth={2.5} />
-            </motion.span>
+            {isOver && (
+              <motion.span
+                animate={{ scale: 1.1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                className={cn('inline-flex', category.color)}
+              >
+                <Icon name="check" size={18} strokeWidth={2.5} />
+              </motion.span>
+            )}
             <span
               className={cn(
                 'text-sm font-display font-semibold tracking-wider',
-                isOver ? category.color : isWaitingForTap ? 'text-accent-hover' : 'text-fg-muted',
+                isOver ? category.color : isWaitingForTap ? 'text-accent' : 'text-fg-muted',
               )}
             >
               {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גרור לכאן'}
@@ -465,7 +462,7 @@ function ItemChip({
         'surface cursor-grab active:cursor-grabbing transition-all',
         compact ? 'p-2' : 'p-3',
         isDragging && 'opacity-50',
-        isSelected && 'border-accent shadow-glow ring-2 ring-accent/40',
+        isSelected && 'border-accent ring-2 ring-accent/40',
         isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/5',
         isWrong && !isSelected && 'border-status-danger/50 bg-status-danger/5',
         !isSelected && !isCorrect && !isWrong && 'hover:border-border-strong'

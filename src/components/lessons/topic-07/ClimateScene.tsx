@@ -116,7 +116,7 @@ export function ClimateScene() {
         eyebrow="מיקרו-אקלים (אקלים מקומי) ועומס על הגוף"
         title={
           <>
-            <span className="gradient-text">קילומטר אחד</span>. שתי עונות.
+            <span className="text-accent-hover">קילומטר אחד</span>. שתי עונות.
           </>
         }
         intro="באותו אזור בדיוק ובאותה שעה — עמק צר והר סמוך יכולים להרגיש כמו שתי עונות שונות לגמרי. בנוסף, מזג האוויר משפיע פיזית על החיילים בכל אזור בצורה שונה. בואו נראה איך זה עובד במספרים. "
@@ -153,7 +153,7 @@ export function ClimateScene() {
                 onClick={() => setActiveSpot(spot.id)}
                 className={cn(
                   'surface p-4 text-right transition-all rounded-xl flex flex-col gap-2',
-                  isActive ? `${spot.border} shadow-glow ${spot.bg}` : 'hover:border-border-strong'
+                  isActive ? `${spot.border} ${spot.bg}` : 'hover:border-border-strong'
                 )}
               >
                 <div className={cn('font-display font-bold leading-tight', isActive && spot.color)}>

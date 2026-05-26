@@ -48,8 +48,8 @@ const STROKE_BY_TONE: Record<InsightTone, string> = {
 };
 
 const TEXT_BY_TONE: Record<InsightTone, string> = {
-  accent: 'text-accent-hover',
-  accentHover: 'text-accent-hover',
+  accent: 'text-accent',
+  accentHover: 'text-accent',
   brand: 'text-brand-dark',
   brandDark: 'text-brand-dark',
   cool: 'text-accent-cool',

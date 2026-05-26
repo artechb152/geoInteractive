@@ -137,7 +137,7 @@ export function BordersScene() {
         eyebrow="טיפולוגיית גבולות"
         title={
           <>
-            <span className="gradient-text">קו שרירותי על מפה</span> — או מכשול אמיתי בשטח?
+            <span className="text-accent-hover">קו שרירותי על מפה</span> — או מכשול אמיתי בשטח?
           </>
         }
         intro="ההיסטוריה מלמדת: גבול שנשען על רכס הרים יכול לשמור על שקט במשך 1,000 שנה, בזמן שגבול ששורטט על מפה בידי פוליטיקאים גורם למלחמות עד היום. בואו נכיר 6 סוגי גבולות, מהטבעיים והיציבים ביותר — ועד למלאכותיים והפגיעים ביותר."
@@ -159,12 +159,10 @@ export function BordersScene() {
               onClick={() => setActive(b.id)}
               className={cn(
                 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2.5',
-                isActive ? `${b.border} shadow-glow ${b.bg}` : 'hover:border-border-strong'
+                isActive ? `${b.border} ${b.bg}` : 'hover:border-border-strong'
               )}
             >
-              <div className={cn('size-10 rounded-lg flex items-center justify-center border-2 shrink-0', b.border, b.bg)}>
-                <Icon name={b.icon} size={18} className={b.color} />
-              </div>
+              <Icon name={b.icon} size={28} className={cn(b.color, 'shrink-0')} />
               <div className="min-w-0">
                 <div className={cn('font-display font-bold text-sm leading-tight', isActive && b.color)}>
                   {b.label}
@@ -193,9 +191,7 @@ export function BordersScene() {
           <div className="grid lg:grid-cols-2 gap-4 mt-5">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', meta.border, meta.bg)}>
-                  <Icon name={meta.icon} size={22} className={meta.color} />
-                </div>
+                <Icon name={meta.icon} size={32} className={cn(meta.color, 'shrink-0')} />
                 <div>
                   <div className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</div>
                   <div className="text-[10px] font-mono text-fg-dim">{meta.english} · {meta.category === 'natural' ? 'טבעי' : 'מלאכותי'}</div>
@@ -233,9 +229,7 @@ export function BordersScene() {
 
       <div className="">
         <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-status-warn/15 border border-status-warn/40 flex items-center justify-center shrink-0">
-            <Icon name="compass" size={22} className="text-status-warn" />
-          </div>
+          <Icon name="compass" size={32} className="text-status-warn shrink-0" />
           <div className="flex-1">
             <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">
               סייקס-פיקו · שיעור כואב בהיסטוריה

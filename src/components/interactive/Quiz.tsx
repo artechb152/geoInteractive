@@ -32,7 +32,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="space-y-3">
         <div className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider text-fg-muted">
-          <ListChecks className="size-4 text-brand-dark" aria-hidden />
+          <ListChecks className="size-4 text-accent" aria-hidden />
           בדיקת ידע
         </div>
         <h2 className="font-display font-bold tracking-tight text-balance leading-tight text-[clamp(1.25rem,2.2vw,1.625rem)]">
@@ -87,8 +87,8 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))}
                       className={cn(
                         'w-full text-right px-3.5 py-2.5 rounded-xl border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
-                        !submitted && isPicked && 'border-brand-dark bg-brand/10 text-brand-dark font-medium',
-                        !submitted && !isPicked && 'border-border hover:border-brand/40 hover:bg-brand/5 text-fg',
+                        !submitted && isPicked && 'border-accent-hover bg-accent/10 text-accent font-medium',
+                        !submitted && !isPicked && 'border-border hover:border-accent/40 hover:bg-accent/5 text-fg',
                         submitted && isAnswer && 'border-status-ok/50 bg-status-ok/10 text-status-ok font-medium',
                         submitted && isPicked && !isAnswer && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
                         submitted && !isPicked && !isAnswer && 'border-border-subtle opacity-55 text-fg-muted',
@@ -98,7 +98,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       <span
                         className={cn(
                           'grid place-items-center size-5 shrink-0 rounded-full border transition-colors',
-                          !submitted && isPicked && 'border-brand-dark bg-brand-dark text-bg-elevated',
+                          !submitted && isPicked && 'border-accent-hover bg-accent-hover text-bg-elevated',
                           !submitted && !isPicked && 'border-border-strong',
                           submitted && isAnswer && 'border-status-ok bg-status-ok text-bg-elevated',
                           submitted && isPicked && !isAnswer && 'border-status-danger bg-status-danger text-bg-elevated',
@@ -209,8 +209,8 @@ export function Quiz({ questions }: { questions: Question[] }) {
               disabled={!allAnswered}
               onClick={() => setSubmitted(true)}
               className={cn(
-                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-fg bg-accent hover:bg-accent-hover hover:text-bg-elevated transition-all shadow-glow',
-                'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-accent disabled:hover:text-fg',
+                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-bg-elevated bg-accent hover:bg-accent-hover transition-all',
+                'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent',
               )}
             >
               <Send className="size-4" aria-hidden />

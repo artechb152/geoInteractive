@@ -133,7 +133,7 @@ title={
                 className={cn(
                   'surface overflow-hidden transition-all duration-300 ease-snap',
                   isExpanded
-                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    ? 'border-brand/45 bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   isPassed && 'opacity-80'
                 )}
@@ -154,7 +154,7 @@ title={
                   <span
                     className={cn(
                       'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      isExpanded ? 'bg-accent text-bg shadow-glow' : isPassed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
+                      isExpanded ? 'bg-brand-dark text-bg-elevated border-brand-dark' : isPassed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
                     )}
                   >
                     {isPassed ? (
@@ -165,19 +165,13 @@ title={
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium leading-tight', isExpanded && 'text-accent')}>{l.label}</div>
+                    <div className={cn('font-medium leading-tight', isExpanded && 'text-brand-dark')}>{l.label}</div>
                   </div>
-
-                  <Icon
-                    name={l.icon}
-                    size={20}
-                    className={cn('transition-colors shrink-0', isExpanded ? 'text-accent' : 'text-fg-dim')}
-                  />
 
                   <motion.span
                     animate={{ rotate: isExpanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', isExpanded ? 'text-accent' : 'text-fg-dim')}
+                    className={cn('shrink-0 inline-flex', isExpanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
                       width="18"
@@ -207,7 +201,7 @@ title={
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
+                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
                           מה השכבה הזו מוסיפה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -245,7 +239,7 @@ title={
         ))}
       </div>
 
-      <ReadyCallout title="עכשיו אתה מוכן">
+      <ReadyCallout title="עכשיו אתם מוכנים">
         <p>הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה":
             <strong className="text-fg"> איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל</strong>.</p>
       </ReadyCallout>

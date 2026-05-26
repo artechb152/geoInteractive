@@ -19,7 +19,6 @@ type Feature = 'flat' | 'mountain' | 'river' | 'narrow';
 type Step = {
   id: Feature;
   label: string;
-  buttonIcon: IconName;
   caption: string;
   insight: string;
   popupTitle: string;
@@ -30,7 +29,6 @@ const STEPS: Step[] = [
   {
     id: 'flat',
     label: 'שטח פתוח (בלי מכשולים)',
-    buttonIcon: 'globe',
     caption: 'אין הרים, אין נהרות. שני הצבאות יכולים פשוט ללכת ישר זה לעבר זה. שום דבר בשטח לא עוזר ולא מפריע לאף אחד.',
     insight: 'בלי השפעה של השטח, מי שיגבר הוא מי שיש לו יותר חיילים, נשק טוב יותר או אימון טוב יותר. כלומר: כוח מול כוח, ניקוד טהור.',
     popupTitle: 'שטח פתוח: כוח מול כוח',
@@ -39,8 +37,7 @@ const STEPS: Step[] = [
   },
   {
     id: 'mountain',
-    label: 'מוסיפים הר באמצע',
-    buttonIcon: 'mountain',
+    label: 'הוספת הר',
     caption: 'פתאום יש מכשול. אי אפשר ללכת ישר יותר — חייבים לעקוף מימין או משמאל. מי שמטפס לראש ההר ראשון רואה את כל מי שזז למטה.',
     insight: 'מי שמחזיק את הנקודה הגבוהה ביותר רואה את האויב ראשון, יורה אליו ראשון, וקשה מאוד לתקוף אותו מלמטה. זאת הסיבה שצבאות תמיד נלחמים על פסגות.',
     popupTitle: 'הר באמצע: מי שלמעלה — מנצח',
@@ -49,8 +46,7 @@ const STEPS: Step[] = [
   },
   {
     id: 'river',
-    label: 'מוסיפים נהר חוצה',
-    buttonIcon: 'wave',
+    label: 'הוספת נהר',
     caption: 'טנקים, משאיות ותותחים לא יכולים פשוט לחצות נהר בשחייה. הם חייבים גשר. ואם יש רק גשר אחד — כל הצבא חייב להצטופף ולעבור דרכו.',
     insight: 'מי ששולט בגשר היחיד — שולט בכל הקרב. אפילו קבוצה קטנה של 50 חיילים, אם היא חוסמת או מפוצצת את הגשר, יכולה לעצור צבא של עשרות אלפים.',
     popupTitle: 'נהר חוצה: חומת מים',
@@ -59,8 +55,7 @@ const STEPS: Step[] = [
   },
   {
     id: 'narrow',
-    label: 'מצמצמים את המעבר',
-    buttonIcon: 'hourglass',
+    label: 'צמצום המעבר',
     caption: 'הוספנו שני רכסי הרים בצדדים. עכשיו המעבר באמצע הצטמצם לסדק. צבא של 10,000 חיילים נאלץ לעבור אחד מאחורי השני — לא 1,000 בשורה אלא 50, חשופים מכל צד.',
     insight: 'כשהמרחב הצר מאלץ אותך להצטופף בטור — היתרון המספרי שלך נעלם. כוח קטן עם נשק טוב יכול לעצור צבא ענק. זאת הסיבה שכל מפקד מחפש את "נקודות החנק" של האויב.',
     popupTitle: "צוואר בקבוק: היתרון המספרי נמחק",
@@ -128,7 +123,7 @@ title={
           <span className="gradient-text">איך גבעה רנדומלית, נהר או שביל צר הופכים לשובר השוויון של שדה הקרב?</span>
           </>
         }
-                intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר, תזרימו נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
+                intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר,  נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
       />
 
       <div className="grid lg:grid-cols-[2fr_3fr] gap-6">
@@ -153,7 +148,7 @@ title={
                 className={cn(
                   'transition-all duration-300 ease-snap',
                   active
-                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    ? 'border-brand/45 bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   passed && !active && 'opacity-85'
                 )}
@@ -168,7 +163,7 @@ title={
                   <span
                     className={cn(
                       'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active && 'bg-accent text-fg border-accent shadow-glow',
+                      active && 'bg-brand-dark text-bg-elevated border-brand-dark',
                       passed && !active && 'bg-status-ok/15 text-status-ok border-status-ok/30',
                       !active && !passed && 'bg-bg-accent text-fg-muted border-border'
                     )}
@@ -189,20 +184,9 @@ title={
                       {s.label}
                     </div>
                   </div>
-                  <Icon
-                    name={s.buttonIcon}
-                    size={20}
-                    className={cn(
-                      'transition-colors shrink-0',
-                      active ? 'text-brand-dark' : 'text-fg-dim'
-                    )}
-                  />
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
-                    <span className="size-1.5 rounded-full bg-accent" aria-hidden />
-                    למה זה משנה
-                  </div>
+                  <div className="mt-3" />
                   <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2 text-fg">
                     {s.popupTitle}
                   </h4>
@@ -215,8 +199,12 @@ title={
           })}
         </Accordion>
 
-        {/* Visualization — second child → LEFT in RTL */}
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        {/* Visualization — second child → LEFT in RTL.
+            Card bg is set to match the SVG's own ground colour so any
+            uncovered area (when the grid stretches the card taller than
+            the SVG's natural aspect) reads as one continuous surface
+            instead of leaving cream bands. */}
+        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
           <TerrainStage feature={step} />
         </div>
       </div>
@@ -236,7 +224,7 @@ title={
         ))}
       </div>
 
-      <ReadyCallout title="עכשיו אתה מוכן">
+      <ReadyCallout title="עכשיו אתם מוכנים">
         <p>הבנתם את ההיגיון? מעולה. כל מה שראיתם עכשיו מבוסס על אינסטינקט בריא. בצבא, לאינסטינקטים האלה יש שמות, חוקים והגדרות. עכשיו ניקח את ההיגיון שלכם ונתרגם אותו לשפה שבה גנרלים מתכננים מלחמות. נתחיל מהבסיס: שלוש הרמות של המלחמה
             <strong className="text-fg"> שלוש הרמות שבהן צבא חושב על מלחמה</strong>.</p>
       </ReadyCallout>
@@ -248,16 +236,15 @@ title={
 function TerrainStage({ feature }: { feature: Feature }) {
   return (
     <div className="relative w-full h-full">
+      {/* `meet` keeps the whole diagram visible (no cropping). The
+          parent card carries the matching `bg-bg-accent/30` so any
+          uncovered area still reads as the same tinted surface. */}
       <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        {/* Base ground */}
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground)" />
+        {/* The diagram has no inner background `<rect>` — the parent
+            card carries the only tint, so even when the SVG doesn't
+            cover the full container (with `meet` it stays centred at
+            its natural aspect ratio), the surrounding area reads as
+            the exact same colour with no stacking/double-tint band. */}
 
         {/* Grid */}
         {Array.from({ length: 10 }).map((_, i) => (

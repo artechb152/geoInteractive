@@ -171,7 +171,7 @@ className="surface-elevated p-6 md:p-8 my-10 rounded-2xl border border-border/50
  'px-4 py-2 rounded-full border text-sm font-bold transition-colors',
 dangerLevel === 'safe' && 'border-status-ok/40 bg-status-ok/10 text-status-ok',
 dangerLevel === 'warn' && 'border-status-warn/40 bg-status-warn/10 text-status-warn',
-dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-status-danger shadow-[0_0_15px_rgba(239,68,68,0.2)]',
+dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-status-danger',
  )}>
  {dangerLevel === 'safe' ? '✓ סטטוס: תקין' : dangerLevel === 'warn' ? '! סטטוס: סיכון' : '✗ סטטוס: סטייה קריטית'}
  </div>
@@ -213,7 +213,7 @@ dangerLevel === 'danger' && 'text-status-danger',
  </div>
  </div>
 
- <div className="surface relative aspect-video overflow-hidden rounded-xl border border-border/40 shadow-inner">
+ <div className="surface relative aspect-video overflow-hidden rounded-xl border border-border/40">
  <ImpactMap shift={shift} />
  </div>
  </div>
@@ -258,7 +258,7 @@ return (
 
  {/* Impact Point */}
  <motion.g animate={{ x: offsetX, y: -offsetY }} transition={{ type: 'spring', stiffness: 50 }}>
- <circle cx="50" cy="32" r="1.2" className="fill-accent-hot shadow-glow" />
+ <circle cx="50" cy="32" r="1.2" className="fill-accent-hot" />
  <circle cx="50" cy="32" r="5" fill="none" className="stroke-accent-hot/40" strokeWidth="0.3">
  <animate attributeName="r" values="3;7;3" dur="1.5s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.8;0.1;0.8" dur="1.5s" repeatCount="indefinite" />
@@ -292,11 +292,9 @@ whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true }}
 className="surface-elevated p-8 rounded-xl flex flex-col md:flex-row gap-6 items-center"
  >
- <div className="p-4 bg-accent/10 rounded-full shrink-0">
- <Icon name="crosshair" size={32} className="text-accent" />
- </div>
+ <Icon name="crosshair" size={48} className="text-accent shrink-0" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider font-bold">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider font-bold">
  השורה התחתונה: נ"צ הוא לא סתם מספר
  </div>
  <p className="text-base text-fg leading-relaxed max-w-3xl">

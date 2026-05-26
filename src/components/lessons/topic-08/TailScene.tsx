@@ -38,7 +38,7 @@ export function TailScene() {
         eyebrow="הבטן הלוגיסטית"
         title={
           <>
-            ככל ש<span className="gradient-text">מתקדמים</span> — הזנב מתארך ונחשף
+            ככל ש<span className="text-accent-hover">מתקדמים</span> — הזנב מתארך ונחשף
           </>
         }
         intro="להתקדם עמוק לשטח האויב דורש יותר מסתם אומץ – זה דורש חישוב קר. על כל קילומטר שנתקדם, נצטרך לשלוח עוד משאיות על הכביש כדי להעביר את הציוד, וכל משאית כזו הופכת למטרה קלה. בואו נראה איך זה עובד במספרים."
@@ -177,9 +177,7 @@ export function TailScene() {
       <div className="grid md:grid-cols-2 gap-4 mb-10">
         <div className="">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-              <Icon name="arrow-left" size={22} className="text-accent" />
-            </div>
+            <Icon name="arrow-left" size={32} className="text-accent shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-accent leading-tight">Push Logistics</div>
               <div className="text-[10px] font-mono text-fg-dim">דחיפה מהעורף</div>
@@ -197,9 +195,7 @@ export function TailScene() {
 
         <div className="">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="size-12 rounded-xl bg-accent-cool/15 border border-accent-cool/40 flex items-center justify-center shrink-0">
-              <Icon name="arrow-right" size={22} className="text-accent-cool" />
-            </div>
+            <Icon name="arrow-right" size={32} className="text-accent-cool shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-accent-cool leading-tight">Pull Logistics</div>
               <div className="text-[10px] font-mono text-fg-dim">משיכה (דרישה מהחזית)</div>

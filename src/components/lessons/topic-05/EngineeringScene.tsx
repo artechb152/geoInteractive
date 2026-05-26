@@ -115,7 +115,7 @@ export function EngineeringScene() {
                 key={m.id}
                 className={cn(
                   'surface overflow-hidden transition-colors',
-                  isActive ? `${m.border} shadow-glow ${m.bg}` : 'hover:border-border-strong'
+                  isActive ? `${m.border} ${m.bg}` : 'hover:border-border-strong'
                 )}
               >
                 <button
@@ -124,14 +124,7 @@ export function EngineeringScene() {
                   aria-expanded={isExpanded}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  <span
-                    className={cn(
-                      'size-10 rounded-xl flex items-center justify-center shrink-0 border-2 transition-all',
-                      isActive ? `${m.border} ${m.bg}` : 'border-border bg-bg-accent'
-                    )}
-                  >
-                    <Icon name={m.icon} size={18} className={isActive ? m.color : 'text-fg-dim'} />
-                  </span>
+                  <Icon name={m.icon} size={28} className={cn('shrink-0 transition-all', isActive ? m.color : 'text-fg-dim')} />
                   <div className="flex-1 min-w-0">
                     <div className={cn('font-display font-bold leading-tight', isActive && m.color)}>
                       {m.label}

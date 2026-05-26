@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import {
   motion,
@@ -10,29 +9,11 @@ import {
   type AnimationPlaybackControls,
   type MotionValue,
 } from 'framer-motion';
-import {
-  ArrowLeft,
-  Mountain,
-  Layers as LayersIcon,
-  Sparkles,
-  RotateCcw,
-  Move3D,
-} from 'lucide-react';
-import { lessons, totalDuration } from '@/lib/lessons';
+import { RotateCcw, Move3D } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ContinueLearningButton } from './ContinueLearningButton';
 
 const easeSnap = [0.22, 1, 0.36, 1] as const;
-const ORANGE = '#EB9E48';
-const ORANGE_DARK = '#B17736';
-const SAGE = '#749C75';
-const SAGE_DARK = '#5B7C5C';
-
-const STATS = [
-  { value: String(lessons.length), label: 'שיעורים אינטראקטיביים', Icon: LayersIcon },
-  { value: `${Math.round(totalDuration / 60)}+`, label: 'שעות לימוד ותרגול', Icon: Mountain },
-  { value: '100%', label: 'סימולציות וניתוח שטח', Icon: Sparkles },
-];
 
 type ViewSpec = { x: number; y: number; label: string };
 const VIEWS: Record<'iso' | 'top' | 'side' | 'front', ViewSpec> = {
@@ -46,15 +27,14 @@ type ViewKey = keyof typeof VIEWS;
 
 export function Hero() {
   const reduce = useReducedMotion();
-  const firstLessonHref = `/lessons/${lessons[0].id}/`;
 
   return (
     <section
       id="hero"
-      className="relative overflow-hidden pt-16 pb-8 md:pt-20 md:pb-12"
+      className="relative overflow-hidden min-h-[calc(100vh-3rem)] flex items-center pt-8 pb-12 md:pt-12"
       aria-labelledby="hero-title"
     >
-      <div className="relative max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.05fr_1fr] items-center gap-6 lg:gap-10">
+      <div className="relative max-w-6xl mx-auto w-full px-6 grid lg:grid-cols-[1.05fr_1fr] items-center gap-6 lg:gap-10">
         <motion.div
           initial="hidden"
           animate="show"
@@ -64,17 +44,6 @@ export function Hero() {
           }}
           className="relative z-10"
         >
-          <motion.div variants={fadeUp(!!reduce)} className="mb-4 inline-flex items-center gap-3 flex-wrap">
-            <span className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider uppercase text-accent-hover">
-              <span className="size-2 rounded-full bg-accent animate-pulse" />
-              SECTOR · 04
-            </span>
-            <span className="h-px w-10 bg-fg/15" aria-hidden />
-            <span className="text-sm md:text-[15px] font-display font-semibold tracking-wider uppercase text-fg-muted">
-              GEO·INT COURSE
-            </span>
-          </motion.div>
-
           <motion.h1
             id="hero-title"
             variants={fadeUp(!!reduce)}
@@ -97,12 +66,10 @@ export function Hero() {
                 השטח.
               </span>
               <span
-                className="relative inline-block"
+                className="relative inline-block text-accent"
                 style={{
-                  color: ORANGE,
                   fontSize: 'clamp(2.25rem, 7vw, 5rem)',
                   lineHeight: '0.92',
-                  textShadow: '0 10px 40px rgba(235,158,72,0.22)',
                 }}
               >
                 השטח<span className="text-fg">.</span>
@@ -110,7 +77,7 @@ export function Hero() {
             </span>
 
             <span className="block mt-3 text-[clamp(1rem,2vw,1.625rem)] font-medium text-fg-muted tracking-[0.02em]">
-              <span className="text-brand-dark">לפני</span> שצועדים בו.
+              <span className="text-accent">לפני</span> שצועדים בו.
             </span>
           </motion.h1>
 
@@ -124,41 +91,12 @@ export function Hero() {
 
           <motion.div variants={fadeUp(!!reduce)} className="mt-5 flex flex-wrap items-center gap-2.5">
             <ContinueLearningButton />
-            <Link
-              href={firstLessonHref}
-              className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-fg bg-accent hover:bg-accent-hover hover:text-bg-elevated transition-all duration-300 shadow-glow"
-            >
-              <span>התחלת הקורס</span>
-              <ArrowLeft
-                className="size-4 transition-transform duration-300 group-hover:-translate-x-1"
-                aria-hidden
-              />
-            </Link>
             <a
-              href="#features"
-              className="group inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-brand-dark border border-brand/40 hover:border-brand hover:bg-brand/10 transition-all duration-300"
+              href="#lessons"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 transition-colors duration-300"
             >
-              <span className="size-1.5 rounded-full bg-brand animate-pulse" aria-hidden />
               <span>מה לומדים בקורס</span>
             </a>
-          </motion.div>
-
-          <motion.div
-            variants={fadeUp(!!reduce)}
-            className="mt-6 grid grid-cols-3 max-w-sm gap-2.5 sm:gap-3"
-          >
-            {STATS.map(({ value, label, Icon }) => (
-              <div
-                key={label}
-                className="relative rounded-xl border border-border bg-bg-elevated px-3 py-2.5 sm:px-3.5 sm:py-3 overflow-hidden"
-              >
-                <Icon className="size-3.5 text-fg-dim mb-1.5" aria-hidden />
-                <div className="font-display font-bold text-lg sm:text-xl text-fg">{value}</div>
-                <div className="mt-0.5 text-[11px] sm:text-xs text-fg-muted leading-snug">
-                  {label}
-                </div>
-              </div>
-            ))}
           </motion.div>
         </motion.div>
 
@@ -534,7 +472,7 @@ function FloatingLabel({
         : 'bg-accent';
   return (
     <div className="absolute" style={{ left: x, top: y, transform: `translateZ(${tz}px)` }}>
-      <div className="flex items-center gap-2 rounded-md border border-border bg-bg-elevated/95 backdrop-blur px-2 py-1.5 shadow-elevated">
+      <div className="flex items-center gap-2 rounded-md border border-border bg-bg-elevated/95 backdrop-blur px-2 py-1.5">
         <span className={cn('size-1.5 rounded-full', dot)} aria-hidden />
         <div className="text-right leading-tight">
           <div className="text-[8px] font-mono tracking-[0.18em] uppercase text-fg-dim">
@@ -557,7 +495,7 @@ function ViewControls({
   const views: ViewKey[] = ['iso', 'top', 'side', 'front'];
   return (
     <div className="absolute top-2 left-2 z-20 flex flex-col items-end gap-1">
-      <div className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated/90 backdrop-blur p-1 shadow-elevated">
+      <div className="flex items-center gap-1 rounded-md border border-border bg-bg-elevated/90 backdrop-blur p-1">
         {views.map((v) => (
           <button
             key={v}
@@ -585,7 +523,7 @@ function ViewControls({
 function DragHint() {
   return (
     <div className="absolute bottom-2 right-2 z-20 pointer-events-none">
-      <div className="flex items-center gap-1.5 rounded-md border border-border bg-bg-elevated/85 backdrop-blur px-2 py-1 shadow-elevated">
+      <div className="flex items-center gap-1.5 rounded-md border border-border bg-bg-elevated/85 backdrop-blur px-2 py-1">
         <Move3D className="size-3 text-accent" aria-hidden />
         <span className="text-[10px] font-mono tracking-[0.15em] uppercase text-fg-muted">
           DRAG · ROTATE

@@ -109,7 +109,7 @@ export function QuizDemo() {
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-fg font-semibold hover:bg-accent-hover transition-colors shadow-glow"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
         >
           <RotateCcw className="size-4" aria-hidden /> נסה שוב
         </button>
@@ -149,7 +149,7 @@ export function QuizDemo() {
         >
           {/* Definition card */}
           <div className="rounded-2xl border border-accent/30 bg-accent/5 p-6 md:p-8 mb-6 text-center">
-            <div className="text-[11px] font-display font-semibold tracking-wider text-accent-hover uppercase mb-2">
+            <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase mb-2">
               לאיזה מושג ההגדרה הזו שייכת?
             </div>
             <div className="font-display font-semibold text-lg md:text-xl leading-snug text-fg text-balance max-w-2xl mx-auto">

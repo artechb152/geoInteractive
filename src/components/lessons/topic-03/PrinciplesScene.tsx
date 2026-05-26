@@ -456,7 +456,7 @@ className="surface-elevated p-6 flex gap-4 items-start"
  >
  <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  השורה התחתונה
  </div>
  <p className="text-fg leading-relaxed text-pretty">

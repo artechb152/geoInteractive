@@ -79,7 +79,7 @@ key={s.id}
 onClick={() => setScale(s)}
 className={cn(
  'surface p-4 text-right transition-all relative overflow-hidden',
-active ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong opacity-70 hover:opacity-100'
+active ? 'border-accent bg-accent/5' : 'hover:border-border-strong opacity-70 hover:opacity-100'
  )}
  >
  <div className="flex items-baseline justify-between mb-1">
@@ -98,7 +98,7 @@ active ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong o
 
  <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch">
  {/* Map Preview Area */}
- <div className="surface-elevated relative overflow-hidden border border-border/50 rounded-xl">
+ <div className="surface-elevated bg-bg relative overflow-hidden border border-border/50 rounded-xl">
  <ScalePreview scale={scale} />
  </div>
 
@@ -191,8 +191,8 @@ className="surface p-5 border-r-2 border-accent rounded-xl"
 function ScalePreview({ scale }: { scale: Scale }) {
 const detailLevel = scale.id === '10k' ? 'high' : scale.id === '50k' ? 'medium' : 'low';
 return (
- <div className="aspect-[4/3] relative w-full h-full">
- <svg viewBox="0 0 100 75" className="w-full h-full select-none" preserveAspectRatio="xMidYMid slice">
+ <div className="relative w-full h-full min-h-[320px] bg-bg">
+ <svg viewBox="0 0 100 75" className="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
  <rect x="0" y="0" width="100" height="75" className="fill-bg" />
 
  {/* Dynamic Grid based on scale */}

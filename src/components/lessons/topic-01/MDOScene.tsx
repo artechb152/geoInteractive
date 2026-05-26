@@ -84,7 +84,7 @@ title={
  </div>
  </div>
 
- <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+ <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
  <div className="space-y-4">
  <SuperiorityIndicator on={allOn} off={allOff} count={active.size} pct={pct} />
 
@@ -132,7 +132,7 @@ className="surface-elevated p-5 flex gap-3 items-start"
  >
  <Icon name="shield" size={20} className="text-accent shrink-0 mt-0.5" />
  <div className="text-sm">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">המצב האידיאלי ·"בועה" סביב האויב</div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">המצב האידיאלי ·"בועה" סביב האויב</div>
  <p className="text-fg-muted leading-relaxed">
  כשכל החמישה דולקים יחד, הצבא שלנו יוצר סביב האויב מעין <strong className="text-fg">בועה הרמטית</strong> —
  כלומר אזור שממנו הוא לא יכול לנוע, לא יכול לראות מה קורה, ולא יכול לתקשר עם הכוחות שלו.
@@ -175,7 +175,7 @@ className="mt-6 surface p-6 flex gap-4 items-start"
  >
  <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  המסקנה: החוליה החלשה
  </div>
  <p className="text-fg leading-relaxed text-pretty">
@@ -200,35 +200,35 @@ const radius = 38;
 return (
  <div className="relative aspect-square max-w-md mx-auto">
  <svg viewBox="-50 -50 100 100" className="w-full h-full">
- <defs>
- <radialGradient id="superiority" cx="50%" cy="50%" r="50%">
- <stop offset="0%" stopColor="rgb(212 167 44)" stopOpacity="0.5" />
- <stop offset="60%" stopColor="rgb(91 157 217)" stopOpacity="0.25" />
- <stop offset="100%" stopColor="rgb(212 167 44)" stopOpacity="0" />
- </radialGradient>
- <radialGradient id="dim-sphere" cx="50%" cy="50%" r="50%">
- <stop offset="0%" stopColor="rgb(106 124 137)" stopOpacity="0.15" />
- <stop offset="100%" stopColor="rgb(106 124 137)" stopOpacity="0" />
- </radialGradient>
- </defs>
 
- {/* Outer pulse rings when allOn */}
+ {/* Pulse rings when allOn — colourless motion, identical timing to
+     the original design. Uses the central-sphere outline colour so
+     they read as the sphere "breathing" rather than separate FX. */}
  {allOn && (
  <>
- <circle cx="0" cy="0" r="22" fill="none" stroke="rgb(212 167 44)" strokeWidth="0.4" opacity="0.5">
+ <circle cx="0" cy="0" r="22" fill="none" className="stroke-accent" strokeWidth="0.4" opacity="0.5">
  <animate attributeName="r" values="20;42;20" dur="3.5s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.6;0;0.6" dur="3.5s" repeatCount="indefinite" />
  </circle>
- <circle cx="0" cy="0" r="22" fill="none" stroke="rgb(91 157 217)" strokeWidth="0.4" opacity="0.5">
+ <circle cx="0" cy="0" r="22" fill="none" className="stroke-accent" strokeWidth="0.4" opacity="0.5">
  <animate attributeName="r" values="20;42;20" dur="3.5s" begin="1s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.6;0;0.6" dur="3.5s" begin="1s" repeatCount="indefinite" />
  </circle>
  </>
  )}
 
- {/* Central sphere */}
- <circle cx="0" cy="0" r="22" fill={allOn ? 'url(#superiority)' : 'url(#dim-sphere)'} />
+ {/* Central sphere — outline only, no fill. Solid when allOn,
+     dashed when partial. */}
  <circle cx="0" cy="0" r="22" fill="none" className={cn('transition-colors', allOn ? 'stroke-accent' : 'stroke-border')} strokeWidth="0.5" strokeDasharray={allOn ? '0' : '1 1.2'} />
+
+ {/* Soft inner halo when allOn — barely-there ring that pulses
+     once per rotation, restoring the depth the central sphere had. */}
+ {allOn && (
+ <circle cx="0" cy="0" r="3" fill="none" className="stroke-accent" strokeWidth="0.25">
+ <animate attributeName="r" values="2;8;2" dur="2.4s" repeatCount="indefinite" />
+ <animate attributeName="opacity" values="0.7;0;0.7" dur="2.4s" repeatCount="indefinite" />
+ </circle>
+ )}
 
  {/* Lines between consecutive active domains — break only the segments touching an inactive node */}
  {domains.map((d, i) => {
@@ -237,8 +237,11 @@ if (!active.has(d.id) || !active.has(next.id)) return null;
 const a = (d.angle * Math.PI) / 180;
 const b = (next.angle * Math.PI) / 180;
 return (
- <line
+ <motion.line
 key={d.id + next.id}
+initial={{ pathLength: 0, opacity: 0 }}
+animate={{ pathLength: 1, opacity: 1 }}
+transition={{ duration: 0.6, ease: 'easeOut' }}
 x1={Math.cos(a) * radius}
 y1={Math.sin(a) * radius}
 x2={Math.cos(b) * radius}
@@ -250,12 +253,17 @@ strokeDasharray="0.6 0.6"
  );
  })}
 
- {/* Lines from each active domain to center */}
+ {/* Lines from each active domain to center — animated draw-in
+     when a domain comes online, plus a steady pulse along their
+     dashed length to feel like flowing data. */}
  {domains.filter((d) => active.has(d.id)).map((d) => {
 const a = (d.angle * Math.PI) / 180;
 return (
- <line
-key={'spoke-' + d.id}
+ <g key={'spoke-' + d.id}>
+ <motion.line
+initial={{ pathLength: 0 }}
+animate={{ pathLength: 1 }}
+transition={{ duration: 0.5, ease: 'easeOut' }}
 x1="0"
 y1="0"
 x2={Math.cos(a) * radius}
@@ -263,6 +271,18 @@ y2={Math.sin(a) * radius}
 className="stroke-accent/30"
 strokeWidth="0.25"
  />
+ {/* Pulse dot travelling along the spoke into the centre */}
+ <motion.circle
+r="0.6"
+className="fill-accent"
+animate={{
+cx: [Math.cos(a) * radius, 0],
+cy: [Math.sin(a) * radius, 0],
+opacity: [0.9, 0],
+ }}
+transition={{ duration: 1.8, repeat: Infinity, ease: 'easeIn' }}
+ />
+ </g>
  );
  })}
 
@@ -303,8 +323,8 @@ whileTap={{ scale: 0.95 }}
 className={cn(
  'group size-16 sm:size-[72px] rounded-2xl border-2 transition-colors duration-200 flex flex-col items-center justify-center gap-0.5',
 isOn
- ? 'bg-bg-elevated border-accent shadow-glow'
- : 'bg-bg-card/80 border-border-strong opacity-50 hover:opacity-100 hover:border-accent hover:bg-accent/10 hover:shadow-glow'
+ ? 'bg-bg-elevated border-accent'
+ : 'bg-bg-card/80 border-border-strong opacity-50 hover:opacity-100 hover:border-accent hover:bg-accent/10'
  )}
 aria-pressed={isOn}
  >
@@ -372,9 +392,6 @@ transition={{ delay: i * 0.08 }}
 className="surface p-5"
  >
  <div className="flex items-start gap-3 mb-3">
- <div className="size-10 rounded-xl bg-bg-accent border border-border flex items-center justify-center shrink-0">
- <Icon name={c.icon} size={20} className={c.accent} />
- </div>
  <div className="flex-1 min-w-0">
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  {c.year}
@@ -392,13 +409,6 @@ className="surface p-5"
 function SuperiorityIndicator({ on, off, count, pct }: { on: boolean; off: boolean; count: number; pct: number }) {
 return (
  <div className="surface-elevated p-6 text-center relative overflow-hidden">
- {on && (
- <motion.div
-initial={{ opacity: 0 }}
-animate={{ opacity: 1 }}
-className="absolute inset-0 bg-gradient-to-br from-accent/20 via-transparent to-accent-cool/20"
- />
- )}
  <div className="relative">
  <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">כמה ממדים פעילים</div>
  <div className="font-display font-bold text-5xl tabular-nums mb-1">{count}/5</div>
@@ -417,7 +427,7 @@ off && 'text-status-danger',
 
  <div className="mt-4 h-1.5 rounded-full bg-bg-accent overflow-hidden">
  <motion.div
-className={cn('h-full rounded-full', on ? 'bg-gradient-to-r from-accent to-accent-cool' : 'bg-status-warn')}
+className="h-full rounded-full bg-accent"
 animate={{ width: `${pct}%` }}
 transition={{ duration: 0.4 }}
  />

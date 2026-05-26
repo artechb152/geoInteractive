@@ -9,12 +9,14 @@ import type { Lesson } from '@/lib/lessons';
 import { cn } from '@/lib/utils';
 
 /**
- * Carries the prev/next lesson info down to PagedLearn. PagedLearn
- * uses `next` to render the recap sub-topic's "next" slot as a link
- * to the next lesson (replacing the old per-recap "השיעור הבא" card
- * + the lesson-level prev/next footer that used to render below).
+ * Carries the prev/next lesson info AND the current lesson down to
+ * PagedLearn. PagedLearn uses `current` to render the lesson header at
+ * the top of its TOC sidebar (since the lesson title was removed from
+ * the secondary header per a site-wide design pass) and `next` to
+ * render the recap sub-topic's "next lesson" link.
  */
 export type LessonNavInfo = {
+  current?: { number: number; shortTitle: string };
   prev?: { id: string; shortTitle: string };
   next?: { id: string; shortTitle: string };
 };
@@ -69,38 +71,12 @@ export function LessonShell({
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* ── Sticky header ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-xl border-b border-border-subtle">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center gap-4">
-          <Link
-            href="/"
-            className="group inline-flex items-center gap-1.5 text-xs text-fg-muted hover:text-brand-dark transition-colors shrink-0"
-          >
-            <ArrowRight
-              className="size-3.5 transition-transform group-hover:translate-x-0.5"
-              aria-hidden
-            />
-            <span className="hidden sm:inline">חזרה לסילבוס</span>
-            <span className="sm:hidden">סילבוס</span>
-          </Link>
-
-          <span className="h-4 w-px bg-border-subtle" aria-hidden />
-
-          <div className="flex-1 min-w-0 flex items-center gap-2.5">
-            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-wider text-fg-muted shrink-0">
-              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
-              שיעור {String(lesson.number).padStart(2, '0')}
-              <span className="text-fg-dim/60">·</span>
-              <span className="text-fg-dim">{lesson.duration} דק'</span>
-            </div>
-            <span className="h-4 w-px bg-border-subtle hidden sm:block" aria-hidden />
-            <h1 className="font-display font-bold tracking-tight truncate text-sm md:text-base text-fg">
-              {lesson.shortTitle}
-            </h1>
-          </div>
-        </div>
-
-        {/* Tab nav — sage-dark indicator with framer-motion layout animation */}
+      {/* ── Sticky secondary header — just the three tabs.
+              "חזרה לסילבוס" and the lesson number/duration row used
+              to live here too; both were removed per a site-wide
+              design pass. The lesson title now headlines the TOC
+              sidebar inside PagedLearn. ─────────────────────────── */}
+      <header className="sticky top-12 z-30 bg-bg-elevated border-b border-brand">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 relative"
@@ -155,7 +131,7 @@ export function LessonShell({
       {/* ── Main content with cross-fade between tabs ────────────────── */}
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6">
-          <LessonNavContext.Provider value={{ prev, next }}>
+          <LessonNavContext.Provider value={{ current: { number: lesson.number, shortTitle: lesson.shortTitle }, prev, next }}>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={tab}

@@ -1,55 +1,35 @@
-import { Icon, type IconName } from '@/components/Icon';
-import { cn } from '@/lib/utils';
+import type { IconName } from '@/components/Icon';
 
 /**
- * IntelCard — editorial pull-quote card.
+ * IntelCard — editorial pull-quote card for historical-example callouts.
  *
  * Structural choices that make it read as a magazine excerpt, not a card:
  *  - No border. Whitespace + the white surface on the cream page define it.
  *  - Headline first. No kicker, no eyebrow — the claim leads.
- *  - A short colour stroke under the headline acts as a typographic signature
- *    in the card's accent colour, replacing the generic eyebrow dot.
- *  - The "place" lives at the bottom as a quote attribution (em-dash + text),
- *    not as a metadata header.
- *  - The icon is the smallest typographic element on the card (11–12px),
- *    sitting inline with the attribution like a typesetter's mark.
+ *  - A short sage stroke under the headline acts as a typographic
+ *    signature, matching the green accent bar on the OnboardingScene
+ *    accordions so all "historical" surfaces read as one family.
+ *  - The "place" lives at the bottom as a quote attribution
+ *    (em-dash + text), not as a metadata header.
+ *  - Per a site-wide design pass, the tiny topic icon that used to sit
+ *    on the start side of the attribution row was removed.
  *
  * Server-renderable. Fully static — no hover, no animation, no client JS.
+ *
+ * `icon` and `accent` props are kept (optional) so every existing
+ * caller continues to compile; they're intentionally unused now.
  */
 type IntelCardProps = {
   place: string;
   headline: string;
   lesson: string;
-  icon: IconName;
-  /** Tailwind text-* class for the byline icon, e.g. `text-accent-cool` */
-  accent: string;
+  /** Unused. Kept for backwards compatibility with existing callers. */
+  icon?: IconName;
+  /** Unused. Kept for backwards compatibility with existing callers. */
+  accent?: string;
 };
 
-// Static map so Tailwind JIT compiles every bg-* variant we hand off.
-const STROKE_BY_ACCENT: Record<string, string> = {
-  'text-accent': 'bg-accent',
-  'text-accent-hover': 'bg-accent-hover',
-  'text-accent-cool': 'bg-accent-cool',
-  'text-accent-hot': 'bg-accent-hot',
-  'text-accent-intel': 'bg-accent-intel',
-  'text-brand': 'bg-brand',
-  'text-brand-dark': 'bg-brand-dark',
-  'text-terrain-sky': 'bg-terrain-sky',
-  'text-terrain-ridge': 'bg-terrain-ridge',
-  'text-terrain-olive': 'bg-terrain-olive',
-  'text-terrain-sand': 'bg-terrain-sand',
-  'text-terrain-steel': 'bg-terrain-steel',
-};
-
-export function IntelCard({
-  place,
-  headline,
-  lesson,
-  icon,
-  accent,
-}: IntelCardProps) {
-  const stroke = STROKE_BY_ACCENT[accent] ?? 'bg-accent';
-
+export function IntelCard({ place, headline, lesson }: IntelCardProps) {
   return (
     <article className="bg-bg-elevated rounded-md p-3.5 md:p-4">
       {/* Headline as the lead */}
@@ -57,13 +37,11 @@ export function IntelCard({
         {headline}
       </h3>
 
-      {/* Typographic signature — short coloured stroke */}
+      {/* Typographic signature — always sage, mirrors the accordion bar
+          in the OnboardingScene's "lesson context" accordions. */}
       <span
         aria-hidden
-        className={cn(
-          'mt-2 mb-2.5 inline-block h-[3px] w-8 rounded-full',
-          stroke,
-        )}
+        className="mt-2 mb-2.5 inline-block h-[3px] w-8 rounded-full bg-brand-dark"
       />
 
       {/* Body */}
@@ -72,9 +50,8 @@ export function IntelCard({
       </p>
 
       {/* Quote-style attribution at the bottom */}
-      <div className="mt-3.5 flex items-center gap-1.5 text-[11px] md:text-xs font-display font-medium tracking-wide text-fg-dim">
-        <Icon name={icon} size={11} className={accent} />
-        <span aria-hidden className="text-fg-dim/55">—</span>
+      <div className="mt-3.5 text-[11px] md:text-xs font-display font-medium tracking-wide text-fg-dim">
+        <span aria-hidden className="text-fg-dim/55 me-1.5">—</span>
         <span>{place}</span>
       </div>
     </article>

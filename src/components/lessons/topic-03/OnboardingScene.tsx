@@ -118,7 +118,7 @@ export function OnboardingScene() {
                 className={cn(
                   'surface overflow-hidden transition-all duration-300 ease-snap',
                   active
-                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    ? 'border-brand/45 bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   passed && !active && 'opacity-80'
                 )}
@@ -139,7 +139,7 @@ export function OnboardingScene() {
                   <span
                     className={cn(
                       'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active ? 'bg-accent text-fg border-accent shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
+                      active ? 'bg-brand-dark text-bg-elevated border-brand-dark' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
@@ -153,11 +153,6 @@ export function OnboardingScene() {
                       {s.label}
                     </div>
                   </div>
-                  <Icon
-                    name={s.icon}
-                    size={20}
-                    className={cn('transition-colors shrink-0', active ? 'text-brand-dark' : 'text-fg-dim')}
-                  />
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
@@ -234,7 +229,7 @@ export function OnboardingScene() {
         ))}
       </div>
 
-      <ReadyCallout title="עכשיו אתה מוכן">
+      <ReadyCallout title="עכשיו אתם מוכנים">
         <p>הבנת ש"ניווט" זה תהליך שלם — לא רק קריאת מפה. בשלוש הסצנות הבאות נלמד את הכלים בפועל:
             <strong className="text-fg"> איך מחשבים אזימוט, איך מתכננים מסלול, ואיך מנווטים בשטח אויב</strong>.</p>
       </ReadyCallout>

@@ -96,23 +96,15 @@ whileHover={{ y: -3 }}
 whileTap={{ scale: 0.98 }}
 className={cn(
  'surface text-right p-5 transition-all relative overflow-hidden',
-isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
+isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
  )}
  >
  {isActive && (
  <div aria-hidden className="absolute -end-12 -top-12 size-32 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
  )}
  <div className="relative flex items-start gap-3 mb-3">
- <div className={cn(
- 'size-12 rounded-xl border flex items-center justify-center shrink-0',
-isActive ? 'border-accent bg-accent/15 shadow-glow' : 'border-border bg-bg-accent'
- )}>
- <Icon name={t.icon} size={22} className={isActive ? 'text-accent' : t.color} />
- </div>
+ <Icon name={t.icon} size={32} className={cn('shrink-0 mt-0.5', isActive ? 'text-accent' : t.color)} />
  <div className="min-w-0 flex-1">
- <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
- סוג {i + 1}
- </div>
  <h4 className={cn('font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2', isActive && 'text-accent')}>
  {t.label}
  </h4>
@@ -138,7 +130,7 @@ className={cn('surface-elevated p-6 sm:p-7 border-r-4 mb-6', meta.borderColor)}
  >
  <div className="flex items-center gap-3 mb-4">
  <Icon name={meta.icon} size={22} className={meta.color} />
- <h3 className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</h3>
+ <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
  <span className="font-mono text-xs text-fg-dim">{meta.english}</span>
  </div>
 
@@ -157,7 +149,7 @@ className={cn('surface-elevated p-6 sm:p-7 border-r-4 mb-6', meta.borderColor)}
  <div className="flex gap-3 items-start">
  <Icon name="spark" size={18} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">דוגמה היסטורית</div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">דוגמה היסטורית</div>
  <p className="text-sm text-fg leading-relaxed">{meta.example}</p>
  </div>
  </div>
@@ -173,7 +165,7 @@ className="surface-elevated p-6 flex gap-4 items-start"
  >
  <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">המסקנה</div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">המסקנה</div>
 <p className="text-fg leading-relaxed text-pretty">
  המפה היא לא סתם קווים וצבעים — היא <strong className="text-fg">לוח שחמט תלת-ממדי</strong>. 
  ברגע שתלמדו לזהות שטח שולט, חיוני ומת, תפסיקו לקרוא מידע יבש ותתחילו לראות תוכנית קרב חיה. ההבנה הזו היא שהופכת תצפיתן למפקד.

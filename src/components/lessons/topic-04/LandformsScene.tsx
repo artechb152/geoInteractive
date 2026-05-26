@@ -100,13 +100,13 @@ return (
 key={f.id}
 className={cn(
  'surface overflow-hidden transition-colors relative',
-isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong'
+isActive ? 'border-brand-dark bg-brand/5' : 'hover:border-border-strong'
  )}
  >
  {isActive && (
  <motion.span
 layoutId="t4-form-bar"
-className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
  />
  )}
  <button
@@ -118,13 +118,13 @@ className="w-full p-4 text-right flex items-center gap-3"
  <span
 className={cn(
  'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all font-mono text-sm font-bold',
-isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
+isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  )}
  >
  {i + 1}
  </span>
  <div className="flex-1 min-w-0">
- <div className={cn('font-display font-bold leading-tight', isActive ? 'text-accent' : 'text-fg')}>
+ <div className={cn('font-display font-bold leading-tight', isActive ? 'text-brand-dark' : 'text-fg')}>
  {f.label}
  </div>
  <div className="text-xs font-mono text-fg-dim mt-0.5">{f.english}</div>
@@ -132,7 +132,7 @@ isActive ? 'bg-accent text-bg shadow-glow' : 'bg-bg-accent text-fg-muted'
  <motion.span
 animate={{ rotate: isActive ? 180 : 0 }}
 transition={{ duration: 0.25 }}
-className={cn('shrink-0 inline-flex', isActive ? 'text-accent' : 'text-fg-dim')}
+className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
  >
  <svg
 width="18"
@@ -160,7 +160,7 @@ exit={{ height: 0, opacity: 0 }}
 transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
 className="overflow-hidden"
  >
- <div className="px-4 pb-4 pt-1 border-t border-accent/20 space-y-3">
+ <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
  <div className="mt-3">
  <div className="text-sm font-display font-semibold text-accent-cool mb-1 tracking-wider">
  מה זה
@@ -168,7 +168,7 @@ className="overflow-hidden"
  <p className="text-sm leading-relaxed text-fg">{f.description}</p>
  </div>
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
  איך מזהים במפה
  </div>
  <p className="text-sm leading-relaxed text-fg">{f.contourHint}</p>
@@ -213,7 +213,7 @@ className="surface p-5 mb-12 flex gap-3 items-start"
  >
  <Icon name="spark" size={20} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">דוגמה היסטורית</div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">דוגמה היסטורית</div>
  <p className="text-sm text-fg-muted leading-relaxed">{meta.example}</p>
  </div>
  </motion.div>
@@ -443,7 +443,7 @@ isActive ? 'border-accent bg-accent/10' : 'border-border bg-bg-card hover:border
  </div>
 
  <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
- <div className="surface relative overflow-hidden aspect-[4/3]">
+ <div className="surface bg-bg-elevated relative overflow-hidden h-full min-h-[260px]">
  <SlopeProfile slope={active} />
  </div>
 
@@ -460,7 +460,7 @@ className="space-y-3"
  <p className="text-sm leading-relaxed text-fg">{meta.description}</p>
  </div>
  <div className="surface p-5">
- <div className="text-sm font-display font-semibold text-accent-hover mb-2 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-2 tracking-wider">
  איך מזהים במפה
  </div>
  <p className="text-sm leading-relaxed text-fg-muted">{meta.contourHint}</p>
@@ -478,7 +478,7 @@ concave: 'M 5 60 L 35 50 Q 65 35 90 12',
 shoulder: 'M 5 60 L 30 35 L 60 32 L 90 12',
  };
 return (
- <svg viewBox="0 0 100 75" className="w-full h-full">
+ <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
  <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
  {/* Grid */}

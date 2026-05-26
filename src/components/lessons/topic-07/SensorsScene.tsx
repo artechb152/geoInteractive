@@ -117,7 +117,7 @@ export function SensorsScene() {
         eyebrow="בליעה אטמוספרית ו-Thermal Crossover"
         title={
           <>
-            <span className="gradient-text">האוויר מעוור</span> את החיישנים שלכם
+            <span className="text-accent-hover">האוויר מעוור</span> את החיישנים שלכם
           </>
         }
         intro={`דמיינו שכל קרן או שידור שיוצאים מהמצלמות והמכ"מים שלנו צריכים לעבור מסלול מכשולים של מולקולות מים, אבק וגשם. כל חלקיק כזה מתפקד כמו חומה קטנה שחוסמת את הראות. שחקו עם תנאי מזג האוויר למטה ובדקו איזו טכנולוגיה שורדת באילו תנאים.`}
@@ -145,12 +145,10 @@ export function SensorsScene() {
               onClick={() => setWeather(w.id)}
               className={cn(
                 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? `${w.border} shadow-glow ${w.bg}` : 'hover:border-border-strong'
+                isActive ? `${w.border} ${w.bg}` : 'hover:border-border-strong'
               )}
             >
-              <div className={cn('size-9 rounded-lg flex items-center justify-center border-2 shrink-0', w.border, w.bg)}>
-                <Icon name={w.icon} size={16} className={w.color} />
-              </div>
+              <Icon name={w.icon} size={26} className={cn('shrink-0', w.color)} />
               <div>
                 <div className={cn('font-display font-bold text-sm leading-tight', isActive && w.color)}>
                   {w.label}
@@ -178,9 +176,7 @@ export function SensorsScene() {
             return (
               <div key={s.id} className="surface p-3 rounded-xl">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="size-9 rounded-lg bg-bg-accent border border-border flex items-center justify-center shrink-0">
-                    <Icon name={s.icon} size={16} className="text-fg" />
-                  </div>
+                  <Icon name={s.icon} size={26} className="text-fg shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-display font-bold text-sm leading-tight">{s.label}</div>
                     <div className="text-[10px] font-mono text-fg-dim">{s.english}</div>

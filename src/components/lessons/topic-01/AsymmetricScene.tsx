@@ -18,7 +18,7 @@ label: 'ספיגה והתמדה',
 icon: 'hourglass',
 oneLiner: 'הזמן עובד לטובתם. המטרה היא פשוט לשרוד את המכות.',
 detail:"ארגון טרור מבין מראש שהוא לא יכול להשמיד צבא של מדינה, אז המטרה שלו היא פשוט לא להפסיד. מבחינתו, כל יום שבו הוא נשאר בחיים וממשיך לירות – נחשב לניצחון. הוא מנצל את העובדה שלמדינה יש 'שעון חול': המלחמה עולה לה מיליארדים, חיילי המילואים נשחקים, ויש לחץ בינלאומי. החלש פשוט מנסה להישאר על הרגליים עד שהחזק יקרוס מבפנים.",
-color: 'text-accent-cool',
+color: 'text-accent-hot',
  },
  {
 id: 'deterrence',
@@ -26,7 +26,7 @@ label: 'הרתעה אסימטרית',
 icon: 'megaphone',
 oneLiner: 'עוקפים את החזית – תוקפים את האזרחים בעורף במקום את החיילים.',
 detail:"כשהצד החלש לא מצליח לחדור שריון של טנק או להפיל מטוסי קרב, הוא פשוט 'מדלג' עליהם. במקום להילחם מול הצבא פנים אל פנים, הוא יורה טילים זולים ורחפנים ישירות על הערים של המדינה החזקה. המטרה היא לשתק את הכלכלה, לזרוע פאניקה ולגרום לאזרחים המפוחדים ללחוץ על הממשלה שלהם לעצור את המלחמה מיד.",
-color: 'text-accent-hot',
+color: 'text-accent-cool',
  },
  {
 id: 'attrition',
@@ -80,7 +80,7 @@ title={
 
  <div className="p-5 mb-6">
  <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
+ <Icon name="spark" size={20} className="text-accent-hot shrink-0 mt-0.5" />
  <div className="text-sm leading-relaxed">
  <strong className="text-fg">מילון קצר:</strong>
  <ul className="mt-2 space-y-1 text-fg-muted">
@@ -110,9 +110,6 @@ transition={{ delay: i * 0.1 }}
 className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
  >
  <div className="flex items-start gap-3 mb-3 relative">
- <div className="size-10 rounded-xl border border-border bg-bg-accent flex items-center justify-center shrink-0">
- <Icon name={p.icon} size={20} className={p.color} />
- </div>
  <div className="min-w-0 flex-1">
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  עמוד {i + 1} · האסטרטגיה של החלש
@@ -151,15 +148,7 @@ transition={{ delay: i * 0.06 }}
 className="surface p-5 relative overflow-hidden"
  >
  <div className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
- <div className="relative flex items-start justify-between mb-3">
- <div className="size-11 rounded-xl bg-accent/10 border border-accent/30 flex items-center justify-center">
- <Icon name={t.icon} size={22} className="text-accent" />
- </div>
- <span className="font-mono text-xs text-fg-dim">
- {String(i + 1).padStart(2, '0')}
- </span>
- </div>
- <h4 className="font-display font-semibold mb-1.5 leading-tight">{t.title}</h4>
+ <h4 className="font-display font-semibold mb-1.5 leading-tight relative">{t.title}</h4>
  <p className="text-sm text-fg-muted leading-relaxed">{t.desc}</p>
  </motion.div>
  ))}
@@ -174,7 +163,7 @@ className="surface-elevated p-6 flex gap-4 items-start"
  >
  <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  המסקנה: זורקים את ספר החוקים הישן לפח
  </div>
  <p className="text-fg leading-relaxed text-pretty">
@@ -243,19 +232,19 @@ return (
  <div className="p-4 bg-bg-accent/40">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">השוואה</div>
  </div>
- <div className="p-4 bg-accent-hot/10 border-r border-border-strong">
- <div className="flex items-center gap-2 mb-1">
- <Icon name="tank" size={20} className="text-accent-hot" />
- <div className="font-display font-bold text-base">צד חזק</div>
- </div>
- <div className="text-xs text-accent-hot font-mono">מדינה · צבא סדיר</div>
- </div>
  <div className="p-4 bg-accent-cool/10 border-r border-border-strong">
  <div className="flex items-center gap-2 mb-1">
- <Icon name="mask" size={20} className="text-accent-cool" />
+ <Icon name="tank" size={20} className="text-accent-cool" />
+ <div className="font-display font-bold text-base">צד חזק</div>
+ </div>
+ <div className="text-xs font-display font-medium tracking-wide text-accent-cool">מדינה · צבא סדיר</div>
+ </div>
+ <div className="p-4 bg-accent-hot/10 border-r border-border-strong">
+ <div className="flex items-center gap-2 mb-1">
+ <Icon name="mask" size={20} className="text-accent-hot" />
  <div className="font-display font-bold text-base">צד חלש</div>
  </div>
- <div className="text-xs text-accent-cool font-mono">ארגון לא־סדיר · גרילה</div>
+ <div className="text-xs font-display font-medium tracking-wide text-accent-hot">ארגון לא־סדיר · גרילה</div>
  </div>
  </div>
 
@@ -290,7 +279,7 @@ i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent'
  <div className="grid grid-cols-[1.2fr_1fr_1fr] bg-bg-accent/30">
  <div className="p-4 flex items-center gap-2 border-r border-border-subtle">
  <Icon name="scale" size={18} className="text-accent" />
- <span className="text-sm font-display font-semibold text-accent-hover tracking-wider">פער אסימטרי</span>
+ <span className="text-sm font-display font-semibold text-accent tracking-wider">פער אסימטרי</span>
  </div>
  <div className="p-4 col-span-2 text-xs text-fg-muted leading-relaxed border-r border-border-subtle">
 על הנייר, הצד החזק אמור למחוץ את הצד החלש ביום אחד. בדיוק בגלל זה הצד החלש בורח מקרב"ראש בראש" בשטח פתוח. במקום זה, הוא גורר את הצבא הגדול למגרש שלו: סמטאות צפופות ומנהרות – המקום היחיד שבו המטוסים והטנקים מאבדים את היתרון הטכנולוגי שלהם. </div>
@@ -368,17 +357,15 @@ function TimeAsymmetry() {
           viewport={{ once: true }}
           className="surface-elevated p-5 sm:p-6 relative overflow-hidden"
         >
-          <div aria-hidden className="absolute -top-12 -end-12 size-40 rounded-full bg-accent-hot/10 blur-3xl pointer-events-none" />
+          <div aria-hidden className="absolute -top-12 -end-12 size-40 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
           <div className="relative flex items-start gap-4">
-            <div className="grid place-items-center size-12 rounded-xl bg-accent-hot/10 border border-accent-hot/30 shrink-0">
-              <Icon name="tank" size={22} className="text-accent-hot" />
-            </div>
+            <Icon name="tank" size={32} className="text-accent-cool shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-display font-semibold tracking-wider text-accent-hot mb-1">
+              <div className="text-xs font-display font-semibold tracking-wider text-accent-cool mb-1">
                 צד חזק · מדינה
               </div>
               <div className="flex items-baseline gap-2">
-                <div className="font-display font-bold text-5xl tabular-nums text-accent-hot leading-none">
+                <div className="font-display font-bold text-5xl tabular-nums text-accent-cool leading-none">
                   5
                 </div>
                 <div className="text-sm text-fg-muted leading-tight">
@@ -401,17 +388,15 @@ function TimeAsymmetry() {
           transition={{ delay: 0.1 }}
           className="surface-elevated p-5 sm:p-6 relative overflow-hidden"
         >
-          <div aria-hidden className="absolute -top-12 -end-12 size-40 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
+          <div aria-hidden className="absolute -top-12 -end-12 size-40 rounded-full bg-accent-hot/10 blur-3xl pointer-events-none" />
           <div className="relative flex items-start gap-4">
-            <div className="grid place-items-center size-12 rounded-xl bg-accent-cool/10 border border-accent-cool/30 shrink-0">
-              <Icon name="mask" size={22} className="text-accent-cool" />
-            </div>
+            <Icon name="mask" size={32} className="text-accent-hot shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-display font-semibold tracking-wider text-accent-cool mb-1">
+              <div className="text-xs font-display font-semibold tracking-wider text-accent-hot mb-1">
                 צד חלש · ארגון לא-סדיר
               </div>
               <div className="flex items-baseline gap-2">
-                <div className="font-display font-bold text-5xl tabular-nums text-accent-cool leading-none">
+                <div className="font-display font-bold text-5xl tabular-nums text-accent-hot leading-none">
                   1
                 </div>
                 <div className="text-sm text-fg-muted leading-tight">
@@ -436,13 +421,13 @@ function TimeAsymmetry() {
               מי באמת יכול להכריח אותך לסיים את המלחמה?
             </div>
           </div>
-          <div className="px-3 sm:px-4 py-3 bg-accent-hot/10 border-r border-border-strong text-center min-w-[68px] sm:min-w-[88px]">
-            <div className="text-xs font-display font-semibold tracking-wider text-accent-hot">
+          <div className="px-3 sm:px-4 py-3 bg-accent-cool/10 border-r border-border-strong text-center min-w-[68px] sm:min-w-[88px]">
+            <div className="text-xs font-display font-semibold tracking-wider text-accent-cool">
               חזק
             </div>
           </div>
-          <div className="px-3 sm:px-4 py-3 bg-accent-cool/10 border-r border-border-strong text-center min-w-[68px] sm:min-w-[88px]">
-            <div className="text-xs font-display font-semibold tracking-wider text-accent-cool">
+          <div className="px-3 sm:px-4 py-3 bg-accent-hot/10 border-r border-border-strong text-center min-w-[68px] sm:min-w-[88px]">
+            <div className="text-xs font-display font-semibold tracking-wider text-accent-hot">
               חלש
             </div>
           </div>
@@ -461,9 +446,7 @@ function TimeAsymmetry() {
             )}
           >
             <div className="p-3 sm:p-4 flex items-center gap-3 min-w-0">
-              <div className="size-10 rounded-lg border border-border bg-bg-accent flex items-center justify-center shrink-0">
-                <Icon name={o.icon} size={18} className="text-accent" />
-              </div>
+              <Icon name={o.icon} size={26} className="text-accent shrink-0" />
               <div className="min-w-0">
                 <div className="font-display font-semibold text-sm leading-tight">
                   {o.title}
@@ -475,7 +458,7 @@ function TimeAsymmetry() {
             </div>
             <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[68px] sm:min-w-[88px]">
               {o.strongActive ? (
-                <span className="inline-flex items-center justify-center size-7 rounded-full bg-accent-hot/15 text-accent-hot border border-accent-hot/40">
+                <span className="inline-flex items-center justify-center size-7 rounded-full bg-accent-cool/15 text-accent-cool border border-accent-cool/40">
                   <Icon name="check" size={14} strokeWidth={3} />
                 </span>
               ) : (
@@ -486,7 +469,7 @@ function TimeAsymmetry() {
             </div>
             <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[68px] sm:min-w-[88px]">
               {o.weakActive ? (
-                <span className="inline-flex items-center justify-center size-7 rounded-full bg-accent-cool/15 text-accent-cool border border-accent-cool/40">
+                <span className="inline-flex items-center justify-center size-7 rounded-full bg-accent-hot/15 text-accent-hot border border-accent-hot/40">
                   <Icon name="check" size={14} strokeWidth={3} />
                 </span>
               ) : (
@@ -502,17 +485,17 @@ function TimeAsymmetry() {
         <div className="grid grid-cols-[1fr_auto_auto] bg-bg-accent/30 border-t border-border-strong">
           <div className="p-3 sm:p-4 flex items-center gap-2">
             <Icon name="scale" size={18} className="text-accent" />
-            <span className="text-sm font-display font-semibold text-accent-hover tracking-wider">
+            <span className="text-sm font-display font-semibold text-accent tracking-wider">
               סך החזיתות
             </span>
           </div>
           <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[68px] sm:min-w-[88px]">
-            <div className="font-display font-bold text-2xl tabular-nums text-accent-hot leading-none">
+            <div className="font-display font-bold text-2xl tabular-nums text-accent-cool leading-none">
               5
             </div>
           </div>
           <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[68px] sm:min-w-[88px]">
-            <div className="font-display font-bold text-2xl tabular-nums text-accent-cool leading-none">
+            <div className="font-display font-bold text-2xl tabular-nums text-accent-hot leading-none">
               1
             </div>
           </div>
@@ -520,7 +503,7 @@ function TimeAsymmetry() {
       </div>
 
       <div className="rounded-xl border border-accent/30 bg-accent/5 p-5 mt-4">
-        <div className="text-sm font-display font-semibold text-accent-hover mb-1.5 tracking-wider">
+        <div className="text-sm font-display font-semibold text-accent mb-1.5 tracking-wider">
           התובנה
         </div>
         <p className="text-sm text-fg leading-relaxed text-pretty">

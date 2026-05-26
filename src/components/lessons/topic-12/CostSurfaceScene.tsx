@@ -147,7 +147,7 @@ step="12.2"
 eyebrow="משטח עלות ונתיב בעלות מינימלית"
 title={
  <>
- <span className="gradient-text">Cost Surface</span> + <span className="gradient-text">Least-Cost Path</span>
+ <span className="text-accent-hover">Cost Surface</span> + <span className="text-accent-hover">Least-Cost Path</span>
  </>
  }
 intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל: מה הדרך הזולה ביותר מ-A ל-B? GIS עונה לך תוך 3 שניות — ובדרך כלל המסלול לא הקו הישר."
@@ -166,7 +166,7 @@ intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל
  {/* Main interactive */}
  <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6 items-stretch mb-12">
  {/* Map */}
- <div className="surface-elevated p-4 rounded-2xl">
+ <div className="surface-elevated p-4 rounded-2xl flex flex-col">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  משטח עלות חי · A ← B
@@ -177,7 +177,9 @@ intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל
  </div>
  </div>
 
+ <div className="flex-1 min-h-0 flex">
  <CostMap cost={cost} path={lcp.path} start={start} end={end} showDirect={showDirect} />
+ </div>
 
  <div className="mt-3 flex items-center gap-4 text-[10px] font-mono text-fg-dim flex-wrap">
  <span className="flex items-center gap-1"><span className="size-2 bg-status-ok rounded-sm" /> עלות נמוכה</span>
@@ -229,7 +231,7 @@ onClick={() => setShowDirect(!showDirect)}
 className={cn(
  'flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5',
 showDirect
- ? 'bg-status-danger text-bg shadow-glow'
+ ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
  )}
  >
@@ -254,11 +256,9 @@ showDirect
  {/* Concept callout */}
  <div className="">
  <div className="flex gap-4 items-start">
- <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
- <Icon name="compass" size={22} className="text-accent" />
- </div>
+ <Icon name="compass" size={32} className="text-accent shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">"כמו מים זורמים"
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">"כמו מים זורמים"
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">
  הנתיב הזול לא תמיד הוא הקצר
@@ -297,8 +297,8 @@ if (cost[x][y] > maxCost) maxCost = cost[x][y];
  }
  }
 return (
- <div className="aspect-[22/13] relative rounded-xl overflow-hidden">
- <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+ <div className="relative w-full h-full min-h-[260px] rounded-xl overflow-hidden" style={{ backgroundColor: 'rgba(34, 211, 238, 0.12)' }}>
+ <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
  {/* Cost heatmap */}
  {Array.from({ length: W }).map((_, x) =>
 Array.from({ length: H }).map((_, y) => {

@@ -50,23 +50,27 @@
   }
 
   .btn-primary {
-    @apply btn bg-accent text-fg hover:bg-accent-hover shadow-glow active:scale-[0.98];
+    @apply btn bg-accent text-bg-elevated hover:bg-accent-hover active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply btn bg-brand text-bg-elevated hover:bg-brand-dark active:scale-[0.98];
+    @apply btn bg-accent text-bg-elevated hover:bg-accent-hover active:scale-[0.98];
   }
 
   .btn-ghost {
-    @apply btn bg-transparent border border-brand/40 text-brand-dark hover:bg-brand/10;
+    @apply btn bg-transparent border border-accent/40 text-accent hover:bg-accent/10;
   }
 
   .topo-bg {
     @apply bg-grid-pattern bg-grid;
   }
 
+  /* `gradient-text` is kept as a class for backwards compatibility with
+     existing headlines. It resolves to the darkest orange — h1 picks it
+     up naturally; lighter hierarchy for h2/h3 is set on those elements
+     themselves via `text-accent-hover` / `text-accent-deep`. */
   .gradient-text {
-    @apply bg-gradient-to-l from-accent via-accent-hover to-brand-dark bg-clip-text text-transparent;
+    @apply text-accent;
   }
 }
 

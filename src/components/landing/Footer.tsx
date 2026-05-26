@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Compass, ArrowUp } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { lessons } from '@/lib/lessons';
 
 const NAV_GROUPS = [
@@ -43,7 +43,7 @@ export function Footer() {
               className="group inline-flex items-center gap-2.5"
               aria-label="עמוד הבית"
             >
-              <span className="relative grid place-items-center size-9 rounded-md border border-accent/40 bg-accent/10 text-accent-hover group-hover:bg-accent/20 transition-colors">
+              <span className="relative grid place-items-center size-9 rounded-md border border-accent/40 bg-accent/10 text-accent group-hover:bg-accent/20 transition-colors">
                 <Compass className="size-4" aria-hidden />
                 <span
                   className="absolute -bottom-1 -left-1 size-1.5 rounded-full bg-accent"
@@ -51,7 +51,7 @@ export function Footer() {
                 />
               </span>
               <span className="font-display font-bold text-base text-fg">
-                גיאוגרפיה <span className="text-accent-hover">צבאית</span>
+                גיאוגרפיה <span className="text-accent">צבאית</span>
               </span>
             </Link>
 
@@ -62,9 +62,8 @@ export function Footer() {
 
             <a
               href="#hero"
-              className="mt-6 inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark hover:text-brand transition-colors"
+              className="mt-6 inline-flex items-center gap-2 text-sm font-display font-semibold text-accent hover:text-accent-hover transition-colors"
             >
-              <ArrowUp className="size-4" aria-hidden />
               חזרה למעלה
             </a>
           </div>
@@ -80,7 +79,7 @@ export function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-fg-muted hover:text-brand-dark transition-colors"
+                      className="text-fg-muted hover:text-accent transition-colors"
                     >
                       {link.label}
                     </Link>

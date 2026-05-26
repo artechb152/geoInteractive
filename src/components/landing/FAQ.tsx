@@ -51,7 +51,7 @@ export function FAQ() {
           >
             כל מה שצריך לדעת
             <br className="hidden sm:block" />
-            <span className="text-brand-dark">לפני שמתחילים</span>.
+            <span className="text-accent-hover">לפני שמתחילים</span>.
           </h2>
           <p className="mt-3 text-sm md:text-base text-fg-muted leading-relaxed text-pretty">
             אספנו את השאלות שמגיעות הכי הרבה לפני ההצטרפות לקורס.
@@ -71,7 +71,7 @@ export function FAQ() {
                 className={cn(
                   'group relative overflow-hidden rounded-xl border border-border bg-bg-elevated',
                   'transition-all duration-300 ease-snap',
-                  'data-[state=open]:border-brand/40 data-[state=open]:shadow-elevated',
+                  'data-[state=open]:border-brand/40',
                 )}
               >
                 {/* Active indicator: vertical bar on the RTL start (right) edge */}
@@ -112,8 +112,8 @@ export function FAQ() {
                         'grid place-items-center size-9 shrink-0 rounded-full',
                         'border border-border text-fg-dim bg-bg-elevated',
                         'transition-all duration-300 ease-snap',
-                        'group-hover:border-brand/40 group-hover:text-brand-dark',
-                        'group-data-[state=open]:bg-brand/10 group-data-[state=open]:border-brand-dark/40 group-data-[state=open]:text-brand-dark',
+                        'group-hover:border-brand/40 group-hover:text-brand',
+                        'group-data-[state=open]:bg-brand/10 group-data-[state=open]:border-brand/40 group-data-[state=open]:text-brand-dark',
                       )}
                     >
                       <Plus

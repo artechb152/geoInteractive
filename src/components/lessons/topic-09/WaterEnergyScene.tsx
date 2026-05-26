@@ -94,7 +94,7 @@ export function WaterEnergyScene() {
         eyebrow="הידרו-פוליטיקה ואנרגיה"
         title={
           <>
-            <span className="gradient-text">מים זה הנפט החדש</span>
+            <span className="text-accent-hover">מים זה הנפט החדש</span>
           </>
         }
         intro="במאה ה-20 מדינות יצאו למלחמות על נפט, אבל המאה ה-21 שייכת למים. היום, מי ששולט במקור המים שולט בגורלן של מדינות שלמות. במקביל, גם האנרגיה הפסיקה להיות רק מוצר שקונים ומוכרים, והפכה לנשק פוליטי וזירת עימות מרכזית."
@@ -182,12 +182,10 @@ export function WaterEnergyScene() {
               onClick={() => setActiveEnergy(e.id)}
               className={cn(
                 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? `${e.border} shadow-glow ${e.bg}` : 'hover:border-border-strong'
+                isActive ? `${e.border} ${e.bg}` : 'hover:border-border-strong'
               )}
             >
-              <div className={cn('size-10 rounded-lg flex items-center justify-center border-2 shrink-0', e.border, e.bg)}>
-                <Icon name={e.icon} size={18} className={e.color} />
-              </div>
+              <Icon name={e.icon} size={28} className={cn(e.color, 'shrink-0')} />
               <div className="min-w-0">
                 <div className={cn('font-display font-bold text-sm leading-tight', isActive && e.color)}>
                   {e.label}
@@ -209,9 +207,7 @@ export function WaterEnergyScene() {
           className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-6', ePick.border.replace('border-', 'border-r-'))}
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', ePick.border, ePick.bg)}>
-              <Icon name={ePick.icon} size={22} className={ePick.color} />
-            </div>
+            <Icon name={ePick.icon} size={32} className={cn(ePick.color, 'shrink-0')} />
             <div>
               <div className={cn('font-display font-bold text-xl leading-tight', ePick.color)}>{ePick.label}</div>
               <div className="text-[10px] font-mono text-fg-dim mt-0.5">{ePick.english}</div>
@@ -228,7 +224,7 @@ export function WaterEnergyScene() {
               <p className="text-sm text-fg-muted leading-relaxed">{ePick.vulnerability}</p>
             </div>
             <div>
-              <div className="text-sm font-display font-semibold text-accent-hover mb-1.5 tracking-wider">ערך אסטרטגי</div>
+              <div className="text-sm font-display font-semibold text-accent mb-1.5 tracking-wider">ערך אסטרטגי</div>
               <p className="text-sm text-fg leading-relaxed">{ePick.strategic}</p>
             </div>
           </div>
@@ -237,11 +233,9 @@ export function WaterEnergyScene() {
 
       <div className="">
         <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-            <Icon name="spark" size={22} className="text-accent" />
-          </div>
+          <Icon name="spark" size={32} className="text-accent shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
               מריכוזיות לביזור · ממעמד של תלות לעצמאות אנרגטית
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">

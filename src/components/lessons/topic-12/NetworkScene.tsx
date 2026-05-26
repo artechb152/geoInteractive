@@ -83,7 +83,7 @@ step="12.3"
 eyebrow="ניתוח רשתות ומעגלי השפעה"
 title={
  <>
- <span className="gradient-text">Network</span> + <span className="gradient-text">Buffer</span> Analysis
+ <span className="text-accent-hover">Network</span> + <span className="text-accent-hover">Buffer</span> Analysis
  </>
  }
 intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טילים מאיימת על 50 ק"מ. ניתוח רשתות חושף את הצומת הקריטי, וניתוח Buffer מציג איפה אסור לעבור.`}
@@ -138,7 +138,6 @@ disabled.size > 0
  : 'border-border text-fg-dim cursor-not-allowed opacity-50'
  )}
  >
- <Icon name="arrow-left" size={12} />
  אפס נזק ({disabled.size})
  </button>
  </div>
@@ -192,7 +191,7 @@ onClick={() => setShowThreatBuffers(!showThreatBuffers)}
 className={cn(
  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5',
 showThreatBuffers
- ? 'bg-status-danger text-bg shadow-glow'
+ ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
  )}
  >
@@ -215,16 +214,11 @@ viewport={{ once: true, amount: 0.3 }}
 transition={{ delay: i * 0.08 }}
 className={cn(
  'surface p-4 rounded-xl border-r-4 transition-all',
-isAffecting ? 'border-r-status-danger bg-status-danger/5 shadow-glow' : 'border-r-status-warn'
+isAffecting ? 'border-r-status-danger bg-status-danger/5' : 'border-r-status-warn'
  )}
  >
  <div className="flex items-center gap-3">
- <div className={cn(
- 'size-11 rounded-xl flex items-center justify-center border-2',
-isAffecting ? 'border-status-danger bg-status-danger/15' : 'border-status-warn/40 bg-status-warn/10'
- )}>
- <Icon name="crosshair" size={18} className={isAffecting ? 'text-status-danger' : 'text-status-warn'} />
- </div>
+ <Icon name="crosshair" size={30} className={cn(isAffecting ? 'text-status-danger' : 'text-status-warn', 'shrink-0')} />
  <div className="flex-1">
  <div className={cn('font-display font-bold leading-tight', isAffecting && 'text-status-danger')}>
  {t.label}
@@ -245,11 +239,9 @@ isAffecting ? 'border-status-danger bg-status-danger/15' : 'border-status-warn/4
  {/* Use case callout */}
  <div className="">
  <div className="flex gap-4 items-start">
- <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
- <Icon name="spark" size={22} className="text-accent" />
- </div>
+ <Icon name="spark" size={32} className="text-accent shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  שימוש מבצעי כפול
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">

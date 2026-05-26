@@ -109,7 +109,7 @@ step="10.3"
 eyebrow="המרחב האזרחי-משפטי"
 title={
  <>
- הכוח שלך <span className="gradient-text">לא חופשי</span> לפעול
+ הכוח שלך <span className="text-accent-hover">לא חופשי</span> לפעול
  </>
  }
 intro="בעיר, האוכלוסייה האזרחית והתשתיות שלה מגבילות את מה שמותר לך לעשות. בית חולים, מסגד, בית ספר — כל אחד עם רמת הגנה משפטית, ורמת ניצול אפשרי על ידי האויב. בוא נראה."
@@ -137,7 +137,7 @@ onClick={() => setCorridorActive(!corridorActive)}
 className={cn(
  'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
 corridorActive
- ? 'bg-status-ok text-bg shadow-glow'
+ ? 'bg-status-ok text-bg'
  : 'border border-border hover:border-border-strong text-fg'
  )}
  >
@@ -176,12 +176,10 @@ key={t}
 onClick={() => setActiveSite(t)}
 className={cn(
  'surface p-3 text-center transition-all rounded-xl flex flex-col items-center gap-2',
-isActive ? `${m.border} shadow-glow ${m.bg}` : 'hover:border-border-strong'
+isActive ? `${m.border} ${m.bg}` : 'hover:border-border-strong'
  )}
  >
- <div className={cn('size-9 rounded-lg flex items-center justify-center border-2', m.border, m.bg)}>
- <Icon name={m.icon} size={16} className={m.color} />
- </div>
+ <Icon name={m.icon} size={24} className={cn(m.color, 'shrink-0')} />
  <div className={cn('font-display font-bold text-[10px] leading-tight', isActive && m.color)}>
  {m.label}
  </div>
@@ -201,11 +199,9 @@ transition={{ duration: 0.25 }}
 className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.replace('border-', 'border-r-'))}
  >
  <div className="flex items-center gap-3 mb-4">
- <div className={cn('size-12 rounded-xl flex items-center justify-center border-2 shrink-0', meta.border, meta.bg)}>
- <Icon name={meta.icon} size={22} className={meta.color} />
- </div>
+ <Icon name={meta.icon} size={32} className={cn(meta.color, 'shrink-0')} />
  <div>
- <h3 className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</h3>
+ <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
  </div>
  </div>
 
@@ -236,9 +232,7 @@ className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.r
  <div className="grid md:grid-cols-2 gap-4">
  <div className="">
  <div className="flex items-center gap-3 mb-3">
- <div className="size-12 rounded-xl bg-status-ok/15 border border-status-ok/40 flex items-center justify-center shrink-0">
- <Icon name="people" size={22} className="text-status-ok" />
- </div>
+ <Icon name="people" size={32} className="text-status-ok shrink-0" />
  <div>
  <div className="font-display font-bold text-lg text-status-ok leading-tight">ציר הומניטרי</div>
  <div className="text-[10px] font-mono text-fg-dim">Humanitarian Corridor</div>
@@ -257,11 +251,9 @@ className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.r
 
  <div className="">
  <div className="flex items-center gap-3 mb-3">
- <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
- <Icon name="scale" size={22} className="text-accent" />
- </div>
+ <Icon name="scale" size={32} className="text-accent shrink-0" />
  <div>
- <div className="font-display font-bold text-lg text-accent leading-tight">ROE — כללי הפעלת אש</div>
+ <div className="font-display font-bold text-lg text-accent-deep leading-tight">ROE — כללי הפעלת אש</div>
  <div className="text-[10px] font-mono text-fg-dim">Rules of Engagement</div>
  </div>
  </div>
@@ -269,7 +261,7 @@ className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.r
  ההגדרות המדויקות מתי, איפה, ועל מי מותר לחייל לפתוח באש. בעיר — הן <strong className="text-fg">מורכבות מאוד</strong> בגלל סמיכות לאזרחים.
  </p>
  <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
- <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">דוגמה ל-ROE</div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">דוגמה ל-ROE</div>
  <p className="text-xs text-fg-muted leading-relaxed">"אש רק בתגובה לאש מזוהה" /"תקיפה רק אחרי אזהרה ופינוי" /"הימנעות מירי לכיוון אתר רגיש מסומן". כל סיטואציה אחרת.
  </p>
  </div>

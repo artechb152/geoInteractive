@@ -78,18 +78,9 @@ function CompletionBanner() {
       <div className="absolute -start-16 -bottom-16 size-48 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
 
       <div className="relative flex items-center gap-4 sm:gap-5">
-        <div className="relative shrink-0">
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="size-14 rounded-full bg-accent/20 absolute inset-0"
-          />
-          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg shadow-glow">
-            <Icon name="check" size={28} strokeWidth={3} />
-          </div>
-        </div>
+        <Icon name="check" size={48} strokeWidth={3} className="text-accent shrink-0" />
         <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
             כל הכבוד · סיימת את שיעור הניווטים
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">

@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v2 · 01 — תיק תדריכים / Declassified Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:opsz,wght@6..72,400;6..72,700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --paper:#F0EBDC;
+    --paper-edge:#E2D9BD;
+    --ink:#1C1814;
+    --ink-2:#3A3328;
+    --ink-3:#6B6052;
+    --rule:#2A251D;
+    --stamp:#B33A2A;
+    --stamp-fade:rgba(179,58,42,.78);
+    --olive:#5B6739;
+    --folder:#C8B98F;
+    --highlight:#F4D67B;
+  }
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Heebo',system-ui,sans-serif;
+    background:#3A352B; /* desk surface behind folder */
+    color:var(--ink);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:geometricPrecision;
+  }
+  /* desk texture */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(ellipse at 30% 20%,rgba(255,240,210,.06),transparent 60%),
+      radial-gradient(ellipse at 80% 80%,rgba(0,0,0,.35),transparent 70%);
+  }
+  /* the folder/page itself */
+  .doc{
+    position:relative;z-index:1;
+    max-width:1180px;margin:24px auto;
+    background:var(--paper);
+    box-shadow:
+      0 1px 0 var(--paper-edge),
+      0 30px 60px -20px rgba(0,0,0,.55),
+      0 60px 120px -40px rgba(0,0,0,.45);
+    border:1px solid #C8B98F;
+  }
+  /* paper grain */
+  .doc::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:
+      repeating-linear-gradient(0deg,rgba(60,42,18,.018) 0,rgba(60,42,18,.018) 1px,transparent 1px,transparent 3px),
+      radial-gradient(ellipse at 20% 30%,rgba(110,80,30,.06),transparent 60%),
+      radial-gradient(ellipse at 80% 70%,rgba(120,90,40,.08),transparent 55%);
+    mix-blend-mode:multiply;
+  }
+
+  /* CLASSIFICATION BANNER */
+  .banner{
+    background:var(--ink);
+    color:#F0EBDC;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.22em;
+    text-align:center;
+    padding:10px 0;
+    border-bottom:3px double #F0EBDC;
+    text-transform:uppercase;
+    direction:ltr;
+  }
+  .banner.bottom{border-bottom:0;border-top:3px double #F0EBDC}
+
+  /* DOCUMENT CONTROL HEADER */
+  .control{
+    display:grid;
+    grid-template-columns:1.2fr .9fr .9fr 1.1fr;
+    gap:0;
+    border-bottom:1.5px solid var(--rule);
+    background:#EBE5D2;
+  }
+  .control > div{
+    padding:11px 18px;
+    border-inline-start:1px solid var(--rule);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.05em;
+    color:var(--ink-2);
+  }
+  .control > div:first-child{border-inline-start:0}
+  .control .k{
+    display:block;font-size:9.5px;color:var(--ink-3);
+    text-transform:uppercase;letter-spacing:.16em;margin-bottom:3px;
+  }
+  .control .v{font-weight:700;color:var(--ink)}
+
+  /* TITLE BLOCK */
+  .titleblock{
+    position:relative;
+    padding:48px 64px 42px;
+    border-bottom:1px solid var(--rule);
+  }
+  @media (max-width:780px){.titleblock{padding:32px 24px}}
+  .subjline{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--ink-3);
+    border-bottom:1px solid var(--rule);
+    padding-bottom:8px;margin-bottom:24px;
+    display:flex;justify-content:space-between;gap:24px;
+  }
+  .subjline strong{color:var(--ink)}
+  h1.title{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:clamp(40px,5.6vw,72px);
+    line-height:1.02;
+    letter-spacing:-.015em;
+    color:var(--ink);
+    margin:0 0 14px;
+  }
+  h1.title .lead{
+    display:block;
+    font-family:'Heebo',sans-serif;
+    font-weight:500;
+    font-size:.32em;
+    letter-spacing:.04em;
+    color:var(--ink-3);
+    text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .subtitle{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:500;
+    font-size:22px;
+    line-height:1.45;
+    color:var(--ink-2);
+    max-width:62ch;
+    margin:18px 0 0;
+  }
+
+  /* RED STAMP */
+  .stamp{
+    position:absolute;
+    inset-inline-start:48px;top:64px;
+    transform:rotate(-9deg);
+    border:3px solid var(--stamp-fade);
+    color:var(--stamp-fade);
+    padding:10px 18px;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13.5px;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+    direction:ltr;
+    background:transparent;
+    opacity:.88;
+    pointer-events:none;
+  }
+  .stamp .small{
+    display:block;font-size:9px;letter-spacing:.22em;
+    text-align:center;margin-top:2px;
+  }
+  @media (max-width:880px){.stamp{position:static;display:inline-block;margin-bottom:16px;transform:rotate(-3deg)}}
+
+  /* CTA ROW */
+  .cta-row{
+    display:flex;gap:14px;flex-wrap:wrap;
+    margin-top:34px;align-items:center;
+  }
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'Heebo',sans-serif;
+    font-weight:600;font-size:15px;
+    padding:13px 22px;
+    border:1.5px solid var(--ink);
+    background:var(--ink);color:var(--paper);
+    text-decoration:none;
+    transition:transform .12s ease, background .15s;
+    border-radius:0;
+  }
+  .btn:hover{transform:translateY(-1px);background:#000}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
+  .btn.ghost:hover{background:var(--ink);color:var(--paper)}
+  .btn .arrow{font-family:'JetBrains Mono',monospace;font-size:13px}
+  .endorsement{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;color:var(--ink-3);
+    letter-spacing:.1em;text-transform:uppercase;
+    border-inline-start:2px solid var(--rule);padding-inline-start:14px;
+    line-height:1.5;
+  }
+  .endorsement b{color:var(--ink)}
+
+  /* BODY: 2-COLUMN LEDGER WITH MARGIN NOTES */
+  .body{
+    display:grid;
+    grid-template-columns:96px 1fr;
+    border-bottom:1px solid var(--rule);
+  }
+  .margin{
+    border-inline-end:1px solid var(--rule);
+    padding:42px 14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.08em;
+    color:var(--ink-3);
+    text-align:start;
+  }
+  .margin .tick{
+    margin-bottom:32px;line-height:1.35;
+  }
+  .margin .tick b{display:block;color:var(--ink);font-size:11px}
+
+  .content{padding:42px 56px;min-width:0}
+  @media (max-width:780px){
+    .body{grid-template-columns:1fr}
+    .margin{display:none}
+    .content{padding:30px 22px}
+  }
+
+  /* SECTION HEADINGS */
+  .sec-h{
+    display:grid;grid-template-columns:auto 1fr auto;
+    gap:14px;align-items:end;
+    margin:48px 0 18px;
+    padding-bottom:6px;
+    border-bottom:2px solid var(--ink);
+  }
+  .sec-h:first-of-type{margin-top:0}
+  .sec-n{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:13px;
+    background:var(--ink);color:var(--paper);
+    padding:3px 9px;letter-spacing:.08em;
+  }
+  .sec-t{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700;font-size:28px;
+    color:var(--ink);line-height:1.1;
+  }
+  .sec-meta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;letter-spacing:.16em;
+    color:var(--ink-3);text-transform:uppercase;
+    align-self:end;padding-bottom:4px;
+  }
+
+  /* SCOPE / PILLARS: 3 numbered paragraphs with hanging indent, NOT cards */
+  .scope{display:flex;flex-direction:column;gap:26px}
+  .para{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:18px;
+    padding:14px 0;
+    border-top:1px dotted var(--ink-3);
+  }
+  .para:first-child{border-top:0;padding-top:0}
+  .para .num{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;font-size:46px;
+    color:var(--stamp);
+    line-height:1;
+    letter-spacing:-.02em;
+  }
+  .para h3{
+    font-family:'Heebo',sans-serif;
+    font-weight:700;font-size:18px;
+    margin:6px 0 6px;
+    color:var(--ink);
+    display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  }
+  .para h3 .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:.16em;
+    color:var(--ink-3);text-transform:uppercase;
+    border:1px solid var(--ink-3);padding:2px 7px;
+    font-weight:500;
+  }
+  .para p{
+    margin:0;color:var(--ink-2);
+    font-size:15.5px;line-height:1.7;max-width:62ch;
+  }
+  .para .ref{
+    display:block;margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:var(--ink-3);
+    letter-spacing:.06em;
+  }
+
+  /* SYLLABUS TABLE — looks like a doc annex */
+  .syllabus{
+    margin-top:18px;
+    border:1px solid var(--rule);
+  }
+  .syl-h{
+    display:grid;grid-template-columns:50px 1fr 100px 140px;
+    background:var(--ink);color:var(--paper);
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .syl-h > div{padding:10px 14px;border-inline-start:1px solid var(--paper-edge)}
+  .syl-h > div:first-child{border-inline-start:0}
+  .syl-r{
+    display:grid;grid-template-columns:50px 1fr 100px 140px;
+    border-top:1px solid var(--rule);
+    transition:background .15s;
+  }
+  .syl-r:hover{background:#EBE5D2}
+  .syl-r > div{
+    padding:11px 14px;
+    border-inline-start:1px solid #D2C9AE;
+    font-size:14px;color:var(--ink);
+  }
+  .syl-r > div:first-child{
+    border-inline-start:0;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;color:var(--stamp);
+    text-align:center;font-size:13px;
+  }
+  .syl-r > div:nth-child(2){font-family:'Frank Ruhl Libre',serif;font-weight:500;font-size:15.5px}
+  .syl-r > div:nth-child(3){
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink-3);letter-spacing:.08em;text-align:center;
+  }
+  .syl-r > div:nth-child(4){
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink-3);letter-spacing:.06em;
+  }
+  @media (max-width:780px){
+    .syl-h{grid-template-columns:42px 1fr 80px}
+    .syl-h > div:last-child{display:none}
+    .syl-r{grid-template-columns:42px 1fr 80px}
+    .syl-r > div:last-child{display:none}
+  }
+
+  /* MAP VIGNETTE FIGURE */
+  .figure{
+    margin:28px 0 8px;
+    border:1px solid var(--rule);
+    background:#EBE5D2;
+  }
+  .figcap{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 14px;border-bottom:1px solid var(--rule);
+    background:var(--ink);color:var(--paper);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;
+  }
+  .figbody{padding:12px;display:flex;justify-content:center}
+  .figbody svg{display:block;width:100%;max-width:520px;height:auto}
+
+  /* ENROLLMENT BLOCK */
+  .enroll{
+    margin-top:42px;
+    border:2px solid var(--ink);
+    padding:28px 28px;
+    background:repeating-linear-gradient(
+      135deg,
+      transparent 0 6px,
+      rgba(28,24,20,.03) 6px 8px
+    );
+  }
+  .enroll-h{
+    display:flex;align-items:baseline;gap:12px;
+    border-bottom:1.5px solid var(--ink);padding-bottom:8px;margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .enroll-h h3{
+    font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:26px;
+    margin:0;color:var(--ink);
+  }
+  .enroll-h .lbl{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+  }
+  .enroll p{margin:0 0 16px;color:var(--ink-2);font-size:15.5px;max-width:62ch}
+  .enroll form{
+    display:grid;grid-template-columns:1fr auto;gap:0;
+    border:1.5px solid var(--ink);max-width:520px;
+  }
+  .enroll input{
+    border:0;background:var(--paper);color:var(--ink);
+    padding:14px 16px;font-family:'Heebo',sans-serif;font-size:15px;
+    outline:none;
+  }
+  .enroll input::placeholder{color:var(--ink-3)}
+  .enroll button{
+    border:0;background:var(--ink);color:var(--paper);
+    padding:0 22px;font-family:'JetBrains Mono',monospace;font-weight:700;
+    font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+  }
+  .enroll .meta{
+    margin-top:14px;display:flex;gap:18px;flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase;
+  }
+  .enroll .meta span::before{content:"§ ";color:var(--ink)}
+
+  /* DOC FOOTER */
+  .docfoot{
+    display:grid;grid-template-columns:1fr 1fr 1fr;
+    background:#EBE5D2;
+    border-top:1px solid var(--rule);
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;color:var(--ink-3);
+    letter-spacing:.08em;text-transform:uppercase;
+  }
+  .docfoot > div{padding:10px 18px;border-inline-start:1px solid var(--rule)}
+  .docfoot > div:first-child{border-inline-start:0}
+  .docfoot b{color:var(--ink)}
+  @media (max-width:680px){.docfoot{grid-template-columns:1fr 1fr}}
+
+  /* fold mark on side */
+  .fold{
+    position:absolute;top:0;bottom:0;
+    inset-inline-end:-1px;
+    width:14px;
+    background:linear-gradient(90deg,rgba(0,0,0,.06),transparent);
+    pointer-events:none;
+  }
+
+  /* SVG map vignette */
+  .map-svg .contour{fill:none;stroke:#5C5247;stroke-width:.6}
+  .map-svg .grid{stroke:#8a8478;stroke-width:.3;stroke-dasharray:2 2}
+  .map-svg .water{fill:#A9C0CE;opacity:.55}
+  .map-svg .label{font-family:'JetBrains Mono',monospace;font-size:8px;fill:#3A3328;letter-spacing:.1em}
+  .map-svg .objective{fill:none;stroke:#B33A2A;stroke-width:1.2}
+  .map-svg .compass{fill:#1C1814}
+</style>
+</head>
+<body>
+
+<article class="doc">
+  <div class="fold"></div>
+
+  <!-- TOP CLASSIFICATION -->
+  <div class="banner">⬥ Restricted // For Training Use Only // שמור · שימוש הוראתי ⬥</div>
+
+  <!-- DOC CONTROL -->
+  <div class="control">
+    <div><span class="k">File no.</span><span class="v">GEO-2026-001 / R-7</span></div>
+    <div><span class="k">AOR</span><span class="v">ZONE-07 (Levant)</span></div>
+    <div><span class="k">Datum</span><span class="v">WGS·84 · MGRS</span></div>
+    <div><span class="k">Effective</span><span class="v">25 MAY 2026 — 00:00Z</span></div>
+  </div>
+
+  <!-- TITLE BLOCK -->
+  <header class="titleblock">
+    <div class="stamp">
+      מאושר להוראה
+      <span class="small">Cmdr · 5/26</span>
+    </div>
+
+    <div class="subjline">
+      <span><strong>SUBJ:</strong> Course Brief — Military Geography (Foundation → Operational GEOINT)</span>
+      <span>PG · 01 / 12</span>
+    </div>
+
+    <h1 class="title">
+      <span class="lead">קורס יסוד — גיאוגרפיה צבאית</span>
+      קוראים את השטח<br>לפני שצועדים בו.
+    </h1>
+
+    <p class="subtitle">
+      תכנית הוראה אינטראקטיבית שמלמדת איך המרחב הפיזי מעצב אסטרטגיה, תמרון ואיסוף מודיעין. סימולציות, תרגול ומשוב — מהבסיס ועד GEOINT מבצעי.
+    </p>
+
+    <div class="cta-row">
+      <a class="btn" href="#enroll">פתח את התדריך
+        <span class="arrow">↙</span>
+      </a>
+      <a class="btn ghost" href="#scope">תוכן עניינים</a>
+      <div class="endorsement">
+        Distribution: <b>בוגרי קורסים בסיסיים</b><br>
+        Authority: <b>מטה ההוראה · ענף הגיאוגרפיה</b>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+    <aside class="margin">
+      <div class="tick"><b>§ 1</b>SCOPE<br>p. 02</div>
+      <div class="tick"><b>§ 2</b>SYLLABUS<br>p. 03–05</div>
+      <div class="tick"><b>§ 3</b>FIG · 1<br>p. 06</div>
+      <div class="tick"><b>§ 4</b>ENROL<br>p. 07</div>
+      <div class="tick"><b>—</b>ANNEX<br>p. 08–12</div>
+    </aside>
+
+    <main class="content">
+
+      <!-- § 1 SCOPE -->
+      <section id="scope">
+        <div class="sec-h">
+          <div class="sec-n">§ 1</div>
+          <h2 class="sec-t">היקף וכוונה</h2>
+          <div class="sec-meta">SCOPE / INTENT</div>
+        </div>
+
+        <div class="scope">
+          <article class="para">
+            <div class="num">01</div>
+            <div>
+              <h3>סימולציות שטח אינטראקטיביות <span class="tag">TERRAIN</span></h3>
+              <p>קריאת קווי-גובה, אינטר-ויזיביליות, שיפועים והשפעת תכסית על תנועה והסתרה. סטודנט מתאמן על שטח אמיתי במגוון תרחישים — לא בתרשים מופשט.</p>
+              <span class="ref">REF: Topics 02 · 04 · 05</span>
+            </div>
+          </article>
+          <article class="para">
+            <div class="num">02</div>
+            <div>
+              <h3>ניתוח חישה מרחוק <span class="tag">GEOINT</span></h3>
+              <p>פענוח לוויינים והבחנה בין סימני אמת לתעתועים, מיזוג מקורות (IMINT, SIGINT, OSINT) ותהליכי הסקה מודיעיניים — שיטה לפני כלים.</p>
+              <span class="ref">REF: Topics 06 · 07 · 12</span>
+            </div>
+          </article>
+          <article class="para">
+            <div class="num">03</div>
+            <div>
+              <h3>יישום מבצעי וקבלת החלטות <span class="tag">OPS</span></h3>
+              <p>מניתוח לפעולה — הערכת איום מרחבית, kill-chain, אצירת LOC וצירי-תנועה, מקרי בוחן מקצה־לקצה תחת אילוצי זמן ומידע חסר.</p>
+              <span class="ref">REF: Topics 06 · 08 · 09 · 10</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- § 2 SYLLABUS -->
+      <section>
+        <div class="sec-h">
+          <div class="sec-n">§ 2</div>
+          <h2 class="sec-t">תוכנית הוראה</h2>
+          <div class="sec-meta">SYLLABUS · 12 LESSONS</div>
+        </div>
+
+        <div class="syllabus">
+          <div class="syl-h">
+            <div>#</div><div>שיעור</div><div>קוד</div><div>הפניות</div>
+          </div>
+          <div class="syl-r"><div>01</div><div>מבוא: מרחב, כוח ורמות מלחמה</div><div>FOUND</div><div>MDO · STRAT</div></div>
+          <div class="syl-r"><div>02</div><div>יסודות קרטוגרפיה וקריאת מפות</div><div>CARTO</div><div>UTM · CONTOUR</div></div>
+          <div class="syl-r"><div>03</div><div>התמצאות, אזימוט ותכנון ציר</div><div>NAV</div><div>GPS-DENIED</div></div>
+          <div class="syl-r"><div>04</div><div>טופוגרפיה ומורפולוגיית שטח</div><div>TERRAIN</div><div>KEY-TERRAIN</div></div>
+          <div class="syl-r"><div>05</div><div>ניידות, תמרון, כיסוי והסתרה</div><div>MOBILITY</div><div>TRAFFIC · COVER</div></div>
+          <div class="syl-r"><div>06</div><div>קווי-ראייה וצפייה (LOS · Viewshed)</div><div>LOS</div><div>KILL-CHAIN</div></div>
+          <div class="syl-r"><div>07</div><div>אקלים, מזג-אוויר ועונתיות</div><div>WX</div><div>SENSOR-IMPACT</div></div>
+          <div class="syl-r"><div>08</div><div>תשתיות וגיאוגרפיה של לוגיסטיקה</div><div>LOG</div><div>LOC · MSR/ASR</div></div>
+          <div class="syl-r"><div>09</div><div>משאבים, אנרגיה וגיאו-כלכלה</div><div>GEO-ECON</div><div>SLOC · MAHAN</div></div>
+          <div class="syl-r"><div>10</div><div>לחימה בשטח בנוי (Urban / MOUT)</div><div>URBAN</div><div>VERTICAL · TUNNELS</div></div>
+          <div class="syl-r"><div>11</div><div>גבולות, עומק אסטרטגי ואזורי חיץ</div><div>BORDERS</div><div>BUFFER · DEPTH</div></div>
+          <div class="syl-r"><div>12</div><div>GIS יישומי לניתוח מבצעי</div><div>GIS</div><div>RASTER · COST</div></div>
+        </div>
+      </section>
+
+      <!-- § 3 FIGURE -->
+      <section>
+        <div class="sec-h">
+          <div class="sec-n">§ 3</div>
+          <h2 class="sec-t">דוגמת איור — תרגיל LOS</h2>
+          <div class="sec-meta">FIG · 1 / SAMPLE</div>
+        </div>
+
+        <div class="figure">
+          <div class="figcap">
+            <span>FIG · 1 — Viewshed exercise · Topic 06</span>
+            <span>MGRS · 36RXV 12345 67890</span>
+          </div>
+          <div class="figbody">
+            <svg class="map-svg" viewBox="0 0 520 280" aria-label="Sample LOS exercise sketch">
+              <!-- grid -->
+              <g class="grid">
+                <line x1="0" y1="40" x2="520" y2="40"/>
+                <line x1="0" y1="80" x2="520" y2="80"/>
+                <line x1="0" y1="120" x2="520" y2="120"/>
+                <line x1="0" y1="160" x2="520" y2="160"/>
+                <line x1="0" y1="200" x2="520" y2="200"/>
+                <line x1="0" y1="240" x2="520" y2="240"/>
+                <line x1="60" y1="0" x2="60" y2="280"/>
+                <line x1="120" y1="0" x2="120" y2="280"/>
+                <line x1="180" y1="0" x2="180" y2="280"/>
+                <line x1="240" y1="0" x2="240" y2="280"/>
+                <line x1="300" y1="0" x2="300" y2="280"/>
+                <line x1="360" y1="0" x2="360" y2="280"/>
+                <line x1="420" y1="0" x2="420" y2="280"/>
+                <line x1="480" y1="0" x2="480" y2="280"/>
+              </g>
+              <!-- contours -->
+              <g class="contour">
+                <path d="M 60,210 C 130,180 180,170 230,160 C 300,148 360,160 460,180"/>
+                <path d="M 70,190 C 140,160 190,148 240,138 C 310,124 370,140 460,160"/>
+                <path d="M 80,170 C 150,140 200,128 250,118 C 320,104 380,120 460,142"/>
+                <path d="M 100,150 C 170,122 220,110 270,100 C 330,90 380,102 450,124"/>
+                <path d="M 130,130 C 190,108 240,98 290,90 C 340,82 380,92 440,110"/>
+                <path d="M 170,114 C 220,98 260,92 300,88 C 340,84 370,90 420,100"/>
+                <path d="M 210,102 C 250,92 280,90 310,90 C 340,90 360,94 400,100"/>
+              </g>
+              <!-- water -->
+              <path class="water" d="M 0,250 L 520,250 L 520,280 L 0,280 Z"/>
+              <!-- observation post -->
+              <circle cx="100" cy="220" r="3.5" fill="#1C1814"/>
+              <circle cx="100" cy="220" r="9" fill="none" stroke="#1C1814" stroke-width="1"/>
+              <text class="label" x="108" y="216">OP · ALPHA · 482m</text>
+              <!-- objective -->
+              <g class="objective">
+                <circle cx="380" cy="120" r="14"/>
+                <line x1="362" y1="120" x2="398" y2="120"/>
+                <line x1="380" y1="102" x2="380" y2="138"/>
+              </g>
+              <text class="label" x="402" y="118" style="fill:#B33A2A">OBJ · BRAVO · 612m</text>
+              <!-- LOS lines (dashed sight) -->
+              <line x1="100" y1="220" x2="380" y2="120" stroke="#1C1814" stroke-width=".8" stroke-dasharray="3 3"/>
+              <line x1="100" y1="220" x2="280" y2="158" stroke="#B33A2A" stroke-width=".8" stroke-dasharray="2 2"/>
+              <text class="label" x="200" y="180">LOS · clear</text>
+              <text class="label" x="200" y="200" style="fill:#B33A2A">LOS · masked</text>
+              <!-- compass -->
+              <g transform="translate(485,30)">
+                <circle r="14" fill="none" stroke="#1C1814" stroke-width="1"/>
+                <path class="compass" d="M 0,-12 L 4,0 L 0,12 L -4,0 Z"/>
+                <text class="label" x="-3" y="-18">N</text>
+              </g>
+              <!-- scale bar -->
+              <g transform="translate(20,265)">
+                <line x1="0" y1="0" x2="60" y2="0" stroke="#1C1814" stroke-width="1"/>
+                <line x1="0" y1="-3" x2="0" y2="3" stroke="#1C1814" stroke-width="1"/>
+                <line x1="30" y1="-3" x2="30" y2="3" stroke="#1C1814" stroke-width="1"/>
+                <line x1="60" y1="-3" x2="60" y2="3" stroke="#1C1814" stroke-width="1"/>
+                <text class="label" x="62" y="3">0 — 1 km</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- § 4 ENROLLMENT -->
+      <section id="enroll">
+        <div class="sec-h">
+          <div class="sec-n">§ 4</div>
+          <h2 class="sec-t">רשימת מתכשרים</h2>
+          <div class="sec-meta">TRAINEE ROSTER · BETA</div>
+        </div>
+
+        <div class="enroll">
+          <div class="enroll-h">
+            <h3>הקדימו את התור. קבלו גישה ראשונים.</h3>
+            <span class="lbl">CLOSED COHORT · 7/26</span>
+          </div>
+          <p>משתתפי הגישה המוקדמת מקבלים את הקורס ראשונים, ללא תשלום, ומשפיעים על הפיתוח של השיעורים הבאים.</p>
+
+          <form onsubmit="event.preventDefault()">
+            <input type="email" placeholder="כתובת מייל מבצעית" required />
+            <button type="submit">הרשמה · ENROL ↙</button>
+          </form>
+
+          <div class="meta">
+            <span>12 שיעורים מובנים</span>
+            <span>גישה ללא הגבלת זמן</span>
+            <span>ללא עלות בבטא</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- DOC FOOTER -->
+  <div class="docfoot">
+    <div><span>Doc.</span> <b>GEO-2026-001</b> · R-7</div>
+    <div><span>Page</span> <b>01</b> of 12 · Annex A–D</div>
+    <div><span>Auth.</span> <b>מטה ההוראה</b> · IL</div>
+  </div>
+
+  <!-- BOTTOM CLASSIFICATION -->
+  <div class="banner bottom">⬥ Restricted // For Training Use Only // שמור · שימוש הוראתי ⬥</div>
+</article>
+
+</body>
+</html>

@@ -137,7 +137,7 @@ export function MatchDemo() {
             type="button"
             disabled={!allPaired || submitted}
             onClick={() => setSubmitted(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-accent text-fg font-semibold text-sm hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-glow"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-accent text-bg-elevated font-semibold text-sm hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Check className="size-3.5" aria-hidden /> בדוק
           </button>
@@ -187,9 +187,9 @@ export function MatchDemo() {
                     'font-display font-semibold text-[15px] text-fg',
                     submitted && status === 'ok' && 'border-status-ok/60 bg-status-ok/10',
                     submitted && status === 'bad' && 'border-status-danger/60 bg-status-danger/10',
-                    !submitted && isSelected && 'border-accent shadow-glow bg-accent/10',
-                    !submitted && !isSelected && matchedDef && 'border-brand/40 bg-brand/5',
-                    !submitted && !isSelected && !matchedDef && 'border-border hover:border-brand/30',
+                    !submitted && isSelected && 'border-accent bg-accent/10',
+                    !submitted && !isSelected && matchedDef && 'border-accent/40 bg-accent/5',
+                    !submitted && !isSelected && !matchedDef && 'border-border hover:border-accent/30',
                   )}
                 >
                   {t.term}
@@ -218,9 +218,9 @@ export function MatchDemo() {
                     'cursor-pointer rounded-xl border bg-bg-elevated px-3.5 py-2.5 text-right transition-all text-sm text-fg-muted leading-snug',
                     submitted && status === 'ok' && 'border-status-ok/60 bg-status-ok/10 text-fg',
                     submitted && status === 'bad' && 'border-status-danger/60 bg-status-danger/10 text-fg',
-                    !submitted && isSelected && 'border-accent shadow-glow bg-accent/10 text-fg',
-                    !submitted && !isSelected && pairedTermId && 'border-brand/40 bg-brand/5',
-                    !submitted && !isSelected && !pairedTermId && 'border-border hover:border-brand/30',
+                    !submitted && isSelected && 'border-accent bg-accent/10 text-fg',
+                    !submitted && !isSelected && pairedTermId && 'border-accent/40 bg-accent/5',
+                    !submitted && !isSelected && !pairedTermId && 'border-border hover:border-accent/30',
                   )}
                 >
                   {d.def}

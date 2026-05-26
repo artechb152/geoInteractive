@@ -21,7 +21,7 @@ export function SceneDivider({ next }: { next?: string }) {
     >
       <div className="relative h-16 w-px overflow-hidden">
         <motion.div
-          className="absolute inset-0 bg-gradient-to-b from-transparent via-brand/45 to-transparent"
+          className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/45 to-transparent"
           initial={{ y: '-100%' }}
           whileInView={{ y: '100%' }}
           viewport={{ once: true }}
@@ -31,7 +31,7 @@ export function SceneDivider({ next }: { next?: string }) {
       </div>
       {next && (
         <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-subtle bg-bg-elevated text-sm font-display font-semibold tracking-wider text-fg-muted">
-          <span className="size-1.5 rounded-full bg-brand shrink-0" aria-hidden />
+          <span className="size-1.5 rounded-full bg-accent shrink-0" aria-hidden />
           {next}
         </div>
       )}

@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v3 · 05 — תבליט שלילי / Negative Relief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --bg:#0A0A0A;
+    --text:#F0EDE6;
+    --text-2:#8E8A82;
+    --text-3:#5C5854;
+    --line:rgba(240,237,230,.08);
+    --amber:#F2A93C;
+    --c-bright:rgba(240,237,230,.7);
+    --c-med:rgba(240,237,230,.35);
+    --c-dim:rgba(240,237,230,.16);
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text)}
+  body{
+    font-family:'Heebo','Outfit',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:geometricPrecision;
+    overflow-x:hidden;
+  }
+  /* film grain */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode:overlay;
+  }
+
+  /* MINIMAL NAV */
+  .nav{
+    position:fixed;top:0;left:0;right:0;z-index:40;
+    display:grid;grid-template-columns:auto 1fr auto;
+    align-items:center;gap:24px;
+    padding:20px 36px;
+    backdrop-filter:blur(8px);
+    background:rgba(10,10,10,.4);
+  }
+  @media (max-width:680px){.nav{padding:14px 20px;gap:14px}}
+  .brand{
+    font-family:'Outfit',sans-serif;font-weight:900;font-size:13px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--text);
+    display:flex;align-items:center;gap:6px;
+  }
+  .brand::before{content:"◇";color:var(--amber);font-size:14px;font-weight:400}
+  .nav-coord{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--text-2);letter-spacing:.18em;text-align:center;direction:ltr;
+  }
+  .nav-cta{
+    font-family:'Outfit',sans-serif;font-weight:600;font-size:12px;
+    letter-spacing:.12em;color:var(--text);text-decoration:none;
+    border:1px solid rgba(240,237,230,.2);padding:8px 14px;
+    transition:border-color .15s,color .15s;
+  }
+  .nav-cta:hover{border-color:var(--amber);color:var(--amber)}
+  @media (max-width:680px){.nav-coord{display:none}}
+
+  /* HERO — single massive relief, text floating in negative space */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    overflow:hidden;
+    background:var(--bg);
+    display:flex;align-items:end;
+  }
+
+  /* big relief svg fills the hero */
+  .hero-relief{
+    position:absolute;inset:0;width:100%;height:100%;
+    pointer-events:none;
+  }
+  .hero-relief .cb{fill:none;stroke:var(--c-bright);stroke-width:1.1;stroke-linejoin:round}
+  .hero-relief .cm{fill:none;stroke:var(--c-med);stroke-width:.7;stroke-linejoin:round}
+  .hero-relief .cd{fill:none;stroke:var(--c-dim);stroke-width:.45;stroke-linejoin:round}
+  .hero-relief .ca{
+    fill:none;stroke:var(--amber);stroke-width:1.6;stroke-linecap:round;
+    filter:drop-shadow(0 0 8px rgba(242,169,60,.35));
+  }
+
+  /* TITLE block — floats at lower-right (RTL: lower-left of visual = our right) */
+  .hero-title{
+    position:relative;z-index:5;
+    width:100%;
+    padding:0 56px 80px;
+    display:grid;grid-template-columns:1fr auto;
+    gap:60px;align-items:end;
+  }
+  @media (max-width:880px){.hero-title{padding:0 22px 60px;grid-template-columns:1fr;gap:30px}}
+
+  .title-block{}
+  .micro{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.22em;color:var(--amber);text-transform:uppercase;
+    margin-bottom:18px;display:flex;align-items:center;gap:10px;
+  }
+  .micro::before{content:"";width:24px;height:1.5px;background:var(--amber)}
+
+  h1.h{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(56px,9vw,144px);line-height:.88;letter-spacing:-.035em;
+    color:var(--text);margin:0 0 26px;max-width:18ch;
+  }
+  h1.h em{font-style:normal;color:var(--amber)}
+  h1.h .latin{
+    display:block;font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:.22em;letter-spacing:.16em;color:var(--text-3);
+    text-transform:uppercase;margin-bottom:14px;line-height:1;direction:ltr;
+  }
+
+  .lede{
+    font-size:17px;line-height:1.7;color:var(--text-2);
+    max-width:48ch;margin:0 0 32px;font-weight:500;
+  }
+  .lede b{color:var(--text);font-weight:700}
+
+  .cta-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:12px;
+    font-family:'Heebo',sans-serif;font-weight:700;font-size:15px;
+    padding:16px 28px;background:var(--amber);color:var(--bg);
+    text-decoration:none;border-radius:0;border:0;
+    transition:transform .12s,filter .15s;
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+  .btn.ghost{background:transparent;color:var(--text);border:1.5px solid rgba(240,237,230,.25)}
+  .btn.ghost:hover{border-color:var(--amber);color:var(--amber)}
+  .btn .ar{
+    width:18px;height:18px;background:currentColor;transform:scaleX(-1);
+    -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>') center/contain no-repeat;
+            mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>') center/contain no-repeat;
+  }
+
+  /* side data panel — vertical, minimal */
+  .side-stats{
+    align-self:end;
+    border-inline-start:1px solid var(--line);padding-inline-start:30px;
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    color:var(--text);letter-spacing:.04em;line-height:1.95;direction:ltr;text-align:start;
+  }
+  .side-stats .row{display:flex;justify-content:space-between;gap:18px;min-width:240px}
+  .side-stats .k{color:var(--text-3);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+  .side-stats .v{color:var(--text);font-weight:700}
+  .side-stats .v.amber{color:var(--amber)}
+  .side-stats .div{margin:10px 0;border-top:1px solid var(--line)}
+  @media (max-width:880px){.side-stats{border-inline-start:0;border-top:1px solid var(--line);padding-inline-start:0;padding-top:18px}}
+
+  /* SECTION: axes — but using contour-frame compositional language */
+  .axes{
+    position:relative;padding:140px 36px 80px;
+    border-top:1px solid var(--line);background:var(--bg);
+    overflow:hidden;
+  }
+  @media (max-width:780px){.axes{padding:80px 22px 60px}}
+
+  .axes-h{
+    max-width:1240px;margin:0 auto;
+    display:flex;justify-content:space-between;align-items:end;
+    border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:60px;
+  }
+  .axes-h h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(36px,4.6vw,60px);margin:0;color:var(--text);
+    letter-spacing:-.025em;line-height:1;
+  }
+  .axes-h .meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;direction:ltr;
+  }
+
+  /* axes — vertical stack of large rows, not 3 cards */
+  .axis-row{
+    max-width:1240px;margin:0 auto;
+    display:grid;grid-template-columns:1.1fr 1fr;gap:60px;
+    align-items:center;
+    padding:48px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .axis-row:last-child{border-bottom:0}
+  @media (max-width:880px){.axis-row{grid-template-columns:1fr;gap:24px;padding:32px 0}}
+
+  .axis-row .text .n{
+    font-family:'Outfit',sans-serif;font-weight:900;font-size:64px;
+    color:var(--amber);line-height:.85;letter-spacing:-.04em;margin-bottom:8px;
+  }
+  .axis-row .text .tag{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.22em;color:var(--text-3);text-transform:uppercase;
+    margin-bottom:14px;display:flex;gap:14px;
+  }
+  .axis-row .text h3{
+    font-family:'Heebo',sans-serif;font-weight:900;font-size:36px;
+    color:var(--text);margin:0 0 14px;letter-spacing:-.015em;line-height:1.05;
+  }
+  .axis-row .text p{
+    font-size:17px;color:var(--text-2);max-width:46ch;margin:0;
+    line-height:1.7;font-weight:500;
+  }
+  .axis-vig{
+    aspect-ratio:7/5;background:#0F0F0F;border:1px solid var(--line);
+    position:relative;overflow:hidden;
+  }
+  .axis-vig svg{position:absolute;inset:0;width:100%;height:100%}
+  .a-c{fill:none;stroke:var(--c-bright);stroke-width:.9}
+  .a-cs{fill:none;stroke:var(--c-dim);stroke-width:.55}
+  .a-amber{fill:none;stroke:var(--amber);stroke-width:1.5}
+
+  /* TOPICS — scattered "elevation marker" layout */
+  .topics{
+    position:relative;padding:120px 36px 100px;
+    border-top:1px solid var(--line);background:var(--bg);overflow:hidden;
+  }
+  @media (max-width:780px){.topics{padding:80px 22px 60px}}
+  .topics-h{
+    max-width:1240px;margin:0 auto;
+    display:flex;justify-content:space-between;align-items:end;
+    border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:60px;
+  }
+  .topics-h h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(36px,4.6vw,60px);margin:0;color:var(--text);
+    letter-spacing:-.025em;line-height:1;
+  }
+  .topics-h .meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.18em;color:var(--text-3);text-transform:uppercase;direction:ltr;
+  }
+  .topic-stack{
+    max-width:1240px;margin:0 auto;
+    display:grid;grid-template-columns:1fr;gap:0;
+    border-top:1px solid var(--line);
+  }
+  .topic-line{
+    display:grid;grid-template-columns:80px 1fr auto auto;gap:24px;
+    align-items:center;padding:24px 0;
+    border-bottom:1px solid var(--line);
+    transition:padding .15s;cursor:pointer;
+  }
+  .topic-line:hover{padding-inline-start:14px}
+  .topic-line:hover .n{color:var(--amber)}
+  .topic-line:hover .arrow{color:var(--amber);transform:translateX(-8px)}
+  .topic-line .n{
+    font-family:'Outfit',sans-serif;font-weight:900;font-size:38px;
+    color:var(--text-2);letter-spacing:-.025em;line-height:1;transition:color .15s;
+  }
+  .topic-line .t{
+    font-family:'Heebo',sans-serif;font-weight:600;font-size:22px;
+    color:var(--text);line-height:1.2;
+  }
+  .topic-line .t small{
+    display:block;font-family:'JetBrains Mono',monospace;font-weight:500;
+    font-size:11px;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;
+    margin-top:4px;direction:ltr;
+  }
+  .topic-line .ele{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;direction:ltr;
+  }
+  .topic-line .ele b{color:var(--text);font-weight:700;font-size:13px}
+  .topic-line .arrow{
+    font-family:'Outfit',sans-serif;font-weight:600;font-size:26px;color:var(--text-3);
+    transition:color .15s,transform .15s;
+  }
+  @media (max-width:780px){
+    .topic-line{grid-template-columns:50px 1fr auto;gap:14px}
+    .topic-line .ele{display:none}
+  }
+
+  /* ENROLL — one big floating panel, minimal */
+  .enroll{
+    position:relative;padding:140px 36px;
+    border-top:1px solid var(--line);background:var(--bg);
+    overflow:hidden;
+  }
+  @media (max-width:780px){.enroll{padding:80px 22px}}
+  .enroll-bg{
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
+  }
+  .enroll-bg .e-c{fill:none;stroke:var(--c-dim);stroke-width:.6}
+  .enroll-bg .e-cs{fill:none;stroke:var(--c-bright);stroke-width:.9;opacity:.5}
+
+  .enroll-card{
+    position:relative;z-index:2;
+    max-width:880px;margin:0 auto;
+    background:rgba(10,10,10,.5);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(240,237,230,.12);
+    padding:54px 54px;
+    text-align:center;
+  }
+  @media (max-width:780px){.enroll-card{padding:38px 24px}}
+  .enroll-card .lbl{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.22em;color:var(--amber);text-transform:uppercase;margin-bottom:14px;
+  }
+  .enroll-card h2{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(40px,5.5vw,72px);line-height:.96;margin:0 0 16px;
+    color:var(--text);letter-spacing:-.025em;
+  }
+  .enroll-card p{
+    font-size:17px;color:var(--text-2);max-width:48ch;margin:0 auto 32px;
+    line-height:1.65;
+  }
+  .e-form{
+    display:flex;gap:0;border:1.5px solid rgba(240,237,230,.2);
+    max-width:520px;margin:0 auto;
+  }
+  .e-form input{
+    flex:1;background:transparent;border:0;padding:16px 18px;
+    color:var(--text);font-family:'Heebo',sans-serif;font-size:15.5px;
+    outline:none;
+  }
+  .e-form input::placeholder{color:var(--text-3)}
+  .e-form button{
+    background:var(--amber);color:var(--bg);border:0;
+    padding:0 24px;font-family:'Outfit',sans-serif;font-weight:800;
+    font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+    transition:filter .15s;
+  }
+  .e-form button:hover{filter:brightness(1.1)}
+  .enroll-card .meta{
+    margin-top:16px;display:flex;gap:18px;justify-content:center;flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;
+  }
+  .enroll-card .meta span::before{content:"◆";color:var(--amber);margin-inline-end:8px;font-size:8px}
+
+  footer{
+    padding:24px 36px;background:var(--bg);border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.14em;color:var(--text-3);text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="brand">GEO · יסוד</div>
+  <div class="nav-coord">SHEET · 26-01 · 36RXV · WGS·84</div>
+  <a class="nav-cta" href="#enroll">↙ הצטרפות</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <svg class="hero-relief" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <!-- one massive central ridge complex -->
+    <g class="cd">
+      <path d="M -40,920 C 200,860 420,820 640,800 C 860,780 1080,790 1300,810 C 1440,822 1540,820 1640,816"/>
+      <path d="M -40,880 C 220,820 440,780 660,758 C 880,738 1080,748 1300,772"/>
+      <path d="M -40,840 C 240,776 460,730 680,706 C 880,684 1080,694 1300,718"/>
+    </g>
+    <g class="cm">
+      <path d="M -40,800 C 260,728 480,680 700,654 C 900,632 1100,640 1320,660"/>
+      <path d="M -40,760 C 280,684 500,632 720,604 C 920,580 1120,586 1340,604"/>
+      <path d="M -40,720 C 300,644 520,584 740,554 C 940,532 1140,536 1360,552"/>
+      <path d="M -40,680 C 320,604 540,540 760,506 C 960,484 1140,486 1380,500"/>
+      <path d="M 40,640  C 340,564 560,498 780,462 C 980,440 1160,442 1400,452"/>
+    </g>
+    <g class="cb">
+      <path d="M 100,600 C 380,524 580,458 800,420 C 1000,400 1180,400 1420,408"/>
+      <path d="M 180,560 C 420,488 620,420 800,380 C 980,358 1160,360 1420,366"/>
+      <path d="M 260,520 C 460,452 660,386 820,344 C 990,322 1160,322 1400,326"/>
+      <path d="M 340,484 C 500,420 700,356 850,316 C 1010,294 1180,294 1380,296"/>
+      <path d="M 420,452 C 560,396 740,332 880,294 C 1030,272 1190,272 1370,272"/>
+      <path d="M 500,422 C 620,374 780,316 910,278 C 1040,258 1190,256 1360,256"/>
+      <path d="M 580,392 C 680,354 820,300 940,266 C 1060,250 1190,250 1340,250"/>
+      <path d="M 660,364 C 740,332 860,288 970,256 C 1080,242 1190,244 1320,246"/>
+      <path d="M 740,338 C 800,312 900,278 1000,250 C 1100,234 1190,236 1300,242"/>
+      <path d="M 820,316 C 860,294 940,266 1030,244 C 1110,228 1180,230 1280,238"/>
+      <path d="M 900,296 C 920,280 980,256 1060,238"/>
+      <path d="M 980,278 C 990,266 1030,250 1100,238"/>
+    </g>
+    <g class="cm">
+      <path d="M 1060,260 C 1080,250 1110,242 1140,240"/>
+      <path d="M 1100,250 C 1110,244 1130,240 1150,240"/>
+    </g>
+
+    <!-- right secondary ridge -->
+    <g class="cd">
+      <path d="M 1100,520 C 1240,470 1380,448 1500,452 C 1580,456 1620,460 1660,464"/>
+    </g>
+    <g class="cm">
+      <path d="M 1140,494 C 1280,448 1400,430 1500,436"/>
+      <path d="M 1180,470 C 1310,424 1410,410 1500,418"/>
+    </g>
+
+    <!-- AMBER ROUTE highlight, traversing -->
+    <path class="ca" d="M 80,930 C 220,880 340,820 420,720 C 480,640 560,580 660,540 C 760,500 860,440 940,380 C 1010,330 1070,280 1140,256"/>
+
+    <!-- destination diamond -->
+    <g transform="translate(1140,256)">
+      <circle r="20" fill="none" stroke="rgba(242,169,60,.3)" stroke-width=".5"/>
+      <polygon points="0,-12 12,0 0,12 -12,0" fill="rgba(242,169,60,.15)" stroke="#F2A93C" stroke-width="1.6"/>
+      <circle r="2.5" fill="#F2A93C"/>
+    </g>
+    <!-- mini waypoints -->
+    <g stroke="#F2A93C" stroke-width="1.4" fill="rgba(242,169,60,.1)">
+      <polygon points="420,720 426,726 420,732 414,726"/>
+      <polygon points="660,540 666,546 660,552 654,546"/>
+      <polygon points="940,380 946,386 940,392 934,386"/>
+    </g>
+
+    <!-- floating elevation labels -->
+    <g font-family="JetBrains Mono" font-size="11" fill="rgba(240,237,230,.5)" letter-spacing="0.06em">
+      <text x="850" y="345">700</text>
+      <text x="1010" y="265">742</text>
+      <text x="640" y="565">540</text>
+      <text x="380" y="745">420</text>
+    </g>
+  </svg>
+
+  <!-- TITLE in negative space -->
+  <div class="hero-title">
+    <div class="title-block">
+      <div class="micro">קורס יסוד · גיאוגרפיה צבאית</div>
+      <h1 class="h">
+        <span class="latin">Reading the Terrain · Beta 26-01</span>
+        קוראים את <em>השטח</em>,<br>לפני שצועדים בו.
+      </h1>
+      <p class="lede">
+        מסלול של <b>12 שיעורים</b> שמלמד איך המרחב הפיזי מעצב אסטרטגיה, תמרון ואיסוף מודיעין. פחות כלים, יותר שיטה.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="#enroll">פתיחת המסלול <span class="ar"></span></a>
+        <a class="btn ghost" href="#topics">שיעורי הקורס</a>
+      </div>
+    </div>
+
+    <aside class="side-stats">
+      <div class="row"><span class="k">SHEET</span><span class="v">01 / 12</span></div>
+      <div class="row"><span class="k">DATUM</span><span class="v">WGS·84</span></div>
+      <div class="row"><span class="k">CONT</span><span class="v">20 m</span></div>
+      <div class="row"><span class="k">SCALE</span><span class="v">1 : 50,000</span></div>
+      <div class="div"></div>
+      <div class="row"><span class="k">OBJ</span><span class="v amber">BRAVO · 742m</span></div>
+      <div class="row"><span class="k">ROUTE</span><span class="v">8.4 km</span></div>
+    </aside>
+  </div>
+</section>
+
+<!-- AXES — vertical stack -->
+<section class="axes" id="axes">
+  <div class="axes-h">
+    <h2>שלושה צירים, שיטה אחת.</h2>
+    <div class="meta">Three Axes</div>
+  </div>
+
+  <div class="axis-row">
+    <div class="text">
+      <div class="n">01</div>
+      <div class="tag"><span>TERRAIN</span><span>Topics 02 · 04 · 05</span></div>
+      <h3>שטח · קווי גובה ועבירות.</h3>
+      <p>קריאת קווי-גובה, אינטר-ויזיביליות, שיפועים והשפעת תכסית על תנועה והסתרה. תרגול על שטח אמיתי, לא תרשים מופשט. הסטודנט מתאמן ולא רק לומד.</p>
+    </div>
+    <div class="axis-vig">
+      <svg viewBox="0 0 420 300" preserveAspectRatio="xMidYMid slice">
+        <g class="a-cs">
+          <path d="M -20,240 C 80,210 180,200 280,196 C 360,194 420,196 440,196"/>
+          <path d="M -20,210 C 80,180 180,170 280,166 C 360,164 420,166 440,166"/>
+        </g>
+        <g class="a-c">
+          <path d="M -20,180 C 80,148 180,138 280,134 C 360,132 420,134 440,134"/>
+          <path d="M 0,150 C 100,118 200,108 290,106 C 360,106 420,108 440,108"/>
+          <path d="M 30,124 C 140,92 240,84 320,82 C 380,82 420,84 440,84"/>
+          <path d="M 80,102 C 180,76 270,70 340,70 C 390,70 420,72 440,72"/>
+          <path d="M 140,86 C 240,68 310,62 380,62"/>
+          <path d="M 200,76 C 280,62 340,58 390,58"/>
+        </g>
+        <path class="a-amber" d="M 40,300 C 110,250 180,210 250,170 C 310,140 360,118 410,102"/>
+        <circle cx="250" cy="170" r="3" fill="#F2A93C"/>
+        <circle cx="410" cy="102" r="3" fill="#F2A93C"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="axis-row" style="direction:ltr">
+    <div class="axis-vig" style="direction:rtl">
+      <svg viewBox="0 0 420 300" preserveAspectRatio="xMidYMid slice">
+        <g class="a-c">
+          <circle cx="210" cy="150" r="100"/>
+          <circle cx="210" cy="150" r="68" stroke-dasharray="3 4"/>
+          <circle cx="210" cy="150" r="42"/>
+          <circle cx="210" cy="150" r="20" stroke-dasharray="2 3"/>
+        </g>
+        <line x1="210" y1="30" x2="210" y2="44" class="a-c"/>
+        <line x1="210" y1="256" x2="210" y2="270" class="a-c"/>
+        <line x1="92" y1="150" x2="106" y2="150" class="a-c"/>
+        <line x1="316" y1="150" x2="330" y2="150" class="a-c"/>
+        <polygon points="210,140 220,150 210,160 200,150" fill="rgba(242,169,60,.18)" stroke="#F2A93C" stroke-width="1.4"/>
+        <circle cx="210" cy="150" r="3" fill="#F2A93C"/>
+      </svg>
+    </div>
+    <div class="text" style="direction:rtl">
+      <div class="n">02</div>
+      <div class="tag"><span>GEOINT</span><span>Topics 06 · 07 · 12</span></div>
+      <h3>חישה מרחוק · GEOINT.</h3>
+      <p>פענוח תצלומי לוויין, הבחנה בין סימן לתעתוע, מיזוג מקורות (IMINT · SIGINT · OSINT) ותהליכי הסקה מודיעיניים. שיטה לפני כלים, אנליסט לפני מערכת.</p>
+    </div>
+  </div>
+
+  <div class="axis-row">
+    <div class="text">
+      <div class="n">03</div>
+      <div class="tag"><span>OPS</span><span>Topics 06 · 08 · 09 · 10</span></div>
+      <h3>יישום מבצעי · קבלת החלטות.</h3>
+      <p>הערכת איום מרחבית, kill-chain, אצירת LOC וצירי תנועה, מקרי בוחן מקצה-לקצה. השלב שבו הסטודנט עובר מקריאה לפעולה ושוקל החלטות אמיתיות מול שעון.</p>
+    </div>
+    <div class="axis-vig">
+      <svg viewBox="0 0 420 300" preserveAspectRatio="xMidYMid slice">
+        <g class="a-c">
+          <line x1="40"  y1="260" x2="180" y2="160" stroke-width="1.4"/>
+          <line x1="180" y1="160" x2="320" y2="200" stroke-width="1.4"/>
+          <line x1="180" y1="160" x2="260" y2="60"  stroke-width="1.4"/>
+          <line x1="260" y1="60"  x2="380" y2="40" stroke-width="1.4" stroke-dasharray="4 3"/>
+        </g>
+        <g fill="rgba(240,237,230,.7)">
+          <circle cx="40"  cy="260" r="6"/>
+          <circle cx="320" cy="200" r="6"/>
+          <circle cx="260" cy="60"  r="6"/>
+          <circle cx="380" cy="40"  r="6"/>
+        </g>
+        <polygon points="180,150 190,160 180,170 170,160" fill="rgba(242,169,60,.18)" stroke="#F2A93C" stroke-width="1.5"/>
+        <circle cx="180" cy="160" r="3" fill="#F2A93C"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- TOPICS -->
+<section class="topics" id="topics">
+  <div class="topics-h">
+    <h2>12 שיעורים.</h2>
+    <div class="meta">12 Lessons · Foundation → Capstone</div>
+  </div>
+
+  <div class="topic-stack">
+    <div class="topic-line"><span class="n">01</span><div class="t">מבוא: מרחב, כוח ורמות מלחמה<small>FOUND · Strategic</small></div><span class="ele"><b>+0 m</b> · Base</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">02</span><div class="t">קרטוגרפיה וקריאת מפות<small>CARTO · UTM</small></div><span class="ele"><b>+58 m</b> · 1.2 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">03</span><div class="t">התמצאות, אזימוט וציר תנועה<small>NAV · GPS-DENIED</small></div><span class="ele"><b>+124 m</b> · 1.6 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">04</span><div class="t">טופוגרפיה ומורפולוגיית שטח<small>TERRAIN · KEY</small></div><span class="ele"><b>+186 m</b> · 2.1 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">05</span><div class="t">ניידות, כיסוי והסתרה<small>MOBILITY · COVER</small></div><span class="ele"><b>+232 m</b> · 2.5 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">06</span><div class="t">קווי-ראייה (LOS · Viewshed)<small>LOS · KILL-CHAIN</small></div><span class="ele"><b>+294 m</b> · 3.0 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">07</span><div class="t">אקלים, מזג-אוויר ועונתיות<small>WX · SENSORS</small></div><span class="ele"><b>+336 m</b> · 3.6 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">08</span><div class="t">תשתיות ולוגיסטיקה (LOC · MSR)<small>LOG · MSR/ASR</small></div><span class="ele"><b>+372 m</b> · 4.2 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">09</span><div class="t">משאבים, אנרגיה וגיאו-כלכלה<small>GEO-ECON · SLOC</small></div><span class="ele"><b>+418 m</b> · 4.8 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">10</span><div class="t">לחימה בשטח בנוי (Urban · MOUT)<small>URBAN · VERTICAL</small></div><span class="ele"><b>+482 m</b> · 5.4 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">11</span><div class="t">גבולות, עומק אסטרטגי, חיץ<small>BORDERS · DEPTH</small></div><span class="ele"><b>+618 m</b> · 6.2 km</span><span class="arrow">←</span></div>
+    <div class="topic-line"><span class="n">12</span><div class="t">GIS יישומי לניתוח מבצעי<small>GIS · CAPSTONE</small></div><span class="ele"><b>+742 m</b> · OBJ</span><span class="arrow">←</span></div>
+  </div>
+</section>
+
+<!-- ENROLL -->
+<section class="enroll" id="enroll">
+  <svg class="enroll-bg" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g class="e-c">
+      <path d="M -40,560 C 200,520 400,500 620,490 C 840,480 1080,494 1300,490 C 1440,488 1540,486 1640,484"/>
+      <path d="M -40,520 C 200,480 400,460 620,452 C 840,446 1080,460 1300,456"/>
+      <path d="M -40,480 C 200,440 400,422 620,416 C 840,410 1080,424 1300,420"/>
+      <path d="M -40,440 C 240,396 460,380 660,374 C 880,366 1080,378 1300,374"/>
+    </g>
+    <g class="e-cs">
+      <path d="M -40,400 C 240,356 480,338 700,332 C 900,326 1100,338 1320,332"/>
+      <path d="M -40,360 C 280,316 520,294 740,288"/>
+    </g>
+  </svg>
+
+  <div class="enroll-card">
+    <div class="lbl">Beta Cohort · 7/26</div>
+    <h2>פתיחת הקורס.<br>גישה ראשונה.</h2>
+    <p>גישה ראשונה לכל 12 השיעורים, השפעה ישירה על פיתוח השיעורים הבאים, ללא עלות בתקופת הבטא.</p>
+    <form class="e-form" onsubmit="event.preventDefault()">
+      <input type="email" placeholder="name@unit.example" required />
+      <button type="submit">הצטרפות ↙</button>
+    </form>
+    <div class="meta">
+      <span>12 שיעורים</span><span>גישה לא מוגבלת</span><span>ללא עלות בבטא</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>גיאוגרפיה צבאית · GEO · יסוד · 2026</span>
+  <span>WGS·84 · IL · v1·BETA · ◇</span>
+</footer>
+
+</body>
+</html>

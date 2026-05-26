@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v2 · 03 — כתב עת משלחת / Expedition Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --paper:#FBF6EA;
+    --paper-2:#F1E9D2;
+    --ink:#1A1612;
+    --ink-2:#3D362C;
+    --ink-3:#6C6356;
+    --rule:#1A1612;
+    --gold:#C6A04A;           /* used sparingly: section marks, drop cap */
+    --earth:#8B2E1C;          /* article markers */
+    --photo:#0F0D0A;          /* full-bleed dark image background */
+    --photo-2:#1B1812;
+    --sepia:#D4C8AF;
+  }
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Frank Ruhl Libre',Georgia,serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* MASTHEAD */
+  .masthead{
+    border-bottom:1px solid var(--rule);
+    padding:14px 36px;
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;gap:24px;
+    background:var(--paper);
+  }
+  .mast-left,.mast-right{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink-2);letter-spacing:.14em;text-transform:uppercase;
+  }
+  .mast-right{text-align:start}
+  .mast-left{text-align:end}
+  .mast-title{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;
+    font-size:22px;letter-spacing:.005em;color:var(--ink);
+    text-align:center;
+  }
+  .mast-title span{
+    display:block;font-family:'JetBrains Mono',monospace;font-weight:500;
+    font-size:9.5px;letter-spacing:.22em;color:var(--ink-3);
+    text-transform:uppercase;margin-top:2px;
+  }
+
+  /* HERO — full-bleed dark imagery */
+  .hero{
+    position:relative;
+    min-height:78vh;
+    background:var(--photo);
+    overflow:hidden;
+    color:var(--paper);
+  }
+  /* simulated satellite imagery via gradient mesh + terrain SVG */
+  .hero .img{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse at 22% 30%,#3A3324 0,transparent 55%),
+      radial-gradient(ellipse at 75% 65%,#1F2418 0,transparent 60%),
+      radial-gradient(ellipse at 50% 50%,#2A2517 0,#0F0D0A 80%),
+      linear-gradient(180deg,#0F0D0A 0,#1B1812 100%);
+  }
+  .hero .veil{
+    position:absolute;inset:0;
+    background:
+      linear-gradient(180deg,rgba(15,13,10,.2) 0,rgba(15,13,10,.85) 75%),
+      linear-gradient(90deg,rgba(15,13,10,.55) 0,transparent 50%);
+  }
+  .hero svg.terrain{
+    position:absolute;inset:0;width:100%;height:100%;
+    opacity:.42;mix-blend-mode:screen;
+  }
+  .terrain .c{fill:none;stroke:#D4C8AF;stroke-width:.5}
+  .terrain .ci{fill:none;stroke:#C6A04A;stroke-width:.9}
+  .terrain .g{stroke:#D4C8AF;stroke-width:.25;stroke-dasharray:2 6;opacity:.4}
+
+  .hero-content{
+    position:relative;z-index:2;
+    max-width:1200px;margin:0 auto;
+    padding:90px 36px 60px;
+    display:grid;grid-template-columns:1fr 1fr;gap:60px;
+    align-items:end;
+    min-height:78vh;
+  }
+  @media (max-width:880px){.hero-content{grid-template-columns:1fr;padding:64px 22px 36px;gap:40px}}
+
+  .feature-label{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.22em;color:var(--gold);text-transform:uppercase;
+    border-top:2px solid var(--gold);padding-top:10px;
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:24px;
+  }
+  .feature-label .right{color:var(--sepia)}
+
+  h1.feature{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:clamp(48px,6.5vw,96px);
+    line-height:.96;letter-spacing:-.02em;
+    margin:0 0 24px;color:var(--paper);
+  }
+  .dek{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:500;font-size:21px;line-height:1.55;
+    color:var(--sepia);max-width:42ch;margin:0 0 28px;
+  }
+  .byline{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.16em;color:var(--sepia);text-transform:uppercase;
+    border-inline-start:2px solid var(--gold);padding-inline-start:14px;
+    line-height:1.6;
+  }
+  .byline b{color:var(--paper);font-weight:700}
+
+  /* hero right-column: locator card with coordinates */
+  .locator{
+    position:relative;color:var(--sepia);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;letter-spacing:.06em;
+    line-height:1.8;direction:ltr;
+    text-align:start;
+  }
+  .locator .lat{
+    font-size:14px;color:var(--paper);
+    display:flex;flex-direction:column;gap:2px;
+    padding:14px 0;
+    border-top:1px solid rgba(212,200,175,.3);
+    border-bottom:1px solid rgba(212,200,175,.3);
+    margin:18px 0;
+  }
+  .locator .lat b{color:var(--gold);letter-spacing:.1em;font-weight:700}
+  .locator .caption{font-style:italic;font-family:'Frank Ruhl Libre',serif;font-size:14px;color:var(--paper);line-height:1.5;max-width:36ch}
+
+  /* SCROLL CUE */
+  .scroll-cue{
+    position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+    color:var(--sepia);font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    z-index:3;
+  }
+  .scroll-cue::after{
+    content:"";width:1px;height:42px;background:var(--gold);
+  }
+
+  /* ARTICLE BODY */
+  article.body{
+    max-width:1200px;margin:0 auto;
+    padding:80px 36px 24px;
+  }
+  @media (max-width:880px){article.body{padding:54px 22px 24px}}
+
+  .stand-first{
+    columns:2;column-gap:48px;
+    font-family:'Frank Ruhl Libre',serif;
+    font-size:18.5px;line-height:1.85;color:var(--ink-2);
+    max-width:1080px;
+  }
+  @media (max-width:780px){.stand-first{columns:1}}
+  .stand-first p{margin:0 0 16px;break-inside:avoid}
+  .stand-first p:first-child::first-letter{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;font-size:5.6em;
+    line-height:.86;
+    float:right;margin-inline-start:10px;margin-top:4px;
+    color:var(--earth);
+  }
+
+  /* PULL QUOTE */
+  .pull{
+    max-width:780px;margin:64px auto 64px;
+    padding:32px 36px;
+    border-top:2px solid var(--ink);
+    border-bottom:2px solid var(--ink);
+    text-align:center;
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:500;
+    font-size:clamp(24px,3.2vw,36px);
+    line-height:1.35;color:var(--ink);
+    position:relative;
+  }
+  .pull::before,.pull::after{
+    content:"§";color:var(--gold);font-size:18px;
+    position:absolute;left:50%;transform:translateX(-50%);
+    background:var(--paper);padding:0 12px;
+  }
+  .pull::before{top:-12px}.pull::after{bottom:-12px}
+  .pull .who{
+    display:block;margin-top:14px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase;
+  }
+
+  /* FIELD NOTES — 3 zig-zag editorial sections */
+  .notes{max-width:1200px;margin:0 auto;padding:36px 36px 0}
+  @media (max-width:880px){.notes{padding:24px 22px 0}}
+  .notes-h{
+    display:flex;justify-content:space-between;align-items:end;
+    border-bottom:1.5px solid var(--ink);padding-bottom:8px;margin-bottom:36px;
+  }
+  .notes-h h2{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:36px;
+    margin:0;color:var(--ink);letter-spacing:-.01em;
+  }
+  .notes-h .lbl{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;
+  }
+
+  .field-note{
+    display:grid;grid-template-columns:1fr 1fr;gap:60px;
+    align-items:center;
+    margin-bottom:64px;
+  }
+  .field-note.flip{grid-template-columns:1fr 1fr;direction:ltr}
+  .field-note.flip > *{direction:rtl}
+  @media (max-width:880px){.field-note,.field-note.flip{grid-template-columns:1fr;gap:24px;margin-bottom:44px}}
+
+  .note-img{
+    aspect-ratio:4/3;background:var(--photo);position:relative;
+    overflow:hidden;
+    border:1px solid var(--ink-3);
+  }
+  .note-img svg{position:absolute;inset:0;width:100%;height:100%}
+  .note-img .cap{
+    position:absolute;left:0;right:0;bottom:0;
+    background:linear-gradient(transparent,rgba(15,13,10,.85));
+    color:var(--sepia);
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.1em;padding:14px 14px 10px;
+    display:flex;justify-content:space-between;
+  }
+  .note-img .cap b{color:var(--paper);text-transform:uppercase;letter-spacing:.16em}
+
+  .note-text .coord{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.18em;color:var(--gold);text-transform:uppercase;
+    margin-bottom:10px;direction:ltr;
+  }
+  .note-text h3{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;
+    font-size:clamp(28px,3.4vw,38px);
+    margin:0 0 12px;line-height:1.1;letter-spacing:-.01em;
+  }
+  .note-text p{
+    font-size:17px;line-height:1.75;color:var(--ink-2);
+    max-width:48ch;margin:0 0 10px;
+  }
+  .note-text .meta{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink-3);letter-spacing:.06em;margin-top:14px;
+  }
+  .note-text .meta b{color:var(--earth)}
+
+  /* ITINERARY (syllabus as long-form list) */
+  .itin{
+    max-width:1080px;margin:54px auto 0;
+    padding:0 36px 24px;
+  }
+  @media (max-width:880px){.itin{padding:0 22px}}
+  .itin-h{
+    border-top:3px double var(--ink);
+    padding-top:18px;margin-bottom:20px;
+    display:flex;justify-content:space-between;align-items:end;
+  }
+  .itin-h h2{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:32px;
+    margin:0;letter-spacing:-.01em;
+  }
+  .itin-h .lbl{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;
+  }
+  .leg{
+    display:grid;
+    grid-template-columns:80px 1fr 180px;
+    gap:24px;align-items:baseline;
+    padding:18px 0;
+    border-bottom:1px solid var(--paper-2);
+  }
+  @media (max-width:680px){
+    .leg{grid-template-columns:54px 1fr;}
+    .leg .coords{display:none}
+  }
+  .leg:last-child{border-bottom:0}
+  .leg .day{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:34px;
+    color:var(--gold);letter-spacing:-.02em;
+  }
+  .leg .place{
+    font-family:'Frank Ruhl Libre',serif;font-weight:500;font-size:20px;
+    color:var(--ink);
+  }
+  .leg .place small{
+    display:block;font-family:'Heebo',sans-serif;font-weight:400;
+    font-size:14px;color:var(--ink-3);margin-top:2px;
+    letter-spacing:0;
+  }
+  .leg .coords{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--ink-3);letter-spacing:.06em;
+    text-align:start;direction:ltr;
+  }
+  .leg .coords b{color:var(--earth);display:block;font-size:10px;letter-spacing:.16em;margin-bottom:2px}
+
+  /* SUBSCRIBE BLOCK */
+  .subscribe{
+    margin:80px auto 24px;max-width:1080px;
+    padding:0 36px;
+  }
+  .sub-box{
+    background:var(--ink);color:var(--paper);
+    padding:48px 48px;
+    display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:center;
+    border:1px solid var(--ink);
+  }
+  @media (max-width:880px){.sub-box{grid-template-columns:1fr;padding:32px 24px}}
+  .sub-box .label{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.2em;color:var(--gold);text-transform:uppercase;
+    margin-bottom:14px;
+  }
+  .sub-box h2{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;
+    font-size:clamp(34px,4vw,48px);line-height:1.05;
+    margin:0 0 14px;letter-spacing:-.015em;
+  }
+  .sub-box p{
+    font-size:17px;line-height:1.65;color:var(--sepia);max-width:46ch;margin:0;
+  }
+  .sub-form{display:grid;gap:10px}
+  .sub-form label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--sepia);letter-spacing:.16em;text-transform:uppercase;
+  }
+  .sub-form input{
+    background:transparent;border:0;border-bottom:1.5px solid var(--sepia);
+    padding:11px 0;font-family:'Frank Ruhl Libre',serif;font-size:18px;
+    color:var(--paper);outline:none;border-radius:0;
+  }
+  .sub-form input:focus{border-color:var(--gold)}
+  .sub-form input::placeholder{color:rgba(212,200,175,.5)}
+  .sub-form button{
+    margin-top:14px;background:var(--gold);color:var(--ink);border:0;
+    padding:14px 0;font-family:'JetBrains Mono',monospace;font-weight:700;
+    font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;
+  }
+  .sub-form .meta{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--sepia);letter-spacing:.1em;margin-top:8px;
+  }
+
+  /* COLOPHON */
+  .colophon{
+    max-width:1200px;margin:0 auto;padding:32px 36px 60px;
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;
+    border-top:1px solid var(--ink);margin-top:24px;
+  }
+  @media (max-width:780px){.colophon{grid-template-columns:1fr;padding:24px 22px 40px}}
+  .colo{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    color:var(--ink-3);letter-spacing:.06em;line-height:1.7;
+  }
+  .colo b{color:var(--ink);font-weight:700;display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+
+  /* small note-img inline SVG terrain illustrations */
+  .ill-1 path.c{fill:none;stroke:#C6A04A;stroke-width:.8;opacity:.55}
+  .ill-1 path.ci{fill:none;stroke:#D4C8AF;stroke-width:1.2;opacity:.7}
+  .ill-1 .w{fill:#3A4A55;opacity:.6}
+  .ill-1 .bg{fill:#1B1812}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="mast-left">VOL · 01 · ISSUE 01 · 2026</div>
+  <div class="mast-title">
+    כתב עת לגיאוגרפיה משלחתית
+    <span>An Expedition Journal of Field Geography · IL-G</span>
+  </div>
+  <div class="mast-right">No. 26-001 · ₪ — / TRAINING ED.</div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="img"></div>
+  <svg class="terrain" viewBox="0 0 1440 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g class="g">
+      <line x1="0" y1="160" x2="1440" y2="160"/>
+      <line x1="0" y1="320" x2="1440" y2="320"/>
+      <line x1="0" y1="480" x2="1440" y2="480"/>
+      <line x1="0" y1="640" x2="1440" y2="640"/>
+      <line x1="240" y1="0" x2="240" y2="800"/>
+      <line x1="480" y1="0" x2="480" y2="800"/>
+      <line x1="720" y1="0" x2="720" y2="800"/>
+      <line x1="960" y1="0" x2="960" y2="800"/>
+      <line x1="1200" y1="0" x2="1200" y2="800"/>
+    </g>
+    <g class="ci">
+      <path d="M -20,620 C 220,560 420,520 620,490 C 820,460 1020,468 1240,490 C 1340,500 1400,500 1460,495"/>
+      <path d="M 0,540 C 240,470 460,430 660,400 C 860,372 1060,378 1240,398"/>
+      <path d="M 60,460 C 280,400 480,360 680,332 C 880,308 1060,316 1240,336"/>
+      <path d="M 140,380 C 340,332 540,294 720,272 C 880,254 1020,260 1180,280"/>
+      <path d="M 280,310 C 420,280 580,250 740,238 C 880,228 1000,234 1120,250"/>
+    </g>
+    <g class="c">
+      <path d="M -20,640 C 220,584 420,548 620,520 C 820,494 1020,498 1240,520"/>
+      <path d="M 0,580 C 240,512 460,476 660,448"/>
+      <path d="M 20,500 C 240,440 460,406 660,380"/>
+      <path d="M 80,440 C 280,388 480,350 680,326"/>
+      <path d="M 120,400 C 320,358 520,322 720,304"/>
+      <path d="M 200,360 C 360,328 540,300 720,288"/>
+      <path d="M 320,290 C 420,272 540,260 700,254"/>
+      <path d="M 380,250 C 460,238 540,230 660,232"/>
+      <path d="M 440,222 C 500,216 560,214 640,220"/>
+    </g>
+  </svg>
+  <div class="veil"></div>
+
+  <div class="hero-content">
+    <div>
+      <div class="feature-label">
+        <span>Cover Feature — Course Introduction</span>
+        <span class="right">סיפור השער · 01</span>
+      </div>
+      <h1 class="feature">קוראים את השטח, לפני שצועדים בו.</h1>
+      <p class="dek">
+        בשנים האחרונות הצטמצמה הגישה לקריאה אמיתית של שטח. הקורס הזה משחזר אותה — לא דרך אינסטרומנטים, אלא דרך הרגלי קריאה של מי שגדל מולה.
+      </p>
+      <div class="byline">
+        כתב ועורך · <b>מטה ההוראה · IL-G</b><br>
+        צילום · משלחות שטח · 2024–2026<br>
+        הוצאה · גליון מס׳ 01 / 12
+      </div>
+    </div>
+
+    <aside class="locator">
+      <div class="feature-label"><span>Locator</span><span class="right">36RXV</span></div>
+      <div>“Where the terrain forces the decision,<br>strategy is already half-written.”</div>
+      <div class="lat">
+        <span><b>LAT</b> · 32° 47' 12" N</span>
+        <span><b>LON</b> · 35° 31' 04" E</span>
+        <span><b>ELE</b> · 742 m AMSL</span>
+        <span><b>MGRS</b> · 36RXV 12345 67890</span>
+      </div>
+      <div class="caption">תרגיל פתיחה — קריאת אגן הניקוז של עמק יזרעאל ומעברו אל גב ההר. נושא בשיעור 04.</div>
+    </aside>
+  </div>
+
+  <div class="scroll-cue">scroll · גליון</div>
+</section>
+
+<!-- ARTICLE BODY -->
+<article class="body">
+  <div class="stand-first">
+    <p>הגיאוגרפיה הצבאית איננה אוסף עובדות על הקרקע, אלא אופן חשיבה. שיטה שמלמדת את האנליסט לקרוא את השטח כפי שגנרל קורא מפה — לא לפי מה שכתוב עליה, אלא לפי מה ששתוק בה. הקורס הזה הוא ניסיון לבנות מחדש את הקריאה הזו, שיעור אחר שיעור, מרמת קווי הגובה עד לרמת ה-GEOINT המבצעי.</p>
+    <p>שתים-עשרה יחידות לימוד, מאות שעות תרגול, ושלושה צירים מרכזיים: <b>שטח</b>, <b>חישה מרחוק</b> ו<b>יישום מבצעי</b>. כל יחידה פותחת בשאלה אחת — מה השטח מכריח את הצד החלש לעשות? — ומסתיימת ביכולת קונקרטית: לקרוא אגן ניקוז, להעריך LOS, לזהות תעתוע על תצלום לוויין, או לבחור LOC לכוח לוגיסטי בזמן אמת.</p>
+  </div>
+
+  <blockquote class="pull">
+    "השטח איננו רק זירת הפעולה. הוא המימד המערכתי שמכריע אותה."
+    <span class="who">— מטה ההוראה · ענף הגיאוגרפיה</span>
+  </blockquote>
+</article>
+
+<!-- FIELD NOTES — 3 zig-zag editorial sections -->
+<section class="notes">
+  <div class="notes-h">
+    <h2>הערות שטח · שלושה צירים</h2>
+    <div class="lbl">Field Notes · Three Axes</div>
+  </div>
+
+  <article class="field-note">
+    <div class="note-img">
+      <svg class="ill-1" viewBox="0 0 480 360" preserveAspectRatio="xMidYMid slice">
+        <rect class="bg" width="480" height="360"/>
+        <g class="ci">
+          <path d="M -20,300 C 80,260 180,250 280,235 C 380,222 460,228 500,232" class="ci"/>
+          <path d="M -20,260 C 100,212 200,200 300,182 C 400,166 460,170 500,168" class="ci"/>
+          <path d="M 20,210 C 140,170 240,152 340,138 C 420,128 470,130 500,128" class="ci"/>
+        </g>
+        <g class="c">
+          <path d="M -20,320 C 100,278 200,266 300,250 C 400,234 460,240 500,242"/>
+          <path d="M -20,290 C 100,242 200,228 300,212 C 400,196 460,200 500,200"/>
+          <path d="M -20,240 C 120,194 220,180 320,164 C 420,150 470,152 500,150"/>
+          <path d="M 0,200 C 140,156 240,140 340,124 C 420,114 470,116 500,114"/>
+          <path d="M 60,168 C 180,134 280,120 380,106"/>
+          <path d="M 120,140 C 220,114 320,100 410,90"/>
+        </g>
+        <path class="w" d="M -20,340 C 100,310 200,310 300,300 C 400,290 460,294 500,290 L 500,360 L -20,360 Z"/>
+      </svg>
+      <div class="cap"><b>שטח · TERRAIN</b><span>32°47'12"N · 35°31'04"E</span></div>
+    </div>
+    <div class="note-text">
+      <div class="coord">SECTION I · TOPICS 02 · 04 · 05</div>
+      <h3>קריאת קווי-גובה, שיפועים, וסיפור האגן.</h3>
+      <p>היחידה הראשונה מאמנת את האנליסט לקרוא את השטח לעומקו: היכן הקרקע מאלצת תנועה, היכן היא מסתירה, והיכן היא מסכנת. תרגול על אזורים אמיתיים — מהגליל ועד פאתי הר חברון — ולא על תרשימים מופשטים.</p>
+      <div class="meta">תרגול · <b>סימולציות שטח אינטראקטיביות</b> · משוב מיידי</div>
+    </div>
+  </article>
+
+  <article class="field-note flip">
+    <div class="note-text">
+      <div class="coord">SECTION II · TOPICS 06 · 07 · 12</div>
+      <h3>תצלום הוא טענה. מה הוא טוען, ומי טוען עליו?</h3>
+      <p>פענוח לוויינים שיודע להבחין בין הסימן לתעתוע, מיזוג מקורות (IMINT · SIGINT · OSINT), ותהליכי הסקה מודיעיניים — לפני שמכוונים כלי. שיטה לפני אמצעי.</p>
+      <div class="meta">תרגול · <b>חישה מרחוק · GEOINT</b> · מקרי בוחן אמיתיים</div>
+    </div>
+    <div class="note-img">
+      <svg viewBox="0 0 480 360" preserveAspectRatio="xMidYMid slice">
+        <rect width="480" height="360" fill="#1B1812"/>
+        <!-- satellite scan-like horizontal bands -->
+        <g opacity=".7">
+          <rect x="0" y="40"  width="480" height="40" fill="#2C281E"/>
+          <rect x="0" y="120" width="480" height="40" fill="#34301F"/>
+          <rect x="0" y="200" width="480" height="40" fill="#3B341F"/>
+          <rect x="0" y="280" width="480" height="40" fill="#2C281E"/>
+        </g>
+        <!-- reticle -->
+        <g stroke="#C6A04A" stroke-width="1" fill="none">
+          <circle cx="240" cy="180" r="80"/>
+          <circle cx="240" cy="180" r="40" stroke-dasharray="3 3"/>
+          <line x1="240" y1="100" x2="240" y2="260"/>
+          <line x1="160" y1="180" x2="320" y2="180"/>
+        </g>
+        <circle cx="240" cy="180" r="4" fill="#8B2E1C"/>
+        <!-- coordinate ticks -->
+        <g stroke="#D4C8AF" stroke-width=".5" stroke-dasharray="2 4">
+          <line x1="60" y1="0" x2="60" y2="360"/>
+          <line x1="420" y1="0" x2="420" y2="360"/>
+        </g>
+      </svg>
+      <div class="cap"><b>חישה · GEOINT</b><span>SCAN · 2026·05·14 · 14:32Z</span></div>
+    </div>
+  </article>
+
+  <article class="field-note">
+    <div class="note-img">
+      <svg viewBox="0 0 480 360" preserveAspectRatio="xMidYMid slice">
+        <rect width="480" height="360" fill="#1B1812"/>
+        <!-- LOC nodes -->
+        <g>
+          <line x1="40" y1="280" x2="220" y2="200" stroke="#C6A04A" stroke-width="2"/>
+          <line x1="220" y1="200" x2="360" y2="240" stroke="#C6A04A" stroke-width="2"/>
+          <line x1="220" y1="200" x2="300" y2="110" stroke="#C6A04A" stroke-width="2"/>
+          <line x1="300" y1="110" x2="440" y2="80" stroke="#C6A04A" stroke-width="2" stroke-dasharray="6 4"/>
+        </g>
+        <g fill="#D4C8AF">
+          <circle cx="40"  cy="280" r="6"/>
+          <circle cx="220" cy="200" r="9"/>
+          <circle cx="360" cy="240" r="6"/>
+          <circle cx="300" cy="110" r="6"/>
+          <circle cx="440" cy="80"  r="6"/>
+        </g>
+        <g fill="#8B2E1C">
+          <circle cx="220" cy="200" r="3"/>
+        </g>
+        <g font-family="JetBrains Mono" font-size="9" fill="#D4C8AF" opacity=".85">
+          <text x="50" y="298">NODE · S</text>
+          <text x="232" y="222">HUB · OBJ</text>
+          <text x="368" y="258">FWD · E</text>
+          <text x="308" y="100">DEPOT · N</text>
+          <text x="368" y="74">RES · NE</text>
+        </g>
+      </svg>
+      <div class="cap"><b>יישום · OPS</b><span>LOC · MSR/ASR · Sample</span></div>
+    </div>
+    <div class="note-text">
+      <div class="coord">SECTION III · TOPICS 06 · 08 · 09 · 10</div>
+      <h3>מניתוח לפעולה, תחת אילוצי זמן ומידע חסר.</h3>
+      <p>הערכת איום מרחבית, ניתוח kill-chain, אצירת LOC וצירי-תנועה, מקרי בוחן מקצה-לקצה — שלב שבו הסטודנט עובר מקריאה לפעולה ושוקל החלטות אמיתיות מול שעון.</p>
+      <div class="meta">תרגול · <b>יישום מבצעי וקבלת החלטות</b> · תחת שעון</div>
+    </div>
+  </article>
+</section>
+
+<!-- ITINERARY -->
+<section class="itin">
+  <div class="itin-h">
+    <h2>מסלול המשלחת · 12 תחנות</h2>
+    <div class="lbl">Itinerary · 12 Stops</div>
+  </div>
+
+  <div class="leg"><div class="day">01</div><div class="place">מבוא: מרחב, כוח ורמות מלחמה<small>השטח כמימד מערכתי</small></div><div class="coords"><b>FOUND</b>Topic · 01 · Strategic</div></div>
+  <div class="leg"><div class="day">02</div><div class="place">קרטוגרפיה וקריאת מפות<small>הסמן והשטח, פרויקציות, UTM</small></div><div class="coords"><b>CARTO</b>Topic · 02 · Foundation</div></div>
+  <div class="leg"><div class="day">03</div><div class="place">התמצאות, אזימוט וציר תנועה<small>ניווט גם בלי GPS</small></div><div class="coords"><b>NAV</b>Topic · 03 · Tactical</div></div>
+  <div class="leg"><div class="day">04</div><div class="place">טופוגרפיה ומורפולוגיית שטח<small>חמשת דפוסי הקרקע · Key Terrain</small></div><div class="coords"><b>TERRAIN</b>Topic · 04 · Tactical</div></div>
+  <div class="leg"><div class="day">05</div><div class="place">ניידות, כיסוי והסתרה<small>עבירות, תכסית, מסלולי איתור</small></div><div class="coords"><b>MOBILITY</b>Topic · 05 · Tactical</div></div>
+  <div class="leg"><div class="day">06</div><div class="place">קווי-ראייה (LOS · Viewshed)<small>צפייה, אש, kill-chain</small></div><div class="coords"><b>LOS</b>Topic · 06 · Operational</div></div>
+  <div class="leg"><div class="day">07</div><div class="place">אקלים, מזג-אוויר ועונתיות<small>חציית תרמית, השפעה על חיישנים</small></div><div class="coords"><b>WX</b>Topic · 07 · Operational</div></div>
+  <div class="leg"><div class="day">08</div><div class="place">תשתיות ולוגיסטיקה (LOC · MSR)<small>"בטן לוגיסטית" וצירי-אספקה</small></div><div class="coords"><b>LOG</b>Topic · 08 · Operational</div></div>
+  <div class="leg"><div class="day">09</div><div class="place">משאבים, אנרגיה וגיאו-כלכלה<small>הידרו-פוליטיקה, SLOC, Mahan</small></div><div class="coords"><b>GEO-ECON</b>Topic · 09 · Strategic</div></div>
+  <div class="leg"><div class="day">10</div><div class="place">לחימה בשטח בנוי (Urban · MOUT)<small>מימד אנכי, מנהרות, אזרחים</small></div><div class="coords"><b>URBAN</b>Topic · 10 · Operational</div></div>
+  <div class="leg"><div class="day">11</div><div class="place">גבולות, עומק אסטרטגי, אזורי חיץ<small>מהמושג למקרה האזורי</small></div><div class="coords"><b>BORDERS</b>Topic · 11 · Strategic</div></div>
+  <div class="leg"><div class="day">12</div><div class="place">GIS יישומי לניתוח מבצעי<small>שכבות, Raster/Vector, Cost-surface</small></div><div class="coords"><b>GIS</b>Topic · 12 · Capstone</div></div>
+</section>
+
+<!-- SUBSCRIBE -->
+<section class="subscribe">
+  <div class="sub-box">
+    <div>
+      <div class="label">Join the Expedition · בטא 7/26</div>
+      <h2>הצטרפו לקוהורט הראשון.</h2>
+      <p>גישה ראשונה לכל הגיליונות, השפעה ישירה על פיתוח השיעורים הבאים, ללא עלות בתקופת הבטא.</p>
+    </div>
+    <form class="sub-form" onsubmit="event.preventDefault()">
+      <label>EMAIL · כתובת מבצעית</label>
+      <input type="email" placeholder="name@unit.example" required />
+      <button type="submit">↙ הצטרפות למשלחת</button>
+      <div class="meta">12 גיליונות · גישה לא מוגבלת · ללא עלות בבטא</div>
+    </form>
+  </div>
+</section>
+
+<!-- COLOPHON -->
+<footer class="colophon">
+  <div class="colo">
+    <b>Editorial</b>
+    Editor-in-chief · מטה ההוראה · IL-G<br>
+    Cartography · Field Survey Section<br>
+    Photography · Expeditions 2024–2026
+  </div>
+  <div class="colo">
+    <b>Sources</b>
+    Datum · WGS·84 · UTM 36N<br>
+    Series · IL-G · 1:50,000 · Ed. 7<br>
+    Topics · 12 lessons · Foundation → Capstone
+  </div>
+  <div class="colo">
+    <b>Issue 01 / 2026</b>
+    כתב עת לגיאוגרפיה משלחתית<br>
+    הוצאה לאור הוראתית · Made in IL<br>
+    © 2026 — כל הזכויות שמורות
+  </div>
+</footer>
+
+</body>
+</html>

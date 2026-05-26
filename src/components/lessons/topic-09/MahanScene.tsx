@@ -124,7 +124,7 @@ export function MahanScene() {
         eyebrow="דוקטרינת מהן ו-SLOC"
         title={
           <>
-            <span className="gradient-text">דוקטרינה בת 130 שנה</span>. שעדיין מנהלת את העולם.
+            <span className="text-accent-hover">דוקטרינה בת 130 שנה</span>. שעדיין מנהלת את העולם.
           </>
         }
         intro="ב-1890, אסטרטג צבאי אמריקאי בשם אלפרד תייר מֵהָן פרסם ספר ששינה את ההיסטוריה. הרעיון שלו היה מבריק ופשוט: 'מי ששולט בים — שולט בעולם'. הכלל הזה ניהל את כל המאה ה-20, וגם היום, במאה ה-21, המעצמות הגדולות בעולם פועלות בדיוק לפיו."
@@ -150,12 +150,10 @@ export function MahanScene() {
               onClick={() => setActivePillar(p.id)}
               className={cn(
                 'surface p-4 text-right transition-all rounded-xl flex flex-col items-start gap-2',
-                isActive ? `${p.border} shadow-glow ${p.bg}` : 'hover:border-border-strong'
+                isActive ? `${p.border} ${p.bg}` : 'hover:border-border-strong'
               )}
             >
-              <div className={cn('size-10 rounded-xl flex items-center justify-center border-2', p.border, p.bg)}>
-                <Icon name={p.icon} size={18} className={p.color} />
-              </div>
+              <Icon name={p.icon} size={28} className={cn(p.color, 'shrink-0')} />
               <div className="flex-1">
                 <div className={cn('font-display font-bold leading-tight', isActive && p.color)}>{p.label}</div>
                 <div className="text-[10px] font-mono text-fg-dim mt-0.5">{p.english}</div>
@@ -182,7 +180,7 @@ export function MahanScene() {
               <p className="text-sm text-fg leading-relaxed">{meta.desc}</p>
             </div>
             <div>
-              <div className="text-sm font-display font-semibold text-accent-hover mb-1.5 tracking-wider">היישום המודרני</div>
+              <div className="text-sm font-display font-semibold text-accent mb-1.5 tracking-wider">היישום המודרני</div>
               <p className="text-sm text-fg-muted leading-relaxed">{meta.modern}</p>
             </div>
           </div>
@@ -204,7 +202,7 @@ export function MahanScene() {
                 onClick={() => setActivePower(p)}
                 className={cn(
                   'px-3 py-1 rounded-lg text-xs font-medium transition-colors',
-                  activePower === p ? 'bg-accent text-bg shadow-glow' : 'text-fg-muted hover:text-fg'
+                  activePower === p ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
                 )}
               >
                 {p === 'both' ? 'הצג את שתיהן' : p === 'us' ? 'ארה"ב' : 'סין'}
@@ -231,11 +229,9 @@ export function MahanScene() {
       {/* Conclusion */}
       <div className="">
         <div className="flex gap-4 items-start">
-          <div className="size-12 rounded-xl bg-accent/15 border border-accent/40 flex items-center justify-center shrink-0">
-            <Icon name="spark" size={22} className="text-accent" />
-          </div>
+          <Icon name="spark" size={32} className="text-accent shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-accent-hover mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
               שורה תחתונה לדור שלך
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">

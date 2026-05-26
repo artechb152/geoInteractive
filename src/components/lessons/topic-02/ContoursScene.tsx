@@ -78,7 +78,7 @@ title={
                intro="האתגר הכי גדול במפה הוא להבין איך השטח נראה במציאות. הרי המפה היא דף שטוח, אבל העולם הוא תלת-ממדי. כדי לפתור את זה, אנחנו משתמשים בשיטה חכמה: קווי גובה. דמיינו שחתכנו את ההר לפרוסות אופקיות (כמו עוגת קומות). כל קו שתראו במפה הוא פשוט הקצה של פרוסה כזו."
       />
 
-      <div className="surface-elevated p-6 mb-6 rounded-2xl border border-border/50 shadow-inner">
+      <div className="surface-elevated p-6 mb-6 rounded-2xl border border-border/50">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div className="space-y-3">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
@@ -114,11 +114,11 @@ title={
               onClick={() => setShapeId(s.id)}
               className={cn(
                 'surface p-5 text-right transition-all rounded-xl relative overflow-hidden',
-                active ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong opacity-80 hover:opacity-100'
+                active ? 'border-accent bg-accent/5' : 'hover:border-border-strong opacity-80 hover:opacity-100'
               )}
             >
               <div className="font-display font-bold text-lg mb-1">{s.label}</div>
-              <div className={cn('text-sm font-display font-semibold tracking-wider font-bold', active ? 'text-accent-hover' : 'text-fg-muted')}>
+              <div className={cn('text-sm font-display font-semibold tracking-wider font-bold', active ? 'text-accent' : 'text-fg-muted')}>
                 {s.steepnessHint === 'gentle' && '↘ מדרון נוח'}
                 {s.steepnessHint === 'steep' && '↑ תלול ומאתגר'}
                 {s.steepnessHint === 'cliff' && '! חסימה / מצוק'}
@@ -140,9 +140,7 @@ title={
               className="surface p-6 border-r-4 border-accent rounded-xl"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                    <Icon name="mountain" size={24} className="text-accent" />
-                </div>
+                <Icon name="mountain" size={36} className="text-accent shrink-0" />
                 <h3 className="font-display font-bold text-2xl leading-tight">{shape.label}</h3>
               </div>
               <p className="text-sm text-fg-muted leading-relaxed font-medium">
@@ -154,7 +152,7 @@ title={
           <Glossary />
         </div>
 
-        <div className="surface-elevated relative overflow-hidden border border-border/50 rounded-2xl">
+        <div className="surface-elevated bg-bg-accent/20 relative overflow-hidden border border-border/50 rounded-2xl">
           <ShapeMap shape={shape} />
         </div>
       </div>
@@ -267,12 +265,12 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
 
 function ShapeMap({ shape }: { shape: Shape }) {
   return (
-    <div className="aspect-[4/3] relative w-full h-full">
-      <svg viewBox="0 0 100 75" className="w-full h-full bg-[#0a0f1a]">
+    <div className="relative w-full h-full min-h-[280px]">
+      <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {Array.from({ length: 11 }).map((_, i) => (
           <g key={i}>
-            <line x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-white/5" strokeWidth="0.1" />
-            <line x1="0" y1={i * 7.5} x2="100" y2={i * 7.5} className="stroke-white/5" strokeWidth="0.1" />
+            <line x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle/30" strokeWidth="0.1" />
+            <line x1="0" y1={i * 7.5} x2="100" y2={i * 7.5} className="stroke-border-subtle/30" strokeWidth="0.1" />
           </g>
         ))}
 
@@ -302,7 +300,7 @@ function ShapeMap({ shape }: { shape: Shape }) {
 function Glossary() {
   return (
     <div className="surface p-6 rounded-xl space-y-4 bg-bg-accent/10 border border-border/30">
-      <div className="text-sm font-display font-semibold text-accent-hover tracking-wider font-bold mb-2">מילון מושגים לניווט</div>
+      <div className="text-sm font-display font-semibold text-accent tracking-wider font-bold mb-2">מילון מושגים לניווט</div>
       <Item term="קו גובה (Contour Line)" def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר." />
       <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים." />
       <Item term="קו אינדקס (Index Contour)" def="כל קו חמישי הוא עבה יותר ורשום עליו הגובה. זה ה'עוגן' שעוזר לספור גבהים מהר." />

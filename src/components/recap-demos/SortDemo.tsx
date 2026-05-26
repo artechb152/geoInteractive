@@ -87,7 +87,7 @@ export function SortDemo() {
             type="button"
             disabled={!allPlaced || submitted}
             onClick={() => setSubmitted(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-accent text-fg font-semibold text-sm hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-glow"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-accent text-bg-elevated font-semibold text-sm hover:bg-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Check className="size-3.5" aria-hidden /> בדוק
           </button>
@@ -210,8 +210,8 @@ function Chip({
         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-bg font-display font-semibold text-sm transition-all',
         status === 'ok' && 'border-status-ok/60 bg-status-ok/10 text-status-ok',
         status === 'bad' && 'border-status-danger/60 bg-status-danger/10 text-status-danger',
-        !status && picked && 'border-accent bg-accent text-fg shadow-glow scale-105',
-        !status && !picked && 'border-border text-fg hover:border-brand/40 hover:bg-brand/5',
+        !status && picked && 'border-accent bg-accent text-bg-elevated scale-105',
+        !status && !picked && 'border-border text-fg hover:border-accent/40 hover:bg-accent/5',
       )}
     >
       {label}

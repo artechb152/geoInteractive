@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Heebo, Rubik } from 'next/font/google';
 import './globals.css';
+import { Navbar } from '@/components/landing/Navbar';
 
 const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
@@ -28,7 +29,10 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={`${heebo.variable} ${rubik.variable}`}>
       <body className="overflow-x-clip">
-        <div className="min-h-screen flex flex-col">{children}</div>
+        {/* Global, always-on navbar. Fixed at top across every route.
+            Children sit below it via `pt-16` (= navbar height = 4rem). */}
+        <Navbar />
+        <div className="min-h-screen flex flex-col pt-12">{children}</div>
       </body>
     </html>
   );

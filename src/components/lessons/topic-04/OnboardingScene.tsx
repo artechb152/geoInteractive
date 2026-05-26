@@ -123,7 +123,7 @@ export function OnboardingScene() {
                 className={cn(
                   'surface overflow-hidden transition-all duration-300 ease-snap',
                   active
-                    ? 'border-brand/45 bg-bg-elevated shadow-elevated'
+                    ? 'border-brand/45 bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   passed && !active && 'opacity-80'
                 )}
@@ -144,7 +144,7 @@ export function OnboardingScene() {
                   <span
                     className={cn(
                       'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active ? 'bg-accent text-fg border-accent shadow-glow' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
+                      active ? 'bg-brand-dark text-bg-elevated border-brand-dark' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
@@ -156,11 +156,6 @@ export function OnboardingScene() {
                   <div className="flex-1 min-w-0">
                     <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
                   </div>
-                  <Icon
-                    name={s.icon}
-                    size={20}
-                    className={cn('transition-colors shrink-0', active ? 'text-brand-dark' : 'text-fg-dim')}
-                  />
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
@@ -193,7 +188,7 @@ export function OnboardingScene() {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-accent-hover mt-3 mb-2 tracking-wider">
+                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
                           למה זה משנה
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -232,7 +227,7 @@ export function OnboardingScene() {
         ))}
       </div>
 
-      <ReadyCallout title="עכשיו אתה מוכן">
+      <ReadyCallout title="עכשיו אתם מוכנים">
         <p>הבנת ש"קריאת שטח" זה משהו שלם — לא ריגוש מהנוף. בשלוש הסצנות הבאות נצלול לעומק:
             <strong className="text-fg"> מאיזה סלע ההר עשוי, איך לזהות 5 צורות נוף קלאסיות, ואיך מסווגים שטח לפי הערך הצבאי שלו</strong>.</p>
       </ReadyCallout>

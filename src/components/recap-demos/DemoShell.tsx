@@ -8,7 +8,6 @@
  */
 
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DEMOS, type DemoId } from './demos';
 
@@ -32,17 +31,13 @@ export function DemoShell({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
           <Link
             href="/"
-            className="group inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-brand-dark transition-colors shrink-0"
+            className="group inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-accent transition-colors shrink-0"
           >
-            <ArrowRight
-              className="size-3.5 transition-transform group-hover:translate-x-0.5"
-              aria-hidden
-            />
             <span>חזרה לדף הבית</span>
           </Link>
           <span className="h-5 w-px bg-border-subtle" aria-hidden />
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-display font-semibold tracking-wider text-accent-hover uppercase">
+            <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase">
               דמו · סיכום שיעור
             </div>
             <h1 className="font-display font-bold text-base md:text-lg truncate text-fg">
@@ -67,9 +62,9 @@ export function DemoShell({
               <Link
                 key={d.id}
                 href={d.href}
-                className="group rounded-xl border border-border bg-bg-elevated p-3.5 hover:border-accent/40 hover:shadow-elevated transition-all"
+                className="group rounded-xl border border-border bg-bg-elevated p-3.5 hover:border-accent/40 transition-all"
               >
-                <div className="font-display font-bold text-sm text-fg group-hover:text-accent-hover transition-colors">
+                <div className="font-display font-bold text-sm text-fg group-hover:text-accent transition-colors">
                   {d.title}
                 </div>
                 <div className="text-xs text-fg-muted mt-0.5">{d.tagline}</div>

@@ -117,7 +117,7 @@ export function ViewshedScene() {
       {/* Main viewshed map */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Map */}
-        <div className="surface-elevated p-4 rounded-2xl overflow-hidden">
+        <div className="surface-elevated p-4 rounded-2xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מפת שטחים גלויים · {mode === 'single' ? 'תצפיתן אחד' : `${observers.length} תצפיתנים יחד`}
@@ -131,12 +131,14 @@ export function ViewshedScene() {
               </span>
             </div>
           </div>
-          <ViewshedMap
-            visibilityMap={visibilityMap}
-            observers={visibleObservers}
-            selectedIdx={selectedIdx}
-            onCellClick={handleCellClick}
-          />
+          <div className="flex-1 min-h-[300px]">
+            <ViewshedMap
+              visibilityMap={visibilityMap}
+              observers={visibleObservers}
+              selectedIdx={selectedIdx}
+              onCellClick={handleCellClick}
+            />
+          </div>
           <div className="mt-3 text-[10px] text-fg-dim text-center">
             לחצו על המפה כדי להזיז את <strong className="text-fg">{observers[selectedIdx]?.label}</strong>
           </div>
@@ -154,7 +156,7 @@ export function ViewshedScene() {
                   onClick={() => setMode(m)}
                   className={cn(
                     'flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                    mode === m ? 'bg-accent text-bg shadow-glow' : 'text-fg-muted hover:text-fg'
+                    mode === m ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
                   )}
                 >
                   {m === 'single' ? 'תצפיתן בודד' : 'שילוב תצפיתנים'}
@@ -194,7 +196,7 @@ export function ViewshedScene() {
                     className={cn(
                       'flex items-center gap-2 p-2 rounded-lg border transition-all',
                       isSelected
-                        ? 'border-accent bg-accent/5 shadow-glow'
+                        ? 'border-accent bg-accent/5'
                         : 'border-border hover:border-border-strong'
                     )}
                   >
@@ -289,10 +291,10 @@ function ViewshedMap({
   const cellH = 100 / GRID_H;
 
   return (
-    <div className="aspect-[22/13] relative">
+    <div className="relative w-full h-full min-h-[300px]">
       <svg
         viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         className="w-full h-full select-none"
         style={{ cursor: 'crosshair' }}
       >

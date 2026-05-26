@@ -32,8 +32,16 @@ const config: Config = {
           dim: '#6a6a6a',
         },
         accent: {
+          // Site-wide rule: orange goes from DEFAULT (darkest) only
+          // LIGHTER — never darker. DEFAULT carries h1, primary buttons,
+          // and every coloured label that needs to read on cream.
           DEFAULT: '#EB9E48',
-          hover: '#B17736',
+          // ~15% lighter wash — button-hover state and h2 emphasis.
+          hover: '#F2B872',
+          // Lightest tint — h3 emphasis. Token still named `deep` for
+          // backwards compatibility with existing classNames; the value
+          // is the palest orange in the system.
+          deep: '#F7CFA0',
           hot: '#e2553a',
           cool: '#5b9dd9',
           intel: '#9d6bd9',

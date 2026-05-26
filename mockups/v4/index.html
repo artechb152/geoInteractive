@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>v4 — שני כיוונים רדיקליים / Two Radical Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Newsreader:opsz,ital,wght@6..72,0,500;6..72,0,700;6..72,1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --bg:#F1ECDF;
+    --bg-2:#E8E2D1;
+    --ink:#111110;
+    --ink-2:#3D3A33;
+    --ink-3:#807A6C;
+    --orange:#EB9E48;
+    --bp:#0F3050;
+    --paper:#E8EFF5;
+    --cyan:#5FC8F2;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+  body{
+    font-family:'Heebo','Outfit',system-ui,sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:geometricPrecision;
+  }
+
+  .wrap{max-width:1280px;margin:0 auto;padding:48px 32px 80px}
+  @media (max-width:680px){.wrap{padding:32px 22px 60px}}
+
+  .top{
+    display:flex;justify-content:space-between;align-items:end;
+    border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:40px;
+    flex-wrap:wrap;gap:18px;
+  }
+  .top .brand{
+    font-family:'Heebo',sans-serif;font-weight:900;font-size:24px;
+    letter-spacing:-.015em;color:var(--ink);
+  }
+  .top .brand sup{
+    font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;
+    color:var(--orange);vertical-align:top;letter-spacing:.14em;padding-inline-start:6px;
+  }
+  .top .meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase;direction:ltr;
+  }
+
+  .intro{
+    margin-bottom:42px;max-width:780px;
+  }
+  .intro h1{
+    font-family:'Heebo',sans-serif;font-weight:900;
+    font-size:clamp(28px,3.5vw,42px);line-height:1.1;letter-spacing:-.02em;
+    margin:0 0 14px;color:var(--ink);
+  }
+  .intro h1 em{font-style:normal;background:var(--ink);color:var(--bg);padding:0 10px}
+  .intro p{
+    font-family:'Newsreader',serif;font-size:18px;font-weight:500;
+    color:var(--ink-2);line-height:1.6;margin:0 0 10px;
+  }
+  .intro .note{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--ink-3);letter-spacing:.08em;margin-top:14px;
+  }
+
+  /* TWO LARGE CARDS, SIDE BY SIDE */
+  .grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:24px;
+  }
+  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    border:2px solid var(--ink);
+    background:var(--bg);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    transition:transform .2s,box-shadow .2s;
+  }
+  .card:hover{transform:translate(-3px,-3px);box-shadow:8px 8px 0 var(--ink)}
+
+  .card .label{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:12px 20px;background:var(--ink);color:var(--bg);
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.18em;text-transform:uppercase;
+  }
+  .card .label b{color:var(--orange)}
+
+  .preview{
+    aspect-ratio:8/5;
+    position:relative;overflow:hidden;
+    border-bottom:2px solid var(--ink);
+  }
+  .preview svg{position:absolute;inset:0;width:100%;height:100%}
+
+  /* Card A preview = blueprint dark */
+  .preview-a{background:var(--bp)}
+  .preview-a .pln{stroke:var(--paper);stroke-width:1.2;fill:none}
+  .preview-a .pln-t{stroke:var(--paper);stroke-width:.7;fill:none}
+  .preview-a .pln-c{stroke:var(--cyan);stroke-width:.8;fill:none;stroke-dasharray:3 2}
+  .preview-a .pln-o{stroke:var(--orange);stroke-width:1.6;fill:none}
+  .preview-a text{font-family:'JetBrains Mono',monospace;fill:var(--paper);font-size:9px;letter-spacing:.06em}
+  .preview-a .o-text{fill:var(--orange);font-weight:700}
+
+  /* Card B preview = constructivist cream */
+  .preview-b{background:var(--bg)}
+
+  .body{padding:24px 22px;display:flex;flex-direction:column;gap:14px;flex:1}
+  .body .name{
+    font-family:'Heebo',sans-serif;font-weight:900;font-size:26px;
+    color:var(--ink);letter-spacing:-.015em;line-height:1.1;margin:0;
+  }
+  .body .sub{
+    font-family:'Newsreader',serif;font-style:italic;font-weight:500;font-size:16px;
+    color:var(--ink-2);line-height:1.45;margin:0;
+  }
+  .body .desc{
+    font-size:14.5px;color:var(--ink-2);line-height:1.65;margin:0;
+  }
+  .body .desc b{color:var(--ink);font-weight:700}
+  .body ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+  .body ul li{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    letter-spacing:.06em;color:var(--ink-2);padding-inline-start:14px;
+    position:relative;
+  }
+  .body ul li::before{
+    content:"▸";color:var(--orange);position:absolute;right:0;font-size:11px;
+  }
+  .swatches{
+    display:flex;gap:6px;margin-top:8px;
+  }
+  .sw{width:22px;height:22px;border:1px solid var(--ink)}
+  .actions{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:14px;
+    border-top:1px solid var(--bg-2);
+  }
+  .actions a{
+    flex:1;text-align:center;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'Heebo',sans-serif;font-weight:700;font-size:14px;
+    padding:13px 16px;background:var(--ink);color:var(--bg);
+    text-decoration:none;border:0;transition:background .15s;
+  }
+  .actions a:hover{background:var(--orange);color:var(--ink)}
+  .actions a.amber{background:var(--orange);color:var(--ink)}
+  .actions a.amber:hover{background:var(--ink);color:var(--orange)}
+
+  /* PREVIOUS ROUNDS LINK */
+  .prev-round{
+    margin-top:40px;
+    padding:18px 22px;
+    border:1.5px solid var(--ink);
+    background:transparent;
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:14px;
+  }
+  .prev-round .t{
+    font-family:'Heebo',sans-serif;font-weight:700;font-size:15px;color:var(--ink);
+  }
+  .prev-round .t small{
+    display:block;font-family:'JetBrains Mono',monospace;font-weight:400;font-size:11px;
+    color:var(--ink-3);letter-spacing:.08em;margin-top:2px;
+  }
+  .prev-round .links{
+    display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .prev-round .links a{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:.1em;color:var(--ink-2);text-decoration:none;
+    border:1px solid var(--ink-3);padding:6px 10px;text-transform:uppercase;
+    transition:all .15s;
+  }
+  .prev-round .links a:hover{border-color:var(--orange);color:var(--orange)}
+
+  .foot{
+    margin-top:40px;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">גיאו<sup>v4 · TWO</sup></div>
+    <div class="meta">CONCEPT REVIEW · 25 MAY 2026 · ROUND 04</div>
+  </header>
+
+  <section class="intro">
+    <h1>שני כיוונים <em>רדיקליים</em>. בלי קווי גובה.</h1>
+    <p>שני עיצובים שונים זה מזה ושונים מכל מה שהוצע עד עכשיו — אחד מבוסס שפת שרטוט הנדסי-מבצעי (Blueprint), והשני שפת פוסטר קונסטרוקטיביסטי (Lissitzky · El Lissitzky · IDF-poster). שניהם משתמשים בכתום המותגי (#EB9E48), שניהם מותאמים לעברית מימין-לשמאל, ושניהם אומצו ע"י עקרונות שלושת הסקילים: <b>frontend-design</b> (לאסתטיקה ייחודית), <b>taste-skill</b> (כללי anti-LLM-bias), ו-<b>ui-ux-pro-max</b> (פלטות וטיפוגרפיה).</p>
+    <div class="note">פתח כל עיצוב במלואו (Open Full), השווה, ובחר. ה-5 הקודמים (קווי-גובה) זמינים בקישור בתחתית.</div>
+  </section>
+
+  <div class="grid">
+
+    <!-- CARD A: BLUEPRINT -->
+    <article class="card">
+      <div class="label">
+        <span>OPTION · A</span>
+        <span><b>D-26-01</b> · TACTICAL DRAWINGS</span>
+      </div>
+      <div class="preview preview-a">
+        <svg viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice">
+          <!-- drawing border -->
+          <rect x="14" y="14" width="372" height="222" class="pln-t" fill="none"/>
+          <line x1="14" y1="34" x2="386" y2="34" class="pln-t"/>
+          <text x="20" y="28" class="o-text">SHEET · D-26-01 · TERRAIN ELEVATION PROFILE</text>
+          <!-- terrain profile -->
+          <path class="pln" d="M 30,200 L 70,190 L 110,160 L 150,120 L 190,100 L 230,140 L 280,180 L 320,160 L 360,100"/>
+          <!-- hatching -->
+          <g class="pln-t">
+            <line x1="30" y1="200" x2="36" y2="214"/>
+            <line x1="70" y1="190" x2="76" y2="204"/>
+            <line x1="110" y1="160" x2="116" y2="174"/>
+            <line x1="150" y1="120" x2="156" y2="134"/>
+            <line x1="190" y1="100" x2="196" y2="114"/>
+            <line x1="230" y1="140" x2="236" y2="154"/>
+            <line x1="280" y1="180" x2="286" y2="194"/>
+            <line x1="320" y1="160" x2="326" y2="174"/>
+            <line x1="360" y1="100" x2="366" y2="114"/>
+          </g>
+          <!-- LOS -->
+          <line x1="70" y1="190" x2="360" y2="92" class="pln-c"/>
+          <circle cx="70" cy="190" r="3" fill="#5FC8F2"/>
+          <polygon points="352,86 372,86 362,72" class="pln-o" fill="none"/>
+          <text x="346" y="68" class="o-text">OBJ</text>
+          <!-- dim line -->
+          <g class="pln-t">
+            <line x1="70" y1="220" x2="360" y2="220"/>
+            <polygon points="70,220 76,217 76,223" fill="#E8EFF5"/>
+            <polygon points="360,220 354,217 354,223" fill="#E8EFF5"/>
+            <text x="215" y="216" text-anchor="middle">8.4 km</text>
+          </g>
+          <!-- north -->
+          <g transform="translate(370,52)">
+            <polygon points="-3,-10 3,-10 0,-18" fill="#E8EFF5"/>
+            <text x="-5" y="-22">N</text>
+          </g>
+        </svg>
+      </div>
+      <div class="body">
+        <h3 class="name">תכנית הנדסית טקטית</h3>
+        <p class="sub">"Tactical Blueprint — a course rendered as a drawing set."</p>
+        <p class="desc">הדף הוא <b>שרטוט הנדסי מבצעי אמיתי</b>: רקע אינדיגו כחול, קווים לבנים, חתכי-גובה (לא קווי גובה), קווי-עזר, callouts מקצועיים, title-block בתחתית. הקורס מוצג כסט גיליונות עם מספרי שרטוט (D-26-01.XX). שיעורים = SHEETS. ההרשמה היא APPROVAL & SIGN-OFF.</p>
+        <ul>
+          <li>פלטה: #0F3050 + #E8EFF5 + #5FC8F2 + כתום מותגי</li>
+          <li>טיפוגרפיה: Heebo + Newsreader serif + JetBrains Mono</li>
+          <li>מבנה: title-block, drawing border, callouts, dimension lines</li>
+          <li>קהל: רגיש להנדסה ולתכנון מבצעי</li>
+        </ul>
+        <div class="swatches">
+          <span class="sw" style="background:#0F3050"></span>
+          <span class="sw" style="background:#13395D"></span>
+          <span class="sw" style="background:#E8EFF5"></span>
+          <span class="sw" style="background:#5FC8F2"></span>
+          <span class="sw" style="background:#EB9E48"></span>
+        </div>
+        <div class="actions">
+          <a class="amber" href="A-tactical-blueprint.html" target="_blank">פתיחה מלאה · OPEN FULL ↗</a>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD B: CONSTRUCTIVIST -->
+    <article class="card">
+      <div class="label">
+        <span>OPTION · B</span>
+        <span><b>POSTER · 26-01</b> · LISSITZKY MODE</span>
+      </div>
+      <div class="preview preview-b">
+        <svg viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice">
+          <!-- big orange circle top-right (visually) -->
+          <circle cx="350" cy="60" r="65" fill="#EB9E48"/>
+          <circle cx="370" cy="80" r="22" fill="#111110"/>
+          <!-- diagonal black bar -->
+          <polygon points="400,170 400,200 -10,250 -10,220" fill="#111110"/>
+          <!-- orange parallel -->
+          <polygon points="400,148 400,162 -10,210 -10,196" fill="#EB9E48"/>
+          <!-- small ring bottom-left -->
+          <circle cx="42" cy="200" r="16" fill="none" stroke="#111110" stroke-width="1.4"/>
+          <circle cx="42" cy="200" r="4" fill="#111110"/>
+          <!-- square block -->
+          <rect x="32" y="60" width="14" height="14" fill="#111110"/>
+          <!-- big H1 text -->
+          <text x="30" y="120" font-family="Heebo" font-weight="900" font-size="38" fill="#111110" letter-spacing="-.02em">קוראים את</text>
+          <text x="30" y="158" font-family="Heebo" font-weight="900" font-size="38" fill="#111110" letter-spacing="-.02em">
+            <tspan fill="#111110">השטח</tspan>
+            <tspan fill="#111110">.</tspan>
+          </text>
+          <!-- micro label -->
+          <text x="30" y="40" font-family="JetBrains Mono" font-size="9" fill="#EB9E48" letter-spacing="0.18em">ISSUE · 01 / 12</text>
+          <!-- tiny dots row -->
+          <g fill="#111110">
+            <circle cx="200" cy="28" r="2"/>
+            <circle cx="215" cy="28" r="2"/>
+            <circle cx="230" cy="28" r="2"/>
+            <circle cx="245" cy="28" r="2"/>
+            <circle cx="260" cy="28" r="2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="body">
+        <h3 class="name">פוסטר קונסטרוקטיביסטי</h3>
+        <p class="sub">"A Lissitzky-mode poster for a strategic field course."</p>
+        <p class="desc">קומפוזיציה אסימטרית קיצונית בשפת ה<b>קונסטרוקטיביזם הרוסי</b> מהאוונגרד של תחילת המאה: עיגולים גדולים, אלכסונים בולטים, ריבועים מסיביים, היררכיה טיפוגרפית רחבה. שלושה צבעים בלבד — שמנת + שחור + כתום מותגי. הכותרת בנויה כבלוקים גיאומטריים. שיעורים = טוקנים גיאומטריים ממוספרים. הרשמה כפוסטר ב<b>צללית כתום מאחורי קופסה שחורה</b>.</p>
+        <ul>
+          <li>פלטה: #F1ECDF + #111110 + #EB9E48 (+ אדום בודד)</li>
+          <li>טיפוגרפיה: Heebo 900 + Outfit 900 + Newsreader italic</li>
+          <li>מבנה: אסימטריה קיצונית, גיאומטריה, manifesto strip</li>
+          <li>קהל: רגיש לעיצוב, עורך, קצין-תרבות</li>
+        </ul>
+        <div class="swatches">
+          <span class="sw" style="background:#F1ECDF"></span>
+          <span class="sw" style="background:#E8E2D1"></span>
+          <span class="sw" style="background:#111110"></span>
+          <span class="sw" style="background:#EB9E48"></span>
+          <span class="sw" style="background:#C73B2B"></span>
+        </div>
+        <div class="actions">
+          <a class="amber" href="B-constructivist-poster.html" target="_blank">פתיחה מלאה · OPEN FULL ↗</a>
+        </div>
+      </div>
+    </article>
+
+  </div>
+
+  <!-- LINK BACK TO PREVIOUS ROUND -->
+  <div class="prev-round">
+    <div class="t">
+      גם 5 הווריאציות של קווי-גובה (v3) זמינות
+      <small>POSTER · DARK TRAIL · SOFT EDITORIAL · ATLAS · NEGATIVE RELIEF</small>
+    </div>
+    <div class="links">
+      <a href="../v3/01-poster-light.html" target="_blank">v3 · 01</a>
+      <a href="../v3/02-night-trail-dark.html" target="_blank">v3 · 02</a>
+      <a href="../v3/03-soft-editorial.html" target="_blank">v3 · 03</a>
+      <a href="../v3/04-atlas-plate.html" target="_blank">v3 · 04</a>
+      <a href="../v3/05-negative-relief.html" target="_blank">v3 · 05</a>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>גיאוגרפיה צבאית · GEO · יסוד · v4 · 25 MAY 2026</span>
+    <span>ED · 26-01 · IL · CONCEPT REVIEW</span>
+  </div>
+
+</div>
+
+</body>
+</html>

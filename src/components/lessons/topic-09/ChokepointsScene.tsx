@@ -115,7 +115,7 @@ export function ChokepointsScene() {
         eyebrow="נקודות חנק ימיות"
         title={
           <>
-            <span className="gradient-text">5 מיצרים</span> ששולטים בכלכלה העולמית
+            <span className="text-accent-hover">5 מיצרים</span> ששולטים בכלכלה העולמית
           </>
         }
         intro="רוב הסחר הימי בעולם זורם דרך מספר קטן של מעברים צרים. כל אחד מהם הוא מטרה אסטרטגית עם ערך עצום. בואו נכיר אותם, ונראה מה קורה כשסוגרים אפילו אחד מהם."
@@ -175,7 +175,7 @@ export function ChokepointsScene() {
               <div className={cn('text-sm font-display font-semibold mb-0.5 tracking-wider', meta.color)}>
                 {meta.english}
               </div>
-              <h3 className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</h3>
+              <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-center">
@@ -189,8 +189,8 @@ export function ChokepointsScene() {
                 className={cn(
                   'px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',
                   blocked.has(active)
-                    ? 'bg-status-ok text-bg shadow-glow hover:scale-[0.99]'
-                    : 'bg-status-danger text-bg shadow-glow hover:scale-[1.02] active:scale-[0.98]'
+                    ? 'bg-status-ok text-bg hover:scale-[0.99]'
+                    : 'bg-status-danger text-bg hover:scale-[1.02] active:scale-[0.98]'
                 )}
               >
                 <Icon name={blocked.has(active) ? 'check' : 'bolt'} size={14} strokeWidth={2.5} />
@@ -238,7 +238,7 @@ export function ChokepointsScene() {
               onClick={() => setActive(c.id)}
               className={cn(
                 'surface p-3 text-right transition-all rounded-xl',
-                isActive ? 'border-accent shadow-glow bg-accent/5' : 'hover:border-border-strong',
+                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong',
                 isBlocked && 'border-status-danger/40 bg-status-danger/5'
               )}
             >
