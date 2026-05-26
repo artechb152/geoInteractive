@@ -72,14 +72,17 @@ export function LessonShell({
   return (
     <div className="min-h-screen flex flex-col">
       {/* ── Sticky secondary header — just the three tabs.
-              "חזרה לסילבוס" and the lesson number/duration row used
-              to live here too; both were removed per a site-wide
-              design pass. The lesson title now headlines the TOC
-              sidebar inside PagedLearn. ─────────────────────────── */}
-      <header className="sticky top-12 z-30 bg-bg-elevated border-b border-brand">
+              On xl+ the header is shifted left by the TOC drawer's
+              width (160px) so it never crosses the white TOC strip,
+              giving the impression that the tabs sit ABOVE the lesson
+              content column only. The bg is the page cream (`bg-bg`)
+              so it reads as part of the content area, and there is no
+              border / underline between the tabs and the lesson
+              content below. ─────────────────────────── */}
+      <header className="sticky top-12 z-30 bg-bg xl:ms-[160px]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
-            className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 relative"
+            className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"
             role="tablist"
             aria-label="חלקי השיעור"
           >

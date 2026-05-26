@@ -34,9 +34,14 @@ export function Navbar() {
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="fixed inset-x-0 top-0 z-50 bg-bg-elevated border-b border-brand"
     >
-      <nav className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between gap-6">
+      {/* No `max-w-7xl mx-auto` so the brand starts flush against the
+          viewport's start edge (right in RTL) with a tight `pe-4` —
+          its position no longer depends on the viewport width. The
+          `text-[15px]` is a fixed pixel size that doesn't scale with
+          the viewport. */}
+      <nav className="ps-4 pe-6 h-12 flex items-center justify-between gap-6">
         <Link href="/" className="group flex items-center gap-2.5" aria-label="עמוד הבית">
-          <span className="font-display font-bold text-sm tracking-tight text-fg">
+          <span className="font-display font-bold text-[15px] tracking-tight text-fg">
             גיאוגרפיה <span className="text-brand">צבאית</span>
           </span>
         </Link>

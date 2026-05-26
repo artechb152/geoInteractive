@@ -286,7 +286,7 @@ function ScenePagerDesktop({
       className="hidden xl:flex flex-col fixed start-0 top-12 bottom-0 z-20 w-[160px] overflow-y-auto bg-bg-elevated border-e border-border"
       aria-label="ניווט תתי-נושא"
     >
-      <div className="p-3 pt-10 flex-1 flex flex-col">
+      <div className="p-3 pt-3 flex-1 flex flex-col">
         {lesson && (
           <div className="px-1.5 mb-4 pb-1.5 border-b border-border-subtle">
             <div className="font-display font-bold text-accent text-base mb-1.5">
