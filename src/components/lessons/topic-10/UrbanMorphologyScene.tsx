@@ -74,56 +74,111 @@ export function UrbanMorphologyScene() {
         intro="הצורה הפיזית של העיר משפיעה על הקרב הרבה יותר מאשר סוג הנשק או כמות החיילים. הילחמות ברחוב ישר ומסודר שונה לחלוטין מהילחמות בסמטה צפופה ומתפתלת. זה לא רק עניין של נוף – כל סביבה דורשת שיטת לחימה שונה לחלוטין."
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">MOUT (לש"ב)</strong> — ראשי תיבות של "לוחמה בשטח בנוי" (Military Operations in Urban Terrain).
-            <strong className="text-fg block mt-1.5">המאפיין הקריטי:</strong> בשטח פתוח חיילים יורים אחד על השני ממרחק של קילומטרים, אבל בעיר זה יורד ל<strong>מטרים בודדים, פנים אל פנים</strong>. בסביבה כזו, היתרון של טנקים או מטוסי קרב מצטמצם דרמטית, והיתרון של הצד שמכיר את הסמטאות הכי טוב – הופך למכריע.
+      {/* Two SEPARATE feature cards side-by-side — same orange-accent
+          treatment as the matched pair in topic-09 ChokepointsScene.
+          Promotes a tooltip-style block to core content. */}
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
+        {/* Card A — definition */}
+        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            עיקרון מנחה
           </div>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+            MOUT <span className="text-fg-muted font-medium text-base sm:text-lg">(לש"ב · לוחמה בשטח בנוי)</span>
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            ראשי תיבות של <strong className="text-fg">Military Operations in Urban Terrain</strong> —
+            דוקטרינה צבאית שלמה למבצעים בתוך עיר, שבה כל החוקים של קרב פתוח משתנים.
+          </p>
+        </div>
+
+        {/* Card B — the critical characteristic */}
+        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            המאפיין הקריטי
+          </div>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+            ק"מ בשטח פתוח ← מטרים בודדים, פנים אל פנים
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            בעיר היתרון של טנקים ומטוסי קרב מצטמצם דרמטית. <strong className="text-fg">הצד שמכיר את הסמטאות הכי טוב</strong> — הופך למכריע.
+          </p>
         </div>
       </div>
 
-      {/* Pattern selector */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      {/* Pattern selector — styled to match the topic-1 OnboardingScene
+          step cards (accordion-style row with leading icon-badge and a
+          sage active bar). The selector is visually connected to the
+          map directly below via `rounded-b-none` and the matching
+          `rounded-t-none` on the map card, so they read as one
+          continuous control + canvas. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {PATTERNS.map((p) => {
           const isActive = pattern === p.id;
           return (
             <button
               key={p.id}
+              type="button"
               onClick={() => setPattern(p.id)}
+              aria-pressed={isActive}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl flex items-center gap-3',
-                isActive ? `${p.border} ${p.bg}` : 'hover:border-border-strong'
+                'relative rounded-xl border p-4 text-right flex items-center gap-3 transition-all duration-300 ease-snap cursor-pointer',
+                isActive
+                  ? 'border-accent bg-bg-elevated'
+                  : 'border-border bg-bg-elevated hover:border-accent/50 hover:bg-accent/[0.04]',
               )}
             >
-              <Icon name={p.icon} size={32} className={cn(p.color, 'shrink-0')} />
-              <div>
-                <div className={cn('font-display font-bold leading-tight', isActive && p.color)}>
+              {isActive && (
+                <motion.span
+                  layoutId="urban-pattern-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                  aria-hidden
+                />
+              )}
+              <span
+                className={cn(
+                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  isActive
+                    ? 'bg-accent text-bg-elevated border-accent'
+                    : 'bg-bg-accent text-fg-muted border-border',
+                )}
+              >
+                <Icon name={p.icon} size={20} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="font-display font-bold text-base leading-tight text-fg">
                   {p.label}
                 </div>
-                <div className="text-[10px] font-mono text-fg-dim">{p.english}</div>
+                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
+                  {p.english}
+                </div>
               </div>
             </button>
           );
         })}
       </div>
 
-      {/* Comparison map */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
+      {/* Comparison map — visually attached to the selector above. */}
+      <div className="surface-elevated p-4 rounded-2xl mt-2 mb-6">
+        <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark mb-3 tracking-wider">
+          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
           מבט אווירי · {meta.label}
         </div>
         <UrbanMap pattern={pattern} />
-        <div className="mt-3 flex items-center justify-center gap-4 text-[10px] font-mono text-fg-dim flex-wrap">
-          <span className="flex items-center gap-1"><span className="size-2 bg-accent-cool rounded-full" /> הכוח שלנו</span>
-          <span className="flex items-center gap-1"><span className="size-2 bg-status-ok/40 rounded-sm" /> שטח מואר (קשר עין - LOS)</span>
-          <span className="flex items-center gap-1"><span className="size-2 bg-status-danger/40 rounded-sm" /> שטח מת (מוסתר מהעין)</span>
-          <span className="flex items-center gap-1"><span className="size-2 bg-accent-hot rounded-full" /> איום פוטנציאלי</span>
+        <div className="mt-3 flex items-center justify-center gap-x-4 gap-y-1.5 text-[11px] font-display font-medium tracking-wide text-fg-dim flex-wrap">
+          <span className="flex items-center gap-1.5"><span className="size-2 bg-accent-cool rounded-full" /> הכוח שלנו</span>
+          <span className="flex items-center gap-1.5"><span className="size-2 bg-status-ok/40 rounded-sm" /> שטח מואר (LOS)</span>
+          <span className="flex items-center gap-1.5"><span className="size-2 bg-status-danger/40 rounded-sm" /> שטח מת</span>
+          <span className="flex items-center gap-1.5"><span className="size-2 bg-accent-hot rounded-full" /> איום פוטנציאלי</span>
         </div>
       </div>
 
-      {/* Pattern details */}
+      {/* Pattern details — readable, single-column reading flow with a
+          stat strip up top. No more dense 2x2 grid of coloured panels;
+          each property gets its own row with a clear eyebrow, an
+          icon, and roomy `text-base` body copy. */}
       <AnimatePresence mode="wait">
         <motion.div
           key={meta.id}
@@ -131,47 +186,38 @@ export function UrbanMorphologyScene() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
+          className="surface-elevated p-6 sm:p-8 rounded-2xl mb-12"
         >
-          <div className="mb-4">
-            <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', meta.color)}>
+          {/* Header */}
+          <div className="mb-6 pb-6 border-b border-border-subtle">
+            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
               {meta.english}
             </div>
-            <h3 className="font-display font-bold text-2xl leading-tight mb-2 text-accent-deep">{meta.label}</h3>
-            <p className="text-sm text-fg leading-relaxed">{meta.desc}</p>
+            <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight mb-3 text-accent-hover">{meta.label}</h3>
+            <p className="text-base text-fg leading-relaxed text-pretty">{meta.desc}</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <div className="surface p-4 rounded-xl">
-              <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider flex items-center gap-1.5">
-                <Icon name="eye" size={11} />
-                טווח LOS
-              </div>
-              <p className="text-sm text-fg leading-relaxed">{meta.losRange}</p>
-            </div>
-            <div className="surface p-4 rounded-xl">
-              <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider flex items-center gap-1.5">
-                <Icon name="truck" size={11} />
-                תנועה
-              </div>
-              <p className="text-sm text-fg leading-relaxed">{meta.movement}</p>
+          {/* Properties — vertical stack, each one a labelled paragraph
+              with a small icon eyebrow. Reads like an article, not a
+              dashboard. */}
+          <div className="space-y-5 sm:space-y-6">
+            <PropertyRow icon="eye" eyebrow="טווח קו ראייה (LOS)" text={meta.losRange} />
+            <PropertyRow icon="truck" eyebrow="תנועה וניווט" text={meta.movement} />
+
+            <div className="grid md:grid-cols-2 gap-5 sm:gap-6 pt-2">
+              <RoleRow side="attacker" eyebrow="נקודת המבט של התוקף" text={meta.attacker} />
+              <RoleRow side="defender" eyebrow="נקודת המבט של המגן" text={meta.defender} />
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3 mb-4">
-            <div className="surface p-4 rounded-xl bg-accent-cool/5 border-accent-cool/30">
-              <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider">לתוקף</div>
-              <p className="text-sm text-fg-muted leading-relaxed">{meta.attacker}</p>
+          {/* Historical example — quoted, restful end to the panel. */}
+          <div className="mt-6 pt-6 border-t border-border-subtle">
+            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+              <span className="size-1.5 rounded-full bg-fg-dim" aria-hidden />
+              דוגמה היסטורית
             </div>
-            <div className="surface p-4 rounded-xl bg-accent-hot/5 border-accent-hot/30">
-              <div className="text-sm font-display font-semibold text-accent-hot mb-1.5 tracking-wider">למגן</div>
-              <p className="text-sm text-fg-muted leading-relaxed">{meta.defender}</p>
-            </div>
-          </div>
-
-          <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
-            <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה היסטורית</div>
-            <p className="text-xs text-fg leading-relaxed italic">"{meta.example}"</p>
+            <p className="text-base text-fg leading-relaxed italic text-pretty">"{meta.example}"</p>
           </div>
         </motion.div>
       </AnimatePresence>
@@ -196,6 +242,42 @@ export function UrbanMorphologyScene() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ────── Helpers used by the details panel above ────── */
+
+function PropertyRow({ icon, eyebrow, text }: { icon: IconName; eyebrow: string; text: string }) {
+  return (
+    <div className="flex gap-3 sm:gap-4">
+      <Icon name={icon} size={24} className="text-accent-hover shrink-0 mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1.5">
+          {eyebrow}
+        </div>
+        <p className="text-base text-fg leading-relaxed text-pretty">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function RoleRow({ side, eyebrow, text }: { side: 'attacker' | 'defender'; eyebrow: string; text: string }) {
+  return (
+    <div className={cn(
+      'rounded-xl border p-4',
+      side === 'attacker'
+        ? 'border-accent-cool/30 bg-accent-cool/5'
+        : 'border-accent-hot/30 bg-accent-hot/5',
+    )}>
+      <div className={cn(
+        'inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase mb-2',
+        side === 'attacker' ? 'text-accent-cool' : 'text-accent-hot',
+      )}>
+        <span className={cn('size-1.5 rounded-full', side === 'attacker' ? 'bg-accent-cool' : 'bg-accent-hot')} aria-hidden />
+        {eyebrow}
+      </div>
+      <p className="text-sm sm:text-base text-fg leading-relaxed text-pretty">{text}</p>
+    </div>
   );
 }
 

@@ -100,13 +100,43 @@ export function WaterEnergyScene() {
         intro="במאה ה-20 מדינות יצאו למלחמות על נפט, אבל המאה ה-21 שייכת למים. היום, מי ששולט במקור המים שולט בגורלן של מדינות שלמות. במקביל, גם האנרגיה הפסיקה להיות רק מוצר שקונים ומוכרים, והפכה לנשק פוליטי וזירת עימות מרכזית."
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">פוליטיקה של מים (הידרו-פוליטיקה)</strong> — זהו המאבק הפוליטי והצבאי על שליטה במשאבי מים. חוק האצבע פשוט: ככל שמדינה תלויה יותר במקור מים שמגיע ממדינה אחרת, כך אפשר לסחוט אותה יותר.
-            <strong className="text-fg block mt-1.5">המקרה הקלאסי:</strong> כ-95% מהמים של מצרים מגיעים מנהר הנילוס. ברגע שאתיופיה, שנמצאת בתחילת הנהר, מחליטה לבנות סכר בשטחה – עבור מצרים מדובר בסכנה קיומית ודאית.
+      {/* Hydro-politics primary block. Promoted from a tooltip-style
+          callout to a two-column feature card so it reads as core
+          content, not a footnote. Left: term + definition headline;
+          right: a stat-hero case study (95% of Egypt's water from the
+          Nile) with the cause-and-effect under it. */}
+      <div className="surface-elevated p-6 sm:p-8 rounded-2xl mb-12 grid md:grid-cols-[1.2fr_1fr] gap-6 md:gap-8 items-start">
+        <div>
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-2.5">
+            <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
+            עיקרון מנחה
           </div>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-brand-dark">
+            פוליטיקה של מים <span className="text-fg-muted font-medium text-base sm:text-lg">(הידרו-פוליטיקה)</span>
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            המאבק הפוליטי והצבאי על שליטה במשאבי מים. חוק האצבע פשוט: ככל שמדינה תלויה יותר במקור מים שמגיע ממדינה אחרת, כך אפשר לסחוט אותה יותר.
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-bg p-5 sm:p-6">
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-3">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            המקרה הקלאסי · מצרים · אתיופיה
+          </div>
+          <div className="flex items-baseline gap-2 mb-1.5">
+            <div className="font-display font-bold text-5xl sm:text-6xl tabular-nums text-accent-hover leading-none">
+              95%
+            </div>
+            <div className="text-sm text-fg-muted leading-tight">
+              ממימי <strong className="text-fg">מצרים</strong>
+              <br />
+              מגיעים מנהר הנילוס
+            </div>
+          </div>
+          <p className="text-sm text-fg leading-relaxed text-pretty mt-4 pt-4 border-t border-border-subtle">
+            ברגע שאתיופיה, שנמצאת בתחילת הנהר, מחליטה לבנות סכר בשטחה — עבור מצרים מדובר ב<strong className="text-fg">סכנה קיומית ודאית</strong>.
+          </p>
         </div>
       </div>
 
@@ -119,7 +149,7 @@ export function WaterEnergyScene() {
             </div>
             <div className={cn('chip', sm.bg, sm.color, 'border-current/40')}>
               <Icon name={status === 'normal' ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
-              <span className="font-mono">{sm.label}</span>
+              <span className="font-display font-semibold tracking-wide">{sm.label}</span>
             </div>
           </div>
 
@@ -146,18 +176,18 @@ export function WaterEnergyScene() {
               className="w-full accent-accent"
               aria-label="סגירת סכר"
             />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+            <div className="flex justify-between text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1.5">
               <span>פתוח</span>
               <span>חלקי</span>
               <span>סגור</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
               <div className="surface p-2 rounded-lg text-center">
-                <div className="text-[10px] font-mono text-fg-dim">זרימה במורד</div>
+                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">זרימה במורד</div>
                 <div className="font-display font-bold text-lg text-accent tabular-nums">{downstreamFlow}%</div>
               </div>
               <div className="surface p-2 rounded-lg text-center">
-                <div className="text-[10px] font-mono text-fg-dim">מים במאגר</div>
+                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">מים במאגר</div>
                 <div className="font-display font-bold text-lg text-accent-cool tabular-nums">{damClosure}%</div>
               </div>
             </div>

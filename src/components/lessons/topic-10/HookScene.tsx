@@ -65,26 +65,29 @@ function BackdropCity() {
         preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 w-full h-full"
       >
-        {/* City skyline silhouettes (foreground) */}
+        {/* City skyline silhouettes (foreground). Heights scaled down
+            so the buildings sit in the LOWER half of the canvas only
+            (text area at the top stays clear). Opacity dropped from
+            0.45 → 0.22 so they read as a quiet background motif
+            instead of competing with the headline. */}
         <motion.g
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 0.45, y: 0 }}
+          animate={{ opacity: 0.22, y: 0 }}
           transition={{ duration: 1.5, delay: 0.3 }}
         >
-          {/* Buildings of different heights */}
           {[
-            { x: 4,  w: 8, h: 35 },
-            { x: 13, w: 5, h: 50 },
-            { x: 19, w: 9, h: 28 },
-            { x: 29, w: 6, h: 60 },
-            { x: 36, w: 10, h: 42 },
-            { x: 47, w: 5, h: 70 },
-            { x: 53, w: 8, h: 48 },
-            { x: 62, w: 7, h: 55 },
-            { x: 70, w: 9, h: 32 },
-            { x: 80, w: 6, h: 58 },
-            { x: 87, w: 8, h: 38 },
-            { x: 96, w: 4, h: 45 },
+            { x: 4,  w: 8, h: 22 },
+            { x: 13, w: 5, h: 32 },
+            { x: 19, w: 9, h: 18 },
+            { x: 29, w: 6, h: 38 },
+            { x: 36, w: 10, h: 26 },
+            { x: 47, w: 5, h: 44 },
+            { x: 53, w: 8, h: 30 },
+            { x: 62, w: 7, h: 35 },
+            { x: 70, w: 9, h: 20 },
+            { x: 80, w: 6, h: 36 },
+            { x: 87, w: 8, h: 24 },
+            { x: 96, w: 4, h: 28 },
           ].map((b, i) => (
             <g key={i}>
               <rect
@@ -94,7 +97,7 @@ function BackdropCity() {
                 height={b.h}
                 className="fill-terrain-ridge"
               />
-              {/* Windows */}
+              {/* Windows — dimmer too, in step with the silhouettes. */}
               {Array.from({ length: Math.floor(b.h / 6) }).map((_, j) => (
                 <rect
                   key={j}
@@ -103,7 +106,7 @@ function BackdropCity() {
                   width={b.w - 2}
                   height="1.2"
                   className="fill-accent"
-                  opacity={0.25 + (j % 3) * 0.15}
+                  opacity={0.15 + (j % 3) * 0.1}
                 />
               ))}
             </g>
@@ -134,11 +137,12 @@ function BackdropCity() {
           />
         </motion.g>
 
-        {/* Threat markers (snipers in high buildings) */}
+        {/* Threat markers — repositioned to sit on top of the (now
+            shorter) buildings, below the headline. */}
         {[
-          { x: 30, y: 45 },
-          { x: 47, y: 32 },
-          { x: 80, y: 47 },
+          { x: 30, y: 64 },
+          { x: 47, y: 58 },
+          { x: 80, y: 66 },
         ].map((p, i) => (
           <motion.g
             key={i}
@@ -154,9 +158,20 @@ function BackdropCity() {
           </motion.g>
         ))}
 
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />
       </svg>
 
+      {/* Soft cream backdrop right behind the headline — bumps the
+          contrast of the title against the city silhouettes without
+          covering them. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 55% at 50% 38%, rgba(255,251,247,0.92) 0%, rgba(255,251,247,0.6) 45%, transparent 80%)',
+        }}
+      />
+      {/* Bottom fade so the buildings dissolve into the page bg. */}
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />
     </div>
   );

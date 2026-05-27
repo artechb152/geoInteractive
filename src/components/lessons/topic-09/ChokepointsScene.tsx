@@ -19,6 +19,16 @@ type Chokepoint = {
   threats: string;
   incidents: string;
   color: string;
+  /** Revealed only when the user blocks this chokepoint. Real-world
+   * cascade — concrete numbers the user discovers via the action.
+   * Designed for the instructional-design "interactive consequence"
+   * pattern: blocking isn't decorative, it teaches a fact. */
+  blockImpact: {
+    headline: string;
+    detourDays: string;
+    costPerDay: string;
+    whoBleeds: string;
+  };
 };
 
 const CHOKEPOINTS: Chokepoint[] = [
@@ -34,6 +44,12 @@ const CHOKEPOINTS: Chokepoint[] = [
     threats: 'איראן מאיימת באופן קבוע לחסום את המיצר בתגובה לסנקציות. האיומים כוללים סירות קומנדו מהירות, מוקשים ימיים ומתקפות סייבר.',
     incidents: 'ב-2019 הותקפו 4 מכליות נפט במוקשים, וב-2023 איראן השתלטה על מספר מכליות. בתגובה, צבאות ארה"ב ובריטניה מחזיקים שם כוחות קבועים.',
     color: 'text-accent-hot',
+    blockImpact: {
+      headline: 'מחיר הדלק העולמי מזנק תוך 24 שעות',
+      detourDays: 'אין מעקף ימי',
+      costPerDay: '+50% במחיר הנפט',
+      whoBleeds: 'כל מי שמתדלק רכב — ארה"ב, אירופה, סין, ישראל',
+    },
   },
   {
     id: 'bab-el-mandeb',
@@ -47,6 +63,12 @@ const CHOKEPOINTS: Chokepoint[] = [
     threats: 'החות\'ים בתימן, שמשתמשים בטילים זולים וברחפנים מתאבדים. קל וזול מאוד לייצר שם כאוס ביטחוני.',
     incidents: 'ב-2023-2024 החות\'ים תקפו ספינות ללא הפסקה. חברות ענק נאלצו לוותר על המסלול הזה ולהקיף את כל אפריקה, מה שהוסיף שבועות של הפלגה וייקר את המחירים לכולנו.',
     color: 'text-status-danger',
+    blockImpact: {
+      headline: 'ספינות מאסיה מקיפות את אפריקה — שבועיים של דרך',
+      detourDays: '+10–14 ימים',
+      costPerDay: '+30% עלות שילוח',
+      whoBleeds: 'יבואנים אירופיים · מצרים מאבדת הכנסות מסואץ',
+    },
   },
   {
     id: 'suez',
@@ -60,6 +82,12 @@ const CHOKEPOINTS: Chokepoint[] = [
     threats: 'הסכנה המרכזית היא חסימה פיזית של התעלה (כי היא מלאכותית וצרה מאוד), או אי-יציבות ביטחונית במצרים.',
     incidents: 'ב-2021 ספינת משא אחת ענקית ("Ever Given") נתקעה באלכסון וחסמה את התעלה ל-6 ימים. הנזק לכלכלה העולמית: כ-9.6 מיליארד דולר ביום(!).',
     color: 'text-accent',
+    blockImpact: {
+      headline: '9.6 מיליארד דולר נזק עולמי. בכל יום.',
+      detourDays: '+10 ימים מסביב לאפריקה',
+      costPerDay: '$9.6B נזק / יום',
+      whoBleeds: 'מצרים (50M$/יום מהכנסות תעלה) · יבואני אירופה',
+    },
   },
   {
     id: 'malacca',
@@ -73,6 +101,12 @@ const CHOKEPOINTS: Chokepoint[] = [
     threats: 'איום של שודדי ים, אבל בעיקר מתח צבאי בין ארה"ב לסין. לסינים יש פחד קיומי שנקרא "דילמת מלאקה" — ההבנה שמי שחוסם להם את המיצר, חונק אותם למוות.',
     incidents: 'בגלל הפחד מ"חנק", סין משקיעה היום מיליארדים בבניית כבישים ורכבות עוקפות ("פרויקט החגורה והדרך") רק כדי לא להיות תלויה בלעדית במיצר הזה.',
     color: 'text-accent-cool',
+    blockImpact: {
+      headline: 'סין מאבדת ~80% מאספקת הנפט תוך שבועיים',
+      detourDays: 'אין מעקף ריאלי באוקיינוס',
+      costPerDay: 'משבר אנרגיה אסיה',
+      whoBleeds: 'סין · יפן · דרום קוריאה · טייוואן — כולם תלויים',
+    },
   },
   {
     id: 'panama',
@@ -86,14 +120,18 @@ const CHOKEPOINTS: Chokepoint[] = [
     threats: 'האיום פה הוא לא צבאי אלא אקלימי. התעלה פועלת על בסיס מי אגמים מתוקים, ובצורת גורמת לירידת מפלס המים ומונעת מעבר ספינות כבדות.',
     incidents: 'ב-2023 בצורת קשה חתכה את יכולת המעבר ב-50%. זה גרם לעיכובים עצומים במסחר והקפיץ את מחירי השילוח לשמיים.',
     color: 'text-status-warn',
+    blockImpact: {
+      headline: 'חוף מערב ארה"ב מתנתק מהמזרח',
+      detourDays: '+8,000 מייל סביב דרום אמריקה',
+      costPerDay: '+40% מחירי שילוח לארה"ב',
+      whoBleeds: 'ארה"ב (קליפורניה, טקסס) · יצואני דרום אמריקה',
+    },
   },
 ];
 
 export function ChokepointsScene() {
-  const [active, setActive] = useState<ChokepointId>('hormuz');
   const [blocked, setBlocked] = useState<Set<ChokepointId>>(new Set());
 
-  const meta = CHOKEPOINTS.find((c) => c.id === active)!;
   const blockedTradePct = Array.from(blocked).reduce((s, id) => {
     const c = CHOKEPOINTS.find((x) => x.id === id);
     return s + (c?.tradePct || 0);
@@ -121,203 +159,239 @@ export function ChokepointsScene() {
         intro="רוב הסחר הימי בעולם זורם דרך מספר קטן של מעברים צרים. כל אחד מהם הוא מטרה אסטרטגית עם ערך עצום. בואו נכיר אותם, ונראה מה קורה כשסוגרים אפילו אחד מהם."
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">נקודת חנק ימית (Maritime Chokepoint)</strong> — מיצר ים צר (מעבר בין יבשות או מדינות) שעובר דרכו חלק ענק מהסחר העולמי. מכיוון שאי אפשר באמת לעקוף אותו, הוא הופך ל<strong>מעבר כמעט בלעדי</strong>.
-            <strong className="text-fg block mt-1.5">נקודת התורפה:</strong> בגלל שהמעבר כל כך צר, אפילו ארגון טרור קטן עם כמה רקטות פשוטות יכול לחסום אותו לחלוטין. הכלכלה העולמית כולה יכולה להיתקע בגלל שחקן אחד קטן.
+      {/* Two SEPARATE feature cards side-by-side (no nesting). Both
+          carry the same orange accent treatment — eyebrow dot, h3
+          colour, divider — so they read as a matched pair. */}
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
+        {/* Card A — concept */}
+        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            עיקרון מנחה
           </div>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+            נקודת חנק ימית <span className="text-fg-muted font-medium text-base sm:text-lg">(Maritime Chokepoint)</span>
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            מיצר ים צר — מעבר בין יבשות או מדינות — שעובר דרכו חלק ענק מהסחר העולמי. מכיוון שאי אפשר באמת לעקוף אותו, הוא הופך ל<strong className="text-fg">מעבר כמעט בלעדי</strong>.
+          </p>
+        </div>
+
+        {/* Card B — vulnerability */}
+        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            נקודת התורפה
+          </div>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+            שחקן אחד קטן הופך למשבר עולמי
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            בגלל שהמעבר כל כך צר, אפילו ארגון טרור קטן עם כמה רקטות פשוטות יכול לחסום אותו לחלוטין. הכלכלה העולמית כולה יכולה להיתקע בגלל <strong className="text-fg">שחקן אחד</strong>.
+          </p>
         </div>
       </div>
 
-      {/* World map */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
-            מפת הסחר הימי העולמי
+      {/* Map + sidebar of chokepoint chips. Sidebar is the FIRST DOM
+          child so it lands on the RIGHT in RTL — the user explicitly
+          asked for the buttons to sit to the right of the map. */}
+      <div className="grid lg:grid-cols-[1fr_2fr] gap-4 mb-6 items-stretch">
+        {/* Sidebar — 5 chokepoint cards, vertical stack */}
+        <div className="flex flex-col gap-2">
+          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold text-brand-dark tracking-[0.2em] uppercase mb-1">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            5 מיצרים · בחר ובדוק
           </div>
-          <div className={cn(
-            'chip',
-            blocked.size === 0 ? 'border-status-ok/40 bg-status-ok/10 text-status-ok' :
-              blockedTradePct < 20 ? 'border-status-warn/40 bg-status-warn/10 text-status-warn' :
-                'border-status-danger/40 bg-status-danger/10 text-status-danger'
-          )}>
-            <Icon name={blocked.size === 0 ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
-            <span className="font-mono">{blockedTradePct}% מהסחר חסום</span>
-          </div>
-        </div>
-
-        <WorldMap
-          chokepoints={CHOKEPOINTS}
-          active={active}
-          blocked={blocked}
-          onSelect={setActive}
-        />
-
-        <div className="mt-3 text-[10px] text-fg-dim text-center">
-          לחצו על נקודת חנק במפה לפרטים · נסו לחסום נתיבים כדי לראות את ההשפעה
-        </div>
-      </div>
-
-      {/* Selected chokepoint details */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className="surface-elevated p-6 rounded-2xl mb-6"
-        >
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div>
-              <div className={cn('text-sm font-display font-semibold mb-0.5 tracking-wider', meta.color)}>
-                {meta.english}
-              </div>
-              <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-center">
-                <div className="text-[10px] font-mono text-fg-dim">מסחר עולמי</div>
-                <div className={cn('font-display font-bold text-2xl tabular-nums', meta.color)}>
-                  {meta.tradePct}<span className="text-sm">%</span>
-                </div>
-              </div>
+          {CHOKEPOINTS.map((c) => {
+            const isBlocked = blocked.has(c.id);
+            return (
               <button
-                onClick={() => toggleBlock(active)}
+                key={c.id}
+                onClick={() => toggleBlock(c.id)}
                 className={cn(
-                  'px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',
-                  blocked.has(active)
-                    ? 'bg-status-ok text-bg hover:scale-[0.99]'
-                    : 'bg-status-danger text-bg hover:scale-[1.02] active:scale-[0.98]'
+                  'group rounded-xl border p-3 text-right transition-all flex items-center gap-3 cursor-pointer',
+                  isBlocked
+                    ? 'border-status-danger/60 bg-status-danger/8'
+                    : 'border-border bg-bg-elevated hover:border-accent/50 hover:bg-accent/[0.04]',
                 )}
+                aria-pressed={isBlocked}
               >
-                <Icon name={blocked.has(active) ? 'check' : 'bolt'} size={14} strokeWidth={2.5} />
-                {blocked.has(active) ? 'שחרר נתיב' : 'חסום נתיב'}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div className="surface p-3 rounded-lg">
-              <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">רוחב גיאוגרפי</div>
-              <div className="text-sm text-fg font-medium">{meta.width}</div>
-            </div>
-            <div className="surface p-3 rounded-lg">
-              <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">עומק / שוקע</div>
-              <div className="text-sm text-fg font-medium">{meta.depth}</div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', meta.color)}>מה עובר שם</div>
-              <p className="text-sm text-fg leading-relaxed">{meta.whatPasses}</p>
-            </div>
-            <div>
-              <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">איומים</div>
-              <p className="text-sm text-fg-muted leading-relaxed">{meta.threats}</p>
-            </div>
-            <div className="pt-3 border-t border-border-subtle">
-              <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">אירועים בולטים</div>
-              <p className="text-sm text-fg-muted leading-relaxed italic">{meta.incidents}</p>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      {/* All chokepoints grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-12">
-        {CHOKEPOINTS.map((c) => {
-          const isActive = active === c.id;
-          const isBlocked = blocked.has(c.id);
-          return (
-            <button
-              key={c.id}
-              onClick={() => setActive(c.id)}
-              className={cn(
-                'surface p-3 text-right transition-all rounded-xl',
-                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong',
-                isBlocked && 'border-status-danger/40 bg-status-danger/5'
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <div className={cn('size-2 rounded-full', isBlocked ? 'bg-status-danger' : 'bg-current', c.color)} />
-                <div className={cn('font-display font-bold text-xs leading-tight', isActive && c.color)}>
-                  {c.label}
+                <div className="min-w-0 flex-1">
+                  <div className="font-display font-bold text-sm leading-tight text-fg">
+                    {c.label}
+                  </div>
+                  <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
+                    {c.english}
+                  </div>
                 </div>
+                <div className={cn(
+                  'font-display font-bold text-base tabular-nums shrink-0 leading-none',
+                  isBlocked ? 'text-status-danger' : 'text-fg',
+                )}>
+                  {c.tradePct}<span className="text-xs">%</span>
+                </div>
+                {/* The block / unblock toggle — visible on every card,
+                    it's the diagram's main interaction. */}
+                <span
+                  className={cn(
+                    'shrink-0 inline-flex items-center justify-center size-8 rounded-md text-[11px] font-display font-bold transition-colors',
+                    isBlocked
+                      ? 'bg-status-ok text-bg-elevated'
+                      : 'bg-status-danger text-bg-elevated',
+                  )}
+                  aria-hidden
+                >
+                  <Icon name={isBlocked ? 'check' : 'bolt'} size={14} strokeWidth={2.5} />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Map column */}
+        <div className="surface-elevated bg-bg-accent/30 p-4 rounded-2xl overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+              מפת הסחר הימי העולמי
+            </div>
+            <div className={cn(
+              'chip',
+              blocked.size === 0 ? 'border-status-ok/40 bg-status-ok/10 text-status-ok' :
+                blockedTradePct < 20 ? 'border-status-warn/40 bg-status-warn/10 text-status-warn' :
+                  'border-status-danger/40 bg-status-danger/10 text-status-danger'
+            )}>
+              <Icon name={blocked.size === 0 ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
+              <span className="font-display font-semibold tracking-wide tabular-nums">{blockedTradePct}% מהסחר חסום</span>
+            </div>
+          </div>
+
+          <div className="flex-1">
+            <WorldMap
+              chokepoints={CHOKEPOINTS}
+              blocked={blocked}
+              onToggle={toggleBlock}
+            />
+          </div>
+
+          {/* Live impact stack — appears in the map area itself so the
+              cause (block) and the consequence (real-world headline)
+              sit side by side. When nothing is blocked, the tip text
+              invites the action. */}
+          {blocked.size === 0 ? (
+            <div className="mt-4 text-[11px] font-display font-medium tracking-wide text-fg-dim text-center">
+              לחצו על מיצר ברשימה או על המפה כדי לחסום נתיב ולראות את ההשפעה האמיתית
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+              <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-danger">
+                <span className="size-1.5 rounded-full bg-status-danger animate-pulse" aria-hidden />
+                השפעות פעילות · {blocked.size} מיצרים חסומים
               </div>
-              <div className="text-[10px] font-mono text-fg-dim">{c.english}</div>
-              <div className="text-[10px] font-mono text-fg mt-1">{c.tradePct}% סחר</div>
-            </button>
-          );
-        })}
+              <AnimatePresence initial={false}>
+                {CHOKEPOINTS.filter((c) => blocked.has(c.id)).map((c) => (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.25 }}
+                    className="w-full rounded-lg border border-status-danger/35 bg-status-danger/5 p-3 text-right"
+                  >
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <div className="inline-flex items-center gap-1.5">
+                        <Icon name="bolt" size={11} className="text-status-danger" />
+                        <span className="font-display font-bold text-sm text-fg">{c.label}</span>
+                      </div>
+                      <span className="font-display font-bold text-xs tabular-nums text-status-danger">
+                        −{c.tradePct}% מהסחר
+                      </span>
+                    </div>
+                    <div className="text-[12px] font-medium text-fg-muted leading-snug text-balance">
+                      {c.blockImpact.headline}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
       </div>
+
     </section>
   );
 }
 
 function WorldMap({
   chokepoints,
-  active,
   blocked,
-  onSelect,
+  onToggle,
 }: {
   chokepoints: Chokepoint[];
-  active: ChokepointId;
   blocked: Set<ChokepointId>;
-  onSelect: (id: ChokepointId) => void;
+  onToggle: (id: ChokepointId) => void;
 }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="ocean" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#cbd5e1" />
-          </linearGradient>
-        </defs>
+    <div className="relative w-full h-full min-h-[360px] rounded-xl overflow-hidden">
+      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+        {/* Subtle "map paper" grid — same family as the other maps
+            across topics 1-3 / 6 / 8. No coloured background; the
+            parent card carries the surface colour. */}
+        {Array.from({ length: 11 }).map((_, i) => (
+          <line
+            key={`v-${i}`}
+            x1={i * 10}
+            y1="0"
+            x2={i * 10}
+            y2="56"
+            className="stroke-border-subtle/40"
+            strokeWidth="0.08"
+          />
+        ))}
+        {Array.from({ length: 7 }).map((_, i) => (
+          <line
+            key={`h-${i}`}
+            x1="0"
+            y1={i * 8}
+            x2="100"
+            y2={i * 8}
+            className="stroke-border-subtle/40"
+            strokeWidth="0.08"
+          />
+        ))}
 
-        <rect x="0" y="0" width="100" height="56" fill="url(#ocean)" />
+        {/* Continents — warm sand silhouettes; no per-shape stroke so
+            they read as one terrain wash rather than seven blobs. */}
+        <g className="fill-terrain-sand/35">
+          <path d="M5 18 L18 14 L26 22 L24 32 L18 38 L10 42 L5 38 L4 28 Z" />
+          <path d="M22 38 L28 38 L30 46 L26 54 L24 54 L21 46 Z" />
+          <path d="M44 18 L52 14 L56 18 L54 26 L48 30 L42 28 L42 22 Z" />
+          <path d="M46 30 L54 28 L58 32 L60 42 L56 50 L50 52 L46 48 L44 38 Z" />
+          <path d="M56 22 L70 20 L82 22 L88 28 L86 36 L80 40 L72 36 L64 32 L58 32 Z" />
+          <path d="M74 40 L82 42 L84 48 L80 52 L74 50 L72 44 Z" />
+          <path d="M82 50 L90 50 L92 54 L86 54 Z" />
+        </g>
 
-        {/* Simplified continents */}
-        {/* North America */}
-        <path d="M5 18 L18 14 L26 22 L24 32 L18 38 L10 42 L5 38 L4 28 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-        {/* South America */}
-        <path d="M22 38 L28 38 L30 46 L26 54 L24 54 L21 46 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-        {/* Europe */}
-        <path d="M44 18 L52 14 L56 18 L54 26 L48 30 L42 28 L42 22 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-        {/* Africa */}
-        <path d="M46 30 L54 28 L58 32 L60 42 L56 50 L50 52 L46 48 L44 38 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-        {/* Middle East / Asia */}
-        <path d="M56 22 L70 20 L82 22 L88 28 L86 36 L80 40 L72 36 L64 32 L58 32 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-        {/* Southeast Asia */}
-        <path d="M74 40 L82 42 L84 48 L80 52 L74 50 L72 44 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-        {/* Australia */}
-        <path d="M82 50 L90 50 L92 54 L86 54 Z" className="fill-terrain-sand/40 stroke-terrain-sand/70" strokeWidth="0.2" />
-
-        {/* Major shipping lanes */}
+        {/* Major shipping lanes — neutral sage dash; the orange
+            travelling blip is the only colour accent on the route. */}
         {[
-          'M14 38 Q 22 45 28 50', // Americas
-          'M30 40 Q 35 36 50 38 Q 60 39 72 45 Q 78 48 84 50', // South route
-          'M48 26 Q 52 32 55 38 Q 58 44 56 47', // Med to Suez
-          'M55 38 Q 60 40 70 42 Q 78 45 84 50', // Asia route
+          'M14 38 Q 22 45 28 50',
+          'M30 40 Q 35 36 50 38 Q 60 39 72 45 Q 78 48 84 50',
+          'M48 26 Q 52 32 55 38 Q 58 44 56 47',
+          'M55 38 Q 60 40 70 42 Q 78 45 84 50',
         ].map((d, i) => (
           <path
             key={i}
             d={d}
             fill="none"
-            className="stroke-accent"
-            strokeWidth="0.3"
-            strokeDasharray="1 0.8"
-            opacity="0.5"
+            className="stroke-brand-dark/35"
+            strokeWidth="0.25"
+            strokeDasharray="0.9 0.7"
           />
         ))}
 
-        {/* Animated ship blip */}
         <motion.circle
-          r="0.6"
+          r="0.7"
           className="fill-accent"
           animate={{ offsetDistance: ['0%', '100%'] }}
           transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
@@ -326,78 +400,70 @@ function WorldMap({
           }}
         />
 
-        {/* Chokepoint markers */}
+        {/* Chokepoint markers — each marker is itself the toggle.
+            Blocked markers turn red with an X; unblocked are sage.
+            Hover ring on un-blocked invites the click. */}
         {chokepoints.map((c) => {
-          const isActive = active === c.id;
           const isBlocked = blocked.has(c.id);
           return (
             <g
               key={c.id}
-              onClick={() => onSelect(c.id)}
+              onClick={() => onToggle(c.id)}
               style={{ cursor: 'pointer' }}
+              className="group"
             >
-              {/* Pulse ring on active or blocked */}
-              {(isActive || isBlocked) && (
+              {isBlocked && (
                 <circle
                   cx={c.position.x}
                   cy={c.position.y}
                   r="3"
                   fill="none"
-                  className={isBlocked ? 'stroke-status-danger' : 'stroke-accent'}
-                  strokeWidth="0.3"
+                  className="stroke-status-danger"
+                  strokeWidth="0.35"
                 >
                   <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" values="0.9;0;0.9" dur="2s" repeatCount="indefinite" />
                 </circle>
               )}
 
-              {/* Marker */}
               <circle
                 cx={c.position.x}
                 cy={c.position.y}
-                r={isActive ? 1.6 : 1.2}
+                r="1.6"
                 className={cn(
-                  isBlocked ? 'fill-status-danger stroke-status-danger' : 'stroke-current',
-                  c.color
+                  'transition-all',
+                  isBlocked
+                    ? 'fill-status-danger'
+                    : 'fill-brand-dark group-hover:fill-accent',
                 )}
                 stroke="#ffffff"
-                strokeWidth="0.4"
+                strokeWidth="0.5"
               />
 
-              {/* X mark on blocked */}
               {isBlocked && (
                 <g>
-                  <line x1={c.position.x - 0.9} y1={c.position.y - 0.9} x2={c.position.x + 0.9} y2={c.position.y + 0.9} className="stroke-bg" strokeWidth="0.5" strokeLinecap="round" />
-                  <line x1={c.position.x - 0.9} y1={c.position.y + 0.9} x2={c.position.x + 0.9} y2={c.position.y - 0.9} className="stroke-bg" strokeWidth="0.5" strokeLinecap="round" />
+                  <line x1={c.position.x - 0.9} y1={c.position.y - 0.9} x2={c.position.x + 0.9} y2={c.position.y + 0.9} className="stroke-bg-elevated" strokeWidth="0.55" strokeLinecap="round" />
+                  <line x1={c.position.x - 0.9} y1={c.position.y + 0.9} x2={c.position.x + 0.9} y2={c.position.y - 0.9} className="stroke-bg-elevated" strokeWidth="0.55" strokeLinecap="round" />
                 </g>
               )}
 
-              {/* Label */}
+              {/* Single name label — below the marker only. Red when
+                  blocked, dark fg otherwise. */}
               <text
                 x={c.position.x}
-                y={c.position.y - 3}
+                y={c.position.y + 4}
                 textAnchor="middle"
-                className={cn('font-display font-bold', isBlocked ? 'fill-status-danger' : c.color)}
-                fontSize="2.4"
+                className={cn(
+                  'font-display font-bold pointer-events-none',
+                  isBlocked ? 'fill-status-danger' : 'fill-fg',
+                )}
+                fontSize="2.3"
                 paintOrder="stroke"
                 stroke="#ffffff"
-                strokeWidth="0.85"
+                strokeWidth="0.95"
                 strokeLinejoin="round"
               >
                 {c.label}
-              </text>
-              <text
-                x={c.position.x}
-                y={c.position.y + 4.5}
-                textAnchor="middle"
-                className="fill-fg-dim font-display font-bold"
-                fontSize="1.8"
-                paintOrder="stroke"
-                stroke="#ffffff"
-                strokeWidth="0.7"
-                strokeLinejoin="round"
-              >
-                {c.tradePct}%
               </text>
             </g>
           );
