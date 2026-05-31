@@ -150,25 +150,41 @@ export function VegetationScene() {
 
       {/* 4 vegetation types */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {VEGETATION.map((v) => {
+        {VEGETATION.map((v, i) => {
           const isActive = active === v.id;
           return (
             <button
               key={v.id}
+              type="button"
               onClick={() => setActive(v.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl flex flex-col gap-2',
-                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
+                'surface p-4 text-right transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden',
+                isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
+              {isActive && (
+                <motion.span
+                  layoutId="t5-veg-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                />
+              )}
               <VegSilhouette density={v.density} />
-              <div className="flex items-baseline justify-between">
-                <div className={cn('font-display font-bold leading-tight', isActive && 'text-accent')}>
-                  {v.label}
+              <div className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+                    isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-bold text-base text-fg leading-tight">
+                    {v.label}
+                  </div>
+                  <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{v.english} · {v.height}</div>
                 </div>
-                <div className="text-[10px] font-mono text-fg-dim">{v.height}</div>
               </div>
-              <div className="text-[10px] font-mono text-fg-dim">{v.english}</div>
             </button>
           );
         })}
@@ -185,7 +201,7 @@ export function VegetationScene() {
         >
           <div className="flex items-baseline justify-between mb-3 flex-wrap gap-3">
             <h3 className="font-display font-bold text-2xl leading-tight">{meta.label}</h3>
-            <div className="text-xs font-mono text-fg-dim">{meta.english} · {meta.height}</div>
+            <div className="text-xs font-display font-medium tracking-wide text-fg-dim">{meta.english} · {meta.height}</div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-3 mb-3">
@@ -224,22 +240,36 @@ export function VegetationScene() {
           return (
             <button
               key={a.id}
+              type="button"
               onClick={() => setActiveAg(a.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl',
-                isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
+                'surface p-4 text-right transition-all rounded-xl relative overflow-hidden',
+                isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
-              <div className="flex items-center gap-3 mb-2">
-                <Icon name={a.icon} size={28} className={cn('shrink-0', isActive ? 'text-accent' : 'text-fg-dim')} />
-                <div>
-                  <div className={cn('font-display font-bold text-sm leading-tight', isActive && 'text-accent')}>
+              {isActive && (
+                <motion.span
+                  layoutId="t5-ag-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                />
+              )}
+              <div className="flex items-start gap-3 mb-2">
+                <span
+                  className={cn(
+                    'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                    isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+                  )}
+                >
+                  <Icon name={a.icon} size={20} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-bold text-base text-fg leading-tight">
                     {a.label}
                   </div>
-                  <div className="text-[10px] font-mono text-fg-dim mt-0.5">{a.english}</div>
+                  <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{a.english}</div>
                 </div>
               </div>
-              <div className="text-[11px] text-fg-dim">{a.examples}</div>
+              <div className="text-xs text-fg-muted leading-relaxed">{a.examples}</div>
             </button>
           );
         })}
@@ -299,16 +329,16 @@ export function VegetationScene() {
 }
 
 function VegSilhouette({ density }: { density: number }) {
-  const colors = ['#a3b18a', '#90a173', '#6d8254', '#3f5839'];
+  // Map to palette tokens: terrain-olive=#7a8a3f, brand=#749C75, brand-dark=#5B7C5C, terrain-ridge=#5a6b4a
+  const colors = ['#7a8a3f', '#749C75', '#5B7C5C', '#5a6b4a'];
   const color = colors[density - 1];
-  const groundColor = '#dbe5d4';
 
   return (
     <div className="aspect-[2/1] relative w-full">
       <svg viewBox="0 0 100 50" className="w-full h-full rounded-lg">
-        <rect x="0" y="0" width="100" height="50" fill={groundColor} />
+        <rect x="0" y="0" width="100" height="50" className="fill-bg-accent" />
         {/* Ground line */}
-        <line x1="0" y1="42" x2="100" y2="42" stroke="#94a3b8" strokeWidth="0.3" opacity="0.4" />
+        <line x1="0" y1="42" x2="100" y2="42" className="stroke-border-strong" strokeWidth="0.3" opacity="0.4" />
 
         {density === 1 && (
           // herbaceous: tiny strokes
@@ -367,7 +397,7 @@ function VegSilhouette({ density }: { density: number }) {
             const x = 8 + (i * 16);
             return (
               <g key={i}>
-                <line x1={x} y1="42" x2={x} y2="30" stroke="#574133" strokeWidth="1" />
+                <line x1={x} y1="42" x2={x} y2="30" className="stroke-fg" strokeWidth="1" />
                 <ellipse cx={x} cy="22" rx="7" ry="10" fill={color} opacity="0.95" />
               </g>
             );

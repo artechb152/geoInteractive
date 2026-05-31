@@ -232,25 +232,14 @@ className="aspect-[4/3]"
 function View3D() {
 return (
  <svg viewBox="0 0 100 75" className="w-full h-full">
- <defs>
- <linearGradient id="hill3d" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor="#7a8a3f" stopOpacity="0.9" />
- <stop offset="100%" stopColor="#5a6b4a" stopOpacity="0.5" />
- </linearGradient>
- <linearGradient id="hill3d-back" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor="#5a6b4a" stopOpacity="0.7" />
- <stop offset="100%" stopColor="#3a4452" stopOpacity="0.4" />
- </linearGradient>
- </defs>
-
  {/* Sky */}
  <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
  {/* Back ridges */}
- <path d="M0 50 L25 32 L45 42 L65 28 L85 38 L100 30 L100 75 L0 75 Z" fill="url(#hill3d-back)" />
+ <path d="M0 50 L25 32 L45 42 L65 28 L85 38 L100 30 L100 75 L0 75 Z" className="fill-terrain-ridge/55" />
 
  {/* Front mountain */}
- <path d="M0 60 L20 45 L40 38 L55 25 L70 35 L85 48 L100 55 L100 75 L0 75 Z" fill="url(#hill3d)" />
+ <path d="M0 60 L20 45 L40 38 L55 25 L70 35 L85 48 L100 55 L100 75 L0 75 Z" className="fill-terrain-olive/75" />
 
  {/* Ridge lines */}
  <path d="M0 60 L20 45 L40 38 L55 25 L70 35 L85 48 L100 55" fill="none" className="stroke-fg" strokeWidth="0.3" opacity="0.4" />

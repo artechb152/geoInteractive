@@ -136,7 +136,7 @@ export function CoverScene() {
               : 'border-status-warn/40 bg-status-warn/10 text-status-warn'
           )}>
             <Icon name={correctCount === ITEMS.length ? 'check' : 'spark'} size={14} strokeWidth={2.5} />
-            <span className="font-mono">{correctCount}/{ITEMS.length} נכון</span>
+            <span className="font-display font-medium tracking-wide">{correctCount}/{ITEMS.length} נכון</span>
           </div>
         )}
       </div>

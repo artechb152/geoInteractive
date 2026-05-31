@@ -114,27 +114,40 @@ export function EngineeringScene() {
               <div
                 key={m.id}
                 className={cn(
-                  'surface overflow-hidden transition-colors',
-                  isActive ? `${m.border} ${m.bg}` : 'hover:border-border-strong'
+                  'surface overflow-hidden transition-colors relative',
+                  isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
                 )}
               >
+                {isActive && (
+                  <motion.span
+                    layoutId="t5-eng-bar"
+                    className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => handleClick(m.id)}
                   aria-expanded={isExpanded}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  <Icon name={m.icon} size={28} className={cn('shrink-0 transition-all', isActive ? m.color : 'text-fg-dim')} />
+                  <span
+                    className={cn(
+                      'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                      isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+                    )}
+                  >
+                    <Icon name={m.icon} size={20} />
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-bold leading-tight', isActive && m.color)}>
+                    <div className="font-display font-bold text-base text-fg leading-tight">
                       {m.label}
                     </div>
-                    <div className="text-[10px] font-mono text-fg-dim mt-0.5">{m.english}</div>
+                    <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{m.english}</div>
                   </div>
                   <motion.span
                     animate={{ rotate: isExpanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', isExpanded ? m.color : 'text-fg-dim')}
+                    className={cn('shrink-0 inline-flex', isExpanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
                       width="18"
@@ -161,8 +174,8 @@ export function EngineeringScene() {
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className={cn('px-4 pb-4 pt-1 border-t', m.border)}>
-                        <div className={cn('text-sm font-display font-semibold mt-3 mb-2 tracking-wider', m.color)}>
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
                           {m.english}
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
@@ -249,13 +262,7 @@ function EngineeringStage({ mode }: { mode: Mode }) {
   return (
     <div className="aspect-[4/3] relative">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="ground-eng" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground-eng)" />
+        <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
         {/* Background ridges */}
         <path d="M0 55 L20 40 L40 50 L60 35 L80 45 L100 38 L100 75 L0 75 Z" className="fill-terrain-sand/15" />

@@ -104,13 +104,30 @@ export function KillChainScene() {
         intro="כל תקיפה מורכבת משרשרת של 4 שלבים. כל שלב מחובר לשני בעזרת חוט דק אחד — קו הראייה (LOS). אם החוט הזה נחתך באמצע, כל השרשרת קורסת. בואו נבין איך זה עובד."
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">שרשרת התקיפה (Kill Chain)</strong> — תהליך חובה של 4 שלבים שמתחיל ברגע שמחפשים את המטרה, ומסתיים רק כשווידאנו שהיא הושמדה.
-            <strong className="text-fg block mt-1.5">הסוד:</strong> אי אפשר לדלג על שלבים! אם איבדנו קו ראייה (LOS) בשלב 2, השלבים הבאים מתבטלים. לכן, מנתח שטח חכם בודק מראש שיש לו קו ראייה בכל אחד מהשלבים.
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            השרשרת
           </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            Kill Chain · 4 שלבי חובה
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            תהליך מחייב של ארבעה שלבים שמתחיל ברגע שמחפשים את המטרה ומסתיים רק כשווידאנו שהיא הושמדה. כל שלב חייב להסתיים בהצלחה כדי שאפשר יהיה לעבור לבא אחריו.
+          </p>
+        </div>
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            הסוד
+          </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            אסור לדלג על שלבים
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            אם איבדנו קו ראייה (LOS) בשלב 2 — כל השלבים הבאים מתבטלים. לכן, מנתח שטח חכם בודק <strong className="text-fg">מראש</strong> שיש לו קו ראייה רציף בכל אחד מארבעת השלבים.
+          </p>
         </div>
       </div>
 
@@ -146,7 +163,7 @@ export function KillChainScene() {
                   <div className={cn('font-display font-bold text-xs sm:text-sm leading-tight text-center', isActive && s.color)}>
                     {s.label}
                   </div>
-                  <div className="text-[9px] font-mono text-fg-dim text-center hidden sm:block">{s.english}</div>
+                  <div className="text-[9px] font-display font-medium tracking-wide text-fg-dim text-center hidden sm:block">{s.english}</div>
                 </button>
                 {/* Connector arrow (between stages, but not after the last one) */}
                 {i < STAGES.length - 1 && (
@@ -265,13 +282,6 @@ function CoverageCellViz() {
     <div className="aspect-[4/3] relative">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <defs>
-          {/* Coverage fill — same brand colour for all three sensors. Combined
-              with mix-blend-mode: multiply, overlapping zones naturally darken,
-              which is exactly the "stronger tracking where two sensors see" idea. */}
-          <radialGradient id="cov-fill" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgb(116, 156, 117)" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="rgb(116, 156, 117)" stopOpacity="0.05" />
-          </radialGradient>
           {/* Diagonal hatch for the dead zone — clearly different texture */}
           <pattern id="dead-hatch" patternUnits="userSpaceOnUse" width="3" height="3" patternTransform="rotate(45)">
             <rect width="3" height="3" className="fill-status-danger/12" />
@@ -289,11 +299,21 @@ function CoverageCellViz() {
           </g>
         ))}
 
-        {/* (1) Coverage fills — multiply blending makes overlaps darker, so the
-            learner SEES that overlap regions have stronger coverage. */}
+        {/* (1) Coverage fills — same brand colour for all three sensors.
+            Combined with mix-blend-mode: multiply, overlapping zones naturally
+            darken, which is exactly the "stronger tracking where two sensors
+            see" idea. */}
         <g style={{ mixBlendMode: 'multiply' }}>
           {sensors.map((s) => (
-            <ellipse key={s.id} cx={s.x} cy={s.y} rx={s.rx} ry={s.ry} fill="url(#cov-fill)" />
+            <ellipse
+              key={s.id}
+              cx={s.x}
+              cy={s.y}
+              rx={s.rx}
+              ry={s.ry}
+              className="fill-brand"
+              opacity="0.35"
+            />
           ))}
         </g>
 

@@ -207,7 +207,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
           <SupplyChainStage view={view} />
         </div>
       </div>
@@ -244,14 +244,7 @@ function SupplyChainStage({ view }: { view: View }) {
   return (
     <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="ground-8" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground-8)" />
+        {/* Parent card carries `bg-bg-accent/30`; no internal background fill. */}
 
         {/* Terrain hints */}
         <path d="M0 58 L25 50 L45 55 L65 48 L85 52 L100 50 L100 75 L0 75 Z" className="fill-terrain-sand/20" />

@@ -122,7 +122,7 @@ export function ViewshedScene() {
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מפת שטחים גלויים · {mode === 'single' ? 'תצפיתן אחד' : `${observers.length} תצפיתנים יחד`}
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-mono text-fg-dim">
+            <div className="flex items-center gap-3 text-[10px] font-display font-medium tracking-wide text-fg-dim">
               <span className="flex items-center gap-1">
                 <span className="size-2 bg-status-ok rounded-sm" /> גלוי {coverage}%
               </span>
@@ -178,7 +178,7 @@ export function ViewshedScene() {
                 onClick={addObserver}
                 disabled={observers.length >= 3}
                 className={cn(
-                  'text-[10px] font-mono px-2 py-1 rounded-md border transition-colors',
+                  'text-[10px] font-display font-medium tracking-wide px-2 py-1 rounded-md border transition-colors',
                   observers.length >= 3
                     ? 'border-border text-fg-dim cursor-not-allowed'
                     : 'border-accent/40 text-accent hover:bg-accent/5'
@@ -213,7 +213,7 @@ export function ViewshedScene() {
                         )}
                       />
                       <span className="text-xs font-medium">{obs.label}</span>
-                      <span className="text-[10px] font-mono text-fg-dim ms-auto">
+                      <span className="text-[10px] font-display font-medium tracking-wide text-fg-dim ms-auto">
                         ({obs.x}, {obs.y})
                       </span>
                     </button>

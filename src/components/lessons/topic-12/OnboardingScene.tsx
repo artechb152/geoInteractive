@@ -241,16 +241,9 @@ function GISStage({ view }: { view: View }) {
   const showDecision = view === 'decision';
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-bg-accent">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="ground-13" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground-13)" />
+        <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
         {/* Base map — terrain (always visible) */}
         <path d="M0 50 L20 40 L40 48 L60 38 L80 45 L100 42 L100 75 L0 75 Z" className="fill-terrain-sand/20" />

@@ -108,20 +108,39 @@ title={
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         {SHAPES.map((s) => {
           const active = s.id === shapeId;
+          const badgeChar = s.steepnessHint === 'gentle' ? '↘' : s.steepnessHint === 'steep' ? '↑' : '!';
+          const subtitle =
+            s.steepnessHint === 'gentle'
+              ? 'מדרון נוח'
+              : s.steepnessHint === 'steep'
+              ? 'תלול ומאתגר'
+              : 'חסימה / מצוק';
           return (
             <button
               key={s.id}
               onClick={() => setShapeId(s.id)}
               className={cn(
-                'surface p-5 text-right transition-all rounded-xl relative overflow-hidden',
-                active ? 'border-accent bg-accent/5' : 'hover:border-border-strong opacity-80 hover:opacity-100'
+                'surface p-4 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
+                active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
               )}
             >
-              <div className="font-display font-bold text-lg mb-1">{s.label}</div>
-              <div className={cn('text-sm font-display font-semibold tracking-wider font-bold', active ? 'text-accent' : 'text-fg-muted')}>
-                {s.steepnessHint === 'gentle' && '↘ מדרון נוח'}
-                {s.steepnessHint === 'steep' && '↑ תלול ומאתגר'}
-                {s.steepnessHint === 'cliff' && '! חסימה / מצוק'}
+              {active && (
+                <motion.span
+                  layoutId="t2-shape-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                />
+              )}
+              <span
+                className={cn(
+                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold',
+                  active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+                )}
+              >
+                {badgeChar}
+              </span>
+              <div className="flex-1 min-w-0 text-right">
+                <div className="font-display font-bold text-base text-fg leading-tight">{s.label}</div>
+                <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{subtitle}</div>
               </div>
             </button>
           );
@@ -180,10 +199,12 @@ function SlicedHill({ activeRing }: { activeRing: number | null }) {
                 cy={s.y}
                 rx={s.w / 2}
                 ry={s.w / 6}
-                className={cn(s.color, 'transition-all duration-300', isActive && 'fill-accent/60')}
-                stroke="currentColor"
+                className={cn(
+                  s.color,
+                  'transition-all duration-300',
+                  isActive ? 'fill-accent/60 stroke-accent' : 'stroke-terrain-olive/60'
+                )}
                 strokeWidth="0.4"
-                style={{ color: isActive ? '#D4A72C' : 'rgba(58, 68, 82, 0.5)' }}
               />
               <text
                 x={50 + s.w / 2 + 5}

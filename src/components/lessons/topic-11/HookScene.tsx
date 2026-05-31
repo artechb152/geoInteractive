@@ -78,30 +78,29 @@ function BackdropMap() {
           d="M 30 25 L 65 22 L 72 30 L 70 50 L 65 70 L 55 80 L 35 78 L 28 65 L 30 45 Z"
           fill="none"
           className="stroke-accent-hot"
-          strokeWidth="0.5"
+          strokeWidth="0.4"
           strokeDasharray="2 1.5"
           initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.5 }}
+          animate={{ pathLength: 1, opacity: 0.25 }}
           transition={{ duration: 2.5, delay: 0.5 }}
         />
 
-        {/* Capital / heart of country */}
+        {/* Capital / heart of country — marker only, no overlapping
+            label (text used to sit right behind the H1 headline). */}
         <motion.g
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 1.5, duration: 0.4 }}
         >
-          <circle cx="48" cy="50" r="1.4" className="fill-accent" />
-          <circle cx="48" cy="50" r="3" fill="none" className="stroke-accent/50" strokeWidth="0.2">
+          <circle cx="48" cy="50" r="1.2" className="fill-accent" opacity="0.6" />
+          <circle cx="48" cy="50" r="3" fill="none" className="stroke-accent/30" strokeWidth="0.18">
             <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite" />
           </circle>
-          <text x="48" y="46" textAnchor="middle" className="fill-accent font-display font-bold font-bold" fontSize="2.4" paintOrder="stroke" stroke="#0a0f1a" strokeWidth="0.8" strokeLinejoin="round" opacity="0.7">
-            לב המדינה
-          </text>
         </motion.g>
 
-        {/* Threat markers along border */}
+        {/* Threat markers along border — muted so they don't fight the
+            headline copy. */}
         {[
           { cx: 70, cy: 32 },
           { cx: 65, cy: 75 },
@@ -114,7 +113,7 @@ function BackdropMap() {
             animate={{ scale: 1 }}
             transition={{ delay: 1.7 + i * 0.15, duration: 0.4 }}
           >
-            <circle cx={p.cx} cy={p.cy} r="0.8" className="fill-accent-hot" opacity="0.7" />
+            <circle cx={p.cx} cy={p.cy} r="0.7" className="fill-accent-hot" opacity="0.4" />
           </motion.g>
         ))}
 
@@ -136,6 +135,18 @@ function BackdropMap() {
         ))}
       </svg>
 
+      {/* Soft cream backdrop right behind the headline — bumps the
+          contrast of the title against the country silhouette and
+          dashed border without removing them. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255,251,247,0.94) 0%, rgba(255,251,247,0.65) 45%, transparent 80%)',
+        }}
+      />
+      {/* Bottom fade so the map dissolves into the page bg. */}
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />
     </div>
   );

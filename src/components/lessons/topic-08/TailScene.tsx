@@ -44,13 +44,30 @@ export function TailScene() {
         intro="להתקדם עמוק לשטח האויב דורש יותר מסתם אומץ – זה דורש חישוב קר. על כל קילומטר שנתקדם, נצטרך לשלוח עוד משאיות על הכביש כדי להעביר את הציוד, וכל משאית כזו הופכת למטרה קלה. בואו נראה איך זה עובד במספרים."
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">שיטת ה"דחיפה" (Push Logistics)</strong> — הציוד נשלח באופן רציף מהעורף אל החזית, כמו סרט נע. זה עובד מצוין כשאנחנו בשטח שלנו. אבל כשאנחנו מתקדמים לעומק שטח האויב, קו האספקה הארוך הזה הופך לנקודת תורפה רצינית.
-            <strong className="text-fg block mt-1.5">"ציידי לוגיסטיקה"</strong> — חוליות קטנות ומהירות של האויב שמסתובבות לנו מאחורי הגב. הן לא מנסות להילחם בכוח המרכזי שלנו בחזית, אלא פשוט תוקפות משאיות אספקה חסרות מגן בעורף. חוליה קטנה של 20 לוחמים יכולה לשתק כוח של 10,000 חיילים רק על ידי ניתוק המים והתחמושת שלהם.
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            השיטה
           </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            דחיפה · Push Logistics
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            הציוד נשלח באופן רציף מהעורף אל החזית, כמו <strong className="text-fg">סרט נע</strong>. עובד מצוין בשטח שלנו — אבל כשמתקדמים לעומק שטח האויב, הקו הארוך הופך לנקודת תורפה רצינית.
+          </p>
+        </div>
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            האיום
+          </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            "ציידי לוגיסטיקה"
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            חוליות קטנות ומהירות של האויב שמסתובבות מאחורי הגב שלנו. הן לא מנסות להילחם בכוח המרכזי בחזית — רק תוקפות משאיות אספקה. <strong className="text-fg">חוליה של 20 לוחמים יכולה לשתק כוח של 10,000 חיילים</strong>.
+          </p>
         </div>
       </div>
 
@@ -62,7 +79,7 @@ export function TailScene() {
           </div>
           <div className={cn('chip', sm.border, sm.bg, sm.color)}>
             <Icon name={status === 'safe' ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
-            <span className="font-mono">{sm.label}</span>
+            <span className="font-display font-medium tracking-wide">{sm.label}</span>
           </div>
         </div>
 
@@ -92,7 +109,7 @@ export function TailScene() {
               className="w-full accent-accent"
               aria-label="עומק חדירה"
             />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+            <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-1">
               <span>20</span>
               <span>150</span>
               <span>300</span>
@@ -180,7 +197,7 @@ export function TailScene() {
             <Icon name="arrow-left" size={32} className="text-accent shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-accent leading-tight">Push Logistics</div>
-              <div className="text-[10px] font-mono text-fg-dim">דחיפה מהעורף</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">דחיפה מהעורף</div>
             </div>
           </div>
           <p className="text-sm text-fg leading-relaxed mb-3">
@@ -198,7 +215,7 @@ export function TailScene() {
             <Icon name="arrow-right" size={32} className="text-accent-cool shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-accent-cool leading-tight">Pull Logistics</div>
-              <div className="text-[10px] font-mono text-fg-dim">משיכה (דרישה מהחזית)</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">משיכה (דרישה מהחזית)</div>
             </div>
           </div>
           <p className="text-sm text-fg leading-relaxed mb-3">
@@ -241,16 +258,9 @@ function TailViz({
   const securedEndX = baseX + ((frontX - baseX) * secured) / 100;
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent/40">
       <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="tail-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="56" fill="url(#tail-bg)" />
+        {/* Parent div carries `bg-bg-accent/40` — no internal gradient rect needed. */}
 
         {/* Background terrain */}
         <path d="M0 42 L25 38 L45 41 L65 36 L85 40 L100 38 L100 56 L0 56 Z" className="fill-terrain-sand/20" />

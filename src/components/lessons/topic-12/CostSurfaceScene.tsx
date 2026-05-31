@@ -153,13 +153,30 @@ title={
 intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל: מה הדרך הזולה ביותר מ-A ל-B? GIS עונה לך תוך 3 שניות — ובדרך כלל המסלול לא הקו הישר."
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">Cost Surface</strong> — ראסטר שבו כל פיקסל קיבל ציון"קושי לתנועה". <strong className="text-fg">עלות גבוהה</strong> = שיפוע, בוץ, נחל, איום. <strong className="text-fg">עלות נמוכה</strong> = כביש, שטח מוסתר.
- <strong className="text-fg block mt-1.5">Least-Cost Path</strong> — אלגוריתם שמחפש את הנתיב הזול ביותר. כמו"מים זורמים" — עוקף מכשולים, נדבק לדרך הקלה. <strong className="text-fg">תוצאה:</strong> מסלול אולי ארוך יותר במבט על — אבל מהיר, בטוח, וחסכוני יותר.
+ <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הקלט
  </div>
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ Cost Surface — ראסטר של "קושי לתנועה"
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ ראסטר שבו כל פיקסל קיבל ציון של קושי לתנועה. <strong className="text-fg">עלות גבוהה</strong> = שיפוע, בוץ, נחל, איום אש. <strong className="text-fg">עלות נמוכה</strong> = כביש סלול, שטח מוסתר, מסלול בטוח.
+ </p>
+ </div>
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הפלט
+ </div>
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ Least-Cost Path — אלגוריתם שזורם כמו מים
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ מחפש את הנתיב הזול ביותר מ-A ל-B. עוקף מכשולים, נדבק לדרך הקלה, ומגיע ליעד במסלול שעשוי להיראות ארוך יותר במבט על — אבל מהיר, בטוח וחסכוני יותר בפועל.
+ </p>
  </div>
  </div>
 
@@ -173,7 +190,7 @@ intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל
  </div>
  <div className="chip border-status-ok/40 bg-status-ok/10 text-status-ok">
  <Icon name="check" size={12} strokeWidth={2.5} />
- <span className="font-mono">חיסכון: {savings}%</span>
+ <span className="font-display font-medium tracking-wide">חיסכון: {savings}%</span>
  </div>
  </div>
 
@@ -181,7 +198,7 @@ intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל
  <CostMap cost={cost} path={lcp.path} start={start} end={end} showDirect={showDirect} />
  </div>
 
- <div className="mt-3 flex items-center gap-4 text-[10px] font-mono text-fg-dim flex-wrap">
+ <div className="mt-3 flex items-center gap-4 text-[11px] font-display font-medium tracking-wide text-fg-dim flex-wrap">
  <span className="flex items-center gap-1"><span className="size-2 bg-status-ok rounded-sm" /> עלות נמוכה</span>
  <span className="flex items-center gap-1"><span className="size-2 bg-status-warn rounded-sm" /> עלות בינונית</span>
  <span className="flex items-center gap-1"><span className="size-2 bg-status-danger rounded-sm" /> עלות גבוהה</span>
@@ -242,11 +259,11 @@ showDirect
 
  <div className="grid grid-cols-2 gap-2">
  <div className="surface p-3 rounded-lg text-center">
- <div className="text-[10px] font-mono text-fg-dim">עלות LCP</div>
+ <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">עלות LCP</div>
  <div className="font-display font-bold text-xl text-status-ok tabular-nums">{lcp.total.toFixed(0)}</div>
  </div>
  <div className="surface p-3 rounded-lg text-center">
- <div className="text-[10px] font-mono text-fg-dim">קו ישיר</div>
+ <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">קו ישיר</div>
  <div className="font-display font-bold text-xl text-status-danger tabular-nums">{directDist.toFixed(0)}</div>
  </div>
  </div>
@@ -297,17 +314,17 @@ if (cost[x][y] > maxCost) maxCost = cost[x][y];
  }
  }
 return (
- <div className="relative w-full h-full min-h-[260px] rounded-xl overflow-hidden" style={{ backgroundColor: 'rgba(34, 211, 238, 0.12)' }}>
+ <div className="relative w-full h-full min-h-[260px] rounded-xl overflow-hidden bg-bg-accent">
  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
  {/* Cost heatmap */}
  {Array.from({ length: W }).map((_, x) =>
 Array.from({ length: H }).map((_, y) => {
 const c = cost[x][y] / maxCost;
-const color =
-c > 0.7 ? '#dc2626' :
-c > 0.5 ? '#f59e0b' :
-c > 0.3 ? '#10b981' :
- '#22d3ee';
+const colorClass =
+c > 0.7 ? 'fill-status-danger' :
+c > 0.5 ? 'fill-status-warn' :
+c > 0.3 ? 'fill-status-ok' :
+ 'fill-accent-cool';
 return (
  <rect
 key={`${x}-${y}`}
@@ -315,7 +332,7 @@ x={x * cellW}
 y={y * cellH}
 width={cellW}
 height={cellH}
-fill={color}
+className={colorClass}
 opacity={0.15 + c * 0.5}
  />
  );

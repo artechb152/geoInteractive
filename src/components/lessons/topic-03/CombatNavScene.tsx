@@ -95,7 +95,7 @@ className={cn(
 isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  )}
  >
- <span className="font-mono text-sm font-bold">{i + 1}</span>
+ <span className="font-display font-bold text-sm">{i + 1}</span>
  </span>
  <div className="flex-1 min-w-0 text-right">
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
@@ -104,7 +104,7 @@ isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  <div className={cn('font-display font-bold leading-tight', isActive ? 'text-brand-dark' : 'text-fg')}>
  {m.label}
  </div>
- <div className="text-xs font-mono text-fg-dim mt-0.5">{m.english}</div>
+ <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{m.english}</div>
  </div>
  <motion.span
 animate={{ rotate: isActive ? 180 : 0 }}
@@ -270,19 +270,14 @@ function DeadReckoningVisual() {
 return (
  <div className="aspect-[4/3] sm:aspect-auto h-full relative">
  <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
- <defs>
- <radialGradient id="storm" cx="50%" cy="50%" r="60%">
- <stop offset="0%" stopColor="#3a4452" stopOpacity="0.3" />
- <stop offset="100%" stopColor="#11161f" stopOpacity="0.95" />
- </radialGradient>
- </defs>
  <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
  {/* Featureless desert */}
  <rect x="0" y="55" width="100" height="20" className="fill-terrain-sand/10" />
 
- {/* Sandstorm overlay */}
- <rect x="0" y="0" width="100" height="75" fill="url(#storm)" />
+ {/* Sandstorm overlay — palette-based haze */}
+ <rect x="0" y="0" width="100" height="75" className="fill-terrain-ridge/30" />
+ <rect x="0" y="0" width="100" height="75" className="fill-fg/40" />
 
  {/*"Dust particles" */}
  {Array.from({ length: 40 }).map((_, i) => {

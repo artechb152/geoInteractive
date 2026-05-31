@@ -18,17 +18,32 @@ title={
 intro="ניווט הוא לא ניחוש - הוא מדע של דיוק. הכל מתחיל ב'אזימוט': הכלי שמאפשר לכם לדעת בדיוק לאן ללכת, גם באמצע שום מקום ובחושך מוחלט."
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">מילון שטח מהיר:</strong>
- <ul className="mt-2 space-y-1 text-fg-muted">
- <li>· <strong className="text-fg">אזימוט (Azimuth)</strong> — הזווית המדויקת ליעד שלכם (0–360 מעלות). 0° זה צפון, 90° זה מזרח.</li>
- <li>· <strong className="text-fg">אזימוט חוזר (Back Azimuth)</strong> — הדרך המהירה והבטוחה הביתה. פשוט הופכים את הכיוון (מוסיפים או מחסירים 180°).</li>
- <li>· <strong className="text-fg">GPS-Denied</strong> — הרגע שבו הטכנולוגיה בוגדת בנו. כשהאויב משבש לוויינים או כשנמצאים מתחת לאדמה, חוזרים למפה ולמצפן.</li>
- </ul>
+ {/* Concept · matched pair feature cards */}
+ <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ השפה של הניווט
  </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+ אזימוט <span className="text-fg-muted font-medium text-base sm:text-lg">(Azimuth)</span>
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ הזווית המדויקת ליעד שלכם — <strong className="text-fg">בין 0° ל-360° מצפון</strong>. 0° זה צפון, 90° זה מזרח. ה"אזימוט החוזר" הוא פשוט הכיוון ההפוך (±180°) — הדרך הבטוחה הביתה.
+ </p>
+ </div>
+
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הרגע הקריטי
+ </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ GPS-Denied: כשהטכנולוגיה בוגדת
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ כשהאויב משבש את הלוויינים, או כשנמצאים מתחת לאדמה — <strong className="text-fg">חוזרים למפה ולמצפן</strong>. נווט טוב יודע לפעול גם כשכל המסכים כבים.
+ </p>
  </div>
  </div>
 
@@ -84,7 +99,7 @@ onChange={(e) => setAzimuth(Number(e.target.value))}
 className="w-full accent-accent"
 aria-label="אזימוט"
  />
- <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+ <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-1">
  <span>0° צפון</span>
  <span>90° מזרח</span>
  <span>180° דרום</span>
@@ -96,7 +111,7 @@ aria-label="אזימוט"
  אזימוט חוזר (הדרך חזרה)
  </div>
  <div className="flex items-center gap-3">
- <span className="font-mono text-fg-muted text-sm">
+ <span className="font-display font-medium tracking-wide text-fg-muted text-sm">
  {azimuth}° {azimuth >= 180 ? '−' : '+'} 180° =
  </span>
  <span className="font-display font-bold text-3xl tabular-nums text-accent-cool">
@@ -218,7 +233,7 @@ style={{ transformOrigin: '0 0' }}
  <circle cx="0" cy="0" r="0.7" className="fill-accent" />
  </svg>
 
- <div className="absolute bottom-2 inset-x-0 flex justify-center gap-3 text-[10px] font-mono">
+ <div className="absolute bottom-2 inset-x-0 flex justify-center gap-3 text-[10px] font-display font-medium tracking-wide">
  <span className="flex items-center gap-1 text-accent">
  <span className="size-2 bg-accent" /> אזימוט
  </span>
@@ -278,22 +293,38 @@ return (
 
  <div className="grid lg:grid-cols-[1fr_1fr] gap-6 items-stretch">
  <div className="space-y-3">
- <div className="grid grid-cols-3 gap-2">
- {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n]) => {
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+ {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n], i) => {
 const isActive = id === active;
 return (
  <button
 key={id}
 onClick={() => setActive(id)}
 className={cn(
- 'p-3 rounded-xl border-2 text-center transition-all',
-isActive ? `${n.border} ${n.bg}` : 'border-border bg-bg-card hover:border-border-strong'
+ 'surface p-3 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
+isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
  )}
  >
- <div className={cn('font-display font-bold text-sm leading-tight', isActive && n.color)}>
+ {isActive && (
+ <motion.span
+layoutId="t3-norths-bar"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+ )}
+ <span
+className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm tabular-nums',
+isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ {i + 1}
+ </span>
+ <div className="flex-1 min-w-0 text-right">
+ <div className="font-display font-bold text-base text-fg leading-tight">
  {n.label}
  </div>
- <div className="text-[9px] font-mono text-fg-dim mt-0.5">{n.english}</div>
+ <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{n.english}</div>
+ </div>
  </button>
  );
  })}
@@ -376,7 +407,7 @@ isActive ? 'opacity-100' : 'opacity-50'
  )}
  >
  <span className={cn('inline-block size-2.5 rounded-full', n.color)} style={{ backgroundColor: 'currentColor' }} />
- <span className={cn('font-mono font-bold whitespace-nowrap', n.color)}>{n.label}</span>
+ <span className={cn('font-display font-semibold tracking-wide whitespace-nowrap', n.color)}>{n.label}</span>
  </div>
  );
  })}

@@ -146,7 +146,7 @@ export function LOCScene() {
                     <div className="font-display font-semibold leading-tight text-fg">
                       {d.label}
                     </div>
-                    <div className="text-[10px] font-mono text-fg-dim mt-0.5">
+                    <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
                       {d.msrEffect === 'open'
                         ? 'MSR פתוח'
                         : d.msrEffect === 'partial'
@@ -226,7 +226,7 @@ export function LOCScene() {
               <Icon name={r.id === 'msr' ? 'truck' : 'compass'} size={32} className={cn(r.color, 'shrink-0')} />
               <div>
                 <div className={cn('font-display font-bold text-lg leading-tight', r.color)}>{r.label}</div>
-                <div className="text-[10px] font-mono text-fg-dim">{r.english}</div>
+                <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">{r.english}</div>
               </div>
             </div>
 

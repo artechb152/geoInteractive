@@ -94,13 +94,30 @@ export function InfrastructureScene() {
         intro="התשתיות האסטרטגיות של המדינה הן הנקודות שבהן נפגשים כל כלי התחבורה: ספינות, רכבות, משאיות ומטוסים. מי ששולט בצומת כזה מחזיק את המדינה בכיס שלו, ופגיעה בו יוצרת משבר לאומי מיידי."
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">מרכז תחבורה משולב (Intermodal Hub)</strong> — תחשבו על זה כ"תחנה המרכזית" של הלוגיסטיקה. זו נקודה גיאוגרפית אחת שבה מתחברים כולם: ים, רכבת, כביש ואוויר (למשל נמל ים שצמוד לתחנת רכבת ולידו כביש מהיר).
-            <strong className="text-fg block mt-1.5">המשמעות הצבאית:</strong> תקיפה מוצלחת על מרכז כזה לא סתם תוקעת את האספקה לחיילים – היא מסוגלת לשתק את הכלכלה של המדינה כולה. בגלל זה, המקומות האלה נחשבים ל<strong>"נכסים אסטרטגיים קריטיים"</strong> ושומרים עליהם מכל משמר.
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            המושג
           </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            מרכז תחבורה משולב · Intermodal Hub
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            "תחנה מרכזית" אחת שבה נפגשים כל כלי התחבורה: <strong className="text-fg">ים, רכבת, כביש ואוויר</strong>. לדוגמה — נמל ים שצמוד לתחנת רכבת ולידו כביש מהיר, כך שאפשר להעביר ארגז ממטוס ישר למשאית.
+          </p>
+        </div>
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            המשמעות הצבאית
+          </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            נכסים אסטרטגיים קריטיים
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            תקיפה מוצלחת על מרכז כזה לא רק תוקעת את האספקה לחיילים — היא משתקת את <strong className="text-fg">הכלכלה של המדינה כולה</strong>. לכן שומרים על המקומות האלו מכל משמר.
+          </p>
         </div>
       </div>
 
@@ -128,7 +145,7 @@ export function InfrastructureScene() {
                 )}
                 aria-hidden
               />
-              <span className="font-mono tabular-nums">
+              <span className="font-display font-medium tracking-wide tabular-nums">
                 יכולת העברה שנותרה · {remainingCapacity}%
               </span>
             </div>
@@ -156,7 +173,7 @@ export function InfrastructureScene() {
                 <Icon name={meta.icon} size={32} className="text-brand-dark shrink-0" />
                 <div>
                   <div className="font-display font-bold text-lg leading-tight text-fg">{meta.label}</div>
-                  <div className="text-[10px] font-mono text-fg-dim">{meta.english}</div>
+                  <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">{meta.english}</div>
                 </div>
               </div>
 
@@ -232,7 +249,7 @@ export function InfrastructureScene() {
             <Icon name="ship" size={32} className="text-terrain-sky shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-terrain-sky leading-tight">נמל מים עמוקים</div>
-              <div className="text-[10px] font-mono text-fg-dim">Deep-Water Port</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">Deep-Water Port</div>
             </div>
           </div>
           <p className="text-sm text-fg leading-relaxed mb-3">
@@ -257,7 +274,7 @@ export function InfrastructureScene() {
             <Icon name="layers" size={32} className="text-accent shrink-0" />
             <div>
               <div className="font-display font-bold text-lg text-accent leading-tight">מרכז תחבורה משולב (היברידי)</div>
-              <div className="text-[10px] font-mono text-fg-dim">Intermodal Hub</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">Intermodal Hub</div>
             </div>
           </div>
           <p className="text-sm text-fg leading-relaxed mb-3">

@@ -81,17 +81,30 @@ export function LOSScene() {
  intro="בעולם האמיתי, קו הראייה הוא קו דמיוני וישר שנמתח בינינו לבין המטרה. מספיק שמכשול אחד בדרך יחתוך את הקו הזה – והראייה נחסמת. כאן למטה תוכלו לשחק עם הנתונים ולראות בזמן אמת מתי רואים את המטרה ומתי היא נעלמת."
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">מילון קצר:</strong>
- <ul className="mt-2 space-y-1 text-fg-muted">
- <li>· <strong className="text-fg">LOS (Line of Sight)</strong> — קו הראייה. הקו הדמיוני והישר שמחבר בין התצפיתן (או המצלמה) לבין המטרה.</li>
- <li>· <strong className="text-fg">חסימת / שבירת LOS</strong> — מצב שבו הר (תבליט) או בניין (תכסית) חותכים את קו הראייה ומסתירים את המטרה.</li>
- <li>· <strong className="text-fg">קו נראות הדדית</strong> — הנקודה המדויקת שבה עוברים מהסתרה מוחלטת לחשיפה מלאה (כמו להדליק מתג של אור).</li>
- </ul>
+ <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+ <div className="surface-elevated p-5 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ מושג מפתח
  </div>
+ <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+ LOS · קו הראייה
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ הקו הדמיוני והישר שמחבר בין התצפיתן (או המצלמה) לבין המטרה. אם הוא נחתך באמצע על-ידי הר (תבליט) או בניין (תכסית) — אומרים ש<strong className="text-fg">"שברנו את ה-LOS"</strong> והמטרה מוסתרת.
+ </p>
+ </div>
+ <div className="surface-elevated p-5 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הרגע הקריטי
+ </div>
+ <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+ קו נראות הדדית
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ הנקודה המדויקת שבה עוברים מהסתרה מוחלטת לחשיפה מלאה — בלי שום שלב ביניים. עובד כמו <strong className="text-fg">מתג של אור</strong>: רגע אחד הסתרה גמורה, וברגע הבא מטרה גלויה לחלוטין.
+ </p>
  </div>
  </div>
 
@@ -217,7 +230,7 @@ export function LOSScene() {
  <Icon name={b.id === 'terrain' ? 'mountain' : 'layers'} size={32} className={cn('shrink-0', b.color)} />
  <div>
  <div className={cn('font-display font-bold text-lg leading-tight', b.color)}>{b.label}</div>
- <div className="text-[10px] font-mono text-fg-dim">{b.english}</div>
+ <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">{b.english}</div>
  </div>
  </div>
  <p className="text-sm text-fg leading-relaxed mb-3">{b.desc}</p>

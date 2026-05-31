@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 
 type Layer = 'physical' | 'fence' | 'sensors' | 'radar';
@@ -16,9 +22,6 @@ type LayerData = {
   capability: string;
   cost: string;
   replaces: string;
-  color: string;
-  bg: string;
-  border: string;
 };
 
 const LAYERS: LayerData[] = [
@@ -27,48 +30,44 @@ const LAYERS: LayerData[] = [
     label: 'רצועה מפורזת',
     english: 'Physical Buffer',
     icon: 'mountain',
-    capability: 'שטח פיזי ריק ברוחב קילומטרים ספורים. הכניסה לכוחות צבא אסורה, ולעיתים קרובות אין בו גם אזרחים.',
+    capability:
+      'שטח פיזי ריק ברוחב קילומטרים ספורים. הכניסה לכוחות צבא אסורה, ולעיתים קרובות אין בו גם אזרחים.',
     cost: 'תשלום במטבע של קרקע: דורש מהמדינה לוותר על שטח ריבוני.',
-    replaces: 'זהו בסיס ההגנה המסורתי. עצם קיום המרחק הוא מה שמעכב את האויב ומונע חיכוך סתמי.',
-    color: 'text-terrain-ridge',
-    bg: 'bg-terrain-ridge/10',
-    border: 'border-terrain-ridge/40',
+    replaces:
+      'זהו בסיס ההגנה המסורתי. עצם קיום המרחק הוא מה שמעכב את האויב ומונע חיכוך סתמי.',
   },
   {
     id: 'fence',
     label: 'גדר חכמה',
     english: 'Smart Fence',
     icon: 'shield',
-    capability: 'מכשול פיזי משולב בטכנולוגיה — מזהה ניסיונות טיפוס, חיתוך רשת או תנועה קרובה. מתריע מיד בזמן אמת.',
+    capability:
+      'מכשול פיזי משולב בטכנולוגיה — מזהה ניסיונות טיפוס, חיתוך רשת או תנועה קרובה. מתריע מיד בזמן אמת.',
     cost: 'כ-1 עד 3 מיליון דולר לכל קילומטר, פלוס עלויות תחזוקה גבוהות מאוד.',
-    replaces: 'מחליפה את הצורך בחייל שעומד פיזית על הקו. עם זאת, היא מתריעה רק כשנוגעים בה — כלומר לא מספקת עומק התרעתי.',
-    color: 'text-accent',
-    bg: 'bg-accent/10',
-    border: 'border-accent/40',
+    replaces:
+      'מחליפה את הצורך בחייל שעומד פיזית על הקו. עם זאת, היא מתריעה רק כשנוגעים בה — כלומר לא מספקת עומק התרעתי.',
   },
   {
     id: 'sensors',
     label: 'חיישנים סייסמיים',
     english: 'Seismic Sensors',
     icon: 'wave',
-    capability: 'חיישנים הקבורים באדמה (או פרוסים סביבה) שמזהים תנודות ורעידות. יודעים להבחין בין אדם הולך, רכב נוסע או חפירת מנהרה.',
+    capability:
+      'חיישנים הקבורים באדמה (או פרוסים סביבה) שמזהים תנודות ורעידות. יודעים להבחין בין אדם הולך, רכב נוסע או חפירת מנהרה.',
     cost: '200,000$ עד מיליון דולר לקילומטר. מחייב חיבור למערכת שליטה ובקרה (חמ"ל) מתקדמת.',
-    replaces: 'מחליפה סיורי שטח (פטרולים). מספקת "עיניים ואוזניים" שקופות על הקרקע בכיסוי של 24/7.',
-    color: 'text-accent-cool',
-    bg: 'bg-accent-cool/10',
-    border: 'border-accent-cool/40',
+    replaces:
+      'מחליפה סיורי שטח (פטרולים). מספקת "עיניים ואוזניים" שקופות על הקרקע בכיסוי של 24/7.',
   },
   {
     id: 'radar',
     label: 'רדאר ותצפית',
     english: 'Radar / Observation',
     icon: 'eye',
-    capability: '"לראות מעבר לגבעה". מכ"מים שחודרים עננים, בלוני תצפית ומצלמות חום, שסורקים למרחק של עשרות קילומטרים לתוך שטח האויב.',
+    capability:
+      '"לראות מעבר לגבעה". מכ"מים שחודרים עננים, בלוני תצפית ומצלמות חום, שסורקים למרחק של עשרות קילומטרים לתוך שטח האויב.',
     cost: '5 עד 50 מיליון דולר למערכת תצפית בודדת, בהתאם לטווח ולרזולוציה.',
-    replaces: 'זו ההחלפה האמיתית של עומק אסטרטגי. מאפשרת למדינה קטנה לזהות תנועות אויב הרבה לפני שהוא בכלל מתקרב לגבול שלה.',
-    color: 'text-accent-hot',
-    bg: 'bg-accent-hot/10',
-    border: 'border-accent-hot/40',
+    replaces:
+      'זו ההחלפה האמיתית של עומק אסטרטגי. מאפשרת למדינה קטנה לזהות תנועות אויב הרבה לפני שהוא בכלל מתקרב לגבול שלה.',
   },
 ];
 
@@ -105,17 +104,28 @@ const BUFFER_EXAMPLES = [
 export function BufferScene() {
   const [activeLayers, setActiveLayers] = useState<Set<Layer>>(new Set(['physical']));
 
-  const toggleLayer = (id: Layer) => {
-    setActiveLayers((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  // Accordion value (multi-open) is the SAME as the active layers — opening
+  // a panel turns the layer on in the viz, closing turns it off. One click,
+  // one mental model: each accordion IS its layer.
+  const accordionValue = Array.from(activeLayers);
+  const handleAccordionChange = (vals: string[]) => {
+    setActiveLayers(new Set(vals as Layer[]));
   };
 
-  const detectionRange = activeLayers.has('radar') ? 25 : activeLayers.has('sensors') ? 8 : activeLayers.has('fence') ? 1 : 0;
-  const reactionTime = activeLayers.has('radar') ? '15+ דקות' : activeLayers.has('sensors') ? '5–10 דקות' : activeLayers.has('fence') ? '1–2 דקות' : 'מיידי בלבד';
+  const detectionRange = activeLayers.has('radar')
+    ? 25
+    : activeLayers.has('sensors')
+      ? 8
+      : activeLayers.has('fence')
+        ? 1
+        : 0;
+  const reactionTime = activeLayers.has('radar')
+    ? '15+ דקות'
+    : activeLayers.has('sensors')
+      ? '5–10 דקות'
+      : activeLayers.has('fence')
+        ? '1–2 דקות'
+        : 'מיידי בלבד';
 
   return (
     <section id="scene-buffer" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -127,92 +137,135 @@ export function BufferScene() {
             איך <span className="text-accent-hover">טכנולוגיה מנסה להחליף</span> מרחק וגיאוגרפיה?
           </>
         }
-        intro={`מדינה צרה לא יכולה להרשות לעצמה אזור הפרדה של 100 ק"מ. במקום זה, היא משתמשת במודיעין וסנסורים: גדרות חכמות, חיישני קרקע ומערכות רדאר. הטכנולוגיה מנסה לקנות את מה שהגיאוגרפיה לא נותנת — זמן התרעה. הדליקו וכיבו את השכבות כדי לראות איך זה עובד.`}
+        intro={`מדינה צרה לא יכולה להרשות לעצמה אזור הפרדה של 100 ק"מ. במקום זה, היא משתמשת במודיעין וסנסורים: גדרות חכמות, חיישני קרקע ומערכות רדאר. הטכנולוגיה מנסה לקנות את מה שהגיאוגרפיה לא נותנת — זמן התרעה. לחצו על שכבה ברשימה — היא תיפתח להסבר ותידלק בתצוגה.`}
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">אזור חיץ (Buffer Zone)</strong> — שטח "נקי" מצבא (מפורז) או דליל מאוד בכוחות, שמפריד בין שתי מדינות עוינות. המטרה שלו כפולה: <strong className="text-fg">למנוע חיכוך יומיומי</strong>, ו<strong className="text-fg">לקלוט את המכה הראשונה</strong> במקרה של פלישה כדי לתת התרעה מוקדמת.
-            <strong className="text-fg block mt-1.5">ומה עושים כשאין שטח?</strong> פונים לטכנולוגיה. צבאות מתקדמים פורסים "שכבות איסוף" (גדרות חכמות, מכ"מים, לוויינים) שיוצרות "אזור חיץ וירטואלי" ומספקות התרעה מרחוק, במקום להסתמך על מרחק פיזי.
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-6 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            הגדרת היסוד
           </div>
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+            אזור חיץ — שטח שמרכך את המכה הראשונה
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            שטח "נקי" מצבא (מפורז) או דליל מאוד בכוחות, שמפריד בין שתי מדינות עוינות. המטרה שלו כפולה: <strong className="text-fg">למנוע חיכוך יומיומי</strong>, ו<strong className="text-fg">לקלוט את המכה הראשונה</strong> במקרה של פלישה כדי לתת התרעה מוקדמת.
+          </p>
+        </div>
+        <div className="surface-elevated p-6 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            כשאין שטח
+          </div>
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+            אזור חיץ וירטואלי — טכנולוגיה במקום מרחק
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            צבאות מתקדמים פורסים "שכבות איסוף" (גדרות חכמות, מכ"מים, לוויינים) שיוצרות "אזור חיץ וירטואלי" ומספקות התרעה מרחוק, במקום להסתמך על מרחק פיזי שאין למדינה.
+          </p>
         </div>
       </div>
 
-      {/* Buffer visualization */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
-            אזור חיץ עם שכבות טכנולוגיה
+      {/* Main 2-column block — accordions right (source first), viz left.
+          Same layout family as topic-01 OnboardingScene. */}
+      <div className="grid lg:grid-cols-[2fr_3fr] gap-6 mb-12">
+        {/* Right (RTL): 4 accordion items, one per layer */}
+        <Accordion
+          type="multiple"
+          value={accordionValue}
+          onValueChange={handleAccordionChange}
+          className="space-y-3"
+        >
+          {LAYERS.map((l, i) => {
+            const isActive = activeLayers.has(l.id);
+            return (
+              <AccordionItem
+                key={l.id}
+                value={l.id}
+                className={cn(
+                  'transition-all duration-300 ease-snap',
+                  isActive
+                    ? 'border-brand/45 bg-bg-elevated'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                )}
+              >
+                <AccordionTrigger>
+                  {isActive && (
+                    <motion.span
+                      layoutId="t11-buffer-bar"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      isActive
+                        ? 'bg-brand-dark text-bg-elevated border-brand-dark'
+                        : 'bg-bg-accent text-fg-muted border-border',
+                    )}
+                  >
+                    <span className="font-display text-sm font-bold">{i + 1}</span>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display font-semibold leading-tight text-fg">
+                      {l.label}
+                    </div>
+                    <div className="font-display font-medium tracking-wide text-[11px] text-fg-dim mt-0.5">
+                      {l.english}
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                    <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+                    מה השכבה הזו עושה
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-1">
+                        יכולת
+                      </div>
+                      <p className="text-sm text-fg leading-relaxed text-pretty">{l.capability}</p>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-1">
+                        עלות
+                      </div>
+                      <p className="text-sm text-fg-muted leading-relaxed text-pretty">{l.cost}</p>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1">
+                        מה היא מחליפה
+                      </div>
+                      <p className="text-sm text-fg leading-relaxed text-pretty">{l.replaces}</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+
+        {/* Left (RTL): cumulative buffer visualisation */}
+        <div className="surface-elevated bg-bg-accent/30 rounded-2xl p-4 overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+              אזור חיץ עם שכבות טכנולוגיה
+            </div>
+            <div className="chip border-accent/40 bg-accent/10 text-accent">
+              <Icon name="eye" size={12} strokeWidth={2.5} />
+              <span className="font-display font-medium tracking-wide tabular-nums">
+                זיהוי {detectionRange} ק"מ · התרעה {reactionTime}
+              </span>
+            </div>
           </div>
-          <div className="chip border-accent/40 bg-accent/10 text-accent">
-            <Icon name="eye" size={12} strokeWidth={2.5} />
-            <span className="font-mono">טווח זיהוי מוקדם: {detectionRange} ק"מ · זמן התרעה: {reactionTime}</span>
+
+          <div className="flex-1 min-h-[360px] flex">
+            <BufferViz activeLayers={activeLayers} />
           </div>
         </div>
-
-        <BufferViz activeLayers={activeLayers} />
-      </div>
-
-      {/* Layer toggles */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-6">
-        {LAYERS.map((l) => {
-          const isActive = activeLayers.has(l.id);
-          return (
-            <button
-              key={l.id}
-              onClick={() => toggleLayer(l.id)}
-              className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? `${l.border} ${l.bg}` : 'hover:border-border-strong opacity-70'
-              )}
-            >
-              <Icon name={l.icon} size={26} className={cn(l.color, 'shrink-0')} />
-              <div className="min-w-0">
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && l.color)}>
-                  {l.label}
-                </div>
-                <div className="text-[10px] font-mono text-fg-dim">{isActive ? 'פעיל' : 'כבוי'}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Layer details */}
-      <div className="grid sm:grid-cols-2 gap-3 mb-12">
-        {LAYERS.filter((l) => activeLayers.has(l.id)).map((l) => (
-          <motion.div
-            key={l.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn('surface-elevated p-5 rounded-2xl border-r-4', l.border.replace('border-', 'border-r-'), l.bg)}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <Icon name={l.icon} size={30} className={cn(l.color, 'shrink-0')} />
-              <div>
-                <div className={cn('font-display font-bold leading-tight', l.color)}>{l.label}</div>
-                <div className="text-[10px] font-mono text-fg-dim">{l.english}</div>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div>
-                <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">יכולת</div>
-                <div className="text-fg leading-relaxed">{l.capability}</div>
-              </div>
-              <div>
-                <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">עלות</div>
-                <div className="text-fg-muted leading-relaxed">{l.cost}</div>
-              </div>
-              <div>
-                <div className={cn('text-sm font-display font-semibold mb-0.5 tracking-wider', l.color)}>מה היא מחליפה</div>
-                <div className="text-fg leading-relaxed">{l.replaces}</div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
       </div>
 
       <SoftDivider text="3 אזורי חיץ מהעולם שבאמת עובדים (בדרך כלל)" />
@@ -228,28 +281,28 @@ export function BufferScene() {
             transition={{ delay: i * 0.08 }}
             className="surface p-5 rounded-xl"
           >
-            <div className="flex items-center gap-2.5 mb-3">
-              <Icon name={e.icon} size={28} className="text-accent shrink-0" />
-              <div>
-                <div className="font-display font-bold leading-tight">{e.name}</div>
-                <div className="text-[10px] font-mono text-fg-dim">{e.english}</div>
-              </div>
+            <div className="mb-3">
+              <div className="font-display font-bold leading-tight">{e.name}</div>
+              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">{e.english}</div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
               <div className="surface p-2 rounded-lg">
-                <div className="text-[10px] font-mono text-fg-dim">רוחב</div>
+                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">רוחב</div>
                 <div className="font-display font-bold text-sm text-accent">{e.width}</div>
               </div>
               <div className="surface p-2 rounded-lg">
-                <div className="text-[10px] font-mono text-fg-dim">אורך</div>
+                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">אורך</div>
                 <div className="font-display font-bold text-sm text-accent">{e.length}</div>
               </div>
             </div>
 
-            <p className="text-xs text-fg-muted leading-relaxed mb-2">{e.desc}</p>
-            <div className="text-[11px] text-status-ok bg-status-ok/5 rounded-lg p-2 leading-relaxed">
-              <strong className="text-fg">תוצאה:</strong> {e.success}
+            <p className="text-sm text-fg-muted leading-relaxed mb-3">{e.desc}</p>
+            <div className="text-sm text-fg bg-bg-accent/40 rounded-lg p-3 leading-relaxed">
+              <strong className="text-fg block mb-1 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted">
+                תוצאה
+              </strong>
+              {e.success}
             </div>
           </motion.div>
         ))}
@@ -260,17 +313,8 @@ export function BufferScene() {
 
 function BufferViz({ activeLayers }: { activeLayers: Set<Layer> }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="buffer-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="56" fill="url(#buffer-bg)" />
-
+    <div className="relative w-full h-full min-h-[360px] rounded-xl overflow-hidden">
+      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Enemy territory (left) */}
         <rect x="0" y="0" width="20" height="56" className="fill-status-danger/10" />
         <text x="10" y="9" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
@@ -300,13 +344,10 @@ function BufferViz({ activeLayers }: { activeLayers: Set<Layer> }) {
         {/* Smart fence */}
         {activeLayers.has('fence') && (
           <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Two parallel fence lines */}
             <line x1="55" y1="20" x2="55" y2="46" className="stroke-accent" strokeWidth="0.8" />
-            {/* Fence posts */}
             {[20, 24, 28, 32, 36, 40, 44].map((y, i) => (
               <line key={i} x1="54.5" y1={y} x2="55.5" y2={y} className="stroke-accent" strokeWidth="0.4" />
             ))}
-            {/* Sensors on fence */}
             {[25, 35].map((y, i) => (
               <circle key={i} cx="55" cy={y} r="0.6" className="fill-accent" />
             ))}
@@ -340,11 +381,8 @@ function BufferViz({ activeLayers }: { activeLayers: Set<Layer> }) {
         {/* Radar dome */}
         {activeLayers.has('radar') && (
           <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Radar tower */}
             <line x1="85" y1="32" x2="85" y2="40" className="stroke-fg" strokeWidth="0.5" />
             <ellipse cx="85" cy="30" rx="2.5" ry="1.4" className="fill-accent-hot stroke-accent-hot" strokeWidth="0.3" />
-            
-            {/* Radar coverage arc */}
             <path
               d="M 85 30 A 35 35 0 0 0 50 30 A 35 35 0 0 0 50 30 L 85 30"
               fill="none"
@@ -353,7 +391,6 @@ function BufferViz({ activeLayers }: { activeLayers: Set<Layer> }) {
               strokeDasharray="1 0.7"
               opacity="0.5"
             />
-            {/* Wide cone of detection */}
             <path d="M 85 30 L 18 5 L 18 55 Z" fill="currentColor" className="text-accent-hot" opacity="0.08" />
             <text x="85" y="44" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">
               רדאר

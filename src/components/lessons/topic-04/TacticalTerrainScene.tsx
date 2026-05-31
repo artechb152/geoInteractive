@@ -72,49 +72,70 @@ title={
 intro='בשדה הקרב, לכל פיסת אדמה יש"תג מחיר" צבאי. מפקדים מחלקים את המרחב ל-3 קטגוריות טקטיות המאפשרות להחליט איפה לרכז את הכוח העיקרי, מהו"הקו האדום" ואיפה ניתן להפתיע את האויב.'
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">למה צריך 3 קטגוריות?</strong>{' '}
- כי לא כל מקום צריך להישמר באותה מידה. שטח שולט = להחזיק בכל מחיר. שטח חיוני = לאבטח. שטח מת = לנצל.
- לא לכל פיסת אדמה אותו ערך — וצבא חכם יודע איפה להשקיע את המשאבים.
+ <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+ <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <div className="flex items-center gap-2 mb-3">
+ <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
+ <span className="text-sm font-display font-semibold text-accent tracking-wider">למה צריך 3 קטגוריות?</span>
  </div>
+ <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">לא כל פיסת אדמה שווה אותו דבר</h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ צבא חכם לא שומר על כל פיסת אדמה באותה מידה. אם נשמור על הכל — לא נשמור על כלום. הקטגוריות מאפשרות להחליט מראש איפה לרכז משאבים ואיפה מותר להתפשר.
+ </p>
+ </article>
+ <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <div className="flex items-center gap-2 mb-3">
+ <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
+ <span className="text-sm font-display font-semibold text-accent tracking-wider">איך מחליטים?</span>
  </div>
+ <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">שולט · חיוני · מת — שלוש החלטות שונות</h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ שטח שולט = להחזיק בכל מחיר. שטח חיוני = לאבטח כי אי אפשר בלעדיו. שטח מת = לנצל לתחבולה. כל קטגוריה מובילה לפעולה אחרת לחלוטין בשטח.
+ </p>
+ </article>
  </div>
 
  <TacticalMap activeType={active} showAll={showAll} setShowAll={setShowAll} />
 
  <div className="mt-8 grid lg:grid-cols-3 gap-3 mb-6">
- {TYPES.map((t, i) => {
+ {TYPES.map((t) => {
 const isActive = active === t.id;
 return (
- <motion.button
+ <button
 key={t.id}
+type="button"
 onClick={() => setActive(t.id)}
-whileHover={{ y: -3 }}
-whileTap={{ scale: 0.98 }}
 className={cn(
- 'surface text-right p-5 transition-all relative overflow-hidden',
-isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
+ 'surface text-right p-4 transition-all relative overflow-hidden',
+isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
  {isActive && (
- <div aria-hidden className="absolute -end-12 -top-12 size-32 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+ <motion.span
+ layoutId="t4-tac-bar"
+ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
  )}
  <div className="relative flex items-start gap-3 mb-3">
- <Icon name={t.icon} size={32} className={cn('shrink-0 mt-0.5', isActive ? 'text-accent' : t.color)} />
+ <span
+ className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+ isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ <Icon name={t.icon} size={20} />
+ </span>
  <div className="min-w-0 flex-1">
- <h4 className={cn('font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2', isActive && 'text-accent')}>
+ <h4 className="font-display font-bold text-base text-fg leading-tight text-balance">
  {t.label}
  </h4>
- <div className="text-[10px] font-mono text-fg-dim mt-0.5">{t.english}</div>
+ <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{t.english}</div>
  </div>
  </div>
  <p className={cn('text-sm leading-relaxed', isActive ? 'text-fg' : 'text-fg-muted')}>
  {t.shortDef}
  </p>
- </motion.button>
+ </button>
  );
  })}
  </div>
@@ -131,7 +152,7 @@ className={cn('surface-elevated p-6 sm:p-7 border-r-4 mb-6', meta.borderColor)}
  <div className="flex items-center gap-3 mb-4">
  <Icon name={meta.icon} size={22} className={meta.color} />
  <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
- <span className="font-mono text-xs text-fg-dim">{meta.english}</span>
+ <span className="font-display font-medium tracking-wide text-xs text-fg-dim">{meta.english}</span>
  </div>
 
  <div className="grid md:grid-cols-2 gap-5">
@@ -191,14 +212,7 @@ return (
  <div className="surface-elevated relative overflow-hidden max-w-3xl mx-auto">
  <div className="aspect-[16/8] relative">
  <svg viewBox="0 0 160 100" className="w-full h-full" preserveAspectRatio="none">
- <defs>
- <linearGradient id="ground-tac" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor="#f3f5f9" />
- <stop offset="100%" stopColor="#e6ebf2" />
- </linearGradient>
- </defs>
-
- <rect x="0" y="0" width="160" height="100" fill="url(#ground-tac)" />
+ <rect x="0" y="0" width="160" height="100" className="fill-bg-accent" />
 
  {/* Grid */}
  {Array.from({ length: 16 }).map((_, i) => (

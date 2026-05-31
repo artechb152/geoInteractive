@@ -241,14 +241,7 @@ function MissionStage({ phase }: { phase: Phase }) {
   return (
     <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="ground-3" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground-3)" />
+        <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
         {/* Grid */}
         {Array.from({ length: 10 }).map((_, i) => (

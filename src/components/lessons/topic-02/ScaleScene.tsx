@@ -58,18 +58,36 @@ title={
         }intro={`קנה מידה הוא הדרך שלנו להבין כמה השטח"התכווץ" כדי להיכנס למפה. הנוסחה פשוטה: 1 ס"מ במפה = X סנטימטרים במציאות. למשל ב-1:50,000, כל ס"מ במפה שווה ל-500 מטר בשטח.`}
  />
 
- {/* Tip Callout */}
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">גדול או קטן? הכלל שסוגר לכם את הפינה:</strong> אל תסתכלו על המספר הגדול במכנה, תחשבו על רמת הפירוט. 
- <span className="font-mono mx-1">1:10,000</span> הוא קנה מידה <strong>גדול</strong> כי רואים בו פרטים גדולים וברורים (כמו זום חזק פנימה).
+ {/* Concept · matched pair feature cards */}
+ <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הכלל המנחה
  </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+ גדול או קטן? <span className="text-fg-muted font-medium text-base sm:text-lg">לפי הפירוט — לא המספר</span>
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ אל תסתכלו על המספר הגדול במכנה — תחשבו על רמת הפירוט. <strong className="text-fg">1:10,000 הוא קנה מידה גדול</strong> כי רואים בו פרטים גדולים וברורים (כמו זום חזק פנימה).
+ </p>
+ </div>
+
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ ההיגיון ההפוך
+ </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ ככל שהמספר גדול יותר — קנה המידה קטן יותר
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ ב-1:250,000 כל ס"מ במפה שווה ל-2.5 ק"מ בשטח — רואים את התמונה הגדולה אבל מאבדים את הפרטים. <strong className="text-fg">קנה מידה קטן = זום החוצה</strong>.
+ </p>
  </div>
  </div>
 
- {/* Scale Selection Tabs */}
+ {/* Scale Selection — OnboardingScene step-card pattern */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
  {SCALES.map((s) => {
 const active = s.id === scale.id;
@@ -78,19 +96,32 @@ return (
 key={s.id}
 onClick={() => setScale(s)}
 className={cn(
- 'surface p-4 text-right transition-all relative overflow-hidden',
-active ? 'border-accent bg-accent/5' : 'hover:border-border-strong opacity-70 hover:opacity-100'
+ 'surface p-4 text-right transition-all relative overflow-hidden flex items-center gap-3 rounded-xl',
+active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
  )}
  >
- <div className="flex items-baseline justify-between mb-1">
- <span className={cn('font-display font-bold text-2xl', active ? 'text-accent' : 'text-fg')}>
+ {active && (
+ <motion.span
+layoutId="t2-scale-bar"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+ )}
+ <span
+className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ <span className="font-display font-bold text-sm tabular-nums">{s.size === 'גדול' ? 'L' : s.size === 'בינוני' ? 'M' : 'S'}</span>
+ </span>
+ <div className="flex-1 min-w-0 text-right">
+ <div className="font-display font-bold text-base text-fg leading-tight">
  {s.label}
- </span>
- <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">
- קנה {s.size}
- </span>
  </div>
- <div className="text-xs text-fg-muted">{s.who}</div>
+ <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">
+ קנה {s.size} · {s.who}
+ </div>
+ </div>
  </button>
  );
  })}
@@ -120,7 +151,7 @@ max={100}
 step={0.1}
 value={mapDistance}
 onChange={(e) => setMapDistance(Number(e.target.value) || 0)}
-className="w-24 bg-bg-accent border border-border rounded-lg px-3 py-2 font-mono text-xl tabular-nums focus:border-accent outline-none transition-colors"
+className="w-24 bg-bg-accent border border-border rounded-lg px-3 py-2 font-display font-medium tracking-wide text-xl tabular-nums focus:border-accent outline-none transition-colors"
  />
  <span className="text-fg-muted text-sm pb-2.5">ס״מ במפה</span>
  </div>
@@ -150,7 +181,7 @@ aria-hidden
  <span className="text-fg-muted text-sm font-medium">ק״מ</span>
  </div>
 
- <div className="mt-4 pt-3 border-t border-border-subtle text-[11px] text-fg-dim font-mono italic">
+ <div className="mt-4 pt-3 border-t border-border-subtle text-[11px] text-fg-dim font-display font-medium tracking-wide italic">
  * טיפ: במפת 1:50,000, פשוט מחלקים את הס"מ ב-2 כדי לקבל ק"מ.
  </div>
  </div>
@@ -271,7 +302,7 @@ return (
  </g>
  </svg>
 
- <div className="absolute top-4 start-4 chip border-accent/20 bg-bg/80 backdrop-blur-md text-[10px] text-accent font-bold font-mono px-2 py-1 rounded">
+ <div className="absolute top-4 start-4 chip border-accent/20 bg-bg/80 backdrop-blur-md text-[10px] text-accent font-bold font-display tracking-wide px-2 py-1 rounded">
  {scale.label}
  </div>
  </div>
@@ -335,7 +366,7 @@ function ProjectionTile({ name, scope, tradeoff }: { name: string; scope: string
 return (
  <div className="surface p-4 border-t-2 border-accent-cool/20 rounded-b-lg">
  <div className="font-bold text-sm text-accent-cool mb-1">{name}</div>
- <div className="text-[10px] text-fg-dim mb-3 uppercase tracking-wider font-mono">{scope}</div>
+ <div className="text-[10px] text-fg-dim mb-3 uppercase tracking-wider font-display font-medium">{scope}</div>
  <div className="text-fg-muted text-xs leading-relaxed">{tradeoff}</div>
  </div>
  );

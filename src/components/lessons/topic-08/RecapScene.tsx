@@ -49,7 +49,7 @@ export function RecapScene() {
           >
             <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
             <div className="relative flex items-start gap-3">
-              <span className="font-mono text-xs text-accent mt-1 shrink-0">
+              <span className="font-display font-medium tracking-wide text-xs text-accent mt-1 shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="flex-1 min-w-0">

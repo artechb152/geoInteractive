@@ -94,19 +94,35 @@ title={
 intro="כל GIS בנוי משכבות. כל שכבה היא 'שקף שקוף'. ויש שני אופנים שהמחשב רואה את העולם — ראסטר (פיקסלים) או וקטור (אובייקטים). ההבדל הזה הוא הכל."
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">העיקרון:</strong> כל סוג מידע = שכבה נפרדת. הלבשת שכבה על שכבה (<strong className="text-fg">Overlay</strong>) = תמונה רב-ממדית.
- <strong className="text-fg block mt-1.5">ראסטר</strong> (Raster) — רשת פיקסלים, כל פיקסל ערך אחד. מתאים לתופעות רציפות (גובה, טמפ׳).
- <strong className="text-fg block">וקטור</strong> (Vector) — אובייקטים בודדים (נקודות/קווים/פוליגונים), כל אחד עם <strong className="text-fg">טבלת תכונות</strong>. מתאים לשאילתות.
+ <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ העיקרון
  </div>
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ ראסטר — רשת פיקסלים לתופעות רציפות
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ רשת פיקסלים שבה כל פיקסל מחזיק ערך אחד. מתאים לתופעות שמשתנות ברציפות בכל המרחב — <strong className="text-fg">גובה, טמפרטורה, לחות, כיסוי קרקע</strong>. הרזולוציה תלויה בגודל הפיקסל.
+ </p>
+ </div>
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הגישה השנייה
+ </div>
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ וקטור — אובייקטים בודדים עם טבלת תכונות
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ נקודות, קווים ופוליגונים — כל אחד אובייקט עצמאי שאליו מצורפת <strong className="text-fg">טבלת תכונות</strong>. מתאים לשאילתות חכמות: "תן לי את כל המבנים מעל 4 קומות בטווח 200 מטר מכביש ראשי".
+ </p>
  </div>
  </div>
 
  {/* Layer toggles */}
- <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+ <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
  {LAYERS.map((l) => {
 const isActive = activeLayers.has(l.id);
 return (
@@ -114,16 +130,33 @@ return (
 key={l.id}
 onClick={() => toggleLayer(l.id)}
 className={cn(
- 'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-isActive ? `${l.border} ${l.bg}` : 'hover:border-border-strong opacity-70'
+ 'relative p-4 text-right transition-all duration-300 ease-snap rounded-2xl border flex items-center gap-3',
+isActive
+ ? 'border-accent bg-bg-elevated'
+ : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
- <Icon name={l.icon} size={28} className={cn(l.color, 'shrink-0')} />
- <div className="min-w-0">
- <div className={cn('font-display font-bold text-sm leading-tight', isActive && l.color)}>
+{isActive && (
+ <motion.span
+layoutId="t12-basics-bar"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+)}
+ <span
+className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+isActive
+ ? 'bg-accent text-bg-elevated border-accent'
+ : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ <Icon name={l.icon} size={18} strokeWidth={2.25} />
+ </span>
+ <div className="min-w-0 flex-1">
+ <div className="font-display font-bold text-base text-fg leading-tight">
  {l.label}
  </div>
- <div className="text-[10px] font-mono text-fg-dim">
+ <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">
  {l.type === 'raster' ? '◧ ראסטר' : '◢ וקטור'}
  </div>
  </div>
@@ -198,11 +231,11 @@ model === m ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
  <table className="w-full text-sm border-collapse">
  <thead>
  <tr className="border-b border-border">
- <th className="text-right py-2 px-3 text-xs font-mono text-fg-dim">ID</th>
- <th className="text-right py-2 px-3 text-xs font-mono text-fg-dim">סוג</th>
- <th className="text-right py-2 px-3 text-xs font-mono text-fg-dim">גובה (מ׳)</th>
- <th className="text-right py-2 px-3 text-xs font-mono text-fg-dim">אוכלוסייה</th>
- <th className="text-right py-2 px-3 text-xs font-mono text-fg-dim">רגיש?</th>
+ <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">ID</th>
+ <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">סוג</th>
+ <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">גובה (מ׳)</th>
+ <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">אוכלוסייה</th>
+ <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">רגיש?</th>
  </tr>
  </thead>
  <tbody>
@@ -210,15 +243,15 @@ model === m ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
 const highlight = queriedSensitive && b.sensitive;
 return (
  <tr key={b.id} className={cn('border-b border-border-subtle transition-colors', highlight && 'bg-status-warn/10')}>
- <td className="py-2 px-3 font-mono text-fg-dim">{b.id}</td>
+ <td className="py-2 px-3 font-display font-medium tracking-wide text-fg-dim tabular-nums">{b.id}</td>
  <td className="py-2 px-3 text-fg">{b.type}</td>
  <td className="py-2 px-3 tabular-nums">{b.height}</td>
  <td className="py-2 px-3 tabular-nums">{b.pop}</td>
  <td className="py-2 px-3">
  {b.sensitive ? (
- <span className="text-status-warn font-mono font-bold">✓ כן</span>
+ <span className="text-status-warn font-display font-bold tracking-wide">✓ כן</span>
  ) : (
- <span className="text-fg-dim font-mono">לא</span>
+ <span className="text-fg-dim font-display font-medium tracking-wide">לא</span>
  )}
  </td>
  </tr>
@@ -278,16 +311,9 @@ queriedSensitive
 }
 function LayerMap({ activeLayers }: { activeLayers: Set<Layer> }) {
 return (
- <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+ <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent">
  <svg viewBox="0 0 100 56" className="w-full h-full">
- <defs>
- <linearGradient id="basics-bg" x1="0" y1="0" x2="0" y2="1">
- <stop offset="0%" stopColor="#f3f5f9" />
- <stop offset="100%" stopColor="#e6ebf2" />
- </linearGradient>
- </defs>
-
- <rect x="0" y="0" width="100" height="56" fill="url(#basics-bg)" />
+ <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
 
  {/* Layer 1: Elevation (raster heatmap) */}
  {activeLayers.has('elevation') && (
@@ -299,9 +325,9 @@ const cx = col * 5;
 const cy = row * 5.6;
  // Simple elevation noise
 const e = Math.sin(col * 0.4) * Math.cos(row * 0.5) * 0.5 + 0.5;
-const color = e > 0.7 ? '#7c5836' : e > 0.5 ? '#a47e51' : e > 0.3 ? '#c9a87a' : '#dfc497';
+const colorClass = e > 0.7 ? 'fill-terrain-ridge' : e > 0.5 ? 'fill-terrain-olive' : e > 0.3 ? 'fill-terrain-sand' : 'fill-bg-warm';
 return (
- <rect key={i} x={cx} y={cy} width="5" height="5.6" fill={color} opacity="0.5" />
+ <rect key={i} x={cx} y={cy} width="5" height="5.6" className={colorClass} opacity="0.5" />
  );
  })}
  </motion.g>
@@ -377,8 +403,8 @@ const y = row * 5.6;
  // Simulate a"building" pixelated
 const inBuilding = col >= 8 && col <= 14 && row >= 3 && row <= 6;
 const inRoad = row === 7 || row === 8;
-const fill = inBuilding ? '#5783c4' : inRoad ? '#a8855a' : '#d6dfe8';
-return <rect key={i} x={x} y={y} width="3.5" height="5.6" fill={fill} stroke="#0a0f1a" strokeWidth="0.05" opacity="0.5" />;
+const fillClass = inBuilding ? 'fill-accent-cool' : inRoad ? 'fill-terrain-sand' : 'fill-bg-accent';
+return <rect key={i} x={x} y={y} width="3.5" height="5.6" className={cn(fillClass, 'stroke-border-subtle')} strokeWidth="0.05" opacity="0.6" />;
  })}
  <text x="50" y="6" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
  ראסטר · 280 פיקסלים — כל אחד עם ערך

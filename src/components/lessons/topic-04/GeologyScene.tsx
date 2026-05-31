@@ -89,13 +89,27 @@ title={
 intro='גיאולוגיה היא"תורת הסלע". היא מסבירה איך נוצר החומר שנמצא לנו מתחת לרגליים ואיך הוא מעצב את ההרים והעמקים שמעליו. בלי להבין את המבנה הפנימי של הקרקע, לא נוכל להעריך נכון את האתגרים שהשטח מציב לנו.'
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">למה זה קריטי לקבלת החלטות?</strong>{' '}
-סוג הסלע הוא זה שקובע אם הכוח שלך יתקע בבוץ אחרי הגשם הראשון, אם תוכל לחפור עמדות הגנה יציבות, ואם השטח עביר לטנקים או רק ללוחמים רגליים. הבנת המסלע (סוג הסלע) הופכת ניחוש להחלטה מבצעית חכמה. </div>
+ <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+ <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <div className="flex items-center gap-2 mb-3">
+ <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
+ <span className="text-sm font-display font-semibold text-accent tracking-wider">למה זה קריטי?</span>
  </div>
+ <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">סוג הסלע = הצלחת המשימה</h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ סוג הסלע קובע אם הכוח שלך יתקע בבוץ אחרי הגשם הראשון, אם תוכל לחפור עמדות הגנה יציבות, ואם השטח עביר לטנקים או רק ללוחמים רגליים.
+ </p>
+ </article>
+ <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <div className="flex items-center gap-2 mb-3">
+ <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
+ <span className="text-sm font-display font-semibold text-accent tracking-wider">מה זה משנה בפועל?</span>
+ </div>
+ <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">מניחוש להחלטה מבצעית חכמה</h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ הבנת המסלע (סוג הסלע) הופכת ניחוש להחלטה: איפה לבסס בונקרים, איפה לנוע, איפה להניח גשר ואיפה לחפור מארב. בלי זה — אתה מתכנן באוויר.
+ </p>
+ </article>
  </div>
 
  <div className="my-12">
@@ -107,20 +121,39 @@ intro='גיאולוגיה היא"תורת הסלע". היא מסבירה איך 
  </div>
 
  <div className="grid sm:grid-cols-3 gap-3 mb-4">
- {ROCKS.map((r) => {
+ {ROCKS.map((r, i) => {
 const active = rock === r.id;
 return (
  <button
 key={r.id}
+type="button"
 onClick={() => setRock(r.id)}
 className={cn(
- 'surface p-4 text-right transition-all',
-active ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
+ 'surface p-4 text-right transition-all relative overflow-hidden',
+active ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
- <div className={cn('font-display font-bold', active ? 'text-accent' : r.color)}>{r.label}</div>
- <div className="text-[10px] font-mono text-fg-dim mt-1">{r.english}</div>
- <div className="text-[11px] text-fg-muted mt-2 leading-relaxed">{r.examples}</div>
+ {active && (
+ <motion.span
+ layoutId="t4-rock-bar"
+ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+ )}
+ <div className="flex items-start gap-3 mb-2">
+ <span
+ className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+ active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ {i + 1}
+ </span>
+ <div className="flex-1 min-w-0">
+ <div className="font-display font-bold text-base text-fg leading-tight">{r.label}</div>
+ <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{r.english}</div>
+ </div>
+ </div>
+ <div className="text-xs text-fg-muted leading-relaxed">{r.examples}</div>
  </button>
  );
  })}
@@ -168,17 +201,31 @@ const active = force === f.id;
 return (
  <button
 key={f.id}
+type="button"
 onClick={() => setForce(f.id)}
 className={cn(
- 'surface p-5 text-right transition-all flex items-start gap-3',
-active ? 'border-accent bg-accent/5' : 'hover:border-border-strong'
+ 'surface p-5 text-right transition-all flex items-start gap-3 relative overflow-hidden',
+active ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
- <Icon name={f.icon} size={32} className={cn('shrink-0', active ? 'text-accent' : 'text-fg-muted')} />
+ {active && (
+ <motion.span
+ layoutId="t4-force-bar"
+ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+ )}
+ <span
+ className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+ active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ <Icon name={f.icon} size={20} />
+ </span>
  <div className="flex-1 min-w-0">
- <div className={cn('font-display font-bold leading-tight', active && 'text-accent')}>{f.label}</div>
- <div className="text-[10px] font-mono text-fg-dim mt-0.5">{f.english}</div>
- <div className="text-[11px] text-fg-muted mt-1.5">{f.scale}</div>
+ <div className="font-display font-bold text-base text-fg leading-tight">{f.label}</div>
+ <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{f.english}</div>
+ <div className="font-display font-medium tracking-wide text-xs text-fg-muted mt-1.5">{f.scale}</div>
  </div>
  </button>
  );

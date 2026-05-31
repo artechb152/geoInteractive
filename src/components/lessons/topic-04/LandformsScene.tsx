@@ -117,7 +117,7 @@ className="w-full p-4 text-right flex items-center gap-3"
  >
  <span
 className={cn(
- 'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all font-mono text-sm font-bold',
+ 'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all font-display text-sm font-bold',
 isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  )}
  >
@@ -127,7 +127,7 @@ isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  <div className={cn('font-display font-bold leading-tight', isActive ? 'text-brand-dark' : 'text-fg')}>
  {f.label}
  </div>
- <div className="text-xs font-mono text-fg-dim mt-0.5">{f.english}</div>
+ <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{f.english}</div>
  </div>
  <motion.span
 animate={{ rotate: isActive ? 180 : 0 }}
@@ -423,18 +423,33 @@ return (
  </div>
 
  <div className="grid sm:grid-cols-4 gap-2 mb-5">
- {slopes.map((s) => {
+ {slopes.map((s, i) => {
 const isActive = active === s.id;
 return (
  <button
 key={s.id}
+type="button"
 onClick={() => onSelect(s.id)}
 className={cn(
- 'p-3 rounded-xl border-2 text-center transition-all',
-isActive ? 'border-accent bg-accent/10' : 'border-border bg-bg-card hover:border-border-strong'
+ 'p-3 rounded-xl border-2 text-right transition-all relative overflow-hidden flex items-center gap-3',
+isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
- <div className={cn('font-display font-bold text-sm leading-tight', isActive && 'text-accent')}>
+ {isActive && (
+ <motion.span
+ layoutId="t4-slope-bar"
+ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+ )}
+ <span
+ className={cn(
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+ isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ {i + 1}
+ </span>
+ <div className="font-display font-bold text-sm text-fg leading-tight flex-1">
  {s.label}
  </div>
  </button>

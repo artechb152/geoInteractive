@@ -89,13 +89,30 @@ title={
 intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טילים מאיימת על 50 ק"מ. ניתוח רשתות חושף את הצומת הקריטי, וניתוח Buffer מציג איפה אסור לעבור.`}
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">Network Analysis</strong> — ניתוח טופולוגי של קווים מחוברים (כבישים, צינורות דלק, כבלי תקשורת). מזהה <strong className="text-fg">"נקודות כשל"</strong>: מה יקרה אם גשר מסוים יפוצץ? אילו כוחות יישארו מנותקים?
- <strong className="text-fg block mt-1.5">Buffer Analysis</strong> — שרטוט טבעות סביב אובייקטים. <strong className="text-fg">טבעת איום</strong> סביב סוללת SAM ="Kill Box". כל כוח שנמצא בתוך הטבעת — בסכנה.
+ <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ ניתוח טופולוגי
  </div>
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ Network Analysis — מי מתחבר למי, ומה קורה כשמנתקים
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ ניתוח של קווים מחוברים — כבישים, צינורות דלק, כבלי תקשורת. מזהה את <strong className="text-fg">נקודות הכשל</strong>: מה יקרה אם גשר מסוים יפוצץ? אילו כוחות יישארו מנותקים? אילו צמתים שולטים על הזרימה?
+ </p>
+ </div>
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ ניתוח מרחבי
+ </div>
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ Buffer Analysis — טבעות איום סביב מטרות
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ שרטוט טבעות סביב אובייקטים על המפה. <strong className="text-fg">טבעת איום</strong> סביב סוללת SAM היא <strong className="text-fg">"Kill Box"</strong> — כל כוח שנמצא בתוך הטבעת נמצא בסכנה ודורש מסלול חלופי.
+ </p>
  </div>
  </div>
 
@@ -110,7 +127,7 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
 isConnected ? 'border-status-ok/40 bg-status-ok/10 text-status-ok' : 'border-status-danger/40 bg-status-danger/10 text-status-danger'
  )}>
  <Icon name={isConnected ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
- <span className="font-mono">
+ <span className="font-display font-medium tracking-wide">
  {isConnected ? `מחובר · ${path.length - 1} צמתי ביניים` : 'מנותק! החזית מבודדת'}
  </span>
  </div>
@@ -168,7 +185,7 @@ threatsAffecting.length === 1 ? 'border-status-warn/40 bg-status-warn/10 text-st
  'border-status-danger/40 bg-status-danger/10 text-status-danger'
  )}>
  <Icon name={threatsAffecting.length === 0 ? 'check' : 'shield'} size={12} strokeWidth={2.5} />
- <span className="font-mono">
+ <span className="font-display font-medium tracking-wide">
  {threatsAffecting.length === 0 ? 'בטוח' : `${threatsAffecting.length} איום${threatsAffecting.length > 1 ? 'ים' : ''} מאיים${threatsAffecting.length > 1 ? 'ים' : ''}`}
  </span>
  </div>
@@ -223,10 +240,10 @@ isAffecting ? 'border-r-status-danger bg-status-danger/5' : 'border-r-status-war
  <div className={cn('font-display font-bold leading-tight', isAffecting && 'text-status-danger')}>
  {t.label}
  </div>
- <div className="text-[10px] font-mono text-fg-dim">{t.type} · טווח {t.range}</div>
+ <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">{t.type} · טווח {t.range}</div>
  </div>
  {isAffecting && (
- <div className="text-status-danger font-mono font-bold text-xs">
+ <div className="text-status-danger font-display font-bold tracking-wide text-xs">
  ⚠ בסכנה
  </div>
  )}
@@ -448,7 +465,7 @@ setFriendlyPos({ x, y });
  {/* Inner ring (50%) */}
  <circle cx={t.x} cy={t.y} r={t.range * 0.6} fill="none" className="stroke-status-danger" strokeWidth="0.25" strokeDasharray="0.8 0.5" opacity="0.4" />
  {/* Range label */}
- <text x={t.x + t.range - 2} y={t.y - 1} className="fill-status-danger font-display font-bold" fontSize="1.6" paintOrder="stroke" stroke="#0a0f1a" strokeWidth="0.6" strokeLinejoin="round">
+ <text x={t.x + t.range - 2} y={t.y - 1} className="fill-status-danger font-display font-bold" fontSize="1.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">
 Kill Box
  </text>
  </g>

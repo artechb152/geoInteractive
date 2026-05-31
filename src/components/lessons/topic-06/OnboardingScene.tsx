@@ -207,7 +207,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
           <SightStage view={view} />
         </div>
       </div>
@@ -243,14 +243,8 @@ function SightStage({ view }: { view: View }) {
   return (
     <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="ground-6" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground-6)" />
+        {/* No internal background rect — parent card carries `bg-bg-accent/30`
+            so the SVG and surround read as one continuous warm cream surface. */}
 
         {/* Terrain profile (side view): observer hill on left, ridge in middle, valley on right */}
         <path

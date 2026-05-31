@@ -150,7 +150,7 @@ export function BordersScene() {
       </InsightCard>
 
       {/* Selector grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
         {BORDERS.map((b) => {
           const isActive = active === b.id;
           return (
@@ -158,16 +158,33 @@ export function BordersScene() {
               key={b.id}
               onClick={() => setActive(b.id)}
               className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2.5',
-                isActive ? `${b.border} ${b.bg}` : 'hover:border-border-strong'
+                'relative p-4 text-right transition-all duration-300 ease-snap rounded-2xl border flex items-center gap-3',
+                isActive
+                  ? 'border-accent bg-bg-elevated'
+                  : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
-              <Icon name={b.icon} size={28} className={cn(b.color, 'shrink-0')} />
-              <div className="min-w-0">
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && b.color)}>
+              {isActive && (
+                <motion.span
+                  layoutId="t11-borders-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                />
+              )}
+              <span
+                className={cn(
+                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  isActive
+                    ? 'bg-accent text-bg-elevated border-accent'
+                    : 'bg-bg-accent text-fg-muted border-border'
+                )}
+              >
+                <Icon name={b.icon} size={18} strokeWidth={2.25} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="font-display font-bold text-base text-fg leading-tight">
                   {b.label}
                 </div>
-                <div className="text-[10px] font-mono text-fg-dim">
+                <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">
                   {b.category === 'natural' ? 'טבעי' : 'מלאכותי'} · יציבות {b.stability}/5
                 </div>
               </div>
@@ -194,7 +211,7 @@ export function BordersScene() {
                 <Icon name={meta.icon} size={32} className={cn(meta.color, 'shrink-0')} />
                 <div>
                   <div className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</div>
-                  <div className="text-[10px] font-mono text-fg-dim">{meta.english} · {meta.category === 'natural' ? 'טבעי' : 'מלאכותי'}</div>
+                  <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">{meta.english} · {meta.category === 'natural' ? 'טבעי' : 'מלאכותי'}</div>
                 </div>
               </div>
 
@@ -251,15 +268,9 @@ export function BordersScene() {
 
 function BorderVisualization({ border }: { border: Border }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent">
       <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="bv-sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="100" height="56" fill="url(#bv-sky)" />
+        <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
 
         {/* Two countries' territories */}
         <rect x="0" y="38" width="50" height="18" className="fill-status-danger/15" />
@@ -274,7 +285,7 @@ function BorderVisualization({ border }: { border: Border }) {
             <path d="M40 38 L44 18 L48 28 L52 14 L56 26 L60 38 Z" className="fill-terrain-ridge stroke-terrain-ridge" strokeWidth="0.3" />
             <path d="M42 38 L46 22 L50 32 L54 20 L58 30 Z" className="fill-terrain-ridge/70" />
             {/* Snow peaks */}
-            <path d="M51 16 L52 14 L53 16 Z" className="fill-white" />
+            <path d="M51 16 L52 14 L53 16 Z" className="fill-bg-elevated" />
             <text x="50" y="12" textAnchor="middle" className="fill-terrain-ridge font-display font-bold" fontSize="3" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
               רכס הרים
             </text>

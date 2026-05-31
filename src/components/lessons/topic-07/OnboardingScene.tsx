@@ -207,7 +207,7 @@ export function OnboardingScene() {
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
           <WeatherStage view={view} />
         </div>
       </div>
@@ -245,18 +245,7 @@ function WeatherStage({ view }: { view: View }) {
   return (
     <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="sky-7" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#f0f4f9" />
-          </linearGradient>
-          <radialGradient id="fog-7" cx="50%" cy="80%" r="60%">
-            <stop offset="0%" stopColor="#cbd5e1" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#sky-7)" />
+        {/* Parent card carries `bg-bg-accent/30` (warm cream); no sky gradient here. */}
 
         {/* Sun (regional view) */}
         <motion.g initial={false} animate={{ opacity: view === 'regional' ? 1 : 0.2 }} transition={{ duration: 0.4 }}>
@@ -289,9 +278,9 @@ function WeatherStage({ view }: { view: View }) {
 
         {/* Valley fog (micro-climate) */}
         <motion.g initial={false} animate={{ opacity: showFog ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-          <ellipse cx="48" cy="62" rx="22" ry="9" fill="url(#fog-7)" />
-          <ellipse cx="40" cy="60" rx="14" ry="6" fill="url(#fog-7)" opacity="0.6" />
-          <ellipse cx="58" cy="63" rx="12" ry="5" fill="url(#fog-7)" opacity="0.7" />
+          <ellipse cx="48" cy="62" rx="22" ry="9" className="fill-fg-dim" opacity="0.35" />
+          <ellipse cx="40" cy="60" rx="14" ry="6" className="fill-fg-dim" opacity="0.22" />
+          <ellipse cx="58" cy="63" rx="12" ry="5" className="fill-fg-dim" opacity="0.26" />
           <text
             x="48"
             y="68"

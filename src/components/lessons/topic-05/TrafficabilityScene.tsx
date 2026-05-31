@@ -161,23 +161,39 @@ export function TrafficabilityScene() {
                 return (
                   <button
                     key={v.id}
+                    type="button"
                     onClick={() => setVehicle(v.id)}
                     className={cn(
-                      'p-3 rounded-xl border-2 text-right transition-all',
+                      'p-3 rounded-xl border-2 text-right transition-all relative overflow-hidden',
                       isActive
-                        ? 'border-accent bg-accent/5'
-                        : 'border-border hover:border-border-strong'
+                        ? 'border-accent bg-bg-elevated'
+                        : 'border-border bg-bg-elevated hover:border-accent/50'
                     )}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Icon name={v.icon} size={18} className={isActive ? 'text-accent' : 'text-fg-dim'} />
-                      <div className={cn('font-display font-bold text-sm', isActive && 'text-accent')}>
-                        {v.label}
+                    {isActive && (
+                      <motion.span
+                        layoutId="t5-vehicle-bar"
+                        className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                      />
+                    )}
+                    <div className="flex items-start gap-3 mb-2">
+                      <span
+                        className={cn(
+                          'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                          isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+                        )}
+                      >
+                        <Icon name={v.icon} size={20} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display font-bold text-base text-fg leading-tight">
+                          {v.label}
+                        </div>
+                        <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{v.english}</div>
                       </div>
                     </div>
-                    <div className="text-[10px] font-mono text-fg-dim">{v.english}</div>
-                    <div className="text-xs text-fg-muted mt-1.5 leading-snug">{v.example}</div>
-                    <div className={cn('mt-2 text-[10px] font-mono', isActive ? 'text-accent' : 'text-fg-dim')}>
+                    <div className="text-xs text-fg-muted leading-snug">{v.example}</div>
+                    <div className={cn('mt-2 text-[10px] font-display font-medium tracking-wide', isActive ? 'text-accent' : 'text-fg-dim')}>
                       שיפוע מקסימלי: כ-{v.maxSlope}%
                     </div>
                   </button>
@@ -190,7 +206,7 @@ export function TrafficabilityScene() {
           <div className="surface-elevated p-5">
             <div className="flex items-baseline justify-between mb-2">
               <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">רמת השיפוע (עד כמה תלול?)</div>
-              <div className="text-[10px] font-mono text-fg-dim">≈ {slopeDegrees.toFixed(1)}°</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">≈ {slopeDegrees.toFixed(1)}°</div>
             </div>
             <div className="font-display font-bold text-4xl tabular-nums text-accent mb-3">
               {slope}<span className="text-xl text-fg-muted">%</span>
@@ -205,7 +221,7 @@ export function TrafficabilityScene() {
               className="w-full accent-accent"
               aria-label="שיפוע באחוזים"
             />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+            <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-1">
               <span>0%</span>
               <span>30%</span>
               <span>60%</span>
@@ -272,17 +288,35 @@ export function TrafficabilityScene() {
           return (
             <button
               key={s.id}
+              type="button"
               onClick={() => setActiveSoil(s.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl flex flex-col items-start',
-                isActive ? `${s.border} ${s.bg}` : 'hover:border-border-strong'
+                'surface p-4 text-right transition-all rounded-xl relative overflow-hidden',
+                isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
-              <Icon name={s.icon} size={32} className={cn('mb-3', s.color)} />
-              <div className={cn('font-display font-bold leading-tight', isActive && s.color)}>
-                {s.label}
+              {isActive && (
+                <motion.span
+                  layoutId="t5-soil-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                />
+              )}
+              <div className="flex items-start gap-3">
+                <span
+                  className={cn(
+                    'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                    isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+                  )}
+                >
+                  <Icon name={s.icon} size={20} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-bold text-base text-fg leading-tight">
+                    {s.label}
+                  </div>
+                  <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{s.english}</div>
+                </div>
               </div>
-              <div className="text-[10px] font-mono text-fg-dim mt-0.5">{s.english}</div>
             </button>
           );
         })}

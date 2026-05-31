@@ -54,27 +54,32 @@ title={
         intro={`כשרוצים להגיד"תפגע כאן" — צריך מספר שכל המכשירים יבינו. זאת קואורדינטה: שני מספרים שמגדירים נקודה אחת ויחידה בעולם. הבעיה מתחילה כשיש כמה"שפות" (רשתות) שונות. אם אחד דיבר בשפה אחת והשני בשפה אחרת — הירי יחטיא את המטרה.`}
  />
 
- {/* Dictionary Callout */}
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">מילון קצר:</strong>
- <ul className="mt-3 space-y-2 text-fg-muted">
- <li className="flex gap-2">
- <span className="text-accent-cool font-bold">·</span>
- <span><strong className="text-fg">נ"צ (נקודת ציון):</strong> ה"מספר האישי" של המיקום שלכם. צמד מספרים שקובע נקודה אחת בעולם.</span>
- </li>
- <li className="flex gap-2">
- <span className="text-accent-cool font-bold">·</span>
- <span><strong className="text-fg">רשת קואורדינטות:</strong> השפה שבה משתמשים. לכל רשת יש שיטה אחרת לחישוב המיקום.</span>
- </li>
- <li className="flex gap-2">
- <span className="text-accent-cool font-bold">·</span>
- <span><strong className="text-fg">דו"צ (ירי דו־צדדי):</strong> פגיעה בטעות בכוחותינו. רוב המקרים האלו קורים בגלל בלבול של ספרה אחת בנ"צ או שימוש ברשת לא נכונה.</span>
- </li>
- </ul>
+ {/* Concept · matched pair feature cards */}
+ <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ השפה של הנ"צ
  </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+ נקודת ציון <span className="text-fg-muted font-medium text-base sm:text-lg">(Grid Reference)</span>
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ ה"מספר האישי" של המיקום שלכם — <strong className="text-fg">צמד מספרים שקובע נקודה אחת בעולם</strong>. כל רשת קואורדינטות היא שפה אחרת לחישוב אותה נקודה, ולכל אחת יש כללים משלה.
+ </p>
+ </div>
+
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ נקודת התורפה
+ </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ ספרה אחת שגויה הופכת ל-100 מ' של דו"צ
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ דו"צ (ירי דו-צדדי) הוא פגיעה בטעות בכוחותינו. רוב המקרים קורים מ<strong className="text-fg">בלבול של ספרה אחת בנ"צ</strong> או משימוש ברשת קואורדינטות לא נכונה — ההפרש בשטח קטלני.
+ </p>
  </div>
  </div>
 
@@ -100,7 +105,7 @@ className="surface-elevated p-6 border border-border/50 rounded-xl"
 
  <div className="text-xs text-fg-muted mb-4 font-medium italic">{s.long}</div>
 
- <div className="surface p-4 mb-4 font-mono text-sm border border-border/40 rounded-lg bg-bg/50">
+ <div className="surface p-4 mb-4 font-display font-medium tracking-wide text-sm border border-border/40 rounded-lg bg-bg/50">
  <div className="text-[10px] text-fg-dim mb-1 uppercase tracking-tighter">{s.format}</div>
  <div className="text-fg tabular-nums text-lg font-bold">{s.example}</div>
  </div>
@@ -186,7 +191,7 @@ value={shift}
 onChange={(e) => setShift(Number(e.target.value))}
 className="w-full h-2 bg-bg-accent rounded-lg appearance-none cursor-pointer accent-accent mb-2"
  />
- <div className="flex justify-between text-[10px] font-mono text-fg-dim mb-8">
+ <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mb-8">
  <span>0 מ׳</span>
  <span>50 מ׳ (טווח רסיסים)</span>
  <span>100 מ׳ (החטאה מלאה)</span>

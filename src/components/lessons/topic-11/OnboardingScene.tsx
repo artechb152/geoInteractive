@@ -241,16 +241,9 @@ function CountryStage({ view }: { view: View }) {
   const showDepth = view === 'depth';
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-bg-accent">
       <svg viewBox="0 0 100 75" className="w-full h-full">
-        <defs>
-          <linearGradient id="ground-11" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f3f5f9" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="75" fill="url(#ground-11)" />
+        <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
         {/* Country shape */}
         <motion.path

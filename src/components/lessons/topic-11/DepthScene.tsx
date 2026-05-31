@@ -9,48 +9,97 @@ import { cn } from '@/lib/utils';
 type CountryExample = {
   id: string;
   name: string;
-  depth: number; // km
-  doctrine: string;
-  example: string;
+  region: string;
+  depth: number;          // km
+  timeLabel: string;      // human-readable "≈ X hours/days/months to capital"
+  reference: string;      // concrete real-world scale-anchor
+  doctrine: string;       // forced strategy
+  allows: string;         // what this depth lets you do
+  prevents: string;       // what this depth makes impossible
+  historical: string;     // one historical case in plain language
 };
 
+/* Each country card now answers FIVE concrete questions instead of
+   one abstract sentence:
+   (1) how many km,
+   (2) how much TIME does that buy at a standard 30 km/day advance,
+   (3) a familiar real-world scale anchor (so the learner can FEEL it),
+   (4) what the depth allows / prevents (operational consequences),
+   (5) a historical case that makes (3)+(4) concrete. */
 const COUNTRIES: CountryExample[] = [
-  { 
-    id: 'israel', 
-    name: 'ישראל (אזור צר)', 
-    depth: 14, 
-    doctrine: 'התקפה מקדימה (מתקפת מנע)', 
-    example: 'אין שום שטח שאפשר לוותר עליו. תפיסת הביטחון היא "להעביר את הלחימה לשטח האויב" מהר ככל האפשר, תוך הסתמכות על חיל אוויר מהיר ומודיעין מדויק.' 
+  {
+    id: 'israel',
+    name: 'ישראל',
+    region: 'אזור הצר במרכז',
+    depth: 14,
+    timeLabel: '≈ 11 שעות עד לב המדינה',
+    reference: 'מרחק נסיעה של 12 דקות במכונית. צבא חיל-רגלים יחצה את כל המדינה בנסיעה אחת.',
+    doctrine: 'מתקפה מקדימה (Preemptive)',
+    allows: 'לתקוף ראשונים — לקפוץ בבוקר על שדות התעופה של האויב לפני שיתקוף.',
+    prevents: 'לוותר אפילו על עיר אחת. אין מרחב נסיגה — כל שטח שאובד הוא קצה הקו.',
+    historical: 'מלחמת ששת הימים (1967): ישראל זיהתה הצטברות צבא מצרי בסיני וירדה ראשונה על שדות התעופה ב-5 ביוני. הסיבה: עוד 24 שעות שיהוי = מצרים תוקפת ראשונה.',
   },
-  { 
-    id: 'lebanon', 
-    name: 'לבנון', 
-    depth: 80, 
-    doctrine: 'הגנה מבוססת שטח (מרובדת)', 
-    example: 'יש מעט עומק המאפשר נסיגה הדרגתית כדי להשהות את האויב, אבל לא מספיק לקרבות ענק. במקרה כזה, מערך ההגנה נשען על המבנה הטופוגרפי של השטח (הרים ורכסים) כמגן טבעי.' 
+  {
+    id: 'lebanon',
+    name: 'לבנון',
+    region: 'מהגבול הדרומי לבירות',
+    depth: 80,
+    timeLabel: '≈ 3 ימים מהגבול לבירות',
+    reference: 'מרחק נסיעה של כשעה. כמו מתל אביב לחיפה — והגעת לבירה של מדינה.',
+    doctrine: 'הגנה מבוססת שטח (טופוגרפיה כמגן)',
+    allows: 'להישען על הרי לבנון כקווי הגנה טבעיים — להשהות אויב מתקדם, לסחוט אבדות, לקנות שעות.',
+    prevents: 'לסגת לעומק — אין לאן. כל יום של נסיגה = 20-30 ק"מ קרובים יותר לבירות.',
+    historical: 'מלחמת לבנון השנייה (2006): רקטות חיזבאללה מהדרום הגיעו לחיפה — 60 ק"מ דרומה מהגבול. צה"ל התקדם בעמקים בהדרגה, אבל ב-34 ימים לא הגיע אפילו לליטני.',
   },
-  { 
-    id: 'ukraine', 
-    name: 'אוקראינה', 
-    depth: 600, 
-    doctrine: 'הגנה גמישה ונסיגה מבוקרת', 
-    example: 'כפי שראינו במלחמה מול רוסיה מ-2022: הצבא יכול לאבד ערים שלמות מבלי שהמדינה תקרוס. העומק נותן למדינה את הזמן לארגן כוחות מחדש, לקבל נשק מהמערב, ולשחוק את האויב לאט לאט.' 
+  {
+    id: 'ukraine',
+    name: 'אוקראינה',
+    region: 'מהגבול הרוסי לקייב',
+    depth: 600,
+    timeLabel: '≈ 3 שבועות (אם אין התנגדות)',
+    reference: 'מרחק מתל אביב ללוקסור (מצרים). חצי הדרך מלונדון לרומא.',
+    doctrine: 'הגנה גמישה + נסיגה מבוקרת',
+    allows: 'לאבד ערים שלמות (חרסון, מאריאופול) ועדיין להמשיך להילחם. זמן לארגן סיוע מ-50 מדינות, להעביר תעשייה מערבה, לאמן חיילים חדשים.',
+    prevents: 'נסיגה אינסופית — בסוף קייב היא הקו האדום. אם נופלת — המדינה נופלת.',
+    historical: 'מלחמת רוסיה-אוקראינה (2022 ואילך): רוסיה תפסה ~20% משטח אוקראינה אך לא הצליחה להגיע לקייב. העומק נתן לאוקראינה שנתיים של זמן — והכריע את מאזן הסיוע המערבי.',
   },
-  { 
-    id: 'russia', 
-    name: 'רוסיה', 
-    depth: 4000, 
-    doctrine: 'התשה (לשאוב את האויב פנימה)', 
-    example: 'מדינה שיכולה להרשות לעצמה לאבד עיר אחר עיר ועדיין לנצח. גם נפוליאון וגם היטלר הוכרעו לא רק בגלל הקור, אלא פשוט בגלל שהשטח העצום שאב והתיש את הצבאות שלהם.' 
+  {
+    id: 'russia',
+    name: 'רוסיה',
+    region: 'מהגבול המערבי למוסקבה',
+    depth: 4000,
+    timeLabel: '≈ 4 חודשים+ (תיאורטית)',
+    reference: 'יותר מרוחב יבשת אירופה כולה. שאיפה אבסולוטית — אין מי שיכול לכבוש את כולה.',
+    doctrine: 'התשה (לבלוע את האויב פנימה)',
+    allows: 'לאבד עיר אחר עיר — מינסק, סמולנסק, ואפילו פאתי מוסקבה — ועדיין יש 2,500 ק"מ של מרחב מאחור.',
+    prevents: 'כיבוש מלא — לא קרה אף פעם בהיסטוריה. השטח עצמו הוא הצבא.',
+    historical: 'נפוליאון (1812): כבש את מוסקבה — ונסוג כי קווי האספקה התארכו 2,000 ק"מ. היטלר (1941): הגיע 20 ק"מ ממוסקבה — קרס מאותה סיבה. החורף קטל, אבל המרחק קיבע את הגזר דין.',
   },
-  { 
-    id: 'usa', 
-    name: 'ארה"ב', 
-    depth: 4500, 
-    doctrine: 'הגנה מעבר לים (Far Forward)', 
-    example: 'האיומים נמצאים בצד השני של האוקיינוס. מלחמה יכולה להתנהל במשך שנים בחו"ל מבלי שאזרח בלוס אנג\'לס ירגיש סכנה פיזית. עומק אבסולוטי שווה שקט נפשי מוחלט מבית.' 
+  {
+    id: 'usa',
+    name: 'ארה"ב',
+    region: 'מכל גבול ימי לוושינגטון',
+    depth: 4500,
+    timeLabel: 'לא רלוונטי — אוקיינוס חוצץ',
+    reference: 'אוקיינוס שלם בין כל אויב פוטנציאלי לגבול היבשתי. גרסת על של עומק.',
+    doctrine: 'הגנה מעבר לים (Forward Defense)',
+    allows: 'לנהל מלחמה 20 שנה רחוק מבית בלי שאזרח בקליפורניה ירגיש סכנה פיזית. שקט נפשי מוחלט בעורף.',
+    prevents: 'פלישה קרקעית — לא קיימת כאיום ריאלי כבר יותר מ-200 שנה (מאז 1812).',
+    historical: 'וייטנאם (1965-1973), עיראק (2003-2011), אפגניסטן (2001-2021): כל המלחמות האלה נוהלו 10,000 ק"מ מבית. אזרחי ארה"ב חוו מלחמה רק במסכים — והפסידו כשדעת הקהל קרסה, לא כשהאויב התקרב.',
   },
 ];
+
+/* Visual scale for the comparison bars. Linear scale crushes Israel
+   (14 km) to invisible width next to the USA (4500 km). Log-scale
+   keeps all 5 countries visible AND reflects how perception of "more
+   depth" diminishes (each doubling matters less than the previous). */
+const MAX_DEPTH = 4500;
+const MIN_DEPTH = 10;
+const logMin = Math.log10(MIN_DEPTH);
+const logMax = Math.log10(MAX_DEPTH);
+function depthToPct(km: number): number {
+  return ((Math.log10(km) - logMin) / (logMax - logMin)) * 100;
+}
 
 export function DepthScene() {
   const [depth, setDepth] = useState(80);
@@ -108,15 +157,30 @@ export function DepthScene() {
         intro={`כל קילומטר של מרחק בין קו החזית לבין מרכזי האוכלוסייה הוא למעשה עוד שעה של זמן חסד לקבלת החלטות. בואו נשחק עם המרחק ונראה איך אותה מתקפת אויב נראית כשיש למדינה רק 14 ק"מ של עומק, לעומת 4,000 ק"מ.`}
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">עומק אסטרטגי (Strategic Depth)</strong> הוא המרחק הפיזי בין אזור הלחימה (החזית) לבין לב המדינה — המקום שבו נמצאים האזרחים, מפעלי התעשייה ומוסדות השלטון. המרחק הזה קובע 3 דברים קריטיים:
-            <strong className="text-fg block mt-1.5">1. זמן תגובה:</strong> כמה זמן יש למנהיגים ולצבא לקבל החלטות לפני שהאויב מגיע לבירה.
-            <strong className="text-fg block">2. מרחב נסיגה:</strong> כמה שטח המדינה יכולה להרשות לעצמה "להקריב" כדי להתארגן מחדש, מבלי להפסיד במלחמה.
-            <strong className="text-fg block">3. שיטת הלחימה:</strong> איזו אסטרטגיה צבאית בכלל אפשרית (התקפית, הגנתית או השהייה).
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-6 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            ההגדרה
           </div>
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+            עומק אסטרטגי = המרחק בין החזית ללב המדינה
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            המרחק הפיזי בין אזור הלחימה (החזית) לבין לב המדינה — המקום שבו נמצאים האזרחים, מפעלי התעשייה ומוסדות השלטון. הוא הגורם שקובע את חופש הפעולה של הצבא ושל מקבלי ההחלטות מאחור.
+          </p>
+        </div>
+        <div className="surface-elevated p-6 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            למה זה קובע הכל
+          </div>
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+            העומק קובע 3 דברים קריטיים
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            <strong className="text-fg">זמן תגובה</strong> — כמה זמן יש למנהיגים לפני שהאויב מגיע לבירה. <strong className="text-fg">מרחב נסיגה</strong> — כמה שטח אפשר "להקריב" כדי להתארגן מחדש. <strong className="text-fg">שיטת לחימה</strong> — איזו אסטרטגיה צבאית בכלל אפשרית: התקפית, הגנתית או השהייה.
+          </p>
         </div>
       </div>
 
@@ -130,7 +194,7 @@ export function DepthScene() {
             </div>
             <div className={cn('chip', dm.bg, dm.color, 'border-current/40')}>
               <Icon name="shield" size={12} strokeWidth={2.5} />
-              <span className="font-mono">{dm.label}</span>
+              <span className="font-display font-medium tracking-wide">{dm.label}</span>
             </div>
           </div>
 
@@ -140,17 +204,17 @@ export function DepthScene() {
 
           <div className="mt-3 grid grid-cols-3 gap-2">
             <div className="surface p-2 rounded-lg text-center">
-              <div className="text-[10px] font-mono text-fg-dim">עומק</div>
+              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">עומק</div>
               <div className="font-display font-bold text-lg text-accent tabular-nums">{depth} ק"מ</div>
             </div>
             <div className="surface p-2 rounded-lg text-center">
-              <div className="text-[10px] font-mono text-fg-dim">זמן עד הגעה לבירה</div>
+              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">זמן עד הגעה לבירה</div>
               <div className={cn('font-display font-bold text-lg tabular-nums', daysToCapital < 1 ? 'text-status-danger' : daysToCapital < 5 ? 'text-status-warn' : 'text-status-ok')}>
                 {daysToCapital < 1 ? `${Math.round(daysToCapital * 24)} שעות` : `${Math.round(daysToCapital)} ימים`}
               </div>
             </div>
             <div className="surface p-2 rounded-lg text-center">
-              <div className="text-[10px] font-mono text-fg-dim">בדומה למדינה:</div>
+              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">בדומה למדינה:</div>
               <div className="font-display font-bold text-sm text-fg">{closestCountry.name}</div>
             </div>
           </div>
@@ -175,7 +239,7 @@ export function DepthScene() {
               className="w-full accent-accent"
               aria-label="עומק"
             />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+            <div className="flex justify-between text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1">
               <span>10</span>
               <span>500</span>
               <span>2,000</span>
@@ -189,7 +253,7 @@ export function DepthScene() {
                   key={c.id}
                   onClick={() => setDepth(c.depth)}
                   className={cn(
-                    'px-1.5 py-1 rounded-md text-[10px] font-mono border transition-colors text-center',
+                    'px-1.5 py-1 rounded-md text-[11px] font-display font-medium tracking-wide border transition-colors text-center',
                     Math.abs(depth - c.depth) < 5
                       ? 'border-accent bg-accent/10 text-accent'
                       : 'border-border hover:border-border-strong text-fg-muted'
@@ -223,44 +287,104 @@ export function DepthScene() {
         </div>
       </div>
 
-      <SoftDivider text="5 דוגמאות לעומק אסטרטגי בעולם" />
+      <SoftDivider text="חמש דוגמאות לעומק אסטרטגי בעולם" />
 
-      {/* Country comparison */}
+      {/* Quick log-scale ruler — lets the eye compare all 5 at once
+          before reading the individual cards. */}
+      <div className="surface-elevated p-5 rounded-2xl mb-4">
+        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
+          קנה מידה השוואתי · ק"מ מהגבול ללב המדינה (סולם לוגריתמי — כל הכפלה היא צעד אחד)
+        </div>
+        <div className="space-y-2">
+          {COUNTRIES.map((c) => (
+            <div key={c.id} className="grid grid-cols-[100px_1fr_60px] items-center gap-3 text-sm">
+              <span className="font-display font-bold text-fg shrink-0">{c.name}</span>
+              <div className="relative h-2 bg-bg-accent rounded-full overflow-hidden">
+                <div
+                  className="absolute inset-y-0 right-0 bg-accent rounded-full"
+                  style={{ width: `${depthToPct(c.depth)}%` }}
+                />
+              </div>
+              <span className="font-display font-bold tabular-nums text-accent text-right">
+                {c.depth.toLocaleString()} ק"מ
+              </span>
+            </div>
+          ))}
+          {/* Scale markers */}
+          <div className="grid grid-cols-[100px_1fr_60px] gap-3 text-[10px] font-display font-medium tracking-wide text-fg-dim pt-1">
+            <span />
+            <div className="relative h-3">
+              {[10, 100, 1000, 4500].map((k) => (
+                <span
+                  key={k}
+                  className="absolute"
+                  style={{ right: `${depthToPct(k)}%`, transform: 'translateX(50%)' }}
+                >
+                  {k.toLocaleString()}
+                </span>
+              ))}
+            </div>
+            <span />
+          </div>
+        </div>
+      </div>
+
+      {/* Per-country profile cards */}
       <div className="space-y-3">
         {COUNTRIES.map((c, i) => (
-          <motion.div
+          <motion.article
             key={c.id}
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.06 }}
-            className="surface p-4 rounded-xl flex items-center gap-4 flex-wrap"
+            className="surface-elevated p-5 sm:p-6 rounded-2xl"
           >
-            <div className="shrink-0 w-32">
-              <div className="font-display font-bold text-sm">{c.name}</div>
-              <div className="text-[10px] font-mono text-fg-dim">{c.depth.toLocaleString()} ק"מ</div>
-            </div>
-            {/* Bar */}
-            <div className="flex-1 min-w-[180px]">
-              <div className="h-2 bg-bg-accent rounded-full overflow-hidden">
-                <div
-                  className={cn(
-                    'h-full rounded-full',
-                    c.depth < 30 ? 'bg-status-danger' :
-                    c.depth < 200 ? 'bg-status-warn' :
-                    c.depth < 1000 ? 'bg-accent' :
-                    'bg-status-ok'
-                  )}
-                  style={{ width: `${Math.min(100, (c.depth / 4500) * 100)}%` }}
-                />
+            {/* Header: name + region + the two big numbers */}
+            <div className="grid sm:grid-cols-[1fr_auto] gap-4 mb-4 pb-4 border-b border-border-subtle">
+              <div>
+                <h4 className="font-display font-bold text-xl leading-tight text-fg">{c.name}</h4>
+                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1">
+                  {c.region}
+                </div>
+              </div>
+              <div className="sm:text-left">
+                <div className="font-display font-bold text-3xl tabular-nums text-accent-hover leading-none">
+                  {c.depth.toLocaleString()}<span className="text-base text-fg-muted ms-1">ק"מ</span>
+                </div>
+                <div className="text-xs text-fg-muted mt-1">{c.timeLabel}</div>
               </div>
             </div>
-            {/* Doctrine */}
-            <div className="text-xs text-fg-muted shrink-0 max-w-md">
-              <strong className="text-fg block">{c.doctrine}.</strong>
-              {c.example}
+
+            {/* Reference scale anchor — makes the number feel real */}
+            <div className="text-sm text-fg-muted leading-relaxed mb-4 text-pretty">
+              <strong className="text-fg">בקנה מידה: </strong>{c.reference}
             </div>
-          </motion.div>
+
+            {/* The instructional pair: allows / prevents */}
+            <div className="grid sm:grid-cols-2 gap-3 mb-4">
+              <div className="rounded-lg border border-status-ok/30 bg-status-ok/5 p-3">
+                <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-ok mb-1.5">
+                  מה זה מאפשר
+                </div>
+                <p className="text-sm text-fg leading-relaxed text-pretty">{c.allows}</p>
+              </div>
+              <div className="rounded-lg border border-status-danger/30 bg-status-danger/5 p-3">
+                <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-danger mb-1.5">
+                  מה זה לא מאפשר
+                </div>
+                <p className="text-sm text-fg leading-relaxed text-pretty">{c.prevents}</p>
+              </div>
+            </div>
+
+            {/* Doctrine + historical case */}
+            <div className="rounded-lg bg-bg-accent/40 p-3">
+              <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1">
+                דוקטרינה כפויה · {c.doctrine}
+              </div>
+              <p className="text-sm text-fg leading-relaxed text-pretty">{c.historical}</p>
+            </div>
+          </motion.article>
         ))}
       </div>
     </section>
@@ -281,16 +405,9 @@ function DepthVisualization({
   const enemyProgress = 0.15; // enemy has advanced 15% into depth
 
   return (
-    <div className="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden" style={{ backgroundColor: '#e2e8f0' }}>
+    <div className="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden bg-bg-accent">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        <defs>
-          <linearGradient id="depth-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#e6ebf2" />
-          </linearGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="56" fill="url(#depth-bg)" />
+        <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
 
         {/* Enemy territory (left of border) */}
         <rect x="0" y="0" width={borderX} height="56" className="fill-status-danger/10" />

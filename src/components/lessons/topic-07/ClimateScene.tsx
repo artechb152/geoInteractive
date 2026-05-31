@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { Icon } from '@/components/Icon';
+import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
 type Spot = 'valley' | 'ridge';
@@ -11,6 +11,8 @@ type Spot = 'valley' | 'ridge';
 type SpotData = {
   id: Spot;
   label: string;
+  subtitle: string;
+  icon: IconName;
   temp: string;
   humidity: string;
   visibility: string;
@@ -23,7 +25,9 @@ type SpotData = {
 const SPOTS: SpotData[] = [
   {
     id: 'valley',
-    label: 'עמק צר (06:00)',
+    label: 'עמק צר',
+    subtitle: '06:00 · ערפל לוכד לחות',
+    icon: 'wave',
     temp: '12°C',
     humidity: '95%',
     visibility: '< 500 מ׳ — ערפל כבד',
@@ -34,7 +38,9 @@ const SPOTS: SpotData[] = [
   },
   {
     id: 'ridge',
-    label: 'רכס פתוח (06:00)',
+    label: 'רכס פתוח',
+    subtitle: '06:00 · ראות חלקה לכל הכיוונים',
+    icon: 'mountain',
     temp: '14°C',
     humidity: '40%',
     visibility: '20+ ק"מ — ראות חלקה',
@@ -122,17 +128,30 @@ export function ClimateScene() {
         intro="באותו אזור בדיוק ובאותה שעה — עמק צר והר סמוך יכולים להרגיש כמו שתי עונות שונות לגמרי. בנוסף, מזג האוויר משפיע פיזית על החיילים בכל אזור בצורה שונה. בואו נראה איך זה עובד במספרים. "
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">מילון קצר לפני שמתחילים:</strong>
-            <ul className="mt-2 space-y-1 text-fg-muted">
-              <li>· <strong className="text-fg">מיקרו-אקלים (אקלים מקומי)</strong> — מצב שבו צורת השטח יוצרת מזג אוויר שונה באזור קטן. למשל: עמק שלוכד קור ולחות ויוצר ערפל, לעומת הר פתוח עם ראות מצוינת.</li>
-              <li>· <strong className="text-fg">עומס חום/קור (WBGT)</strong> — מדד שמשקלל טמפרטורה, לחות, רוח וקרינת שמש. זהו המדד שקובע כמה מהר הגוף יתעייף, ולפיו הצבא מחליט אם מותר להתאמן או לצאת למבצע. </li>
-              <li>· <strong className="text-fg">היפותרמיה (מכת קור)</strong> — ירידה מסוכנת של חום הגוף מתחת ל-35 מעלות. הסכנה הגדולה: היא פוגעת במוח וביכולת לקבל החלטות עוד לפני שהלוחם בכלל מבין שהוא בסכנה.</li>
-            </ul>
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            המושג
           </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            מיקרו-אקלים · אקלים מקומי
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            מצב שבו צורת השטח יוצרת מזג אוויר שונה באזור קטן: עמק שלוכד קור ולחות ויוצר ערפל, לעומת הר פתוח עם ראות מצוינת — שני עולמות במרחק קילומטר.
+          </p>
+        </div>
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            המדדים שמכריעים
+          </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            WBGT והיפותרמיה
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            <strong className="text-fg">WBGT</strong> משקלל טמפרטורה, לחות, רוח וקרינת שמש — וקובע כמה מהר הגוף יתעייף. <strong className="text-fg">היפותרמיה</strong> (חום גוף מתחת ל-35°) פוגעת במוח וביכולת ההחלטה עוד לפני שהלוחם מרגיש בסכנה.
+          </p>
         </div>
       </div>
 
@@ -150,27 +169,53 @@ export function ClimateScene() {
             return (
               <button
                 key={spot.id}
+                type="button"
                 onClick={() => setActiveSpot(spot.id)}
                 className={cn(
-                  'surface p-4 text-right transition-all rounded-xl flex flex-col gap-2',
-                  isActive ? `${spot.border} ${spot.bg}` : 'hover:border-border-strong'
+                  'surface p-4 text-right transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden',
+                  isActive
+                    ? 'border-accent bg-bg-elevated'
+                    : 'border-border bg-bg-elevated hover:border-accent/50'
                 )}
               >
-                <div className={cn('font-display font-bold leading-tight', isActive && spot.color)}>
-                  {spot.label}
+                {isActive && (
+                  <motion.span
+                    layoutId="t7-spot-bar"
+                    className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                  />
+                )}
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      isActive
+                        ? 'bg-accent text-bg-elevated border-accent'
+                        : 'bg-bg-accent text-fg-muted border-border',
+                    )}
+                  >
+                    <Icon name={spot.icon} size={18} strokeWidth={2.2} />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display font-bold text-base text-fg leading-tight">
+                      {spot.label}
+                    </div>
+                    <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">
+                      {spot.subtitle}
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-[11px]">
                   <div>
                     <div className="text-fg-dim">טמפ׳</div>
-                    <div className="font-mono font-bold tabular-nums">{spot.temp}</div>
+                    <div className="font-display font-bold tabular-nums">{spot.temp}</div>
                   </div>
                   <div>
                     <div className="text-fg-dim">לחות</div>
-                    <div className="font-mono font-bold tabular-nums">{spot.humidity}</div>
+                    <div className="font-display font-bold tabular-nums">{spot.humidity}</div>
                   </div>
                   <div>
                     <div className="text-fg-dim">ראות</div>
-                    <div className="font-mono font-bold">{spot.visibility.split(' ')[0]}</div>
+                    <div className="font-display font-bold">{spot.visibility.split(' ')[0]}</div>
                   </div>
                 </div>
               </button>
@@ -211,7 +256,7 @@ export function ClimateScene() {
                 size={12}
                 strokeWidth={2.5}
               />
-              <span className="font-mono font-bold">{s.label}</span>
+              <span className="font-display font-bold tracking-wide">{s.label}</span>
             </div>
           </div>
 
@@ -307,28 +352,17 @@ export function ClimateScene() {
 
 function MicroClimateViz({ active }: { active: Spot }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent/40">
       <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="mc-sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#f0f4f9" />
-          </linearGradient>
-          <radialGradient id="mc-fog" cx="50%" cy="80%" r="55%">
-            <stop offset="0%" stopColor="#cbd5e1" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        <rect x="0" y="0" width="100" height="56" fill="url(#mc-sky)" />
+        {/* Parent card carries the warm cream background. */}
 
         {/* Mountains forming valley */}
         <path d="M0 40 L18 18 L35 38 L48 45 L62 38 L78 22 L100 40 L100 56 L0 56 Z" className="fill-terrain-ridge/30 stroke-terrain-ridge/60" strokeWidth="0.3" />
         <path d="M30 38 L48 48 L62 38 L62 56 L30 56 Z" className="fill-terrain-sand/15" />
 
         {/* Fog in valley */}
-        <ellipse cx="48" cy="48" rx="24" ry="7" fill="url(#mc-fog)" />
-        <ellipse cx="38" cy="46" rx="12" ry="4" fill="url(#mc-fog)" opacity="0.6" />
+        <ellipse cx="48" cy="48" rx="24" ry="7" className="fill-fg-dim" opacity="0.42" />
+        <ellipse cx="38" cy="46" rx="12" ry="4" className="fill-fg-dim" opacity="0.26" />
 
         {/* Ridge marker */}
         <g>
@@ -446,7 +480,7 @@ function PhysioGauge({ score, mode, status }: { score: number; mode: 'heat' | 'c
       </svg>
 
       <div className="absolute bottom-0 inset-x-0 text-center">
-        <div className="font-mono text-[10px] text-fg-dim">
+        <div className="font-display font-medium tracking-wide text-[10px] text-fg-dim">
           ציון עומס: <span className="font-bold text-fg">{score.toFixed(0)}</span> · {mode === 'heat' ? 'עומס חום' : 'עומס קור'}
         </div>
       </div>
@@ -489,7 +523,7 @@ function Slider({
         className="w-full accent-accent"
         aria-label={label}
       />
-      <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-0.5">
+      <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
         <span>{min}</span>
         <span>{max}</span>
       </div>

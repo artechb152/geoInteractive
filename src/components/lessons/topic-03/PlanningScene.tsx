@@ -31,14 +31,32 @@ title={
 intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפורטת — מעין 'ספוילר' של מה שהעיניים שלכם אמורות לראות בכל קטע בדרך. ככה גם אם הלילה קשה והדרך מורכבת, אתם לא מאבדים את החוט."
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">למה לכתוב את זה מראש?</strong>
- <br />
- בלילה, תחת לחץ או אחרי שעות של הליכה, המוח שלנו עובד פחות טוב. 'סיפור דרך' מוכן מראש מאפשר לכם לנווט על 'אוטומט' — פשוט לעקוב אחרי ההוראות של עצמכם מבלי להיתקע בחישובים מיותרים. זה ממש מציל חיים.
+ {/* Concept · matched pair feature cards */}
+ <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ הכלי המנחה
  </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+ סיפור דרך <span className="text-fg-muted font-medium text-base sm:text-lg">(Route Story)</span>
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ תוכנית מפורטת שמתארת מראש <strong className="text-fg">מה העיניים אמורות לראות בכל קטע</strong>. ככה גם בלילה קשה או בדרך מורכבת — לא מאבדים את החוט.
+ </p>
+ </div>
+
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
+ <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ למה מראש
+ </div>
+ <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ בחושך, המוח עובד פחות — התסריט עובד תמיד
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ תחת לחץ או אחרי שעות של הליכה, המוח עובד פחות טוב. סיפור דרך מוכן מאפשר לנווט <strong className="text-fg">על אוטומט</strong> — עוקבים אחרי ההוראות של עצמכם, בלי חישובים מיותרים.
+ </p>
  </div>
  </div>
 
@@ -70,35 +88,38 @@ onClick={() => setActive(i)}
 whileHover={{ x: -3 }}
 whileTap={{ scale: 0.98 }}
 className={cn(
- 'w-full surface p-4 text-right transition-all flex items-start gap-3 relative overflow-hidden',
-isActive ? 'border-accent bg-accent/5' : 'hover:border-border-strong',
+ 'w-full surface p-4 text-right transition-all flex items-start gap-3 relative overflow-hidden rounded-xl',
+isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50',
 passed && !isActive && 'opacity-80'
  )}
  >
  {isActive && (
  <motion.span
 layoutId="t3-route-bar"
-className="absolute inset-y-0 end-0 w-1 bg-accent rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
  />
  )}
  <span
 className={cn(
- 'size-8 rounded-lg flex items-center justify-center shrink-0 transition-all',
-isActive ? 'bg-accent text-bg-elevated' : passed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+isActive
+ ? 'bg-accent text-bg-elevated border-accent'
+ : passed
+ ? 'bg-status-ok/15 text-status-ok border-status-ok/30'
+ : 'bg-bg-accent text-fg-muted border-border'
  )}
  >
  {passed && !isActive ? (
- <Icon name="check" size={14} strokeWidth={2.5} />
+ <Icon name="check" size={16} strokeWidth={2.5} />
  ) : (
- <span className="font-mono text-xs font-bold">{i + 1}</span>
+ <Icon name={c.icon} size={16} />
  )}
  </span>
- <Icon name={c.icon} size={18} className={cn('shrink-0 mt-0.5', isActive ? 'text-accent' : 'text-fg-dim')} />
  <div className="flex-1 min-w-0 text-right">
- <div className={cn('text-sm font-medium leading-tight', isActive && 'text-accent')}>
+ <div className="font-display font-bold text-base text-fg leading-tight">
  {c.label}
  </div>
- <div className="text-xs text-fg-muted mt-0.5 leading-relaxed">{c.feature}</div>
+ <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-1 leading-relaxed">{c.feature}</div>
  </div>
  </motion.button>
  );
@@ -226,7 +247,7 @@ return (
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div className="space-y-6">
  <div className="flex justify-between items-end">
- <span className="text-xs font-mono text-fg-dim uppercase">מרחק שצריך לעבור:</span>
+ <span className="text-xs font-display font-medium tracking-wide text-fg-dim uppercase">מרחק שצריך לעבור:</span>
  <span className="text-4xl font-display font-bold text-accent">{distance} מ'</span>
  </div>
  <input
@@ -239,7 +260,7 @@ onChange={(e) => setDistance(Number(e.target.value))}
 className="w-full accent-accent"
 aria-label="מרחק במטרים"
  />
- <div className="grid grid-cols-4 text-[10px] font-mono text-fg-dim">
+ <div className="grid grid-cols-4 text-[10px] font-display font-medium tracking-wide text-fg-dim">
  <span>50 מ'</span>
  <span className="text-center">500</span>
  <span className="text-center">1,000</span>
@@ -248,7 +269,7 @@ aria-label="מרחק במטרים"
  </div>
 
  <div className="surface p-6 rounded-2xl border-2 border-accent/20 flex flex-col items-center justify-center bg-accent/5">
- <div className="text-[10px] font-mono text-accent mb-2 uppercase tracking-widest">כמות צמדי צעדים משוערת</div>
+ <div className="text-[10px] font-display font-medium text-accent mb-2 uppercase tracking-widest">כמות צמדי צעדים משוערת</div>
  <div className="text-6xl font-display font-bold text-accent tabular-nums mb-2">{paces}</div>
  <div className="text-sm font-bold text-fg">זוגות צעדים</div>
  <div className="text-[10px] text-fg-dim mt-4">חישוב: {distance} מ' ÷ 1.5 מ' (אורך צמד צעדים) = {paces}</div>

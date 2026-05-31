@@ -43,7 +43,7 @@ export function RecapScene() {
             className="surface p-5"
           >
             <div className="flex items-start gap-3">
-              <span className="font-mono text-xs text-accent mt-1">{String(i + 1).padStart(2, '0')}</span>
+              <span className="font-display font-medium tracking-wide text-xs text-accent mt-1">{String(i + 1).padStart(2, '0')}</span>
               <div className="flex-1">
                 <div className="font-display font-bold mb-1">{t.term}</div>
                 <div className="text-sm text-fg-muted">

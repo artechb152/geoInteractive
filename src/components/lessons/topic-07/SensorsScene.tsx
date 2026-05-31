@@ -123,15 +123,30 @@ export function SensorsScene() {
         intro={`דמיינו שכל קרן או שידור שיוצאים מהמצלמות והמכ"מים שלנו צריכים לעבור מסלול מכשולים של מולקולות מים, אבק וגשם. כל חלקיק כזה מתפקד כמו חומה קטנה שחוסמת את הראות. שחקו עם תנאי מזג האוויר למטה ובדקו איזו טכנולוגיה שורדת באילו תנאים.`}
       />
 
-      <div className="p-5 mb-6">
-        <div className="flex gap-3 items-start">
-          <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
-          <div className="text-sm leading-relaxed">
-            <strong className="text-fg">בליעה אטמוספרית (Atmospheric Attenuation)</strong> — תופעה שבה חלקיקים באוויר (כמו אדי מים, אבק או גשם) "בולעים", שוברים או מפזרים את גלי השידור של המערכות שלנו.
-            <br />
-            המשמעות בשטח: מצלמה שעבדה מושלם אתמול, יכולה להיות עיוורת לגמרי היום.
-            <strong className="text-fg block mt-1.5">הצלבת סנסורים = ביטוח:</strong> הצבא תמיד משתמש בכמה סוגי חיישנים יחד – כדי שכשאחד קורס בגלל מזג האוויר, השני יחפה עליו.
+      <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            התופעה
           </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            בליעה אטמוספרית
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            חלקיקים באוויר — אדי מים, אבק או גשם — <strong className="text-fg">"בולעים"</strong>, שוברים או מפזרים את גלי השידור של המערכות שלנו. מצלמה שעבדה מושלם אתמול יכולה להיות עיוורת לחלוטין היום.
+          </p>
+        </div>
+        <div className="surface-elevated p-5 rounded-2xl">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            הביטוח
+          </div>
+          <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
+            הצלבת חיישנים
+          </h3>
+          <p className="text-base text-fg leading-relaxed text-pretty">
+            הצבא תמיד משתמש בכמה סוגי חיישנים <strong className="text-fg">יחד</strong> — אופטי, תרמי, מכ"ם ולייזר. כשאחד קורס בגלל מזג האוויר, השני מחפה עליו, וכך אף פעם לא נשארים עיוורים לחלוטין.
+          </p>
         </div>
       </div>
 
@@ -142,18 +157,38 @@ export function SensorsScene() {
           return (
             <button
               key={w.id}
+              type="button"
               onClick={() => setWeather(w.id)}
               className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
-                isActive ? `${w.border} ${w.bg}` : 'hover:border-border-strong'
+                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2.5 relative overflow-hidden',
+                isActive
+                  ? 'border-accent bg-bg-elevated'
+                  : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
-              <Icon name={w.icon} size={26} className={cn('shrink-0', w.color)} />
-              <div>
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && w.color)}>
+              {isActive && (
+                <motion.span
+                  layoutId="t7-weather-bar"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                />
+              )}
+              <span
+                className={cn(
+                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  isActive
+                    ? 'bg-accent text-bg-elevated border-accent'
+                    : 'bg-bg-accent text-fg-muted border-border'
+                )}
+              >
+                <Icon name={w.icon} size={18} strokeWidth={2.2} />
+              </span>
+              <div className="min-w-0">
+                <div className="font-display font-bold text-base text-fg leading-tight">
                   {w.label}
                 </div>
-                <div className="text-[10px] font-mono text-fg-dim">{w.english}</div>
+                <div className="font-display font-medium tracking-wide text-[10px] text-fg-dim mt-0.5">
+                  {w.english}
+                </div>
               </div>
             </button>
           );
@@ -179,7 +214,7 @@ export function SensorsScene() {
                   <Icon name={s.icon} size={26} className="text-fg shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-display font-bold text-sm leading-tight">{s.label}</div>
-                    <div className="text-[10px] font-mono text-fg-dim">{s.english}</div>
+                    <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">{s.english}</div>
                   </div>
                   <div className={cn('font-display font-bold text-2xl tabular-nums', labelColor)}>
                     {pct}<span className="text-xs">%</span>
@@ -210,7 +245,7 @@ export function SensorsScene() {
             </div>
             <div className={cn('chip', isCrossover ? 'border-status-danger/40 bg-status-danger/10 text-status-danger' : 'border-status-ok/40 bg-status-ok/10 text-status-ok')}>
               <Icon name={isCrossover ? 'spark' : 'check'} size={12} strokeWidth={2.5} />
-              <span className="font-mono">{isCrossover ? 'Crossover!' : 'IR פעיל'}</span>
+              <span className="font-display font-medium tracking-wide">{isCrossover ? 'Crossover!' : 'IR פעיל'}</span>
             </div>
           </div>
 
@@ -218,15 +253,15 @@ export function SensorsScene() {
 
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             <div>
-              <div className="text-[10px] font-mono text-accent-hot">טנק</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-accent-hot">טנק</div>
               <div className="font-display font-bold text-xl text-accent-hot tabular-nums">{tankTemp}°</div>
             </div>
             <div>
-              <div className="text-[10px] font-mono text-terrain-sky">רקע (אדמה)</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-terrain-sky">רקע (אדמה)</div>
               <div className="font-display font-bold text-xl text-terrain-sky tabular-nums">{backgroundTemp.toFixed(1)}°</div>
             </div>
             <div>
-              <div className="text-[10px] font-mono text-fg-dim">הפרש (ΔT)</div>
+              <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim">הפרש (ΔT)</div>
               <div className={cn('font-display font-bold text-xl tabular-nums', isCrossover ? 'text-status-danger' : 'text-status-ok')}>
                 {delta.toFixed(1)}°
               </div>
@@ -249,7 +284,7 @@ export function SensorsScene() {
               className="w-full accent-accent"
               aria-label="שעה"
             />
-            <div className="flex justify-between text-[10px] font-mono text-fg-dim mt-1">
+            <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-1">
               <span>00:00</span>
               <span>06:00</span>
               <span>12:00</span>
@@ -275,18 +310,18 @@ export function SensorsScene() {
 }
 
 function ThermalViz({ tank, background, hour, crossover }: { tank: number; background: number; hour: number; crossover: boolean }) {
-  // Map temps to colors: cold = blue, warm = red
+  // Map temps (5°..30°) to a 0..1 intensity. Low → "cool" tint, high → "hot" tint.
+  // We layer two palette-token rects (accent-cool + accent-hot) per surface
+  // and opacity-blend them, so all colour comes from the design system.
   const bgIntensity = Math.max(0, Math.min(1, (background - 5) / 25));
   const tankIntensity = Math.max(0, Math.min(1, (tank - 5) / 25));
-
-  const bgColor = `rgba(${Math.round(255 * bgIntensity)}, ${Math.round(150 * (1 - bgIntensity * 0.5))}, ${Math.round(220 * (1 - bgIntensity))}, 0.85)`;
-  const tankColor = `rgba(${Math.round(255 * tankIntensity)}, ${Math.round(150 * (1 - tankIntensity * 0.5))}, ${Math.round(220 * (1 - tankIntensity))}, 0.95)`;
 
   return (
     <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
       <svg viewBox="0 0 100 56" className="w-full h-full">
-        {/* Background heatmap */}
-        <rect x="0" y="0" width="100" height="56" fill={bgColor} />
+        {/* Background heatmap — two stacked palette layers, opacity by intensity */}
+        <rect x="0" y="0" width="100" height="56" className="fill-accent-cool" opacity={0.85 * (1 - bgIntensity)} />
+        <rect x="0" y="0" width="100" height="56" className="fill-accent-hot" opacity={0.85 * bgIntensity} />
 
         {/* Noise pattern */}
         {Array.from({ length: 40 }).map((_, i) => {
@@ -298,31 +333,62 @@ function ThermalViz({ tank, background, hour, crossover }: { tank: number; backg
               cx={x}
               cy={y}
               r="1"
-              fill="rgba(255,255,255,0.08)"
+              className="fill-bg-elevated"
+              opacity="0.08"
             />
           );
         })}
 
         {/* Ground / terrain hint */}
-        <path d="M0 40 L25 36 L50 42 L75 38 L100 41 L100 56 L0 56 Z" fill="rgba(0,0,0,0.1)" />
+        <path d="M0 40 L25 36 L50 42 L75 38 L100 41 L100 56 L0 56 Z" className="fill-fg" opacity="0.1" />
 
-        {/* Tank silhouette */}
+        {/* Tank silhouette — same two-layer cool/hot blend on top of a base */}
         <g transform="translate(45 32)">
-          <rect x="-8" y="-5" width="16" height="5" rx="0.5" fill={tankColor} stroke={crossover ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.4)'} strokeWidth="0.3" />
-          <rect x="-3" y="-7.5" width="6" height="2.5" rx="0.4" fill={tankColor} stroke={crossover ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.4)'} strokeWidth="0.3" />
-          <rect x="2" y="-7" width="5" height="0.6" fill={tankColor} />
-          <rect x="-9" y="-0.5" width="18" height="2.4" rx="1" fill={tankColor} stroke={crossover ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.4)'} strokeWidth="0.3" />
+          {[
+            { x: -8, y: -5, w: 16, h: 5, rx: 0.5 },
+            { x: -3, y: -7.5, w: 6, h: 2.5, rx: 0.4 },
+            { x: 2, y: -7, w: 5, h: 0.6, rx: 0 },
+            { x: -9, y: -0.5, w: 18, h: 2.4, rx: 1 },
+          ].map((r, i) => (
+            <g key={i}>
+              <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={r.rx} className="fill-accent-cool" opacity={0.95 * (1 - tankIntensity)} />
+              <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={r.rx} className="fill-accent-hot" opacity={0.95 * tankIntensity} />
+              {r.w > 0.6 && (
+                <rect
+                  x={r.x}
+                  y={r.y}
+                  width={r.w}
+                  height={r.h}
+                  rx={r.rx}
+                  fill="none"
+                  className={crossover ? 'stroke-fg' : 'stroke-fg'}
+                  strokeWidth="0.3"
+                  opacity={crossover ? 0.2 : 0.4}
+                />
+              )}
+            </g>
+          ))}
         </g>
 
         {/* Time indicator */}
-        <text x="6" y="9" className="fill-bg font-display font-bold font-bold" fontSize="4" paintOrder="stroke" stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" strokeLinejoin="round">
+        <text
+          x="6"
+          y="9"
+          className="fill-bg-elevated font-display font-bold"
+          fontSize="4"
+          paintOrder="stroke"
+          stroke="#ffffff"
+          strokeWidth="0.8"
+          strokeLinejoin="round"
+          strokeOpacity="0.4"
+        >
           {hour.toString().padStart(2, '0')}:00
         </text>
 
         {/* Crossover overlay */}
         {crossover && (
           <g>
-            <rect x="0" y="0" width="100" height="56" fill="rgba(239,68,68,0.08)" />
+            <rect x="0" y="0" width="100" height="56" className="fill-status-danger" opacity="0.08" />
             <text x="50" y="14" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="4.5" paintOrder="stroke" stroke="#ffffff" strokeWidth="1.4" strokeLinejoin="round">
               ⚠ Thermal Crossover
             </text>
