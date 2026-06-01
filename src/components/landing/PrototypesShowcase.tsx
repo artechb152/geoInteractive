@@ -48,14 +48,10 @@ export function PrototypesShowcase() {
         </div>
         <h2
           id="prototypes-heading"
-          className="font-display font-bold text-2xl md:text-4xl text-balance leading-tight mb-2"
+          className="font-display font-bold text-2xl md:text-4xl text-balance leading-tight"
         >
           שני <span className="text-accent-hover">פרוטוטייפים ראשוניים</span> לבדיקה
         </h2>
-        <p className="text-fg-muted text-base md:text-lg max-w-3xl">
-          פיתוחים חצי־עבודה שבודקים יסודות טכניים של הקורס: סימולציית שטח תלת־ממדית
-          והצגת שכבות מידע גיאו־מרחביות. לחצי על כרטיס כדי לפתוח את הפרוטוטייפ בעמוד מלא.
-        </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
