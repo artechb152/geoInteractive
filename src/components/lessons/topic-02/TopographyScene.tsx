@@ -71,7 +71,7 @@ title={
         intro="טופוגרפיה = חקר צורת הקרקע (איפה יש הר, גבעה או עמק). את אותו ההר אפשר להציג ב-3 דרכים. לחצו על האפשרויות ובדקו מה היתרונות והחסרונות של כל אחת:"
  />
 
- <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
+ <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
  {/* Accordion list — first child → RIGHT in RTL (text on right) */}
  <div className="space-y-3">
  {VIEWS.map((v, i) => {
@@ -200,7 +200,7 @@ aria-hidden
  </div>
 
  {/* Visualization — second child → LEFT in RTL */}
- <div className="surface-elevated relative overflow-hidden">
+ <div className="surface-elevated relative overflow-hidden h-full flex flex-col">
  <AnimatePresence mode="wait">
  <motion.div
 key={view}
@@ -208,7 +208,7 @@ initial={{ opacity: 0, scale: 0.96 }}
 animate={{ opacity: 1, scale: 1 }}
 exit={{ opacity: 0, scale: 1.02 }}
 transition={{ duration: 0.3 }}
-className="aspect-[4/3]"
+className="flex-1 min-h-[18rem]"
  >
  {view === '3d' && <View3D />}
  {view === 'photo' && <ViewPhoto />}
@@ -231,7 +231,7 @@ className="aspect-[4/3]"
 // ==========================================
 function View3D() {
 return (
- <svg viewBox="0 0 100 75" className="w-full h-full">
+ <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
  {/* Sky */}
  <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
 
@@ -260,7 +260,7 @@ return (
 function ViewPhoto() {
  // Pseudo-aerial photo — patches of color
 return (
- <svg viewBox="0 0 100 75" className="w-full h-full">
+ <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
  <defs>
  <radialGradient id="photo-vignette">
  <stop offset="60%" stopColor="transparent" />
@@ -294,7 +294,7 @@ return <circle key={i} cx={x} cy={y} r="0.2" className="fill-fg/20" />;
 }
 function ViewTopo() {
 return (
- <svg viewBox="0 0 100 75" className="w-full h-full">
+ <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
  <rect x="0" y="0" width="100" height="75" className="fill-bg" />
 
  {/* Grid */}

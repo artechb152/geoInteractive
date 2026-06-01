@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
@@ -14,7 +15,14 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 
-type Feature = 'flat' | 'mountain' | 'river' | 'narrow';
+export type Feature = 'flat' | 'mountain' | 'river' | 'narrow';
+
+// 3D visualization is client-only (WebGL needs a browser) and split out so
+// three.js doesn't end up in the initial bundle for the rest of the lesson.
+const TerrainCanvas = dynamic(() => import('./TerrainCanvas'), {
+  ssr: false,
+  loading: () => <TerrainStageLoading />,
+});
 
 type Step = {
   id: Feature;
@@ -236,98 +244,11 @@ title={
 function TerrainStage({ feature }: { feature: Feature }) {
   return (
     <div className="relative w-full h-full">
-      {/* `meet` keeps the whole diagram visible (no cropping). The
-          parent card carries the matching `bg-bg-accent/30` so any
-          uncovered area still reads as the same tinted surface. */}
-      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-        {/* The diagram has no inner background `<rect>` — the parent
-            card carries the only tint, so even when the SVG doesn't
-            cover the full container (with `meet` it stays centred at
-            its natural aspect ratio), the surrounding area reads as
-            the exact same colour with no stacking/double-tint band. */}
+      {/* WebGL scene. The Canvas renders transparent so the parent
+          card's cream tint reads through any uncovered margin. */}
+      <TerrainCanvas feature={feature} />
 
-        {/* Grid */}
-        {Array.from({ length: 10 }).map((_, i) => (
-          <line
-            key={'gx' + i}
-            x1={i * 10}
-            y1="0"
-            x2={i * 10}
-            y2="75"
-            className="stroke-border-subtle"
-            strokeWidth="0.1"
-          />
-        ))}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <line
-            key={'gy' + i}
-            x1="0"
-            y1={i * 10}
-            x2="100"
-            y2={i * 10}
-            className="stroke-border-subtle"
-            strokeWidth="0.1"
-          />
-        ))}
-
-        {/* Mountain */}
-        <AnimatedShape show={['mountain', 'river', 'narrow'].includes(feature)}>
-          <path
-            d="M30 50 L42 25 L54 50 Z"
-            className="fill-terrain-ridge/40 stroke-terrain-ridge"
-            strokeWidth="0.4"
-          />
-          <path
-            d="M50 50 L62 30 L74 50 Z"
-            className="fill-terrain-ridge/30 stroke-terrain-ridge/80"
-            strokeWidth="0.4"
-          />
-        </AnimatedShape>
-
-        {/* River */}
-        <AnimatedShape show={['river', 'narrow'].includes(feature)}>
-          <path
-            d="M0 60 Q 25 56 50 62 T 100 60"
-            fill="none"
-            className="stroke-terrain-sky"
-            strokeWidth="2.4"
-            opacity="0.7"
-          />
-          {/* Bridge marker */}
-          <rect x="48" y="59" width="4" height="2.6" className="fill-accent" rx="0.4" />
-          <text x="50" y="68" textAnchor="middle" className="fill-accent text-[3px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
-            גשר
-          </text>
-        </AnimatedShape>
-
-        {/* Narrow corridor — extra ridges that channel movement */}
-        <AnimatedShape show={feature === 'narrow'}>
-          <path d="M0 12 L20 12 L26 18 L20 24 L0 24 Z" className="fill-terrain-ridge/40" />
-          <path d="M100 12 L80 12 L74 18 L80 24 L100 24 Z" className="fill-terrain-ridge/40" />
-          <text x="50" y="20" textAnchor="middle" className="fill-fg-muted text-[3px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
-            ↕ נקודת חנק
-          </text>
-        </AnimatedShape>
-
-        {/* Movement arrows from blue to red */}
-        <ArrowsByFeature feature={feature} />
-
-        {/* Forces */}
-        <UnitMarker x={6} y={66} color="cool" label="צבא כחול" />
-        <UnitMarker x={94} y={10} color="hot" label="צבא אדום" />
-      </svg>
-
-      <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-xs text-fg-muted">
+      <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-xs text-fg-muted pointer-events-none">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
         לחץ על שלב מימין — נבנה את השטח יחד, צעד אחר צעד
       </div>
@@ -335,83 +256,14 @@ function TerrainStage({ feature }: { feature: Feature }) {
   );
 }
 
-function AnimatedShape({ show, children }: { show: boolean; children: React.ReactNode }) {
+function TerrainStageLoading() {
   return (
-    <motion.g
-      initial={false}
-      animate={{ opacity: show ? 1 : 0 }}
-      transition={{ duration: 0.4 }}
-      style={{ pointerEvents: show ? 'auto' : 'none' }}
-    >
-      {children}
-    </motion.g>
-  );
-}
-
-function UnitMarker({ x, y, color, label }: { x: number; y: number; color: 'cool' | 'hot'; label: string }) {
-  const fill = color === 'cool' ? 'fill-accent-cool' : 'fill-accent-hot';
-  const text = color === 'cool' ? 'fill-accent-cool' : 'fill-accent-hot';
-  return (
-    <g>
-      <circle cx={x} cy={y} r="2.5" className={cn(fill, 'opacity-30')}>
-        <animate attributeName="r" values="2.5;4;2.5" dur="2.5s" repeatCount="indefinite" />
-      </circle>
-      <circle cx={x} cy={y} r="1.6" className={fill} />
-      <text x={x} y={y + 6} textAnchor="middle" className={cn(text, 'text-[2.5px] font-display font-bold')}
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
-        {label}
-      </text>
-    </g>
-  );
-}
-
-function ArrowsByFeature({ feature }: { feature: Feature }) {
-  // Two arrows showing typical movement paths per feature
-  const paths = (() => {
-    switch (feature) {
-      case 'flat':
-        return [{ d: 'M10 64 Q 50 38 90 12', label: 'ישיר' }];
-      case 'mountain':
-        return [
-          { d: 'M10 64 Q 30 64 30 50 Q 30 38 90 12', label: 'איגוף שמאל' },
-          { d: 'M10 64 Q 70 64 78 50 Q 84 38 90 12', label: 'איגוף ימין' },
-        ];
-      case 'river':
-        return [{ d: 'M10 64 Q 30 64 50 60 Q 70 56 90 12', label: 'דרך הגשר' }];
-      case 'narrow':
-        return [{ d: 'M10 64 Q 30 64 50 60 Q 50 30 50 18 Q 70 18 90 12', label: 'נקודת חנק' }];
-      default:
-        return [];
-    }
-  })();
-
-  return (
-    <>
-      <defs>
-        <marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
-          <polygon points="0,0 4,2 0,4" className="fill-accent" />
-        </marker>
-      </defs>
-      {paths.map((p, i) => (
-        <g key={i}>
-          <motion.path
-            d={p.d}
-            fill="none"
-            className="stroke-accent/60"
-            strokeWidth="0.5"
-            strokeDasharray="1.2 1"
-            markerEnd="url(#arrowhead)"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.9 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-          />
-        </g>
-      ))}
-    </>
+    <div className="w-full h-full min-h-[280px] flex items-center justify-center">
+      <div className="flex items-center gap-2 text-fg-dim text-xs font-display">
+        <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
+        <span>טוען תצוגה תלת-ממדית...</span>
+      </div>
+    </div>
   );
 }
 
