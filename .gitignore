@@ -14,3 +14,12 @@ topics-1-2-review/
 
 # Local Claude Code agent state / skill data — not part of the runnable app
 .claude/
+
+# External prototype sources (cloned from idog2210/Terrain3DSimulator…
+# and idog2210/TerrainOverlay… for in-app embedding). Their built
+# output lives at public/prototypes/<name>/ and IS tracked. The source
+# trees stay external — to rebuild after upstream changes:
+#   npm run prototypes:build
+# Leading slash anchors this to the repo root so it doesn't match
+# public/prototypes/ as well.
+/prototypes/

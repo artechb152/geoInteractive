@@ -32,7 +32,7 @@ const PROTOTYPES: Prototype[] = [
     tagline: 'ניווט וחקירה במודל גובה אינטראקטיבי',
     description:
       'פרוטוטייפ ראשוני לסביבת לימוד תלת־ממדית של שטח. מאפשר להסתובב, להזיז את זווית הצפייה ולחקור את התבליט מכל זווית — כדי לתרגל קריאת מורפולוגיה לפני יציאה בפועל לשטח.',
-    embedUrl: null,
+    embedUrl: '/prototypes/terrain-3d/index.html',
     repoUrl: 'https://github.com/idog2210/Terrain3DSimulatorTerrainPrototype01',
     aspectClass: 'aspect-[4/3] md:aspect-[16/10]',
   },
@@ -42,7 +42,7 @@ const PROTOTYPES: Prototype[] = [
     tagline: 'הלבשת שכבות גיאו־מידע על מפה',
     description:
       'פרוטוטייפ ראשוני להצגת שכבות מידע (טופוגרפיה, תשתיות, איומים) על גבי מפת בסיס. מדגים את הרעיון של ניתוח מרחבי דרך הצלבת מספר שכבות שקופות בו־זמנית.',
-    embedUrl: null,
+    embedUrl: '/prototypes/terrain-overlay/index.html',
     repoUrl: 'https://github.com/idog2210/TerrainOverlayPrototype01',
     aspectClass: 'aspect-[4/3] md:aspect-[16/10]',
   },
