@@ -1,14 +1,10 @@
+import Link from 'next/link';
+
 /**
- * Landing-page section that surfaces the two prototypes the user
- * is testing for proof-of-concept (terrain simulator + terrain
- * overlay). Each card embeds the prototype via an iframe and matches
- * the site's design language (orange eyebrow, surface-elevated card,
- * brand typography). The prototype internals are untouched — only the
- * surrounding chrome.
- *
- * To swap in the live URLs, replace the placeholder values in
- * `PROTOTYPES[i].embedUrl` below with the deployed iframe-friendly
- * URLs (e.g. Vercel preview deploys or GitHub Pages).
+ * Landing-page teaser for the two prototypes. Each card is just a
+ * preview tile that links to the dedicated /prototypes/<id> page,
+ * where the actual prototype is rendered full-bleed in an iframe.
+ * No GitHub URLs, no inline embedding — clicks lead to focused pages.
  */
 
 type Prototype = {
@@ -16,13 +12,7 @@ type Prototype = {
   title: string;
   tagline: string;
   description: string;
-  /** The iframe source URL. Set to `null` to render the "placeholder"
-   * card with the repo link, useful before the prototype is deployed. */
-  embedUrl: string | null;
-  /** Always show the GitHub repo link as a fallback / source-of-truth. */
-  repoUrl: string;
-  /** Aspect ratio class for the iframe wrapper. */
-  aspectClass: string;
+  href: string;
 };
 
 const PROTOTYPES: Prototype[] = [
@@ -32,9 +22,7 @@ const PROTOTYPES: Prototype[] = [
     tagline: 'ניווט וחקירה במודל גובה אינטראקטיבי',
     description:
       'פרוטוטייפ ראשוני לסביבת לימוד תלת־ממדית של שטח. מאפשר להסתובב, להזיז את זווית הצפייה ולחקור את התבליט מכל זווית — כדי לתרגל קריאת מורפולוגיה לפני יציאה בפועל לשטח.',
-    embedUrl: '/prototypes/terrain-3d/index.html',
-    repoUrl: 'https://github.com/idog2210/Terrain3DSimulatorTerrainPrototype01',
-    aspectClass: 'aspect-[4/3] md:aspect-[16/10]',
+    href: '/prototypes/terrain-3d',
   },
   {
     id: 'terrain-overlay',
@@ -42,9 +30,7 @@ const PROTOTYPES: Prototype[] = [
     tagline: 'הלבשת שכבות גיאו־מידע על מפה',
     description:
       'פרוטוטייפ ראשוני להצגת שכבות מידע (טופוגרפיה, תשתיות, איומים) על גבי מפת בסיס. מדגים את הרעיון של ניתוח מרחבי דרך הצלבת מספר שכבות שקופות בו־זמנית.',
-    embedUrl: '/prototypes/terrain-overlay/index.html',
-    repoUrl: 'https://github.com/idog2210/TerrainOverlayPrototype01',
-    aspectClass: 'aspect-[4/3] md:aspect-[16/10]',
+    href: '/prototypes/terrain-overlay',
   },
 ];
 
@@ -68,78 +54,33 @@ export function PrototypesShowcase() {
         </h2>
         <p className="text-fg-muted text-base md:text-lg max-w-3xl">
           פיתוחים חצי־עבודה שבודקים יסודות טכניים של הקורס: סימולציית שטח תלת־ממדית
-          והצגת שכבות מידע גיאו־מרחביות. נסי, סובבי, גלי איפה זה עובד ואיפה צריך עוד עבודה.
+          והצגת שכבות מידע גיאו־מרחביות. לחצי על כרטיס כדי לפתוח את הפרוטוטייפ בעמוד מלא.
         </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4 md:gap-6">
         {PROTOTYPES.map((p) => (
-          <article
+          <Link
             key={p.id}
-            className="surface-elevated rounded-2xl overflow-hidden flex flex-col"
+            href={p.href}
+            className="group surface-elevated rounded-2xl p-6 sm:p-8 flex flex-col transition-colors border border-border hover:border-accent"
           >
-            {/* Card header */}
-            <div className="p-5 sm:p-6 border-b border-border-subtle">
-              <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent mb-1.5">
-                {p.tagline}
-              </div>
-              <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-2 text-accent-hover">
-                {p.title}
-              </h3>
-              <p className="text-sm md:text-base text-fg leading-relaxed text-pretty">
-                {p.description}
-              </p>
+            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent mb-2.5">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+              {p.tagline}
             </div>
-
-            {/* Embed area — fills the rest of the card and stays responsive */}
-            <div className={`relative w-full bg-bg-accent/30 ${p.aspectClass}`}>
-              {p.embedUrl ? (
-                <iframe
-                  src={p.embedUrl}
-                  title={p.title}
-                  className="absolute inset-0 w-full h-full border-0"
-                  loading="lazy"
-                  allow="fullscreen; accelerometer; gyroscope"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center p-6">
-                  <div className="text-center max-w-sm">
-                    <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
-                      <span className="size-1.5 rounded-full bg-fg-dim" aria-hidden />
-                      ממתין לפריסה (Deployment)
-                    </div>
-                    <p className="text-sm text-fg leading-relaxed mb-4">
-                      ברגע שהפרוטוטייפ יפרוס ל-Vercel/GitHub-Pages, ההטמעה
-                      תופיע כאן אוטומטית. בינתיים אפשר לעיין בקוד המקור:
-                    </p>
-                    <a
-                      href={p.repoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium text-bg-elevated bg-accent hover:bg-accent-hover transition-colors text-sm"
-                    >
-                      פתח את הריפו ב-GitHub
-                    </a>
-                  </div>
-                </div>
-              )}
+            <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-3 text-accent-hover">
+              {p.title}
+            </h3>
+            <p className="text-sm md:text-base text-fg leading-relaxed text-pretty mb-5">
+              {p.description}
+            </p>
+            <div className="mt-auto pt-4 border-t border-border-subtle">
+              <span className="inline-flex items-center px-4 py-2 rounded-md font-medium text-sm bg-accent text-bg-elevated group-hover:bg-accent-hover transition-colors">
+                פתח את הפרוטוטייפ
+              </span>
             </div>
-
-            {/* Footer — repo link always visible */}
-            <div className="px-5 sm:px-6 py-3 border-t border-border-subtle flex items-center justify-between gap-3 flex-wrap">
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">
-                קוד מקור פתוח
-              </div>
-              <a
-                href={p.repoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[12px] font-display font-medium tracking-wide text-accent-hover hover:text-accent transition-colors truncate max-w-[60%]"
-              >
-                {p.repoUrl.replace('https://github.com/', '')}
-              </a>
-            </div>
-          </article>
+          </Link>
         ))}
       </div>
     </section>

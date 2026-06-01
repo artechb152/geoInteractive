@@ -31,9 +31,9 @@ for (const p of PROTOTYPES) {
   execSync('npm install', { cwd: src, stdio: 'inherit' });
   execSync('npm run build', { cwd: src, stdio: 'inherit' });
 
-  const dest = join(root, 'public', 'prototypes', p.name);
+  const dest = join(root, 'public', 'embeds', p.name);
   if (existsSync(dest)) rmSync(dest, { recursive: true, force: true });
   mkdirSync(dest, { recursive: true });
   cpSync(join(src, 'dist'), dest, { recursive: true });
-  console.log(`[done]  ${p.name} → public/prototypes/${p.name}/`);
+  console.log(`[done]  ${p.name} → public/embeds/${p.name}/`);
 }
