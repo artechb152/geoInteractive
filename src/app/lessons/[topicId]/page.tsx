@@ -9,29 +9,14 @@ import { InteractionPlaceholder } from '@/components/interactive/InteractionPlac
 import { Topic01Lesson } from '@/components/lessons/topic-01/Topic01Lesson';
 import { Topic02Lesson } from '@/components/lessons/topic-02/Topic02Lesson';
 import { Topic03Lesson } from '@/components/lessons/topic-03/Topic03Lesson';
-import { Topic04Lesson } from '@/components/lessons/topic-04/Topic04Lesson';
-import { Topic05Lesson } from '@/components/lessons/topic-05/Topic05Lesson';
-import { Topic06Lesson } from '@/components/lessons/topic-06/Topic06Lesson';
-import { Topic07Lesson } from '@/components/lessons/topic-07/Topic07Lesson';
-import { Topic08Lesson } from '@/components/lessons/topic-08/Topic08Lesson';
-import { Topic09Lesson } from '@/components/lessons/topic-09/Topic09Lesson';
-import { Topic10Lesson } from '@/components/lessons/topic-10/Topic10Lesson';
-import { Topic11Lesson } from '@/components/lessons/topic-11/Topic11Lesson';
-import { Topic12Lesson } from '@/components/lessons/topic-12/Topic12Lesson';
 
+// PREVIEW BUILD — only lessons 1-3 are wired up. To restore the full
+// course, re-add the Topic04Lesson…Topic12Lesson imports and registry
+// entries (they still exist in `src/components/lessons/topic-04..12`).
 const customLearn: Record<string, () => React.ReactNode> = {
   'topic-01': () => <Topic01Lesson />,
   'topic-02': () => <Topic02Lesson />,
   'topic-03': () => <Topic03Lesson />,
-  'topic-04': () => <Topic04Lesson />,
-  'topic-05': () => <Topic05Lesson />,
-  'topic-06': () => <Topic06Lesson />,
-  'topic-07': () => <Topic07Lesson />,
-  'topic-08': () => <Topic08Lesson />,
-  'topic-09': () => <Topic09Lesson />,
-  'topic-10': () => <Topic10Lesson />,
-  'topic-11': () => <Topic11Lesson />,
-  'topic-12': () => <Topic12Lesson />,
 };
 
 export function generateStaticParams() {
