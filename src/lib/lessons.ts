@@ -249,13 +249,6 @@ export const lessons: Lesson[] = [
   },
 ];
 
-// PREVIEW BUILD — keep only the first 3 lessons for the demo branch.
-// To restore: remove the `.slice(0, 3)` call below.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _ALL_LESSONS = lessons;
-const PREVIEW_LESSON_COUNT = 3;
-(lessons as Lesson[]).splice(PREVIEW_LESSON_COUNT);
-
 export function getLesson(id: string): Lesson | undefined {
   return lessons.find((l) => l.id === id);
 }
