@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/ensure-next-junction.mjs",
+    "predev": "node scripts/remove-next-junction.mjs",
     "dev": "next dev",
     "prebuild": "node scripts/remove-next-junction.mjs",
     "build": "next build",
