@@ -1,15 +1,17 @@
 /**
  * OneDrive virtualises freshly-written files in the project folder
  * (turns them into "online-only" reparse points within milliseconds),
- * which destroys the Next.js dev cache. See
- * `scripts/ensure-next-junction.mjs` — the `.next/` folder is
- * symlinked to `%TEMP%/next-geo-course-dist/` so the build cache
- * lives outside OneDrive's sync scope. The link is created
- * automatically by the `predev` / `prebuild` hooks in package.json.
+ * which can corrupt the Next.js dev cache. We mitigate that by
+ * disabling Webpack's filesystem cache in dev (below) — the .pack.gz
+ * files are what OneDrive raced on, and they're cheap enough to
+ * rebuild every time.
  *
- * Webpack's filesystem cache is also disabled in dev because
- * OneDrive can still race on the .pack.gz files even outside the
- * project, and they're cheap enough to rebuild.
+ * NOTE: relocating `.next/` outside the project via a junction was
+ * tried and abandoned — it breaks App Router dev (compiled output in
+ * %TEMP% can't resolve `node_modules`, so every request crashes with
+ * `Cannot find module 'react/jsx-runtime'`). See
+ * `scripts/remove-next-junction.mjs` for the full rationale. If the
+ * cache-disable isn't enough, move the project out of OneDrive.
  */
 
 /** @type {import('next').NextConfig} */

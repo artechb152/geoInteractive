@@ -1,13 +1,22 @@
 #!/usr/bin/env node
 /**
- * Run before `npm run build`. The dev workflow uses a junction
- * `.next/ → %TEMP%/next-geo-course-dist/` (see
- * `ensure-next-junction.mjs`) to dodge OneDrive sync corruption.
- * `next build` doesn't tolerate the junction — when build artifacts
- * land in %TEMP% Node's `require()` walks up from there and can't
- * find the project's `node_modules/`. So before each production
- * build we remove the junction; Next then creates a real `.next/`
- * folder under the project root.
+ * Runs before BOTH `npm run dev` and `npm run build` (predev /
+ * prebuild). It makes sure `.next/` is a real directory under the
+ * project root, removing any stale junction left over from the old
+ * `.next/ → %TEMP%/next-geo-course-dist/` workaround.
+ *
+ * Why the junction was abandoned: when Next's compiled output lands
+ * in %TEMP%, Node resolves the junction to its real path and
+ * `require()` walks up from %TEMP% — where it can't find the
+ * project's `node_modules/`. In dev this crashes every request with
+ * `Cannot find module 'react/jsx-runtime'` (the App Router server
+ * bundle requires React as a bare specifier at runtime). The
+ * `--preserve-symlinks` flag fixes the require but then breaks App
+ * Router route matching (every route 404s), so there's no viable
+ * junction setup. OneDrive sync corruption is instead mitigated by
+ * disabling Webpack's filesystem cache in dev (see next.config.mjs).
+ * If OneDrive still races on `.next/` files, move the project out of
+ * OneDrive (e.g. to C:\dev\).
  *
  * If `.next/` is already a real directory (no junction in place)
  * this script is a no-op.
