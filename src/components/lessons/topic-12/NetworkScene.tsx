@@ -81,11 +81,11 @@ return (
  <SceneHeader
 step="12.3"
 eyebrow="ניתוח רשתות ומעגלי השפעה"
-title={
- <>
- <span className="text-accent-hover">Network</span> + <span className="text-accent-hover">Buffer</span> Analysis
- </>
- }
+title = {
+  <>
+    GIS לא רק מציג מפה — הוא <span className="text-accent-hover">מזהה מה יקרוס ומה מסוכן</span>
+  </>
+}
 intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טילים מאיימת על 50 ק"מ. ניתוח רשתות חושף את הצומת הקריטי, וניתוח Buffer מציג איפה אסור לעבור.`}
  />
 

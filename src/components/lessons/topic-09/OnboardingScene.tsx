@@ -102,11 +102,11 @@ export function OnboardingScene() {
       <SceneHeader
         step="09.0"
         eyebrow="לפני שמתחילים"
-        title={
-          <>
-            איך משאב <span className="text-accent-hover">הופך לנשק</span>
-          </>
-        }
+title = {
+  <>
+    איך <span className="text-accent-hover">משאב טבע</span> הופך לכלי לחץ עולמי
+  </>
+}
         intro="פעם, ערכו של משאב (כמו נפט או מים) נמדד רק בכסף. היום הוא נמדד בכוח שהוא מעניק למי ששולט בו. בחלק זה נראה בארבעה שלבים פשוטים איך באר נפט, נהר או צינור גז הופכים לכלים שמשנים את יחסי הכוחות בעולם."
       />
 

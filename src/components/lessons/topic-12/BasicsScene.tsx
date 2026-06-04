@@ -86,12 +86,11 @@ return (
  <SceneHeader
 step="12.1"
 eyebrow="GIS Basics — שכבות וסוגי נתונים"
-title={
- <>
- <span className="text-accent-hover">שכבות</span> + <span className="text-accent-hover">ראסטר/וקטור</span> = GIS
- </>
- }
-intro="כל GIS בנוי משכבות. כל שכבה היא 'שקף שקוף'. ויש שני אופנים שהמחשב רואה את העולם — ראסטר (פיקסלים) או וקטור (אובייקטים). ההבדל הזה הוא הכל."
+title = {
+  <>
+    GIS מתחיל ברעיון פשוט: <span className="text-accent-hover">כל מידע הוא שכבה שאפשר לחקור</span>
+  </>
+}intro="כל GIS בנוי משכבות. כל שכבה היא 'שקף שקוף'. ויש שני אופנים שהמחשב רואה את העולם — ראסטר (פיקסלים) או וקטור (אובייקטים). ההבדל הזה הוא הכל."
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">

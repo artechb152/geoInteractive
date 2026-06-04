@@ -96,11 +96,11 @@ export function KillChainScene() {
       <SceneHeader
         step="06.3"
         eyebrow="שרשרת התקיפה (Kill Chain) וקו הראייה"
-        title={
-          <>
-            <span className="gradient-text">השרשרת שמחזיקה</span> את כל המבצע
-          </>
-        }
+title = {
+  <>
+    <span className="gradient-text">אם איבדתם קשר עין</span> — איבדתם את כל התקיפה
+  </>
+}
         intro="כל תקיפה מורכבת משרשרת של 4 שלבים. כל שלב מחובר לשני בעזרת חוט דק אחד — קו הראייה (LOS). אם החוט הזה נחתך באמצע, כל השרשרת קורסת. בואו נבין איך זה עובד."
       />
 
