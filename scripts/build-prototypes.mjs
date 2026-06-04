@@ -17,6 +17,9 @@ import { join } from 'node:path';
 const PROTOTYPES = [
   { name: 'terrain-3d', src: 'prototypes/terrain-3d' },
   { name: 'terrain-overlay', src: 'prototypes/terrain-overlay' },
+  // Clone idog2210/Pyramid3LevelsPrototype01 into prototypes/pyramid-3-levels/
+  // and this will build it; until then it's skipped (source not found).
+  { name: 'pyramid-3-levels', src: 'prototypes/pyramid-3-levels' },
 ];
 
 const root = process.cwd();
