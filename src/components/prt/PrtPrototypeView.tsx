@@ -35,7 +35,7 @@ export function PrtPrototypeView({ p }: { p: PrtPrototype }) {
       <div className="flex-1 min-h-0 bg-bg-accent/20 flex items-stretch p-3 sm:p-4 md:p-6">
         <div className="w-full max-w-6xl mx-auto rounded-xl overflow-hidden border border-border bg-bg-elevated">
           <iframe
-            src={`/embeds/${p.id}/index.html`}
+            src={`/embeds/${p.id}/`}
             title={p.title}
             className="block w-full h-full border-0"
             allow="fullscreen; accelerometer; gyroscope"
