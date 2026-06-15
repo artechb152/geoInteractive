@@ -11,11 +11,11 @@ feature: string;
 icon: IconName;
 };
 const CHECKPOINTS: Checkpoint[] = [
- { id: '1', label: 'נקודה 1: יוצאים לדרך', feature: 'עוזבים את המבנים האחרונים בבסיס. לוקחים קשת חדה לכיוון מזרח ומחפשים את תחילת ערוץ הנחל.', icon: 'flag' },
+ { id: '1', label: 'נקודה 1: יוצאים לדרך (נ.ה)', feature: 'עוזבים את המבנים האחרונים בבסיס. לוקחים קשת חדה לכיוון מזרח ומחפשים את תחילת ערוץ הנחל.', icon: 'flag' },
  { id: '2', label: 'נקודה 2: עיקול הנחל', feature: 'מגיעים לסיבוב משמעותי בנחל. חוצים אותו לצד ימין ומטפסים בשיפוע מתון לכיוון צפון-מזרח.', icon: 'wave' },
  { id: '3', label: 'נקודה 3: אימות גובה', feature: 'עוקפים את הגבעה מצד שמאל (מערב). בשלב זה אתם אמורים לראות את תורן האנטנה בקו הרכס הרחוק.', icon: 'mountain' },
  { id: '4', label: 'נקודה 4: חציית ציר', feature: 'מגיעים לדרך עפר רחבה. חוצים אותה בזהירות וממשיכים בתוך חורשת העצים למשך 600 מטרים נוספים.', icon: 'truck' },
- { id: '5', label: 'היעד: נקודת הסיום', feature: 'הגעה לקרקע סלעית עם קבוצת עצי אורן בולטים. זהו היעד — מוודאים אימות אחרון ועוצרים.', icon: 'target' },
+ { id: '5', label: 'היעד: נקודת הסיום (נ.ס)', feature: 'הגעה לקרקע סלעית עם קבוצת עצי אורן בולטים. זהו היעד — מוודאים אימות אחרון ועוצרים.', icon: 'target' },
 ];
 export function PlanningScene() {
 return (
@@ -132,105 +132,419 @@ isActive
  </div>
  );
 }
+// ——— Illustrated-map helpers (visual only — no data/logic changes) ———
+type Pt = { x: number; y: number };
+type Deco = { x: number; y: number; s?: number };
+
+// Catmull-Rom → cubic Bézier, so the orange route reads as an organic trail
+// (it still passes exactly through every checkpoint coordinate).
+function smoothPath(pts: Pt[]): string {
+  if (pts.length < 2) return '';
+  const d = [`M ${pts[0].x} ${pts[0].y}`];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d.push(`C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x} ${p2.y}`);
+  }
+  return d.join(' ');
+}
+
+// Approximate fraction of the route reached at checkpoint `upto`
+// (used to reveal the completed orange leg exactly up to the active marker).
+function cumulativeFraction(pts: Pt[], upto: number): number {
+  const seg: number[] = [];
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    seg.push(len);
+    total += len;
+  }
+  if (total === 0) return 0;
+  let acc = 0;
+  for (let i = 0; i < upto; i++) acc += seg[i] ?? 0;
+  return acc / total;
+}
+
+function Pine({ x, y, s = 1 }: Deco) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx={0} cy={0.25 * s} rx={1.5 * s} ry={0.4 * s} fill="#566b46" opacity={0.16} />
+      <rect x={-0.22 * s} y={-0.5 * s} width={0.44 * s} height={1.1 * s} rx={0.15 * s} fill="#8a6a45" />
+      <path d={`M0 ${-3.4 * s} L ${1.4 * s} ${-0.9 * s} L ${-1.4 * s} ${-0.9 * s} Z`} fill="#4f7150" />
+      <path d={`M0 ${-4.2 * s} L ${1.1 * s} ${-2 * s} L ${-1.1 * s} ${-2 * s} Z`} fill="#6e9a6f" />
+      <path d={`M0 ${-4.8 * s} L ${0.82 * s} ${-3.05 * s} L ${-0.82 * s} ${-3.05 * s} Z`} fill="#93b893" />
+    </g>
+  );
+}
+
+function Bush({ x, y, s = 1 }: Deco) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx={0} cy={0.15 * s} rx={1.3 * s} ry={0.3 * s} fill="#566b46" opacity={0.14} />
+      <circle cx={-0.55 * s} cy={-0.4 * s} r={0.8 * s} fill="#4f7150" />
+      <circle cx={0.55 * s} cy={-0.35 * s} r={0.7 * s} fill="#6e9a6f" />
+      <circle cx={0} cy={-0.8 * s} r={0.85 * s} fill="#88ad88" />
+    </g>
+  );
+}
+
+function Rock({ x, y, s = 1 }: Deco) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx={0} cy={0.18 * s} rx={1.1 * s} ry={0.28 * s} fill="#4a5663" opacity={0.16} />
+      <path
+        d={`M${-1.05 * s} ${0.25 * s} Q ${-1.2 * s} ${-0.7 * s} ${-0.35 * s} ${-1 * s} Q ${0.6 * s} ${-1.2 * s} ${1 * s} ${-0.45 * s} Q ${1.25 * s} ${0.1 * s} ${0.9 * s} ${0.3 * s} Z`}
+        fill="#9aa1a8"
+      />
+      <path d={`M${-0.35 * s} ${-1 * s} Q ${0.6 * s} ${-1.2 * s} ${1 * s} ${-0.45 * s} L ${0.15 * s} ${-0.5 * s} Z`} fill="#bcc3c9" />
+    </g>
+  );
+}
+
+function Cairn({ x, y, s = 1 }: Deco) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx={0} cy={0.1 * s} rx={1 * s} ry={0.25 * s} fill="#4a5663" opacity={0.16} />
+      <ellipse cx={0} cy={-0.2 * s} rx={0.95 * s} ry={0.5 * s} fill="#a7884f" />
+      <ellipse cx={0.08 * s} cy={-0.95 * s} rx={0.7 * s} ry={0.42 * s} fill="#c2a26b" />
+      <ellipse cx={-0.05 * s} cy={-1.5 * s} rx={0.48 * s} ry={0.32 * s} fill="#d8c08a" />
+    </g>
+  );
+}
+
+const PINES: Deco[] = [
+  // grove around the hill (checkpoint 3)
+  { x: 41, y: 31, s: 0.85 },
+  { x: 44.5, y: 28, s: 0.95 },
+  { x: 50.5, y: 26, s: 1 },
+  { x: 54.5, y: 29, s: 0.9 },
+  { x: 58, y: 32, s: 0.8 },
+  // grove the route walks through toward the target (checkpoint 4 → 5)
+  { x: 73, y: 27, s: 0.82 },
+  // pine cluster on the rocky target ground (checkpoint 5)
+  { x: 83, y: 15, s: 0.9 },
+  { x: 90, y: 13, s: 1 },
+  { x: 86, y: 11, s: 0.8 },
+  { x: 93, y: 17, s: 0.8 },
+  // scattered cover along the route
+  { x: 34, y: 45, s: 0.8 },
+  { x: 62, y: 42, s: 0.85 },
+  { x: 75, y: 39, s: 0.8 },
+];
+
+const BUSHES: Deco[] = [
+  { x: 8, y: 66, s: 0.85 },
+  { x: 18, y: 64, s: 0.7 },
+  { x: 16, y: 55, s: 0.9 },
+  { x: 30, y: 57, s: 0.8 },
+  { x: 24, y: 46, s: 0.7 },
+  { x: 58, y: 46, s: 0.85 },
+  { x: 70, y: 41, s: 0.8 },
+];
+
+const ROCKS: Deco[] = [
+  { x: 22, y: 58, s: 0.7 },
+  { x: 40, y: 47, s: 0.7 },
+  { x: 63, y: 27, s: 0.7 },
+  { x: 84, y: 26, s: 1 },
+  { x: 90.5, y: 26, s: 0.85 },
+  { x: 80, y: 23, s: 0.75 },
+];
+
+const CAIRNS: Deco[] = [
+  { x: 38, y: 43, s: 0.8 },
+  { x: 78, y: 26, s: 0.8 },
+];
+
 function RouteMap({ activeStep }: { activeStep: number }) {
- // 5 checkpoints positioned on a path
-const POINTS = [
- { x: 12, y: 60 }, // start
- { x: 28, y: 50 }, // river bend
- { x: 48, y: 38 }, // hill
- { x: 68, y: 32 }, // road
- { x: 88, y: 22 }, // target
- ];
-return (
- <div className="relative w-full h-full min-h-[360px] bg-bg">
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
- <rect x="0" y="0" width="100" height="75" className="fill-bg" />
+  // 5 checkpoints positioned on the terrain (coordinates unchanged)
+  const POINTS: Pt[] = [
+    { x: 12, y: 60 }, // 1 · start
+    { x: 28, y: 50 }, // 2 · river bend
+    { x: 48, y: 38 }, // 3 · hill
+    { x: 68, y: 32 }, // 4 · dirt road
+    { x: 88, y: 22 }, // 5 · target
+  ];
 
- {/* Grid */}
- {Array.from({ length: 10 }).map((_, i) => (
- <line key={'gx' + i} x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle" strokeWidth="0.08" />
- ))}
- {Array.from({ length: 8 }).map((_, i) => (
- <line key={'gy' + i} x1="0" y1={i * 9.4} x2="100" y2={i * 9.4} className="stroke-border-subtle" strokeWidth="0.08" />
- ))}
+  const routeD = smoothPath(POINTS);
+  const revealFrac = cumulativeFraction(POINTS, activeStep);
+  const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
- {/* River (passes near point 2) */}
- <path d="M0 55 Q 28 50 50 55 T 100 60" fill="none" className="stroke-terrain-sky/60" strokeWidth="1.4" />
+  return (
+    <div className="relative w-full h-full min-h-[360px] bg-bg">
+      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="t3-paper" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FFFDF9" />
+            <stop offset="55%" stopColor="#FBF3E4" />
+            <stop offset="100%" stopColor="#F1E5CF" />
+          </linearGradient>
+          <radialGradient id="t3-sun" cx="0.5" cy="0" r="1">
+            <stop offset="0%" stopColor="#FFDCB5" stopOpacity="0.5" />
+            <stop offset="70%" stopColor="#FFDCB5" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="t3-vignette" cx="0.5" cy="0.5" r="0.75">
+            <stop offset="65%" stopColor="#6b5a38" stopOpacity="0" />
+            <stop offset="100%" stopColor="#6b5a38" stopOpacity="0.14" />
+          </radialGradient>
+          <radialGradient id="t3-hill" cx="0.42" cy="0.32" r="0.85">
+            <stop offset="0%" stopColor="#d9c89e" />
+            <stop offset="100%" stopColor="#a3b083" />
+          </radialGradient>
+          <filter id="t3-grain" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n" />
+            <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.34  0 0 0 0 0.2  0 0 0 0.7 0" />
+          </filter>
+        </defs>
 
- {/* Hill (near point 3) */}
- <path d="M40 42 L48 28 L56 42 Z" className="fill-terrain-ridge/40 stroke-terrain-ridge/80" strokeWidth="0.3" />
+        {/* Paper base + warm sun wash + fine grain */}
+        <rect x="0" y="0" width="100" height="75" fill="url(#t3-paper)" />
+        <rect x="0" y="0" width="100" height="75" fill="url(#t3-sun)" />
+        <rect x="0" y="0" width="100" height="75" filter="url(#t3-grain)" opacity="0.05" />
 
- {/* Dirt road (near point 4) */}
- <path d="M55 35 Q 70 30 85 25" fill="none" className="stroke-terrain-sand/70" strokeWidth="0.7" strokeDasharray="1.5 0.8" />
+        {/* Fine map grid */}
+        {Array.from({ length: 10 }).map((_, i) => (
+          <line key={'gx' + i} x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle" strokeWidth="0.07" />
+        ))}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <line key={'gy' + i} x1="0" y1={i * 9.4} x2="100" y2={i * 9.4} className="stroke-border-subtle" strokeWidth="0.07" />
+        ))}
 
- {/* Tower (near point 3) */}
- <line x1="44" y1="34" x2="44" y2="28" className="stroke-fg-muted" strokeWidth="0.4" />
- <circle cx="44" cy="28" r="0.6" className="fill-accent" />
+        {/* Broad topographic contour lines */}
+        {[
+          'M-4 18 C 18 12, 34 22, 54 16 S 88 22, 104 16',
+          'M-4 33 C 16 27, 32 39, 54 32 S 88 39, 104 32',
+          'M-4 49 C 14 43, 30 53, 52 47 S 86 55, 104 49',
+          'M-4 64 C 18 60, 34 68, 56 62 S 88 70, 104 64',
+        ].map((d, i) => (
+          <path key={'c' + i} d={d} fill="none" stroke="#c2a26b" strokeWidth="0.18" opacity="0.45" strokeLinecap="round" />
+        ))}
 
- {/* Path connecting all points */}
- <motion.path
-d={POINTS.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ')}
-fill="none"
-className="stroke-accent/40"
-strokeWidth="0.5"
-strokeDasharray="1.2 1"
- />
+        {/* River / wadi — crosses the route near checkpoint 2 */}
+        <g>
+          <path
+            d="M-3 58 C 10 54, 20 50, 28 51 C 38 52, 50 56, 64 54 C 78 52, 92 56, 104 55"
+            fill="none"
+            stroke="#8ba6ba"
+            strokeWidth="2.3"
+            strokeLinecap="round"
+            opacity="0.5"
+          />
+          <path
+            d="M-3 58 C 10 54, 20 50, 28 51 C 38 52, 50 56, 64 54 C 78 52, 92 56, 104 55"
+            fill="none"
+            stroke="#52738a"
+            strokeWidth="0.5"
+            strokeLinecap="round"
+            opacity="0.6"
+          />
+        </g>
 
- {/* Active leg highlight */}
- {activeStep > 0 && (
- <motion.path
-initial={false}
-d={POINTS.slice(0, activeStep + 1).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ')}
-fill="none"
-className="stroke-accent"
-strokeWidth="0.7"
- />
- )}
+        {/* Hill with contour lines + antenna tower (checkpoint 3) */}
+        <g>
+          <path d="M35 45 Q 40 30 48 28 Q 56 30 61 45 Z" fill="url(#t3-hill)" opacity="0.55" />
+          <path d="M38.5 43.5 Q 43 33 48 32 Q 53 33 57.5 43.5" fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
+          <path d="M41 44 Q 44.5 37 48 36.2 Q 51.5 37 55 44" fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
+          <line x1="48" y1="28" x2="48" y2="22.5" className="stroke-fg-muted" strokeWidth="0.35" />
+          <line x1="48" y1="24.5" x2="46.6" y2="27" className="stroke-fg-muted" strokeWidth="0.2" />
+          <line x1="48" y1="24.5" x2="49.4" y2="27" className="stroke-fg-muted" strokeWidth="0.2" />
+          <circle cx="48" cy="22.2" r="0.55" fill="#EB9E48">
+            <animate attributeName="opacity" values="1;0.3;1" dur="2.2s" repeatCount="indefinite" />
+          </circle>
+        </g>
 
- {/* Checkpoints */}
- {POINTS.map((p, i) => {
-const isActive = i === activeStep;
-const isPassed = i < activeStep;
-return (
- <g key={i}>
- {isActive && (
- <circle cx={p.x} cy={p.y} r="4" fill="none" className="stroke-accent">
- <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
- </circle>
- )}
- <circle
-cx={p.x}
-cy={p.y}
-r="2"
-className={cn(
-isActive ? 'fill-accent' : isPassed ? 'fill-status-ok' : 'fill-bg-card stroke-border-strong'
- )}
-strokeWidth={isActive || isPassed ? 0 : 0.4}
- />
- <text
-x={p.x}
-y={p.y - 3.5}
-textAnchor="middle"
-className={cn('text-[2.5px] font-display font-bold font-bold', isActive ? 'fill-accent' : isPassed ? 'fill-status-ok' : 'fill-fg-muted')}
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
- {i === 4 ? 'B' : i + 1}
- </text>
- </g>
- );
- })}
- </svg>
+        {/* Wide dirt road the route crosses (checkpoint 4) */}
+        <g>
+          <path d="M56 21 Q 67 33 80 45" fill="none" stroke="#c2a26b" strokeWidth="1.7" strokeLinecap="round" opacity="0.45" />
+          <path d="M56 21 Q 67 33 80 45" fill="none" stroke="#9c7e48" strokeWidth="0.35" strokeDasharray="1.4 1" strokeLinecap="round" opacity="0.6" />
+        </g>
 
- <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
- <span className="size-1.5 rounded-full bg-accent animate-pulse" />
- סיפור דרך · 5 נקודות אימות
- </div>
- </div>
- );
+        {/* ——— Route ——— */}
+        {/* dirt trail bed (draws in on mount) */}
+        <motion.path
+          d={routeD}
+          fill="none"
+          stroke="#cdba90"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 0.55 }}
+          transition={{ duration: 1.1, ease }}
+        />
+        {/* planned route — faint dashed, gently marching toward the target */}
+        <motion.path
+          d={routeD}
+          fill="none"
+          stroke="#EB9E48"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+          strokeDasharray="1.4 1.1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+        >
+          <animate attributeName="stroke-dashoffset" from="0" to="-5" dur="3s" repeatCount="indefinite" />
+        </motion.path>
+        {/* completed route — soft glow underlay + sharp line, revealed to the active checkpoint */}
+        <motion.path
+          d={routeD}
+          fill="none"
+          stroke="#EB9E48"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          opacity="0.28"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: revealFrac }}
+          transition={{ duration: 0.7, ease }}
+        />
+        <motion.path
+          d={routeD}
+          fill="none"
+          stroke="#EB9E48"
+          strokeWidth="0.85"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: revealFrac }}
+          transition={{ duration: 0.7, ease }}
+        />
+
+        {/* ——— Terrain objects ——— */}
+        <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35, duration: 1 }}>
+          {ROCKS.map((r, i) => (
+            <Rock key={'r' + i} {...r} />
+          ))}
+          {BUSHES.map((b, i) => (
+            <Bush key={'b' + i} {...b} />
+          ))}
+          {CAIRNS.map((c, i) => (
+            <Cairn key={'k' + i} {...c} />
+          ))}
+          {PINES.map((p, i) => (
+            <Pine key={'p' + i} {...p} />
+          ))}
+        </motion.g>
+
+        {/* Target beacon (checkpoint 5) */}
+        <g>
+          {[0, 1.3].map((begin, i) => (
+            <circle key={'bc' + i} cx="88" cy="22" r="2.6" fill="none" stroke="#EB9E48" strokeWidth="0.3">
+              <animate attributeName="r" values="2.6;7;2.6" dur="2.6s" begin={`${begin}s`} repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.7;0;0.7" dur="2.6s" begin={`${begin}s`} repeatCount="indefinite" />
+            </circle>
+          ))}
+        </g>
+
+        {/* ——— Checkpoint markers ——— */}
+        {POINTS.map((p, i) => {
+          const isTarget = i === 4;
+          const isActive = i === activeStep;
+          const isPassed = i < activeStep;
+          const filled = isTarget || isActive || isPassed;
+          const disc = isTarget ? '#EB9E48' : filled ? '#749C75' : '#FFFFFF';
+          const ringCol = isTarget ? '#d4842f' : '#5B7C5C';
+          const numCol = disc === '#FFFFFF' ? '#5B7C5C' : '#FFFFFF';
+          const r = isTarget ? 2.7 : isActive ? 2.5 : 2.1;
+          return (
+            <motion.g
+              key={i}
+              initial={{ opacity: 0, y: 2 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 + i * 0.1, duration: 0.4, ease }}
+            >
+              <ellipse cx={p.x} cy={p.y + r + 0.5} rx={r * 0.85} ry={r * 0.3} fill="#3a3a3a" opacity="0.13" />
+              <circle cx={p.x} cy={p.y} r={r + 0.85} fill="#FFFFFF" />
+              {isActive && (
+                <circle cx={p.x} cy={p.y} r={r + 0.4} fill="none" stroke="#EB9E48" strokeWidth="0.4">
+                  <animate attributeName="r" values={`${r + 0.4};${r + 3};${r + 0.4}`} dur="1.8s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
+                </circle>
+              )}
+              <circle cx={p.x} cy={p.y} r={r} fill={disc} stroke={ringCol} strokeWidth={disc === '#FFFFFF' ? 0.4 : 0.3} />
+              {disc !== '#FFFFFF' && (
+                <ellipse cx={p.x} cy={p.y - r * 0.38} rx={r * 0.58} ry={r * 0.3} fill="#FFFFFF" opacity="0.2" />
+              )}
+              <text
+                x={p.x}
+                y={p.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={isTarget ? 2.7 : 2.4}
+                fontWeight={700}
+                fill={numCol}
+                style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}
+              >
+                {isTarget ? 'B' : i + 1}
+              </text>
+              {(i === 0 || i === 4) && (
+                <text
+                  x={p.x}
+                  y={p.y + r + 2.4}
+                  textAnchor="middle"
+                  fontSize="2.1"
+                  fontWeight={700}
+                  fill={isTarget ? '#d4842f' : '#5B7C5C'}
+                  paintOrder="stroke"
+                  stroke="#FFFBF7"
+                  strokeWidth="0.7"
+                  strokeLinejoin="round"
+                  style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}
+                >
+                  {i === 0 ? 'נ.ה' : 'נ.ס'}
+                </text>
+              )}
+            </motion.g>
+          );
+        })}
+
+        {/* ——— Map furniture ——— */}
+        <g transform="translate(11 12)" opacity="0.6">
+          <circle r="3.4" fill="#FFFFFF" opacity="0.7" />
+          <circle r="3.4" fill="none" stroke="#C5B695" strokeWidth="0.2" />
+          <circle r="2.6" fill="none" stroke="#C5B695" strokeWidth="0.12" />
+          {[
+            [0, -3.4, 0, -2.7],
+            [0, 3.4, 0, 2.7],
+            [-3.4, 0, -2.7, 0],
+            [3.4, 0, 2.7, 0],
+          ].map((t, i) => (
+            <line key={'t' + i} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke="#8a7c5c" strokeWidth="0.15" />
+          ))}
+          <path d="M0 -2.3 L 0.7 0 L 0 0.5 L -0.7 0 Z" fill="#EB9E48" />
+          <path d="M0 2.3 L 0.7 0 L 0 -0.5 L -0.7 0 Z" fill="#9aa1a8" />
+          <text x="0" y="-3.85" textAnchor="middle" fontSize="1.7" fontWeight={700} fill="#5B7C5C" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
+            צ
+          </text>
+        </g>
+        <g transform="translate(7 70)" opacity="0.65">
+          <rect x="0" y="0" width="12" height="0.9" fill="#FFFFFF" stroke="#C5B695" strokeWidth="0.12" />
+          <rect x="0" y="0" width="3" height="0.9" fill="#5a6b4a" />
+          <rect x="6" y="0" width="3" height="0.9" fill="#5a6b4a" />
+          <text x="0" y="-0.7" textAnchor="middle" fontSize="1.5" fill="#6a6a6a" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
+            0
+          </text>
+          <text x="12" y="-0.7" textAnchor="middle" fontSize="1.5" fill="#6a6a6a" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
+            500מ׳
+          </text>
+        </g>
+
+        {/* edge vignette for depth */}
+        <rect x="0" y="0" width="100" height="75" fill="url(#t3-vignette)" pointerEvents="none" />
+      </svg>
+
+      <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
+        <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+        סיפור דרך · 5 נקודות אימות
+      </div>
+    </div>
+  );
 }
 function PacingDemo() {
 const [distance, setDistance] = useState(500);
@@ -260,11 +574,19 @@ onChange={(e) => setDistance(Number(e.target.value))}
 className="w-full accent-accent"
 aria-label="מרחק במטרים"
  />
- <div className="grid grid-cols-4 text-[10px] font-display font-medium tracking-wide text-fg-dim">
- <span>50 מ'</span>
- <span className="text-center">500</span>
- <span className="text-center">1,000</span>
- <span className="text-left">2,000</span>
+ <div className="relative h-4 text-[10px] font-display font-medium tracking-wide text-fg-dim">
+ {[50, 500, 1000, 1500, 2000].map((val) => {
+ const pct = ((val - 50) / (2000 - 50)) * 100; // מיקום אמיתי על הסרגל (מהקצה הימני, RTL)
+ return (
+ <span
+ key={val}
+ className="absolute translate-x-1/2 whitespace-nowrap"
+ style={{ right: `${pct}%` }}
+ >
+ {val === 50 ? "50 מ'" : val.toLocaleString()}
+ </span>
+ );
+ })}
  </div>
  </div>
 
