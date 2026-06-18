@@ -145,11 +145,11 @@ return (
  <SceneHeader
 step="12.2"
 eyebrow="משטח עלות ונתיב בעלות מינימלית"
-title={
- <>
- <span className="text-accent-hover">Cost Surface</span> + <span className="text-accent-hover">Least-Cost Path</span>
- </>
- }
+title = {
+  <>
+    המסלול הכי קצר הוא לא תמיד <span className="text-accent-hover">המסלול הכי חכם</span>
+  </>
+}
 intro="קח את השטח הפיזי, הוסף איומים ומסלע, ושאל: מה הדרך הזולה ביותר מ-A ל-B? GIS עונה לך תוך 3 שניות — ובדרך כלל המסלול לא הקו הישר."
  />
 

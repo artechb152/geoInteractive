@@ -1,10 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+
+const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="aspect-video sm:aspect-square max-h-[300px] w-full mx-auto flex items-center justify-center text-fg-dim text-sm">
+      טוען מודל תלת־ממד…
+    </div>
+  ),
+});
 
 type Shape = {
   id: string;
@@ -82,10 +92,13 @@ title={
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div className="space-y-3">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
-              מבט מהצד · ההר כעוגת פרוסות
+              מבט תלת־ממדי · ההר כעוגת פרוסות
             </div>
             <div className="surface bg-bg-accent/20 rounded-xl p-4 border border-border/40">
-              <SlicedHill activeRing={activeRing} />
+              <ContourCake3D activeRing={activeRing} setActiveRing={setActiveRing} />
+            </div>
+            <div className="text-[11px] text-accent/80 font-medium text-center">
+              גררו כדי לסובב · גלגלת לזום
             </div>
           </div>
 
@@ -179,67 +192,30 @@ title={
   );
 }
 
-function SlicedHill({ activeRing }: { activeRing: number | null }) {
-  const slices = [
-    { y: 80, w: 70, color: 'fill-terrain-sand/40' },
-    { y: 65, w: 56, color: 'fill-terrain-sand/55' },
-    { y: 50, w: 42, color: 'fill-terrain-ridge/55' },
-    { y: 35, w: 28, color: 'fill-terrain-ridge/70' },
-    { y: 20, w: 14, color: 'fill-terrain-ridge' },
-  ];
-  return (
-    <div className="aspect-video sm:aspect-square max-h-[300px] mx-auto">
-      <svg viewBox="0 0 100 100" className="w-full h-full">
-        {slices.map((s, i) => {
-          const isActive = activeRing === i;
-          return (
-            <g key={i}>
-              <ellipse
-                cx="50"
-                cy={s.y}
-                rx={s.w / 2}
-                ry={s.w / 6}
-                className={cn(
-                  s.color,
-                  'transition-all duration-300',
-                  isActive ? 'fill-accent/60 stroke-accent' : 'stroke-terrain-olive/60'
-                )}
-                strokeWidth="0.4"
-              />
-              <text
-                x={50 + s.w / 2 + 5}
-                y={s.y + 1}
-                className={cn('text-[3px] font-display font-bold font-bold tabular-nums', isActive ? 'fill-accent' : 'fill-fg-dim')}
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
-                {(slices.length - i) * 10} מ׳
-              </text>
-            </g>
-          );
-        })}
-        <line x1="10" y1="20" x2="10" y2="80" className="stroke-border-strong" strokeWidth="0.3" strokeDasharray="1 1" />
-        <text x="12" y="22" className="fill-fg-dim text-[2.5px] font-display font-bold font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >↑ גובה</text>
-      </svg>
-    </div>
-  );
-}
+/**
+ * Shared elevation model for both views, so the side view (cake) and the
+ * top view (map) stay perfectly consistent. Index 0 = the lowest band
+ * (10 m, widest / outermost / bottom slice); the last index = the peak
+ * (50 m, narrowest / innermost / top slice). The `fill`/`op` ramp goes
+ * sand → ridge → olive as we climb, and is identical across both views
+ * so a band reads as "the same place" in either picture.
+ */
+const LEVELS = [
+  { h: 10, fill: 'fill-terrain-sand',  op: 0.35 },
+  { h: 20, fill: 'fill-terrain-sand',  op: 0.55 },
+  { h: 30, fill: 'fill-terrain-ridge', op: 0.5 },
+  { h: 40, fill: 'fill-terrain-ridge', op: 0.7 },
+  { h: 50, fill: 'fill-terrain-olive', op: 0.85 },
+];
+
+// Top view (map): perfectly concentric, constant aspect ratio.
+const CX = 50;
+const MAP_CY = 50;
+const RING_K = 0.7;                                  // ry / rx, fixed for all rings
+const ringRx = (i: number) => 40 - i * 8;           // 40 → 8 (outer → inner)
+const ringRy = (i: number) => ringRx(i) * RING_K;
 
 function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | null; setActiveRing: (n: number | null) => void; }) {
-  const rings = [
-    { rx: 38, ry: 28, h: 10 },
-    { rx: 30, ry: 22, h: 20 },
-    { rx: 22, ry: 16, h: 30 },
-    { rx: 14, ry: 10, h: 40 },
-    { rx: 6, ry: 4,   h: 50 },
-  ];
   return (
     <div className="aspect-video sm:aspect-square max-h-[300px] mx-auto">
       <svg viewBox="0 0 100 100" className="w-full h-full select-none">
@@ -250,35 +226,56 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
           </g>
         ))}
 
-        {rings.map((r, i) => {
+        {/* filled elevation bands — outer (lowest) first, peak painted last on top */}
+        {LEVELS.map((lvl, i) => {
           const isActive = activeRing === i;
           return (
+            <ellipse
+              key={`band-${i}`}
+              cx={CX} cy={MAP_CY} rx={ringRx(i)} ry={ringRy(i)}
+              className={cn('transition-all duration-300', isActive ? 'fill-accent/30' : lvl.fill)}
+              style={{ opacity: isActive ? 0.9 : lvl.op }}
+            />
+          );
+        })}
+
+        {/* contour line strokes + labels + hover targets */}
+        {LEVELS.map((lvl, i) => {
+          const isActive = activeRing === i;
+          const rx = ringRx(i);
+          const ry = ringRy(i);
+          return (
             <g
-              key={i}
+              key={`ring-${i}`}
               onMouseEnter={() => setActiveRing(i)}
               onMouseLeave={() => setActiveRing(null)}
               className="cursor-crosshair"
             >
-              <ellipse cx="50" cy="50" rx={r.rx + 3} ry={r.ry + 3} fill="transparent" />
+              {/* wider invisible hit area */}
+              <ellipse cx={CX} cy={MAP_CY} rx={rx + 3.5} ry={ry + 3.5} fill="transparent" />
               <ellipse
-                cx="50" cy="50" rx={r.rx} ry={r.ry}
+                cx={CX} cy={MAP_CY} rx={rx} ry={ry}
                 fill="none"
                 stroke="currentColor"
-                strokeWidth={isActive ? 0.8 : 0.4}
-                className={cn('transition-colors', isActive ? 'text-accent' : 'text-accent/40')}
+                strokeWidth={isActive ? 0.9 : 0.45}
+                className={cn('transition-colors', isActive ? 'text-accent' : 'text-terrain-olive/70')}
               />
-              <text x="50" y={50 - r.ry - 1} textAnchor="middle" className={cn('text-[2.5px] font-display font-bold font-bold', isActive ? 'fill-accent' : 'fill-fg-dim')}
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
-                {r.h}
+              <text
+                x={CX} y={MAP_CY - ry - 1.2} textAnchor="middle"
+                className={cn(
+                  'text-[2.6px] font-display font-bold tabular-nums',
+                  isActive ? 'fill-accent' : 'fill-fg-dim'
+                )}
+                paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round"
+              >
+                {lvl.h}
               </text>
             </g>
           );
         })}
-        <path d="M50 48 L50 52 M48 50 L52 50" className="stroke-accent" strokeWidth="0.5" />
+
+        {/* peak marker */}
+        <path d={`M${CX} ${MAP_CY - 2.5} L${CX} ${MAP_CY + 2.5} M${CX - 2.5} ${MAP_CY} L${CX + 2.5} ${MAP_CY}`} className="stroke-accent" strokeWidth="0.5" />
       </svg>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, useSpring, useMotionValueEvent } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -135,12 +135,12 @@ aria-label="אזימוט"
  </div>
 
  <div className="surface-elevated p-6 sm:p-8 flex flex-col items-center justify-center">
- <CompassDial azimuth={azimuth} back={back} />
+ <CompassDial azimuth={azimuth} />
  </div>
  </div>
  );
 }
-function CompassDial({ azimuth, back }: { azimuth: number; back: number }) {
+function CompassDial({ azimuth }: { azimuth: number }) {
 return (
  <div className="relative aspect-square w-full max-w-[320px]">
  <svg viewBox="-50 -50 100 100" className="w-full h-full">
@@ -208,25 +208,8 @@ className="fill-fg-dim text-[2.5px] font-display font-bold"
  );
  })}
 
- {/* Forward arrow (azimuth) — fills compass */}
- <motion.g
-animate={{ rotate: azimuth }}
-transition={{ type: 'spring', stiffness: 180, damping: 22 }}
-style={{ transformOrigin: '0 0' }}
- >
- <line x1="0" y1="0" x2="0" y2="-37" className="stroke-accent" strokeWidth="1.6" strokeLinecap="round" />
- <polygon points="0,-39 -4.5,-31 4.5,-31" className="fill-accent" />
- </motion.g>
-
- {/* Back azimuth arrow (full length, dimmer) */}
- <motion.g
-animate={{ rotate: back }}
-transition={{ type: 'spring', stiffness: 180, damping: 22 }}
-style={{ transformOrigin: '0 0' }}
- >
- <line x1="0" y1="0" x2="0" y2="-37" className="stroke-accent-cool/70" strokeWidth="1" strokeDasharray="1.6 1.2" strokeLinecap="round" />
- <polygon points="0,-39 -3.5,-32 3.5,-32" className="fill-accent-cool/80" />
- </motion.g>
+ {/* Azimuth + back-azimuth needles, anchored at the dial center */}
+ <CompassNeedles azimuth={azimuth} />
 
  {/* Center pin */}
  <circle cx="0" cy="0" r="2" className="fill-bg stroke-accent" strokeWidth="0.5" />
@@ -242,6 +225,35 @@ style={{ transformOrigin: '0 0' }}
  </span>
  </div>
  </div>
+ );
+}
+/**
+ * Two needles drawn pointing straight up from the dial center (0,0) and rotated
+ * with the native SVG `transform="rotate(a)"` — which always pivots around the
+ * user-space origin (0,0 == viewBox center). This keeps both needles permanently
+ * anchored to the center; only their angle changes, so they sweep smoothly like
+ * real compass hands instead of jumping. A framer spring drives the angle.
+ */
+function CompassNeedles({ azimuth }: { azimuth: number }) {
+const spring = useSpring(azimuth, { stiffness: 170, damping: 22, mass: 0.6 });
+const [angle, setAngle] = useState(azimuth);
+useEffect(() => {
+spring.set(azimuth);
+ }, [azimuth, spring]);
+useMotionValueEvent(spring, 'change', (v) => setAngle(v));
+return (
+ <>
+ {/* Back azimuth (azimuth + 180°), dashed cool */}
+ <g transform={`rotate(${angle + 180})`}>
+ <line x1="0" y1="0" x2="0" y2="-29" className="stroke-accent-cool/70" strokeWidth="1" strokeDasharray="1.6 1.2" strokeLinecap="round" />
+ <polygon points="0,-36 -4,-28 4,-28" className="fill-accent-cool/80" />
+ </g>
+ {/* Forward azimuth, solid accent */}
+ <g transform={`rotate(${angle})`}>
+ <line x1="0" y1="0" x2="0" y2="-29" className="stroke-accent" strokeWidth="1.6" strokeLinecap="round" />
+ <polygon points="0,-36 -4.5,-28 4.5,-28" className="fill-accent" />
+ </g>
+ </>
  );
 }
 function ThreeNorthsCard() {

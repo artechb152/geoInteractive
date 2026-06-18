@@ -23,13 +23,13 @@ const PROTOTYPES: Prototype[] = [
     id: 'terrain-3d',
     title: 'סימולטור שטח תלת־ממדי',
     tagline: 'ניווט וחקירה במודל גובה אינטראקטיבי',
-    embedPath: '/embeds/terrain-3d/index.html',
+    embedPath: '/embeds/terrain-3d/',
   },
   {
     id: 'terrain-overlay',
     title: 'שכבות מידע על מפת שטח',
     tagline: 'הלבשת שכבות גיאו־מידע על מפה',
-    embedPath: '/embeds/terrain-overlay/index.html',
+    embedPath: '/embeds/terrain-overlay/',
   },
 ];
 

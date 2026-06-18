@@ -102,11 +102,11 @@ export function OnboardingScene() {
       <SceneHeader
         step="12.0"
         eyebrow="לפני שמתחילים"
-        title={
-          <>
-            ממפה <span className="text-accent-hover">טיפשה</span> למפה <span className="text-accent-hover">חכמה</span>
-          </>
-        }
+title = {
+  <>
+    GIS הופך מפה רגילה ל<span className="text-accent-hover">מערכת שמקבלת החלטות</span>
+  </>
+}
         intro="מפה רגילה היא רק ציור. GIS הופך אותה לסביבת קבלת החלטות שמחשבת איומים, מציעה מסלולים, ומזהה נקודות תורפה. בוא נראה את ה-4 שלבים מההצילום למסקנה."
       />
 

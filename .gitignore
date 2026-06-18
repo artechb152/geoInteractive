@@ -23,3 +23,6 @@ topics-1-2-review/
 # Leading slash anchors this to the repo root so it doesn't match
 # public/prototypes/ as well.
 /prototypes/
+
+# TypeScript incremental build info
+*.tsbuildinfo

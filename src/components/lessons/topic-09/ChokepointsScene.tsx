@@ -151,11 +151,11 @@ export function ChokepointsScene() {
       <SceneHeader
         step="09.2"
         eyebrow="נקודות חנק ימיות"
-        title={
-          <>
-            <span className="text-accent-hover">5 מיצרים</span> ששולטים בכלכלה העולמית
-          </>
-        }
+title = {
+  <>
+    <span className="text-accent-hover">כמה מעברים צרים</span> מחזיקים את כל הסחר העולמי
+  </>
+}
         intro="רוב הסחר הימי בעולם זורם דרך מספר קטן של מעברים צרים. כל אחד מהם הוא מטרה אסטרטגית עם ערך עצום. בואו נכיר אותם, ונראה מה קורה כשסוגרים אפילו אחד מהם."
       />
 
