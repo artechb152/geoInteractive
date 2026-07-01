@@ -21,7 +21,7 @@ export function HookScene() {
           <Icon name="eye" size={16} className="text-accent" />
           <span className="font-display font-bold text-sm text-accent tracking-wider">שיעור 06</span>
           <span className="text-fg-dim text-sm" aria-hidden>·</span>
-          <span className="text-sm font-display font-semibold text-fg">קווי ראייה ותצפית · LOS / Viewshed</span>
+          <span className="text-sm font-display font-semibold text-fg">קווי ראייה ותצפית · LOS (Line of Sight) / Viewshed</span>
         </div>
 
 

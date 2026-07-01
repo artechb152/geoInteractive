@@ -168,7 +168,7 @@ className="surface-elevated p-5 sm:p-6 grid md:grid-cols-2 gap-6"
  <Icon name="layers" size={22} className="text-accent-cool shrink-0 mt-0.5" />
  <div>
  <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider">
- איך נוצר ומאיפה
+ איך נוצר ומאיפה?
  </div>
  <p className="text-sm leading-relaxed text-fg">{rockData.description}</p>
  </div>

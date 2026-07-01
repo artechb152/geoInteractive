@@ -12,8 +12,8 @@ scorm-package/
 # Local export folder used to share specific topics — not part of the runnable app
 topics-1-2-review/
 
-# Local Claude Code agent state / skill data — not part of the runnable app
-.claude/
+# Claude Code — commit shared skills/agents, ignore local machine state
+.claude/settings.local.json
 
 # External prototype sources (cloned from idog2210/Terrain3DSimulator…
 # and idog2210/TerrainOverlay… for in-app embedding). Their built
@@ -23,6 +23,9 @@ topics-1-2-review/
 # Leading slash anchors this to the repo root so it doesn't match
 # public/prototypes/ as well.
 /prototypes/
+
+# QA render artifacts (throwaway PNGs from scripts/qa/render-svg.mjs)
+qa-output/
 
 # TypeScript incremental build info
 *.tsbuildinfo

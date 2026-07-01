@@ -36,7 +36,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'hormuz',
     label: 'מיצרי הורמוז',
     english: 'Strait of Hormuz',
-    position: { x: 60, y: 39 },
+    position: { x: 68, y: 21.5 },
     width: '~21 מייל בנקודה הצרה',
     depth: '~60 מ׳',
     tradePct: 21,
@@ -55,7 +55,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'bab-el-mandeb',
     label: 'באב אל-מנדב',
     english: 'Bab el-Mandeb',
-    position: { x: 53, y: 47 },
+    position: { x: 60.3, y: 26.5 },
     width: '~18 מייל בכניסה מים סוף',
     depth: '~100 מ׳',
     tradePct: 12,
@@ -74,7 +74,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'suez',
     label: 'תעלת סואץ',
     english: 'Suez Canal',
-    position: { x: 51, y: 39 },
+    position: { x: 56.7, y: 17.5 },
     width: 'תעלה מלאכותית, ~205 מ׳ רוחב',
     depth: '~24 מ׳',
     tradePct: 12,
@@ -93,7 +93,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'malacca',
     label: 'מיצרי מלאקה',
     english: 'Strait of Malacca',
-    position: { x: 75, y: 53 },
+    position: { x: 80, y: 34 },
     width: '~1.5 מייל בנקודה הצרה',
     depth: '~25 מ׳',
     tradePct: 30,
@@ -112,7 +112,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'panama',
     label: 'תעלת פנמה',
     english: 'Panama Canal',
-    position: { x: 22, y: 53 },
+    position: { x: 26, y: 29.5 },
     width: 'תעלה מלאכותית עם 3 מנעולים',
     depth: '~12–15 מ׳',
     tradePct: 6,
@@ -322,6 +322,24 @@ title = {
   );
 }
 
+/** The Asia↔Europe mega-artery — the single route that threads Suez,
+ *  Bab el-Mandeb, the Hormuz corner and Malacca. It bends INTO each strait
+ *  so the converging-into-chokepoints idea reads at a glance; the travelling
+ *  blip rides this path. */
+const MEGA_ARTERY =
+  'M47,17 Q52,17.4 56.3,18.2 Q59,22 60.3,26.5 Q64.5,29.6 68,28 Q73,29.5 76.5,31.5 Q78.5,32.7 80,34 Q85.5,31 89,24';
+
+/** Map-only label placement. The three Middle-East straits sit close
+ *  together, so their labels are pushed into open water and tied back with
+ *  a short leader line; Panama and Malacca read fine directly below. */
+const LABEL_LAYOUT: Record<ChokepointId, { x: number; y: number; leader: boolean }> = {
+  panama: { x: 26, y: 35.4, leader: false },
+  suez: { x: 50, y: 9.6, leader: true },
+  'bab-el-mandeb': { x: 52, y: 31.8, leader: true },
+  hormuz: { x: 75.5, y: 26.4, leader: true },
+  malacca: { x: 80, y: 40.4, leader: false },
+};
+
 function WorldMap({
   chokepoints,
   blocked,
@@ -334,9 +352,9 @@ function WorldMap({
   return (
     <div className="relative w-full h-full min-h-[360px] rounded-xl overflow-hidden">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        {/* Subtle "map paper" grid — same family as the other maps
-            across topics 1-3 / 6 / 8. No coloured background; the
-            parent card carries the surface colour. */}
+        {/* Subtle "map paper" grid — a faint sage graticule (same sage as
+            the site grid-pattern token) that reads as survey paper without
+            competing with the land. */}
         {Array.from({ length: 11 }).map((_, i) => (
           <line
             key={`v-${i}`}
@@ -344,67 +362,129 @@ function WorldMap({
             y1="0"
             x2={i * 10}
             y2="56"
-            className="stroke-border-subtle/40"
+            className="stroke-brand-dark/10"
             strokeWidth="0.08"
           />
         ))}
-        {Array.from({ length: 7 }).map((_, i) => (
+        {Array.from({ length: 8 }).map((_, i) => (
           <line
             key={`h-${i}`}
             x1="0"
             y1={i * 8}
             x2="100"
             y2={i * 8}
-            className="stroke-border-subtle/40"
+            className="stroke-brand-dark/10"
             strokeWidth="0.08"
           />
         ))}
 
-        {/* Continents — warm sand silhouettes; no per-shape stroke so
-            they read as one terrain wash rather than seven blobs. */}
-        <g className="fill-terrain-sand/35">
-          <path d="M5 18 L18 14 L26 22 L24 32 L18 38 L10 42 L5 38 L4 28 Z" />
-          <path d="M22 38 L28 38 L30 46 L26 54 L24 54 L21 46 Z" />
-          <path d="M44 18 L52 14 L56 18 L54 26 L48 30 L42 28 L42 22 Z" />
-          <path d="M46 30 L54 28 L58 32 L60 42 L56 50 L50 52 L46 48 L44 38 Z" />
-          <path d="M56 22 L70 20 L82 22 L88 28 L86 36 L80 40 L72 36 L64 32 L58 32 Z" />
-          <path d="M74 40 L82 42 L84 48 L80 52 L74 50 L72 44 Z" />
-          <path d="M82 50 L90 50 L92 54 L86 54 Z" />
+        {/* Continents — warm sand silhouettes drawn as a deliberate,
+            recognisable world map: the Americas at the left, Europe /
+            Africa in the centre, the Arabian peninsula and Asia (with
+            India + SE-Asia) to the right, plus supporting landmasses
+            (Greenland, Japan, Madagascar, Australia) for orientation. A
+            faint sand coastline gives them definition without noise. */}
+        <g className="fill-terrain-sand/40 stroke-terrain-sand/60" strokeWidth="0.2" strokeLinejoin="round">
+          {/* North America + the Central-America isthmus as ONE landmass, so
+              the land bridge reads as a deliberate waist Panama cuts through
+              (no thin double-stroke sliver). */}
+          <path d="M11,13 Q11,8.5 14,6.8 Q18,4.8 23,5.4 Q27.5,5 30.5,7.2 Q32.6,9.5 31.4,12.6 Q30.6,15.2 28.6,16.8 Q29.2,18.4 28.2,19.6 Q27,18.4 26.4,17 Q24.4,17.4 22.8,18.8 Q21,20.6 20.4,22.6 Q22.4,24.6 24.4,26.6 Q26,28.2 27,29.4 Q27.7,30.2 27,31 Q25.9,30.6 24.6,29.2 Q22.6,27.4 20.6,25.2 Q18.4,23 16.4,20.4 Q13.4,17.4 12,14.6 Q11.2,13.6 11,13 Z" />
+          {/* South America — Brazil bulge (east), Andes coast, taper to Cape Horn */}
+          <path d="M27,30.4 Q31,29.2 34.6,30.4 Q37.6,31.8 38.4,35.4 Q38.6,38 36.8,39.8 Q37,42 35.4,44.6 Q33,49 30.6,52.6 Q29.6,53 29.2,52 Q28.8,48.4 28.6,44.4 Q27,40.4 25.8,36 Q25,32.8 25.8,31 Q26.2,30.4 27,30.4 Z" />
+          {/* Greenland */}
+          <path d="M36,4 Q39,2.5 41.2,4.6 Q42.2,7 39.2,8.6 Q36,8 35.6,6 Q35.2,4.5 36,4 Z" />
+          {/* Europe — a Scandinavian peninsula above the Mediterranean */}
+          <path d="M44.5,14.4 Q44.4,12 46.4,11 Q47.6,8.8 49.2,10 Q49.8,7.4 51.4,9 Q54,9 55.2,11 Q55.8,13 53.2,13.8 Q49,14.4 46.6,14.9 Q45.2,15 44.5,14.4 Z" />
+          {/* Africa — connects to Arabia just N/S of the Suez marker, so Suez
+              reads as a canal cut through a continuous Africa–Asia landbridge. */}
+          <path d="M42.6,17.2 Q47,15.6 52.5,15.8 Q55.4,15.6 56.4,16.6 L56.4,17.5 Q56.5,18.2 56.9,18.7 Q58.6,19.2 59.4,21.2 Q59,23.4 60.2,25 Q59,26.4 57.4,28.4 Q55,32.4 52.6,38 Q50,44 48,48.6 Q46,46.6 45.2,42 Q44,37.6 43.8,33 Q42.8,31.6 41.6,29 Q40.4,25.6 40.2,22.4 Q40.6,19.4 42,17.8 Q42.3,17.5 42.6,17.2 Z" />
+          {/* Arabian peninsula — touches Africa at Suez; Persian Gulf mouth at Hormuz */}
+          <path d="M56.9,18.7 Q59,19 60.6,19.8 Q63,18.6 65.8,19.2 Q68.2,20.6 68,22.6 Q66.4,24.4 63.8,25.8 Q61.6,26.4 60.4,24.4 Q59.6,22 59.2,20.4 Q58,19.6 56.9,18.7 Z" />
+          {/* Asia / Eurasia — Bay-of-Bengal concavity lightens the right side;
+              the Malay peninsula drops to pinch the Malacca strait. */}
+          <path d="M54.8,11 Q57.6,7.4 63.4,6.4 Q73,5.4 82.4,5.9 Q88.6,6.4 91.6,9 Q93.8,11.2 91,14.6 Q89,17.2 87,17 Q85.4,18.8 84.2,20.8 Q82.4,23.6 80,25.8 Q76.6,24 74.6,25.8 Q73.6,27.4 73.4,29.6 Q75.4,29.2 77.2,29.6 Q79,30 79.4,31.4 Q79.2,32.8 78,33.2 Q76.2,33 74.6,32.4 Q73.2,31.6 72.4,30 Q71.4,27.4 71,24.4 Q70,22 68.2,20.6 Q66,19 63,17.6 Q60.4,16.2 57.8,15.8 Q55.8,14.6 54.8,11 Z" />
+          {/* Japan */}
+          <path d="M90,12 Q92,10.5 92.8,13 Q92.5,15 91,17 Q90,16 90,14 Q89.7,12.8 90,12 Z" />
+          {/* Madagascar — orients the East-Africa / Indian-Ocean corner */}
+          <path d="M62.8,34 Q63.8,33.5 64.1,35 Q64.3,38 63.3,40 Q62.6,39 62.5,37 Q62.3,35 62.8,34 Z" />
+          {/* Sumatra — the far bank of the Malacca strait */}
+          <path d="M77.4,33.4 Q79.4,34.6 82,37.4 Q83.6,39.4 82,40 Q79.8,39.4 77.6,36.6 Q76.4,34.8 77.4,33.4 Z" />
+          {/* Australia */}
+          <path d="M85,41 Q89,38.5 93,40 Q96,41.5 95.5,45 Q94,48.5 90,49 Q86,48.5 84.5,45 Q84,42.5 85,41 Z" />
         </g>
 
-        {/* Major shipping lanes — neutral sage dash; the orange
-            travelling blip is the only colour accent on the route. */}
+        {/* Water channels — the narrow passages themselves. A faint cool
+            stroke traces the Mediterranean, the Red Sea (Suez→Bab), the
+            Persian Gulf (→Hormuz) and the Malacca strait, so the eye sees
+            WHY each marker is a bottleneck. */}
+        <g fill="none" className="stroke-accent-cool/40" strokeLinecap="round">
+          <path d="M45.5,14.9 Q51,14.4 56,15.1" strokeWidth="0.5" className="stroke-accent-cool/30" />
+          <path d="M57.2,18 Q58.8,21.6 60.2,25.6" strokeWidth="0.6" />
+          <path d="M61.6,17 Q64.6,19 68,21.5" strokeWidth="0.6" />
+          <path d="M79,31.6 Q79.8,32.8 80.4,34.4" strokeWidth="0.55" />
+        </g>
+
+        {/* Major shipping lanes — a small, intentional set of corridors so
+            the relationship between routes and chokepoints is obvious. Drawn
+            SOLID (the course convention: a safe/continuous lane is solid, a
+            dangerous straight run would be dashed): the Asia↔Europe artery
+            through Suez/Bab/Hormuz/Malacca, the Gulf-oil run out of Hormuz,
+            and one continuous Atlantic↔Panama↔Pacific corridor. */}
         {[
-          'M14 38 Q 22 45 28 50',
-          'M30 40 Q 35 36 50 38 Q 60 39 72 45 Q 78 48 84 50',
-          'M48 26 Q 52 32 55 38 Q 58 44 56 47',
-          'M55 38 Q 60 40 70 42 Q 78 45 84 50',
+          MEGA_ARTERY,
+          'M68,21.5 Q71.5,26.5 75,29.5 Q78,32 80,34',
+          'M47,16 Q40,20 33,23.5 Q29.5,26.5 26,29.5 Q19,31.5 12,32.5 Q9,33 7,34.5',
         ].map((d, i) => (
           <path
             key={i}
             d={d}
             fill="none"
-            className="stroke-brand-dark/35"
-            strokeWidth="0.25"
-            strokeDasharray="0.9 0.7"
+            className="stroke-brand-dark/55"
+            strokeWidth="0.34"
+            strokeLinecap="round"
           />
         ))}
+
+        {/* Suez + Panama read as engineered canals — a short cool corridor
+            cutting the land, distinct from the natural straits. */}
+        <g className="stroke-accent-cool/60" strokeWidth="0.45" strokeLinecap="round">
+          <line x1="56.7" y1="16.2" x2="56.7" y2="18.8" />
+          <line x1="24.4" y1="27.6" x2="27.2" y2="30" />
+        </g>
 
         <motion.circle
           r="0.7"
           className="fill-accent"
           animate={{ offsetDistance: ['0%', '100%'] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-          style={{
-            offsetPath: 'path("M30 40 Q 35 36 50 38 Q 60 39 72 45 Q 78 48 84 50")',
-          }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+          style={{ offsetPath: `path("${MEGA_ARTERY}")` }}
         />
+
+        {/* Leader lines — drawn under the markers so an offset label ties
+            cleanly back to its strait. */}
+        {chokepoints.map((c) => {
+          const lay = LABEL_LAYOUT[c.id];
+          if (!lay.leader) return null;
+          const isBlocked = blocked.has(c.id);
+          return (
+            <line
+              key={`lead-${c.id}`}
+              x1={c.position.x}
+              y1={c.position.y}
+              x2={lay.x}
+              y2={lay.y - 0.8}
+              className={cn(isBlocked ? 'stroke-status-danger/50' : 'stroke-fg-dim/45')}
+              strokeWidth="0.12"
+            />
+          );
+        })}
 
         {/* Chokepoint markers — each marker is itself the toggle.
             Blocked markers turn red with an X; unblocked are sage.
             Hover ring on un-blocked invites the click. */}
         {chokepoints.map((c) => {
           const isBlocked = blocked.has(c.id);
+          const lay = LABEL_LAYOUT[c.id];
           return (
             <g
               key={c.id}
@@ -447,17 +527,18 @@ function WorldMap({
                 </g>
               )}
 
-              {/* Single name label — below the marker only. Red when
+              {/* Name label — pushed into open water for the crowded
+                  Middle-East cluster, directly below otherwise. Red when
                   blocked, dark fg otherwise. */}
               <text
-                x={c.position.x}
-                y={c.position.y + 4}
+                x={lay.x}
+                y={lay.y}
                 textAnchor="middle"
                 className={cn(
                   'font-display font-bold pointer-events-none',
                   isBlocked ? 'fill-status-danger' : 'fill-fg',
                 )}
-                fontSize="2.3"
+                fontSize="2.6"
                 paintOrder="stroke"
                 stroke="#ffffff"
                 strokeWidth="0.95"

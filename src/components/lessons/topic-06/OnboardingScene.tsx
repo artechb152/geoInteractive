@@ -71,7 +71,7 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
   {
     headline: 'כשהענן הסתיר את המטרה',
     place: 'מלחמות מודרניות · שנות ה-2000',
-    lesson: 'טילים "חכמים" שמונחים בעזרת מצלמה או לייזר דורשים קו ראייה (LOS) רציף אל המטרה עד רגע הפגיעה. במלחמות בעיראק בשנות ה-2000, היו מקרים שבהם ענן או עשן פתאומי חסמו את הראייה של הטיל. כתוצאה מכך נשבר קו הראייה, הטיל איבד את המטרה ופגע בשטח ריק. המסקנה? ללא קו ראייה נקי, אי אפשר לפגוע.',
+    lesson: 'טילים "חכמים" שמונחים בעזרת מצלמה או לייזר דורשים קו ראייה (LOS – Line of Sight) רציף אל המטרה עד רגע הפגיעה. במלחמות בעיראק בשנות ה-2000, היו מקרים שבהם ענן או עשן פתאומי חסמו את הראייה של הטיל. כתוצאה מכך נשבר קו הראייה, הטיל איבד את המטרה ופגע בשטח ריק. המסקנה? ללא קו ראייה נקי, אי אפשר לפגוע.',
     icon: 'plane',
     accent: 'text-accent-cool',
   },
@@ -189,7 +189,7 @@ title = {
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
                         <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
                           <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
-                          למה זה משנה
+                          למה זה משנה?
                         </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
                           {s.popupTitle}
@@ -229,7 +229,7 @@ title = {
 
       <ReadyCallout title="עכשיו אתם מוכנים!">
         <p>הבנתם שלראות את השטח זה לא רק "לפתוח עיניים" — אלא דורש ניתוח והבנה. בסצנות הבאות נלמד: 
-            <strong className="text-fg"> איך מחשבים קו ראייה (LOS) בעצמנו, איך תוכנות יכולות לייצר מפה שחושפת בפנינו את כל האזורים הגלויים (Viewshed), ואיך כל זה מאפשר לנו לסגור מעגל ולפגוע במטרה (Kill Chain)</strong>.</p>
+            <strong className="text-fg"> איך מחשבים קו ראייה (LOS – Line of Sight) בעצמנו, איך תוכנות יכולות לייצר מפה שחושפת בפנינו את כל האזורים הגלויים (Viewshed), ואיך כל זה מאפשר לנו לסגור מעגל ולפגוע במטרה (Kill Chain)</strong>.</p>
       </ReadyCallout>
     </section>
   );

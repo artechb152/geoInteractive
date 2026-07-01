@@ -26,7 +26,7 @@ export function SceneHeader({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="max-w-4xl mb-10"
+      className="max-w-[67.2rem] mb-10"
     >
       <h2 className="font-display font-bold tracking-tight text-balance leading-[1.05] text-[clamp(1.75rem,4.5vw,3.5rem)]">
         {title}
