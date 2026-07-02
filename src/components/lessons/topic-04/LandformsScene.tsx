@@ -162,13 +162,13 @@ className="overflow-hidden"
  <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
  <div className="mt-3">
  <div className="text-sm font-display font-semibold text-accent-cool mb-1 tracking-wider">
- מה זה
+ מה זה?
  </div>
  <p className="text-sm leading-relaxed text-fg">{f.description}</p>
  </div>
  <div>
  <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
- איך מזהים במפה
+ איך מזהים במפה?
  </div>
  <p className="text-sm leading-relaxed text-fg">{f.contourHint}</p>
  </div>
@@ -469,13 +469,13 @@ className="space-y-3"
  >
  <div className="surface-elevated p-5">
  <div className="text-sm font-display font-semibold text-accent-cool mb-2 tracking-wider">
- מה זה
+ מה זה?
  </div>
  <p className="text-sm leading-relaxed text-fg">{meta.description}</p>
  </div>
  <div className="surface p-5">
  <div className="text-sm font-display font-semibold text-accent mb-2 tracking-wider">
- איך מזהים במפה
+ איך מזהים במפה?
  </div>
  <p className="text-sm leading-relaxed text-fg-muted">{meta.contourHint}</p>
  </div>

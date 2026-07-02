@@ -189,14 +189,14 @@ export function OnboardingScene() {
                         <div className="mt-3">
                           <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
                             <Icon name="eye" size={14} />
-                            מה אתה עושה בשלב הזה
+                            מה אתה עושה בשלב הזה?
                           </div>
                           <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
                         </div>
                         <div className="pt-2 border-t border-border-subtle">
                           <div className="text-sm font-display font-semibold text-brand-dark mb-1.5 tracking-wider flex items-center gap-1.5">
                             <Icon name="spark" size={14} />
-                            ולמה זה משנה
+                            ולמה זה משנה?
                           </div>
                           <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>
                         </div>

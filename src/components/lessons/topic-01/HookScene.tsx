@@ -33,7 +33,7 @@ export function HookScene() {
 
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
           המלחמה המודרנית לא מוכרעת ביחס כוחות — היא מוכרעת ב-5 ממדים,
-          3 רמות פיקוד, ובצד השלישי שכולם שוכחים: הזמן. בשיעור הזה תבין
+          3 רמות פיקוד, ובתלות במימד הזמן והמרחב. בשיעור הזה תבין
           איך המרחב הופך לשחקן הראשי, ולמה רחפן של 300 דולר מפיל מטוס של 80 מיליון.
         </p>
         <motion.div
