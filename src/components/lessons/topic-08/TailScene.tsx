@@ -85,6 +85,26 @@ title = {
 
         <TailViz depth={depth} secured={secured} status={status} trucksInPipeline={trucksInPipeline} />
 
+        {/* Legend — carries the zone/raider meaning outside the crowded
+            diagram center, so the belly reads correctly even when a short
+            zone hides its in-diagram word. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[11px] font-display font-medium text-fg-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rounded-sm bg-status-ok/40 border border-status-ok/60" aria-hidden />
+            אזור מאובטח — שיירות מוגנות
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rounded-sm bg-status-danger/40 border border-status-danger/60" aria-hidden />
+            בטן חשופה — ציד לוגיסטי
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="10" height="9" viewBox="0 0 10 9" aria-hidden className="shrink-0">
+              <path d="M1 8 L9 8 L5 1 Z" className="fill-status-danger" />
+            </svg>
+            חוליית אויב
+          </span>
+        </div>
+
         <p className={cn('text-sm leading-relaxed mt-3', sm.color)}>{sm.msg}</p>
       </div>
 
@@ -243,9 +263,10 @@ function TailViz({
   status: 'safe' | 'caution' | 'high' | 'critical';
   trucksInPipeline: number;
 }) {
-  // Scale depth (20-500) to x position of the front (50-92)
+  // Scale depth (20-500) to x position of the front (24.7-90)
   const frontX = 22 + (depth / 500) * 68;
   const baseX = 8;
+  const routeY = 30; // supply-route centerline
 
   // How many trucks to render along the route (capped for visual)
   const shownTrucks = Math.min(14, Math.max(3, Math.round(trucksInPipeline / 12)));
@@ -254,56 +275,49 @@ function TailViz({
     return baseX + t * (frontX - baseX);
   });
 
-  // Secured zone is from base outward (left portion)
+  // Secured zone is from base outward (left portion); the rest is exposed.
   const securedEndX = baseX + ((frontX - baseX) * secured) / 100;
+  const securedW = securedEndX - baseX;
+  const vulnW = frontX - securedEndX;
+  const atRisk = Math.round((1 - secured / 100) * trucksInPipeline);
 
   return (
     <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent/40">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
+      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Parent div carries `bg-bg-accent/40` — no internal gradient rect needed. */}
 
-        {/* Background terrain */}
-        <path d="M0 42 L25 38 L45 41 L65 36 L85 40 L100 38 L100 56 L0 56 Z" className="fill-terrain-sand/20" />
+        {/* Background terrain (kept low so it never crosses the label lanes) */}
+        <path d="M0 48 L25 46 L45 47 L65 45 L85 47 L100 46 L100 56 L0 56 Z" className="fill-terrain-sand/20" />
+
+        {/* Summary line (top lane) */}
+        <text x="50" y="9" textAnchor="middle" className="fill-fg-muted font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
+          {trucksInPipeline} משאיות בצינור · {atRisk} בסיכון
+        </text>
 
         {/* Secured zone (green band) */}
-        <rect x={baseX - 2} y="25" width={Math.max(0, securedEndX - baseX + 2)} height="14" className="fill-status-ok" opacity="0.15" />
-        {securedEndX > baseX + 4 && (
-          <text x={(baseX + securedEndX) / 2} y="22" textAnchor="middle" className="fill-status-ok font-display font-bold font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-            אזור מאובטח
-          </text>
+        {securedW > 0.5 && (
+          <rect x={baseX} y="23" width={securedW} height="14" className="fill-status-ok" opacity="0.15" />
         )}
-
         {/* Vulnerable zone (red band) */}
-        {securedEndX < frontX - 2 && (
-          <>
-            <rect x={securedEndX} y="25" width={frontX - securedEndX} height="14" className="fill-status-danger" opacity="0.12" />
-            <text x={(securedEndX + frontX) / 2} y="22" textAnchor="middle" className="fill-status-danger font-display font-bold font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-              אזור פגיעות
-            </text>
-          </>
+        {vulnW > 0.5 && (
+          <rect x={securedEndX} y="23" width={vulnW} height="14" className="fill-status-danger" opacity="0.13" />
         )}
 
         {/* Supply route line */}
-        <line x1={baseX} y1="32" x2={frontX} y2="32" className="stroke-accent" strokeWidth="0.5" strokeDasharray="2 1" />
+        <line x1={baseX} y1={routeY} x2={frontX} y2={routeY} className="stroke-accent" strokeWidth="0.5" strokeDasharray="2 1" />
+
+        {/* Endpoint labels (top lane) — name + km stacked above each end.
+            baseX is fixed and frontX >= 24.7, so these never overlap. */}
+        <text x={baseX} y="15" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">בסיס</text>
+        <text x={baseX} y="19" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">0 ק"מ</text>
+        <text x={frontX} y="15" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">חזית</text>
+        <text x={frontX} y="19" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">{depth} ק"מ</text>
 
         {/* Base marker */}
         <g>
-          <rect x={baseX - 4} y="29" width="8" height="6" rx="0.8" className="fill-accent-cool" />
-          <rect x={baseX - 3} y="30.5" width="2" height="3" className="fill-bg" />
-          <rect x={baseX} y="30.5" width="2" height="3" className="fill-bg" />
-          <text x={baseX} y="26" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">בסיס</text>
-          <text x={baseX} y="42" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">0 ק"מ</text>
-        </g>
-
-        {/* Front marker */}
-        <g>
-          <circle cx={frontX} cy="32" r="2.4" className="fill-accent-hot" />
-          <circle cx={frontX} cy="32" r="3.8" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
-            <animate attributeName="r" values="3;6;3" dur="2.4s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.8;0;0.8" dur="2.4s" repeatCount="indefinite" />
-          </circle>
-          <text x={frontX} y="26" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">חזית</text>
-          <text x={frontX} y="42" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">{depth} ק"מ</text>
+          <rect x={baseX - 4} y={routeY - 3} width="8" height="6" rx="0.8" className="fill-accent-cool" />
+          <rect x={baseX - 3} y={routeY - 1.5} width="2" height="3" className="fill-bg" />
+          <rect x={baseX} y={routeY - 1.5} width="2" height="3" className="fill-bg" />
         </g>
 
         {/* Supply trucks along route */}
@@ -311,11 +325,11 @@ function TailViz({
           const isSecure = x <= securedEndX;
           return (
             <g key={i}>
-              <rect x={x - 1.4} y="30.5" width="2.8" height="1.7" rx="0.3" className={isSecure ? 'fill-accent' : 'fill-status-warn'} />
-              <circle cx={x - 0.8} cy="32.5" r="0.4" className="fill-fg" />
-              <circle cx={x + 0.8} cy="32.5" r="0.4" className="fill-fg" />
+              <rect x={x - 1.4} y={routeY - 0.85} width="2.8" height="1.7" rx="0.3" className={isSecure ? 'fill-accent' : 'fill-status-warn'} />
+              <circle cx={x - 0.8} cy={routeY + 0.65} r="0.4" className="fill-fg" />
+              <circle cx={x + 0.8} cy={routeY + 0.65} r="0.4" className="fill-fg" />
               {!isSecure && status !== 'safe' && (
-                <circle cx={x} cy="29" r="0.4" className="fill-status-danger">
+                <circle cx={x} cy={routeY - 2.5} r="0.4" className="fill-status-danger">
                   <animate attributeName="opacity" values="1;0.2;1" dur="1.4s" repeatCount="indefinite" />
                 </circle>
               )}
@@ -323,29 +337,62 @@ function TailViz({
           );
         })}
 
-        {/* Logistics raider markers (when vulnerable zone exists) */}
-        {securedEndX < frontX - 3 && status !== 'safe' && (
+        {/* Front marker */}
+        <g>
+          <circle cx={frontX} cy={routeY} r="2.4" className="fill-accent-hot" />
+          <circle cx={frontX} cy={routeY} r="3.8" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
+            <animate attributeName="r" values="3;6;3" dur="2.4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.8;0;0.8" dur="2.4s" repeatCount="indefinite" />
+          </circle>
+        </g>
+
+        {/* Logistics raiders — label-free triangles inside the exposed belly.
+            Their meaning is carried by the legend below the diagram. */}
+        {vulnW > 6 && status !== 'safe' && (
           <>
-            {[
-              { x: securedEndX + (frontX - securedEndX) * 0.3, y: 49 },
-              { x: securedEndX + (frontX - securedEndX) * 0.7, y: 49 },
-            ].map((p, i) => (
-              <g key={i}>
-                <path d={`M${p.x - 1.5} ${p.y} L${p.x + 1.5} ${p.y} L${p.x} ${p.y - 2.5} Z`} className="fill-status-danger" />
-                <text x={p.x} y={p.y + 3.5} textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="1.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">
-                  חוליית אויב
-                </text>
-              </g>
-            ))}
+            {[0.38, 0.72].map((f, i) => {
+              const rx = securedEndX + vulnW * f;
+              return (
+                <path key={i} d={`M${rx - 1.3} 34 L${rx + 1.3} 34 L${rx} 31 Z`} className="fill-status-danger">
+                  <animate attributeName="opacity" values="1;0.35;1" dur="1.8s" repeatCount="indefinite" />
+                </path>
+              );
+            })}
           </>
         )}
 
-        {/* Truck count label */}
-        <text x="50" y="9" textAnchor="middle" className="fill-fg-muted font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-          {trucksInPipeline} משאיות בצינור · {Math.round((1 - secured / 100) * trucksInPipeline)} בסיכון
-        </text>
+        {/* Zone brackets + short words (bottom lane). Words are width-gated
+            so a narrow zone drops its word instead of overlapping. */}
+        {securedW > 2 && <ZoneBracket x1={baseX} x2={securedEndX} y={40} className="stroke-status-ok" />}
+        {vulnW > 2 && <ZoneBracket x1={securedEndX} x2={frontX} y={40} className="stroke-status-danger" />}
+        {securedW >= 12 && (
+          <text x={baseX + securedW / 2} y="45.5" textAnchor="middle" className="fill-status-ok font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">מאובטח</text>
+        )}
+        {vulnW >= 9 && (
+          <text x={securedEndX + vulnW / 2} y="45.5" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">חשוף</text>
+        )}
       </svg>
     </div>
+  );
+}
+
+function ZoneBracket({
+  x1,
+  x2,
+  y,
+  className,
+}: {
+  x1: number;
+  x2: number;
+  y: number;
+  className: string;
+}) {
+  return (
+    <g className={className} strokeWidth="0.4" strokeLinecap="round">
+      <line x1={x1 + 0.4} y1={y} x2={x2 - 0.4} y2={y} />
+      <line x1={x1 + 0.4} y1={y - 1.2} x2={x1 + 0.4} y2={y} />
+      <line x1={x2 - 0.4} y1={y - 1.2} x2={x2 - 0.4} y2={y} />
+    </g>
   );
 }
 

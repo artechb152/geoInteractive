@@ -29,3 +29,7 @@ qa-output/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Playwright MCP session logs and ad-hoc QA screenshots
+.playwright-mcp/
+/geo09-*.png

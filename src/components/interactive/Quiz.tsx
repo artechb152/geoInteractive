@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, ListChecks, RotateCcw, Send, Trophy } from 'lucide-react';
+import { Check, X, ListChecks, RotateCcw, Send, Trophy, Lightbulb, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type Question = {
@@ -11,21 +11,47 @@ export type Question = {
   options: { id: string; label: string }[];
   correctId: string;
   rationale: string;
+  /**
+   * Optional per-option diagnostic hints (keyed by option id). When a
+   * question provides `feedback`, the quiz switches to a *hint-first* flow:
+   * a wrong answer shows the matching hint and lets the learner try again,
+   * and the correct answer is revealed only after the learner picks it or
+   * clicks "הצג תשובה". Questions without `feedback` keep the classic
+   * reveal-on-submit behavior unchanged.
+   */
   feedback?: Record<string, string>;
   objective?: string;
 };
 
 const easeSnap = [0.22, 1, 0.36, 1] as const;
 
+const GENERIC_HINT =
+  'עוד לא מדויק. חזרו לשכבה או למושג שהשאלה בודקת, וחשבו איזו שיטה עונה עליה בדיוק.';
+
 export function Quiz({ questions }: { questions: Question[] }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  // Questions where the learner asked to see the answer (hint-flow only).
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
 
   const allAnswered = Object.keys(answers).length === questions.length;
   const score = submitted
     ? questions.filter((q) => answers[q.id] === q.correctId).length
     : 0;
   const passed = score >= Math.ceil(questions.length * 0.7);
+
+  const reset = () => {
+    setAnswers({});
+    setSubmitted(false);
+    setRevealed(new Set());
+  };
+
+  const revealAnswer = (id: string) =>
+    setRevealed((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
 
   return (
     <div className="space-y-4">
@@ -48,6 +74,18 @@ export function Quiz({ questions }: { questions: Question[] }) {
         {questions.map((q, i) => {
           const picked = answers[q.id];
           const isCorrect = picked === q.correctId;
+          // Hint-flow is opt-in: only questions that ship per-option
+          // diagnostics use it. Everything else keeps the classic flow.
+          const hintMode = !!q.feedback && Object.keys(q.feedback).length > 0;
+          const isRevealed = revealed.has(q.id);
+          // Whether the correct option + rationale may be shown. In classic
+          // mode this is simply "submitted". In hint mode we hold it back on
+          // a wrong answer until the learner recovers or asks to reveal.
+          const showAnswer = submitted && (!hintMode || isCorrect || isRevealed);
+          // A wrong pick that is still being worked on (hint mode only).
+          const inRetry = submitted && hintMode && !isCorrect && !isRevealed;
+          const locked = submitted && !inRetry;
+
           return (
             <li
               key={q.id}
@@ -55,7 +93,8 @@ export function Quiz({ questions }: { questions: Question[] }) {
                 'relative rounded-2xl border bg-bg-elevated p-3.5 md:p-4 transition-colors duration-300 ease-snap',
                 !submitted && 'border-border',
                 submitted && isCorrect && 'border-status-ok/40',
-                submitted && !isCorrect && 'border-status-danger/40',
+                submitted && !isCorrect && inRetry && 'border-status-warn/40',
+                submitted && !isCorrect && !inRetry && 'border-status-danger/40',
               )}
             >
               <div className="flex gap-3 items-start mb-3.5">
@@ -64,7 +103,8 @@ export function Quiz({ questions }: { questions: Question[] }) {
                     'grid place-items-center size-7 shrink-0 rounded-full font-display font-bold text-xs border transition-colors',
                     !submitted && 'bg-bg-accent border-border text-fg-muted',
                     submitted && isCorrect && 'bg-status-ok/15 border-status-ok/40 text-status-ok',
-                    submitted && !isCorrect && 'bg-status-danger/10 border-status-danger/40 text-status-danger',
+                    submitted && !isCorrect && inRetry && 'bg-status-warn/10 border-status-warn/40 text-status-warn',
+                    submitted && !isCorrect && !inRetry && 'bg-status-danger/10 border-status-danger/40 text-status-danger',
                   )}
                   aria-hidden
                 >
@@ -83,32 +123,37 @@ export function Quiz({ questions }: { questions: Question[] }) {
                     <button
                       key={o.id}
                       type="button"
-                      disabled={submitted}
+                      disabled={locked}
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))}
                       className={cn(
                         'w-full text-right px-3.5 py-2.5 rounded-xl border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
-                        !submitted && isPicked && 'border-accent-hover bg-accent/10 text-accent font-medium',
-                        !submitted && !isPicked && 'border-border hover:border-accent/40 hover:bg-accent/5 text-fg',
-                        submitted && isAnswer && 'border-status-ok/50 bg-status-ok/10 text-status-ok font-medium',
-                        submitted && isPicked && !isAnswer && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
-                        submitted && !isPicked && !isAnswer && 'border-border-subtle opacity-55 text-fg-muted',
+                        // pre-submit + active retry (options stay pickable)
+                        !locked && isPicked && !inRetry && 'border-accent-hover bg-accent/10 text-accent font-medium',
+                        !locked && isPicked && inRetry && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
+                        !locked && !isPicked && 'border-border hover:border-accent/40 hover:bg-accent/5 text-fg',
+                        // locked / answer shown
+                        showAnswer && isAnswer && 'border-status-ok/50 bg-status-ok/10 text-status-ok font-medium',
+                        showAnswer && isPicked && !isAnswer && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
+                        showAnswer && !isPicked && !isAnswer && 'border-border-subtle opacity-55 text-fg-muted',
                         'disabled:cursor-default',
                       )}
                     >
                       <span
                         className={cn(
                           'grid place-items-center size-5 shrink-0 rounded-full border transition-colors',
-                          !submitted && isPicked && 'border-accent-hover bg-accent-hover text-bg-elevated',
-                          !submitted && !isPicked && 'border-border-strong',
-                          submitted && isAnswer && 'border-status-ok bg-status-ok text-bg-elevated',
-                          submitted && isPicked && !isAnswer && 'border-status-danger bg-status-danger text-bg-elevated',
-                          submitted && !isPicked && !isAnswer && 'border-border opacity-60',
+                          !locked && isPicked && !inRetry && 'border-accent-hover bg-accent-hover text-bg-elevated',
+                          !locked && isPicked && inRetry && 'border-status-danger bg-status-danger text-bg-elevated',
+                          !locked && !isPicked && 'border-border-strong',
+                          showAnswer && isAnswer && 'border-status-ok bg-status-ok text-bg-elevated',
+                          showAnswer && isPicked && !isAnswer && 'border-status-danger bg-status-danger text-bg-elevated',
+                          showAnswer && !isPicked && !isAnswer && 'border-border opacity-60',
                         )}
                         aria-hidden
                       >
-                        {submitted && isAnswer && <Check className="size-3" strokeWidth={3} />}
-                        {submitted && isPicked && !isAnswer && <X className="size-3" strokeWidth={3} />}
-                        {!submitted && isPicked && <span className="size-1.5 rounded-full bg-bg-elevated" />}
+                        {showAnswer && isAnswer && <Check className="size-3" strokeWidth={3} />}
+                        {showAnswer && isPicked && !isAnswer && <X className="size-3" strokeWidth={3} />}
+                        {inRetry && isPicked && <X className="size-3" strokeWidth={3} />}
+                        {!locked && isPicked && !inRetry && <span className="size-1.5 rounded-full bg-bg-elevated" />}
                       </span>
                       <span className="flex-1 text-pretty leading-snug">{o.label}</span>
                     </button>
@@ -116,12 +161,52 @@ export function Quiz({ questions }: { questions: Question[] }) {
                 })}
               </div>
 
-              <AnimatePresence>
-                {submitted && (
+              <AnimatePresence mode="wait">
+                {/* Hint-flow: wrong answer, correct answer still withheld ── */}
+                {inRetry && (
+                  <motion.div
+                    key="hint"
+                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    transition={{ duration: 0.3, ease: easeSnap }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-3 rounded-xl text-sm md:text-[15px] border border-status-warn/40 bg-status-warn/5 leading-relaxed">
+                      <div className="flex gap-2.5 items-start">
+                        <span
+                          className="grid place-items-center size-5 shrink-0 rounded-full mt-0.5 bg-status-warn/25 text-status-warn"
+                          aria-hidden
+                        >
+                          <Lightbulb className="size-3" strokeWidth={2.5} />
+                        </span>
+                        <span className="text-fg text-pretty">
+                          <strong className="font-semibold text-status-warn me-1">עוד לא.</strong>
+                          <span className="text-fg-muted">{q.feedback?.[picked] ?? GENERIC_HINT}</span>
+                        </span>
+                      </div>
+                      <div className="mt-2.5 flex items-center justify-between gap-3 flex-wrap ps-7">
+                        <span className="text-xs text-fg-dim">בחרו תשובה אחרת ונסו שוב.</span>
+                        <button
+                          type="button"
+                          onClick={() => revealAnswer(q.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border text-fg-muted hover:text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
+                        >
+                          <Eye className="size-3.5" aria-hidden />
+                          הצג תשובה
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Answer shown: correct, revealed, or classic flow ──────── */}
+                {showAnswer && (
                   <motion.div
                     key="feedback"
                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
                     animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     transition={{ duration: 0.3, ease: easeSnap }}
                     className="overflow-hidden"
                   >
@@ -148,7 +233,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       </span>
                       <span className="text-fg text-pretty">
                         <strong className={cn('font-semibold me-1', isCorrect ? 'text-status-ok' : 'text-status-warn')}>
-                          {isCorrect ? 'נכון.' : 'לא נכון.'}
+                          {isCorrect ? 'נכון.' : isRevealed ? 'התשובה הנכונה מסומנת למעלה.' : 'לא נכון.'}
                         </strong>
                         <span className="text-fg-muted">{q.rationale}</span>
                       </span>
@@ -187,10 +272,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
             </div>
             <button
               type="button"
-              onClick={() => {
-                setAnswers({});
-                setSubmitted(false);
-              }}
+              onClick={reset}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
             >
               <RotateCcw className="size-4" aria-hidden />

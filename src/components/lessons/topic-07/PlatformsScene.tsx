@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -153,12 +153,12 @@ title = {
       </div>
 
       {/* Main visualization */}
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
+      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-start mb-12">
         <div className="surface-elevated p-4 rounded-2xl">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div>
               <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase">Altitude Profile</div>
-              <div className="text-base font-display font-bold leading-tight text-fg">חתך אנכי · 12 ק"מ</div>
+              <div className="text-base font-display font-bold leading-tight text-fg">חתך אנכי · קרקע עד 12 ק"מ</div>
             </div>
             <div className="text-end">
               <div className="text-[10px] font-display font-semibold text-fg-muted tracking-wider">תקרת ענן נוכחית</div>
@@ -170,17 +170,11 @@ title = {
 
           <AltitudeMap ceiling={ceiling} platforms={PLATFORMS} />
 
-          <div className="mt-3 flex items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-display font-semibold text-fg-muted tracking-wider flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-status-ok ring-2 ring-status-ok/25" /> מעל תקרת הענן
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-status-warn ring-2 ring-status-warn/25" /> מתחת לעננים · בטוח מ-MANPADS
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-full bg-status-danger ring-2 ring-status-danger/25" /> בטווח MANPADS
-            </span>
-          </div>
+          <p className="mt-3 text-xs text-fg-muted leading-relaxed text-pretty">
+            הקו הכתום = <strong className="text-fg">תקרת הענן</strong>. כלים שנשארים{' '}
+            <strong className="text-status-ok">מעליו</strong> מוגנים — אבל לא רואים את הקרקע.
+            כלים שחייבים לצלול <strong className="text-status-warn">מתחתיו</strong> רואים את המטרה — אבל נחשפים לאש מהקרקע.
+          </p>
         </div>
 
         {/* Controls */}
@@ -224,6 +218,25 @@ title = {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Legend — colour = threat status of each platform */}
+          <div className="surface p-4 rounded-xl border border-border">
+            <div className="text-[11px] font-display font-semibold text-fg-muted tracking-[0.15em] uppercase mb-2.5">מקרא · מצב הפלטפורמה</div>
+            <ul className="space-y-2 text-xs">
+              <li className="flex items-center gap-2.5">
+                <span className="size-2.5 rounded-full bg-status-ok ring-2 ring-status-ok/25 shrink-0" />
+                <span className="text-fg"><strong className="font-semibold">מעל תקרת הענן</strong> · מוגן, אך עיוור לקרקע</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="size-2.5 rounded-full bg-status-warn ring-2 ring-status-warn/25 shrink-0" />
+                <span className="text-fg"><strong className="font-semibold">מתחת לעננים</strong> · רואה, ובטוח מ-MANPADS</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <span className="size-2.5 rounded-full bg-status-danger ring-2 ring-status-danger/25 shrink-0" />
+                <span className="text-fg"><strong className="font-semibold">בטווח MANPADS</strong> · חשוף לטילי כתף (עד 5 ק"מ)</span>
+              </li>
+            </ul>
           </div>
 
           <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
@@ -334,297 +347,227 @@ title = {
 }
 
 function AltitudeMap({ ceiling, platforms }: { ceiling: number; platforms: Platform[] }) {
-  // ViewBox 0 0 100 100. Altitude scale lives at x=0..8, content at x=10..98.
-  const altToY = (alt: number) => 95 - (alt / SCALE_MAX) * 90;
+  const reduce = useReducedMotion();
+
+  // ── Board geometry ──────────────────────────────────────────────────────
+  // viewBox 0 0 100 125 rendered with `xMidYMid meet` (never `none`) so the
+  // whole drawing scales UNIFORMLY at every width — glyphs and text are never
+  // stretched. The left gutter (x 0–23) carries the km axis + the ceiling
+  // read-out; the platform lane lives at x 30–90 so labels never collide.
+  const GROUND_Y = 114;
+  const TOP_Y = 12; // 12 km at the top of the plot
+  const AXIS_X = 20;
+  const PLOT_X0 = 23;
+  const PLOT_X1 = 98;
+  const altToY = (alt: number) => GROUND_Y - (alt / SCALE_MAX) * (GROUND_Y - TOP_Y);
   const ceilingY = altToY(ceiling);
-  const manpadsCeilingY = altToY(5000);
+  const manpadsY = altToY(5000);
+
+  // Short, unambiguous names for the baseline row (full names live in the matrix).
+  const SHORT: Record<string, string> = {
+    helo: 'מסוק',
+    balloon: 'בלון',
+    'mini-uav': 'מל"ט טקטי',
+    'male-uav': 'מל"ט כבד',
+    fighter: 'מטוס קרב',
+    satellite: 'לוויין',
+  };
+
+  // Low → high so each platform owns its own column and the eye reads a rising
+  // altitude staircase. Columns are spread evenly across the lane.
+  const ordered = [...platforms].sort((a, b) => a.defaultAlt - b.defaultAlt);
+  const LANE0 = 30;
+  const LANE1 = 90;
+  const colX = (i: number) => LANE0 + (i * (LANE1 - LANE0)) / (ordered.length - 1);
+
+  // White halo — required on every SVG label so it stays readable on any fill.
+  const halo = {
+    paintOrder: 'stroke' as const,
+    stroke: '#ffffff',
+    strokeWidth: 0.8,
+    strokeLinejoin: 'round' as const,
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+  };
 
   return (
-    <div className="aspect-[3/4] sm:aspect-[5/4] relative rounded-2xl overflow-hidden ring-1 ring-black/5">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+    <div className="aspect-[4/5] relative rounded-2xl overflow-hidden ring-1 ring-black/5">
+      <svg viewBox="0 0 100 125" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         <defs>
-          {/* Subtle blur for clouds */}
-          <filter id="cloudBlur" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="0.55" />
+          <filter id="cloudBlur7" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="0.5" />
           </filter>
-
-          {/* Soft drop shadow for platforms */}
-          <filter id="platformShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id="platformShadow7" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="0.35" />
             <feOffset dy="0.35" />
             <feComponentTransfer>
-              <feFuncA type="linear" slope="0.55" />
+              <feFuncA type="linear" slope="0.5" />
             </feComponentTransfer>
             <feMerge>
               <feMergeNode />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-
-          {/* Diagonal hatching for MANPADS zone */}
-          <pattern id="manpadsHatch" patternUnits="userSpaceOnUse" width="2.4" height="2.4" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="2.4" className="stroke-status-danger" strokeWidth="0.18" opacity="0.35" />
+          <pattern id="manpadsHatch7" patternUnits="userSpaceOnUse" width="2.4" height="2.4" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="2.4" className="stroke-status-danger" strokeWidth="0.18" opacity="0.4" />
           </pattern>
+          {/* Sky → horizon. Stops are existing palette values (terrain-steel /
+              terrain-sky / bg-accent / bg) used as a gradient — no new hues. */}
+          <linearGradient id="sky7" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#4a5663" stopOpacity="0.92" />
+            <stop offset="0.26" stopColor="#3d6b8e" stopOpacity="0.7" />
+            <stop offset="0.58" stopColor="#F5EDDE" stopOpacity="0.85" />
+            <stop offset="1" stopColor="#FFFBF7" stopOpacity="1" />
+          </linearGradient>
         </defs>
 
-        {/* Sky atmosphere — palette-token gradient from deep cool intel (stratosphere)
-            to warm cream (horizon). Built from stacked rects so colour comes from
-            our tokens, not raw hex. */}
-        <rect x="0" y="0" width="100" height="100" className="fill-accent-intel" />
-        <rect x="0" y="14" width="100" height="40" className="fill-fg" opacity="0.18" />
-        <rect x="0" y="55" width="100" height="25" className="fill-bg-accent" opacity="0.55" />
-        <rect x="0" y="78" width="100" height="22" className="fill-bg-accent" />
+        {/* Atmosphere: space (cool, high) → warm cream horizon (low) */}
+        <rect x="0" y="0" width="100" height={GROUND_Y} fill="url(#sky7)" />
 
-        {/* Stars in the upper atmosphere (visible above ~9km) */}
+        {/* A few faint stars, high up only — hints "near space" without clutter */}
         {[
-          { x: 14, y: 6, o: 0.85 },  { x: 22, y: 13, o: 0.6 },
-          { x: 34, y: 8, o: 0.9 },   { x: 44, y: 15, o: 0.55 },
-          { x: 56, y: 7, o: 0.75 },  { x: 66, y: 18, o: 0.5 },
-          { x: 76, y: 11, o: 0.85 }, { x: 86, y: 5, o: 0.7 },
-          { x: 92, y: 17, o: 0.55 }, { x: 30, y: 22, o: 0.45 },
-          { x: 60, y: 24, o: 0.45 }, { x: 80, y: 22, o: 0.4 },
+          { x: 27, y: 6 }, { x: 41, y: 10 }, { x: 55, y: 5 },
+          { x: 70, y: 12 }, { x: 84, y: 7 }, { x: 93, y: 15 },
         ].map((s, i) => (
-          <circle key={i} cx={s.x} cy={s.y} r={i % 3 === 0 ? 0.32 : 0.22} className="fill-bg-elevated" opacity={s.o} />
+          <circle key={i} cx={s.x} cy={s.y} r={i % 2 ? 0.28 : 0.4} fill="#ffffff" opacity="0.5" />
         ))}
 
-        {/* Tropopause marker (~10 km) — subtle hint of where troposphere ends */}
-        <line x1="10" y1={altToY(10000)} x2="98" y2={altToY(10000)} className="stroke-border-strong" strokeWidth="0.18" strokeDasharray="0.7 0.5" opacity="0.7" />
-        <text x="96" y={altToY(10000) - 0.7} textAnchor="end" fontSize="1.6" className="fill-bg-elevated" opacity="0.55" fontStyle="italic">
-          tropopause · ~10 km
-        </text>
+        {/* MANPADS threat band (0–5 km) — red wash + hatch + boundary line */}
+        <rect x={PLOT_X0} y={manpadsY} width={PLOT_X1 - PLOT_X0} height={GROUND_Y - manpadsY} className="fill-status-danger" opacity="0.13" />
+        <rect x={PLOT_X0} y={manpadsY} width={PLOT_X1 - PLOT_X0} height={GROUND_Y - manpadsY} fill="url(#manpadsHatch7)" />
+        <line x1={PLOT_X0} y1={manpadsY} x2={PLOT_X1} y2={manpadsY} className="stroke-status-danger" strokeWidth="0.3" strokeDasharray="1.2 0.8" opacity="0.7" />
 
-        {/* MANPADS threat zone — palette token + diagonal hatching */}
-        <rect x="10" y={manpadsCeilingY} width="88" height={95 - manpadsCeilingY} className="fill-status-danger" opacity="0.18" />
-        <rect x="10" y={manpadsCeilingY} width="88" height={95 - manpadsCeilingY} fill="url(#manpadsHatch)" />
-
-        {/* MANPADS pill label */}
-        <g transform={`translate(54 ${(manpadsCeilingY + 95) / 2})`}>
-          <rect x="-22" y="-2.4" width="44" height="4.6" rx="2.3" className="fill-status-danger" fillOpacity="0.92" />
-          <path d="M -19.6 1.2 L -18 -1.8 L -16.4 1.2 Z" className="fill-bg-elevated" />
-          <text x="-18" y="0.8" textAnchor="middle" fontSize="1.6" fontWeight="900" className="fill-status-danger">!</text>
-          <text x="-14" y="0.65" textAnchor="start" fontSize="2.2" fontWeight="700" className="fill-bg-elevated">
-            אזור MANPADS · 0–5,000 מ׳
-          </text>
-        </g>
-
-        {/* Altitude scale on the left edge */}
-        <line x1="8" y1={altToY(0)} x2="8" y2={altToY(12000)} className="stroke-fg" strokeOpacity="0.3" strokeWidth="0.3" />
-        {/* Major ticks every 2km */}
-        {[0, 2000, 4000, 6000, 8000, 10000, 12000].map((alt) => {
+        {/* Altitude axis (km) */}
+        <line x1={AXIS_X} y1={altToY(0)} x2={AXIS_X} y2={altToY(12000)} className="stroke-fg" strokeOpacity="0.35" strokeWidth="0.3" />
+        {[0, 3000, 6000, 9000, 12000].map((alt) => {
           const y = altToY(alt);
           return (
-            <g key={`maj-${alt}`}>
-              <line x1="6" y1={y} x2="8" y2={y} className="stroke-fg" strokeOpacity="0.55" strokeWidth="0.32" />
-              <text
-                x="5.4"
-                y={y + 0.75}
-                textAnchor="end"
-                fontSize="2.2"
-                fontWeight="700"
-                className="fill-fg"
-                paintOrder="stroke"
-                stroke="#ffffff"
-                strokeWidth="0.95"
-                strokeLinejoin="round"
-                fontFamily="ui-sans-serif, system-ui, sans-serif"
-              >
-                {(alt / 1000).toFixed(0)}
+            <g key={alt}>
+              <line x1={AXIS_X - 1.2} y1={y} x2={AXIS_X} y2={y} className="stroke-fg" strokeOpacity="0.55" strokeWidth="0.32" />
+              <text x={AXIS_X - 2} y={y + 0.85} textAnchor="end" fontSize="2.5" fontWeight="700" className="fill-fg" {...halo}>
+                {alt / 1000}
               </text>
             </g>
           );
         })}
-        {/* Minor ticks every 1km */}
-        {[1000, 3000, 5000, 7000, 9000, 11000].map((alt) => (
-          <line key={`min-${alt}`} x1="7" y1={altToY(alt)} x2="8" y2={altToY(alt)} className="stroke-fg" strokeOpacity="0.3" strokeWidth="0.22" />
-        ))}
-        {/* "km" label */}
-        <text
-          x="3"
-          y="7"
-          fontSize="1.7"
-          fontWeight="700"
-          className="fill-bg-elevated"
-          opacity="0.85"
-          letterSpacing="0.2"
-          fontFamily="ui-sans-serif, system-ui, sans-serif"
-        >
-          KM
+        <text x={AXIS_X - 2} y={altToY(12000) - 2.4} textAnchor="end" fontSize="2" fontWeight="700" className="fill-fg-muted" {...halo}>
+          ק&quot;מ
         </text>
 
-        {/* Cloud ceiling — animated */}
+        {/* Platform stems — faint altitude guides, drawn under everything */}
+        {ordered.map((p, i) => {
+          const x = colX(i);
+          const gy = altToY(p.defaultAlt);
+          return (
+            <line
+              key={`stem-${p.id}`}
+              x1={x}
+              y1={GROUND_Y}
+              x2={x}
+              y2={gy + 2}
+              className="stroke-fg"
+              strokeOpacity="0.16"
+              strokeWidth="0.35"
+              strokeDasharray="0.6 0.7"
+            />
+          );
+        })}
+
+        {/* Ground / terrain baseline */}
+        <path
+          d={`M 0 ${GROUND_Y} Q 26 ${GROUND_Y - 1.6} 50 ${GROUND_Y - 0.6} Q 76 ${GROUND_Y - 1.5} 100 ${GROUND_Y - 0.4} L 100 ${GROUND_Y} Z`}
+          className="fill-terrain-olive"
+          opacity="0.5"
+        />
+        <rect x="0" y={GROUND_Y} width="100" height={125 - GROUND_Y} className="fill-terrain-olive" />
+        <rect x="0" y={GROUND_Y} width="100" height="0.4" className="fill-fg" opacity="0.3" />
+
+        {/* Ground objective — what the sensors overhead are trying to see */}
+        <g transform={`translate(60 ${GROUND_Y - 1.5})`}>
+          <circle r="2.1" className="fill-none stroke-fg" strokeWidth="0.35" opacity="0.55" />
+          <circle r="0.7" className="fill-fg" opacity="0.55" />
+          <line x1="-3" y1="0" x2="-2.4" y2="0" className="stroke-fg" strokeWidth="0.35" opacity="0.55" />
+          <line x1="2.4" y1="0" x2="3" y2="0" className="stroke-fg" strokeWidth="0.35" opacity="0.55" />
+          <line x1="0" y1="-3" x2="0" y2="-2.4" className="stroke-fg" strokeWidth="0.35" opacity="0.55" />
+        </g>
+
+        {/* Cloud ceiling — the hero. Cloud band, line, axis marker and read-out
+            are one group so they animate together to the ceiling height. Drawn
+            BEFORE the platforms so a glyph just above the line is never hidden. */}
         <motion.g
           initial={false}
           animate={{ y: ceilingY }}
-          transition={{ type: 'spring', stiffness: 80, damping: 18 }}
+          transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 80, damping: 18 }}
         >
-          {/* Cloud band base — soft cream wash */}
-          <rect x="10" y="-3.5" width="88" height="7" className="fill-bg-elevated" opacity="0.75" />
+          {/* Connector: axis marker → cloud line, both at the ceiling height */}
+          <line x1={AXIS_X} y1="0" x2={PLOT_X0} y2="0" className="stroke-accent" strokeWidth="0.35" strokeDasharray="0.8 0.6" opacity="0.8" />
 
-          {/* Cloud puffs — back layer (large, soft) */}
-          <g filter="url(#cloudBlur)" opacity="0.85">
-            {[16, 32, 48, 64, 80, 94].map((cx, i) => (
-              <ellipse
-                key={`back-${cx}`}
-                cx={cx}
-                cy={i % 2 === 0 ? -0.4 : 0.6}
-                rx={6 + (i % 3) * 0.6}
-                ry={1.9}
-                className="fill-bg-elevated"
-                opacity="0.7"
-              />
+          {/* Cloud band (its base = the ceiling line) */}
+          <g filter="url(#cloudBlur7)">
+            {[31, 42, 52, 63, 74, 85, 95].map((cx, i) => (
+              <ellipse key={`cb-${cx}`} cx={cx} cy={-1.3 - (i % 2) * 0.5} rx={6 + (i % 3)} ry="2.3" className="fill-bg-elevated" opacity="0.72" />
+            ))}
+            {[29, 38, 47, 58, 70, 82, 93].map((cx) => (
+              <ellipse key={`cm-${cx}`} cx={cx} cy="-0.5" rx="4.4" ry="1.7" className="fill-bg-accent" opacity="0.95" />
+            ))}
+            {[30, 46, 62, 78, 90].map((cx, i) => (
+              <ellipse key={`cf-${cx}`} cx={cx} cy={-1.9 + (i % 2) * 0.4} rx="2.7" ry="1.15" className="fill-bg-elevated" opacity="0.9" />
             ))}
           </g>
-          {/* Cloud puffs — mid layer (medium, denser) */}
-          <g filter="url(#cloudBlur)">
-            {[14, 28, 42, 56, 70, 84, 96].map((cx) => (
-              <ellipse
-                key={`mid-${cx}`}
-                cx={cx}
-                cy={0}
-                rx={3.8}
-                ry={1.35}
-                className="fill-bg-accent"
-                opacity="0.95"
-              />
-            ))}
-          </g>
-          {/* Cloud puffs — front layer (small, crisp, bottom-shaded) */}
-          {[22, 38, 54, 70, 88].map((cx, i) => (
-            <ellipse
-              key={`front-${cx}`}
-              cx={cx}
-              cy={i % 2 === 0 ? 0.6 : -0.1}
-              rx="2.2"
-              ry="0.9"
-              className="fill-bg-elevated"
-              opacity="0.85"
-            />
-          ))}
 
-          {/* Ceiling reference line */}
-          <line x1="10" y1="2.6" x2="98" y2="2.6" className="stroke-fg-muted" strokeWidth="0.22" strokeDasharray="0.8 0.5" opacity="0.7" />
+          {/* Ceiling line — white underlay + accent dash so it reads over clouds */}
+          <line x1={PLOT_X0} y1="0" x2={PLOT_X1} y2="0" stroke="#ffffff" strokeWidth="1.1" opacity="0.7" />
+          <line x1={PLOT_X0} y1="0" x2={PLOT_X1} y2="0" className="stroke-accent" strokeWidth="0.6" strokeDasharray="1.6 1" />
 
-          {/* Pill label — bottom-left of the cloud band */}
-          <g transform="translate(86 5.4)">
-            <rect x="-13.5" y="-2.1" width="13.5" height="4.2" rx="2.1" className="fill-fg" fillOpacity="0.92" />
-            <text x="-6.75" y="0.75" textAnchor="middle" fontSize="2.05" fontWeight="700" className="fill-bg-elevated" fontFamily="ui-sans-serif, system-ui, sans-serif">
-              תקרת ענן
-            </text>
-          </g>
+          {/* Axis intersection marker — the moving height marker */}
+          <circle cx={AXIS_X} cy="0" r="1.55" fill="#ffffff" opacity="0.9" />
+          <circle cx={AXIS_X} cy="0" r="1.05" className="fill-accent" />
+
+          {/* Ceiling read-out pill — far-left gutter lane, clear of the axis numbers */}
+          <rect x="0.4" y="-3.5" width="12.2" height="7" rx="1.6" className="fill-bg-elevated stroke-accent" strokeWidth="0.4" />
+          <text x="6.5" y="-1" textAnchor="middle" fontSize="2" fontWeight="700" className="fill-accent" {...halo}>תקרת ענן</text>
+          <text x="6.5" y="2.15" textAnchor="middle" fontSize="2.55" fontWeight="800" className="fill-fg" {...halo}>{ceiling.toLocaleString()} מ׳</text>
         </motion.g>
 
-        {/* Ground — distant hills + base layer (terrain-olive token) */}
-        <path
-          d="M 10 95 L 10 92 Q 22 88 32 91 Q 44 90 52 92 Q 62 88 72 90 Q 84 91 96 90 L 98 92 L 98 95 Z"
-          className="fill-terrain-olive"
-          opacity="0.55"
-        />
-        <rect x="0" y="95" width="100" height="5" className="fill-terrain-olive" />
-        <rect x="0" y="95" width="100" height="0.4" className="fill-fg" opacity="0.3" />
+        {/* Platforms — glyph + altitude tag + baseline name (on top of clouds) */}
+        {ordered.map((p, i) => {
+          const x = colX(i);
+          const gy = altToY(p.defaultAlt);
+          const aboveCeiling = p.defaultAlt > ceiling;
+          const inManpads = p.defaultAlt <= 5000;
+          const statusClass = aboveCeiling ? 'text-status-ok' : inManpads ? 'text-status-danger' : 'text-status-warn';
+          const name = SHORT[p.id] ?? p.label;
+          const parts = name.split(' ');
+          return (
+            <g key={p.id}>
+              <g filter="url(#platformShadow7)" className={statusClass}>
+                <PlatformGlyph type={p.id} x={x} y={gy} scale={1.25} />
+              </g>
+              {/* Altitude tag on the stem, below the glyph */}
+              <text x={x} y={gy + 4.8} textAnchor="middle" fontSize="2.1" fontWeight="700" className="fill-fg" {...halo}>
+                {(p.defaultAlt / 1000).toFixed(1)} ק&quot;מ
+              </text>
+              {/* Name on a shared baseline row — never overlaps between columns */}
+              {parts.length > 1 ? (
+                <>
+                  <text x={x} y={119.6} textAnchor="middle" fontSize="2.3" fontWeight="700" className="fill-fg" {...halo}>{parts[0]}</text>
+                  <text x={x} y={122.6} textAnchor="middle" fontSize="2.3" fontWeight="700" className="fill-fg" {...halo}>{parts.slice(1).join(' ')}</text>
+                </>
+              ) : (
+                <text x={x} y={121} textAnchor="middle" fontSize="2.4" fontWeight="700" className="fill-fg" {...halo}>{name}</text>
+              )}
+            </g>
+          );
+        })}
 
-        <text
-          x="54"
-          y="98.6"
-          textAnchor="middle"
-          fontSize="2"
-          fontWeight="700"
-          className="fill-bg-elevated"
-          fontFamily="ui-sans-serif, system-ui, sans-serif"
-        >
-          קרקע · 0 מ׳
+        {/* MANPADS threat label — drawn last so a low cloud band never covers it.
+            Centered in the empty low strip; textAnchor="middle" avoids the RTL/bidi
+            reordering that pushes an "end"-anchored mixed string past the edge. */}
+        <text x={75} y={GROUND_Y - 5.8} textAnchor="middle" fontSize="2.1" fontWeight="700" className="fill-status-danger" {...halo}>
+          טווח טילי כתף
         </text>
-
-        {/* Balloon tether — drawn under platforms */}
-        {platforms.map((p, i) => {
-          if (p.id !== 'balloon') return null;
-          const y = altToY(p.defaultAlt);
-          const x = 14 + i * 14;
-          return (
-            <line
-              key={`tether-${p.id}`}
-              x1={x}
-              y1={y + 1.8}
-              x2={x}
-              y2="93"
-              className="stroke-fg"
-              strokeOpacity="0.55"
-              strokeWidth="0.2"
-              strokeDasharray="0.5 0.4"
-            />
-          );
-        })}
-
-        {/* Platforms — glyphs with drop shadow. The glyph uses `currentColor`
-            for status; the parent <g> sets that via a palette token. */}
-        {platforms.map((p, i) => {
-          const y = altToY(p.defaultAlt);
-          const x = 14 + i * 14;
-          const isAboveCeiling = p.defaultAlt > ceiling;
-          const isInManpads = p.defaultAlt <= 5000;
-          const statusClass = isAboveCeiling ? 'text-status-ok' : isInManpads ? 'text-status-danger' : 'text-status-warn';
-          return (
-            <g key={p.id} filter="url(#platformShadow)" className={statusClass}>
-              <PlatformGlyph type={p.id} x={x} y={y} />
-            </g>
-          );
-        })}
-
-        {/* Platform labels — pill above, altitude pill below */}
-        {platforms.map((p, i) => {
-          const y = altToY(p.defaultAlt);
-          const x = 14 + i * 14;
-          const isAboveCeiling = p.defaultAlt > ceiling;
-          const isInManpads = p.defaultAlt <= 5000;
-          const statusClass = isAboveCeiling ? 'text-status-ok' : isInManpads ? 'text-status-danger' : 'text-status-warn';
-          const shortName = p.label.length > 8 ? p.label.split(' ')[0] : p.label;
-          const labelY = y - 4.8;
-          return (
-            <g key={`label-${p.id}`} className={statusClass}>
-              {/* Name pill above */}
-              <rect
-                x={x - 6.2}
-                y={labelY - 1.7}
-                width="12.4"
-                height="3.4"
-                rx="1.7"
-                className="fill-bg-elevated stroke-current"
-                strokeWidth="0.32"
-              />
-              <text
-                x={x}
-                y={labelY + 0.55}
-                textAnchor="middle"
-                fontSize="1.85"
-                fontWeight="700"
-                className="fill-fg"
-                fontFamily="ui-sans-serif, system-ui, sans-serif"
-              >
-                {shortName}
-              </text>
-              {/* Altitude pill below */}
-              <rect
-                x={x - 4.2}
-                y={y + 2.6}
-                width="8.4"
-                height="2.6"
-                rx="1.3"
-                className="fill-current"
-                fillOpacity="0.95"
-              />
-              <text
-                x={x}
-                y={y + 4.45}
-                textAnchor="middle"
-                fontSize="1.55"
-                fontWeight="700"
-                className="fill-bg-elevated"
-                fontFamily="ui-sans-serif, system-ui, sans-serif"
-              >
-                {(p.defaultAlt / 1000).toFixed(1)} ק"מ
-              </text>
-            </g>
-          );
-        })}
+        <text x={75} y={GROUND_Y - 2.9} textAnchor="middle" fontSize="2" fontWeight="600" className="fill-fg-muted" {...halo}>
+          MANPADS · עד 5 ק&quot;מ
+        </text>
       </svg>
     </div>
   );
@@ -633,9 +576,9 @@ function AltitudeMap({ ceiling, platforms }: { ceiling: number; platforms: Platf
 // Custom platform glyphs — small but recognisable silhouettes.
 // `currentColor` resolves to the parent `<g>`'s text-color class, so the same
 // glyph drawing is recoloured by the status (status-ok / status-warn / status-danger).
-function PlatformGlyph({ type, x, y }: { type: string; x: number; y: number }) {
+function PlatformGlyph({ type, x, y, scale = 1 }: { type: string; x: number; y: number; scale?: number }) {
   const sw = 0.28;
-  const t = `translate(${x} ${y})`;
+  const t = `translate(${x} ${y}) scale(${scale})`;
 
   if (type === 'helo') {
     return (

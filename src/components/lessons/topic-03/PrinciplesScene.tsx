@@ -63,15 +63,21 @@ intro="ניווט הוא לא ניחוש - הוא מדע של דיוק. הכל �
 }
 function AzimuthExplorer() {
 const [azimuth, setAzimuth] = useState(47);
-const back = (azimuth + 180) % 360;
+// The dial needle sweeps to its target with a damped spring so it reads like a real
+// compass hand. Every number on screen (digit readout, direction word, back azimuth)
+// is derived from that same animated angle — never from the raw slider value — so
+// what you read always matches exactly where the needle is pointing, mid-sweep or not.
+const angle = useSmoothedAngle(azimuth);
+const displayAzimuth = Math.round(((angle % 360) + 360) % 360);
+const back = (displayAzimuth + 180) % 360;
 const direction =
-azimuth < 22 || azimuth >= 338 ? 'צפון'
- : azimuth < 67 ? 'צפון־מזרח'
- : azimuth < 112 ? 'מזרח'
- : azimuth < 157 ? 'דרום־מזרח'
- : azimuth < 202 ? 'דרום'
- : azimuth < 247 ? 'דרום־מערב'
- : azimuth < 292 ? 'מערב'
+displayAzimuth < 22 || displayAzimuth >= 338 ? 'צפון'
+ : displayAzimuth < 67 ? 'צפון־מזרח'
+ : displayAzimuth < 112 ? 'מזרח'
+ : displayAzimuth < 157 ? 'דרום־מזרח'
+ : displayAzimuth < 202 ? 'דרום'
+ : displayAzimuth < 247 ? 'דרום־מערב'
+ : displayAzimuth < 292 ? 'מערב'
  : 'צפון־מערב';
 return (
  <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
@@ -82,7 +88,7 @@ return (
  </div>
  <div className="flex items-baseline gap-3 mb-4">
  <div className="font-display font-bold text-5xl tabular-nums text-accent">
- {azimuth}°
+ {displayAzimuth}°
  </div>
  <div className="text-fg-muted text-sm">
  כיוון: <strong className="text-fg">{direction}</strong>
@@ -112,14 +118,14 @@ aria-label="אזימוט"
  </div>
  <div className="flex items-center gap-3">
  <span className="font-display font-medium tracking-wide text-fg-muted text-sm">
- {azimuth}° {azimuth >= 180 ? '−' : '+'} 180° =
+ {displayAzimuth}° {displayAzimuth >= 180 ? '−' : '+'} 180° =
  </span>
  <span className="font-display font-bold text-3xl tabular-nums text-accent-cool">
  {back}°
  </span>
  </div>
  <p className="text-xs text-fg-muted mt-2 leading-relaxed">
- הלכתם ליעד ב-{azimuth}°? כדי לחזור בדיוק הביתה לנקודת המוצא, אתם צריכים את הדרך ההפוכה: {back}°.
+ הלכתם ליעד ב-{displayAzimuth}°? כדי לחזור בדיוק הביתה לנקודת המוצא, אתם צריכים את הדרך ההפוכה: {back}°.
  </p>
  </div>
  </div>
@@ -135,12 +141,25 @@ aria-label="אזימוט"
  </div>
 
  <div className="surface-elevated p-6 sm:p-8 flex flex-col items-center justify-center">
- <CompassDial azimuth={azimuth} />
+ <CompassDial angle={angle} />
  </div>
  </div>
  );
 }
-function CompassDial({ azimuth }: { azimuth: number }) {
+/**
+ * Drives a single damped-spring angle toward `target`. Shared by the digit readout
+ * and the dial needle so they can never drift apart — see AzimuthExplorer.
+ */
+function useSmoothedAngle(target: number) {
+const spring = useSpring(target, { stiffness: 170, damping: 22, mass: 0.6 });
+const [angle, setAngle] = useState(target);
+useEffect(() => {
+spring.set(target);
+ }, [target, spring]);
+useMotionValueEvent(spring, 'change', (v) => setAngle(v));
+return angle;
+}
+function CompassDial({ angle }: { angle: number }) {
 return (
  <div className="relative aspect-square w-full max-w-[320px]">
  <svg viewBox="-50 -50 100 100" className="w-full h-full">
@@ -209,7 +228,7 @@ className="fill-fg-dim text-[2.5px] font-display font-bold"
  })}
 
  {/* Azimuth + back-azimuth needles, anchored at the dial center */}
- <CompassNeedles azimuth={azimuth} />
+ <CompassNeedles angle={angle} />
 
  {/* Center pin */}
  <circle cx="0" cy="0" r="2" className="fill-bg stroke-accent" strokeWidth="0.5" />
@@ -232,15 +251,11 @@ className="fill-fg-dim text-[2.5px] font-display font-bold"
  * with the native SVG `transform="rotate(a)"` — which always pivots around the
  * user-space origin (0,0 == viewBox center). This keeps both needles permanently
  * anchored to the center; only their angle changes, so they sweep smoothly like
- * real compass hands instead of jumping. A framer spring drives the angle.
+ * real compass hands instead of jumping. `angle` is the same damped-spring value
+ * (see useSmoothedAngle) that drives the digit readout, so needle and number can
+ * never disagree.
  */
-function CompassNeedles({ azimuth }: { azimuth: number }) {
-const spring = useSpring(azimuth, { stiffness: 170, damping: 22, mass: 0.6 });
-const [angle, setAngle] = useState(azimuth);
-useEffect(() => {
-spring.set(azimuth);
- }, [azimuth, spring]);
-useMotionValueEvent(spring, 'change', (v) => setAngle(v));
+function CompassNeedles({ angle }: { angle: number }) {
 return (
  <>
  {/* Back azimuth (azimuth + 180°), dashed cool */}

@@ -239,7 +239,14 @@ title = {
 
 function WeatherStage({ view }: { view: View }) {
   const showFog = view === 'micro' || view === 'physiology' || view === 'atmosphere';
-  const showPhysio = view === 'physiology' || view === 'atmosphere';
+  // Visibility labels belong to the micro-climate step only. In later steps the
+  // fog stays as context, but its labels are dropped so they never pile up on
+  // the physiology / atmosphere labels that share the same ridge & valley.
+  const showVisibilityLabels = view === 'micro';
+  // Soldiers + load labels belong to the physiology step. They are deliberately
+  // NOT carried into the atmosphere step (which is about optics), so the enlarged
+  // soldier glyph never collides with the IR beam / attenuation marker there.
+  const showPhysio = view === 'physiology';
   const showBeams = view === 'atmosphere';
 
   return (
@@ -276,20 +283,25 @@ function WeatherStage({ view }: { view: View }) {
         {/* Valley between mountains */}
         <path d="M30 52 L40 60 L48 62 L56 60 L65 53 L65 75 L30 75 Z" className="fill-terrain-sand/20" />
 
-        {/* Valley fog (micro-climate) */}
+        {/* Valley fog shapes (micro-climate) — stay as context in later steps */}
         <motion.g initial={false} animate={{ opacity: showFog ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
           <ellipse cx="48" cy="62" rx="22" ry="9" className="fill-fg-dim" opacity="0.35" />
           <ellipse cx="40" cy="60" rx="14" ry="6" className="fill-fg-dim" opacity="0.22" />
           <ellipse cx="58" cy="63" rx="12" ry="5" className="fill-fg-dim" opacity="0.26" />
+        </motion.g>
+
+        {/* Visibility labels — micro-climate step only (dropped once the physiology
+            / atmosphere labels take over the same ridge & valley) */}
+        <motion.g initial={false} animate={{ opacity: showVisibilityLabels ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
           <text
             x="48"
             y="68"
             textAnchor="middle"
-            className="fill-fg-dim font-display font-bold"
-            fontSize="3.4"
+            className="fill-fg font-display font-bold"
+            fontSize="4.2"
             paintOrder="stroke"
             stroke="#ffffff"
-            strokeWidth="1.1"
+            strokeWidth="1.4"
             strokeLinejoin="round"
           >
             ערפל עמק
@@ -324,46 +336,56 @@ function WeatherStage({ view }: { view: View }) {
           </text>
         </motion.g>
 
-        {/* Physiological zones — soldier markers with heat indicators */}
+        {/* Physiological load — same sector, opposite loads on each soldier */}
         <motion.g initial={false} animate={{ opacity: showPhysio ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-          {/* Ridge soldier (cool) */}
-          <g>
-            <circle cx="78" cy="32" r="2.4" className="fill-accent-cool" />
-            <text
-              x="78"
-              y="28"
-              textAnchor="middle"
-              className="fill-accent-cool font-display font-bold"
-              fontSize="2.4"
-              paintOrder="stroke"
-              stroke="#ffffff"
-              strokeWidth="0.8"
-              strokeLinejoin="round"
-            >
-              קור
-            </text>
-          </g>
-          {/* Valley soldier (heat + humid) */}
-          <g>
-            <circle cx="48" cy="60" r="2.4" className="fill-accent-hot" />
-            <circle cx="48" cy="60" r="4" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
-              <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
-            </circle>
-            <text
-              x="48"
-              y="55"
-              textAnchor="middle"
-              className="fill-accent-hot font-display font-bold font-bold"
-              fontSize="2.6"
-              paintOrder="stroke"
-              stroke="#ffffff"
-              strokeWidth="0.85"
-              strokeLinejoin="round"
-            >
-              חום + לחות
-            </text>
-          </g>
+          {/* Ridge soldier — cold load */}
+          <SoldierMarker x={78} y={32} tone="cool" />
+          <text
+            x="78"
+            y="24"
+            textAnchor="middle"
+            className="fill-accent-cool font-display font-bold"
+            fontSize="3"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.9"
+            strokeLinejoin="round"
+          >
+            עומס קור
+          </text>
+
+          {/* Valley soldier — heat + humidity load */}
+          <SoldierMarker x={48} y={61} tone="hot" pulse />
+          <text
+            x="48"
+            y="51"
+            textAnchor="middle"
+            className="fill-accent-hot font-display font-bold"
+            fontSize="3"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.9"
+            strokeLinejoin="round"
+          >
+            עומס חום
+          </text>
+        </motion.g>
+
+        {/* Load caption — ties the loads to their drivers (physiology step only) */}
+        <motion.g initial={false} animate={{ opacity: showPhysio ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.28 }}>
+          <text
+            x="50"
+            y="72"
+            textAnchor="middle"
+            className="fill-fg-muted font-sans"
+            fontSize="2.4"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.8"
+            strokeLinejoin="round"
+          >
+            טמפרטורה · לחות · רוח — עומס על הלוחם
+          </text>
         </motion.g>
 
         {/* Atmosphere beams (laser/IR being absorbed) */}
@@ -374,7 +396,7 @@ function WeatherStage({ view }: { view: View }) {
             x="40"
             y="6"
             textAnchor="middle"
-            className="fill-accent font-display font-bold font-bold"
+            className="fill-accent font-display font-bold"
             fontSize="2.6"
             paintOrder="stroke"
             stroke="#ffffff"
@@ -410,6 +432,36 @@ function WeatherStage({ view }: { view: View }) {
         אותה גזרה · 4 שכבות אקלים
       </div>
     </div>
+  );
+}
+
+/**
+ * Small helmeted-soldier silhouette for the weather stage. Feet sit at (x, y)
+ * and the figure grows upward, so it can stand on a ridge peak or a valley
+ * floor. Filled in the load colour (hot / cool); the hot figure carries a
+ * pulsing stress ring. Reads as a soldier without its label.
+ */
+function SoldierMarker({ x, y, tone, pulse = false }: { x: number; y: number; tone: 'hot' | 'cool'; pulse?: boolean }) {
+  const fillClass = tone === 'hot' ? 'fill-accent-hot' : 'fill-accent-cool';
+  const strokeClass = tone === 'hot' ? 'stroke-accent-hot' : 'stroke-accent-cool';
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      {/* soft ground shadow */}
+      <ellipse cx="0" cy="0.4" rx="2.5" ry="0.7" className="fill-fg-dim" opacity="0.18" />
+      {pulse && (
+        <circle cx="0" cy="-2.4" r="4" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
+          <animate attributeName="r" values="3;5.5;3" dur="2s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
+        </circle>
+      )}
+      {/* torso */}
+      <path d="M-2.1 0 L-1.35 -3.1 Q0 -3.8 1.35 -3.1 L2.1 0 Z" className={fillClass} />
+      {/* head */}
+      <circle cx="0" cy="-4.25" r="1.05" className={fillClass} />
+      {/* helmet dome + brim */}
+      <path d="M-1.35 -4.35 A1.35 1.2 0 0 1 1.35 -4.35 Z" className={fillClass} />
+      <line x1="-1.6" y1="-4.3" x2="1.6" y2="-4.3" className={strokeClass} strokeWidth="0.45" strokeLinecap="round" />
+    </g>
   );
 }
 
