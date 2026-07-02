@@ -102,7 +102,7 @@ export function CoverScene() {
       {/* Comparison cards */}
       <div className="grid md:grid-cols-2 gap-3 mb-10">
         <InsightCard tone="warn" icon="shield" label="הגנה פיזית מפגיעה" title="מחסה (Cover)">
-          עצם קשיח וחזק שאתם מסתתרים מאחוריו: צלע של הר, סלעי ענק, קירות בטון עבים או שקעים עמוקים באדמה.
+          עצם קשיח וחזק שאתם מתמגנים מאחוריו: צלע של הר, סלעי ענק, קירות בטון עבים או שקעים עמוקים באדמה.
           <strong className="block mt-2 text-status-warn">זה מה שבאמת מסוגל לעצור בגופו כדורי רובה, רסיסים של פצצות ואפילו להגן עליכם מהדף של פיצוץ קרוב.</strong>
           <span className="block mt-3 text-[12px] text-fg-muted">
             <strong className="text-fg">כלל ברזל:</strong> אם זה לא קשיח ועבה מספיק כדי לעצור כדור — זה לא מחסה. אל תסמכו על זה.

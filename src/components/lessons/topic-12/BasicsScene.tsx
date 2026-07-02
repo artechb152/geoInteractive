@@ -95,7 +95,7 @@ title = {
 
  {/* Layers lead-in — the core "חישוב על שכבות" idea, kept to one operational sentence */}
  <p className="max-w-3xl text-base text-fg leading-relaxed text-pretty mb-6">
- כל שכבה עונה על שאלה אחת — <strong className="text-fg">איפה גבוה? איפה עובר כביש? איפה יושב איום?</strong> מדליקים כמה שכבות יחד, וההצלבה ביניהן הופכת לתמונה אחת שאפשר להחליט לפיה.
+ כל שכבה עונה על שאלה אחת — לדוגמה: <strong className="text-fg">איפה גבוה? איפה עובר כביש? איפה יושב איום?</strong> מדליקים כמה שכבות יחד, וההצלבה ביניהן הופכת לתמונה אחת שאפשר להחליט לפיה.
  </p>
 
  {/* Layer toggles */}
