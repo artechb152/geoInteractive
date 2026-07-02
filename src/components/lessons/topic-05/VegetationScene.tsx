@@ -284,7 +284,7 @@ title = {
           className="mb-12"
         >
           <div className="grid md:grid-cols-2 gap-3">
-            <InsightCard tone="cool" label="מה זה בעצם">
+            <InsightCard tone="cool" label="מה זה בעצם?">
               {agMeta.desc}
             </InsightCard>
             <InsightCard tone="accent" label="משמעות מבצעית">

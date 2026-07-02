@@ -37,11 +37,11 @@ const STEPS: Step[] = [
   },
   {
     id: 'analysis',
-    label: 'ניתוח — המחשב חושב',
+    label: 'ניתוח — לא מציג, מחשב',
     icon: 'compass',
-    popupTitle: 'מנתח מרחבי במקום סרגל',
+    popupTitle: 'מחשבון מרחבי, לא רק תצוגה',
     popupBody:
-      'הכוח האמיתי של GIS הוא <strong>חישוב על השכבות</strong>: Viewshed (איפה רואים), Cost Surface (איפה זול לעבור), Least-Cost Path (איך לעקוף איומים), Buffers (טבעות איום), Network Analysis (איפה הצמת הקריטי). המחשב עושה ב-3 שניות מה שלוקח ידנית 3 שעות.',
+      'GIS לא נעצר בהצגת שכבות זו על זו — הוא <strong>מחשב עליהן</strong> ומפיק תשובה מבצעית: Viewshed (איפה רואים), Cost Surface (איפה זול לעבור), Least-Cost Path (איך לעקוף איומים), Buffers (טבעות איום), Network Analysis (איפה הצמת הקריטי). מה שלוקח ידנית 3 שעות, המחשב עושה ב-3 שניות.',
   },
   {
     id: 'decision',

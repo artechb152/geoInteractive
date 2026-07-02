@@ -88,7 +88,7 @@ title = {
  מושג מפתח
  </div>
  <h3 className="font-display font-bold text-lg leading-tight text-accent-hover mb-2">
- LOS · קו הראייה
+ LOS (Line of Sight) · קו הראייה
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
  הקו הדמיוני והישר שמחבר בין התצפיתן (או המצלמה) לבין המטרה. אם הוא נחתך באמצע על-ידי הר (תבליט) או בניין (תכסית) — אומרים ש<strong className="text-fg">"שברנו את ה-LOS"</strong> והמטרה מוסתרת.

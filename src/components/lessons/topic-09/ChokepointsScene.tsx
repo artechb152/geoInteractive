@@ -4,6 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import {
+  WORLD_LAND,
+  GRATICULE,
+  SHIPPING_ROUTES,
+  WATER_CHANNELS,
+} from './worldMapGeometry';
 
 type ChokepointId = 'hormuz' | 'bab-el-mandeb' | 'suez' | 'malacca' | 'panama';
 
@@ -11,7 +17,7 @@ type Chokepoint = {
   id: ChokepointId;
   label: string;
   english: string;
-  position: { x: number; y: number }; // 0-100 viewBox coords
+  position: { x: number; y: number }; // projected viewBox coords (x 0-100, y 0-56)
   width: string;
   depth: string;
   tradePct: number;
@@ -36,7 +42,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'hormuz',
     label: 'מיצרי הורמוז',
     english: 'Strait of Hormuz',
-    position: { x: 60, y: 39 },
+    position: { x: 66.92, y: 23.8 },
     width: '~21 מייל בנקודה הצרה',
     depth: '~60 מ׳',
     tradePct: 21,
@@ -55,7 +61,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'bab-el-mandeb',
     label: 'באב אל-מנדב',
     english: 'Bab el-Mandeb',
-    position: { x: 53, y: 47 },
+    position: { x: 63, y: 27.99 },
     width: '~18 מייל בכניסה מים סוף',
     depth: '~100 מ׳',
     tradePct: 12,
@@ -74,7 +80,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'suez',
     label: 'תעלת סואץ',
     english: 'Suez Canal',
-    position: { x: 51, y: 39 },
+    position: { x: 59.7, y: 22.6 },
     width: 'תעלה מלאכותית, ~205 מ׳ רוחב',
     depth: '~24 מ׳',
     tradePct: 12,
@@ -93,7 +99,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'malacca',
     label: 'מיצרי מלאקה',
     english: 'Strait of Malacca',
-    position: { x: 75, y: 53 },
+    position: { x: 80.18, y: 30.84 },
     width: '~1.5 מייל בנקודה הצרה',
     depth: '~25 מ׳',
     tradePct: 30,
@@ -112,7 +118,7 @@ const CHOKEPOINTS: Chokepoint[] = [
     id: 'panama',
     label: 'תעלת פנמה',
     english: 'Panama Canal',
-    position: { x: 22, y: 53 },
+    position: { x: 26.1, y: 29.04 },
     width: 'תעלה מלאכותית עם 3 מנעולים',
     depth: '~12–15 מ׳',
     tradePct: 6,
@@ -322,6 +328,39 @@ title = {
   );
 }
 
+/** Map-only label placement. The three Middle-East straits sit close together,
+ *  so their labels are pushed into open water and tied back with a short leader
+ *  line; Panama (open Pacific) and Malacca (Indian Ocean) read fine offset to
+ *  the side. All positions are in the projected viewBox (x 0-100, y 0-56). */
+const LABEL_LAYOUT: Record<ChokepointId, { x: number; y: number; leader: boolean }> = {
+  panama: { x: 15.5, y: 27, leader: true },
+  suez: { x: 50.5, y: 15.4, leader: true },
+  'bab-el-mandeb': { x: 57, y: 34, leader: true },
+  hormuz: { x: 76, y: 19, leader: true },
+  malacca: { x: 85, y: 35, leader: true },
+};
+
+/** Faint water passages — each is stroked so the eye sees WHY the marker sits
+ *  on a bottleneck (Mediterranean → Suez, the Red Sea → Bab, the Persian Gulf →
+ *  Hormuz, the Malacca strait). Geometry lives in worldMapGeometry.ts. */
+const CHANNELS: { d: string; w: number }[] = [
+  { d: WATER_CHANNELS.med, w: 0.45 },
+  { d: WATER_CHANNELS.redSea, w: 0.6 },
+  { d: WATER_CHANNELS.gulf, w: 0.55 },
+  { d: WATER_CHANNELS.malacca, w: 0.55 },
+];
+
+/** Shipping lanes + the chokepoints each one threads. A lane reads SOLID green
+ *  (active/safe, per the course legend) while open; blocking ANY chokepoint on
+ *  it severs the artery, so it re-renders red + dashed (disrupted). This is what
+ *  makes the block interaction teach — the consequence shows on the map, not
+ *  only in the marker. */
+const ROUTES: { key: string; d: string; cps: ChokepointId[] }[] = [
+  { key: 'mega', d: SHIPPING_ROUTES.mega, cps: ['suez', 'bab-el-mandeb', 'malacca'] },
+  { key: 'gulf', d: SHIPPING_ROUTES.gulf, cps: ['hormuz'] },
+  { key: 'panama', d: SHIPPING_ROUTES.panama, cps: ['panama'] },
+];
+
 function WorldMap({
   chokepoints,
   blocked,
@@ -331,80 +370,117 @@ function WorldMap({
   blocked: Set<ChokepointId>;
   onToggle: (id: ChokepointId) => void;
 }) {
+  // Canal cuts are drawn at the two engineered chokepoints; read their
+  // positions from the data so the cut always tracks the marker.
+  const suezPos = chokepoints.find((c) => c.id === 'suez')!.position;
+  const panamaPos = chokepoints.find((c) => c.id === 'panama')!.position;
+  // The travelling blip represents live trade on the mega-artery — pause it
+  // once that artery is severed anywhere.
+  const megaDisrupted = ROUTES[0].cps.some((id) => blocked.has(id));
   return (
     <div className="relative w-full h-full min-h-[360px] rounded-xl overflow-hidden">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        {/* Subtle "map paper" grid — same family as the other maps
-            across topics 1-3 / 6 / 8. No coloured background; the
-            parent card carries the surface colour. */}
-        {Array.from({ length: 11 }).map((_, i) => (
-          <line
-            key={`v-${i}`}
-            x1={i * 10}
-            y1="0"
-            x2={i * 10}
-            y2="56"
-            className="stroke-border-subtle/40"
-            strokeWidth="0.08"
-          />
+        {/* Graticule — a faint sage meridian/parallel grid aligned to the map
+            projection, so the board reads as survey paper without competing
+            with the land. */}
+        {GRATICULE.meridians.map((x, i) => (
+          <line key={`v-${i}`} x1={x} y1="0" x2={x} y2="56" className="stroke-brand-dark/10" strokeWidth="0.08" />
         ))}
-        {Array.from({ length: 7 }).map((_, i) => (
-          <line
-            key={`h-${i}`}
-            x1="0"
-            y1={i * 8}
-            x2="100"
-            y2={i * 8}
-            className="stroke-border-subtle/40"
-            strokeWidth="0.08"
-          />
+        {GRATICULE.parallels.map((y, i) => (
+          <line key={`h-${i}`} x1="0" y1={y} x2="100" y2={y} className="stroke-brand-dark/10" strokeWidth="0.08" />
         ))}
 
-        {/* Continents — warm sand silhouettes; no per-shape stroke so
-            they read as one terrain wash rather than seven blobs. */}
-        <g className="fill-terrain-sand/35">
-          <path d="M5 18 L18 14 L26 22 L24 32 L18 38 L10 42 L5 38 L4 28 Z" />
-          <path d="M22 38 L28 38 L30 46 L26 54 L24 54 L21 46 Z" />
-          <path d="M44 18 L52 14 L56 18 L54 26 L48 30 L42 28 L42 22 Z" />
-          <path d="M46 30 L54 28 L58 32 L60 42 L56 50 L50 52 L46 48 L44 38 Z" />
-          <path d="M56 22 L70 20 L82 22 L88 28 L86 36 L80 40 L72 36 L64 32 L58 32 Z" />
-          <path d="M74 40 L82 42 L84 48 L80 52 L74 50 L72 44 Z" />
-          <path d="M82 50 L90 50 L92 54 L86 54 Z" />
+        {/* Continents — warm sand silhouettes projected from real Natural
+            Earth 1:50m coastlines (see worldMapGeometry.ts): the Americas at
+            the left, Europe/Africa in the centre, Arabia and Asia (India +
+            SE-Asia) to the right, Australia below, plus Greenland/Japan/
+            Madagascar/UK/NZ for orientation. fillRule="evenodd" cuts inland
+            seas (e.g. the Caspian); a slightly darker sand coastline gives
+            definition without noise. */}
+        <g
+          className="fill-terrain-sand/45 stroke-terrain-sand/80"
+          strokeWidth="0.2"
+          strokeLinejoin="round"
+          fillRule="evenodd"
+        >
+          {WORLD_LAND.map((d, i) => (
+            <path key={i} d={d} />
+          ))}
         </g>
 
-        {/* Major shipping lanes — neutral sage dash; the orange
-            travelling blip is the only colour accent on the route. */}
-        {[
-          'M14 38 Q 22 45 28 50',
-          'M30 40 Q 35 36 50 38 Q 60 39 72 45 Q 78 48 84 50',
-          'M48 26 Q 52 32 55 38 Q 58 44 56 47',
-          'M55 38 Q 60 40 70 42 Q 78 45 84 50',
-        ].map((d, i) => (
-          <path
-            key={i}
-            d={d}
-            fill="none"
-            className="stroke-brand-dark/35"
-            strokeWidth="0.25"
-            strokeDasharray="0.9 0.7"
-          />
-        ))}
+        {/* Water channels — the narrow passages themselves. A faint cool
+            stroke traces the Mediterranean, the Red Sea (Suez→Bab), the
+            Persian Gulf (→Hormuz) and the Malacca strait, so the eye sees
+            WHY each marker is a bottleneck. */}
+        <g fill="none" className="stroke-accent-cool/40" strokeLinecap="round">
+          {CHANNELS.map((ch, i) => (
+            <path key={i} d={ch.d} strokeWidth={ch.w} />
+          ))}
+        </g>
 
-        <motion.circle
-          r="0.7"
-          className="fill-accent"
-          animate={{ offsetDistance: ['0%', '100%'] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-          style={{
-            offsetPath: 'path("M30 40 Q 35 36 50 38 Q 60 39 72 45 Q 78 48 84 50")',
-          }}
-        />
+        {/* Major shipping lanes — a small, intentional set of corridors so
+            the relationship between routes and chokepoints is obvious. Solid
+            green = open/active (course convention); once a chokepoint on the
+            lane is blocked, the whole artery re-renders red + dashed to show
+            it is severed. Asia↔Europe through Suez/Bab/Malacca, the Gulf-oil
+            run out of Hormuz, and the Atlantic↔Panama↔Pacific corridor. */}
+        {ROUTES.map((r) => {
+          const disrupted = r.cps.some((id) => blocked.has(id));
+          return (
+            <path
+              key={r.key}
+              d={r.d}
+              fill="none"
+              strokeLinecap="round"
+              className={cn('transition-colors', disrupted ? 'stroke-status-danger/80' : 'stroke-brand-dark/60')}
+              strokeWidth={disrupted ? 0.4 : 0.34}
+              strokeDasharray={disrupted ? '1.4 1' : undefined}
+            />
+          );
+        })}
+
+        {/* Suez + Panama read as engineered canals — a short cool corridor
+            cutting the land, distinct from the natural straits. */}
+        <g className="stroke-accent-cool/65" strokeWidth="0.5" strokeLinecap="round">
+          <line x1={suezPos.x - 0.5} y1={suezPos.y - 1.4} x2={suezPos.x + 0.6} y2={suezPos.y + 1.4} />
+          <line x1={panamaPos.x - 1.1} y1={panamaPos.y - 1.1} x2={panamaPos.x + 1.1} y2={panamaPos.y + 1} />
+        </g>
+
+        {!megaDisrupted && (
+          <motion.circle
+            r="0.7"
+            className="fill-accent"
+            animate={{ offsetDistance: ['0%', '100%'] }}
+            transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+            style={{ offsetPath: `path("${SHIPPING_ROUTES.mega}")` }}
+          />
+        )}
+
+        {/* Leader lines — drawn under the markers so an offset label ties
+            cleanly back to its strait. */}
+        {chokepoints.map((c) => {
+          const lay = LABEL_LAYOUT[c.id];
+          if (!lay.leader) return null;
+          const isBlocked = blocked.has(c.id);
+          return (
+            <line
+              key={`lead-${c.id}`}
+              x1={c.position.x}
+              y1={c.position.y}
+              x2={lay.x}
+              y2={lay.y - 0.8}
+              className={cn(isBlocked ? 'stroke-status-danger/55' : 'stroke-fg-dim/50')}
+              strokeWidth="0.2"
+            />
+          );
+        })}
 
         {/* Chokepoint markers — each marker is itself the toggle.
             Blocked markers turn red with an X; unblocked are sage.
             Hover ring on un-blocked invites the click. */}
         {chokepoints.map((c) => {
           const isBlocked = blocked.has(c.id);
+          const lay = LABEL_LAYOUT[c.id];
           return (
             <g
               key={c.id}
@@ -421,7 +497,7 @@ function WorldMap({
                   className="stroke-status-danger"
                   strokeWidth="0.35"
                 >
-                  <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
+                  <animate attributeName="r" values="1.8;3.6;1.8" dur="2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" values="0.9;0;0.9" dur="2s" repeatCount="indefinite" />
                 </circle>
               )}
@@ -447,17 +523,18 @@ function WorldMap({
                 </g>
               )}
 
-              {/* Single name label — below the marker only. Red when
+              {/* Name label — pushed into open water for the crowded
+                  Middle-East cluster, directly below otherwise. Red when
                   blocked, dark fg otherwise. */}
               <text
-                x={c.position.x}
-                y={c.position.y + 4}
+                x={lay.x}
+                y={lay.y}
                 textAnchor="middle"
                 className={cn(
                   'font-display font-bold pointer-events-none',
                   isBlocked ? 'fill-status-danger' : 'fill-fg',
                 )}
-                fontSize="2.3"
+                fontSize="2.6"
                 paintOrder="stroke"
                 stroke="#ffffff"
                 strokeWidth="0.95"

@@ -33,7 +33,7 @@ const STEPS: Step[] = [
     icon: 'mountain',
     popupTitle: 'גובה: היתרון הטופוגרפי הכי בסיסי',
     popupBody:
-      'הוספת קווי גובה (קונטור) הופכת את המפה לתלת-ממדית. פתאום אפשר להבחין מהי פסגה ומהו עמק, וכמה הר הוא תלול. מי שתופס את השטח הגבוה רואה את האויב ראשון, יורה אליו ראשון ונהנה מיתרון לוגיסטי גדול — לכן צבאות תמיד נלחמים על פסגות.',
+      'הוספת קווי גובה (קונטור) הופכת את המפה לתלת-ממדית. פתאום אפשר להבחין מהי פסגה ומהו עמק, וכמה הר הוא תלול. מי שתופס את השטח הגבוה רואה את האויב ראשון, יורה אליו ראשון ונהנה מיתרון לוגיסטי גדול — לכן צבאות לרוב נלחמים על הפסגות.',
   },
   {
     id: 'valley',
@@ -260,6 +260,27 @@ function TerrainStage({ view }: { view: View }) {
           d="M0 70 L25 50 L45 60 L65 45 L85 58 L100 65 L100 75 L0 75 Z"
           className="fill-terrain-sand/15"
         />
+
+        {/* Objective flag on the highest peak — always visible, in every step, so the
+            board itself keeps making the point: this is the ground armies fight for.
+            Planted at the peak marker's own bottom-right corner point so the pole reads
+            as rooted in the summit (and the ridge slope beneath it) in every state,
+            including 'flat' before the peak marker itself appears. */}
+        <g>
+          <line
+            x1={peaks[1].x + 2.6}
+            y1={peaks[1].y + 2.6}
+            x2={peaks[1].x + 2.6}
+            y2={peaks[1].y - 6.4}
+            className="stroke-accent-hot"
+            strokeWidth="0.55"
+            strokeLinecap="round"
+          />
+          <path
+            d={`M ${peaks[1].x + 2.6} ${peaks[1].y - 6.4} L ${peaks[1].x + 8.1} ${peaks[1].y - 4.6} L ${peaks[1].x + 2.6} ${peaks[1].y - 2.8} Z`}
+            className="fill-accent-hot"
+          />
+        </g>
 
         {/* Peak markers + height labels */}
         <motion.g initial={false} animate={{ opacity: showHeights ? 1 : 0 }} transition={{ duration: 0.4 }}>

@@ -161,7 +161,7 @@ className={cn('surface-elevated p-6 sm:p-7 border-r-4 mb-6', meta.borderColor)}
  <p className="text-sm leading-relaxed text-fg">{meta.fullDef}</p>
  </div>
  <div>
- <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">מי משתמש בזה</div>
+ <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">מי משתמש בזה?</div>
  <p className="text-sm leading-relaxed text-fg-muted">{meta.whoUses}</p>
  </div>
  </div>

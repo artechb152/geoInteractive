@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "next lint",
     "scorm:package": "node scripts/build-scorm.mjs",
-    "prototypes:build": "node scripts/build-prototypes.mjs"
+    "prototypes:build": "node scripts/build-prototypes.mjs",
+    "qa:svg": "node scripts/qa/render-svg.mjs",
+    "qa:rtl": "node scripts/qa/rtl-audit.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

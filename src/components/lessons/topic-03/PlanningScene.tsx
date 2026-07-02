@@ -11,11 +11,11 @@ feature: string;
 icon: IconName;
 };
 const CHECKPOINTS: Checkpoint[] = [
- { id: '1', label: 'נקודה 1: יוצאים לדרך (נ.ה)', feature: 'עוזבים את המבנים האחרונים בבסיס. לוקחים קשת חדה לכיוון מזרח ומחפשים את תחילת ערוץ הנחל.', icon: 'flag' },
- { id: '2', label: 'נקודה 2: עיקול הנחל', feature: 'מגיעים לסיבוב משמעותי בנחל. חוצים אותו לצד ימין ומטפסים בשיפוע מתון לכיוון צפון-מזרח.', icon: 'wave' },
- { id: '3', label: 'נקודה 3: אימות גובה', feature: 'עוקפים את הגבעה מצד שמאל (מערב). בשלב זה אתם אמורים לראות את תורן האנטנה בקו הרכס הרחוק.', icon: 'mountain' },
- { id: '4', label: 'נקודה 4: חציית ציר', feature: 'מגיעים לדרך עפר רחבה. חוצים אותה בזהירות וממשיכים בתוך חורשת העצים למשך 600 מטרים נוספים.', icon: 'truck' },
- { id: '5', label: 'היעד: נקודת הסיום (נ.ס)', feature: 'הגעה לקרקע סלעית עם קבוצת עצי אורן בולטים. זהו היעד — מוודאים אימות אחרון ועוצרים.', icon: 'target' },
+ { id: '1', label: 'נקודה 1: יוצאים לדרך (נ.ה)', feature: 'אזימוט 070° (מזרח), כ-400 מ׳ (±50): הולכים בקשת חדה לכיוון מזרח אל עבר תחילת ערוץ הנחל.', icon: 'flag' },
+ { id: '2', label: 'נקודה 2: עיקול הנחל', feature: 'אזימוט 035° (צפון-מזרח), כ-500 מ׳ (±50) מנקודה 1: מגיעים לערוץ משמעותי ובו זרימת נחל. חוצים את הנחל ונכנסים בשיפוע מתון לכיוון צפון מזרח.', icon: 'wave' },
+ { id: '3', label: 'נקודה 3: אוכף הרכס', feature: 'אזימוט 065°, כ-700 מ׳ (±50) מנקודה 2: עולים אל קו הרכס ומכוונים אל האוכף — המעבר הנמוך בין שתי הפסגות. הקרקע עולה משני הצדדים ויורדת במעבר, סימן ודאי שאתם על הציר.', icon: 'mountain' },
+ { id: '4', label: 'נקודה 4: חציית ציר', feature: 'אזימוט 050°, כ-500 מ׳ (±50) מנקודה 3: מגיעים לדרך עפר רחבה וחוצים אותה בזהירות.', icon: 'truck' },
+ { id: '5', label: 'היעד: נקודת הסיום (נ.ס)', feature: 'אזימוט 040°, כ-600 מ׳ (±50) מנקודה 4: נכנסים לחורשת העצים ומגיעים לקרקע סלעית עם קבוצת עצי אורן בולטים — זהו היעד. מוודאים אימות אחרון ועוצרים.', icon: 'target' },
 ];
 export function PlanningScene() {
 return (
@@ -78,6 +78,9 @@ return (
  <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
  המסלול ב-5 נקודות אימות
  </div>
+ <p className="text-xs text-fg-dim leading-relaxed mb-2">
+ כל נקודה בסיפור דרך נפתחת ב<strong className="text-fg-muted">אזימוט</strong> וב<strong className="text-fg-muted">מרחק במטרים</strong> (עם טווח משוער) — ורק אז מגיע תיאור הדרך או המקום.
+ </p>
  {CHECKPOINTS.map((c, i) => {
 const isActive = active === i;
 const passed = active > i;
@@ -346,17 +349,37 @@ function RouteMap({ activeStep }: { activeStep: number }) {
           />
         </g>
 
-        {/* Hill with contour lines + antenna tower (checkpoint 3) */}
+        {/* Ridge saddle — two summits with a low pass the route threads (checkpoint 3) */}
         <g>
-          <path d="M35 45 Q 40 30 48 28 Q 56 30 61 45 Z" fill="url(#t3-hill)" opacity="0.55" />
-          <path d="M38.5 43.5 Q 43 33 48 32 Q 53 33 57.5 43.5" fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
-          <path d="M41 44 Q 44.5 37 48 36.2 Q 51.5 37 55 44" fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
-          <line x1="48" y1="28" x2="48" y2="22.5" className="stroke-fg-muted" strokeWidth="0.35" />
-          <line x1="48" y1="24.5" x2="46.6" y2="27" className="stroke-fg-muted" strokeWidth="0.2" />
-          <line x1="48" y1="24.5" x2="49.4" y2="27" className="stroke-fg-muted" strokeWidth="0.2" />
-          <circle cx="48" cy="22.2" r="0.55" fill="#EB9E48">
-            <animate attributeName="opacity" values="1;0.3;1" dur="2.2s" repeatCount="indefinite" />
-          </circle>
+          {/* high-ground massif, pinched at the col so it reads as a saddle
+              (east lobe kept north of the CP3→CP4 route so the trail passes below it) */}
+          <path
+            d="M33 34 Q 32 26.5 40 25 Q 46 25.5 47 30.5 Q 48 31.5 49 30.5 Q 50 25.5 54.5 25.3 Q 59.3 25.7 59 29.3 Q 58.2 31.8 54.5 31.9 Q 50.5 32.2 48 34 Q 45.5 36.8 40 37 Q 33.8 37 33 34 Z"
+            fill="url(#t3-hill)"
+            opacity="0.5"
+          />
+          {/* west summit — concentric contours */}
+          <path d="M33.5 33 Q 33.5 26 40 26 Q 46.5 26.3 46.5 31 Q 46 36 40 36 Q 34 36 33.5 33 Z" fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
+          <path d="M36.5 31.4 Q 37 28 40 28 Q 43.4 28.3 43.4 31 Q 43.2 33.6 40 33.6 Q 36.8 33.6 36.5 31.4 Z" fill="none" stroke="#7a8a5a" strokeWidth="0.16" opacity="0.55" />
+          {/* east summit — concentric contours (pulled clear of the route) */}
+          <path d="M50 31.3 Q 50 25.5 54.5 25.5 Q 59 25.8 58.8 29.3 Q 58.6 31.6 54.5 31.6 Q 50.3 31.6 50 31.3 Z" fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
+          <path d="M52.5 28.8 Q 52.8 26.6 54.5 26.6 Q 57.3 26.8 57.3 28.8 Q 57.2 30.8 54.5 30.8 Q 52.6 30.8 52.5 28.8 Z" fill="none" stroke="#7a8a5a" strokeWidth="0.16" opacity="0.55" />
+          {/* saddle name — under the gap between the two summits */}
+          <text
+            x="48"
+            y="45.6"
+            textAnchor="middle"
+            fontSize="2.5"
+            fontWeight={700}
+            fill="#5B7C5C"
+            paintOrder="stroke"
+            stroke="#FFFBF7"
+            strokeWidth="0.75"
+            strokeLinejoin="round"
+            style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}
+          >
+            אוכף
+          </text>
         </g>
 
         {/* Wide dirt road the route crosses (checkpoint 4) */}

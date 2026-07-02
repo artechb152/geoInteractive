@@ -370,21 +370,6 @@ function ThermalViz({ tank, background, hour, crossover }: { tank: number; backg
           ))}
         </g>
 
-        {/* Time indicator */}
-        <text
-          x="6"
-          y="9"
-          className="fill-bg-elevated font-display font-bold"
-          fontSize="4"
-          paintOrder="stroke"
-          stroke="#ffffff"
-          strokeWidth="0.8"
-          strokeLinejoin="round"
-          strokeOpacity="0.4"
-        >
-          {hour.toString().padStart(2, '0')}:00
-        </text>
-
         {/* Crossover overlay */}
         {crossover && (
           <g>
@@ -397,6 +382,33 @@ function ThermalViz({ tank, background, hour, crossover }: { tank: number; backg
             </text>
           </g>
         )}
+
+        {/* Thermal-camera HUD timestamp — top-left OSD chip, drawn last so it
+            stays crisp over the heatmap and the crossover wash. The old readout
+            was a bare <text> at x=6 with the default text-anchor="start"; on the
+            RTL page "start" resolves to the text's RIGHT edge, so the HH:00
+            numerals flowed left, off the frame, and were clipped — only a
+            "…:00" fragment peeked out at the border. Anchoring "middle" +
+            direction="ltr" pins the numerals inside the frame. */}
+        <g>
+          <rect x="2.5" y="2.5" width="23" height="8" rx="1.6" className="fill-bg-elevated" opacity="0.9" />
+          <rect x="2.5" y="2.5" width="23" height="8" rx="1.6" fill="none" className="stroke-accent" strokeWidth="0.3" opacity="0.5" />
+          <circle cx="6.3" cy="6.5" r="1.1" className="fill-accent-hot" />
+          <text
+            x="16"
+            y="7.6"
+            textAnchor="middle"
+            direction="ltr"
+            className="fill-fg font-display font-bold"
+            fontSize="3.4"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.7"
+            strokeLinejoin="round"
+          >
+            {hour.toString().padStart(2, '0')}:00
+          </text>
+        </g>
       </svg>
     </div>
   );
