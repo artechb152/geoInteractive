@@ -3,9 +3,10 @@
 /**
  * AssetSlot — עטיפה בטוחה לנכסי Magnific עתידיים (design-lock §6.1).
  *
- * החוזה:
- * - כל עוד הקובץ לא קיים ב-public/assets/isometric/ — מוצג ה-placeholder
- *   המלוטש; לעולם לא תמונה שבורה (onError ⇒ חזרה ל-placeholder).
+ * מדיניות ה-placeholder עודכנה — ראו
+ * docs/design-approval/diagnostic-asset-placeholder-policy.md:
+ * - כל עוד הקובץ לא קיים ב-public/assets/isometric/ — מוצג MissingAssetPlaceholder
+ *   אבחוני וגלוי (לא איור-לקוח מלוטש); לעולם לא תמונה שבורה (onError ⇒ חזרה ל-placeholder).
  * - יחס גובה-רוחב קבוע דרך המיכל ⇒ אפס CLS ברגע ההחלפה.
  * - data-asset-id + data-asset-src על המיכל — grep אחד מוצא את כל חובות הנכסים.
  * - הרקע הוא צלחת bg (#FFFBF7) — זהה לרקע הקרם האפוי של הנכסים
@@ -13,8 +14,9 @@
  * - לעולם לא URL חיצוני/CDN — static export ל-LMS/SCORM חייב לעבוד offline.
  * - alt עברי חובה.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { MissingAssetPlaceholder } from './MissingAssetPlaceholder';
 
 type AssetSlotAspect = '16/9' | '21/9' | '1/1' | '4/3';
 
@@ -36,8 +38,6 @@ type AssetSlotProps = {
   aspect?: AssetSlotAspect;
   /** contain (ברירת מחדל). cover רק כשהחיתוך מוצהר בטבלת ה-slots. */
   fit?: 'contain' | 'cover';
-  /** ה-placeholder המלוטש שמוצג עד שהנכס קיים. */
-  placeholder: React.ReactNode;
   className?: string;
 };
 
@@ -47,10 +47,14 @@ export function AssetSlot({
   alt,
   aspect = '16/9',
   fit = 'contain',
-  placeholder,
   className,
 }: AssetSlotProps) {
   const [status, setStatus] = useState<'pending' | 'ready' | 'missing'>('pending');
+  // איפוס ל-pending כשה-src מתחלף (שימוש חוזר ברשימות/לולאות) — כדי שחריץ לא
+  // יישאר "ready"/"missing" מנכס קודם. היום כל האתרים סטטיים, זו הקשחה לעתיד (§6.1).
+  useEffect(() => {
+    setStatus('pending');
+  }, [src]);
   // תמיכה ב-basePath של הייצוא הסטטי; data-asset-src נשאר הנתיב הקנוני.
   const resolvedSrc = src.startsWith('/')
     ? `${process.env.NEXT_PUBLIC_BASE_PATH || ''}${src}`
@@ -63,7 +67,7 @@ export function AssetSlot({
       data-asset-status={status}
       className={cn('relative overflow-hidden bg-bg', ASPECT_CLASS[aspect], className)}
     >
-      {status !== 'ready' && <div className="absolute inset-0">{placeholder}</div>}
+      {status !== 'ready' && <MissingAssetPlaceholder assetId={assetId} expectedSrc={src} />}
       {status !== 'missing' && src.length > 0 && (
         // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
         <img

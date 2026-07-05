@@ -12,9 +12,7 @@ import {
 } from '@/components/design-approval/motifs';
 import {
   LESSON_CARD_SLOTS,
-  LessonCardPlaceholder,
   MapBoardBackground,
-  TerrainSlabPlaceholder,
 } from '@/components/design-approval/placeholders';
 
 export const metadata: Metadata = {
@@ -51,7 +49,7 @@ export default function DesignApprovalIndex() {
       <main className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         {/* ── כותרת ─────────────────────────────── */}
         <header className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-          <CompassEmblem />
+          <CompassEmblem className="size-16 md:size-20" />
           <div>
             <p className="text-[11px] font-display font-semibold uppercase tracking-[0.2em] text-accent">
               קורס גיאוגרפיה צבאית · אישור עיצוב
@@ -107,8 +105,8 @@ export default function DesignApprovalIndex() {
                   רכיבי הבסיס של המוקאפים
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-muted md:text-base">
-                  כל האיורים כאן הם SVG מלוטש שמחזיק את המסך עד שנכסי ה-Magnific יגיעו —
-                  כל חריץ נכס נושא מזהה להחלפה עתידית בלי לשנות את הפריסה.
+                  כל חריץ נכס Magnific שטרם התקבל מוצג כבלוק אבחוני בולט (מגנטה/צהוב/שחור) —
+                  לא כאיור-לקוח — עד שהקובץ יונח ב-public/assets/isometric/ בלי לשנות את הפריסה.
                 </p>
               </div>
 
@@ -120,7 +118,6 @@ export default function DesignApprovalIndex() {
                     src="/assets/isometric/home-hero-terrain.png"
                     alt="לוח טרֵיין פייפרקאט איזומטרי — הרים, נחל ודגלוני ניווט"
                     aspect="16/9"
-                    placeholder={<TerrainSlabPlaceholder />}
                   />
                 </div>
                 <figcaption className="mt-2 text-xs text-fg-dim">
@@ -187,39 +184,27 @@ export default function DesignApprovalIndex() {
                           src={slot.src}
                           alt={slot.alt}
                           aspect="1/1"
-                          placeholder={<LessonCardPlaceholder variant={slot.variant} />}
                         />
                       </div>
-                      <div className="flex items-baseline gap-1.5 px-0.5">
-                        <span className="font-mono text-[11px] text-fg-dim">
+                      <div className="flex items-start gap-1.5 px-0.5">
+                        <span className="font-mono text-[11px] leading-tight text-fg-dim">
                           {String(slot.lesson).padStart(2, '0')}
                         </span>
-                        <span className="truncate text-[11px] text-fg-muted">
+                        <span className="line-clamp-2 min-w-0 text-[11px] leading-tight text-fg-muted">
                           {lessons[slot.lesson - 1]?.shortTitle}
                         </span>
                       </div>
                     </li>
                   ))}
                 </ul>
-                {/* בדיקת קריאוּת במיניאטורה */}
-                <div className="mt-5 flex items-center gap-3">
-                  <span className="text-xs text-fg-dim">בדיקת קריאוּת ב-56px:</span>
-                  <div className="flex items-center gap-2">
-                    {(['navigation', 'landforms', 'urban', 'chokepoint'] as const).map((v) => (
-                      <div key={v} className="size-14 overflow-hidden rounded-md border border-border-subtle">
-                        <LessonCardPlaceholder variant={v} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </MockScreenPanel>
         </div>
 
         <p className="mt-10 text-center text-xs text-fg-dim">
-          מוקאפ לאישור · אינו מסך פרודקשן · כל הנכסים הוויזואליים כאן הם SVG זמני עד
-          לקבלת איורי ה-Magnific
+          מוקאפ לאישור · אינו מסך פרודקשן · חריצי נכס חסרים מוצגים כבלוק אבחוני בולט
+          עד לקבלת קבצי ה-Magnific
         </p>
       </main>
     </div>

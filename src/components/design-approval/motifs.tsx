@@ -192,7 +192,7 @@ export function CompassRose() {
           <path d="M 0 -38 L -6 -6 L 0 0 Z" fill={C.fgDim} />
         </g>
       ))}
-      {/* מחט הצפון — הפאזה הכתומה היחידה */}
+      {/* מחט הצפון — הפאה הכתומה היחידה */}
       <path d="M 0 -38 L 6 -6 L 0 0 Z" fill={C.accent} />
       <path d="M 0 -38 L -6 -6 L 0 0 Z" fill={C.accentHover} />
       <circle r="4.5" fill={C.elevated} stroke={C.fgMuted} strokeWidth="1" />
@@ -203,7 +203,9 @@ export function CompassRose() {
 
 /**
  * CompassEmblem — אמבלמת המצפן (Slot עתידי: UI-COMPASS-ROSE).
- * גדלים מהנעילה: הירו size-16 md:size-20 (ברירת מחדל), header — להעביר size-9.
+ * ברירת המחדל היא גודל-בסיס יחיד (size-16) בלי variant רספונסיבי אפוי, כדי שכל
+ * override של גודל ינצח בכל רוחב מסך (twMerge לא מפיל md:size-20 מול size-9 חשוף).
+ * גדלים מהנעילה (§3.9): הירו — להעביר `size-16 md:size-20`; header — `size-9`.
  * דקורטיבי: הכותרת שלידו נושאת את המשמעות, לכן aria-hidden.
  */
 export function CompassEmblem({ className }: { className?: string }) {
@@ -211,7 +213,7 @@ export function CompassEmblem({ className }: { className?: string }) {
     <svg
       aria-hidden
       viewBox="-50 -50 100 100"
-      className={cn('size-16 shrink-0 md:size-20', className)}
+      className={cn('size-16 shrink-0', className)}
     >
       <CompassRose />
     </svg>

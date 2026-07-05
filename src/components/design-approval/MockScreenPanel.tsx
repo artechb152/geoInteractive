@@ -34,7 +34,8 @@ export function MockScreenPanel({
           <ContourBackdrop tone="inner" />
         </div>
       )}
-      <span className="chip absolute top-0 start-8 z-10 -translate-y-1/2 border-transparent bg-brand-dark font-display text-bg-elevated shadow-elevated">
+      {/* צ'יפ תג-מסך: צל "ללא" לפי סקאלת §1.4 (צ'יפים בלי צל) — הפאנל נושא את ההגבהה. */}
+      <span className="chip absolute top-0 start-8 z-10 -translate-y-1/2 border-transparent bg-brand-dark font-display text-bg-elevated">
         {label}
       </span>
       <div className={cn('relative p-6 md:p-10', contentClassName)}>{children}</div>
