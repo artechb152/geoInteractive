@@ -141,10 +141,10 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
 
   return (
     // xl+: the TOC is now a full-height drawer flush to the viewport
-    // start (right in RTL). Width is 160px, so 180px of padding-start
+    // start (right in RTL). Width is 300px, so 320px of padding-start
     // leaves a clear 20px gap between the TOC's inner edge and the
     // first column of lesson content.
-    <div className="relative scroll-mt-28 xl:ps-[180px]" ref={rootRef}>
+    <div className="relative scroll-mt-28 xl:ps-[320px]" ref={rootRef}>
       {/* Mobile / tablet sub-topic strip (everything below xl gets this) */}
       <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} lesson={currentLesson} />
 
@@ -266,7 +266,7 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
    and the secondary lesson tabs strip, extending to the bottom of the
    viewport. Rectangular (no rounded corners), with a single inner
    border that separates it from the lesson content column. The
-   PagedLearn root adds `xl:ps-[180px]` so content sits clear of the
+   PagedLearn root adds `xl:ps-[320px]` so content sits clear of the
    drawer. The top of the drawer now headlines the active lesson
    (number + short title), since both were removed from the secondary
    header. */
@@ -283,12 +283,12 @@ function ScenePagerDesktop({
 }) {
   return (
     <aside
-      className="hidden xl:flex flex-col fixed start-0 top-12 bottom-0 z-20 w-[160px] overflow-y-auto bg-bg-elevated border-e border-border"
+      className="hidden xl:flex flex-col fixed start-0 top-12 bottom-0 z-20 w-[300px] overflow-y-auto bg-bg-elevated border-e border-border"
       aria-label="ניווט תתי-נושא"
     >
-      <div className="p-3 pt-3 flex-1 flex flex-col">
+      <div className="p-5 pt-5 flex-1 flex flex-col">
         {lesson && (
-          <div className="px-1.5 mb-4 pb-1.5 border-b border-border-subtle">
+          <div className="px-2 mb-5 pb-3 border-b border-border-subtle">
             <div className="font-display font-bold text-accent text-base mb-1.5">
               שיעור {lesson.number}
             </div>
@@ -297,10 +297,10 @@ function ScenePagerDesktop({
             </div>
           </div>
         )}
-        <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-1.5 mb-2">
+        <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-2 mb-3">
           תוכן השיעור
         </div>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
           {scenes.map((s, i) => {
             const isActive = i === active;
             const isPassed = i < active;
@@ -314,9 +314,9 @@ function ScenePagerDesktop({
                 onClick={() => onGoto(i)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'group flex items-center gap-2 px-2 py-1.5 rounded-md transition-all cursor-pointer text-right',
+                  'group flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all cursor-pointer text-right',
                   isActive
-                    ? 'bg-accent/15 text-fg'
+                    ? 'bg-accent/15 text-fg shadow-sm'
                     : 'hover:bg-bg-accent text-fg-muted',
                 )}
               >
@@ -329,7 +329,7 @@ function ScenePagerDesktop({
                 />
                 <span
                   className={cn(
-                    'text-[12.5px] leading-snug transition-colors truncate',
+                    'text-[13.5px] leading-snug transition-colors truncate',
                     isActive && 'font-semibold',
                   )}
                 >
@@ -340,7 +340,7 @@ function ScenePagerDesktop({
           })}
         </div>
 
-        <div className="mt-3 pt-3 border-t border-border-subtle px-1.5">
+        <div className="mt-4 pt-4 border-t border-border-subtle px-2">
           <div className="h-1 rounded-full bg-bg-accent overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-accent"

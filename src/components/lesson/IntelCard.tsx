@@ -1,4 +1,5 @@
 import type { IconName } from '@/components/Icon';
+import { cn } from '@/lib/utils';
 
 /**
  * IntelCard — editorial pull-quote card for historical-example callouts.
@@ -27,11 +28,24 @@ type IntelCardProps = {
   icon?: IconName;
   /** Unused. Kept for backwards compatibility with existing callers. */
   accent?: string;
+  /**
+   * 'editorial' (default) is the original borderless/shadowless magazine
+   * treatment every other lesson's OnboardingScene relies on — leave it
+   * untouched unless a caller opts in. 'elevated' adds a border + soft
+   * shadow for layouts that need the card to read as a distinct raised
+   * surface.
+   */
+  variant?: 'editorial' | 'elevated';
 };
 
-export function IntelCard({ place, headline, lesson }: IntelCardProps) {
+export function IntelCard({ place, headline, lesson, variant = 'editorial' }: IntelCardProps) {
   return (
-    <article className="bg-bg-elevated rounded-md p-3.5 md:p-4">
+    <article
+      className={cn(
+        'bg-bg-elevated rounded-md p-3.5 md:p-4',
+        variant === 'elevated' && 'rounded-2xl border border-border shadow-elevated p-4 md:p-5',
+      )}
+    >
       {/* Headline as the lead */}
       <h3 className="font-display font-bold text-[15px] md:text-base leading-snug text-balance text-fg">
         {headline}

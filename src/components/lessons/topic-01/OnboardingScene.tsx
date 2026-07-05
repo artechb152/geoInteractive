@@ -134,92 +134,104 @@ title={
                 intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר,  נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
       />
 
-      <div className="grid lg:grid-cols-[2fr_3fr] gap-6">
-        {/* Accordion — first child → RIGHT in RTL (text on right) */}
-        <Accordion
-          type="single"
-          collapsible
-          value={expandedStep ?? ''}
-          onValueChange={(v) => {
-            setExpandedStep((v as Feature) || null);
-            if (v) setStep(v as Feature);
-          }}
-          className="space-y-3"
-        >
-          {STEPS.map((s, i) => {
-            const active = step === s.id;
-            const passed = STEPS.findIndex((x) => x.id === step) > i;
-            return (
-              <AccordionItem
-                key={s.id}
-                value={s.id}
-                className={cn(
-                  'transition-all duration-300 ease-snap',
-                  active
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  passed && !active && 'opacity-85'
-                )}
-              >
-                <AccordionTrigger>
-                  {active && (
-                    <motion.span
-                      layoutId="active-step-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
+      <div className="grid lg:grid-cols-[2fr_3fr] gap-5 md:gap-6">
+        {/* Control panel — first child → RIGHT in RTL (text on right).
+            One unified raised panel (not per-item cards) so the
+            accordion reads as the lesson's "control panel" next to the
+            map board, echoing how a route-data panel sits beside a
+            map table. Rows are separated by hairline dividers instead
+            of individual borders. */}
+        <div className="rounded-3xl border border-border bg-bg-elevated shadow-elevated p-2 sm:p-3 h-full">
+          <Accordion
+            type="single"
+            collapsible
+            value={expandedStep ?? ''}
+            onValueChange={(v) => {
+              setExpandedStep((v as Feature) || null);
+              if (v) setStep(v as Feature);
+            }}
+            className="divide-y divide-border-subtle"
+          >
+            {STEPS.map((s, i) => {
+              const active = step === s.id;
+              const passed = STEPS.findIndex((x) => x.id === step) > i;
+              return (
+                <AccordionItem
+                  key={s.id}
+                  value={s.id}
+                  className={cn(
+                    'rounded-2xl border-0 bg-transparent transition-colors duration-300 ease-snap',
+                    active ? 'bg-brand/[0.06]' : 'hover:bg-bg-accent/50',
+                    passed && !active && 'opacity-85'
                   )}
-                  <span
-                    className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active && 'bg-brand-dark text-bg-elevated border-brand-dark',
-                      passed && !active && 'bg-status-ok/15 text-status-ok border-status-ok/30',
-                      !active && !passed && 'bg-bg-accent text-fg-muted border-border'
+                >
+                  <AccordionTrigger>
+                    {active && (
+                      <motion.span
+                        layoutId="active-step-bar"
+                        className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                      />
                     )}
-                  >
-                    {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div
+                    <span
                       className={cn(
-                        'font-display font-semibold leading-tight transition-colors',
-                        active ? 'text-fg' : 'text-fg'
+                        'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                        active && 'bg-brand-dark text-bg-elevated border-brand-dark',
+                        passed && !active && 'bg-status-ok/15 text-status-ok border-status-ok/30',
+                        !active && !passed && 'bg-bg-accent text-fg-muted border-border'
                       )}
                     >
-                      {s.label}
+                      {passed && !active ? (
+                        <Icon name="check" size={16} strokeWidth={2.5} />
+                      ) : (
+                        <span className="font-display text-sm font-bold">{i + 1}</span>
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={cn(
+                          'font-display font-semibold leading-tight transition-colors',
+                          active ? 'text-fg' : 'text-fg'
+                        )}
+                      >
+                        {s.label}
+                      </div>
                     </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="mt-3" />
-                  <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2 text-fg">
-                    {s.popupTitle}
-                  </h4>
-                  <p className="text-sm leading-relaxed text-fg-muted text-pretty">
-                    {s.popupBody}
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="mt-3" />
+                    <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2 text-fg">
+                      {s.popupTitle}
+                    </h4>
+                    <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                      {s.popupBody}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </div>
 
         {/* Visualization — second child → LEFT in RTL.
-            Card bg is set to match the SVG's own ground colour so any
-            uncovered area (when the grid stretches the card taller than
-            the SVG's natural aspect) reads as one continuous surface
-            instead of leaving cream bands. */}
-        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
+            Raised operational map table: warm-tinted surface, faint
+            topographic texture, thick rounded corners, soft shadow —
+            all on ONE div with padding standing in for the "frame",
+            same nesting depth as before (TerrainStage's own internal
+            `w-full h-full` div is still the only percentage-sized
+            child). A second wrapper div was tried here for a two-tone
+            inset look, but it made the WebGL canvas's ResizeObserver
+            race during viewport resizes — the terrain and its Html
+            labels would render at a stale, too-small scale and never
+            self-correct. Single-div nesting matches the original,
+            known-stable structure. */}
+        <div className="relative rounded-[28px] border border-border bg-bg-accent/30 topo-bg shadow-elevated overflow-hidden h-full min-h-[320px] p-3 sm:p-4">
           <TerrainStage feature={step} />
         </div>
       </div>
 
       <SoftDivider text="ועכשיו 4 סיפורים אמיתיים מההיסטוריה" />
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
         {HISTORICAL.map((h, i) => (
           <IntelCard
             key={h.headline}
@@ -228,6 +240,7 @@ title={
             lesson={h.lesson}
             icon={h.icon}
             accent={h.accent}
+            variant="elevated"
           />
         ))}
       </div>

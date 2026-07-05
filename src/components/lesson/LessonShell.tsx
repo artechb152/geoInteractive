@@ -73,13 +73,13 @@ export function LessonShell({
     <div className="min-h-screen flex flex-col">
       {/* ── Sticky secondary header — just the three tabs.
               On xl+ the header is shifted left by the TOC drawer's
-              width (160px) so it never crosses the white TOC strip,
+              width (300px) so it never crosses the white TOC strip,
               giving the impression that the tabs sit ABOVE the lesson
               content column only. The bg is the page cream (`bg-bg`)
               so it reads as part of the content area, and there is no
               border / underline between the tabs and the lesson
               content below. ─────────────────────────── */}
-      <header className="sticky top-12 z-30 bg-bg xl:ms-[160px]">
+      <header className="sticky top-12 z-30 bg-bg xl:ms-[320px]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"
@@ -133,7 +133,20 @@ export function LessonShell({
 
       {/* ── Main content with cross-fade between tabs ────────────────── */}
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6">
+        {/* `learn` renders PagedLearn, which already reserves its own
+            sidebar offset (`xl:ps-[320px]`) and every scene already caps
+            itself at `max-w-6xl` individually. Capping this wrapper at
+            `max-w-6xl` too double-shrinks the whole sidebar+content
+            area — on any screen wider than ~1400px, content plateaus at
+            ~800px and the rest of the viewport becomes dead cream
+            margin. `practice`/`check` have no sidebar and no self-cap of
+            their own, so they keep the constraint here. */}
+        <div
+          className={cn(
+            'px-4 sm:px-6 lg:px-8 py-5 md:py-6',
+            tab !== 'learn' && 'max-w-6xl mx-auto',
+          )}
+        >
           <LessonNavContext.Provider value={{ current: { number: lesson.number, shortTitle: lesson.shortTitle }, prev, next }}>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
