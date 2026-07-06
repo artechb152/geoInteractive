@@ -321,7 +321,7 @@ onClick={() => onToggle(d.id)}
 whileHover={{ scale: isOn ? 1.05 : 1.08 }}
 whileTap={{ scale: 0.95 }}
 className={cn(
- 'group size-16 sm:size-[72px] rounded-2xl border-2 transition-colors duration-200 flex flex-col items-center justify-center gap-0.5',
+ 'group size-16 sm:size-[72px] rounded-[4px] border-2 transition-colors duration-200 flex flex-col items-center justify-center gap-0.5',
 isOn
  ? 'bg-bg-elevated border-accent'
  : 'bg-bg-card/80 border-border-strong opacity-50 hover:opacity-100 hover:border-accent hover:bg-accent/10'

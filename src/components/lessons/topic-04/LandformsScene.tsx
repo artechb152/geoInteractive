@@ -116,7 +116,7 @@ className="w-full p-4 text-right flex items-center gap-3"
  >
  <span
 className={cn(
- 'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all font-display text-sm font-bold',
+ 'size-9 rounded-[3px] flex items-center justify-center shrink-0 transition-all font-display text-sm font-bold',
 isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  )}
  >
@@ -282,7 +282,7 @@ function BoardFrame({
         </span>
         <span className="text-[10px] sm:text-[11px] text-fg-dim truncate">· {sub}</span>
       </figcaption>
-      <div className="relative rounded-xl border border-border bg-bg-elevated overflow-hidden aspect-[100/62]">
+      <div className="relative rounded-[3px] border border-border bg-bg-elevated overflow-hidden aspect-[100/62]">
         <svg viewBox="0 0 100 62" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
           <rect x="0" y="0" width="100" height="62" className="fill-bg-elevated" />
           {mapGrid && <MapGrid />}
@@ -545,7 +545,7 @@ key={s.id}
 type="button"
 onClick={() => onSelect(s.id)}
 className={cn(
- 'p-3 rounded-xl border-2 text-start transition-all relative overflow-hidden flex items-center gap-3',
+ 'p-3 rounded-[3px] border-2 text-start transition-all relative overflow-hidden flex items-center gap-3',
 isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
@@ -557,7 +557,7 @@ isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:
  )}
  <span
  className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
  isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
  )}
  >

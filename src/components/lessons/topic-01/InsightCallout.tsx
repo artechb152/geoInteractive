@@ -38,7 +38,7 @@ export function InsightCallout({
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.4 }}
       className={cn(
-        'p-5 sm:p-6 border-r-4 flex gap-3 sm:gap-4 items-start rounded-2xl border border-border',
+        'p-5 sm:p-6 border-r-4 flex gap-3 sm:gap-4 items-start rounded-[4px] border border-border',
         elevated ? 'bg-bg-elevated' : 'bg-bg-card',
         t.border,
         t.bg,

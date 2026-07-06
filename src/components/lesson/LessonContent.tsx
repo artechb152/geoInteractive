@@ -39,7 +39,7 @@ export function LessonContent({
       </header>
 
       {/* ── Objectives card ──────────────────────────────────────────── */}
-      <section className="relative rounded-2xl border border-brand/25 bg-bg-elevated p-4 md:p-5">
+      <section className="relative rounded-[4px] border border-brand/25 bg-bg-elevated p-4 md:p-5">
         <div className="inline-flex items-center gap-2.5 text-sm font-display font-semibold tracking-wider text-brand-dark mb-5">
           <Target className="size-4" aria-hidden />
           מטרות הלמידה

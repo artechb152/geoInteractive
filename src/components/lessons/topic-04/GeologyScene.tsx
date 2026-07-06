@@ -89,7 +89,7 @@ title = {
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
- <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <article className="surface-elevated p-5 sm:p-6 rounded-[4px]">
  <div className="flex items-center gap-2 mb-3">
  <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
  <span className="text-sm font-display font-semibold text-accent tracking-wider">למה זה קריטי?</span>
@@ -99,7 +99,7 @@ title = {
  סוג הסלע קובע אם הכוח שלך יתקע בבוץ אחרי הגשם הראשון, אם תוכל לחפור עמדות הגנה יציבות, ואם השטח עביר לטנקים או רק ללוחמים רגליים.
  </p>
  </article>
- <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <article className="surface-elevated p-5 sm:p-6 rounded-[4px]">
  <div className="flex items-center gap-2 mb-3">
  <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
  <span className="text-sm font-display font-semibold text-accent tracking-wider">מה זה משנה בפועל?</span>
@@ -141,7 +141,7 @@ active ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:bo
  <div className="flex items-start gap-3 mb-2">
  <span
  className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
  active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
  )}
  >
@@ -215,7 +215,7 @@ active ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:bo
  )}
  <span
  className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
  active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
  )}
  >

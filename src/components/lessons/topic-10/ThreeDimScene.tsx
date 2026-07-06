@@ -123,7 +123,7 @@ title = {
       </div>
 
       {/* 3D Cross-section visualization */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
+      <div className="surface-elevated p-4 rounded-[4px] mb-6 overflow-hidden">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
             חתך צד של לחימה בעיר · לחצו על הממדים למטה
@@ -146,7 +146,7 @@ title = {
               key={d.id}
               onClick={() => setActiveDim(d.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl flex items-center gap-3',
+                'surface p-4 text-right transition-all rounded-[3px] flex items-center gap-3',
                 isActive ? `${d.border} ${d.bg}` : 'hover:border-border-strong'
               )}
             >
@@ -170,7 +170,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
+          className={cn('surface-elevated p-6 rounded-[4px] border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
         >
           <div className="mb-5">
             <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', meta.color)}>
@@ -180,7 +180,7 @@ title = {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div className="surface p-4 rounded-xl bg-status-danger/5 border-status-danger/30">
+            <div className="surface p-4 rounded-[3px] bg-status-danger/5 border-status-danger/30">
               <div className="text-sm font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
                 <Icon name="crosshair" size={11} />
                 איומים
@@ -194,7 +194,7 @@ title = {
                 ))}
               </ul>
             </div>
-            <div className="surface p-4 rounded-xl bg-status-ok/5 border-status-ok/30">
+            <div className="surface p-4 rounded-[3px] bg-status-ok/5 border-status-ok/30">
               <div className="text-sm font-display font-semibold text-status-ok mb-2 tracking-wider flex items-center gap-1.5">
                 <Icon name="shield" size={11} />
                 היתרונות (למי ששולט במרחב)
@@ -210,12 +210,12 @@ title = {
             </div>
           </div>
 
-          <div className="surface p-4 rounded-xl mb-3">
+          <div className="surface p-4 rounded-[3px] mb-3">
             <div className={cn('text-sm font-display font-semibold mb-1.5 tracking-wider', meta.color)}>החיסרון המרכזי (נקודת התורפה)</div>
             <p className="text-sm text-fg-muted leading-relaxed">{meta.weakness}</p>
           </div>
 
-          <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
+          <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
             <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה מבצעית</div>
             <p className="text-xs text-fg-muted leading-relaxed italic">"{meta.example}"</p>
           </div>
@@ -246,7 +246,7 @@ title = {
 
 function CrossSection({ activeDim, onSelect }: { activeDim: Dim; onSelect: (d: Dim) => void }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         <defs>
           <linearGradient id="sky-cross" x1="0" y1="0" x2="0" y2="1">

@@ -149,7 +149,7 @@ title = {
               key={p.id}
               onClick={() => setActivePillar(p.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl flex flex-col items-start gap-2',
+                'surface p-4 text-right transition-all rounded-[3px] flex flex-col items-start gap-2',
                 isActive ? `${p.border} ${p.bg}` : 'hover:border-border-strong'
               )}
             >
@@ -170,7 +170,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-5 rounded-2xl border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
+          className={cn('surface-elevated p-5 rounded-[4px] border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
         >
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -190,18 +190,18 @@ title = {
       <SoftDivider text="המאבק על הים · ארה״ב מול סין" />
 
       {/* Power projection map */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
+      <div className="surface-elevated p-4 rounded-[4px] mb-6 overflow-hidden">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
             פריסת הכוחות והשליטה בים · {activePower === 'both' ? 'שתי המעצמות' : activePower === 'us' ? 'ארה"ב' : 'סין'}
           </div>
-          <div className="flex gap-1 p-1 bg-bg-card border border-border rounded-xl">
+          <div className="flex gap-1 p-1 bg-bg-card border border-border rounded-[3px]">
             {(['both', 'us', 'china'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setActivePower(p)}
                 className={cn(
-                  'px-3 py-1 rounded-lg text-xs font-medium transition-colors',
+                  'px-3 py-1 rounded-[3px] text-xs font-medium transition-colors',
                   activePower === p ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
                 )}
               >
@@ -262,7 +262,7 @@ function PowerMap({
   ];
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         <defs>
           <linearGradient id="ocean-power" x1="0" y1="0" x2="0" y2="1">

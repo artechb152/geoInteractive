@@ -98,7 +98,7 @@ export function SortDemo() {
       <div
         onClick={() => clickBin(null)}
         className={cn(
-          'rounded-xl border bg-bg-elevated min-h-[80px] p-3 mb-6 transition-colors',
+          'rounded-[3px] border bg-bg-elevated min-h-[80px] p-3 mb-6 transition-colors',
           pickedUp && 'border-accent/50 bg-accent/5 cursor-pointer',
           !pickedUp && 'border-border-subtle',
         )}
@@ -131,7 +131,7 @@ export function SortDemo() {
               key={cat.id}
               onClick={() => clickBin(cat.id)}
               className={cn(
-                'rounded-xl border-2 border-dashed min-h-[180px] p-3 transition-colors',
+                'rounded-[3px] border-2 border-dashed min-h-[180px] p-3 transition-colors',
                 pickedUp ? `${tone.border} ${tone.bg} cursor-pointer` : 'border-border-subtle bg-bg-elevated/30',
               )}
             >
@@ -176,7 +176,7 @@ export function SortDemo() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            'mt-6 rounded-xl border p-4',
+            'mt-6 rounded-[3px] border p-4',
             correctCount === LESSON_1_TERMS.length
               ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
               : 'border-status-warn/40 bg-status-warn/10 text-status-warn',

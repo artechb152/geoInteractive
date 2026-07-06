@@ -124,7 +124,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             התופעה
@@ -136,7 +136,7 @@ title = {
             חלקיקים באוויר — אדי מים, אבק או גשם — <strong className="text-fg">"בולעים"</strong>, שוברים או מפזרים את גלי השידור של המערכות שלנו. מצלמה שעבדה מושלם אתמול יכולה להיות עיוורת לחלוטין היום.
           </p>
         </div>
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             הביטוח
@@ -160,7 +160,7 @@ title = {
               type="button"
               onClick={() => setWeather(w.id)}
               className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2.5 relative overflow-hidden',
+                'surface p-3 text-right transition-all rounded-[3px] flex items-center gap-2.5 relative overflow-hidden',
                 isActive
                   ? 'border-accent bg-bg-elevated'
                   : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -174,7 +174,7 @@ title = {
               )}
               <span
                 className={cn(
-                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                   isActive
                     ? 'bg-accent text-bg-elevated border-accent'
                     : 'bg-bg-accent text-fg-muted border-border'
@@ -196,7 +196,7 @@ title = {
       </div>
 
       {/* Sensor effectiveness chart */}
-      <div className="surface-elevated p-5 rounded-2xl mb-12">
+      <div className="surface-elevated p-5 rounded-[4px] mb-12">
         <div className="text-sm font-display font-semibold text-fg-muted mb-4 tracking-wider flex items-center justify-between flex-wrap gap-2">
           <span>יעילות החיישנים בתנאי {WEATHER.find((w) => w.id === weather)?.label}</span>
           <span className="text-[10px] text-fg-dim normal-case">% יעילות לעומת אוויר נקי</span>
@@ -209,7 +209,7 @@ title = {
             const labelColor = pct >= 75 ? 'text-status-ok' : pct >= 50 ? 'text-status-warn' : pct >= 30 ? 'text-accent-hot' : 'text-status-danger';
 
             return (
-              <div key={s.id} className="surface p-3 rounded-xl">
+              <div key={s.id} className="surface p-3 rounded-[3px]">
                 <div className="flex items-center gap-3 mb-2">
                   <Icon name={s.icon} size={26} className="text-fg shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -238,7 +238,7 @@ title = {
 
       {/* Thermal Crossover interactive */}
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch mb-12">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               חתימה תרמית במהלך היממה · {hour.toString().padStart(2, '0')}:00
@@ -270,7 +270,7 @@ title = {
         </div>
 
         <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-2xl">
+          <div className="surface-elevated p-5 rounded-[4px]">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               שעת היום
             </div>
@@ -296,7 +296,7 @@ title = {
             </p>
           </div>
 
-          <div className="surface p-4 rounded-xl bg-status-danger/5">
+          <div className="surface p-4 rounded-[3px] bg-status-danger/5">
             <div className="text-sm font-display font-semibold text-status-danger mb-1 tracking-wider">סיכון מבצעי</div>
             <div className="font-display font-bold mb-1.5 leading-tight">חלון 04:00-08:00</div>
             <p className="text-xs text-fg-muted leading-relaxed">
@@ -317,7 +317,7 @@ function ThermalViz({ tank, background, hour, crossover }: { tank: number; backg
   const tankIntensity = Math.max(0, Math.min(1, (tank - 5) / 25));
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         {/* Background heatmap — two stacked palette layers, opacity by intensity */}
         <rect x="0" y="0" width="100" height="56" className="fill-accent-cool" opacity={0.85 * (1 - bgIntensity)} />

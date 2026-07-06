@@ -183,7 +183,7 @@ export function MatchDemo() {
                   }}
                   onClick={() => !submitted && setSelectedTerm(isSelected ? null : t.id)}
                   className={cn(
-                    'cursor-pointer rounded-xl border bg-bg-elevated px-3.5 py-2.5 text-right transition-all',
+                    'cursor-pointer rounded-[3px] border bg-bg-elevated px-3.5 py-2.5 text-right transition-all',
                     'font-display font-semibold text-[15px] text-fg',
                     submitted && status === 'ok' && 'border-status-ok/60 bg-status-ok/10',
                     submitted && status === 'bad' && 'border-status-danger/60 bg-status-danger/10',
@@ -215,7 +215,7 @@ export function MatchDemo() {
                   }}
                   onClick={() => !submitted && setSelectedDef(isSelected ? null : d.id)}
                   className={cn(
-                    'cursor-pointer rounded-xl border bg-bg-elevated px-3.5 py-2.5 text-right transition-all text-sm text-fg-muted leading-snug',
+                    'cursor-pointer rounded-[3px] border bg-bg-elevated px-3.5 py-2.5 text-right transition-all text-sm text-fg-muted leading-snug',
                     submitted && status === 'ok' && 'border-status-ok/60 bg-status-ok/10 text-fg',
                     submitted && status === 'bad' && 'border-status-danger/60 bg-status-danger/10 text-fg',
                     !submitted && isSelected && 'border-accent bg-accent/10 text-fg',
@@ -236,7 +236,7 @@ export function MatchDemo() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            'mt-6 rounded-xl border p-4',
+            'mt-6 rounded-[3px] border p-4',
             correctCount === LESSON_1_TERMS.length
               ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
               : 'border-status-warn/40 bg-status-warn/10 text-status-warn',

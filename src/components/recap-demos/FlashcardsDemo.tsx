@@ -66,7 +66,7 @@ export function FlashcardsDemo() {
   if (done) {
     const reviewedHard = Object.entries(reviewedTimes).filter(([, n]) => n > 1);
     return (
-      <div className="rounded-2xl border border-status-ok/40 bg-status-ok/10 p-8 text-center">
+      <div className="rounded-[4px] border border-status-ok/40 bg-status-ok/10 p-8 text-center">
         <div className="inline-flex size-14 rounded-full bg-status-ok/20 text-status-ok items-center justify-center mb-3">
           <Check className="size-7" strokeWidth={2.5} />
         </div>
@@ -79,7 +79,7 @@ export function FlashcardsDemo() {
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
         >
           <RotateCcw className="size-4" aria-hidden /> סבב נוסף
         </button>
@@ -123,7 +123,7 @@ export function FlashcardsDemo() {
                 aria-pressed={flipped}
                 aria-label={flipped ? 'הצג מושג' : 'הפוך לראות הגדרה'}
                 className={cn(
-                  'w-full h-full rounded-2xl border p-8 text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer',
+                  'w-full h-full rounded-[4px] border p-8 text-center flex flex-col items-center justify-center gap-3 transition-all cursor-pointer',
                   flipped
                     ? 'border-accent-hover/40 bg-bg-elevated'
                     : 'border-accent/40 bg-accent/5',
@@ -163,7 +163,7 @@ export function FlashcardsDemo() {
             <button
               type="button"
               onClick={markReview}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-accent/40 bg-bg-elevated text-accent font-semibold hover:bg-accent/10 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] border border-accent/40 bg-bg-elevated text-accent font-semibold hover:bg-accent/10 transition-colors"
             >
               <RefreshCw className="size-4 text-accent" aria-hidden />
               צריך לחזור
@@ -171,7 +171,7 @@ export function FlashcardsDemo() {
             <button
               type="button"
               onClick={markKnown}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
             >
               <Check className="size-4" aria-hidden />
               ידעתי

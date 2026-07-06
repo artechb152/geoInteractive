@@ -107,7 +107,7 @@ return (
 key={l.id}
 onClick={() => toggleLayer(l.id)}
 className={cn(
- 'relative p-4 text-right transition-all duration-300 ease-snap rounded-2xl border flex items-center gap-3',
+ 'relative p-4 text-right transition-all duration-300 ease-snap rounded-[4px] border flex items-center gap-3',
 isActive
  ? 'border-accent bg-bg-elevated'
  : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -121,7 +121,7 @@ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
 )}
  <span
 className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
 isActive
  ? 'bg-accent text-bg-elevated border-accent'
  : 'bg-bg-accent text-fg-muted border-border'
@@ -143,7 +143,7 @@ isActive
  </div>
 
  {/* Map */}
- <div className="surface-elevated p-4 rounded-2xl mb-6">
+ <div className="surface-elevated p-4 rounded-[4px] mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  מפת GIS · {activeLayers.size}/4 שכבות פעילות
@@ -155,14 +155,14 @@ isActive
  <SoftDivider text="ראסטר מול וקטור · אותו אזור, שני אופנים" />
 
  {/* Raster vs Vector — same real area, two encodings */}
- <div className="surface-elevated p-4 rounded-2xl mb-12">
+ <div className="surface-elevated p-4 rounded-[4px] mb-12">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
  אותו שטח מבצעי · פעם כראסטר, פעם כוקטור
  </div>
 
  <RasterVectorCompare />
 
- <div className="mt-4 surface p-4 rounded-xl flex gap-3 items-start">
+ <div className="mt-4 surface p-4 rounded-[3px] flex gap-3 items-start">
  <Icon name="satellite" size={20} className="text-accent shrink-0 mt-0.5" />
  <p className="text-sm text-fg-muted leading-relaxed text-pretty">
  <strong className="text-fg">אותו שטח, שתי שיטות אחסון.</strong> ראסטר עונה על <strong className="text-fg">״מה יש בכל נקודה״</strong> — גובה, כיסוי, חום. וקטור עונה על <strong className="text-fg">״אילו אובייקטים יש ומה מותר לשאול עליהם״</strong> — כביש, מבנה, טווח. בניתוח מבצעי משתמשים בשניהם יחד: הראסטר הוא הרקע, הוקטור הוא מה שמחליטים עליו — למשל, לספור מבנים בטווח 200 מטר מהכביש כדי להחליט היכן למקם מחסום.
@@ -173,7 +173,7 @@ isActive
  <SoftDivider text="הכוח של וקטור · שאילתות חכמות" />
 
  {/* Vector query demo */}
- <div className="surface-elevated p-5 rounded-2xl mb-12">
+ <div className="surface-elevated p-5 rounded-[4px] mb-12">
  <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
  טבלת תכונות · 4 מבנים בגזרה
  </div>
@@ -216,7 +216,7 @@ return (
  <button
 onClick={() => setQueriedSensitive(!queriedSensitive)}
 className={cn(
- 'px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all',
+ 'px-4 py-2 rounded-[3px] font-bold text-sm flex items-center gap-2 transition-all',
 queriedSensitive
  ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
@@ -243,12 +243,12 @@ queriedSensitive
  איך שומרים ומנהלים את הנתונים?
  </h3>
  <div className="grid sm:grid-cols-2 gap-3 mt-3">
- <div className="surface p-3 rounded-lg">
+ <div className="surface p-3 rounded-[3px]">
  <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">לוקלי</div>
  <div className="font-display font-bold text-sm mb-1">Shapefile / GDB</div>
  <p className="text-xs text-fg-muted leading-relaxed">קבצים על המחשב האישי. מתאים לניתוח עצמאי ופשוט. אין סנכרון.</p>
  </div>
- <div className="surface p-3 rounded-lg">
+ <div className="surface p-3 rounded-[3px]">
  <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">רשתי</div>
  <div className="font-display font-bold text-sm mb-1">SDE — Spatial DB Engine</div>
  <p className="text-xs text-fg-muted leading-relaxed">שרת מרכזי. קמ"ן בחטיבה וקמ"ן באוגדה עובדים על אותה שכבה בו-זמנית. תמונה אחידה.</p>
@@ -262,7 +262,7 @@ queriedSensitive
 }
 function LayerMap({ activeLayers }: { activeLayers: Set<Layer> }) {
 return (
- <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent">
+ <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden bg-bg-accent">
  <svg viewBox="0 0 100 56" className="w-full h-full">
  <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
 
@@ -341,7 +341,7 @@ function RasterVectorCompare() {
 return (
  <div className="grid gap-4 md:grid-cols-2">
  {/* ── RASTER panel: real satellite image ── */}
- <figure className="relative overflow-hidden rounded-xl border border-border bg-bg-accent">
+ <figure className="relative overflow-hidden rounded-[3px] border border-border bg-bg-accent">
  <div className="relative aspect-square">
  <img
 src={valleyAerial.src}
@@ -380,12 +380,12 @@ draggable={false}
  </figure>
 
  {/* ── VECTOR panel: same area as clean objects ── */}
- <figure className="relative overflow-hidden rounded-xl border border-border bg-bg-elevated">
+ <figure className="relative overflow-hidden rounded-[3px] border border-border bg-bg-elevated">
  <div className="relative aspect-square">
  <VectorMap />
  <span className="chip absolute top-2 end-2 border-border bg-bg-elevated/90 text-fg backdrop-blur-sm font-display font-semibold">◢ וקטור</span>
  {/* attribute table — the core 'each object is a row' idea */}
- <div className="absolute top-2 start-2 rounded-lg border border-border bg-bg-elevated/95 px-2 py-1.5 shadow-sm backdrop-blur-sm">
+ <div className="absolute top-2 start-2 rounded-[3px] border border-border bg-bg-elevated/95 px-2 py-1.5 shadow-sm backdrop-blur-sm">
  <div className="mb-0.5 text-[9px] font-display font-medium tracking-wide text-fg-dim">טבלת תכונות</div>
  <table className="text-[9px] leading-tight tabular-nums">
  <tbody>

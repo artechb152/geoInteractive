@@ -10,7 +10,7 @@ import { PRT_PROTOTYPES } from '@/lib/prt-prototypes';
  */
 export function PrtShowcase() {
   return (
-    <main className="relative min-h-[calc(100vh-3rem)] bg-bg">
+    <main className="relative min-h-[calc(100vh-var(--header-h))] bg-bg">
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
         <div className="mb-10 md:mb-12">
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent mb-2.5">

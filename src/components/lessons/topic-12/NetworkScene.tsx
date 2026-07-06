@@ -90,7 +90,7 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
- <div className="surface-elevated p-6 rounded-2xl">
+ <div className="surface-elevated p-6 rounded-[4px]">
  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  ניתוח טופולוגי
@@ -102,7 +102,7 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
  ניתוח של קווים מחוברים — כבישים, צינורות דלק, כבלי תקשורת. מזהה את <strong className="text-fg">נקודות הכשל</strong>: מה יקרה אם גשר מסוים יפוצץ? אילו כוחות יישארו מנותקים? אילו צמתים שולטים על הזרימה?
  </p>
  </div>
- <div className="surface-elevated p-6 rounded-2xl">
+ <div className="surface-elevated p-6 rounded-[4px]">
  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  ניתוח מרחבי
@@ -117,7 +117,7 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
  </div>
 
  {/* Network analysis */}
- <div className="surface-elevated p-4 rounded-2xl mb-6">
+ <div className="surface-elevated p-4 rounded-[4px] mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  רשת דרכים · בסיס (A) ← חזית (I)
@@ -149,7 +149,7 @@ onToggle={toggleNode}
 onClick={reset}
 disabled={disabled.size === 0}
 className={cn(
- 'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5',
+ 'px-3 py-1.5 rounded-[3px] text-xs font-medium border transition-colors flex items-center gap-1.5',
 disabled.size > 0
  ? 'border-border hover:border-border-strong text-fg'
  : 'border-border text-fg-dim cursor-not-allowed opacity-50'
@@ -161,7 +161,7 @@ disabled.size > 0
  </div>
 
  {/* Targeting insight */}
- <div className="surface-elevated p-5 rounded-2xl mb-12">
+ <div className="surface-elevated p-5 rounded-[4px] mb-12">
  <div className="flex gap-3 items-start">
  <Icon name="crosshair" size={20} className="text-accent shrink-0 mt-0.5" />
  <div className="text-sm leading-relaxed">
@@ -173,7 +173,7 @@ disabled.size > 0
  <SoftDivider text="Buffer Analysis · מעגלי השפעה ואיום" />
 
  {/* Buffer analysis */}
- <div className="surface-elevated p-4 rounded-2xl mb-6">
+ <div className="surface-elevated p-4 rounded-[4px] mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  מעגלי השפעה · כוח ידידותי מול 2 איומים
@@ -206,7 +206,7 @@ threatsAffecting={threatsAffecting.map((t) => t.id)}
  <button
 onClick={() => setShowThreatBuffers(!showThreatBuffers)}
 className={cn(
- 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5',
+ 'px-3 py-1.5 rounded-[3px] text-xs font-medium transition-colors flex items-center gap-1.5',
 showThreatBuffers
  ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
@@ -230,7 +230,7 @@ whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true, amount: 0.3 }}
 transition={{ delay: i * 0.08 }}
 className={cn(
- 'surface p-4 rounded-xl border-r-4 transition-all',
+ 'surface p-4 rounded-[3px] border-r-4 transition-all',
 isAffecting ? 'border-r-status-danger bg-status-danger/5' : 'border-r-status-warn'
  )}
  >
@@ -294,7 +294,7 @@ for (let i = 0; i < path.length - 1; i++) {
 pathEdges.add([path[i], path[i + 1]].sort().join('-'));
  }
 return (
- <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+ <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
  <svg viewBox="0 0 100 56" className="w-full h-full">
  <rect x="0" y="0" width="100" height="56" className="fill-bg-elevated" />
 
@@ -431,7 +431,7 @@ setFriendlyPos: (p: { x: number; y: number }) => void;
 threatsAffecting: string[];
 }) {
 return (
- <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+ <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
  <svg
 viewBox="0 0 100 56"
 preserveAspectRatio="none"

@@ -9,9 +9,15 @@ import {
   type AnimationPlaybackControls,
   type MotionValue,
 } from 'framer-motion';
-import { RotateCcw, Move3D } from 'lucide-react';
+import { RotateCcw, Move3D, BookOpen, Clock, MousePointerClick, Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { lessons, totalDuration } from '@/lib/lessons';
 import { ContinueLearningButton } from './ContinueLearningButton';
+import { Button } from '@/components/ui/Button';
+import { SurfaceCard } from '@/components/ui/SurfaceCard';
+import { FrameCorners } from '@/components/ui/FrameCorners';
+import { TopoField } from '@/components/ui/TopoField';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 
 const easeSnap = [0.22, 1, 0.36, 1] as const;
 
@@ -31,80 +37,147 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden min-h-[calc(100vh-3rem)] flex items-center pt-8 pb-12 md:pt-12"
+      className="relative overflow-hidden border-b-2 border-brand-dark/20 pt-10 pb-10 md:pt-14 md:pb-14"
       aria-labelledby="hero-title"
     >
-      <div className="relative max-w-6xl mx-auto w-full px-6 grid lg:grid-cols-[1.05fr_1fr] items-center gap-6 lg:gap-10">
-        <motion.div
-          initial="hidden"
-          animate="show"
-          variants={{
-            hidden: {},
-            show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } },
-          }}
-          className="relative z-10"
-        >
-          <motion.h1
-            id="hero-title"
-            variants={fadeUp(!!reduce)}
-            className="font-display font-bold tracking-tight leading-[0.92]"
+      {/* שדה קווי-גובה + שטיפת שמש חמה — שולחן המפות */}
+      <TopoField />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-topo-fade" />
+
+      <div className="relative mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
+          {/* ── עמודת הטקסט — ימין ב-RTL ── */}
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } },
+            }}
+            className="relative z-10 flex flex-col items-start"
           >
-            <span className="block text-[clamp(1rem,2vw,1.5rem)] font-medium text-fg-muted mb-2 tracking-[0.04em]">
-              קוראים את
-            </span>
+            <motion.p variants={fadeUp(!!reduce)} className="section-eyebrow">
+              מערכת הכשרה דיגיטלית · 12 שיעורים
+            </motion.p>
 
-            <span className="relative block">
-              <span
-                aria-hidden
-                className="absolute inset-0 select-none translate-x-1 translate-y-1 text-transparent"
-                style={{
-                  WebkitTextStroke: '1px rgba(177,119,54,0.35)',
-                  fontSize: 'clamp(2.25rem, 7vw, 5rem)',
-                  lineHeight: '0.92',
-                }}
-              >
-                השטח.
-              </span>
-              <span
-                className="relative inline-block text-accent"
-                style={{
-                  fontSize: 'clamp(2.25rem, 7vw, 5rem)',
-                  lineHeight: '0.92',
-                }}
-              >
-                השטח<span className="text-fg">.</span>
-              </span>
-            </span>
-
-            <span className="block mt-3 text-[clamp(1rem,2vw,1.625rem)] font-medium text-fg-muted tracking-[0.02em]">
-              <span className="text-accent">לפני</span> שצועדים בו.
-            </span>
-          </motion.h1>
-
-          <motion.p
-            variants={fadeUp(!!reduce)}
-            className="mt-4 max-w-xl text-sm md:text-base text-fg-muted leading-relaxed text-pretty"
-          >
-            קורס אינטראקטיבי שמלמד איך המרחב הפיזי מעצב אסטרטגיה, תמרון ואיסוף מודיעין.
-            סימולציות, תרגול ומשוב — מהבסיס ועד GEOINT מבצעי.
-          </motion.p>
-
-          <motion.div variants={fadeUp(!!reduce)} className="mt-5 flex flex-wrap items-center gap-2.5">
-            <ContinueLearningButton />
-            <a
-              href="#lessons"
-              className="inline-flex items-center justify-center px-4 py-2 rounded-md font-medium text-accent border border-accent/40 hover:border-accent hover:bg-accent/10 transition-colors duration-300"
+            <motion.h1
+              id="hero-title"
+              variants={fadeUp(!!reduce)}
+              className="mt-5 font-display font-extrabold tracking-tight text-balance leading-[0.98] text-[clamp(2.75rem,7vw,5.5rem)]"
             >
-              <span>מה לומדים בקורס</span>
-            </a>
-          </motion.div>
-        </motion.div>
+              גיאוגרפיה
+              <br />
+              צבאית
+            </motion.h1>
 
-        <div className="relative aspect-square w-full max-w-[260px] sm:max-w-[310px] mx-auto lg:mx-0 lg:justify-self-end">
-          <TerrainDiorama reduce={!!reduce} />
+            {/* קו-פעולה: פס כתום + שנתת מרווה — חתימת V2 */}
+            <motion.span variants={fadeUp(!!reduce)} aria-hidden className="mt-5 flex items-center gap-1.5">
+              <span className="block h-2 w-24 bg-accent" />
+              <span className="block size-2 rotate-45 bg-brand-dark" />
+              <span className="block h-0.5 w-10 bg-brand-dark/40" />
+            </motion.span>
+
+            <motion.p
+              variants={fadeUp(!!reduce)}
+              className="mt-5 font-display text-xl font-bold text-fg md:text-2xl"
+            >
+              המרחב שמכתיב החלטות
+            </motion.p>
+
+            <motion.p
+              variants={fadeUp(!!reduce)}
+              className="mt-3 max-w-xl text-base leading-relaxed text-fg-muted md:text-lg text-pretty"
+            >
+              קורס אינטראקטיבי ללימוד קריאת מפה, ניתוח שטח וקבלת החלטות
+              גיאוגרפיות־מבצעיות — מהבסיס ועד GEOINT מבצעי.
+            </motion.p>
+
+            <motion.div
+              variants={fadeUp(!!reduce)}
+              className="mt-8 flex flex-wrap items-center gap-3"
+            >
+              <ContinueLearningButton size="lg" />
+              <Button href="/#syllabus" variant="secondary" size="lg">
+                תכנית הלימודים
+              </Button>
+            </motion.div>
+          </motion.div>
+
+          {/* ── לוח הטריין — נכס Magnific בתוך מסגרת גיליון-מפה ── */}
+          <motion.figure
+            initial={reduce ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: easeSnap, delay: 0.2 }}
+            className="relative w-full"
+          >
+            <div className="relative border border-brand-dark/30 bg-bg-elevated p-2.5 shadow-paper sm:p-3">
+              <FrameCorners />
+              <IsometricAsset
+                assetId="HOME-01"
+                src="/assets/isometric/home-hero-terrain.png"
+                alt="לוח טריין פייפרקאט איזומטרי — רכסים, נחל ודגל ניווט כתום על הפסגה"
+                aspect="16/9"
+                className="rounded-[2px]"
+              />
+              {/* פס מקרא תחתון — מרווה כהה, ספרות mono בלבד */}
+              <div className="mt-2.5 flex items-center justify-between bg-brand-dark px-3 py-1.5 text-bg">
+                <span className="font-mono text-[10px] tracking-[0.25em]" dir="ltr">
+                  GEO-9900
+                </span>
+                <span className="flex items-center gap-1.5" aria-hidden>
+                  <span className="size-1.5 rotate-45 bg-accent" />
+                  <span className="h-px w-10 bg-bg/40" />
+                  <span className="size-1.5 rotate-45 bg-bg/50" />
+                </span>
+                <span className="font-mono text-[10px] tracking-[0.25em]" dir="ltr">
+                  1:50,000
+                </span>
+              </div>
+            </div>
+          </motion.figure>
         </div>
+
+        {/* ── שורת יתרונות — פאנל דוסייה (design-system §22.1) ── */}
+        <HeroStatsRow />
       </div>
     </section>
+  );
+}
+
+function HeroStatsRow() {
+  const items = [
+    { Icon: BookOpen, value: `${lessons.length} שיעורים`, label: 'מסלול מובנה אחד' },
+    { Icon: Clock, value: `${totalDuration} דקות`, label: 'זמן לימוד כולל' },
+    { Icon: MousePointerClick, value: '12 תרגולים', label: 'סימולציות אינטראקטיביות' },
+    { Icon: Gauge, value: '3 רמות קושי', label: 'מהיסוד ועד מתקדם' },
+  ];
+  return (
+    <SurfaceCard flat frame className="mt-12 md:mt-16">
+      <div className="grid grid-cols-2 lg:grid-cols-4">
+        {items.map(({ Icon, value, label }, i) => (
+          <div key={value} className="relative flex items-center gap-3 px-5 py-4 sm:px-7">
+            {i > 0 && (
+              <span
+                aria-hidden
+                className="absolute inset-y-3 start-0 hidden w-px bg-brand-dark/15 lg:block"
+              />
+            )}
+            <span
+              aria-hidden
+              className="oct-sm grid size-10 shrink-0 place-items-center bg-brand/10 text-brand-dark"
+            >
+              <Icon className="size-5" />
+            </span>
+            <div className="min-w-0 leading-tight">
+              <div className="truncate font-display text-sm font-extrabold text-fg sm:text-base">
+                {value}
+              </div>
+              <div className="mt-0.5 truncate text-[11px] text-fg-dim sm:text-xs">{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </SurfaceCard>
   );
 }
 
@@ -169,7 +242,7 @@ function lerpHex(a: string, b: string, t: number) {
   return `#${toHex(ar + (br - ar) * t)}${toHex(ag + (bg - ag) * t)}${toHex(ab + (bb - ab) * t)}`;
 }
 
-function TerrainDiorama({ reduce }: { reduce: boolean }) {
+export function TerrainDiorama({ reduce }: { reduce: boolean }) {
   const rotX = useMotionValue(VIEWS.iso.x);
   const rotY = useMotionValue(VIEWS.iso.y);
 

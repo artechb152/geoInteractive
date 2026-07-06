@@ -45,7 +45,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             השיטה
@@ -57,7 +57,7 @@ title = {
             הציוד נשלח באופן רציף מהעורף אל החזית, כמו <strong className="text-fg">סרט נע</strong>. עובד מצוין בשטח שלנו — אבל כשמתקדמים לעומק שטח האויב, הקו הארוך הופך לנקודת תורפה רצינית.
           </p>
         </div>
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             האיום
@@ -72,7 +72,7 @@ title = {
       </div>
 
       {/* Main visualization */}
-      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
+      <div className="surface-elevated p-4 rounded-[4px] mb-6 overflow-hidden">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
             אורך הבטן הלוגיסטית · {depth} ק"מ
@@ -112,7 +112,7 @@ title = {
       <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch mb-12">
         {/* Controls */}
         <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-2xl">
+          <div className="surface-elevated p-5 rounded-[4px]">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               מרחק ההתקדמות לעומק שטח האויב
             </div>
@@ -137,7 +137,7 @@ title = {
             </div>
           </div>
 
-          <div className="surface-elevated p-5 rounded-2xl">
+          <div className="surface-elevated p-5 rounded-[4px]">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               רמת האבטחה על הציר (כמה מהדרך מאובטחת?)
             </div>
@@ -161,7 +161,7 @@ title = {
         </div>
 
         {/* Stats panel */}
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="text-sm font-display font-semibold text-fg-muted mb-4 tracking-wider">
             המחיר בשטח (ההשפעה על הכוחות)
           </div>
@@ -282,7 +282,7 @@ function TailViz({
   const atRisk = Math.round((1 - secured / 100) * trucksInPipeline);
 
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent/40">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden bg-bg-accent/40">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Parent div carries `bg-bg-accent/40` — no internal gradient rect needed. */}
 
@@ -410,7 +410,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="surface p-3 rounded-lg">
+    <div className="surface p-3 rounded-[3px]">
       <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">{label}</div>
       <div className={cn('font-display font-bold text-2xl tabular-nums', color)}>
         {value}<span className="text-xs text-fg-muted ms-1">{unit}</span>

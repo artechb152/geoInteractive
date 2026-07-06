@@ -44,7 +44,7 @@ export function IntelCard({ place, headline, lesson, variant = 'editorial' }: In
     <article
       className={cn(
         'bg-bg-elevated rounded-md p-3.5 md:p-4',
-        variant === 'elevated' && 'rounded-2xl border border-border shadow-elevated p-4 md:p-5',
+        variant === 'elevated' && 'rounded-[4px] border border-border shadow-elevated p-4 md:p-5',
       )}
     >
       {/* Headline as the lead */}

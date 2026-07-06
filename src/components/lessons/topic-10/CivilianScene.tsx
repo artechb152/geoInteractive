@@ -127,7 +127,7 @@ intro="בעיר, האוכלוסייה האזרחית והתשתיות שלה מ�
  </div>
 
  {/* Map with sensitive sites */}
- <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
+ <div className="surface-elevated p-4 rounded-[4px] mb-6 overflow-hidden">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  מפת אזור לחימה · 6 אתרים רגישים
@@ -135,7 +135,7 @@ intro="בעיר, האוכלוסייה האזרחית והתשתיות שלה מ�
  <button
 onClick={() => setCorridorActive(!corridorActive)}
 className={cn(
- 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5',
+ 'px-3 py-1.5 rounded-[3px] text-xs font-bold transition-all flex items-center gap-1.5',
 corridorActive
  ? 'bg-status-ok text-bg'
  : 'border border-border hover:border-border-strong text-fg'
@@ -152,7 +152,7 @@ corridorActive
  <motion.div
 initial={{ opacity: 0, y: 8 }}
 animate={{ opacity: 1, y: 0 }}
-className="mt-3 surface p-3 rounded-lg bg-status-ok/5 border-status-ok/30"
+className="mt-3 surface p-3 rounded-[3px] bg-status-ok/5 border-status-ok/30"
  >
  <div className="text-sm font-display font-semibold text-status-ok mb-1 tracking-wider">
  ציר הומניטרי הופעל
@@ -175,7 +175,7 @@ return (
 key={t}
 onClick={() => setActiveSite(t)}
 className={cn(
- 'surface p-3 text-center transition-all rounded-xl flex flex-col items-center gap-2',
+ 'surface p-3 text-center transition-all rounded-[3px] flex flex-col items-center gap-2',
 isActive ? `${m.border} ${m.bg}` : 'hover:border-border-strong'
  )}
  >
@@ -196,7 +196,7 @@ initial={{ opacity: 0, y: 8 }}
 animate={{ opacity: 1, y: 0 }}
 exit={{ opacity: 0, y: -8 }}
 transition={{ duration: 0.25 }}
-className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.replace('border-', 'border-r-'))}
+className={cn('surface-elevated p-6 rounded-[4px] border-r-4 mb-10', meta.border.replace('border-', 'border-r-'))}
  >
  <div className="flex items-center gap-3 mb-4">
  <Icon name={meta.icon} size={32} className={cn(meta.color, 'shrink-0')} />
@@ -241,7 +241,7 @@ className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.r
  <p className="text-sm text-fg leading-relaxed mb-3">
  נתיב מעבר מוגדר במרחב ולעיתים גם בזמן, שנקבע בהסכמה בין צדדים ללחימה. מטרתו: פינוי אזרחים בטוח, או הכנסת סיוע הומניטרי (מזון, תרופות).
  </p>
- <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
+ <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
  <div className="text-sm font-display font-semibold text-status-ok mb-1 tracking-wider">דרישות תיאום</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  עצירת פעילות התקפית, הקצאת כוחות לאבטחה, תיאום עם ארגונים בינלאומיים. סיכון: ניצול הציר להעברת לוחמים/נשק.
@@ -260,7 +260,7 @@ className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-10', meta.border.r
  <p className="text-sm text-fg leading-relaxed mb-3">
  ההגדרות המדויקות מתי, איפה, ועל מי מותר לחייל לפתוח באש. בעיר — הן <strong className="text-fg">מורכבות מאוד</strong> בגלל סמיכות לאזרחים.
  </p>
- <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
+ <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
  <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">דוגמה ל-ROE</div>
  <p className="text-xs text-fg-muted leading-relaxed">"אש רק בתגובה לאש מזוהה" /"תקיפה רק אחרי אזהרה ופינוי" /"הימנעות מירי לכיוון אתר רגיש מסומן". כל סיטואציה אחרת.
  </p>
@@ -282,7 +282,7 @@ corridorActive: boolean;
 onSelect: (t: SiteType) => void;
 }) {
 return (
- <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+ <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
  <svg viewBox="0 0 100 56" className="w-full h-full">
  <defs>
  <linearGradient id="urban-bg-civ" x1="0" y1="0" x2="0" y2="1">

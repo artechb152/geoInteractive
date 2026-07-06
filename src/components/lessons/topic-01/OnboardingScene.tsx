@@ -148,7 +148,7 @@ title={
         <EditableBlock
           id="accordion-panel"
           label="פאנל האקורדיון"
-          className="rounded-3xl border border-border bg-bg-elevated shadow-elevated p-2 sm:p-3 h-full"
+          className="rounded-[5px] border border-border bg-bg-elevated shadow-elevated p-2 sm:p-3 h-full"
         >
           <Accordion
             type="single"
@@ -168,7 +168,7 @@ title={
                   key={s.id}
                   value={s.id}
                   className={cn(
-                    'rounded-2xl border-0 bg-transparent transition-colors duration-300 ease-snap',
+                    'rounded-[4px] border-0 bg-transparent transition-colors duration-300 ease-snap',
                     active ? 'bg-brand/[0.06]' : 'hover:bg-bg-accent/50',
                     passed && !active && 'opacity-85'
                   )}
@@ -182,7 +182,7 @@ title={
                     )}
                     <span
                       className={cn(
-                        'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                        'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                         active && 'bg-brand-dark text-bg-elevated border-brand-dark',
                         passed && !active && 'bg-status-ok/15 text-status-ok border-status-ok/30',
                         !active && !passed && 'bg-bg-accent text-fg-muted border-border'

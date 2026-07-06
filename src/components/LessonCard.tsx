@@ -1,56 +1,90 @@
 import Link from 'next/link';
+import { ArrowLeft, Clock, Layers } from 'lucide-react';
 import type { Lesson } from '@/lib/lessons';
-import { cn } from '@/lib/utils';
+import { lessonScenes, lessonAssets, difficultyLabels } from '@/lib/lesson-scenes';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
+import { StatusChip } from '@/components/ui/StatusChip';
+import { FrameCorners } from '@/components/ui/FrameCorners';
 
-const difficultyLabel: Record<Lesson['difficulty'], string> = {
-  foundation: 'יסוד',
-  intermediate: 'בינוני',
-  advanced: 'מתקדם',
-};
-
-const difficultyClass: Record<Lesson['difficulty'], string> = {
-  foundation: 'border-status-ok/40 bg-status-ok/10 text-status-ok',
-  intermediate: 'border-status-warn/40 bg-status-warn/10 text-status-warn',
-  advanced: 'border-status-danger/40 bg-status-danger/10 text-status-danger',
-};
-
+/**
+ * LessonCard V2 — כרטיס דוסייה בגריד הסילבוס (design-system §22.2, שפת V2).
+ * גיליון-מפה חד: מספר-מתאר ענק ברקע, נכס 1:1 בחלון עם סוגריים-מסגרת,
+ * חותמת קושי, מטא עם מוביל-נקודות. מוביל לדף ה-Overview.
+ */
 export function LessonCard({ lesson }: { lesson: Lesson }) {
+  const num = String(lesson.number).padStart(2, '0');
+  const sceneCount = lessonScenes[lesson.id]?.length ?? 0;
+  const asset = lessonAssets[lesson.id];
+
   return (
     <Link
-      href={`/lessons/${lesson.id}/`}
-      className="group surface relative overflow-hidden p-5 transition-all duration-300 ease-snap hover:border-accent/50 hover:shadow-glow hover:-translate-y-0.5"
+      href={`/lessons/${lesson.id}/overview/`}
+      className="group relative flex flex-col overflow-hidden rounded-[3px] border border-brand-dark/25 bg-bg-card shadow-paper transition-all duration-300 ease-snap hover:-translate-y-1 hover:border-brand-dark/50"
     >
-      <div
-        className={cn(
-          'absolute inset-x-0 top-0 h-24 -z-0 bg-gradient-to-b opacity-60 group-hover:opacity-100 transition-opacity',
-          lesson.hero.color
-        )}
-      />
+      {/* מספר-מתאר ענק — חותם רקע */}
+      <span
+        aria-hidden
+        className="outline-numeral pointer-events-none absolute -top-5 -start-2 text-[6.5rem] leading-none opacity-70"
+      >
+        {num}
+      </span>
 
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-mono text-xs text-fg-dim">
-            שיעור {String(lesson.number).padStart(2, '0')}
-          </span>
-          <span className={cn('chip', difficultyClass[lesson.difficulty])}>
-            {difficultyLabel[lesson.difficulty]}
-          </span>
+      {/* ── חלון הנכס ── */}
+      <div className="relative mx-3 mt-3 ms-[4.5rem]">
+        <div className="relative border border-brand-dark/20 bg-bg p-1">
+          <FrameCorners size="sm" />
+          <IsometricAsset
+            assetId={`LESSON-${num}-CARD`}
+            src={asset?.card ?? ''}
+            alt={`איור איזומטרי לשיעור ${lesson.shortTitle}`}
+            aspect="16/9"
+            compactPlaceholder
+          />
         </div>
+        <span className="absolute -bottom-2.5 end-2">
+          <StatusChip tone={lesson.difficulty === 'foundation' ? 'brand' : lesson.difficulty === 'intermediate' ? 'neutral' : 'accent'}>
+            {difficultyLabels[lesson.difficulty]}
+          </StatusChip>
+        </span>
+      </div>
 
-        <h3 className="font-display font-semibold text-lg leading-snug text-balance group-hover:text-accent transition-colors">
+      {/* ── גוף ── */}
+      <div className="relative flex flex-1 flex-col px-4 pb-4 pt-4">
+        <h3 className="font-display text-lg font-extrabold leading-snug text-fg text-balance transition-colors group-hover:text-brand-dark">
           {lesson.shortTitle}
         </h3>
-
-        <p className="text-sm text-fg-muted mt-2 leading-relaxed line-clamp-2 text-pretty">
+        <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-fg-muted line-clamp-2 text-pretty">
           {lesson.subtitle}
         </p>
 
-        <div className="mt-4 pt-4 border-t border-border-subtle flex items-center justify-between text-xs text-fg-dim">
-          <span>{lesson.duration} דק'</span>
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent">
-            כניסה ←
-          </span>
+        {/* מטא — מוביל נקודות */}
+        <div className="mt-3.5 flex flex-col gap-1">
+          <div className="dotted-leader text-xs text-fg-dim">
+            <span className="order-1 inline-flex items-center gap-1.5">
+              <Clock className="size-3.5" aria-hidden />
+              משך
+            </span>
+            <span className="order-3 font-mono font-bold text-fg">{lesson.duration} דק'</span>
+          </div>
+          <div className="dotted-leader text-xs text-fg-dim">
+            <span className="order-1 inline-flex items-center gap-1.5">
+              <Layers className="size-3.5" aria-hidden />
+              סצנות
+            </span>
+            <span className="order-3 font-mono font-bold text-fg">{sceneCount}</span>
+          </div>
         </div>
+      </div>
+
+      {/* ── פס פעולה תחתון ── */}
+      <div className="flex items-center justify-between border-t border-brand-dark/15 bg-bg-accent/50 px-4 py-2.5 transition-colors group-hover:bg-brand-dark group-hover:text-bg">
+        <span className="font-display text-xs font-bold tracking-wide text-brand-dark transition-colors group-hover:text-bg">
+          פתח תדריך שיעור
+        </span>
+        <ArrowLeft
+          className="size-4 text-accent transition-transform group-hover:-translate-x-1"
+          aria-hidden
+        />
       </div>
     </Link>
   );

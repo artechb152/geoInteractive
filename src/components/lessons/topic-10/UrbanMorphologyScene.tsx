@@ -79,7 +79,7 @@ title = {
           Promotes a tooltip-style block to core content. */}
       <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
         {/* Card A — definition */}
-        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+        <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             עיקרון מנחה
@@ -94,7 +94,7 @@ title = {
         </div>
 
         {/* Card B — the critical characteristic */}
-        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+        <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המאפיין הקריטי
@@ -124,7 +124,7 @@ title = {
               onClick={() => setPattern(p.id)}
               aria-pressed={isActive}
               className={cn(
-                'relative rounded-xl border p-4 text-right flex items-center gap-3 transition-all duration-300 ease-snap cursor-pointer',
+                'relative rounded-[3px] border p-4 text-right flex items-center gap-3 transition-all duration-300 ease-snap cursor-pointer',
                 isActive
                   ? 'border-accent bg-bg-elevated'
                   : 'border-border bg-bg-elevated hover:border-accent/50 hover:bg-accent/[0.04]',
@@ -139,7 +139,7 @@ title = {
               )}
               <span
                 className={cn(
-                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                   isActive
                     ? 'bg-accent text-bg-elevated border-accent'
                     : 'bg-bg-accent text-fg-muted border-border',
@@ -161,7 +161,7 @@ title = {
       </div>
 
       {/* Comparison map — visually attached to the selector above. */}
-      <div className="surface-elevated p-4 rounded-2xl mt-2 mb-6">
+      <div className="surface-elevated p-4 rounded-[4px] mt-2 mb-6">
         <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark mb-3 tracking-wider">
           <span className="size-1.5 rounded-full bg-accent" aria-hidden />
           מבט אווירי · {meta.label}
@@ -186,7 +186,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="surface-elevated p-6 sm:p-8 rounded-2xl mb-12"
+          className="surface-elevated p-6 sm:p-8 rounded-[4px] mb-12"
         >
           {/* Header */}
           <div className="mb-6 pb-6 border-b border-border-subtle">
@@ -264,7 +264,7 @@ function PropertyRow({ icon, eyebrow, text }: { icon: IconName; eyebrow: string;
 function RoleRow({ side, eyebrow, text }: { side: 'attacker' | 'defender'; eyebrow: string; text: string }) {
   return (
     <div className={cn(
-      'rounded-xl border p-4',
+      'rounded-[3px] border p-4',
       side === 'attacker'
         ? 'border-accent-cool/30 bg-accent-cool/5'
         : 'border-accent-hot/30 bg-accent-hot/5',
@@ -283,7 +283,7 @@ function RoleRow({ side, eyebrow, text }: { side: 'attacker' | 'defender'; eyebr
 
 function UrbanMap({ pattern }: { pattern: Pattern }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         <defs>
           <linearGradient id="urban-bg" x1="0" y1="0" x2="0" y2="1">

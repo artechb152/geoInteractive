@@ -158,7 +158,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-6 rounded-2xl">
+        <div className="surface-elevated p-6 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             ההגדרה
@@ -170,7 +170,7 @@ title = {
             המרחק הפיזי בין אזור הלחימה (החזית) לבין לב המדינה — המקום שבו נמצאים האזרחים, מפעלי התעשייה ומוסדות השלטון. הוא הגורם שקובע את חופש הפעולה של הצבא ושל מקבלי ההחלטות מאחור.
           </p>
         </div>
-        <div className="surface-elevated p-6 rounded-2xl">
+        <div className="surface-elevated p-6 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             למה זה קובע הכל
@@ -187,7 +187,7 @@ title = {
       {/* Main interactive */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Visualization */}
-        <div className="surface-elevated p-4 rounded-2xl flex flex-col">
+        <div className="surface-elevated p-4 rounded-[4px] flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מבט חתך: מהגבול ועד ללב המדינה
@@ -203,17 +203,17 @@ title = {
           </div>
 
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="surface p-2 rounded-lg text-center">
+            <div className="surface p-2 rounded-[3px] text-center">
               <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">עומק</div>
               <div className="font-display font-bold text-lg text-accent tabular-nums">{depth} ק"מ</div>
             </div>
-            <div className="surface p-2 rounded-lg text-center">
+            <div className="surface p-2 rounded-[3px] text-center">
               <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">זמן עד הגעה לבירה</div>
               <div className={cn('font-display font-bold text-lg tabular-nums', daysToCapital < 1 ? 'text-status-danger' : daysToCapital < 5 ? 'text-status-warn' : 'text-status-ok')}>
                 {daysToCapital < 1 ? `${Math.round(daysToCapital * 24)} שעות` : `${Math.round(daysToCapital)} ימים`}
               </div>
             </div>
-            <div className="surface p-2 rounded-lg text-center">
+            <div className="surface p-2 rounded-[3px] text-center">
               <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">בדומה למדינה:</div>
               <div className="font-display font-bold text-sm text-fg">{closestCountry.name}</div>
             </div>
@@ -222,7 +222,7 @@ title = {
 
         {/* Controls + doctrine */}
         <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-2xl">
+          <div className="surface-elevated p-5 rounded-[4px]">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               עומק אסטרטגי
             </div>
@@ -272,7 +272,7 @@ title = {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2 }}
-              className={cn('surface p-4 rounded-xl border-2', dm.bg)}
+              className={cn('surface p-4 rounded-[3px] border-2', dm.bg)}
               style={{ borderColor: 'currentColor' }}
             >
               <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', dm.color)}>
@@ -291,7 +291,7 @@ title = {
 
       {/* Quick log-scale ruler — lets the eye compare all 5 at once
           before reading the individual cards. */}
-      <div className="surface-elevated p-5 rounded-2xl mb-4">
+      <div className="surface-elevated p-5 rounded-[4px] mb-4">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
           קנה מידה השוואתי · ק"מ מהגבול ללב המדינה (סולם לוגריתמי — כל הכפלה היא צעד אחד)
         </div>
@@ -338,7 +338,7 @@ title = {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.06 }}
-            className="surface-elevated p-5 sm:p-6 rounded-2xl"
+            className="surface-elevated p-5 sm:p-6 rounded-[4px]"
           >
             {/* Header: name + region + the two big numbers */}
             <div className="grid sm:grid-cols-[1fr_auto] gap-4 mb-4 pb-4 border-b border-border-subtle">
@@ -363,13 +363,13 @@ title = {
 
             {/* The instructional pair: allows / prevents */}
             <div className="grid sm:grid-cols-2 gap-3 mb-4">
-              <div className="rounded-lg border border-status-ok/30 bg-status-ok/5 p-3">
+              <div className="rounded-[3px] border border-status-ok/30 bg-status-ok/5 p-3">
                 <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-ok mb-1.5">
                   מה זה מאפשר
                 </div>
                 <p className="text-sm text-fg leading-relaxed text-pretty">{c.allows}</p>
               </div>
-              <div className="rounded-lg border border-status-danger/30 bg-status-danger/5 p-3">
+              <div className="rounded-[3px] border border-status-danger/30 bg-status-danger/5 p-3">
                 <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-danger mb-1.5">
                   מה זה לא מאפשר
                 </div>
@@ -378,7 +378,7 @@ title = {
             </div>
 
             {/* Doctrine + historical case */}
-            <div className="rounded-lg bg-bg-accent/40 p-3">
+            <div className="rounded-[3px] bg-bg-accent/40 p-3">
               <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1">
                 דוקטרינה כפויה · {c.doctrine}
               </div>
@@ -405,7 +405,7 @@ function DepthVisualization({
   const enemyProgress = 0.15; // enemy has advanced 15% into depth
 
   return (
-    <div className="relative w-full h-full min-h-[240px] rounded-xl overflow-hidden bg-bg-accent">
+    <div className="relative w-full h-full min-h-[240px] rounded-[3px] overflow-hidden bg-bg-accent">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
 

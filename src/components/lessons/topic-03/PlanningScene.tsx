@@ -33,7 +33,7 @@ intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפ
 
  {/* Concept · matched pair feature cards */}
  <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  הכלי המנחה
@@ -46,7 +46,7 @@ intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפ
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  למה מראש
@@ -91,7 +91,7 @@ onClick={() => setActive(i)}
 whileHover={{ x: -3 }}
 whileTap={{ scale: 0.98 }}
 className={cn(
- 'w-full surface p-4 text-right transition-all flex items-start gap-3 relative overflow-hidden rounded-xl',
+ 'w-full surface p-4 text-right transition-all flex items-start gap-3 relative overflow-hidden rounded-[3px]',
 isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50',
 passed && !isActive && 'opacity-80'
  )}
@@ -104,7 +104,7 @@ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
  )}
  <span
 className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
 isActive
  ? 'bg-accent text-bg-elevated border-accent'
  : passed
@@ -613,7 +613,7 @@ aria-label="מרחק במטרים"
  </div>
  </div>
 
- <div className="surface p-6 rounded-2xl border-2 border-accent/20 flex flex-col items-center justify-center bg-accent/5">
+ <div className="surface p-6 rounded-[4px] border-2 border-accent/20 flex flex-col items-center justify-center bg-accent/5">
  <div className="text-[10px] font-display font-medium text-accent mb-2 uppercase tracking-widest">כמות צמדי צעדים משוערת</div>
  <div className="text-6xl font-display font-bold text-accent tabular-nums mb-2">{paces}</div>
  <div className="text-sm font-bold text-fg">זוגות צעדים</div>
@@ -623,13 +623,13 @@ aria-label="מרחק במטרים"
 
  <div className="mt-8 grid sm:grid-cols-2 gap-4">
  <div className="surface p-4 flex gap-3 items-start">
- <div className="size-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0 font-bold">1</div>
+ <div className="size-8 rounded-[3px] bg-accent/10 flex items-center justify-center text-accent shrink-0 font-bold">1</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  <strong className="text-fg">מדידה מראש:</strong> כל אחד צועד קצת אחרת. תמדדו כמה צעדים כפולים לוקח לכם לעבור 100 מטרים במישור.
  </p>
  </div>
  <div className="surface p-4 flex gap-3 items-start">
- <div className="size-8 rounded-lg bg-status-warn/10 flex items-center justify-center text-status-warn shrink-0 font-bold">!</div>
+ <div className="size-8 rounded-[3px] bg-status-warn/10 flex items-center justify-center text-status-warn shrink-0 font-bold">!</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  <strong className="text-fg">פקטור שטח:</strong> בעלייה הצעד מתקצר (תספרו יותר), בירידה הוא מתארך. נווט מנוסה יודע 'לפצות' על זה בספירה.
  </p>

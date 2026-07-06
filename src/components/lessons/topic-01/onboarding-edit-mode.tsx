@@ -1119,7 +1119,7 @@ function UserContainer({ id }: { id: string }) {
       }}
       style={style}
       className={cn(
-        'relative mt-8 min-h-[140px] rounded-2xl border-2 border-dashed p-4',
+        'relative mt-8 min-h-[140px] rounded-[4px] border-2 border-dashed p-4',
         isSelected ? 'border-accent bg-accent/5' : 'border-accent/40',
       )}
     >
@@ -1446,7 +1446,7 @@ function EditModeToolbar() {
   return (
     <div
       data-edit-toolbar
-      className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:start-4 sm:w-[320px] z-[100] rounded-2xl border-2 border-accent bg-bg-elevated shadow-elevated p-4 max-h-[85vh] overflow-y-auto"
+      className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:start-4 sm:w-[320px] z-[100] rounded-[4px] border-2 border-accent bg-bg-elevated shadow-elevated p-4 max-h-[85vh] overflow-y-auto"
     >
       <div className="flex items-center justify-between mb-3">
         <span className="font-display font-bold text-sm text-accent">🛠 מצב עריכה — פתיחה שיעור 1</span>
@@ -1751,7 +1751,7 @@ function ExportModal({ overrides, onClose }: { overrides: OverridesMap; onClose:
   const [copied, setCopied] = useState(false);
   return (
     <div data-edit-toolbar className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-bg-elevated rounded-2xl p-4 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-bg-elevated rounded-[4px] p-4 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
         <div className="font-display font-bold text-sm mb-2">העתק את הטקסט הבא ושלח לי בצ'אט</div>
         {Object.keys(overrides).length === 0 ? (
           <p className="text-xs text-fg-muted">עדיין אין שינויים שמורים.</p>

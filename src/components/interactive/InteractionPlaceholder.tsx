@@ -87,22 +87,25 @@ const META: Record<
 export function InteractionPlaceholder({ kind }: { kind: InteractionKind }) {
   const m = META[kind];
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <header className="space-y-2">
-        <div className="text-sm font-mono text-accent">תרגול אינטראקטיבי</div>
-        <h2 className="text-2xl font-bold text-balance">{m.title}</h2>
-        <p className="text-fg-muted text-pretty leading-relaxed">{m.description}</p>
+        <p className="section-eyebrow">תרגול אינטראקטיבי</p>
+        <h2 className="font-display text-2xl font-bold tracking-tight text-balance">{m.title}</h2>
+        <p className="max-w-3xl text-fg-muted text-pretty leading-relaxed">{m.description}</p>
       </header>
 
-      <div className="surface-elevated relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid-pattern bg-grid opacity-20" />
-        <div className="relative aspect-[16/9] flex flex-col items-center justify-center p-6 text-center">
-          <div className="text-6xl mb-3 opacity-80">{m.preview.split(' ')[0]}</div>
-          <div className="text-fg-muted text-sm max-w-md">
+      {/* placeholder מוצהר — שלא ייקרא כעיצוב סופי (design-system §19) */}
+      <div className="relative overflow-hidden rounded-[4px] border-2 border-dashed border-border-strong bg-bg">
+        <div className="absolute inset-0 topo-bg opacity-30" aria-hidden />
+        <div className="relative flex aspect-[16/9] flex-col items-center justify-center p-6 text-center">
+          <div className="mb-3 text-6xl opacity-80" aria-hidden>
+            {m.preview.split(' ')[0]}
+          </div>
+          <div className="max-w-md text-sm text-fg-muted">
             {m.preview.split(' ').slice(1).join(' ')}
           </div>
-          <div className="mt-6 chip border-accent/40 bg-accent/10 text-accent">
-            רכיב יפותח בעיון לעומק בשיעור
+          <div className="mt-6 chip border-accent/40 bg-accent/10 font-semibold text-accent">
+            הסימולטור בפיתוח — יתווסף לשיעור בגרסה הבאה
           </div>
         </div>
       </div>

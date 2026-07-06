@@ -170,7 +170,7 @@ title = {
           colour, divider — so they read as a matched pair. */}
       <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
         {/* Card A — concept */}
-        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+        <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             עיקרון מנחה
@@ -184,7 +184,7 @@ title = {
         </div>
 
         {/* Card B — vulnerability */}
-        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+        <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             נקודת התורפה
@@ -215,7 +215,7 @@ title = {
                 key={c.id}
                 onClick={() => toggleBlock(c.id)}
                 className={cn(
-                  'group rounded-xl border p-3 text-right transition-all flex items-center gap-3 cursor-pointer',
+                  'group rounded-[3px] border p-3 text-right transition-all flex items-center gap-3 cursor-pointer',
                   isBlocked
                     ? 'border-status-danger/60 bg-status-danger/8'
                     : 'border-border bg-bg-elevated hover:border-accent/50 hover:bg-accent/[0.04]',
@@ -255,7 +255,7 @@ title = {
         </div>
 
         {/* Map column */}
-        <div className="surface-elevated bg-bg-accent/30 p-4 rounded-2xl overflow-hidden flex flex-col">
+        <div className="surface-elevated bg-bg-accent/30 p-4 rounded-[4px] overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
               <span className="size-1.5 rounded-full bg-accent" aria-hidden />
@@ -302,7 +302,7 @@ title = {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.25 }}
-                    className="w-full rounded-lg border border-status-danger/35 bg-status-danger/5 p-3 text-right"
+                    className="w-full rounded-[3px] border border-status-danger/35 bg-status-danger/5 p-3 text-right"
                   >
                     <div className="flex items-center justify-between gap-3 mb-1">
                       <div className="inline-flex items-center gap-1.5">
@@ -378,7 +378,7 @@ function WorldMap({
   // once that artery is severed anywhere.
   const megaDisrupted = ROUTES[0].cps.some((id) => blocked.has(id));
   return (
-    <div className="relative w-full h-full min-h-[360px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[360px] rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Graticule — a faint sage meridian/parallel grid aligned to the map
             projection, so the board reads as survey paper without competing

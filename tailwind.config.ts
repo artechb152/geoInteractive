@@ -74,6 +74,9 @@ const config: Config = {
         'glow-cool': '0 0 40px -10px rgba(91, 157, 217, 0.4)',
         elevated:
           '0 10px 30px -12px rgba(91, 124, 92, 0.18), 0 4px 10px -4px rgba(91, 124, 92, 0.10)',
+        // "דף על שולחן מפות" — קו דק קשיח + צל רך רחוק (שפת V2)
+        paper:
+          '0 1px 0 rgba(91, 124, 92, 0.10), 0 14px 28px -18px rgba(58, 58, 58, 0.30)',
       },
       backgroundImage: {
         // soft sage grid that reads on the cream page

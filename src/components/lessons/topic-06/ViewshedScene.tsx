@@ -117,7 +117,7 @@ title = {
       {/* Main viewshed map */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Map */}
-        <div className="surface-elevated p-4 rounded-2xl overflow-hidden flex flex-col">
+        <div className="surface-elevated p-4 rounded-[4px] overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מפת שטחים גלויים · {mode === 'single' ? 'תצפיתן אחד' : `${observers.length} תצפיתנים יחד`}
@@ -147,15 +147,15 @@ title = {
         {/* Controls */}
         <div className="space-y-3">
           {/* Mode toggle */}
-          <div className="surface p-4 rounded-xl">
+          <div className="surface p-4 rounded-[3px]">
             <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">סוג הניתוח</div>
-            <div className="flex gap-1 p-1 bg-bg-card border border-border rounded-xl">
+            <div className="flex gap-1 p-1 bg-bg-card border border-border rounded-[3px]">
               {(['single', 'cumulative'] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
                   className={cn(
-                    'flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
+                    'flex-1 px-3 py-2 rounded-[3px] text-xs font-medium transition-colors',
                     mode === m ? 'bg-accent text-bg-elevated' : 'text-fg-muted hover:text-fg'
                   )}
                 >
@@ -171,7 +171,7 @@ title = {
           </div>
 
           {/* Observers list */}
-          <div className="surface p-4 rounded-xl">
+          <div className="surface p-4 rounded-[3px]">
             <div className="flex items-baseline justify-between mb-2">
               <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">רשימת תצפיתנים</div>
               <button
@@ -194,7 +194,7 @@ title = {
                   <div
                     key={i}
                     className={cn(
-                      'flex items-center gap-2 p-2 rounded-lg border transition-all',
+                      'flex items-center gap-2 p-2 rounded-[3px] border transition-all',
                       isSelected
                         ? 'border-accent bg-accent/5'
                         : 'border-border hover:border-border-strong'
@@ -235,7 +235,7 @@ title = {
             </div>
           </div>
 
-          <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
+          <div className="surface p-3 rounded-[3px] text-xs text-fg-muted bg-bg-accent/30 border border-border">
             <strong className="text-fg block mb-1">אתגר:</strong>
             עברו למצב <em>שילוב תצפיתנים</em>, ונסו למקם 3 תצפיתנים על המפה כך שכמעט ולא יישארו אזורים אדומים.
             (ספוילר: זו בדיוק העבודה של קציני איסוף שמתכננים איפה להציב מצלמות על קו הגבול!)

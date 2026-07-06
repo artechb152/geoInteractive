@@ -38,19 +38,16 @@ export function PrototypesShowcase() {
   return (
     <section
       id="prototypes"
-      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 border-t border-border-subtle"
+      className="mx-auto w-full max-w-[1400px] scroll-mt-[calc(var(--header-h)+1rem)] px-4 sm:px-6 lg:px-8 py-14 md:py-20 border-t border-border-subtle"
       aria-labelledby="prototypes-heading"
     >
-      <div className="mb-10 md:mb-12">
-        <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent mb-2.5">
-          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
-          פרוטוטיפים · בדיקת היתכנות
-        </div>
+      <div className="mb-8 md:mb-10">
+        <p className="section-eyebrow">פרוטוטיפים · בדיקת היתכנות</p>
         <h2
           id="prototypes-heading"
-          className="font-display font-bold text-2xl md:text-4xl text-balance leading-tight"
+          className="mt-1.5 font-display font-bold text-2xl md:text-4xl text-balance leading-tight"
         >
-          שני <span className="text-accent-hover">פרוטוטייפים ראשוניים</span> לבדיקה
+          שני פרוטוטייפים ראשוניים לבדיקה
         </h2>
       </div>
 
@@ -65,7 +62,7 @@ export function PrototypesShowcase() {
               <span className="size-1.5 rounded-full bg-accent" aria-hidden />
               {p.tagline}
             </div>
-            <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-3 text-accent-hover">
+            <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-3 text-fg group-hover:text-brand-dark transition-colors">
               {p.title}
             </h3>
             <p className="text-sm md:text-base text-fg leading-relaxed text-pretty mb-5">

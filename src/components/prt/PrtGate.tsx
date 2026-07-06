@@ -57,7 +57,7 @@ export function PrtGate({ children }: { children: React.ReactNode }) {
 
   if (phase === 'loading') {
     return (
-      <div className="min-h-[calc(100vh-3rem)] grid place-items-center bg-bg">
+      <div className="min-h-[calc(100vh-var(--header-h))] grid place-items-center bg-bg">
         <div className="size-6 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
       </div>
     );
@@ -97,7 +97,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   }
 
   return (
-    <div className="min-h-[calc(100vh-3rem)] grid place-items-center bg-bg topo-bg px-4 py-12">
+    <div className="min-h-[calc(100vh-var(--header-h))] grid place-items-center bg-bg topo-bg px-4 py-12">
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

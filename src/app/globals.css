@@ -2,9 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * שפת V2 — "שולחן מפות מבצעי" (Modern Military Map · Light Tactical).
+ * חתימות ויזואליות:
+ *   - פלטות אוקטגון (פינות קטומות) לכל אלמנט אינטראקטיבי.
+ *   - פאנלים חדים (radius 2-3px) עם מסגרות מרווה במקום עיגול רך.
+ *   - סוגריים-מסגרת (corner brackets) על לוחות מרכזיים.
+ *   - נקודות ציון (waypoints) מעוינות וקווי ציר מקווקווים.
+ *   - פסי פיקוד במרווה כהה — נקודתית, לא כרקע ראשי.
+ */
+
 @layer base {
   :root {
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    /* גובה ה-AppHeader הגלובלי — פס פיקוד עליון + שורת מותג. */
+    --header-h: 3.5rem;
+    /* עומק הקטימה של פלטות אוקטגון */
+    --notch: 0.55rem;
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --header-h: 5rem;
+    }
   }
 
   html {
@@ -32,21 +52,66 @@
 }
 
 @layer components {
+  /* ── פלטת אוקטגון — פינות קטומות בארבע הפינות ─────────────── */
+  .oct {
+    clip-path: polygon(
+      var(--notch) 0,
+      calc(100% - var(--notch)) 0,
+      100% var(--notch),
+      100% calc(100% - var(--notch)),
+      calc(100% - var(--notch)) 100%,
+      var(--notch) 100%,
+      0 calc(100% - var(--notch)),
+      0 var(--notch)
+    );
+  }
+
+  .oct-sm {
+    clip-path: polygon(
+      0.3rem 0,
+      calc(100% - 0.3rem) 0,
+      100% 0.3rem,
+      100% calc(100% - 0.3rem),
+      calc(100% - 0.3rem) 100%,
+      0.3rem 100%,
+      0 calc(100% - 0.3rem),
+      0 0.3rem
+    );
+  }
+
+  /* ── לשונית תיקייה (folder tab) — טרפז קטום למעלה ─────────── */
+  .tab-folder {
+    clip-path: polygon(0.7rem 0, calc(100% - 0.7rem) 0, 100% 100%, 0 100%);
+  }
+
+  /* ── משטחים — נשמרים בשמות הישנים כי סצנות קיימות משתמשות בהם,
+        אבל הביטוי חדש: חד, מסגרת מרווה, צל נייר ───────────────── */
   .surface {
-    @apply bg-bg-card border border-border rounded-2xl;
+    @apply bg-bg-card border border-brand-dark/20 rounded-[3px];
   }
 
   .surface-elevated {
-    @apply bg-bg-elevated border border-border rounded-2xl shadow-elevated;
+    @apply bg-bg-elevated border border-brand-dark/25 rounded-[3px] shadow-paper;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border tracking-wide;
   }
 
+  /* ── כפתורים ישנים בתוך סצנות — מקבלים את שפת הפלטה ─────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-display font-bold
            transition-all duration-200 ease-snap select-none;
+    clip-path: polygon(
+      var(--notch) 0,
+      calc(100% - var(--notch)) 0,
+      100% var(--notch),
+      100% calc(100% - var(--notch)),
+      calc(100% - var(--notch)) 100%,
+      var(--notch) 100%,
+      0 calc(100% - var(--notch)),
+      0 var(--notch)
+    );
   }
 
   .btn-primary {
@@ -54,23 +119,45 @@
   }
 
   .btn-secondary {
-    @apply btn bg-accent text-bg-elevated hover:bg-accent-hover active:scale-[0.98];
+    @apply btn bg-bg-accent text-brand-dark hover:bg-brand/15 active:scale-[0.98];
   }
 
   .btn-ghost {
-    @apply btn bg-transparent border border-accent/40 text-accent hover:bg-accent/10;
+    @apply btn bg-transparent font-semibold text-fg-muted hover:bg-bg-accent hover:text-fg;
   }
 
+  /* ── רקע גריד מדידה עדין ─────────────────────────────────── */
   .topo-bg {
     @apply bg-grid-pattern bg-grid;
   }
 
-  /* `gradient-text` is kept as a class for backwards compatibility with
-     existing headlines. It resolves to the darkest orange — h1 picks it
-     up naturally; lighter hierarchy for h2/h3 is set on those elements
-     themselves via `text-accent-hover` / `text-accent-deep`. */
+  /* `gradient-text` נשמר לתאימות עם כותרות קיימות — הכתום הכהה. */
   .gradient-text {
     @apply text-accent;
+  }
+
+  /* eyebrow אחיד — מרווה כהה, uppercase, tracking רחב (V2). */
+  .section-eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-display font-bold tracking-[0.22em] uppercase text-brand-dark;
+  }
+  .section-eyebrow::before {
+    content: '';
+    @apply inline-block size-1.5 rotate-45 bg-accent;
+  }
+
+  /* ── שורת מטא עם מוביל נקודות (dossier) ──────────────────── */
+  .dotted-leader {
+    @apply flex items-baseline gap-2 text-sm;
+  }
+  .dotted-leader::after {
+    content: '';
+    @apply order-2 flex-1 border-b border-dotted border-brand-dark/30 translate-y-[-3px];
+  }
+
+  /* ── מספר-מתאר ענק — ספרות שקופות עם קו מתאר מרווה ───────── */
+  .outline-numeral {
+    @apply font-display font-extrabold text-transparent select-none;
+    -webkit-text-stroke: 2px rgba(91, 124, 92, 0.28);
   }
 }
 

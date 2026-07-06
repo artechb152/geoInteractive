@@ -146,7 +146,7 @@ className="w-full p-4 text-right flex items-center gap-3"
  >
  <span
 className={cn(
- 'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
+ 'size-9 rounded-[3px] flex items-center justify-center shrink-0 transition-all',
 isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  )}
  >
@@ -237,14 +237,14 @@ className="overflow-hidden"
      stays fully visible while the long accordion is read: balance
      without a forced fixed height. */}
  <div className="lg:sticky lg:top-24 self-start">
- <div className="relative overflow-hidden rounded-2xl border border-border shadow-elevated bg-bg-elevated topo-bg flex flex-col lg:h-[calc(100vh-7rem)]">
+ <div className="relative overflow-hidden rounded-[4px] border border-border shadow-elevated bg-bg-elevated topo-bg flex flex-col lg:h-[calc(100vh-7rem)]">
  {/* Warm terrain wash framing the board top → bottom */}
  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-bg-accent/50 via-transparent to-brand/5" />
 
  {/* Board header — updates with the active technique */}
  <div className="relative flex items-center justify-between gap-3 px-5 pt-5 pb-3">
  <div className="flex items-center gap-2.5 min-w-0">
- <span className="size-9 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
+ <span className="size-9 rounded-[3px] bg-accent/15 text-accent flex items-center justify-center shrink-0">
  <Icon name="spark" size={18} />
  </span>
  <div className="min-w-0">

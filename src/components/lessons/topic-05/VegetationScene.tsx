@@ -157,7 +157,7 @@ title = {
               type="button"
               onClick={() => setActive(v.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden',
+                'surface p-4 text-right transition-all rounded-[3px] flex flex-col gap-3 relative overflow-hidden',
                 isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
@@ -171,7 +171,7 @@ title = {
               <div className="flex items-start gap-3">
                 <span
                   className={cn(
-                    'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+                    'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
                     isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
                   )}
                 >
@@ -242,7 +242,7 @@ title = {
               type="button"
               onClick={() => setActiveAg(a.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl relative overflow-hidden',
+                'surface p-4 text-right transition-all rounded-[3px] relative overflow-hidden',
                 isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
@@ -255,7 +255,7 @@ title = {
               <div className="flex items-start gap-3 mb-2">
                 <span
                   className={cn(
-                    'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                    'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
                     isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
                   )}
                 >
@@ -334,7 +334,7 @@ function VegSilhouette({ density }: { density: number }) {
 
   return (
     <div className="aspect-[2/1] relative w-full">
-      <svg viewBox="0 0 100 50" className="w-full h-full rounded-lg">
+      <svg viewBox="0 0 100 50" className="w-full h-full rounded-[3px]">
         <rect x="0" y="0" width="100" height="50" className="fill-bg-accent" />
         {/* Ground line */}
         <line x1="0" y1="42" x2="100" y2="42" className="stroke-border-strong" strokeWidth="0.3" opacity="0.4" />

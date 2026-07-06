@@ -73,7 +73,7 @@ intro='בשדה הקרב, לכל פיסת אדמה יש"תג מחיר" צבאי.
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
- <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <article className="surface-elevated p-5 sm:p-6 rounded-[4px]">
  <div className="flex items-center gap-2 mb-3">
  <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
  <span className="text-sm font-display font-semibold text-accent tracking-wider">למה צריך 3 קטגוריות?</span>
@@ -83,7 +83,7 @@ intro='בשדה הקרב, לכל פיסת אדמה יש"תג מחיר" צבאי.
  צבא חכם לא שומר על כל פיסת אדמה באותה מידה. אם נשמור על הכל — לא נשמור על כלום. הקטגוריות מאפשרות להחליט מראש איפה לרכז משאבים ואיפה מותר להתפשר.
  </p>
  </article>
- <article className="surface-elevated p-5 sm:p-6 rounded-2xl">
+ <article className="surface-elevated p-5 sm:p-6 rounded-[4px]">
  <div className="flex items-center gap-2 mb-3">
  <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
  <span className="text-sm font-display font-semibold text-accent tracking-wider">איך מחליטים?</span>
@@ -119,7 +119,7 @@ isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:
  <div className="relative flex items-start gap-3 mb-3">
  <span
  className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
  isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
  )}
  >

@@ -40,3 +40,7 @@ qa-output/
 /card-*.png
 /qa-verify-*.png
 /mobile-*.png
+
+# QA screenshots (session artifacts)
+.playwright-mcp/
+qa-*.png

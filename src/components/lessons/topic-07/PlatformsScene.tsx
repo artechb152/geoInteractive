@@ -126,7 +126,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המושג
@@ -138,7 +138,7 @@ title = {
             קו הגובה שבו מתחילים להופיע עננים שמסתירים את הקרקע. מתחת לקו הזה רואים את המטרות, מעליו רואים שמיים ותו לא — לכן הוא <strong className="text-fg">קובע אילו כלי טיס בכלל יכולים לעבוד באותו יום</strong>.
           </p>
         </div>
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             הדילמה
@@ -154,7 +154,7 @@ title = {
 
       {/* Main visualization */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-start mb-12">
-        <div className="surface-elevated p-4 rounded-2xl">
+        <div className="surface-elevated p-4 rounded-[4px]">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div>
               <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase">Altitude Profile</div>
@@ -179,7 +179,7 @@ title = {
 
         {/* Controls */}
         <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-2xl">
+          <div className="surface-elevated p-5 rounded-[4px]">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               גובה תקרת ענן
             </div>
@@ -221,7 +221,7 @@ title = {
           </div>
 
           {/* Legend — colour = threat status of each platform */}
-          <div className="surface p-4 rounded-xl border border-border">
+          <div className="surface p-4 rounded-[3px] border border-border">
             <div className="text-[11px] font-display font-semibold text-fg-muted tracking-[0.15em] uppercase mb-2.5">מקרא · מצב הפלטפורמה</div>
             <ul className="space-y-2 text-xs">
               <li className="flex items-center gap-2.5">
@@ -239,7 +239,7 @@ title = {
             </ul>
           </div>
 
-          <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
+          <div className="surface p-3 rounded-[3px] text-xs text-fg-muted bg-bg-accent/30 border border-border">
             <strong className="text-fg block mb-1">תנסו בעצמכם:</strong>
             הורידו את תקרת העננים ל-1,500 מטרים (מצב טיפוסי לחורף בישראל). שימו לב כמה כלי טיס מוגנים נשארים מעל העננים, וכמה מהם נאלצים לצלול פנימה כדי לראות משהו – ובכך להפוך למטרה קלה לאויב.
           </div>
@@ -263,7 +263,7 @@ title = {
               type="button"
               onClick={() => setScenario(sc.id as typeof scenario)}
               className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2.5 relative overflow-hidden',
+                'surface p-3 text-right transition-all rounded-[3px] flex items-center gap-2.5 relative overflow-hidden',
                 isActive
                   ? 'border-accent bg-bg-elevated'
                   : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -277,7 +277,7 @@ title = {
               )}
               <span
                 className={cn(
-                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                   isActive
                     ? 'bg-accent text-bg-elevated border-accent'
                     : 'bg-bg-accent text-fg-muted border-border'
@@ -305,7 +305,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.2 }}
-          className="surface-elevated p-5 rounded-2xl"
+          className="surface-elevated p-5 rounded-[4px]"
         >
           <p className="text-sm text-fg-muted leading-relaxed mb-4">{recommendations[scenario].rationale}</p>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -315,7 +315,7 @@ title = {
                 <div
                   key={p.id}
                   className={cn(
-                    'surface p-3 rounded-xl flex items-start gap-3 transition-all',
+                    'surface p-3 rounded-[3px] flex items-start gap-3 transition-all',
                     isRecommended
                       ? 'border-status-ok/50 bg-status-ok/5'
                       : 'opacity-50'
@@ -390,7 +390,7 @@ function AltitudeMap({ ceiling, platforms }: { ceiling: number; platforms: Platf
   };
 
   return (
-    <div className="aspect-[4/5] relative rounded-2xl overflow-hidden ring-1 ring-black/5">
+    <div className="aspect-[4/5] relative rounded-[4px] overflow-hidden ring-1 ring-black/5">
       <svg viewBox="0 0 100 125" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         <defs>
           <filter id="cloudBlur7" x="-20%" y="-20%" width="140%" height="140%">

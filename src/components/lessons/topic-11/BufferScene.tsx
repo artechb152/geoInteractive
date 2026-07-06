@@ -141,7 +141,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-6 rounded-2xl">
+        <div className="surface-elevated p-6 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             הגדרת היסוד
@@ -153,7 +153,7 @@ title = {
             שטח "נקי" מצבא (מפורז) או דליל מאוד בכוחות, שמפריד בין שתי מדינות עוינות. המטרה שלו כפולה: <strong className="text-fg">למנוע חיכוך יומיומי</strong>, ו<strong className="text-fg">לקלוט את המכה הראשונה</strong> במקרה של פלישה כדי לתת התרעה מוקדמת.
           </p>
         </div>
-        <div className="surface-elevated p-6 rounded-2xl">
+        <div className="surface-elevated p-6 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             כשאין שטח
@@ -199,7 +199,7 @@ title = {
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isActive
                         ? 'bg-brand-dark text-bg-elevated border-brand-dark'
                         : 'bg-bg-accent text-fg-muted border-border',
@@ -248,7 +248,7 @@ title = {
         </Accordion>
 
         {/* Left (RTL): cumulative buffer visualisation */}
-        <div className="surface-elevated bg-bg-accent/30 rounded-2xl p-4 overflow-hidden flex flex-col">
+        <div className="surface-elevated bg-bg-accent/30 rounded-[4px] p-4 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
               <span className="size-1.5 rounded-full bg-accent" aria-hidden />
@@ -279,7 +279,7 @@ title = {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.08 }}
-            className="surface p-5 rounded-xl"
+            className="surface p-5 rounded-[3px]"
           >
             <div className="mb-3">
               <div className="font-display font-bold leading-tight">{e.name}</div>
@@ -287,18 +287,18 @@ title = {
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
-              <div className="surface p-2 rounded-lg">
+              <div className="surface p-2 rounded-[3px]">
                 <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">רוחב</div>
                 <div className="font-display font-bold text-sm text-accent">{e.width}</div>
               </div>
-              <div className="surface p-2 rounded-lg">
+              <div className="surface p-2 rounded-[3px]">
                 <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">אורך</div>
                 <div className="font-display font-bold text-sm text-accent">{e.length}</div>
               </div>
             </div>
 
             <p className="text-sm text-fg-muted leading-relaxed mb-3">{e.desc}</p>
-            <div className="text-sm text-fg bg-bg-accent/40 rounded-lg p-3 leading-relaxed">
+            <div className="text-sm text-fg bg-bg-accent/40 rounded-[3px] p-3 leading-relaxed">
               <strong className="text-fg block mb-1 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted">
                 תוצאה
               </strong>
@@ -313,7 +313,7 @@ title = {
 
 function BufferViz({ activeLayers }: { activeLayers: Set<Layer> }) {
   return (
-    <div className="relative w-full h-full min-h-[360px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[360px] rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Enemy territory (left) */}
         <rect x="0" y="0" width="20" height="56" className="fill-status-danger/10" />

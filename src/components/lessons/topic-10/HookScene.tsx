@@ -46,7 +46,7 @@ export function HookScene() {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('learn:next'))}
-            className="group inline-flex items-center gap-3 px-7 py-3.5 rounded-xl bg-accent text-bg-elevated font-display font-semibold text-base hover:bg-accent-hover transition-all duration-200"
+            className="group inline-flex items-center gap-3 px-7 py-3.5 rounded-[3px] bg-accent text-bg-elevated font-display font-semibold text-base hover:bg-accent-hover transition-all duration-200"
             aria-label="התחל את השיעור"
           >
             <span>לחץ כדי להתחיל</span>

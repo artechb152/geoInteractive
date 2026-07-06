@@ -82,7 +82,7 @@ title = {
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
- <div className="surface-elevated p-5 rounded-2xl">
+ <div className="surface-elevated p-5 rounded-[4px]">
  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  מושג מפתח
@@ -94,7 +94,7 @@ title = {
  הקו הדמיוני והישר שמחבר בין התצפיתן (או המצלמה) לבין המטרה. אם הוא נחתך באמצע על-ידי הר (תבליט) או בניין (תכסית) — אומרים ש<strong className="text-fg">"שברנו את ה-LOS"</strong> והמטרה מוסתרת.
  </p>
  </div>
- <div className="surface-elevated p-5 rounded-2xl">
+ <div className="surface-elevated p-5 rounded-[4px]">
  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  הרגע הקריטי
@@ -111,7 +111,7 @@ title = {
  {/* Main interactive */}
  <div className="grid lg:grid-cols-[1.6fr_1fr] gap-6 items-stretch mb-12">
  {/* Visualization */}
- <div className="surface-elevated p-4 rounded-2xl overflow-hidden flex flex-col">
+ <div className="surface-elevated p-4 rounded-[4px] overflow-hidden flex flex-col">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-2">
  תצוגה צדדית · הזיזו את הפרמטרים מימין
  </div>
@@ -140,7 +140,7 @@ title = {
  exit={{ opacity: 0, y: -6 }}
  transition={{ duration: 0.2 }}
  className={cn(
- 'rounded-xl border-2 p-4',
+ 'rounded-[3px] border-2 p-4',
  isBlocked
  ? 'border-status-danger/50 bg-status-danger/5'
  : 'border-status-ok/50 bg-status-ok/5'
@@ -168,7 +168,7 @@ title = {
  </AnimatePresence>
 
  {/* Sliders */}
- <div className="surface p-4 rounded-xl space-y-3">
+ <div className="surface p-4 rounded-[3px] space-y-3">
  <Slider
  label="גובה התצפיתן"
  hint="גובה העין מעל הקרקע"
@@ -207,7 +207,7 @@ title = {
  />
  </div>
 
- <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
+ <div className="surface p-3 rounded-[3px] text-xs text-fg-muted bg-bg-accent/30 border border-border">
  <strong className="text-fg block mb-1">טיפ:</strong>
  שחקו עם גובה ההר או הגביהו את התצפיתן — שימו לב איך"קו הנראות ההדדית" זז ופתאום חושף את המטרה.
  </div>
@@ -224,7 +224,7 @@ title = {
  initial={{ opacity: 0, y: 12 }}
  whileInView={{ opacity: 1, y: 0 }}
  viewport={{ once: true, amount: 0.3 }}
- className={cn('surface-elevated p-5 rounded-2xl border-r-4', b.bg, b.border.replace('border-', 'border-r-'))}
+ className={cn('surface-elevated p-5 rounded-[4px] border-r-4', b.bg, b.border.replace('border-', 'border-r-'))}
  >
  <div className="flex items-center gap-3 mb-3">
  <Icon name={b.id === 'terrain' ? 'mountain' : 'layers'} size={32} className={cn('shrink-0', b.color)} />
@@ -234,7 +234,7 @@ title = {
  </div>
  </div>
  <p className="text-sm text-fg leading-relaxed mb-3">{b.desc}</p>
- <div className="text-xs text-fg-muted bg-bg-accent/40 border border-border rounded-lg p-3 leading-relaxed">
+ <div className="text-xs text-fg-muted bg-bg-accent/40 border border-border rounded-[3px] p-3 leading-relaxed">
  <strong className="text-fg block mb-1">דוגמה מבצעית:</strong>
  {b.example}
  </div>
@@ -243,7 +243,7 @@ title = {
  </div>
 
  {/* Intervisibility line callout */}
- <div className="surface-elevated p-6 rounded-2xl">
+ <div className="surface-elevated p-6 rounded-[4px]">
  <div className="flex gap-4 items-start">
  <Icon name="bolt" size={32} className="text-accent shrink-0" />
  <div className="flex-1">
