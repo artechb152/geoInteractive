@@ -14,6 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { OnboardingEditProvider, EditableBlock, EditableFrame } from './onboarding-edit-mode';
 
 export type Feature = 'flat' | 'mountain' | 'river' | 'narrow';
 
@@ -123,6 +124,8 @@ export function OnboardingScene() {
 
   return (
     <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <OnboardingEditProvider>
+      <EditableBlock id="title-intro" label="כותרת + טקסט פתיחה">
       <SceneHeader
         step="01.0"
         eyebrow="לפני שמתחילים"
@@ -133,6 +136,7 @@ title={
         }
                 intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר,  נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
       />
+      </EditableBlock>
 
       <div className="grid lg:grid-cols-[2fr_3fr] gap-5 md:gap-6">
         {/* Control panel — first child → RIGHT in RTL (text on right).
@@ -141,7 +145,11 @@ title={
             map board, echoing how a route-data panel sits beside a
             map table. Rows are separated by hairline dividers instead
             of individual borders. */}
-        <div className="rounded-3xl border border-border bg-bg-elevated shadow-elevated p-2 sm:p-3 h-full">
+        <EditableBlock
+          id="accordion-panel"
+          label="פאנל האקורדיון"
+          className="rounded-3xl border border-border bg-bg-elevated shadow-elevated p-2 sm:p-3 h-full"
+        >
           <Accordion
             type="single"
             collapsible
@@ -210,7 +218,7 @@ title={
               );
             })}
           </Accordion>
-        </div>
+        </EditableBlock>
 
         {/* Visualization — second child → LEFT in RTL.
             Raised operational map table: warm-tinted surface, faint
@@ -223,33 +231,40 @@ title={
             race during viewport resizes — the terrain and its Html
             labels would render at a stale, too-small scale and never
             self-correct. Single-div nesting matches the original,
-            known-stable structure. */}
+            known-stable structure. EditableFrame (not EditableBlock)
+            for the same reason: it must not add a wrapper div. */}
+        <EditableFrame id="visual-frame" label="לוח תלת-ממדי">
         <div className="relative rounded-[28px] border border-border bg-bg-accent/30 topo-bg shadow-elevated overflow-hidden h-full min-h-[320px] p-3 sm:p-4">
           <TerrainStage feature={step} />
         </div>
+        </EditableFrame>
       </div>
 
       <SoftDivider text="ועכשיו 4 סיפורים אמיתיים מההיסטוריה" />
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
         {HISTORICAL.map((h, i) => (
-          <IntelCard
-            key={h.headline}
-            place={h.place}
-            headline={h.headline}
-            lesson={h.lesson}
-            icon={h.icon}
-            accent={h.accent}
-            variant="elevated"
-          />
+          <EditableBlock key={h.headline} id={`history-card-${i}`} label={`כרטיס היסטורי ${i + 1}`}>
+            <IntelCard
+              place={h.place}
+              headline={h.headline}
+              lesson={h.lesson}
+              icon={h.icon}
+              accent={h.accent}
+              variant="elevated"
+            />
+          </EditableBlock>
         ))}
       </div>
 
+      <EditableBlock id="ready-callout" label="תיבת סיכום">
       <ReadyCallout title="עכשיו אתם מוכנים">
         <p>הבנתם את ההיגיון? מעולה. כל מה שראיתם עכשיו מבוסס על אינסטינקט בריא. בצבא, לאינסטינקטים האלה יש שמות, חוקים והגדרות. עכשיו ניקח את ההיגיון שלכם ונתרגם אותו לשפה שבה גנרלים מתכננים מלחמות. נתחיל מהבסיס: שלוש הרמות של המלחמה
             <strong className="text-fg"> שלוש הרמות שבהן צבא חושב על מלחמה</strong>.</p>
       </ReadyCallout>
+      </EditableBlock>
 
+    </OnboardingEditProvider>
     </section>
   );
 }
