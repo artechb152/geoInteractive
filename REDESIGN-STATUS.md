@@ -1,8 +1,11 @@
 # REDESIGN-STATUS.md — סטטוס ה-Redesign המלא (V2)
 
 > קובץ המשך-עבודה. אם הסשן נקטע — ממשיכים מכאן, מכל מחשב.
-> עודכן לאחרונה: 2026-07-06, עצירה יזומה (קרדיטים) אחרי: V2 מיושם על כל המסכים,
-> build ירוק, כל 25 נכסי Magnific בדיסק. **מה שנשאר: בעיקר QA ויזואלי וליטוש.**
+> עודכן לאחרונה: 2026-07-06 — **QA ויזואלי מלא הושלם**: 25/25 נכסים נבדקו ואושרו,
+> QA דסקטופ+מובייל (בית/סילבוס/overview/מעטפת שיעור/Quiz) עבר, פאנל reviewers
+> מקצועי (RTL/frontend/cartographic) רץ על קבצי V2, ונמצא ותוקן **באג קריטי אחד**
+> (ראו סעיף 4א). `npm run build` ירוק אחרי התיקונים. **~98% מהעבודה גמור** —
+> נשאר רק ליטושים אופציונליים (סעיף 4ב) ודוח סיכום ללקוח.
 >
 > **המשך מהמחשב האחר:** `git clone https://github.com/artechb152/geoInteractive.git`
 > → `npm install` → `npm run dev` → http://localhost:3000 — ואז סעיף 4 למטה.
@@ -76,86 +79,65 @@ Redesign גמור לכל האתר לפי `project-knowledge/lesson-shell-design-
 - מודל: **Google Nano Banana Pro** (`imagen-nano-banana-2`), עם style-reference לתמונת
   ה-hero הראשונה לאחידות. עלות ~75 קרדיטים/תמונה, נשארו ~385K קרדיטים ב-Magnific.
 - מיפוי creation-id→קובץ שמור ב-scratchpad (`asset-map.txt`) — לא קריטי, הקבצים כבר בדיסק.
-- **טרם נבדק ויזואלית שכל 24 החדשים תואמים סגנון** (נבדקו רק 2 הראשונים). לבדוק ב-QA;
-  אם נכס חורג (טקסט/צבע זר) — להפיק מחדש באותו פרומפט מ-`project-knowledge/magnific_prompts_style_short_no_transparent_bg.md`.
+- **כל 25 הנכסים נבדקו חזותית אחד-אחד ואושרו** (§4א) — כולם עקביים בסגנון, אין צורך
+  בהפקה מחדש.
 
-## 4. מה נשאר לעשות ⬜ (לפי סדר)
+## 4א. QA מלא + באג קריטי שנמצא ותוקן (2026-07-06)
 
-> **עדכון אחרון לפני עצירה:** סעיפים 1–5 שלמטה **בוצעו במלואם** — דף בית V2 (נכס hero
-> אמיתי בתוך מסגרת גיליון-מפה + פס מקרא מרווה; קוד הדיורמה התלת-ממדית נשאר ב-Hero.tsx
-> כ-`export function TerrainDiorama` לא-בשימוש, לא למחוק), כרטיסי דוסייה בסילבוס
-> (מספר-מתאר, dotted-leader, פס "פתח תדריך"), כל רכיבי מעטפת השיעור V2 (LessonHero עם
-> מספר-מתאר ענק, StatsBar דוסייה, טאבי-תיקייה `.tab-folder`, TOC waypoints מעוינים,
-> SceneCard עם FrameCorners, SceneNavigation מעוינים, UtilityBar פס-פיקוד מרווה-כהה,
-> SceneHeader חותמת "נקודת ציון"), Overview כתדריך, ו-sed חידוד פינות על כל הסצנות
-> (rounded-2xl→[4px] וכו' בכל src/components/lessons + interactive + recap-demos).
-> **`npx tsc --noEmit` נקי ו-`npm run build` ירוק אחרי כל אלה.**
->
-> **QA ויזואלי שבוצע חלקית:** צילום דסקטופ של דף הבית אימת שהשפה החדשה חיה
-> (פס פיקוד, מספור ניווט, מסגרות, TopoField). נכס ה-hero אומת שמוגש (HTTP 200)
-> — בצילום נראה placeholder רק כי הצילום קדם לטעינת התמונה (1.1MB, loading=lazy).
-> **כל שאר ה-QA טרם בוצע** — ראו רשימה למטה.
+**הבאג:** `IsometricAsset.tsx` הסתמך אך ורק על אירוע `onLoad` של ה-`<img>` כדי לעבור
+מ-`status: 'pending'` (מציג placeholder רועש מג'נטה) ל-`'ready'`. לתמונות שנטענות
+מהר מספיק (בתצוגה הראשונית, מהמטמון) — ה-load event כבר קורה לפני ש-React מספיק
+לחבר את המאזין, והוא מוחמץ **לצמיתות**. תוצאה: **דף הבית וכל 12 כרטיסי הסילבוס
+הציגו placeholder מג'נטה "PLACEHOLDER" במקום הנכסים האמיתיים**, למרות שה-network
+מחזיר 200 ו-`img.complete`/`naturalWidth` תקינים. זה נתפס ב-QA-הקודם (§4 הישן) כ"בעיה
+של תזמון הצילום" — בפועל זה היה קבוע, אומת שוב אחרי המתנה וריענון.
 
-### ⬜ נשאר בפועל:
+**התיקון** (`src/components/assets/IsometricAsset.tsx`): נוסף `imgRef` (מחובר ל-`<img>`
+דרך `ref=`), ואפקט שבודק `imgRef.current?.complete && naturalWidth > 0` בכל שינוי `src`
+— כדי לתפוס תמונות שכבר סיימו להיטען לפני שה-effect רץ. `onLoad`/`onError` נשארו
+כרשת ביטחון לתמונות שעדיין בטעינה. אומת חזותית ב-Playwright: כל 25 הנכסים
+(hero + 12×card + 12×hook) עכשיו נטענים ומוצגים נכון בבית ובסילבוס.
 
-1. **QA ויזואלי מלא (Playwright / דפדפן):**
-   - דסקטופ 1440 + מובייל 390: בית, סילבוס (#syllabus), overview של topic-03,
-     שיעור topic-03 — hook, סצנה אמצעית (#scene-planning), recap, טאב תרגול, טאב
-     בדיקת ידע (לענות על Quiz ולוודא נכון/שגוי/רציונל).
-   - לוודא: אין overflow אופקי במובייל; טאבי התיקייה לא נשברים במובייל צר;
-     המספר-המתאר הענק לא מתנגש בכותרות במסכים בינוניים; ה-TOC sticky לא נחתך;
-     hash deep-link עובד; המפות/SVG לא התהפכו; ניגודיות טקסט על פס הפיקוד תקינה.
-   - **לבדוק את 24 הנכסים החדשים אחד-אחד** (נבדקו רק 2): פתח כל overview
-     (/lessons/topic-NN/overview/) וכל כרטיס בסילבוס. נכס עם טקסט/גיבריש/צבע זר —
-     להפיק מחדש (פרומפטים ב-project-knowledge/magnific_prompts_style_short_no_transparent_bg.md,
-     דרך ה-MCP של Magnific, מודל imagen-nano-banana-2, עלות ~75 קרדיטים).
-2. **ליטושים צפויים אחרי QA** (השערות, לאמת מול מסך):
-   - ייתכן שהמספר-המתאר ב-LessonHero/Overview גולש מעל טקסט במסכים צרים — אם כן,
-     להקטין/להסתיר מתחת ל-sm.
-   - כרטיס הנכס ב-LessonCard חותך תמונות 1:1 לחלון 16:9 (מכוון, cover) — לוודא שזה נראה טוב.
-   - divide/מפרידים ב-RTL: המפרידים בסטטס-בר ממומשים ידנית עם border-s — לוודא כיוון.
-3. **אופציונלי (שלב הבא):** רקע hook אטמוספרי — לשלב את `lessonAssets[id].hook`
-   כרקע עדין בסצנות הפתיחה (HookScene) מאחורי הטקסט, opacity נמוך; וכן עמוד recap-demos
-   ו-prt שלא עברו V2 מלא (ירשו חלקית דרך .surface/.btn).
-4. **דוח סיכום ללקוח** לפי הפורמט של §26 במסמך העיצוב.
+**ליטוש נוסף שבוצע:** `LessonTabs.tsx` — ה-prop `layoutIdSuffix` היה מחווט מ-`LessonShell`
+אך לא בשימוש בפועל (הפס הכתום התחלף בקפיצה, לא "זז בעדינות" כפי שדורש §25 של מסמך
+העיצוב). נוסף `motion.span` עם `layoutId` (framer-motion, כבר תלות קיימת בפרויקט,
+בשימוש נרחב בכל סצנות השיעור) + כיבוד `useReducedMotion`. אומת חזותית שהמעבר בין
+טאבים חלק ואין קריסה.
 
-1. **דף בית V2** — `src/components/landing/Hero.tsx`:
-   - להחליף את ויזואל הצד (כיום TerrainDiorama תלת-ממדי) ב-`IsometricAsset` של
-     `home-hero-terrain.png` בתוך פאנל עם `FrameCorners` (את קוד הדיורמה להשאיר בקובץ,
-     לא למחוק — הנחיה §21).
-   - רקע: `TopoField` במקום topo-bg הישן. מספור/פלטות לפי שפת V2. שורת יתרונות
-     כפאנל עם FrameCorners ומעוינים.
-2. **סילבוס V2** — `src/components/LessonCard.tsx` + `landing/LessonsGrid.tsx`:
-   כרטיס דוסייה: מספר-מתאר ענק (.outline-numeral) ברקע, thumb מהנכס האמיתי (1:1),
-   חותמת קושי, מטא עם `.dotted-leader`, פס-פעולה "פתח תדריך".
-3. **מעטפת שיעור V2** — הקבצים כבר קיימים, להחליף ביטוי ויזואלי:
-   - `LessonHero.tsx` — briefing: מספר-מתאר ענק מאחורי הכותרת, breadcrumb כ"מסלול",
-     כרטיס התקדמות כ"כרטיס ציר" עם waypoints.
-   - `LessonStatsBar.tsx` — דוסייה עם `.dotted-leader` במקום גריד עמודות.
-   - `LessonTabs.tsx` — טאבי תיקייה (`.tab-folder`) על קו בסיס מרווה, active עם פס כתום.
-   - `LessonToc.tsx` — ציר waypoints: קו אנכי מקווקו + מעוינים (הושלם=מרווה מלא עם ✓,
-     פעיל=כתום עם טבעת, עתידי=outline) + מספרי mono.
-   - `SceneCard.tsx` — "גיליון מפה": `frame` (FrameCorners) + תווית mono פינתית.
-   - `SceneNavigation.tsx` — פלטות V2 (Button כבר V2 — בעיקר לוודא מראה), מעוינים במרכז.
-   - `LessonUtilityBar.tsx` — פס פיקוד `bg-brand-dark text-bg` + CTA כתום.
-   - `SceneHeader.tsx` — chip חותמת + מעוין, H2 כבד יותר, קו כתום קצר.
-4. **Overview V2** — `src/app/lessons/[topicId]/overview/page.tsx`: מספר-מתאר ענק ב-hero,
-   `TopoField` ברקע, מבנה-השיעור כציר waypoints (לשתף ויזואל עם LessonToc), פאנלים עם frame.
-5. **sed חידוד פינות בסצנות** (reskin זול לכל 60+ הסצנות, בלי לגעת בתוכן):
-   בתוך `src/components/lessons/`, `src/components/interactive/`, `src/components/recap-demos/`:
-   `rounded-4xl→rounded-[6px]`, `rounded-3xl→rounded-[5px]`, `rounded-2xl→rounded-[4px]`,
-   `rounded-xl→rounded-[3px]`, `rounded-lg→rounded-[3px]` (להשאיר `rounded-full` ו-`rounded-md`).
-   זהירות: לא לגעת ב-`src/components/design-approval/` (מוקאפים נעולים).
-6. **חיבור hook assets לסצנות פתיחה** (אופציונלי, §22.5): אפשר להוסיף את
-   `lessonAssets[id].hook` כרקע אטמוספרי ב-HookScene דרך SceneCard flush — לא חובה לשלב ראשון.
-7. **QA** (חובה לפני סיום — §26):
-   - `npx tsc --noEmit` ואז `npm run build`.
-   - dev server קיים ברקע (`npm run dev`, פורט 3000).
-   - Playwright MCP: צילומי דסקטופ 1440 + מובייל 390 של: בית, סילבוס, overview topic-03,
-     שיעור topic-03 (hook, סצנת תכנון ציר, recap), טאב תרגול, טאב בדיקת ידע (לענות על Quiz).
-   - לבדוק: אין overflow אופקי, TOC/Tabs/ניווט עובדים, hash נשמר, מפות לא התהפכו,
-     placeholders בולטים אם נכס חסר, 24 הנכסים החדשים תקינים סגנונית.
-8. **דוח סיכום בעברית** לפי הפורמט בסוף `lesson-shell-design-system.md` §26.
+**QA מלא שבוצע ועבר** (Playwright, דסקטופ 1440 + מובייל 390):
+בית, #syllabus, `/lessons/topic-03/overview/`, מעטפת שיעור topic-03 (hook, deep-link
+ל-`#scene-planning`, מעבר סצנה הבא/הקודם, recap), טאב תרגול (placeholder מוצהר —
+תקין), טאב בדיקת ידע (מולאו 5 תשובות ונשלחו — ✓/✗ ורציונל מוצגים נכון, ציון 4/5,
+"ניסיון נוסף"). אין overflow אופקי במובייל בשום עמוד. Hash deep-link נבדק על טעינה
+אמיתית (לא ניווט same-page) ועובד: נחיתה בטאב "לימוד" בדיוק בסצנה מה-hash. מפות/SVG
+לא התהפכו (compass emblem, מסלול ב-PlanningScene). קונסולת דפדפן נקייה (רק 404
+של favicon.ico, לא רלוונטי).
+
+**פאנל reviewers מקצועי** (rtl-qa-reviewer, frontend-reviewer, cartographic-reviewer)
+רץ על כל קבצי ה-V2 (ui/, lesson/, landing/, overview page). לא נמצאו באגים נוספים
+מלבד מה שתואר למעלה. שאר הממצאים הם הצעות ניקיון/מיזוג-קוד (reuse) ברמת חומרה
+נמוכה-בינונית — ראו §4ב למטה; לא בוצעו כי הם לא באגים ולא נצפו חזותית, וסיכון/תועלת
+לא הצדיק שינוי מבני בשלב זה של המסירה.
+
+`npm run build` ירוק אחרי כל התיקונים (static export, 42 עמודים).
+
+## 4ב. ליטושים אופציונליים לעתיד (לא חוסמים מסירה)
+
+מהפאנל המקצועי — ניקיון קוד/reuse, לא באגים חזותיים מאומתים:
+- כמה מקומות עם markup כמעט-זהה שכדאי למזג לרכיב משותף: כרטיס "שיעור קודם/הבא"
+  (מופיע ב-3 קבצים), "מסגרת נכס + מקרא" (Hero + overview, 2 מקומות), "מספר-מתאר ענק"
+  (3 מקומות עם magic numbers שונים), "קו כותרת + מעוין" (5 מקומות).
+- 5 רכיבי תוכן-סצנה (`InsightCard`, `IntelCard`, `ReadyCallout`, `SceneDivider`,
+  `LessonContent`) עדיין עם `rounded-full`/`rounded-md` מהשפה הישנה — הבדל קטן
+  ולא בולט חזותית מול פינות ה-`rounded-[3px]` של V2 (נבדק בזום), אפשר ליישר בעתיד.
+- `BrandEmblem`/`TopoField` מקודדים hex ישירות ב-SVG במקום טוקני Tailwind — לא משפיע
+  חזותית (הערכים תואמים את הטוקנים הנעולים), רק עניין של "אם הפלטה תשתנה בעתיד".
+- תג קושי "מתקדם" משתמש בגוון accent (כתום) — אותו גוון שה-CTA/מצב-פעיל משתמשים
+  בו. עובד ויזואלית אבל שווה לשקול גוון נפרד להבחנה עיצובית.
+
+אופציונלי נוסף (מ-4 הישן, עדיין לא בוצע כי לא חובה):
+- רקע hook אטמוספרי ב-HookScene (opacity נמוך מאחורי הטקסט) — §22.5.
+- V2 מלא לעמודי `recap-demos`/`prt` (כרגע יורשים חלקית דרך `.surface`/`.btn`).
 
 ## 5. החלטות שהתקבלו (לא לפתוח מחדש בלי סיבה)
 
@@ -185,12 +167,13 @@ npm run build      # חייב לעבור לפני סיום
 
 ## 7. אחוז התקדמות משוער
 
-**~85%** מהעבודה הכוללת:
+**~98%** מהעבודה הכוללת:
 - לוגיקה/מבנה/ניווט/Overview — גמור ועובד (build ירוק). ✅
-- נכסים — גמור (25/25 הופקו דרך MCP של Magnific והורדו ל-public). ✅
+- נכסים — גמור, כל 25/25 הופקו **ונבדקו חזותית אחד-אחד**. ✅
 - תשתית ויזואלית V2 + יישום על כל המסכים (בית, סילבוס, מעטפת, overview, סצנות) — גמור. ✅
-- נשאר (~15%): QA ויזואלי דסקטופ+מובייל, בדיקת 24 הנכסים, תיקוני ליטוש שיעלו מה-QA,
-  ודוח סיכום. הכל מפורט בסעיף 4.
+- QA ויזואלי מלא (דסקטופ+מובייל, Quiz, ניווט, hash) + פאנל reviewers מקצועי — גמור,
+  באג קריטי אחד נמצא ותוקן (§4א). ✅
+- נשאר (~2%): ליטושים אופציונליים לא-חוסמים (§4ב) ודוח סיכום ללקוח (§26 של מסמך העיצוב).
 
 ## 8. נספח — מזהי ההפקות ב-Magnific (לשחזור/הפקה מחדש)
 
@@ -204,3 +187,71 @@ npm run build      # חייב לעבור לפני סיום
 
 סגנון: כל ההפקות עם style-reference ל-aQBCWDOfSh, מודל `imagen-nano-banana-2`,
 פרומפט = פסקת הסגנון הקבועה + Subject מהקובץ בפרויקט-נולדג'.
+
+---
+
+## 9. פיבוט 2026-07-06 (ערב): "Design 1" רך מחליף את שפת ה-V2 הטקטית — לשעת שיעור + topic-03
+
+המשתמש בדק את ה-V2 המתואר למעלה (אוקטגונים, פאנלים חדים, סוגריים-מסגרת,
+מספר-מתאר ענק, פסי פיקוד כהים) מול brief חדש (`lesson-shell-redesign-brief-v2.md`)
+ותמונת רפרנס ("Design 1") — קרם רך, כרטיסים לבנים מוגבהים עם **רדיוס גדול**,
+מסגרות מרווה כמעט בלתי מורגשות, בלי אוקטגונים/סוגריים/פסי פיקוד כהים.
+**הוחלט להחליף** את שפת ה-V2 (לא רק "לתקן פערים") — ראו הודעת המשתמש
+"Replace V2 with true soft Design 1".
+
+**מה בוצע** (scope: מעטפת השיעור + topic-03 בלבד — לא roll-out לכל 12 השיעורים):
+- `globals.css` — `.surface`/`.surface-elevated`/`.chip`/`.btn-*` נכתבו מחדש
+  לרדיוס גדול (`rounded-2xl`), מסגרת `border-brand/15`, `shadow-elevated`.
+  `.oct`/`.oct-sm`/`.tab-folder`/`.outline-numeral`/`.dotted-leader` **נשארו
+  בקובץ בכוונה** (לא נמחקו) — עדיין בשימוש ב-Home/Syllabus/Overview/Prototypes
+  שלא עברו redesign בסבב הזה.
+- `ui/`: `Button`, `SurfaceCard` (prop `frame` נשמר לתאימות לאחור), `ProgressBar`,
+  `StatusChip`, `IconBadge`, `AppHeader` (הוסר פס הפיקוד המרווה-כהה העליון —
+  שורה רכה אחת).
+- `lesson/`: `LessonHero` (צ'יפ רך "שיעור X מתוך Y" במקום מספר-מתאר ענק, נכס
+  Magnific אמיתי בכרטיס `rounded-3xl` — לא placeholder, הקובץ כבר קיים),
+  `LessonStatsBar`, `LessonTabs` (segmented control רך עם רקע נגלל), `LessonToc`
+  (עיגולים ממוספרים במקום מעוינים), `LessonUtilityBar` (בר תחתון לבן/קרם במקום
+  מרווה-כהה), `SceneCard`/`SceneNavigation`/`SceneHeader`.
+- `lessons/topic-03/*` — מעבר מכני של רדיוסים (`rounded-[3px]`→`rounded-xl`,
+  `rounded-[4px]`→`rounded-2xl`) בכל 6 קבצי הסצנה; תוכן/לוגיקה/state לא נגעו.
+- `npx tsc --noEmit` נקי, `npm run build` ירוק (42 עמודים), QA ויזואלי ב-Playwright
+  (דסקטופ 1440 + מובייל 390) על topic-03: hook→onboarding→tabs→quiz, hash
+  deep-link, אין overflow אופקי במובייל.
+
+**לא נגענו** (מחוץ להיקף המפורש של הסבב): Home hero, Syllabus grid, ו-11
+השיעורים האחרים (המעטפת המשותפת שלהם כבר רכה כי היא אותם רכיבים, אבל תוכן
+הסצנות הפנימי שלהם — רדיוסים/hex ישירים — עדיין לא טופל, ראו §10 למטה). אלה
+עדיין ב"מראה V2" ומחכים לגלגול הבא — ראו brief §"Phase 3/4" ואת ה-checklist שם.
+
+### 9א. המשך אותו ערב: Overview page + code review מקצועי
+
+לאחר שהמשתמש בדק וציין ש"זה לא דומה בכלל" — התברר שדף **Lesson Overview**
+(`/lessons/topic-03/overview/`) עדיין נחשב חלק מ"שיעור 3" בעיני המשתמש (הוא ה-
+entry point לפני מעטפת השיעור), למרות שה-brief המקורי שם אותו ב-Phase נפרד.
+עודכן גם הוא לשפת Design 1 המלאה: הוסר מספר-המתאר הענק, מעוינים ב-breadcrumb
+ובמבנה השיעור, סוגריים-מסגרת (FrameCorners) ופס ה-GEO-9900 הכהה מתחת לנכס
+ה-hero; הוחלפו ב-chip רך, שברוני ChevronLeft, ועיגולים ממוספרים — באותה שפה
+בדיוק כמו מעטפת השיעור.
+
+**Workflow של 4 reviewers מקצועיים במקביל** (frontend-tokens, rtl-audit,
+cartographic, residual-v2-scan) רץ על כל 22 הקבצים שהשתנו בסבב הזה, ואחריו
+adversarial-verify (סקפטיקן) על כל ממצא. 24 ממצאים גולמיים → 5 אושרו:
+- hex ישיר בתוך אילוסטרציית ה-SVG של MissionStage (OnboardingScene) שכפל טוקנים
+  קיימים (`terrain.ridge/sand/olive/steel`, `brand`, `brand-dark`) — תוקן ל-
+  className מבוסס-טוקן; **לא** נגעתי בגוונים בודדים שלא תואמים אף טוקן (גוונים
+  ייחודיים לאיור, כמו חום גזע הדקל) כדי לא לסכן את המראה החזותי.
+- אותו דבר ב-PlanningScene (סמני נקודות הציון על המפה, קווי המסלול, כלי המפה) —
+  תוקן באותה זהירות, השאיר `#d4842f` ו-`#cdba90` (אין להם טוקן תואם).
+- `rounded-l-full` (פיזי) במקום `rounded-e-full` (לוגי) על פס-האקטיב, משוכפל
+  זהה ב-4 קבצי סצנה — תוקן בכולם (ללא השפעה חזותית בפועל כי האתר תמיד RTL, אבל
+  תיקון נכון לתחזוקה).
+- `font-bold font-bold` (typo כפול) ב-5 מקומות ב-OnboardingScene — תוקן.
+- (לא תוקן, severity בינונית, מוצהר כ-cleanup עתידי): כפילות ה-idiom של "halo
+  לבן סביב תווית מפה" (`paintOrder="stroke" stroke="#ffffff"...`) שחוזר 30+
+  פעמים ב-4 קבצים עם אי-עקביות קלה בין `#ffffff` ל-`#FFFBF7` — ראוי ל-component
+  משותף `<MapLabel>` בעתיד, לא בוצע כי אין באג חזותי וזה סיכון עריכה גבוה מול
+  ערך נמוך בשלב הזה.
+
+כל תיקון אומת חזותית ב-Playwright (ללא שינוי פיקסלים באיורים) + `tsc --noEmit`
++ `npm run build` ירוקים לפני ה-commit.

@@ -1,16 +1,16 @@
 'use client';
 
 /**
- * LessonToc V2 — "ציר הלמידה" (design-system §12, שפת V2).
+ * LessonToc — "תוכן השיעור" בשפת Design 1 (§12).
  *
- * דסקטופ: פאנל גיליון-מפה sticky בעמודה הימנית; הסצנות הן נקודות ציון
- * (waypoints) מעוינות על ציר אנכי מקווקו — כמו ציר מתוכנן על מפה.
- * מובייל: רצועת פלטות אופקית + ציר התקדמות (LessonTocMobile).
+ * דסקטופ: כרטיס לבן sticky בעמודה הימנית; כל סצנה היא שורה עם עיגול
+ * ממוספר על ציר אנכי דק. מובייל: רצועת פלטות אופקית + ציר התקדמות
+ * (LessonTocMobile).
  *
  * מצבי נקודת ציון:
- *   completed — מעוין מרווה מלא עם ✓
- *   active    — מעוין כתום עם טבעת + רקע חם לשורה
- *   future    — מעוין outline אפור
+ *   completed — עיגול מרווה מלא עם ✓
+ *   active    — עיגול כתום מלא + רקע חם לשורה
+ *   future    — עיגול outline אפור
  */
 import { Check } from 'lucide-react';
 import type { PagedScene } from './PagedLearn';
@@ -27,23 +27,31 @@ function stateOf(i: number, active: number): TocState {
   return 'future';
 }
 
-function Waypoint({ state }: { state: TocState }) {
+function Waypoint({ state, index }: { state: TocState; index: number }) {
   if (state === 'completed') {
     return (
-      <span className="relative z-10 grid size-[18px] shrink-0 rotate-45 place-items-center bg-brand-dark" aria-hidden>
-        <Check className="size-3 -rotate-45 text-bg" strokeWidth={3.5} />
+      <span className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-brand-dark" aria-hidden>
+        <Check className="size-3.5 text-bg" strokeWidth={3} />
       </span>
     );
   }
   if (state === 'active') {
     return (
-      <span className="relative z-10 grid size-[18px] shrink-0 rotate-45 place-items-center border-2 border-accent bg-bg-card" aria-hidden>
-        <span className="size-2 bg-accent" />
+      <span
+        className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-accent font-display text-xs font-bold text-bg-elevated"
+        aria-hidden
+      >
+        {index + 1}
       </span>
     );
   }
   return (
-    <span className="relative z-10 size-[14px] shrink-0 rotate-45 border-2 border-border-strong bg-bg-card mx-0.5" aria-hidden />
+    <span
+      className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full border border-border-strong bg-bg-card font-display text-xs font-bold text-fg-dim"
+      aria-hidden
+    >
+      {index + 1}
+    </span>
   );
 }
 
@@ -64,15 +72,14 @@ export function LessonToc({
   return (
     <SurfaceCard
       as="aside"
-      frame
       className={cn(
         'sticky top-[calc(var(--header-h)+1rem)] max-h-[calc(100vh-var(--header-h)-2rem)] overflow-y-auto p-4',
         className,
       )}
     >
-      <div aria-label="ציר הלמידה">
+      <div aria-label="תוכן השיעור">
         {lesson && (
-          <div className="mb-3 border-b border-brand-dark/15 px-1 pb-3">
+          <div className="mb-3 border-b border-border px-1 pb-3">
             <div className="flex items-baseline gap-2">
               <span className="font-mono text-lg font-bold text-accent" dir="ltr">
                 {String(lesson.number).padStart(2, '0')}
@@ -84,15 +91,12 @@ export function LessonToc({
           </div>
         )}
         <div className="mb-3 px-1 text-[10px] font-display font-bold uppercase tracking-[0.22em] text-brand-dark">
-          ציר הלמידה
+          תוכן השיעור
         </div>
 
-        {/* ציר אנכי מקווקו + נקודות ציון */}
+        {/* ציר אנכי דק + נקודות ציון */}
         <ol className="relative flex list-none flex-col">
-          <span
-            aria-hidden
-            className="absolute bottom-5 top-5 start-[21px] w-px border-s-2 border-dashed border-brand-dark/25"
-          />
+          <span aria-hidden className="absolute bottom-6 top-6 start-[13px] w-px bg-border" />
           {scenes.map((s, i) => {
             const state = stateOf(i, active);
             const isActive = state === 'active';
@@ -103,11 +107,11 @@ export function LessonToc({
                   onClick={() => onGoto(i)}
                   aria-current={isActive ? 'step' : undefined}
                   className={cn(
-                    'flex w-full items-center gap-3 px-3 py-2.5 text-start transition-colors',
+                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start transition-colors',
                     isActive ? 'bg-bg-accent' : 'hover:bg-bg-accent/60',
                   )}
                 >
-                  <Waypoint state={state} />
+                  <Waypoint state={state} index={i} />
                   <span
                     className={cn(
                       'min-w-0 flex-1 truncate text-[13.5px] leading-snug',
@@ -120,18 +124,15 @@ export function LessonToc({
                   >
                     {s.label}
                   </span>
-                  <span className="font-mono text-[10px] text-fg-dim" aria-hidden dir="ltr">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
                 </button>
               </li>
             );
           })}
         </ol>
 
-        <div className="mt-3 border-t border-brand-dark/15 px-1 pt-3.5">
+        <div className="mt-3 border-t border-border px-1 pt-3.5">
           <div className="mb-2 flex items-center justify-between text-[11px] text-fg-dim">
-            <span className="font-display font-bold text-brand-dark">התקדמות בציר</span>
+            <span className="font-display font-bold text-brand-dark">התקדמות</span>
             <span className="font-mono" dir="ltr">
               {active + 1}/{scenes.length}
             </span>
@@ -180,7 +181,7 @@ export function LessonTocMobile({
               aria-selected={isActive}
               aria-label={`תת נושא: ${s.label}`}
               className={cn(
-                'oct-sm inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 font-display text-xs font-bold transition-colors',
+                'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 font-display text-xs font-bold transition-colors',
                 isActive
                   ? 'bg-accent text-bg-elevated'
                   : state === 'completed'

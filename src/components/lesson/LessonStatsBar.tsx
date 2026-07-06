@@ -1,6 +1,7 @@
 /**
- * LessonStatsBar V2 — פאנל דוסייה רוחבי (design-system §9, שפת V2).
- * פאנל חד עם סוגריים-מסגרת, תאים עם משבצות אייקון קטומות וקווי הפרדה מרווה.
+ * LessonStatsBar — פס סטטים רוחבי בשפת Design 1: כרטיס לבן רך עם
+ * משבצות אייקון עגולות וקווי הפרדה עדינים מאוד (כמו רצועת ה-features
+ * בתחתית ה-Hero במסמך העיצוב).
  */
 import { Clock, Gauge, Crosshair, Layers, Activity } from 'lucide-react';
 import type { Lesson } from '@/lib/lessons';
@@ -21,11 +22,11 @@ function StatCell({
   divider?: boolean;
 }) {
   return (
-    <div className="relative flex items-center gap-3 px-4 py-3.5 sm:px-5">
+    <div className="relative flex items-center gap-3 px-4 py-4 sm:px-5">
       {divider && (
-        <span aria-hidden className="absolute inset-y-3 start-0 hidden w-px bg-brand-dark/15 lg:block" />
+        <span aria-hidden className="absolute inset-y-4 start-0 hidden w-px bg-border lg:block" />
       )}
-      <span aria-hidden className="oct-sm grid size-9 shrink-0 place-items-center bg-brand/10 text-brand-dark">
+      <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand-dark">
         {icon}
       </span>
       <div className="min-w-0 leading-tight">
@@ -52,7 +53,7 @@ export function LessonStatsBar({
   const isRecap = hasProgress && sceneIdx === sceneTotal - 1;
 
   return (
-    <SurfaceCard flat frame className={cn('overflow-hidden', className)}>
+    <SurfaceCard flat className={cn('overflow-hidden', className)}>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <StatCell icon={<Clock className="size-4" />} label="משך השיעור" value={`${lesson.duration} דק'`} divider={false} />
         <StatCell
@@ -66,9 +67,9 @@ export function LessonStatsBar({
           value={interactionLabels[lesson.interactions[0]]}
         />
         <StatCell icon={<Layers className="size-4" />} label="נקודות ציון" value={`${sceneTotal} סצנות`} />
-        <div className="relative col-span-2 flex items-center gap-3 px-4 py-3.5 sm:col-span-1 sm:px-5">
-          <span aria-hidden className="absolute inset-y-3 start-0 hidden w-px bg-brand-dark/15 lg:block" />
-          <span aria-hidden className="oct-sm grid size-9 shrink-0 place-items-center bg-brand/10 text-brand-dark">
+        <div className="relative col-span-2 flex items-center gap-3 px-4 py-4 sm:col-span-1 sm:px-5">
+          <span aria-hidden className="absolute inset-y-4 start-0 hidden w-px bg-border lg:block" />
+          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand-dark">
             <Activity className="size-4" />
           </span>
           <div className="min-w-0 leading-tight">

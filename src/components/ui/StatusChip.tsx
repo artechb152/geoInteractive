@@ -1,14 +1,14 @@
 import { cn } from '@/lib/utils';
 
 /**
- * StatusChip — "חותמת" סטטוס בשפת V2: פלטה קטומת-פינות, אותיות מרווחות.
+ * StatusChip — פלולה (pill) סטטוס רכה בשפת Design 1.
  *
  * tones:
  *   accent  — פעיל / בתהליך (כתום)
  *   brand   — הושלם / חיובי (מרווה)
  *   neutral — מטא ניטרלי (משך, סוג)
  *   dim     — נעול / עתידי
- *   command — היפוך: מרווה כהה מלא (לפסי פיקוד)
+ *   command — היפוך: מרווה כהה מלא (תאימות אחורה — מסכים מחוץ להיקף)
  */
 export function StatusChip({
   children,
@@ -24,7 +24,7 @@ export function StatusChip({
   return (
     <span
       className={cn(
-        'oct-sm inline-flex items-center gap-1.5 px-2.5 py-1 font-display text-xs font-bold tracking-wide whitespace-nowrap',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-xs font-bold tracking-wide whitespace-nowrap',
         tone === 'accent' && 'bg-accent/15 text-accent',
         tone === 'brand' && 'bg-brand/15 text-brand-dark',
         tone === 'neutral' && 'bg-bg-accent text-fg-muted',

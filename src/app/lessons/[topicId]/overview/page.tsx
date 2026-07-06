@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  ChevronLeft,
   Crosshair,
   Flag,
   ListChecks,
@@ -16,15 +17,13 @@ import { LessonStatsBar } from '@/components/lesson/LessonStatsBar';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { PageShell } from '@/components/ui/PageShell';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { StatusChip } from '@/components/ui/StatusChip';
 import { IconBadge } from '@/components/ui/IconBadge';
 import { Button } from '@/components/ui/Button';
-import { FrameCorners } from '@/components/ui/FrameCorners';
 import { TopoField } from '@/components/ui/TopoField';
 import { cn } from '@/lib/utils';
 
 /**
- * Lesson Overview — דף הכניסה לשיעור (design-system §22.3).
+ * Lesson Overview — דף הכניסה לשיעור בשפת Design 1 (§22.3).
  * Hero דו-עמודי (טקסט + asset) → CTA התחלה → stats bar → מטרות →
  * מבנה השיעור → דרישות קדם → שיעורים קשורים.
  */
@@ -57,47 +56,39 @@ export default async function LessonOverviewPage({
   return (
     <main className="relative">
       {/* ── תדריך: Hero דו-עמודי על שולחן המפות ── */}
-      <div className="relative overflow-hidden border-b-2 border-brand-dark/20">
+      <div className="relative overflow-hidden border-b border-border">
         <TopoField className="opacity-80" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-topo-fade" />
         <PageShell className="relative py-7 lg:py-10">
-          <nav aria-label="פירורי לחם" className="flex items-center gap-2 text-xs font-display font-semibold text-fg-dim">
+          <nav aria-label="פירורי לחם" className="flex items-center gap-1.5 text-xs font-display font-semibold text-fg-dim">
             <Link href="/" className="transition-colors hover:text-brand-dark">
               הקורס שלי
             </Link>
-            <span aria-hidden className="size-1 rotate-45 bg-brand-dark/40" />
+            <ChevronLeft aria-hidden className="size-3.5 text-fg-dim/50" />
             <Link href="/#syllabus" className="transition-colors hover:text-brand-dark">
               שיעורים
             </Link>
-            <span aria-hidden className="size-1 rotate-45 bg-brand-dark/40" />
+            <ChevronLeft aria-hidden className="size-3.5 text-fg-dim/50" />
             <span className="text-brand-dark" aria-current="page">
               שיעור {num} · תדריך
             </span>
           </nav>
 
-          <div className="relative mt-4 grid items-center gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
-            {/* מספר-מתאר ענק — חותם התדריך */}
-            <span
-              aria-hidden
-              className="outline-numeral pointer-events-none absolute -top-8 -start-3 text-[9rem] leading-none opacity-60 lg:-top-12 lg:text-[13rem]"
-            >
-              {num}
-            </span>
-
+          <div className="mt-4 grid items-center gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
             {/* עמודת טקסט — ימין ב-RTL */}
-            <div className="relative min-w-0 pt-8 lg:pt-12">
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <StatusChip tone="command">תדריך שיעור {num}/12</StatusChip>
-                <StatusChip tone="neutral">{interactionLabels[lesson.interactions[0]]}</StatusChip>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-bg-accent px-3 py-1 font-display text-xs font-bold text-brand-dark">
+                  תדריך שיעור {num} מתוך {lessons.length}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-bg-accent px-3 py-1 font-display text-xs font-bold text-fg-muted">
+                  {interactionLabels[lesson.interactions[0]]}
+                </span>
               </div>
               <h1 className="mt-4 font-display font-extrabold tracking-tight text-balance leading-[1.08] text-[clamp(1.875rem,4.2vw,3.25rem)]">
                 {lesson.title}
               </h1>
-              <span aria-hidden className="mt-4 flex items-center gap-1.5">
-                <span className="block h-1.5 w-20 bg-accent" />
-                <span className="block size-1.5 rotate-45 bg-brand-dark" />
-                <span className="block h-0.5 w-8 bg-brand-dark/40" />
-              </span>
+              <span aria-hidden className="mt-4 block h-1.5 w-20 rounded-full bg-accent" />
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-fg-muted md:text-lg text-pretty">
                 {lesson.subtitle}
               </p>
@@ -112,30 +103,15 @@ export default async function LessonOverviewPage({
               </div>
             </div>
 
-            {/* asset — גיליון מפה ממוסגר, שמאל ב-RTL */}
-            <figure className="relative border border-brand-dark/30 bg-bg-elevated p-2.5 shadow-paper sm:p-3">
-              <FrameCorners />
+            {/* asset Magnific — כרטיס לבן מוגבה, שמאל ב-RTL */}
+            <div className="overflow-hidden rounded-3xl border border-brand/15 bg-bg-elevated shadow-elevated">
               <IsometricAsset
                 assetId={`LESSON-${num}-HOOK`}
                 src={assets?.hook ?? ''}
                 alt={`איור איזומטרי בסגנון papercut לשיעור ${lesson.shortTitle}`}
                 aspect="16/9"
-                className="rounded-[2px]"
               />
-              <div className="mt-2.5 flex items-center justify-between bg-brand-dark px-3 py-1.5 text-bg">
-                <span className="font-mono text-[10px] tracking-[0.25em]" dir="ltr">
-                  GEO-9900 · {num}
-                </span>
-                <span className="flex items-center gap-1.5" aria-hidden>
-                  <span className="size-1.5 rotate-45 bg-accent" />
-                  <span className="h-px w-10 bg-bg/40" />
-                  <span className="size-1.5 rotate-45 bg-bg/50" />
-                </span>
-                <span className="font-mono text-[10px] tracking-[0.25em]" dir="ltr">
-                  {lesson.duration}:00
-                </span>
-              </div>
-            </figure>
+            </div>
           </div>
 
           <LessonStatsBar lesson={lesson} sceneTotal={scenes.length} className="mt-9" />
@@ -176,13 +152,10 @@ export default async function LessonOverviewPage({
             >
               מבנה השיעור
             </h2>
-            <SurfaceCard frame className="mt-5 p-5">
+            <SurfaceCard className="mt-5 p-5">
               <ol className="relative flex list-none flex-col">
-                {/* ציר מקווקו — כמו ציר מתוכנן על מפה */}
-                <span
-                  aria-hidden
-                  className="absolute bottom-6 top-4 start-[15px] w-px border-s-2 border-dashed border-brand-dark/25"
-                />
+                {/* ציר אנכי דק */}
+                <span aria-hidden className="absolute bottom-6 top-6 start-[15px] w-px bg-border" />
                 {scenes.map((s, i) => {
                   const Icon = SCENE_KIND_ICON[s.id] ?? BookOpen;
                   return (
@@ -190,13 +163,13 @@ export default async function LessonOverviewPage({
                       <span
                         aria-hidden
                         className={cn(
-                          'relative z-10 grid size-8 shrink-0 rotate-45 place-items-center border',
+                          'relative z-10 grid size-8 shrink-0 place-items-center rounded-full border',
                           i === 0
                             ? 'border-accent bg-accent/15 text-accent'
-                            : 'border-brand-dark/40 bg-bg-card text-brand-dark',
+                            : 'border-border-strong bg-bg-card text-brand-dark',
                         )}
                       >
-                        <Icon className="size-3.5 -rotate-45" />
+                        <Icon className="size-3.5" />
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-baseline gap-2">
@@ -212,7 +185,7 @@ export default async function LessonOverviewPage({
                   );
                 })}
               </ol>
-              <div className="mt-5 border-t-2 border-dashed border-brand-dark/20 pt-4">
+              <div className="mt-5 border-t border-border pt-4">
                 <Button href={`/lessons/${lesson.id}/`} className="w-full">
                   <Play className="size-4" aria-hidden />
                   <span>התחל שיעור</span>
@@ -227,7 +200,7 @@ export default async function LessonOverviewPage({
               {prev ? (
                 <Link
                   href={`/lessons/${prev.id}/overview/`}
-                  className="group mt-3 flex items-center gap-3 rounded-[3px] border border-border bg-bg-elevated p-4 transition-all duration-200 ease-snap hover:border-brand/40 hover:shadow-elevated"
+                  className="group mt-3 flex items-center gap-3 rounded-2xl border border-border bg-bg-elevated p-4 transition-all duration-200 ease-snap hover:border-brand/40 hover:shadow-elevated"
                 >
                   <IconBadge tone="brand">
                     <Crosshair className="size-4" />
@@ -262,7 +235,7 @@ export default async function LessonOverviewPage({
             {prev && (
               <Link
                 href={`/lessons/${prev.id}/overview/`}
-                className="group flex items-center gap-3 rounded-[3px] border border-border bg-bg-elevated p-4 transition-all duration-200 ease-snap hover:border-brand/40 hover:shadow-elevated"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-bg-elevated p-4 transition-all duration-200 ease-snap hover:border-brand/40 hover:shadow-elevated"
               >
                 <ArrowRight className="size-5 shrink-0 text-fg-dim transition-colors group-hover:text-brand-dark" aria-hidden />
                 <div className="min-w-0 flex-1">
@@ -278,7 +251,7 @@ export default async function LessonOverviewPage({
             {next && (
               <Link
                 href={`/lessons/${next.id}/overview/`}
-                className="group flex items-center gap-3 rounded-[3px] border border-accent/40 bg-accent/10 p-4 transition-all duration-200 ease-snap hover:border-accent hover:bg-accent/20"
+                className="group flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-4 transition-all duration-200 ease-snap hover:border-accent hover:bg-accent/20"
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-display font-semibold uppercase tracking-wider text-accent">

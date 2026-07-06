@@ -1,8 +1,7 @@
 import { cn } from '@/lib/utils';
 
 /**
- * ProgressBar — "ציר התקדמות" בשפת V2: מסילה עם שנתות מדידה,
- * מילוי חד וראש-מעוין בקצה ההתקדמות.
+ * ProgressBar — מסילה רכה עם מילוי מעוגל (Design 1).
  * כתום = התקדמות פעילה; מרווה = השלמה/סטטוס חיובי.
  */
 export function ProgressBar({
@@ -27,29 +26,11 @@ export function ProgressBar({
       aria-valuenow={label ? Math.round(clamped) : undefined}
       aria-valuemin={label ? 0 : undefined}
       aria-valuemax={label ? 100 : undefined}
-      className={cn('relative h-2 overflow-visible', className)}
+      className={cn('relative h-1.5 overflow-visible rounded-full bg-bg-accent', className)}
     >
-      {/* מסילה עם שנתות */}
       <div
-        className="absolute inset-0 rounded-[1px] bg-bg-accent"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(to left, rgba(91,124,92,0.22) 0 1px, transparent 1px 12px)',
-        }}
-      />
-      {/* מילוי */}
-      <div
-        className={cn('absolute inset-y-0 start-0 rounded-[1px] transition-[width] duration-500 ease-snap', fill)}
+        className={cn('h-full rounded-full transition-[width] duration-500 ease-snap', fill)}
         style={{ width: `${clamped}%` }}
-      />
-      {/* ראש מעוין */}
-      <span
-        aria-hidden
-        className={cn(
-          'absolute top-1/2 size-2.5 -translate-y-1/2 rotate-45 border border-bg transition-[inset-inline-start] duration-500 ease-snap',
-          fill,
-        )}
-        style={{ insetInlineStart: `calc(${clamped}% - 5px)` }}
       />
     </div>
   );

@@ -20,7 +20,7 @@ intro="ניווט הוא לא ניחוש - הוא מדע של דיוק. הכל �
 
  {/* Concept · matched pair feature cards */}
  <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  השפה של הניווט
@@ -33,7 +33,7 @@ intro="ניווט הוא לא ניחוש - הוא מדע של דיוק. הכל �
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  הרגע הקריטי
@@ -328,19 +328,19 @@ return (
 key={id}
 onClick={() => setActive(id)}
 className={cn(
- 'surface p-3 text-right transition-all rounded-[3px] relative overflow-hidden flex items-center gap-3',
+ 'surface p-3 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
 isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
  )}
  >
  {isActive && (
  <motion.span
 layoutId="t3-norths-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
  />
  )}
  <span
 className={cn(
- 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm tabular-nums',
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm tabular-nums',
 isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
  )}
  >
@@ -490,7 +490,7 @@ viewport={{ once: true }}
 transition={{ delay: i * 0.08 }}
 className="surface p-4 flex items-start gap-3 hover:border-accent/40 transition-colors"
  >
- <div className="size-10 rounded-[3px] bg-status-danger/10 border border-status-danger/30 flex items-center justify-center text-status-danger shrink-0">
+ <div className="size-10 rounded-xl bg-status-danger/10 border border-status-danger/30 flex items-center justify-center text-status-danger shrink-0">
  <Icon name={it.icon} size={18} />
  </div>
  <div>

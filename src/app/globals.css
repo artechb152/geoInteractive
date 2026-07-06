@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 /**
- * שפת V2 — "שולחן מפות מבצעי" (Modern Military Map · Light Tactical).
+ * שפת Design 1 — "שולחן מפות אזרחי-פרימיום" (Modern Military Map · Light Editorial).
  * חתימות ויזואליות:
- *   - פלטות אוקטגון (פינות קטומות) לכל אלמנט אינטראקטיבי.
- *   - פאנלים חדים (radius 2-3px) עם מסגרות מרווה במקום עיגול רך.
- *   - סוגריים-מסגרת (corner brackets) על לוחות מרכזיים.
- *   - נקודות ציון (waypoints) מעוינות וקווי ציר מקווקווים.
- *   - פסי פיקוד במרווה כהה — נקודתית, לא כרקע ראשי.
+ *   - כרטיסים לבנים מוגבהים עם רדיוס גדול (rounded-2xl/3xl) וצל רך.
+ *   - מסגרות מרווה עדינות מאוד — כמעט בלתי מורגשות, לא קווים כהים.
+ *   - ללא פינות קטומות/אוקטגון, ללא סוגריים-מסגרת, ללא פסי פיקוד כהים.
+ *   - כתום מיועד אך ורק ל-CTA, מצב פעיל ופרוגרס — לא לרקעים גדולים.
  */
 
 @layer base {
   :root {
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-    /* גובה ה-AppHeader הגלובלי — פס פיקוד עליון + שורת מותג. */
-    --header-h: 3.5rem;
-    /* עומק הקטימה של פלטות אוקטגון */
+    /* גובה ה-AppHeader הגלובלי — שורה אחת רכה. */
+    --header-h: 4rem;
+    /* נשמר עבור .oct/.oct-sm — עדיין בשימוש במסכים מחוץ להיקף ה-pass הזה
+       (בית/סילבוס/overview/prototypes). לא בשימוש ב-shell/topic-03 החדשים. */
     --notch: 0.55rem;
   }
 
@@ -84,42 +84,33 @@
     clip-path: polygon(0.7rem 0, calc(100% - 0.7rem) 0, 100% 100%, 0 100%);
   }
 
-  /* ── משטחים — נשמרים בשמות הישנים כי סצנות קיימות משתמשות בהם,
-        אבל הביטוי חדש: חד, מסגרת מרווה, צל נייר ───────────────── */
+  /* ── משטחים — נשמרים בשמות הישנים כי סצנות קיימות משתמשות בהם;
+        הביטוי החדש (Design 1): כרטיס לבן רך, רדיוס גדול, מסגרת מרווה
+        עדינה כמעט בלתי מורגשת, צל מוגבה רך ─────────────────────── */
   .surface {
-    @apply bg-bg-card border border-brand-dark/20 rounded-[3px];
+    @apply bg-bg-card border border-brand/15 rounded-2xl;
   }
 
   .surface-elevated {
-    @apply bg-bg-elevated border border-brand-dark/25 rounded-[3px] shadow-paper;
+    @apply bg-bg-elevated border border-brand/15 rounded-2xl shadow-elevated;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-xs font-semibold border tracking-wide;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border tracking-wide;
   }
 
   /* ── כפתורים ישנים בתוך סצנות — מקבלים את שפת הפלטה ─────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 font-display font-bold
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold
            transition-all duration-200 ease-snap select-none;
-    clip-path: polygon(
-      var(--notch) 0,
-      calc(100% - var(--notch)) 0,
-      100% var(--notch),
-      100% calc(100% - var(--notch)),
-      calc(100% - var(--notch)) 100%,
-      var(--notch) 100%,
-      0 calc(100% - var(--notch)),
-      0 var(--notch)
-    );
   }
 
   .btn-primary {
-    @apply btn bg-accent text-bg-elevated hover:bg-accent-hover active:scale-[0.98];
+    @apply btn bg-accent text-bg-elevated shadow-elevated hover:bg-accent-hover active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply btn bg-bg-accent text-brand-dark hover:bg-brand/15 active:scale-[0.98];
+    @apply btn bg-bg-elevated text-brand-dark border border-brand/25 hover:bg-bg-accent active:scale-[0.98];
   }
 
   .btn-ghost {
@@ -142,7 +133,7 @@
   }
   .section-eyebrow::before {
     content: '';
-    @apply inline-block size-1.5 rotate-45 bg-accent;
+    @apply inline-block size-1.5 rounded-full bg-accent;
   }
 
   /* ── שורת מטא עם מוביל נקודות (dossier) ──────────────────── */

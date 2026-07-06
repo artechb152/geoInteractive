@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * SceneNavigation V2 — ניווט תחתון בתוך גיליון הסצנה (design-system §14).
- * "הבא" פלטה כתומה · "הקודם" פלטת נייר · מעוינים + "נקודת ציון X/Y" במרכז.
+ * SceneNavigation — ניווט תחתון בתוך כרטיס הסצנה (Design 1, §14).
+ * "הבא" כפתור כתום · "הקודם" כפתור outline · נקודות רכות + "סצנה X מתוך Y" במרכז.
  * בסצנת הסיכום, ה"הבא" הופך לקישור לשיעור הבא (או "סיום הקורס").
  */
 import { ArrowLeft, ArrowRight, Flag } from 'lucide-react';
@@ -26,7 +26,7 @@ export function SceneNavigation({
   const isLast = active === scenes.length - 1;
 
   return (
-    <div className="mt-10 flex flex-col gap-4 border-t-2 border-dashed border-brand-dark/20 pt-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
       {/* הקודם — אחורה בסדר הלמידה */}
       <Button
         variant="secondary"
@@ -40,25 +40,25 @@ export function SceneNavigation({
         <span className="truncate">הקודם · {isFirst ? '' : scenes[active - 1].label}</span>
       </Button>
 
-      {/* מעוינים — אינדיקטור ציר */}
+      {/* נקודות רכות — אינדיקטור סצנות */}
       <div className="order-first flex flex-col items-center gap-2 sm:order-none">
-        <div className="flex items-center gap-2" aria-hidden>
+        <div className="flex items-center gap-1.5" aria-hidden>
           {scenes.map((s, i) => (
             <span
               key={s.id}
               className={cn(
-                'rotate-45 transition-all duration-300',
+                'rounded-full transition-all duration-300',
                 i === active
-                  ? 'size-2.5 bg-accent'
+                  ? 'h-2 w-5 bg-accent'
                   : i < active
-                    ? 'size-1.5 bg-brand-dark'
-                    : 'size-1.5 border border-border-strong bg-transparent',
+                    ? 'size-2 bg-brand-dark/60'
+                    : 'size-2 border border-border-strong bg-transparent',
               )}
             />
           ))}
         </div>
         <span className="text-[11px] font-display font-semibold text-fg-dim">
-          נקודת ציון {active + 1} מתוך {scenes.length}
+          סצנה {active + 1} מתוך {scenes.length}
         </span>
       </div>
 

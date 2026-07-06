@@ -10,7 +10,7 @@
  * - data-asset-id + data-asset-src על המיכל — grep אחד מוצא את כל חובות הנכסים.
  * - לעולם לא URL חיצוני — static export ל-LMS/SCORM חייב לעבוד offline.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { AssetPlaceholder } from './AssetPlaceholder';
 
@@ -44,8 +44,12 @@ export function IsometricAsset({
   className?: string;
 }) {
   const [status, setStatus] = useState<'pending' | 'ready' | 'missing'>('pending');
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
   useEffect(() => {
-    setStatus('pending');
+    // תמונה יכולה להיטען (מהמטמון או מכיוון שהיא כבר בתצוגה) לפני ש-React
+    // מספיק לחבר את מאזין onLoad — אירוע ה-load מוחמץ ו-status נתקע ב-pending.
+    setStatus(imgRef.current?.complete && imgRef.current.naturalWidth > 0 ? 'ready' : 'pending');
   }, [src]);
 
   const resolvedSrc = src.startsWith('/')
@@ -70,6 +74,7 @@ export function IsometricAsset({
       {status !== 'missing' && src.length > 0 && (
         // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
         <img
+          ref={imgRef}
           src={resolvedSrc}
           alt={alt}
           loading="lazy"

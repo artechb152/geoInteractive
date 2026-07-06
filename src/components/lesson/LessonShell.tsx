@@ -165,7 +165,7 @@ function LessonFooterNav({
       {prev ? (
         <Link
           href={`/lessons/${prev.id}/`}
-          className="group flex items-center gap-3 rounded-[3px] border border-border bg-bg-elevated p-3.5 text-right transition-all duration-200 ease-snap hover:border-brand/40 hover:shadow-elevated"
+          className="group flex items-center gap-3 rounded-2xl border border-border bg-bg-elevated p-3.5 text-right transition-all duration-200 ease-snap hover:border-brand/40 hover:shadow-elevated"
         >
           <ArrowRight
             className="size-5 shrink-0 text-fg-dim transition-all group-hover:translate-x-0.5 group-hover:text-brand-dark"
@@ -187,7 +187,7 @@ function LessonFooterNav({
       {next ? (
         <Link
           href={`/lessons/${next.id}/`}
-          className="group flex items-center gap-3 rounded-[3px] border border-accent/40 bg-accent/10 p-3.5 transition-all duration-200 ease-snap hover:border-accent hover:bg-accent/20"
+          className="group flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-3.5 transition-all duration-200 ease-snap hover:border-accent hover:bg-accent/20"
         >
           <div className="min-w-0 flex-1 text-right">
             <div className="text-[11px] font-display font-semibold uppercase tracking-wider text-accent">
@@ -205,7 +205,7 @@ function LessonFooterNav({
       ) : (
         <Link
           href="/"
-          className="group flex items-center gap-3 rounded-[3px] border border-brand/40 bg-brand/10 p-3.5 transition-all duration-200 ease-snap hover:border-brand-dark hover:bg-brand/20"
+          className="group flex items-center gap-3 rounded-2xl border border-brand/40 bg-brand/10 p-3.5 transition-all duration-200 ease-snap hover:border-brand-dark hover:bg-brand/20"
         >
           <Check className="size-5 shrink-0 text-brand-dark" aria-hidden />
           <div className="min-w-0 flex-1 text-right">

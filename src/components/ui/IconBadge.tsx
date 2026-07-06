@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 /**
- * IconBadge — משבצת אייקון קטומת-פינות בשפת V2.
+ * IconBadge — משבצת אייקון עגולה בשפת Design 1.
  * משמש בכרטיסי מטרות, שורות דוסייה ושדות מטא.
  */
 export function IconBadge({
@@ -19,7 +19,7 @@ export function IconBadge({
     <span
       aria-hidden
       className={cn(
-        'oct-sm grid place-items-center shrink-0',
+        'grid shrink-0 place-items-center rounded-full',
         size === 'sm' && 'size-8',
         size === 'md' && 'size-10',
         size === 'lg' && 'size-12',
