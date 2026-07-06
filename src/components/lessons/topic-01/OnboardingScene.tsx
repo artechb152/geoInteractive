@@ -247,8 +247,16 @@ title={
           <EditableBlock key={h.headline} id={`history-card-${i}`} label={`כרטיס היסטורי ${i + 1}`}>
             <IntelCard
               place={h.place}
-              headline={h.headline}
-              lesson={h.lesson}
+              headline={
+                <EditableBlock as="span" nested id={`history-card-${i}-title`} label={`כותרת כרטיס ${i + 1}`} className="block">
+                  {h.headline}
+                </EditableBlock>
+              }
+              lesson={
+                <EditableBlock as="span" nested id={`history-card-${i}-text`} label={`טקסט כרטיס ${i + 1}`} className="block">
+                  {h.lesson}
+                </EditableBlock>
+              }
               icon={h.icon}
               accent={h.accent}
               variant="elevated"

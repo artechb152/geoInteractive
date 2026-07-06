@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -21,9 +22,9 @@ import { cn } from '@/lib/utils';
  * caller continues to compile; they're intentionally unused now.
  */
 type IntelCardProps = {
-  place: string;
-  headline: string;
-  lesson: string;
+  place: ReactNode;
+  headline: ReactNode;
+  lesson: ReactNode;
   /** Unused. Kept for backwards compatibility with existing callers. */
   icon?: IconName;
   /** Unused. Kept for backwards compatibility with existing callers. */
