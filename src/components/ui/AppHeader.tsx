@@ -13,7 +13,6 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { BrandEmblem } from './BrandEmblem';
-import { ContinueLearningButton } from '@/components/landing/ContinueLearningButton';
 
 const NAV_LINKS: { href: string; label: string }[] = [
   { href: '/', label: 'בית' },
@@ -43,25 +42,21 @@ export function AppHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50">
       <div className="h-16 border-b border-border bg-bg-elevated/90 backdrop-blur-md lg:h-20">
-        <nav className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          {/* מותג — ימין ב-RTL */}
-          <Link href="/" className="flex min-w-0 items-center gap-2.5" aria-label="עמוד הבית">
+        <nav className="relative h-full w-full">
+          {/* מותג — 10% מהצד הכי ימני של המסך */}
+          <Link
+            href="/"
+            className="absolute top-1/2 start-[3%] flex min-w-0 -translate-y-1/2 items-center gap-2.5"
+            aria-label="עמוד הבית"
+          >
             <BrandEmblem className="size-9" />
-            <span className="flex min-w-0 flex-col leading-none">
-              <span className="font-display text-base font-extrabold tracking-tight text-fg">
-                גיאוגרפיה צבאית
-              </span>
-              <span className="mt-1 hidden items-center gap-1.5 sm:flex" aria-hidden>
-                <span className="h-0.5 w-5 rounded-full bg-accent" />
-                <span className="text-[10px] font-display font-semibold tracking-[0.18em] text-fg-dim">
-                  לקרוא שטח · להבין החלטה
-                </span>
-              </span>
+            <span className="min-w-0 font-display text-xl font-extrabold leading-none tracking-tight text-fg">
+              גיאוגרפיה צבאית
             </span>
           </Link>
 
-          {/* ניווט — מרכז */}
-          <ul className="hidden items-center md:flex">
+          {/* ניווט — מרכז המסך */}
+          <ul className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center md:flex">
             {NAV_LINKS.map((l) => (
               <li key={l.href}>
                 <Link
@@ -79,10 +74,7 @@ export function AppHeader() {
           </ul>
 
           {/* פעולה — שמאל ב-RTL */}
-          <div className="flex items-center gap-2">
-            <div className="hidden md:block">
-              <ContinueLearningButton size="sm" />
-            </div>
+          <div className="absolute top-1/2 end-4 flex -translate-y-1/2 items-center gap-2 sm:end-6 lg:end-8">
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
@@ -119,9 +111,6 @@ export function AppHeader() {
                   </Link>
                 </li>
               ))}
-              <li className="pt-2">
-                <ContinueLearningButton className="w-full" />
-              </li>
             </ul>
           </motion.div>
         )}

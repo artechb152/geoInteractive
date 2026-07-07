@@ -1008,11 +1008,10 @@ export function EditableBlock({
   const As = as as 'div';
 
   if (!enabled) {
-    return (
-      <As className={className} style={style}>
-        {children}
-      </As>
-    );
+    // Baked edit-mode overrides (absolute x/y + fixed px sizes tuned for one
+    // monitor) must never leak into normal rendering — they break layout at
+    // other viewport widths. Only apply them while the visual editor is on.
+    return <As className={className}>{children}</As>;
   }
 
   const block = (
@@ -1055,7 +1054,8 @@ export function EditableFrame({
   const style = useOverrideStyle(o, elRef, enabled);
 
   if (!enabled) {
-    return cloneElement(children, { style: { ...(children.props.style || {}), ...style } });
+    // See EditableBlock — baked overrides are edit-mode-only.
+    return children;
   }
 
   return cloneElement(children, {

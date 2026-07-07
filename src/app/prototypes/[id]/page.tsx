@@ -23,13 +23,19 @@ const PROTOTYPES: Prototype[] = [
     id: 'terrain-3d',
     title: 'סימולטור שטח תלת־ממדי',
     tagline: 'ניווט וחקירה במודל גובה אינטראקטיבי',
-    embedPath: '/embeds/terrain-3d/',
+    embedPath: '/embeds/terrain-3d/index.html',
   },
   {
     id: 'terrain-overlay',
     title: 'שכבות מידע על מפת שטח',
     tagline: 'הלבשת שכבות גיאו־מידע על מפה',
-    embedPath: '/embeds/terrain-overlay/',
+    embedPath: '/embeds/terrain-overlay/index.html',
+  },
+  {
+    id: 'valley-crossing-3d',
+    title: 'סימולטור ניתוח שטח — מעבר גיא',
+    tagline: 'תרחיש מודרך: קרקע גבוהה, תצפית אויב, צוואר בקבוק וגשר',
+    embedPath: '/embeds/valley-crossing-3d/index.html',
   },
 ];
 
@@ -69,19 +75,16 @@ export default async function PrototypePage({
         </div>
       </header>
 
-      {/* The prototype itself — sized to leave breathing room around
-          it. Width capped at the same max-w as lesson content, height
-          stops short of the bottom edge so the page doesn't feel
-          edge-clipped. */}
-      <div className="flex-1 min-h-0 bg-bg-accent/20 flex items-stretch p-3 sm:p-4 md:p-6">
-        <div className="w-full max-w-6xl mx-auto rounded-xl overflow-hidden border border-border bg-bg-elevated">
-          <iframe
-            src={p.embedPath}
-            title={p.title}
-            className="block w-full h-full border-0"
-            allow="fullscreen; accelerometer; gyroscope"
-          />
-        </div>
+      {/* The prototype itself — fills the entire remaining viewport
+          below the header, edge to edge, so the simulator reads as a
+          full-screen rectangular canvas. */}
+      <div className="flex-1 min-h-0">
+        <iframe
+          src={p.embedPath}
+          title={p.title}
+          className="block w-full h-full border-0"
+          allow="fullscreen; accelerometer; gyroscope"
+        />
       </div>
     </div>
   );

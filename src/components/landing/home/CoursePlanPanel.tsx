@@ -1,212 +1,254 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
-import { lessons } from '@/lib/lessons';
-import { useCourseProgress } from '@/lib/course-progress';
+import { lessons, lessonDioramaSrc } from '@/lib/lessons';
 
 /**
- * CoursePlanPanel — פאנל "תכנית הקורס" (design/mockup.png, פס תחתון-שמאלי).
- * קרוסלה אמיתית על כל 12 השיעורים: חלון של 5 כרטיסים, החץ בקצה השמאלי
- * (inline-end) מתקדם עמוק יותר ברשימה (RTL), חץ חזרה מופיע בקצה הימני.
- * כל כרטיס הוא קישור ל-/lessons/topic-XX/; הכרטיס הפעיל (כתום) נגזר
- * מה-last-visit, ברירת מחדל 01 כמו במוקאפ. "צפייה בכל השיעורים" פורש
- * את כל ה-12 ברשת בתוך הפאנל.
- * טקסטים לשיעורים 01–05 נשמרים כפי שאושרו במוקאפ ("ניווטים",
- * "מורפולוגיית" — לא שגיאות ה-AI שבתמונה).
+ * CoursePlanPanel — פאנל "פרקי הקורס" (design/carouselMockUpHomePage.png).
+ * מחובר לנתוני הקורס האמיתיים (@/lib/lessons) וכולל גרירה/גלילה אמיתית
+ * של השורה, שגולל לנצח (01→12→01…) על ידי שכפול הרשימה פי 3 וקפיצה
+ * שקטה בין העותקים. "צפייה בכל השיעורים" פורש (עם אנימציה) רשת של כל
+ * 12 השיעורים בתוך הפאנל.
  */
 
 type LessonItem = {
   id: string;
   num: string;
-  img: string;
   title: string;
-  sub?: string;
+  img: string;
 };
 
-/** תצוגת 01–05 — מחרוזות מדויקות כפי שאושרו במוקאפ */
-const MOCKUP_FIVE: LessonItem[] = [
-  {
-    id: 'topic-01',
-    num: '01',
-    img: '/assets/isometric/lesson-01-strategy-terrain.png',
-    title: 'מבוא',
-    sub: 'מרחב, כוח, אסטרטגיה',
-  },
-  {
-    id: 'topic-02',
-    num: '02',
-    img: '/assets/isometric/lesson-02-map-reading.png',
-    title: 'קרטוגרפיה וקריאת מפות',
-  },
-  {
-    id: 'topic-03',
-    num: '03',
-    img: '/assets/isometric/lesson-03-navigation.png',
-    title: 'ניווטים',
-    sub: 'אזימוט ותכנון ציר',
-  },
-  {
-    id: 'topic-04',
-    num: '04',
-    img: '/assets/isometric/lesson-04-landforms.png',
-    title: 'טופוגרפיה\nומורפולוגיית שטח',
-  },
-  {
-    id: 'topic-05',
-    num: '05',
-    img: '/assets/isometric/lesson-05-mobility.png',
-    title: 'ניידות ותמרון',
-    sub: 'עבירות, כיסוי, תכסית',
-  },
-];
-
-/** מיני-דיורמות לשיעורים 06–12 — לפי שמות הקבצים ב-public/assets/isometric */
-const ASSET_SLUGS: Record<number, string> = {
-  6: 'los',
-  7: 'weather',
-  8: 'logistics',
-  9: 'chokepoints',
-  10: 'urban',
-  11: 'borders',
-  12: 'gis-layers',
+/** תוויות מאושרות במוקאפ ל-01–07; 08–12 נופלים חזרה ל-shortTitle */
+const APPROVED_TITLES: Record<string, string> = {
+  'topic-01': 'מבוא',
+  'topic-02': 'קרטוגרפיה קריאת מפות',
+  'topic-03': 'ניווטים',
+  'topic-04': 'טופוגרפיה\nומורפולוגיית שטח',
+  'topic-05': 'ניידות ותמרון',
+  'topic-06': 'קווי ראייה',
+  'topic-07': 'אקלים ומזג אוויר',
 };
 
-const ALL_LESSONS: LessonItem[] = [
-  ...MOCKUP_FIVE,
-  ...lessons.slice(5).map((l) => ({
-    id: l.id,
-    num: String(l.number).padStart(2, '0'),
-    img: `/assets/isometric/lesson-${String(l.number).padStart(2, '0')}-${ASSET_SLUGS[l.number]}.png`,
-    title: l.shortTitle,
-  })),
-];
+/** סדר עולה 01→12 — תחת dir="rtl" הילד הראשון ב-DOM מוצג ימני ביותר */
+const ALL_LESSONS: LessonItem[] = lessons.map((l) => ({
+  id: l.id,
+  num: String(l.number).padStart(2, '0'),
+  title: APPROVED_TITLES[l.id] ?? l.shortTitle,
+  img: lessonDioramaSrc(l.number),
+}));
 
-const WINDOW = 5;
-const LAST_PAGE = Math.ceil(ALL_LESSONS.length / WINDOW) - 1;
+/** שכפול הרשימה פי 3 כדי לאפשר גלילה אינסופית עם קפיצה בלתי מורגשת בין העותקים */
+const LOOP_COPIES = 3;
+const LOOPED_LESSONS: (LessonItem & { copyKey: string })[] = Array.from(
+  { length: LOOP_COPIES },
+  (_, copyIndex) => ALL_LESSONS.map((lesson) => ({ ...lesson, copyKey: `${copyIndex}-${lesson.id}` })),
+).flat();
 
-export function CoursePlanPanel() {
-  const [page, setPage] = useState(0);
-  const [expanded, setExpanded] = useState(false);
-  const { activeTopicId } = useCourseProgress();
+/** מרחק גרירה מינימלי (px) שמעליו קליק בסיום הגרירה נחשב גרירה ולא בחירה בשיעור */
+const DRAG_CLICK_THRESHOLD = 4;
 
-  const visible = expanded
-    ? ALL_LESSONS
-    : ALL_LESSONS.slice(page * WINDOW, page * WINDOW + WINDOW);
+export function CoursePlanPanel({
+  expanded,
+  onExpandedChange,
+}: {
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
+}) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ x: number; scrollLeft: number; pointerId: number; captured: boolean } | null>(
+    null,
+  );
+  const draggedRef = useRef(false);
+  const setWidthRef = useRef(0);
+
+  const recalcSetWidth = useCallback(() => {
+    const el = rowRef.current;
+    if (!el) return 0;
+    const width = el.scrollWidth / LOOP_COPIES;
+    setWidthRef.current = width;
+    return width;
+  }, []);
+
+  const wrapIfNeeded = useCallback(() => {
+    const el = rowRef.current;
+    const w = setWidthRef.current;
+    if (!el || !w) return;
+    if (el.scrollLeft > -w) {
+      el.scrollLeft -= w;
+      if (dragRef.current) dragRef.current.scrollLeft -= w;
+    } else if (el.scrollLeft < -2 * w) {
+      el.scrollLeft += w;
+      if (dragRef.current) dragRef.current.scrollLeft += w;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (expanded) return;
+    const el = rowRef.current;
+    if (!el) return;
+    const w = recalcSetWidth();
+    el.scrollLeft = -w;
+    const onScroll = () => wrapIfNeeded();
+    const onResize = () => recalcSetWidth();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [expanded, recalcSetWidth, wrapIfNeeded]);
+
+  const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (expanded || e.pointerType !== 'mouse') return;
+    const el = rowRef.current;
+    if (!el) return;
+    draggedRef.current = false;
+    // אין תפיסת pointer כאן בכוונה: תפיסה מיידית מסיטה גם את אירוע ה-click
+    // מה-Link אל השורה, וקליק רגיל (בלי גרירה) לא היה פותח את השיעור.
+    dragRef.current = { x: e.clientX, scrollLeft: el.scrollLeft, pointerId: e.pointerId, captured: false };
+  };
+
+  const handleRowPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = rowRef.current;
+    if (!el || !dragRef.current) return;
+    const delta = e.clientX - dragRef.current.x;
+    if (!dragRef.current.captured && Math.abs(delta) > DRAG_CLICK_THRESHOLD) {
+      draggedRef.current = true;
+      dragRef.current.captured = true;
+      el.setPointerCapture(dragRef.current.pointerId);
+    }
+    el.scrollLeft = dragRef.current.scrollLeft - delta;
+    wrapIfNeeded();
+  };
+
+  const endRowDrag = () => {
+    if (dragRef.current?.captured) {
+      rowRef.current?.releasePointerCapture(dragRef.current.pointerId);
+    }
+    dragRef.current = null;
+  };
+
+  /** בולם קליק/ניווט בטעות בסיום גרירה עם העכבר */
+  const handleRowClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (draggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      draggedRef.current = false;
+    }
+  };
 
   return (
     <section
       id="syllabus"
-      className="relative scroll-mt-6 rounded-3xl bg-paper-panel p-6 shadow-panel-soft"
+      className="relative scroll-mt-6 rounded-[28px] bg-paper-panel p-8 shadow-panel-soft"
     >
-      {/* כותרת — מיושרת ל-inline-start (ימין); האייקון ימני לטקסט כמו במוקאפ */}
-      <div className="flex items-center justify-start gap-2.5 px-2">
-        <BookOpen className="size-6 text-olive-ink" strokeWidth={1.8} />
-        <span className="text-[22px] font-bold text-olive-ink">תכנית הקורס</span>
+      {/* כותרת — מיושרת למרכז, עם קו מפריד קישוטי */}
+      <div className="flex flex-col items-center gap-2 px-2 text-center">
+        <span className="text-[26px] font-extrabold text-olive-ink">פרקי הקורס</span>
+        <div className="flex items-center gap-2" aria-hidden>
+          <span className="h-px w-8 bg-tanline" />
+          <span className="size-1.5 rotate-45 bg-ember" />
+          <span className="h-px w-8 bg-tanline" />
+        </div>
       </div>
 
-      {/* קרוסלת שיעורים — הראשון ב-DOM = ימני ויזואלית */}
-      <div
-        className={cn(
-          'mt-4 grid grid-cols-5 gap-3.5 pe-1 ps-8',
-          expanded ? 'items-stretch gap-y-4' : 'items-center',
-        )}
-      >
-        {visible.map((l) => (
-          <LessonCard key={l.id} lesson={l} active={l.id === activeTopicId} />
-        ))}
-      </div>
-
-      {/* חיצי קרוסלה — מוסתרים במצב פרוש. ב-RTL החץ השמאלי (inline-end)
-          מתקדם עמוק יותר ברשימה; חץ חזרה מופיע בקצה הימני רק כשיש לאן לחזור */}
-      {!expanded && (
-        <>
-          <button
-            type="button"
-            aria-label="שיעורים נוספים"
-            disabled={page >= LAST_PAGE}
-            onClick={() => setPage((p) => Math.min(LAST_PAGE, p + 1))}
-            className="absolute end-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-olive-muted transition duration-150 ease-snap hover:text-olive-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft disabled:cursor-default disabled:opacity-35 disabled:hover:text-olive-muted"
+      {/* שורת כרטיסים — 01→12 (ימין לשמאל), גלילה אינסופית; גרירה אמיתית בעכבר, גלילת מגע טבעית */}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {expanded ? (
+          <motion.div
+            key="grid"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            style={{ willChange: 'opacity, transform' }}
+            className="mt-10 grid grid-cols-6 items-stretch gap-3.5 gap-y-4 pb-2"
           >
-            <ChevronLeft className="size-6" strokeWidth={2.2} />
-          </button>
-          {page > 0 && (
-            <button
-              type="button"
-              aria-label="שיעורים קודמים"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="absolute start-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-olive-muted transition duration-150 ease-snap hover:text-olive-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft"
+            {ALL_LESSONS.map((lesson) => (
+              <LessonCard key={lesson.id} lesson={lesson} compact={false} />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="carousel"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            style={{ willChange: 'opacity' }}
+          >
+            <div
+              ref={rowRef}
+              onPointerDown={handleRowPointerDown}
+              onPointerMove={handleRowPointerMove}
+              onPointerUp={endRowDrag}
+              onPointerCancel={endRowDrag}
+              onClickCapture={handleRowClickCapture}
+              className="mt-10 flex cursor-grab select-none items-start gap-4 overflow-x-auto pb-2 active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              <ChevronRight className="size-6" strokeWidth={2.2} />
-            </button>
-          )}
-        </>
-      )}
+              {LOOPED_LESSONS.map((lesson) => (
+                <LessonCard key={lesson.copyKey} lesson={lesson} compact />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="mt-4 flex justify-center">
+      {/* כפתור ghost */}
+      <div className="mt-6 flex justify-center">
         <button
           type="button"
           aria-expanded={expanded}
-          onClick={() => {
-            setExpanded((e) => !e);
-            setPage(0);
-          }}
-          className="flex h-10 items-center gap-2 rounded-full border border-tanline bg-paper-bright/70 px-8 text-[15px] font-bold text-olive-ink transition duration-150 ease-snap hover:bg-paper-bright active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft"
+          onClick={() => onExpandedChange(!expanded)}
+          className="flex h-11 items-center gap-2 rounded-full border border-tanline bg-paper-bright/70 px-8 text-[16px] font-bold text-olive-ink transition duration-150 ease-snap hover:bg-paper-bright active:translate-y-px"
         >
           <span>{expanded ? 'הצגה מצומצמת' : 'צפייה בכל השיעורים'}</span>
-          <ChevronLeft
-            className={cn('size-4 transition-transform duration-150', expanded && '-rotate-90')}
-            strokeWidth={2.4}
-          />
+          <motion.span
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="flex"
+          >
+            <ChevronDown className="size-4" strokeWidth={2.2} />
+          </motion.span>
         </button>
       </div>
     </section>
   );
 }
 
-function LessonCard({ lesson, active }: { lesson: LessonItem; active: boolean }) {
+function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean }) {
   return (
     <Link
       href={`/lessons/${lesson.id}/`}
       aria-label={`שיעור ${lesson.num} — ${lesson.title.replace('\n', ' ')}`}
-      aria-current={active ? 'true' : undefined}
+      draggable={false}
       className={cn(
-        'flex flex-col items-center rounded-2xl bg-paper-card px-3 text-center shadow-card-soft transition duration-150 ease-snap hover:-translate-y-0.5 hover:shadow-panel-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-panel',
-        active ? 'border-2 border-ember-soft bg-paper-bright py-5' : 'py-3',
+        'relative flex flex-col items-center rounded-2xl bg-paper-card px-[18px] pb-[28px] pt-[28px] text-center shadow-card-soft transition duration-150 ease-snap hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-panel',
+        compact ? 'shrink-0' : 'w-full',
+        compact && 'h-[437px] w-[225px]',
       )}
     >
-      <span
-        dir="ltr"
-        className={cn(
-          'text-2xl font-bold leading-none',
-          active ? 'text-ember' : 'text-olive-ink',
-        )}
-      >
+      <span dir="ltr" className="text-[44px] font-extrabold leading-none text-olive-ink">
         {lesson.num}
       </span>
       <IsometricAsset
-        assetId={`HOME-LESSON-${lesson.num}`}
+        assetId={`HOME-CAROUSEL-LESSON-${lesson.num}`}
         src={lesson.img}
         alt=""
         aspect="1/1"
         fit="contain"
         compactPlaceholder
-        className="mt-1 w-[86px] bg-transparent mix-blend-multiply [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black_50%,transparent_78%)]"
+        eager
+        className="mt-[23px] h-[219px] w-full bg-transparent mix-blend-multiply [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black_50%,transparent_78%)]"
       />
-      <h3
-        className={cn(
-          'mt-1 whitespace-pre-line text-[15px] font-bold leading-snug',
-          active ? 'text-ember' : 'text-olive-ink',
-        )}
-      >
+      <h3 className="mt-[23px] whitespace-pre-line text-[20px] font-bold leading-snug text-olive-ink">
         {lesson.title}
       </h3>
-      {lesson.sub && (
-        <p className="mt-0.5 text-[13px] leading-snug text-olive-muted">{lesson.sub}</p>
-      )}
     </Link>
   );
 }

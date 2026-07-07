@@ -10,7 +10,9 @@ export function PageShell({ children }: { children: ReactNode }) {
     <>
       <main className="relative -mt-[var(--header-h)] min-h-screen overflow-hidden bg-paper-grad">
         <ContourField />
-        <div className="relative mx-auto max-w-[1440px] px-12 pt-8">{children}</div>
+        <div className="relative mx-auto max-w-[1800px] px-12 pt-8 xl:px-20 2xl:px-28">
+          {children}
+        </div>
       </main>
     </>
   );

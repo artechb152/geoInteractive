@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCourseProgress } from '@/lib/course-progress';
+import { HomeTerrainDiorama } from './HomeTerrainDiorama';
 
 /**
  * HomeHero — פס ההירו (design/mockup.png): עמודת טקסט בימין (inline-start),
@@ -23,11 +24,7 @@ export function HomeHero() {
     <section className="mt-3 grid grid-cols-[330px_minmax(0,1fr)] items-center gap-8">
       {/* עמודת טקסט — ילד ראשון = ימין ויזואלי */}
       <div className="flex flex-col items-start">
-        <span className="inline-flex h-7 items-center rounded-full border border-tanline bg-paper-bright/50 px-4 text-sm font-semibold text-tanline-badge">
-          קורס דיגיטלי אינטראקטיבי
-        </span>
-
-        <h1 className="mt-[14px] text-[58px] font-extrabold leading-[1.12] text-olive-ink">
+        <h1 className="text-[58px] font-extrabold leading-[1.12] text-olive-ink">
           <span className="whitespace-nowrap">הבנה מרחבית.</span>
           <br />
           <span className="whitespace-nowrap">יתרון מבצעי.</span>
@@ -60,18 +57,14 @@ export function HomeHero() {
         </button>
       </div>
 
-      {/* דיורמת שטח — נחתכה מ-design/mockup.png (70,88,706×492); הרקע הוסר
-          (PNG שקוף) כך שהיא יושבת ישירות על קנבס העמוד. */}
+      {/* דיורמת שטח — מודל תלת-ממדי אינטראקטיבי (InteractiveHomeTerrainModel
+          דרך HomeTerrainDiorama), באותו יחס-ממדים (706×492) ובאותה זווית
+          כמו החיתוך המקורי מ-design/mockup.png; נופל חזרה לתמונה הסטטית
+          אם WebGL לא זמין. */}
       <div className="flex items-center justify-end">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
-        <img
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/isometric/home-hero-terrain-mockup.png`}
-          alt="דיורמת שטח טופוגרפית — שכבות נייר, נהר ודגל מטרה"
-          width={706}
-          height={492}
-          draggable={false}
-          className="-mt-14 me-6 w-full max-w-[725px]"
-        />
+        <div className="-mt-14 me-6 aspect-[706/492] w-full max-w-[725px]">
+          <HomeTerrainDiorama />
+        </div>
       </div>
     </section>
   );

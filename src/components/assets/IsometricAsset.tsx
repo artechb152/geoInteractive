@@ -30,6 +30,7 @@ export function IsometricAsset({
   aspect = '16/9',
   fit = 'cover',
   compactPlaceholder = false,
+  eager = false,
   className,
 }: {
   /** מזהה נכס מטבלת §20, למשל "LESSON-03-HOOK" */
@@ -41,6 +42,8 @@ export function IsometricAsset({
   aspect?: AssetAspect;
   fit?: 'cover' | 'contain';
   compactPlaceholder?: boolean;
+  /** טעינה מיידית — למשל תוכן שדורש גלילה אופקית פנימית שבה loading="lazy" לא מזהה נראות נכון */
+  eager?: boolean;
   className?: string;
 }) {
   const [status, setStatus] = useState<'pending' | 'ready' | 'missing'>('pending');
@@ -77,7 +80,7 @@ export function IsometricAsset({
           ref={imgRef}
           src={resolvedSrc}
           alt={alt}
-          loading="lazy"
+          loading={eager ? 'eager' : 'lazy'}
           decoding="async"
           draggable={false}
           aria-hidden={status !== 'ready'}

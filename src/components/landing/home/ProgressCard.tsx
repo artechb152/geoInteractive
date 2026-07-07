@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
 import { lessons, lessonDioramaSrc } from '@/lib/lessons';
 import { useCourseProgress } from '@/lib/course-progress';
 
@@ -19,7 +18,7 @@ export function ProgressCard() {
     lessons.find((l) => l.id === progress.activeTopicId) ?? lessons[0];
 
   return (
-    <aside className="relative flex flex-col items-center overflow-hidden rounded-3xl bg-pine-grad p-6 text-paper-bright shadow-pine-card">
+    <aside className="relative flex h-full flex-col items-center overflow-hidden rounded-3xl bg-pine-grad p-8 text-paper-bright shadow-pine-card">
       {/* הדגשה רכה במקום תצלום החייל החסר */}
       <div
         aria-hidden
@@ -32,29 +31,31 @@ export function ProgressCard() {
 
       <h2 className="relative text-[22px] font-bold">השיעור האחרון שלך</h2>
 
-      {/* מיני-דיורמת השיעור על עיגול קרם — מחליפה את טבעת ההתקדמות */}
-      <div className="relative mt-4 flex size-[170px] items-center justify-center rounded-full bg-paper-bright/10">
+      {/* מיני-דיורמת השיעור — ממורכזת אנכית ברווח הפנוי */}
+      <div className="relative flex flex-1 items-center justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
         <img
           src={lessonDioramaSrc(lessonNumber)}
           alt={`שיעור ${String(lessonNumber).padStart(2, '0')} — ${lesson.shortTitle}`}
-          className="size-[140px] object-contain drop-shadow-lg"
+          className="size-[265px] object-contain drop-shadow-lg"
         />
       </div>
 
-      <p className="relative mt-4 text-center text-[17px] font-medium text-paper-bright/90">
-        {progress.started
-          ? `שיעור ${String(lessonNumber).padStart(2, '0')} · ${lesson.shortTitle}`
-          : 'עוד לא התחלת את הקורס'}
-      </p>
+      {/* שם השיעור והכפתור — צמודים כמעט לתחתית הכרטיסייה */}
+      <div className="relative mt-auto flex w-full flex-col items-center gap-5 pt-6">
+        <p className="text-center text-[17px] font-medium text-paper-bright/90">
+          {progress.started
+            ? `שיעור ${String(lessonNumber).padStart(2, '0')} · ${lesson.shortTitle}`
+            : 'עוד לא התחלת את הקורס'}
+        </p>
 
-      <Link
-        href={progress.continueHref}
-        className="relative mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-cta-ember text-base font-bold text-white shadow-cta-ember transition duration-150 ease-snap hover:brightness-105 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-pine"
-      >
-        <span>{progress.started ? 'חזרה לשיעור' : 'התחלת השיעור הראשון'}</span>
-        <ChevronLeft className="size-4" strokeWidth={2.6} />
-      </Link>
+        <Link
+          href={progress.continueHref}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-cta-ember text-base font-bold text-white shadow-cta-ember transition duration-150 ease-snap hover:brightness-105 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-pine"
+        >
+          <span>{progress.started ? 'חזרה לשיעור' : 'התחלת השיעור הראשון'}</span>
+        </Link>
+      </div>
     </aside>
   );
 }
