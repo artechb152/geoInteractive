@@ -2,19 +2,21 @@
 
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { ProgressRing } from '@/components/ui/ProgressRing';
+import { lessons, lessonDioramaSrc } from '@/lib/lessons';
 import { useCourseProgress } from '@/lib/course-progress';
 
 /**
- * ProgressCard — כרטיס "התקדמות שלך" הכהה (design/mockup.png, פס תחתון-ימני).
- * הנתונים נגזרים חיים מ-useCourseProgress (last-visit): X מתוך 12 ⇒ אחוז
- * מחושב (מקור אמת אחד — פותר את 35%-מול-4/12 שבמוקאפ). מכשיר טרי מקבל
- * מצב ריק (0%, "עוד לא התחלת") והכפתור מוביל לשיעור הראשון.
- * חוב נכסים: HOME-PROGRESS-SOLDIER (תצלום דו-גוני של חייל קורא מפה,
- * ממוזג ברקע בקצה ה-inline-end) — כרגע גרדיאנט בלבד.
+ * ProgressCard — כרטיס "השיעור האחרון שלך" הכהה (פס תחתון-ימני):
+ * מיני-דיורמת השיעור האחרון שביקרו בו, שמו, וכפתור primary "חזרה לשיעור"
+ * שמחזיר לנקודה האחרונה (continueHref כולל #scene-<id> כשקיים).
+ * מכשיר טרי: שיעור 01 + "התחלת השיעור הראשון".
  */
 export function ProgressCard() {
   const progress = useCourseProgress();
+
+  const lessonNumber = progress.visit?.topicNumber ?? 1;
+  const lesson =
+    lessons.find((l) => l.id === progress.activeTopicId) ?? lessons[0];
 
   return (
     <aside className="relative flex flex-col items-center overflow-hidden rounded-3xl bg-pine-grad p-6 text-paper-bright shadow-pine-card">
@@ -28,22 +30,30 @@ export function ProgressCard() {
         }}
       />
 
-      <h2 className="relative text-[22px] font-bold">התקדמות שלך</h2>
+      <h2 className="relative text-[22px] font-bold">השיעור האחרון שלך</h2>
 
-      <ProgressRing percent={progress.percent} className="relative mt-4" />
+      {/* מיני-דיורמת השיעור על עיגול קרם — מחליפה את טבעת ההתקדמות */}
+      <div className="relative mt-4 flex size-[170px] items-center justify-center rounded-full bg-paper-bright/10">
+        {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
+        <img
+          src={lessonDioramaSrc(lessonNumber)}
+          alt={`שיעור ${String(lessonNumber).padStart(2, '0')} — ${lesson.shortTitle}`}
+          className="size-[140px] object-contain drop-shadow-lg"
+        />
+      </div>
 
-      <p className="relative mt-4 text-[17px] font-medium text-paper-bright/90">
+      <p className="relative mt-4 text-center text-[17px] font-medium text-paper-bright/90">
         {progress.started
-          ? `סיימת ${progress.completedCount} מתוך ${progress.totalCount} שיעורים`
+          ? `שיעור ${String(lessonNumber).padStart(2, '0')} · ${lesson.shortTitle}`
           : 'עוד לא התחלת את הקורס'}
       </p>
 
       <Link
         href={progress.continueHref}
-        className="relative mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-ember-soft text-base font-bold text-paper-bright transition duration-150 ease-snap hover:bg-paper-bright/10 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-pine"
+        className="relative mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-cta-ember text-base font-bold text-white shadow-cta-ember transition duration-150 ease-snap hover:brightness-105 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-pine"
       >
-        <span>{progress.started ? 'המשך לשיעור הבא' : 'התחלת השיעור הראשון'}</span>
-        <ChevronLeft className="size-4 text-ember-soft" strokeWidth={2.6} />
+        <span>{progress.started ? 'חזרה לשיעור' : 'התחלת השיעור הראשון'}</span>
+        <ChevronLeft className="size-4" strokeWidth={2.6} />
       </Link>
     </aside>
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, FileText } from 'lucide-react';
 import { useCourseProgress } from '@/lib/course-progress';
 
 /**
@@ -49,20 +48,7 @@ export function HomeHero() {
           }
           className="mt-9 flex h-[50px] w-full items-center justify-center gap-2.5 rounded-xl bg-cta-ember text-lg font-bold text-white shadow-cta-ember transition duration-150 ease-snap hover:brightness-105 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-page"
         >
-          {/* גליף קטן מימין לטקסט — כמו במוקאפ */}
-          <span aria-hidden className="grid size-5 place-items-center rounded-md bg-paper-bright/90">
-            <svg viewBox="0 0 12 12" className="size-3">
-              <path
-                d="M2.5 9.5 C 4.5 8, 3.5 5.5, 5.5 4.5 S 8.5 4, 9.5 2.5"
-                fill="none"
-                stroke="#D97E2B"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
           <span>המשך ללמוד</span>
-          <ChevronLeft className="size-5" strokeWidth={2.5} />
         </Link>
 
         <button
@@ -70,14 +56,12 @@ export function HomeHero() {
           onClick={scrollToSyllabus}
           className="mt-4 flex h-[45px] w-full items-center justify-center gap-2.5 rounded-xl border border-tanline bg-paper-bright/70 text-lg font-bold text-olive-ink transition duration-150 ease-snap hover:bg-paper-bright active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-page"
         >
-          {/* האייקון מימין לטקסט, כמו במוקאפ */}
-          <FileText className="size-5 text-brand-dark" strokeWidth={1.8} />
           <span>סקירת הקורס</span>
         </button>
       </div>
 
-      {/* דיורמת שטח — נחתכה ישירות מ-design/mockup.png (70,88,706×492) להתאמה
-          מדויקת. הרקע האפוי זהה לקנבס; mask עדין מעלים את קו התפר. */}
+      {/* דיורמת שטח — נחתכה מ-design/mockup.png (70,88,706×492); הרקע הוסר
+          (PNG שקוף) כך שהיא יושבת ישירות על קנבס העמוד. */}
       <div className="flex items-center justify-end">
         {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
         <img
@@ -86,7 +70,7 @@ export function HomeHero() {
           width={706}
           height={492}
           draggable={false}
-          className="-mt-14 me-6 w-full max-w-[725px] [mask-image:radial-gradient(ellipse_78%_75%_at_50%_48%,black_60%,transparent_92%)]"
+          className="-mt-14 me-6 w-full max-w-[725px]"
         />
       </div>
     </section>

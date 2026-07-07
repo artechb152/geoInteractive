@@ -8,10 +8,7 @@ import type { ReactNode } from 'react';
 export function PageShell({ children }: { children: ReactNode }) {
   return (
     <>
-      {/* קנבס הדפדפן מאחורי היריעה — body עבר לקרם (bg-bg = paper.page),
-          אז שכבה בהירה שומרת על ניגודיות פינות ה-40px כמו במוקאפ. */}
-      <div aria-hidden className="fixed inset-0 -z-10 bg-paper-bright" />
-      <main className="relative -mt-[var(--header-h)] min-h-screen overflow-hidden rounded-[40px] bg-paper-grad">
+      <main className="relative -mt-[var(--header-h)] min-h-screen overflow-hidden bg-paper-grad">
         <ContourField />
         <div className="relative mx-auto max-w-[1440px] px-12 pt-8">{children}</div>
       </main>

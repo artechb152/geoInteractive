@@ -45,7 +45,9 @@ function compute(ready: boolean): CourseProgress {
     totalCount: total,
     percent: Math.round((completed / total) * 100),
     activeTopicId,
-    continueHref: `/lessons/${activeTopicId}/`,
+    continueHref: visit?.sceneId
+      ? `/lessons/${activeTopicId}/#scene-${visit.sceneId}`
+      : `/lessons/${activeTopicId}/`,
   };
 }
 
