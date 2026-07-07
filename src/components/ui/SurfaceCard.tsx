@@ -2,16 +2,23 @@ import { cn } from '@/lib/utils';
 import { FrameCorners } from './FrameCorners';
 
 /**
- * SurfaceCard — כרטיס לבן מוגבה בשפת Design 1: רדיוס גדול, מסגרת מרווה
- * עדינה, צל רך. `frame` נשמר לתאימות אחורה עם מסכים מחוץ להיקף ה-pass
- * הנוכחי (overview/home) שעדיין מציגים סוגריים-מסגרת בפינות — הכרטיסים
- * החדשים (lesson shell / topic-03) לא מפעילים את ה-prop הזה.
+ * SurfaceCard — כרטיס בשפת דף הבית (design lock).
+ *
+ * tone:
+ *   light (ברירת מחדל) — כרטיס לבן מוגבה על הקרם: רדיוס גדול, קו-שיער
+ *                        tanline עדין, צל card-soft חם.
+ *   pine              — פאנל מרווה כהה (כמו "התקדמות שלך" בדף הבית):
+ *                        גרדיאנט pine, טקסט קרם, צל pine-card.
+ *
+ * `frame` נשמר לתאימות אחורה עם מסכים ישנים שעדיין מציגים סוגריים-מסגרת
+ * בפינות — השפה החדשה לא מפעילה את ה-prop הזה.
  */
 export function SurfaceCard({
   children,
   className,
   flat = false,
   frame = false,
+  tone = 'light',
   as: Tag = 'div',
 }: {
   children: React.ReactNode;
@@ -20,13 +27,17 @@ export function SurfaceCard({
   flat?: boolean;
   /** סוגריים-מסגרת בפינות (תאימות אחורה — לא בשימוש בשפה החדשה) */
   frame?: boolean;
+  tone?: 'light' | 'pine';
   as?: 'div' | 'section' | 'article' | 'aside';
 }) {
   return (
     <Tag
       className={cn(
-        'relative bg-bg-card border border-brand/15 rounded-2xl',
-        !flat && 'shadow-elevated',
+        'relative rounded-2xl',
+        tone === 'light' && 'bg-bg-card border border-border/60',
+        tone === 'light' && !flat && 'shadow-elevated',
+        tone === 'pine' && 'bg-pine-grad text-paper-bright',
+        tone === 'pine' && !flat && 'shadow-pine-card',
         className,
       )}
     >

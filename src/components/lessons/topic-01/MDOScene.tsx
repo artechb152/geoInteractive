@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { MapPaperPanel } from '@/components/lesson/MapPaperPanel';
+import { LessonInsightStrip } from '@/components/lesson/LessonInsightStrip';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 type Domain = {
@@ -144,10 +146,7 @@ className="surface-elevated p-5 flex gap-3 items-start"
  </AnimatePresence>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 relative overflow-hidden">
- <div aria-hidden className="absolute inset-0 topo-bg opacity-20 pointer-events-none" />
- <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent-cool/5 pointer-events-none" />
- <div className="relative">
+ <MapPaperPanel>
  <div className="flex items-center justify-between mb-4">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  לחץ על כל ממד כדי לכבות / להפעיל
@@ -161,28 +160,14 @@ className="text-xs font-mono text-fg-dim hover:text-accent transition-colors fle
  </button>
  </div>
  <SuperioritySphere domains={DOMAINS} active={active} onToggle={toggle} />
- </div>
- </div>
+ </MapPaperPanel>
  </div>
 
  <RealWorldExamples />
 
- <motion.div
-initial={{ opacity: 0 }}
-whileInView={{ opacity: 1 }}
-viewport={{ once: true }}
-className="mt-6 surface p-6 flex gap-4 items-start"
- >
- <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
- <div>
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
- המסקנה: החוליה החלשה
- </div>
- <p className="text-fg leading-relaxed text-pretty">
+ <LessonInsightStrip eyebrow="המסקנה: החוליה החלשה" className="mt-6">
 אי אפשר לנצח מלחמה היום רק עם הטנקים הכי טובים או חיל האוויר הכי חזק. מספיק שממד אחד נופל – וכל הצבא קורס איתו. צבא חכם מתכנן מכה שמשלבת את כל הממדים יחד, ובמקביל דואג"לנתק" לאויב את החיבורים שלו כדי לשתק אותו.
- </p>
- </div>
- </motion.div>
+ </LessonInsightStrip>
  </section>
  );
 }

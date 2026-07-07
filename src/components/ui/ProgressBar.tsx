@@ -26,7 +26,7 @@ export function ProgressBar({
       aria-valuenow={label ? Math.round(clamped) : undefined}
       aria-valuemin={label ? 0 : undefined}
       aria-valuemax={label ? 100 : undefined}
-      className={cn('relative h-1.5 overflow-visible rounded-full bg-bg-accent', className)}
+      className={cn('relative h-1.5 overflow-visible rounded-full bg-tanline/40', className)}
     >
       <div
         className={cn('h-full rounded-full transition-[width] duration-500 ease-snap', fill)}

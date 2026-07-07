@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { Icon } from '@/components/Icon';
+import { RecapBanner } from '@/components/lesson/RecapBanner';
 
 const TERMS = [
   { term: 'רמות המלחמה',         def: 'אסטרטגית · אופרטיבית · טקטית — אותה מלחמה ברזולוציה אחרת.' },
@@ -29,7 +29,14 @@ export function RecapScene() {
         intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
       />
 
-      <CompletionBanner />
+      <RecapBanner
+        eyebrow="כל הכבוד · סיימת את השיעור הראשון"
+        title={
+          <>
+            הבנת את <span className="gradient-text">היסודות של גיאוגרפיה צבאית</span>
+          </>
+        }
+      />
 
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
@@ -59,32 +66,5 @@ export function RecapScene() {
         ))}
       </div>
     </section>
-  );
-}
-
-function CompletionBanner() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      className="mb-8 relative overflow-hidden rounded-[4px] border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7"
-    >
-      <div className="absolute -end-16 -top-16 size-48 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
-      <div className="absolute -start-16 -bottom-16 size-48 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
-
-      <div className="relative flex items-center gap-4 sm:gap-5">
-        <Icon name="check" size={48} strokeWidth={3} className="text-accent shrink-0" />
-        <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
-            כל הכבוד · סיימת את השיעור הראשון
-          </div>
-          <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            הבנת את <span className="gradient-text">היסודות של גיאוגרפיה צבאית</span>
-          </div>
-        </div>
-      </div>
-    </motion.div>
   );
 }

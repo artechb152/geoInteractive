@@ -3,12 +3,13 @@
 @tailwind utilities;
 
 /**
- * שפת Design 1 — "שולחן מפות אזרחי-פרימיום" (Modern Military Map · Light Editorial).
+ * שפת דף הבית (design lock) — Modern Military Map על נייר קרם.
  * חתימות ויזואליות:
- *   - כרטיסים לבנים מוגבהים עם רדיוס גדול (rounded-2xl/3xl) וצל רך.
- *   - מסגרות מרווה עדינות מאוד — כמעט בלתי מורגשות, לא קווים כהים.
- *   - ללא פינות קטומות/אוקטגון, ללא סוגריים-מסגרת, ללא פסי פיקוד כהים.
- *   - כתום מיועד אך ורק ל-CTA, מצב פעיל ופרוגרס — לא לרקעים גדולים.
+ *   - קנבס קרם (paper.page) עם מרקם קווי-גובה tan עדין.
+ *   - כרטיסים לבנים מוגבהים: רדיוס גדול, קו-שיער tanline, צל card-soft חם.
+ *   - דיו זית (olive.ink) לטקסט; מרווה/זית כמבטא מפה צבאית.
+ *   - כתום (ember) אך ורק לפעולה/פוקוס/פרוגרס — לעולם לא דקורטיבי.
+ *   - פאנל pine כהה כמשקל-נגד יחיד (התקדמות) — לא פסי פיקוד.
  */
 
 @layer base {
@@ -85,32 +86,32 @@
   }
 
   /* ── משטחים — נשמרים בשמות הישנים כי סצנות קיימות משתמשות בהם;
-        הביטוי החדש (Design 1): כרטיס לבן רך, רדיוס גדול, מסגרת מרווה
-        עדינה כמעט בלתי מורגשת, צל מוגבה רך ─────────────────────── */
+        הביטוי (design lock): כרטיס לבן על קרם, רדיוס גדול, קו-שיער
+        tanline עדין, צל card-soft חם ───────────────────────────── */
   .surface {
-    @apply bg-bg-card border border-brand/15 rounded-2xl;
+    @apply bg-bg-card border border-border/60 rounded-2xl;
   }
 
   .surface-elevated {
-    @apply bg-bg-elevated border border-brand/15 rounded-2xl shadow-elevated;
+    @apply bg-bg-elevated border border-border/60 rounded-2xl shadow-elevated;
   }
 
   .chip {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border tracking-wide;
   }
 
-  /* ── כפתורים ישנים בתוך סצנות — מקבלים את שפת הפלטה ─────────── */
+  /* ── כפתורים ישנים בתוך סצנות — מיושרים לשפת דף הבית (כמו ui/Button) ── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold
            transition-all duration-200 ease-snap select-none;
   }
 
   .btn-primary {
-    @apply btn bg-accent text-bg-elevated shadow-elevated hover:bg-accent-hover active:scale-[0.98];
+    @apply btn bg-cta-ember text-white shadow-cta-ember hover:brightness-105 active:translate-y-px;
   }
 
   .btn-secondary {
-    @apply btn bg-bg-elevated text-brand-dark border border-brand/25 hover:bg-bg-accent active:scale-[0.98];
+    @apply btn bg-paper-bright/70 text-fg border border-border hover:bg-paper-bright active:translate-y-px;
   }
 
   .btn-ghost {

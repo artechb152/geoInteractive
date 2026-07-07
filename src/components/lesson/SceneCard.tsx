@@ -22,7 +22,7 @@ export function SceneCard({
         'overflow-hidden rounded-3xl',
         flush
           ? 'bg-bg p-0'
-          : 'border border-brand/15 bg-bg-card p-4 py-8 shadow-elevated sm:p-6 sm:py-10 lg:p-8 lg:py-12',
+          : 'border border-border/60 bg-bg-card p-4 py-8 shadow-elevated sm:p-6 sm:py-10 lg:p-8 lg:py-12',
         className,
       )}
     >

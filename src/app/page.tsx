@@ -1,23 +1,26 @@
-import { Hero } from '@/components/landing/Hero';
-import { LessonsGrid } from '@/components/landing/LessonsGrid';
-import { PrototypesShowcase } from '@/components/landing/PrototypesShowcase';
-import { RecapDemosTeaser } from '@/components/landing/RecapDemosTeaser';
-// Temporarily hidden from the landing page. To restore: uncomment the
-// imports below and the matching <Features /> / <FAQ /> in the JSX.
-// import { Features } from '@/components/landing/Features';
-// import { FAQ } from '@/components/landing/FAQ';
+import { PageShell } from '@/components/landing/home/PageShell';
+import { HomeHeader } from '@/components/landing/home/HomeHeader';
+import { HomeHero } from '@/components/landing/home/HomeHero';
+import { FeaturesRow } from '@/components/landing/home/FeaturesRow';
+import { CoursePlanPanel } from '@/components/landing/home/CoursePlanPanel';
+import { ProgressCard } from '@/components/landing/home/ProgressCard';
 
+/**
+ * דף הבית — מימוש סטטי pixel-accurate של design/mockup.png (1440px).
+ * ללא פונקציונליות בשלב זה; רכיבי V2 הישנים (landing/Hero וכו') נשארים
+ * על הדיסק אך אינם מיובאים יותר.
+ */
 export default function HomePage() {
   return (
-    <main className="relative">
-      <Hero />
-      <LessonsGrid />
-      <PrototypesShowcase />
-      <RecapDemosTeaser />
-      {/* Hidden — restore by uncommenting the imports above and these lines:
-      <Features />
-      <FAQ />
-      */}
-    </main>
+    <PageShell>
+      <HomeHeader />
+      <HomeHero />
+      <FeaturesRow />
+      {/* פס תחתון: ProgressCard ראשון ב-DOM = ימין ויזואלי ב-RTL, כמו במוקאפ */}
+      <div className="mb-4 mt-10 grid grid-cols-[370px_minmax(0,1fr)] items-stretch gap-4 pb-4">
+        <ProgressCard />
+        <CoursePlanPanel />
+      </div>
+    </PageShell>
   );
 }

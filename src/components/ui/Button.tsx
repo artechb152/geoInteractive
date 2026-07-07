@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 /**
- * Button — שפת הכפתורים Design 1: פינות רכות, כתום רק ל-primary.
+ * Button — שפת הכפתורים של דף הבית (design lock): פינות רכות, כתום רק לפעולה.
  *
- * primary   — כתום מלא + צל רך: התחלת שיעור, המשך לשלב הבא, בדיקת תשובה.
- * secondary — לבן/קרם עם מסגרת מרווה עדינה: חזרה לסילבוס, פעולות משנה.
+ * primary   — גרדיאנט ember + צל cta-ember (כמו "המשך ללמוד" בהירו):
+ *             התחלת שיעור, המשך לשלב הבא, בדיקת תשובה.
+ * secondary — קרם בהיר עם מסגרת tanline (כמו "סקירת הקורס"): פעולות משנה.
  * ghost     — טקסטואלי, ללא מילוי.
  *
  * מקבל `href` ⇒ מרונדר כ-<Link>; אחרת <button>.
@@ -52,11 +53,11 @@ export function Button({
     BASE,
     SIZE_CLASS[size],
     variant === 'primary' &&
-      'bg-accent font-bold text-bg-elevated shadow-elevated hover:bg-accent-hover active:scale-[0.985]',
+      'bg-cta-ember font-bold text-white shadow-cta-ember hover:brightness-105 active:translate-y-px',
     variant === 'secondary' &&
-      'border border-brand/25 bg-bg-elevated font-semibold text-brand-dark hover:bg-bg-accent active:scale-[0.985]',
+      'border border-border bg-paper-bright/70 font-semibold text-fg hover:bg-paper-bright active:translate-y-px',
     variant === 'ghost' && 'font-semibold text-fg-muted hover:bg-bg-accent hover:text-fg',
-    disabled && 'opacity-45 cursor-not-allowed hover:bg-accent active:scale-100',
+    disabled && 'opacity-45 cursor-not-allowed hover:brightness-100 active:translate-y-0',
     className,
   );
 

@@ -37,6 +37,9 @@ export function AppHeader() {
     setOpen(false);
   }, [pathname]);
 
+  // דף הבית החדש (design/mockup.png) מביא Header פנימי משלו — אין Header גלובלי ב-/.
+  if (pathname === '/') return null;
+
   return (
     <header className="fixed inset-x-0 top-0 z-50">
       <div className="h-16 border-b border-border bg-bg-elevated/90 backdrop-blur-md lg:h-20">
