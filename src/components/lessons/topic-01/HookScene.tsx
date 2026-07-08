@@ -1,13 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Icon } from '@/components/Icon';
 
 export function HookScene() {
   return (
     <section
       id="scene-hook"
-      className="min-h-[88vh] relative flex items-center justify-center overflow-hidden"
+      className="min-h-[70vh] relative flex items-center justify-center overflow-hidden"
     >
       <BackdropConstellation />
 
@@ -17,14 +16,6 @@ export function HookScene() {
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 text-center max-w-4xl px-6"
       >
-        <div className="inline-flex items-center gap-2.5 mb-10 mx-auto px-4 py-2 rounded-full border border-accent/50 bg-accent/12 w-fit">
-          <Icon name="globe" size={16} className="text-accent" />
-          <span className="font-display font-bold text-sm text-accent tracking-wider">שיעור 01</span>
-          <span className="text-fg-dim text-sm" aria-hidden>·</span>
-          <span className="text-sm font-display font-semibold text-fg">מבוא · מרחב, כוח, אסטרטגיה</span>
-        </div>
-
-
 <h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
           המרחב איננו רק זירת הפעולה.
           <br />

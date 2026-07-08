@@ -118,7 +118,7 @@ title={
       />
       </EditableBlock>
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         {/* Control panel — first child → RIGHT in RTL (text on right). */}
         <EditableBlock id="accordion-panel" label="פאנל השלבים" className="space-y-3">
           {STEPS.map((s, i) => {
@@ -162,7 +162,7 @@ title={
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-semibold leading-tight transition-colors text-fg">
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
                       {s.label}
                     </div>
                   </div>
@@ -200,18 +200,18 @@ title={
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
                         <div className="mt-3">
-                          <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                             <Icon name="eye" size={14} />
                             מה קורה בשלב הזה?
                           </div>
-                          <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
+                          <p className="text-base leading-relaxed text-black">{s.caption}</p>
                         </div>
                         <div className="pt-2 border-t border-border-subtle">
-                          <div className="text-sm font-display font-semibold text-brand-dark mb-1.5 tracking-wider flex items-center gap-1.5">
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                             <Icon name="spark" size={14} />
                             ולמה זה משנה?
                           </div>
-                          <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>
+                          <p className="text-base leading-relaxed text-black">{s.insight}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -225,9 +225,14 @@ title={
         {/* Visualization — second child → LEFT in RTL. EditableFrame (not
             EditableBlock) so it doesn't add a wrapper div: an extra div here
             made the WebGL canvas's ResizeObserver race during viewport
-            resizes, leaving the terrain rendered at a stale, too-small scale. */}
+            resizes, leaving the terrain rendered at a stale, too-small scale.
+            [&_canvas]:!w-full/[&_canvas]:!h-full — the permanent scene-wide
+            `zoom: 0.86` (onboarding-edit-mode.tsx) makes r3f's ResizeObserver
+            read a post-zoom size and re-apply it as literal px, which the
+            browser then zooms AGAIN, shrinking the canvas inside this frame.
+            Forcing percentage sizing sidesteps that double-zoom entirely. */}
         <EditableFrame id="visual-frame" label="לוח תלת-ממדי">
-        <div className="surface-elevated bg-bg relative overflow-hidden h-full min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px] [&_canvas]:!w-full [&_canvas]:!h-full">
           <TerrainStage feature={step} />
         </div>
         </EditableFrame>
@@ -260,7 +265,7 @@ title={
       <EditableBlock id="ready-callout" label="תיבת סיכום">
       <ReadyCallout title="עכשיו אתם מוכנים">
         <p>הבנתם את ההיגיון? מעולה. כל מה שראיתם עכשיו מבוסס על אינסטינקט בריא. בצבא, לאינסטינקטים האלה יש שמות, חוקים והגדרות. עכשיו ניקח את ההיגיון שלכם ונתרגם אותו לשפה שבה גנרלים מתכננים מלחמות. נתחיל מהבסיס: שלוש הרמות של המלחמה
-            <strong className="text-fg"> שלוש הרמות שבהן צבא חושב על מלחמה</strong>.</p>
+            <strong className="text-black font-bold"> שלוש הרמות שבהן צבא חושב על מלחמה</strong>.</p>
       </ReadyCallout>
       </EditableBlock>
 
@@ -275,11 +280,6 @@ function TerrainStage({ feature }: { feature: Feature }) {
       {/* WebGL scene. The Canvas renders transparent so the parent
           card's cream tint reads through any uncovered margin. */}
       <TerrainCanvas feature={feature} />
-
-      <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-xs text-fg-muted pointer-events-none">
-        <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        לחץ על שלב מימין — נבנה את השטח יחד, צעד אחר צעד
-      </div>
     </div>
   );
 }
@@ -299,7 +299,7 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
+      <span className="text-base font-display font-bold text-black tracking-wider">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

@@ -73,13 +73,14 @@ export function LessonShell({
     <div className="min-h-screen flex flex-col">
       {/* ── Sticky secondary header — just the three tabs.
               On xl+ the header is shifted left by the TOC drawer's
-              width (160px) so it never crosses the white TOC strip,
-              giving the impression that the tabs sit ABOVE the lesson
-              content column only. The bg is the page cream (`bg-bg`)
-              so it reads as part of the content area, and there is no
+              width (7vw, matching ScenePagerDesktop in PagedLearn.tsx)
+              so it never crosses the white TOC strip, giving the
+              impression that the tabs sit ABOVE the lesson content
+              column only. The bg is the page cream (`bg-bg`) so it
+              reads as part of the content area, and there is no
               border / underline between the tabs and the lesson
               content below. ─────────────────────────── */}
-      <header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[160px]">
+      <header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[7vw]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"
@@ -133,7 +134,7 @@ export function LessonShell({
 
       {/* ── Main content with cross-fade between tabs ────────────────── */}
       <main className="flex-1">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-6">
           <LessonNavContext.Provider value={{ current: { number: lesson.number, shortTitle: lesson.shortTitle }, prev, next }}>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -157,7 +158,7 @@ export function LessonShell({
               sub-topic of `learn`, or on `practice` / `check` tabs ──── */}
       {showLessonNav && (
       <footer className="border-t border-border-subtle bg-bg-elevated/40 mt-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {prev ? (
             <Link
               href={`/lessons/${prev.id}/`}

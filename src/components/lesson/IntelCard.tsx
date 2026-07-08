@@ -43,12 +43,12 @@ export function IntelCard({ place, headline, lesson, variant = 'editorial' }: In
   return (
     <article
       className={cn(
-        'bg-bg-elevated rounded-md p-3.5 md:p-4',
+        'bg-bg-elevated rounded-md p-3.5 md:p-4 h-full flex flex-col',
         variant === 'elevated' && 'rounded-[4px] border border-border shadow-elevated p-4 md:p-5',
       )}
     >
       {/* Headline as the lead */}
-      <h3 className="font-display font-bold text-[15px] md:text-base leading-snug text-balance text-fg">
+      <h3 className="font-display font-bold text-base md:text-lg leading-snug text-balance text-black">
         {headline}
       </h3>
 
@@ -60,13 +60,13 @@ export function IntelCard({ place, headline, lesson, variant = 'editorial' }: In
       />
 
       {/* Body */}
-      <p className="text-[13px] md:text-sm text-fg-muted leading-relaxed text-pretty">
+      <p className="text-sm md:text-base text-black leading-relaxed text-pretty">
         {lesson}
       </p>
 
       {/* Quote-style attribution at the bottom */}
-      <div className="mt-3.5 text-[11px] md:text-xs font-display font-medium tracking-wide text-fg-dim">
-        <span aria-hidden className="text-fg-dim/55 me-1.5">—</span>
+      <div className="mt-auto pt-3.5 text-xs md:text-sm font-display font-semibold tracking-wide text-black">
+        <span aria-hidden className="text-black/55 me-1.5">—</span>
         <span>{place}</span>
       </div>
     </article>

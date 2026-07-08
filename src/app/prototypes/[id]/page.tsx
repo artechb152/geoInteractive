@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PrototypeViewer } from './PrototypeViewer';
 
 /**
  * Dedicated page per prototype. The actual prototype is a Vite+React
@@ -52,40 +52,5 @@ export default async function PrototypePage({
   const p = PROTOTYPES.find((x) => x.id === id);
   if (!p) notFound();
 
-  return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 3rem)' }}>
-      {/* Header strip — orange eyebrow, title, back link, in the
-          site's design language. */}
-      <header className="shrink-0 bg-bg-elevated border-b border-brand">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent mb-1">
-              פרוטוטייפ · {p.tagline}
-            </div>
-            <h1 className="font-display font-bold text-lg sm:text-xl text-accent-hover leading-tight">
-              {p.title}
-            </h1>
-          </div>
-          <Link
-            href="/#prototypes"
-            className="inline-flex items-center px-4 py-2 rounded-md font-medium text-sm border border-accent/40 text-accent-hover hover:bg-accent/10 transition-colors"
-          >
-            חזרה לעמוד הבית
-          </Link>
-        </div>
-      </header>
-
-      {/* The prototype itself — fills the entire remaining viewport
-          below the header, edge to edge, so the simulator reads as a
-          full-screen rectangular canvas. */}
-      <div className="flex-1 min-h-0">
-        <iframe
-          src={p.embedPath}
-          title={p.title}
-          className="block w-full h-full border-0"
-          allow="fullscreen; accelerometer; gyroscope"
-        />
-      </div>
-    </div>
-  );
+  return <PrototypeViewer title={p.title} tagline={p.tagline} embedPath={p.embedPath} />;
 }

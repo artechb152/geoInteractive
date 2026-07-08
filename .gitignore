@@ -44,3 +44,6 @@ qa-output/
 # QA screenshots (session artifacts)
 .playwright-mcp/
 qa-*.png
+/progress-card-*.png
+/topic01-*.png
+/topic02-*.png
