@@ -11,7 +11,15 @@
  * pre-built public/prototypes/ may be present.
  */
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const PROTOTYPES = [
@@ -42,5 +50,31 @@ for (const p of PROTOTYPES) {
   if (existsSync(dest)) rmSync(dest, { recursive: true, force: true });
   mkdirSync(dest, { recursive: true });
   cpSync(join(src, p.outDir), dest, { recursive: true });
+  fixAbsoluteAssetPaths(dest);
   console.log(`[done]  ${p.name} → public/embeds/${p.name}/`);
+}
+
+/**
+ * The embeds are served from /embeds/<name>/, not the site root, so any
+ * root-absolute asset URL baked into a bundle (e.g. terrain-3d fetching
+ * `/textures/...`) 404s at runtime. Rewrite such references to be
+ * relative to the embed's index.html.
+ */
+function fixAbsoluteAssetPaths(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      fixAbsoluteAssetPaths(full);
+    } else if (/\.(js|css|html)$/.test(entry.name)) {
+      const before = readFileSync(full, 'utf8');
+      const after = before
+        .replaceAll('`/textures/', '`textures/')
+        .replaceAll('"/textures/', '"textures/')
+        .replaceAll("'/textures/", "'textures/");
+      if (after !== before) {
+        writeFileSync(full, after);
+        console.log(`[fix]   rewrote absolute /textures/ paths in ${full}`);
+      }
+    }
+  }
 }

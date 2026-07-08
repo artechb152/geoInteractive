@@ -55,6 +55,10 @@ function supportsWebGL(): boolean {
  * otherwise (or on any runtime error) keeps the original static PNG so the
  * hero never breaks.
  */
+// המודל התלת-ממדי מושבת כרגע — מציגים רק את התמונה הסטטית.
+// להחזרת המודל: להחליף ל-SHOW_3D_MODEL = true.
+const SHOW_3D_MODEL = false;
+
 export function HomeTerrainDiorama() {
   const [webglOk, setWebglOk] = useState<boolean | null>(null);
 
@@ -62,7 +66,9 @@ export function HomeTerrainDiorama() {
     setWebglOk(supportsWebGL());
   }, []);
 
-  if (webglOk === null || webglOk === false) return <StaticTerrainFallback />;
+  if (!SHOW_3D_MODEL || webglOk === null || webglOk === false) {
+    return <StaticTerrainFallback />;
+  }
 
   return (
     <TerrainErrorBoundary>

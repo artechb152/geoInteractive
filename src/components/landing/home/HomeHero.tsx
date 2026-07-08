@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCourseProgress } from '@/lib/course-progress';
+import { HomeTerrainDiorama } from './HomeTerrainDiorama';
 
 /**
  * HomeHero — פס ההירו (design/mockup.png): עמודת טקסט בימין (inline-start),
@@ -52,18 +53,14 @@ export function HomeHero() {
         </button>
       </div>
 
-      {/* דיורמת שטח — נחתכה מ-design/mockup.png (70,88,706×492); הרקע הוסר
-          (PNG שקוף) כך שהיא יושבת ישירות על קנבס העמוד. */}
+      {/* דיורמת שטח — מודל תלת-ממדי אינטראקטיבי (home-hero-terrain.glb,
+          מיוצא מ-geoHome.blend דרך Blender MCP), באותו יחס-ממדים (706×492)
+          כמו החיתוך המקורי מ-design/mockup.png; נופל חזרה לתמונה הסטטית
+          אם WebGL לא זמין. */}
       <div className="flex items-center justify-end">
-        {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
-        <img
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/isometric/home-hero-terrain-mockup.png`}
-          alt="דיורמת שטח טופוגרפית — שכבות נייר, נהר ודגל מטרה"
-          width={706}
-          height={492}
-          draggable={false}
-          className="-mt-14 me-6 w-full max-w-[725px]"
-        />
+        <div className="-mt-14 me-6 aspect-[706/492] w-full max-w-[725px]">
+          <HomeTerrainDiorama />
+        </div>
       </div>
     </section>
   );

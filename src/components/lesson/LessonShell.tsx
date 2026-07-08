@@ -70,7 +70,7 @@ export function LessonShell({
   const content = tab === 'learn' ? learn : tab === 'practice' ? practice : check;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-[calc(100dvh-var(--header-h))] flex flex-col">
       {/* ── Sticky secondary header — just the three tabs.
               On xl+ the header is shifted left by the TOC drawer's
               width (7vw, matching ScenePagerDesktop in PagedLearn.tsx)
@@ -80,7 +80,7 @@ export function LessonShell({
               reads as part of the content area, and there is no
               border / underline between the tabs and the lesson
               content below. ─────────────────────────── */}
-      <header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[7vw]">
+      <header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[13vw]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"

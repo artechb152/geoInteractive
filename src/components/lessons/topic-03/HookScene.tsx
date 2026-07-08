@@ -6,7 +6,7 @@ export function HookScene() {
   return (
     <section
       id="scene-hook"
-      className="min-h-[70vh] relative flex items-center justify-center overflow-hidden"
+      className="min-h-[calc(100dvh-var(--header-h)-5rem)] relative flex items-center justify-center overflow-hidden"
     >
       <BackdropTerrain />
 

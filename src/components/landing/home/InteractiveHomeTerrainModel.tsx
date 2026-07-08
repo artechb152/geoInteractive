@@ -42,6 +42,12 @@ const MODEL_URL = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/models/home
 // Matches the Blender build: CORE_THICKNESS (0.2) + LIP_THICKNESS (0.035).
 const SLAB_TOP_Y = 0.235;
 
+// The geoHome.glb export places the diorama offset from the origin
+// (slab bottom at y=0.206, x/z shifted −0.04/+0.11). This anchors it back
+// to the origin the camera/shadow/controls constants were tuned against
+// (slab bottom at y=0, slab centred on x/z).
+const MODEL_OFFSET: [number, number, number] = [0.04, -0.206, -0.11];
+
 function TerrainModel() {
   const { scene } = useGLTF(MODEL_URL);
   useEffect(() => {
@@ -52,7 +58,11 @@ function TerrainModel() {
       }
     });
   }, [scene]);
-  return <primitive object={scene} />;
+  return (
+    <group position={MODEL_OFFSET}>
+      <primitive object={scene} />
+    </group>
+  );
 }
 
 useGLTF.preload(MODEL_URL);

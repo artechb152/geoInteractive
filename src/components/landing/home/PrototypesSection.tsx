@@ -36,7 +36,7 @@ const PROTOTYPES: Prototype[] = [
 
 export function PrototypesSection() {
   return (
-    <section className="mb-4 mt-10">
+    <section id="prototypes" className="mb-4 mt-10">
       <div className="px-2">
         <span className="text-[22px] font-bold text-olive-ink">פרוטוטיפים לבדיקה</span>
       </div>
