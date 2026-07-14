@@ -12,12 +12,12 @@ label: 'מודל תלת־ממדי',
 icon: 'mountain',
 whatItIs: 'העתק מדויק של המציאות. ממש כמו דגם פלסטיק מוקטן של ההר או משחק מחשב.',
 pros: [
- 'הכי קל ואינטואיטיבי', 
+ 'הכי קל ואינטואיטיבי',
  'המוח מזהה מיד מה גבוה ומה נמוך, בלי שנצטרך ללמוד שום דבר מראש'
  ],
 cons: [
- 'קשה למדוד עליו מרחקים במדויק', 
- 'דורש מסך וחשמל', 
+ 'קשה למדוד עליו מרחקים במדויק',
+ 'דורש מסך וחשמל',
  'אי אפשר לקפל אותו לכיס ולקחת לשטח'
  ],
 whyItMatters: 'זהו כלי מעולה לתדרוך בחמ"ל. לוחמים יכולים"לעוף" וירטואלית מעל השטח לפני מבצע כדי להבין איך הוא ייראה במציאות.',
@@ -28,12 +28,12 @@ label: 'תצ״א (תצלום מהאוויר)',
 icon: 'eye',
 whatItIs: 'תמונה מציאותית שצולמה ממטוס, רחפן או לוויין, במבט ישר מלמעלה (ממעוף הציפור).',
 pros: [
- 'מראה את המציאות העדכנית ביותר', 
+ 'מראה את המציאות העדכנית ביותר',
  'רואים כל עץ, מבנה או שביל בדיוק כפי שהם נראים היום'
  ],
 cons: [
- 'התמונה חסרת עומק ונראית"מעוכה"', 
- 'אי אפשר לדעת אם כביש הוא תלול או מישורי', 
+ 'התמונה חסרת עומק ונראית"מעוכה"',
+ 'אי אפשר לדעת אם כביש הוא תלול או מישורי',
  'צמרות עצים יכולות להסתיר את מה שמתחתן'
  ],
 whyItMatters: 'התצ"א מצוינת כדי לדעת איפה יש מבנים ואיך נראה היעד, אבל בלי לדעת מה שיפוע ההר - אי אפשר לתכנן דרכה מסלול נסיעה בטוח.',
@@ -44,12 +44,12 @@ label: 'מפה טופוגרפית',
 icon: 'layers',
 whatItIs: 'שרטוט חכם על נייר או מסך, שמשתמש בסמלים מוסכמים וב"קווי גובה" כדי לתאר שטח תלת-ממדי על גבי דף שטוח.',
 pros: [
- 'מדויקת להפליא. מאפשרת מדידה מתמטית של מרחקים ושיפועים', 
- 'מסננת"רעשי רקע" שסתם מפריעים לעין', 
+ 'מדויקת להפליא. מאפשרת מדידה מתמטית של מרחקים ושיפועים',
+ 'מסננת"רעשי רקע" שסתם מפריעים לעין',
  'עובדת מעולה גם מודפסת בשטח'
  ],
 cons: [
- 'דורשת למידה ותרגול', 
+ 'דורשת למידה ותרגול',
  'מי שלא מכיר את"שפת המפה", יראה רק אוסף מבלבל של קווים ולא יבין מה הוא קורא'
  ],
 whyItMatters: 'המפה היא כלי העבודה מספר 1 של כל מפקד. היא משאירה רק את הנתונים הקריטיים לניווט, ומאפשרת לקבל החלטות מדויקות תחת לחץ.',
@@ -71,132 +71,105 @@ title={
         intro="טופוגרפיה = חקר צורת הקרקע (איפה יש הר, גבעה או עמק). את אותו ההר אפשר להציג ב-3 דרכים. לחצו על האפשרויות ובדקו מה היתרונות והחסרונות של כל אחת:"
  />
 
- <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
- {/* Accordion list — first child → RIGHT in RTL (text on right) */}
- <div className="space-y-3">
+ {/* View switcher — tab row (drives the same `view` state as before) */}
+ <div className="grid grid-cols-3 gap-3 mb-5">
  {VIEWS.map((v, i) => {
 const isActive = view === v.id;
 return (
- <div
-key={v.id}
-className={cn(
- 'surface overflow-hidden transition-colors',
-isActive ? 'border-brand-dark bg-brand/5' : 'hover:border-border-strong'
- )}
- >
  <button
+key={v.id}
 type="button"
 onClick={() => setView(v.id)}
-aria-expanded={isActive}
-className="w-full p-4 text-right flex items-center gap-3"
+aria-pressed={isActive}
+style={{ order: VIEWS.length - 1 - i }}
+className={cn(
+ 'surface relative overflow-hidden flex items-center gap-3 p-4 text-start transition-colors',
+isActive ? 'border-accent bg-accent/10 shadow-card-soft' : 'hover:border-border-strong'
+ )}
  >
+ <Icon
+name={v.icon}
+size={26}
+strokeWidth={1.5}
+className={cn('shrink-0', isActive ? 'text-accent' : 'text-fg-dim')}
+ />
  <div className="flex-1 min-w-0">
- <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+ <div className="text-xs font-display font-semibold text-fg-dim tracking-wider">
  תצוגה {String(i + 1).padStart(2, '0')}
  </div>
- <div className={cn('font-medium text-sm leading-tight', isActive && 'text-brand-dark')}>
+ <div className={cn('font-semibold text-sm leading-tight', isActive ? 'text-accent' : 'text-fg')}>
  {v.label}
  </div>
  </div>
- <motion.span
-animate={{ rotate: isActive ? 180 : 0 }}
-transition={{ duration: 0.25 }}
-className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
- >
- <svg
-width="18"
-height="18"
-viewBox="0 0 24 24"
-fill="none"
-stroke="currentColor"
-strokeWidth="1.8"
-strokeLinecap="round"
-strokeLinejoin="round"
-aria-hidden
- >
- <path d="m6 9 6 6 6-6" />
- </svg>
- </motion.span>
- </button>
-
- <AnimatePresence initial={false}>
  {isActive && (
+ <span className="absolute inset-inline-start-0 bottom-0 h-1 w-full bg-accent rounded-full" aria-hidden />
+ )}
+ </button>
+ );
+ })}
+ </div>
+
+ <div className="grid lg:grid-cols-[1fr_1.7fr] gap-6 items-stretch">
+ {/* Info panel — first child → RIGHT in RTL. Always-visible, driven by the active `meta`. */}
+ <div className="surface-elevated p-5 flex flex-col overflow-hidden">
+ <AnimatePresence mode="wait">
  <motion.div
-key={`panel-${v.id}`}
-initial={{ height: 0, opacity: 0 }}
-animate={{ height: 'auto', opacity: 1 }}
-exit={{ height: 0, opacity: 0 }}
-transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-className="overflow-hidden"
+key={view}
+initial={{ opacity: 0, y: 6 }}
+animate={{ opacity: 1, y: 0 }}
+exit={{ opacity: 0, y: -6 }}
+transition={{ duration: 0.25 }}
+className="divide-y divide-border/60"
  >
- <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-4">
- <div>
- <div className="text-sm font-display font-semibold text-accent-cool mt-3 mb-1.5 tracking-wider">
+ <div className="pb-4">
+ <div className="flex items-center gap-2 text-sm font-display font-semibold text-fg mb-2 tracking-wider">
+ <IconWordsSimple />
  במילים פשוטות
  </div>
- <p className="text-sm text-fg leading-relaxed">{v.whatItIs}</p>
+ <p className="text-sm text-fg leading-relaxed">{meta.whatItIs}</p>
  </div>
 
- <div className="grid sm:grid-cols-2 gap-3">
- <div className="surface p-3">
- <div className="flex items-center gap-2 text-sm font-display font-semibold text-status-ok mb-2 tracking-wider">
- <Icon name="check" size={12} strokeWidth={2.5} />
+ <div className="py-4">
+ <div className="flex items-center gap-2 text-sm font-display font-semibold text-accent mb-2 tracking-wider">
+ <IconAdvantage />
  מה היתרון
  </div>
- <ul className="space-y-1.5 text-sm">
- {v.pros.map((p) => (
+ <ul className="space-y-2 text-sm">
+ {meta.pros.map((p) => (
  <li key={p} className="flex gap-2">
- <span className="text-status-ok mt-0.5">·</span>
+ <span className="text-accent mt-0.5">·</span>
  <span className="text-fg">{p}</span>
  </li>
  ))}
  </ul>
  </div>
 
- <div className="surface p-3">
- <div className="flex items-center gap-2 text-sm font-display font-semibold text-status-warn mb-2 tracking-wider">
- <svg
-width="12"
-height="12"
-viewBox="0 0 24 24"
-fill="none"
-stroke="currentColor"
-strokeWidth="2.5"
-strokeLinecap="round"
-strokeLinejoin="round"
-aria-hidden
- >
- <path d="M18 6 6 18M6 6l12 12" />
- </svg>
+ <div className="py-4">
+ <div className="flex items-center gap-2 text-sm font-display font-semibold text-accent mb-2 tracking-wider">
+ <IconProblem />
  מה הבעיה
  </div>
- <ul className="space-y-1.5 text-sm">
- {v.cons.map((c) => (
+ <ul className="space-y-2 text-sm">
+ {meta.cons.map((c) => (
  <li key={c} className="flex gap-2">
- <span className="text-status-warn mt-0.5">·</span>
+ <span className="text-accent mt-0.5">·</span>
  <span className="text-fg">{c}</span>
  </li>
  ))}
  </ul>
  </div>
- </div>
 
- <div className="surface p-3 flex gap-2.5 items-start">
- <Icon name="spark" size={18} className="text-brand-dark shrink-0 mt-0.5" />
+ <div className="pt-4 flex gap-2.5 items-start">
+ <Icon name="spark" size={18} className="text-accent shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
  למה זה חשוב
  </div>
- <p className="text-sm text-fg leading-relaxed text-pretty">{v.whyItMatters}</p>
- </div>
+ <p className="text-sm text-fg leading-relaxed text-pretty">{meta.whyItMatters}</p>
  </div>
  </div>
  </motion.div>
- )}
  </AnimatePresence>
- </div>
- );
- })}
  </div>
 
  {/* Visualization — second child → LEFT in RTL */}
@@ -223,6 +196,70 @@ className="flex-1 min-h-[18rem]"
  </div>
  </div>
  </section>
+ );
+}
+
+// ==========================================
+// אייקוני עזר — פאנל המידע (לוקאליים לקובץ זה, לא נוגעים ב-Icon.tsx המשותף)
+// באותה שפה חזותית של Icon.tsx: viewBox 24×24, stroke בלבד, ללא צמתי <text>
+// ==========================================
+function IconWordsSimple({ className }: { className?: string }) {
+return (
+ <svg
+viewBox="0 0 24 24"
+width={22}
+height={22}
+fill="none"
+stroke="currentColor"
+strokeWidth={1.5}
+strokeLinecap="round"
+strokeLinejoin="round"
+aria-hidden
+className={cn('shrink-0', className)}
+ >
+ <path d="M3 17 9 8l4 6 2-3 4 6H3Z" />
+ <path d="M5.5 20a8 8 0 0 0 13 0" opacity="0.5" />
+ </svg>
+ );
+}
+
+function IconAdvantage({ className }: { className?: string }) {
+return (
+ <svg
+viewBox="0 0 24 24"
+width={22}
+height={22}
+fill="none"
+stroke="currentColor"
+strokeWidth={1.5}
+strokeLinecap="round"
+strokeLinejoin="round"
+aria-hidden
+className={cn('shrink-0', className)}
+ >
+ <rect x="3" y="9.5" width="18" height="6" rx="1.1" transform="rotate(-10 12 12.5)" />
+ <path d="M6.2 10.6v2M9.6 9.9v2.6M13 9.2v2M16.4 8.5v2" transform="rotate(-10 12 12.5)" />
+ </svg>
+ );
+}
+
+function IconProblem({ className }: { className?: string }) {
+return (
+ <svg
+viewBox="0 0 24 24"
+width={22}
+height={22}
+fill="none"
+stroke="currentColor"
+strokeWidth={1.5}
+strokeLinecap="round"
+strokeLinejoin="round"
+aria-hidden
+className={cn('shrink-0', className)}
+ >
+ <path d="M3 8c2 0 2 2 4 2s2-3 4-3 2 4 4 4 2-2 4-2" />
+ <path d="M3 14c2 0 2 2 4 2s2-3 4-3 2 4 4 4 2-2 4-2" />
+ </svg>
  );
 }
 
@@ -333,13 +370,13 @@ return (
         strokeWidth="0.9"
         strokeLinejoin="round"
       >מ׳</text>
- <text x="13" y="60" className="fill-fg-muted text-[2.2px] font-display font-bold"
+ <text x="13" y="60" textAnchor="start" direction="ltr" className="fill-fg-muted text-[2.2px] font-display font-bold"
         paintOrder="stroke"
         stroke="#ffffff"
         strokeWidth="0.9"
         strokeLinejoin="round"
       >300</text>
- <text x="79" y="55" className="fill-fg-muted text-[2.2px] font-display font-bold"
+ <text x="79" y="55" textAnchor="start" direction="ltr" className="fill-fg-muted text-[2.2px] font-display font-bold"
         paintOrder="stroke"
         stroke="#ffffff"
         strokeWidth="0.9"
@@ -362,13 +399,13 @@ return (
       >מבנה</text>
 
  {/* Coordinate corner */}
- <text x="2" y="73" className="fill-fg-dim text-[2px] font-display font-bold"
+ <text x="2" y="73" textAnchor="start" direction="ltr" className="fill-fg-dim text-[2px] font-display font-bold"
         paintOrder="stroke"
         stroke="#ffffff"
         strokeWidth="0.9"
         strokeLinejoin="round"
       >N31°45'</text>
- <text x="84" y="73" className="fill-fg-dim text-[2px] font-display font-bold"
+ <text x="84" y="73" textAnchor="start" direction="ltr" className="fill-fg-dim text-[2px] font-display font-bold"
         paintOrder="stroke"
         stroke="#ffffff"
         strokeWidth="0.9"
