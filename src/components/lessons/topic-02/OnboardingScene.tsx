@@ -110,18 +110,24 @@ export function OnboardingScene() {
 
   return (
     <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="section-eyebrow justify-center w-full mb-3">לפני שמתחילים</div>
+      <div className="flex items-center justify-center gap-3 mb-3" aria-hidden>
+        <span className="h-px w-16 bg-border" />
+        <span className="size-1.5 rotate-45 bg-border-strong" />
+        <span className="h-px w-16 bg-border" />
+      </div>
       <SceneHeader
         step="02.0"
         eyebrow="לפני שמתחילים"
 title={
           <>
-          <span className="gradient-text">מפה היא לא תמונה דו-ממדית – היא פאזל של שכבות מידע</span>
+            מפה היא לא תמונה דו-ממדית – היא <span className="gradient-text">פאזל</span> של שכבות מידע
           </>
         }
                 intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שקופים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-8 md:gap-10">
         <div className="space-y-3">
           {LAYERS.map((l, i) => {
             const isOn = i < step;
@@ -219,23 +225,24 @@ title={
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="bg-transparent relative overflow-hidden rounded-2xl min-h-[360px] md:min-h-[420px]">
           <LayeredMap enabled={enabled} />
         </div>
       </div>
 
       <SoftDivider text="לקרוא מפה — להציל חיים" />
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="rounded-2xl bg-bg-accent/60 p-4 md:p-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-0 lg:divide-x lg:divide-border">
         {FACTS.map((f, i) => (
-          <IntelCard
-            key={f.headline}
-            place={f.place}
-            headline={f.headline}
-            lesson={f.lesson}
-            icon={f.icon}
-            accent={f.accent}
-          />
+          <div key={f.headline} className="lg:px-4 first:lg:ps-0 last:lg:pe-0">
+            <IntelCard
+              place={f.place}
+              headline={f.headline}
+              lesson={f.lesson}
+              icon={f.icon}
+              accent={f.accent}
+            />
+          </div>
         ))}
       </div>
 
@@ -361,9 +368,9 @@ function Toggle({ on }: { on: boolean }) {
 
 function SoftDivider({ text }: { text: string }) {
   return (
-    <div className="my-12 flex items-center gap-4">
+    <div className="my-10 md:my-14 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
+      <span className="text-lg sm:text-xl font-display font-bold text-fg tracking-wide">{text}</span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );
