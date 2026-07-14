@@ -88,104 +88,86 @@ title={
                intro="האתגר הכי גדול במפה הוא להבין איך השטח נראה במציאות. הרי המפה היא דף שטוח, אבל העולם הוא תלת-ממדי. כדי לפתור את זה, אנחנו משתמשים בשיטה חכמה: קווי גובה. דמיינו שחתכנו את ההר לפרוסות אופקיות (כמו עוגת קומות). כל קו שתראו במפה הוא פשוט הקצה של פרוסה כזו."
       />
 
-      <div className="surface-elevated p-6 mb-6 rounded-[4px] border border-border/50">
+      <div className="bg-paper-bright border border-border/60 rounded-2xl shadow-elevated p-6 mb-6">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div className="space-y-3">
-            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
-              מבט תלת־ממדי · ההר כעוגת פרוסות
-            </div>
-            <div className="surface bg-bg-accent/20 rounded-[3px] p-4 border border-border/40">
-              <ContourCake3D activeRing={activeRing} setActiveRing={setActiveRing} />
-            </div>
-            <div className="text-[11px] text-accent/80 font-medium text-center">
-              גררו כדי לסובב · גלגלת לזום
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
+            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold text-center">
               מבט מלמעלה · איך זה נראה במפה
             </div>
-            <div className="surface bg-bg-accent/20 rounded-[3px] p-4 border border-border/40">
+            <div className="p-2">
               <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
             <div className="text-[11px] text-accent/80 font-medium text-center animate-pulse">
                רחפו עם העכבר על הקווים במפה כדי לראות את הפרוסה התואמת
             </div>
           </div>
+
+          <div className="space-y-3">
+            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold text-center">
+              מבט תלת־ממדי · ההר כעוגת פרוסות
+            </div>
+            <div className="p-2">
+              <ContourCake3D activeRing={activeRing} setActiveRing={setActiveRing} />
+            </div>
+            <div className="text-[11px] text-accent/80 font-medium text-center">
+              גררו כדי לסובב · גלגלת לזום
+            </div>
+          </div>
         </div>
       </div>
 
-      <SoftDivider text="זיהוי תנאי שטח לפי צפיפות" />
+      <SoftDivider text="זיהוי תנאי שטח לפי צפיפות" compact />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        {SHAPES.map((s) => {
-          const active = s.id === shapeId;
-          const badgeChar = s.steepnessHint === 'gentle' ? '↘' : s.steepnessHint === 'steep' ? '↑' : '!';
-          const subtitle =
-            s.steepnessHint === 'gentle'
-              ? 'מדרון נוח'
-              : s.steepnessHint === 'steep'
-              ? 'תלול ומאתגר'
-              : 'חסימה / מצוק';
-          return (
-            <button
-              key={s.id}
-              onClick={() => setShapeId(s.id)}
-              className={cn(
-                'surface p-4 text-right transition-all rounded-[3px] relative overflow-hidden flex items-center gap-3',
-                active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
-              )}
-            >
-              {active && (
-                <motion.span
-                  layoutId="t2-shape-bar"
-                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                />
-              )}
-              <span
-                className={cn(
-                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold',
-                  active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
-                )}
-              >
-                {badgeChar}
-              </span>
-              <div className="flex-1 min-w-0 text-right">
-                <div className="font-display font-bold text-base text-fg leading-tight">{s.label}</div>
-                <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{subtitle}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
-        <div className="space-y-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={shape.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="surface p-6 border-r-4 border-accent rounded-[3px]"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <Icon name="mountain" size={36} className="text-accent shrink-0" />
-                <h3 className="font-display font-bold text-2xl leading-tight">{shape.label}</h3>
-              </div>
-              <p className="text-sm text-fg-muted leading-relaxed font-medium">
-                {shape.desc}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
+      <div className="grid lg:grid-cols-[1fr_1.35fr] gap-8 items-start">
+        <div className="lg:border-e lg:border-border/50 lg:pe-8">
           <Glossary />
         </div>
 
-        <div className="surface-elevated bg-bg-accent/20 relative overflow-hidden border border-border/50 rounded-[4px]">
-          <ShapeMap shape={shape} />
+        <div className="bg-paper-bright border border-border/60 rounded-2xl shadow-elevated p-6">
+          <div className="flex rounded-full border border-border p-1 bg-bg-elevated gap-1">
+            {SHAPES.map((s) => {
+              const active = s.id === shapeId;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setShapeId(s.id)}
+                  className={cn(
+                    'flex-1 rounded-full py-2.5 px-4 text-center font-display font-bold text-base transition-colors border',
+                    active
+                      ? 'border-accent bg-bg-elevated text-accent'
+                      : 'border-transparent text-fg hover:text-accent/80'
+                  )}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch mt-6">
+            <div className="bg-bg-accent/20 relative overflow-hidden rounded-xl border border-border/40">
+              <ShapeMap shape={shape} />
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={shape.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="border-s-4 border-accent ps-6"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <Icon name="mountain" size={36} className="text-accent shrink-0" />
+                  <h3 className="font-display font-bold text-2xl leading-tight">{shape.label}</h3>
+                </div>
+                <p className="text-sm text-fg-muted leading-relaxed font-medium">
+                  {shape.desc}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </section>
@@ -317,30 +299,99 @@ function ShapeMap({ shape }: { shape: Shape }) {
 
 function Glossary() {
   return (
-    <div className="surface p-6 rounded-[3px] space-y-4 bg-bg-accent/10 border border-border/30">
-      <div className="text-sm font-display font-semibold text-accent tracking-wider font-bold mb-2">מילון מושגים לניווט</div>
-      <Item term="קו גובה (Contour Line)" def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר." />
-      <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים." />
-      <Item term="קו אינדקס (Index Contour)" def="כל קו חמישי הוא עבה יותר ורשום עליו הגובה. זה ה'עוגן' שעוזר לספור גבהים מהר." />
-      <Item term="צפיפות = תלילות" def="החוק הכי חשוב: קווים קרובים = הר תלול וקשה. קווים רחוקים = גבעה נוחה או מישור." />
+    <div>
+      <div className="flex items-center gap-4 mb-2">
+        <div className="h-px flex-1 bg-border/50" />
+        <div className="text-sm font-display font-semibold text-accent tracking-wider font-bold whitespace-nowrap">
+          מילון מושגים לניווט
+        </div>
+        <div className="h-px flex-1 bg-border/50" />
+      </div>
+      <div className="divide-y divide-border/40">
+        <Item
+          icon="rings"
+          term="קו גובה (Contour Line)"
+          def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר."
+        />
+        <Item
+          icon="interval"
+          term="רווח אנכי (Contour Interval)"
+          def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים."
+        />
+        <Item
+          icon="ellipse"
+          term="קו אינדקס (Index Contour)"
+          def="כל קו חמישי הוא עבה יותר ורשום עליו הגובה. זה ה'עוגן' שעוזר לספור גבהים מהר."
+        />
+        <Item
+          icon="lines"
+          term="צפיפות = תלילות"
+          def="החוק הכי חשוב: קווים קרובים = הר תלול וקשה. קווים רחוקים = גבעה נוחה או מישור."
+        />
+      </div>
     </div>
   );
 }
 
-function Item({ term, def }: { term: string; def: string }) {
+type GlossaryIconKind = 'rings' | 'interval' | 'ellipse' | 'lines';
+
+/**
+ * Small decorative glyphs for the glossary rows — purely illustrative, not
+ * shared/locked icons, so they live locally next to their one use site.
+ */
+function GlossaryIcon({ kind }: { kind: GlossaryIconKind }) {
   return (
-    <div className="text-xs group">
-      <div className="font-bold text-fg mb-1 group-hover:text-accent transition-colors">{term}</div>
-      <div className="text-fg-muted leading-relaxed">{def}</div>
+    <span className="size-11 rounded-full bg-bg-accent border border-border/50 flex items-center justify-center shrink-0">
+      <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={1.4} className="text-fg-muted">
+        {kind === 'rings' && (
+          <>
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="5.5" />
+            <circle cx="12" cy="12" r="2" />
+          </>
+        )}
+        {kind === 'interval' && (
+          <>
+            <path d="M7 4v16M17 4v16" strokeDasharray="2 2" strokeWidth={1} />
+            <path d="M12 5v14" />
+            <path d="M9 8l3-3 3 3M9 16l3 3 3-3" />
+          </>
+        )}
+        {kind === 'ellipse' && <ellipse cx="12" cy="12" rx="9" ry="5.5" />}
+        {kind === 'lines' && (
+          <path d="M4 6h16M4 10.5h16M4 15h11M4 19.5h7" />
+        )}
+      </svg>
+    </span>
+  );
+}
+
+function Item({ icon, term, def }: { icon: GlossaryIconKind; term: string; def: string }) {
+  return (
+    <div className="flex items-start gap-4 py-4 first:pt-0 last:pb-0 group">
+      <GlossaryIcon kind={icon} />
+      <div className="flex-1 min-w-0">
+        <div className="font-display font-bold text-sm text-fg mb-1 group-hover:text-accent transition-colors">
+          {term}
+        </div>
+        <div className="text-xs text-fg-muted leading-relaxed">{def}</div>
+      </div>
     </div>
   );
 }
 
-function SoftDivider({ text }: { text: string }) {
+function SoftDivider({ text, compact = false }: { text: string; compact?: boolean }) {
   return (
-    <div className="my-14 flex items-center gap-6">
+    <div className={cn('flex items-center gap-6', compact ? 'my-8' : 'my-14')}>
       <div className="h-px flex-1 bg-gradient-to-l from-border/50 to-transparent" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">{text}</span>
+      <span
+        className={cn(
+          'font-display font-semibold text-fg-muted tracking-wider font-bold',
+          compact ? 'text-xs' : 'text-sm'
+        )}
+      >
+        {text}
+      </span>
       <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent" />
     </div>
   );
