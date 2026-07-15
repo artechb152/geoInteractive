@@ -128,7 +128,7 @@ key={m.id}
 className={cn(
  'surface overflow-hidden transition-colors relative',
 isActive
- ? 'border-brand-dark bg-brand/5'
+ ? 'border-brand-dark bg-brand/10'
  : 'hover:border-border-strong hover:bg-bg-accent/30'
  )}
  >
@@ -214,8 +214,9 @@ className="overflow-hidden"
  </ul>
  </div>
 
- <div className="pt-2 border-t border-border-subtle">
- <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+ <div className="rounded-xl bg-bg-accent p-3">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider flex items-center gap-1.5">
+ <Icon name="spark" size={13} className="text-accent" />
  דוגמה
  </div>
  <p className="text-sm text-fg-muted leading-relaxed">{m.example}</p>
@@ -239,7 +240,7 @@ className="overflow-hidden"
  <div className="lg:sticky lg:top-24 self-start">
  <div className="relative overflow-hidden rounded-2xl border border-border shadow-elevated bg-bg-elevated topo-bg flex flex-col lg:h-[calc(100vh-7rem)]">
  {/* Warm terrain wash framing the board top → bottom */}
- <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-bg-accent/50 via-transparent to-brand/5" />
+ <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-bg-accent/50 via-transparent to-brand/10" />
 
  {/* Board header — updates with the active technique */}
  <div className="relative flex items-center justify-between gap-3 px-5 pt-5 pb-3">
@@ -282,7 +283,7 @@ className="absolute inset-0"
  {/* Caption + legend — part of the same surface, no separate panel */}
  <div className="relative px-5 pb-5 pt-3 space-y-3">
  <p className="text-sm text-fg-muted leading-relaxed">{support.caption}</p>
- <div className="pt-3 border-t border-border-subtle/70">
+ <div className="rounded-xl border border-border bg-bg-elevated/70 p-3">
  <div className="text-[11px] font-display font-semibold text-fg-dim mb-2 tracking-wider">מקרא</div>
  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
  {support.legend.map((it) => (
@@ -329,7 +330,7 @@ return (
 
  {/* Open, exposed ground (the whole board reads as open terrain; the
      ridge + its sheltered lane are the only cover) */}
- <rect x="0" y="0" width="100" height="75" className="fill-terrain-sand/8" />
+ <rect x="0" y="0" width="100" height="75" className="fill-terrain-sand/10" />
 
  {/* Sheltered lane hugging the ridge — where the safe route stays */}
  <path d="M10 50 C 28 48 54 46 74 45" fill="none" className="stroke-brand/10" strokeWidth="7" strokeLinecap="round" />
