@@ -10,6 +10,7 @@ return (
  <SceneHeader
 step="03.1"
 eyebrow="עקרונות הניווט"
+eyebrowTone="accent"
 title={
           <>
           המתמטיקה של הניווט: איך קובעים <span className="gradient-text">כיוון מוחלט</span> בשטח לא מוכר?
@@ -18,30 +19,24 @@ title={
 intro="ניווט הוא לא ניחוש - הוא מדע של דיוק. הכל מתחיל ב'אזימוט': הכלי שמאפשר לכם לדעת בדיוק לאן ללכת, גם באמצע שום מקום ובחושך מוחלט."
  />
 
- {/* Concept · matched pair feature cards */}
- <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
- <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
- השפה של הניווט
- </div>
- <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
- אזימוט <span className="text-fg-muted font-medium text-base sm:text-lg">(Azimuth)</span>
+ {/* Concept · light icon+text strip, divided (not two heavy boxed cards) */}
+ <div className="grid md:grid-cols-2 gap-8 md:gap-10 mb-12 md:divide-x md:divide-x-reverse md:divide-border-subtle">
+ <div className="flex flex-col md:pe-8">
+ <Icon name="compass" size={26} className="text-accent-hover mb-3" strokeWidth={1.4} />
+ <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-2 text-fg">
+ אזימוט <span className="text-fg-muted font-medium text-sm sm:text-base">(Azimuth)</span>
  </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
+ <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">
  הזווית המדויקת ליעד שלכם — <strong className="text-fg">בין 0° ל-360° מצפון</strong>. 0° זה צפון, 90° זה מזרח. ה"אזימוט החוזר" הוא פשוט הכיוון ההפוך (±180°) — הדרך הבטוחה הביתה.
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
- <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
- הרגע הקריטי
- </div>
- <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ <div className="flex flex-col md:ps-8">
+ <Icon name="satellite" size={26} className="text-accent-hover mb-3" strokeWidth={1.4} />
+ <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-2 text-fg">
  GPS-Denied: כשהטכנולוגיה בוגדת
  </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
+ <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">
  כשהאויב משבש את הלוויינים, או כשנמצאים מתחת לאדמה — <strong className="text-fg">חוזרים למפה ולמצפן</strong>. נווט טוב יודע לפעול גם כשכל המסכים כבים.
  </p>
  </div>
@@ -80,9 +75,16 @@ displayAzimuth < 22 || displayAzimuth >= 338 ? 'צפון'
  : displayAzimuth < 292 ? 'מערב'
  : 'צפון־מערב';
 return (
- <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
- <div className="space-y-4">
- <div className="surface-elevated p-5 sm:p-6">
+ <div className="surface-elevated overflow-hidden">
+ <div className="flex items-center gap-2.5 px-6 sm:px-8 pt-5 pb-4 border-b border-border-subtle">
+ <span className="size-9 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
+ <Icon name="crosshair" size={18} />
+ </span>
+ <h3 className="font-display font-bold text-lg text-fg">מחקר אזימוט</h3>
+ </div>
+
+ <div className="grid lg:grid-cols-[1.05fr_1fr_0.85fr] gap-8 lg:gap-0 p-6 sm:p-8 lg:divide-x lg:divide-x-reverse lg:divide-border-subtle">
+ <div className="lg:pe-8">
  <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
  תנו למצפן סיבוב — בחרו כיוון
  </div>
@@ -130,18 +132,19 @@ aria-label="אזימוט"
  </div>
  </div>
 
- <div className="surface p-4 flex gap-3 items-start">
- <Icon name="spark" size={18} className="text-accent-cool shrink-0 mt-0.5" />
+ <div className="flex flex-col items-center justify-center lg:px-8 py-6 lg:py-0">
+ <CompassDial angle={angle} />
+ </div>
+
+ <div className="lg:ps-8 flex flex-col justify-center pt-6 lg:pt-0 border-t lg:border-t-0 border-border-subtle">
+ <div className="flex gap-2.5 items-start">
+ <Icon name="spark" size={16} className="text-accent-cool shrink-0 mt-0.5" />
  <div className="text-xs leading-relaxed">
- <strong className="text-fg">מתי משתמשים באזימוט חוזר?</strong>
- <br />
+ <strong className="text-fg block mb-1">מתי משתמשים באזימוט חוזר?</strong>
  כדי לחזור הביתה בבטחה, כדי לוודא שחברים שלכם נמצאים במיקום הנכון, או כדי לבצע נסיגה חכמה דרך נתיב שכבר בדקתם וסימנתם כבטוח.
  </div>
  </div>
  </div>
-
- <div className="surface-elevated p-6 sm:p-8 flex flex-col items-center justify-center">
- <CompassDial angle={angle} />
  </div>
  </div>
  );
@@ -318,9 +321,8 @@ return (
  </p>
  </div>
 
- <div className="grid lg:grid-cols-[1fr_1fr] gap-6 items-stretch">
- <div className="space-y-3">
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+ <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-6 items-stretch">
+ <div className="space-y-2 order-2 lg:order-1">
  {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n], i) => {
 const isActive = id === active;
 return (
@@ -328,7 +330,7 @@ return (
 key={id}
 onClick={() => setActive(id)}
 className={cn(
- 'surface p-3 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
+ 'w-full surface p-3.5 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
 isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
  )}
  >
@@ -357,28 +359,8 @@ isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-mu
  })}
  </div>
 
- <div className={cn('surface-elevated p-5 border-r-4 transition-colors', meta.border)}>
- <div className={cn('text-sm font-display font-semibold mb-2 tracking-wider', meta.color)}>
- {meta.label}
- </div>
- <dl className="space-y-2.5 text-sm">
- <div>
- <dt className="text-fg-dim text-xs mb-0.5">במה משתמשים?</dt>
- <dd className="text-fg">{meta.who}</dd>
- </div>
- <div>
- <dt className="text-fg-dim text-xs mb-0.5">מה זה בעצם?</dt>
- <dd className="text-fg leading-relaxed">{meta.what}</dd>
- </div>
- <div>
- <dt className="text-fg-dim text-xs mb-0.5">למה כן? / למה לא?</dt>
- <dd className="text-fg-muted leading-relaxed">{meta.why}</dd>
- </div>
- </dl>
- </div>
- </div>
-
- <div className="surface aspect-square sm:aspect-auto sm:min-h-[280px] flex flex-col items-center justify-center p-6 relative overflow-hidden gap-3">
+ <div className="space-y-4 order-1 lg:order-2">
+ <div className="surface aspect-square sm:aspect-auto sm:min-h-[220px] flex flex-col items-center justify-center p-6 relative overflow-hidden gap-3">
  <svg viewBox="-50 -50 100 100" className="w-full h-full max-w-[260px]">
  <circle cx="0" cy="0" r="40" className="fill-bg-elevated stroke-border" strokeWidth="0.4" />
 
@@ -440,6 +422,27 @@ isActive ? 'opacity-100' : 'opacity-50'
  })}
  </div>
  </div>
+
+ <div className={cn('surface-elevated p-5 border-r-4 transition-colors', meta.border)}>
+ <div className={cn('text-sm font-display font-semibold mb-2 tracking-wider', meta.color)}>
+ {meta.label}
+ </div>
+ <dl className="space-y-2.5 text-sm">
+ <div>
+ <dt className="text-fg-dim text-xs mb-0.5">במה משתמשים?</dt>
+ <dd className="text-fg">{meta.who}</dd>
+ </div>
+ <div>
+ <dt className="text-fg-dim text-xs mb-0.5">מה זה בעצם?</dt>
+ <dd className="text-fg leading-relaxed">{meta.what}</dd>
+ </div>
+ <div>
+ <dt className="text-fg-dim text-xs mb-0.5">למה כן? / למה לא?</dt>
+ <dd className="text-fg-muted leading-relaxed">{meta.why}</dd>
+ </div>
+ </dl>
+ </div>
+ </div>
  </div>
 
  <div className="mt-5 surface p-4 flex gap-3 items-start">
@@ -471,7 +474,7 @@ desc: 'לוויינים יכולים ליפול, להתקלקל או להיפג�
  ];
 return (
  <div className="surface-elevated p-6 sm:p-8">
- <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 items-start">
+ <div className="grid lg:grid-cols-[1fr_1.3fr] gap-8 lg:gap-10 items-center">
  <div>
  <h3 className="font-display font-bold text-xl leading-tight mb-2">למה אסור לסמוך רק על ה-GPS?</h3>
  <p className="text-fg-muted text-sm leading-relaxed">
@@ -480,23 +483,19 @@ return (
  המונח <strong className="text-fg">"GPS-Denied"</strong> מתאר כל מצב שבו המערכות הלווייניות מושבתות. נווט טוב הוא מי ששולט בשיטות ה"אולד-סקול" - מפה, מצפן וספירת צעדים - כי אלו הכלים היחידים שלא צריכים קליטה או סוללה.
  </p>
  </div>
- <div className="space-y-3">
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-4">
  {items.map((it, i) => (
  <motion.div
 key={it.title}
-initial={{ opacity: 0, x: 10 }}
-whileInView={{ opacity: 1, x: 0 }}
+initial={{ opacity: 0, y: 8 }}
+whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true }}
 transition={{ delay: i * 0.08 }}
-className="surface p-4 flex items-start gap-3 hover:border-accent/40 transition-colors"
+className="flex flex-col gap-2"
  >
- <div className="size-10 rounded-xl bg-status-danger/10 border border-status-danger/30 flex items-center justify-center text-status-danger shrink-0">
- <Icon name={it.icon} size={18} />
- </div>
- <div>
- <h4 className="font-display font-semibold mb-0.5 text-sm">{it.title}</h4>
+ <Icon name={it.icon} size={24} strokeWidth={1.4} className="text-status-danger" />
+ <h4 className="font-display font-semibold text-sm text-fg">{it.title}</h4>
  <p className="text-xs text-fg-muted leading-relaxed">{it.desc}</p>
- </div>
  </motion.div>
  ))}
  </div>

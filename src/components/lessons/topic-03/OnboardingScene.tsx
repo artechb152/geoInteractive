@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { IntelCard } from '@/components/lesson/IntelCard';
+import { ReadyBand } from './ReadyBand';
+import { NavExampleCard } from './NavExampleCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -217,22 +217,21 @@ export function OnboardingScene() {
       <SoftDivider text="ניווט גרוע = חיים בסכנה" />
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {HISTORICAL.map((h, i) => (
-          <IntelCard
+        {HISTORICAL.map((h) => (
+          <NavExampleCard
             key={h.headline}
             place={h.place}
             headline={h.headline}
             lesson={h.lesson}
             icon={h.icon}
-            accent={h.accent}
           />
         ))}
       </div>
 
-      <ReadyCallout title="עכשיו אתם מוכנים">
+      <ReadyBand title="עכשיו אתם מוכנים">
         <p>הבנת ש"ניווט" זה תהליך שלם — לא רק קריאת מפה. בשלוש הסצנות הבאות נלמד את הכלים בפועל:
             <strong className="text-fg"> איך מחשבים אזימוט, איך מתכננים מסלול, ואיך מנווטים בשטח אויב</strong>.</p>
-      </ReadyCallout>
+      </ReadyBand>
     </section>
   );
 }
@@ -499,7 +498,15 @@ function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
+      <span className="inline-flex items-center gap-2.5 text-sm font-display font-semibold text-fg-muted tracking-wider">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" className="text-fg-dim shrink-0" aria-hidden>
+          <path d="M12 2 14 10 22 12 14 14 12 22 10 14 2 12 10 10Z" />
+        </svg>
+        {text}
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" className="text-fg-dim shrink-0" aria-hidden>
+          <path d="M12 2 14 10 22 12 14 14 12 22 10 14 2 12 10 10Z" />
+        </svg>
+      </span>
       <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );

@@ -17,12 +17,24 @@ const CHECKPOINTS: Checkpoint[] = [
  { id: '4', label: 'נקודה 4: חציית ציר', feature: 'אזימוט 050°, כ-500 מ׳ (±50) מנקודה 3: מגיעים לדרך עפר רחבה וחוצים אותה בזהירות.', icon: 'truck' },
  { id: '5', label: 'היעד: נקודת הסיום (נ.ס)', feature: 'אזימוט 040°, כ-600 מ׳ (±50) מנקודה 4: נכנסים לחורשת העצים ומגיעים לקרקע סלעית עם קבוצת עצי אורן בולטים — זהו היעד. מוודאים אימות אחרון ועוצרים.', icon: 'target' },
 ];
+// Pure presentational split of the existing `feature` string on its one
+// ": " boundary — separates the azimuth+distance clause (bolded, as the
+// mockup emphasizes it) from the terrain description that follows. No
+// data/copy is changed; this only changes which span the same characters
+// render inside.
+function splitFeature(feature: string): { lead: string; rest: string } {
+  const idx = feature.indexOf(': ');
+  if (idx === -1) return { lead: feature, rest: '' };
+  return { lead: feature.slice(0, idx + 1), rest: feature.slice(idx + 2) };
+}
+
 export function PlanningScene() {
 return (
  <section id="scene-planning" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
 step="03.2"
 eyebrow="תכנון ציר ותנועה"
+eyebrowTone="accent"
 title={
           <>
           לא רק למתוח קו: איך בונים <span className="gradient-text">סיפור דרך</span> שיעבוד לכם גם בחושך
@@ -31,33 +43,34 @@ title={
 intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפורטת — מעין 'ספוילר' של מה שהעיניים שלכם אמורות לראות בכל קטע בדרך. ככה גם אם הלילה קשה והדרך מורכבת, אתם לא מאבדים את החוט."
  />
 
- {/* Concept · matched pair feature cards */}
- <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
- <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
- הכלי המנחה
- </div>
- <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
- סיפור דרך <span className="text-fg-muted font-medium text-base sm:text-lg">(Route Story)</span>
+ {/* Concept · light icon+text strip, divided (not two heavy boxed cards) */}
+ <div className="grid md:grid-cols-2 gap-8 md:gap-10 mb-12 md:divide-x md:divide-x-reverse md:divide-border-subtle">
+ <div className="flex flex-col md:pe-8">
+ <Icon name="layers" size={26} className="text-accent-hover mb-3" strokeWidth={1.4} />
+ <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-2 text-fg">
+ סיפור דרך <span className="text-fg-muted font-medium text-sm sm:text-base">(Route Story)</span>
  </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
+ <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">
  תוכנית מפורטת שמתארת מראש <strong className="text-fg">מה העיניים אמורות לראות בכל קטע</strong>. ככה גם בלילה קשה או בדרך מורכבת — לא מאבדים את החוט.
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
- <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
- למה מראש
- </div>
- <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ <div className="flex flex-col md:ps-8">
+ <Icon name="eye" size={26} className="text-accent-hover mb-3" strokeWidth={1.4} />
+ <h3 className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight mb-2 text-fg">
  בחושך, המוח עובד פחות — התסריט עובד תמיד
  </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
+ <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">
  תחת לחץ או אחרי שעות של הליכה, המוח עובד פחות טוב. סיפור דרך מוכן מאפשר לנווט <strong className="text-fg">על אוטומט</strong> — עוקבים אחרי ההוראות של עצמכם, בלי חישובים מיותרים.
  </p>
  </div>
+ </div>
+
+ <div className="flex items-center justify-center gap-2.5 mb-5 text-center">
+ <Icon name="spark" size={15} className="text-fg-dim" />
+ <h3 className="font-display font-semibold text-base text-fg-muted">
+ בנו את סיפור הדרך שלכם <span className="text-fg-dim font-normal">(Route Story Builder)</span>
+ </h3>
  </div>
 
  <RouteStoryBuilder />
@@ -122,7 +135,12 @@ isActive
  <div className="font-display font-bold text-base text-fg leading-tight">
  {c.label}
  </div>
- <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-1 leading-relaxed">{c.feature}</div>
+ <div className="text-xs mt-1 leading-relaxed">
+ <span className="font-display font-semibold tracking-wide text-accent-hover">{splitFeature(c.feature).lead}</span>
+ {splitFeature(c.feature).rest && (
+ <span className="font-display font-medium tracking-wide text-fg-dim"> {splitFeature(c.feature).rest}</span>
+ )}
+ </div>
  </div>
  </motion.button>
  );
@@ -614,11 +632,11 @@ aria-label="מרחק במטרים"
  </div>
  </div>
 
- <div className="surface p-6 rounded-2xl border border-accent/25 flex flex-col items-center justify-center bg-accent/5">
+ <div className="surface p-6 rounded-2xl border border-accent/25 flex flex-col items-center justify-center bg-accent/10">
  <div className="text-[10px] font-display font-medium text-accent mb-2 uppercase tracking-widest">כמות צמדי צעדים משוערת</div>
  <div className="text-6xl font-display font-bold text-accent tabular-nums mb-2">{paces}</div>
  <div className="text-sm font-bold text-fg">זוגות צעדים</div>
- <div className="text-[10px] text-fg-dim mt-4">חישוב: {distance} מ' ÷ 1.5 מ' (אורך צמד צעדים) = {paces}</div>
+ <div className="text-sm font-display font-semibold text-fg-muted mt-4 tabular-nums">חישוב: {distance} מ' ÷ 1.5 מ' (אורך צמד צעדים) = {paces}</div>
  </div>
  </div>
 
