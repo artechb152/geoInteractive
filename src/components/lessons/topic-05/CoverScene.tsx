@@ -175,7 +175,7 @@ export function CoverScene() {
           onClick={() => setSubmitted(true)}
           disabled={!allAssigned}
           className={cn(
-            'px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2',
+            'px-6 py-3 rounded-[3px] font-bold transition-all flex items-center gap-2',
             allAssigned
               ? 'bg-accent text-bg-elevated hover:scale-105 active:scale-95'
               : 'bg-bg-accent text-fg-dim border border-border cursor-not-allowed'
@@ -187,7 +187,7 @@ export function CoverScene() {
         {(assignedCount > 0 || submitted) && (
           <button
             onClick={reset}
-            className="px-6 py-3 rounded-xl border border-border hover:border-border-strong font-medium text-sm flex items-center gap-2"
+            className="px-6 py-3 rounded-[3px] border border-border hover:border-border-strong font-medium text-sm flex items-center gap-2"
           >
             <Icon name="spark" size={14} />
             אפס הכל
@@ -253,7 +253,7 @@ function ItemPool({
         onDragEnd();
       }}
       className={cn(
-        'bg-bg-elevated p-4 mb-6 rounded-xl border transition-colors duration-200',
+        'bg-bg-elevated p-4 mb-6 rounded-[3px] border transition-colors duration-200',
         isOver ? 'border-brand' : 'border-border'
       )}
     >
@@ -330,7 +330,7 @@ function CategoryBin({
       animate={{ scale: isOver ? 1.015 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'relative bg-bg-elevated rounded-xl overflow-hidden flex flex-col transition-colors duration-200',
+        'relative bg-bg-elevated rounded-[3px] overflow-hidden flex flex-col transition-colors duration-200',
         'border',
         isOver
           ? category.border
@@ -374,7 +374,7 @@ function CategoryBin({
                   ? 'rgba(235, 158, 72, 0.06)'
                   : 'rgba(0, 0, 0, 0.015)',
             }}
-            className="h-full min-h-[100px] rounded-lg flex flex-col items-center justify-center gap-2 transition-colors"
+            className="h-full min-h-[100px] rounded-[3px] flex flex-col items-center justify-center gap-2 transition-colors"
           >
             {isOver && (
               <motion.span

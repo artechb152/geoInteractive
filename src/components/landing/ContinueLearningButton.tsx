@@ -1,31 +1,28 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ArrowLeft, Play } from 'lucide-react';
 import { lessons } from '@/lib/lessons';
 import { getLastVisit, type LastVisit } from '@/lib/last-visit';
+import { Button } from '@/components/ui/Button';
 
 /**
- * The primary CTA in the hero. Renders ONE of:
- *   - "התחלת הקורס" when the user has no recorded last-visit (first
- *     time, fresh device, or after clearing storage).
- *   - "המשך · NN.M · sub-topic" when a last-visit exists — links to
- *     that exact sub-topic (last *visited*, not furthest reached).
+ * ה-CTA הראשי של הקורס. מרנדר אחד מהשניים:
+ *   - "התחלת הקורס" כשאין ביקור מוקלט (פעם ראשונה / מכשיר חדש).
+ *   - "המשך · NN.M · תת-נושא" כשקיים ביקור — קישור לתת-הנושא המדויק
+ *     (האחרון שביקרו בו, לא הכי מתקדם).
  *
- * Both states share the same visual treatment as the site's primary
- * button — solid orange fill, white text — so the hero only ever
- * shows one CTA and it always reads the same way.
+ * שני המצבים חולקים את אותו Button primary כתום (design-system §16).
  *
- * SSR-safe: server renders the "start" variant so the page has a CTA
- * on first paint; on hydration we swap to "continue" if a visit exists.
+ * SSR-safe: השרת מרנדר את מצב ה"התחלה"; בהידרציה עוברים ל"המשך" אם צריך.
  */
-
-const PRIMARY_CTA_CLASS =
-  'group inline-flex items-center justify-center px-4 py-2 rounded-md font-medium text-bg-elevated bg-accent hover:bg-accent-hover transition-colors duration-300';
-
-const FIRST_LESSON_HREF = `/lessons/${lessons[0].id}/`;
-
-export function ContinueLearningButton() {
+export function ContinueLearningButton({
+  size = 'md',
+  className,
+}: {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
   const [visit, setVisit] = useState<LastVisit | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -36,9 +33,10 @@ export function ContinueLearningButton() {
 
   if (!mounted || !visit) {
     return (
-      <Link href={FIRST_LESSON_HREF} className={PRIMARY_CTA_CLASS}>
+      <Button href={`/lessons/${lessons[0].id}/`} size={size} className={className}>
+        <Play className="size-4" aria-hidden />
         <span>התחלת הקורס</span>
-      </Link>
+      </Button>
     );
   }
 
@@ -53,12 +51,14 @@ export function ContinueLearningButton() {
       : `שיעור ${lessonNum} · ${visit.topicShortTitle}`;
 
   return (
-    <Link
+    <Button
       href={href}
-      className={PRIMARY_CTA_CLASS}
+      size={size}
+      className={className}
       aria-label={`המשך מהמקום שעצרת: ${subPart}`}
     >
-      <span className="truncate max-w-[22rem]">המשך · {subPart}</span>
-    </Link>
+      <span className="max-w-[20rem] truncate">המשך · {subPart}</span>
+      <ArrowLeft className="size-4 shrink-0" aria-hidden />
+    </Button>
   );
 }

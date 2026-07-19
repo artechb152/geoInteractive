@@ -335,7 +335,7 @@ isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:
  {isActive && (
  <motion.span
 layoutId="t3-norths-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
  />
  )}
  <span

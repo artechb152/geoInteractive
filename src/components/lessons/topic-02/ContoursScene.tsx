@@ -88,13 +88,13 @@ title={
                intro="האתגר הכי גדול במפה הוא להבין איך השטח נראה במציאות. הרי המפה היא דף שטוח, אבל העולם הוא תלת-ממדי. כדי לפתור את זה, אנחנו משתמשים בשיטה חכמה: קווי גובה. דמיינו שחתכנו את ההר לפרוסות אופקיות (כמו עוגת קומות). כל קו שתראו במפה הוא פשוט הקצה של פרוסה כזו."
       />
 
-      <div className="surface-elevated p-6 mb-6 rounded-2xl border border-border/50">
+      <div className="surface-elevated p-6 mb-6 rounded-[4px] border border-border/50">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           <div className="space-y-3">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
               מבט תלת־ממדי · ההר כעוגת פרוסות
             </div>
-            <div className="surface bg-bg-accent/20 rounded-xl p-4 border border-border/40">
+            <div className="surface bg-bg-accent/20 rounded-[3px] p-4 border border-border/40">
               <ContourCake3D activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
             <div className="text-[11px] text-accent/80 font-medium text-center">
@@ -106,7 +106,7 @@ title={
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
               מבט מלמעלה · איך זה נראה במפה
             </div>
-            <div className="surface bg-bg-accent/20 rounded-xl p-4 border border-border/40">
+            <div className="surface bg-bg-accent/20 rounded-[3px] p-4 border border-border/40">
               <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
             <div className="text-[11px] text-accent/80 font-medium text-center animate-pulse">
@@ -133,7 +133,7 @@ title={
               key={s.id}
               onClick={() => setShapeId(s.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
+                'surface p-4 text-right transition-all rounded-[3px] relative overflow-hidden flex items-center gap-3',
                 active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
               )}
             >
@@ -145,7 +145,7 @@ title={
               )}
               <span
                 className={cn(
-                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold',
+                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold',
                   active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
                 )}
               >
@@ -169,7 +169,7 @@ title={
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
-              className="surface p-6 border-r-4 border-accent rounded-xl"
+              className="surface p-6 border-r-4 border-accent rounded-[3px]"
             >
               <div className="flex items-center gap-3 mb-3">
                 <Icon name="mountain" size={36} className="text-accent shrink-0" />
@@ -184,7 +184,7 @@ title={
           <Glossary />
         </div>
 
-        <div className="surface-elevated bg-bg-accent/20 relative overflow-hidden border border-border/50 rounded-2xl">
+        <div className="surface-elevated bg-bg-accent/20 relative overflow-hidden border border-border/50 rounded-[4px]">
           <ShapeMap shape={shape} />
         </div>
       </div>
@@ -317,7 +317,7 @@ function ShapeMap({ shape }: { shape: Shape }) {
 
 function Glossary() {
   return (
-    <div className="surface p-6 rounded-xl space-y-4 bg-bg-accent/10 border border-border/30">
+    <div className="surface p-6 rounded-[3px] space-y-4 bg-bg-accent/10 border border-border/30">
       <div className="text-sm font-display font-semibold text-accent tracking-wider font-bold mb-2">מילון מושגים לניווט</div>
       <Item term="קו גובה (Contour Line)" def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר." />
       <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים." />

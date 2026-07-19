@@ -62,7 +62,7 @@ export function DemoShell({
               <Link
                 key={d.id}
                 href={d.href}
-                className="group rounded-xl border border-border bg-bg-elevated p-3.5 hover:border-accent/40 transition-all"
+                className="group rounded-[3px] border border-border bg-bg-elevated p-3.5 hover:border-accent/40 transition-all"
               >
                 <div className="font-display font-bold text-sm text-fg group-hover:text-accent transition-colors">
                   {d.title}

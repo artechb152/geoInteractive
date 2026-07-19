@@ -60,7 +60,7 @@ title={
 
  {/* Concept · matched pair feature cards */}
  <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  הכלל המנחה
@@ -73,7 +73,7 @@ title={
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  ההיגיון ההפוך
@@ -96,7 +96,7 @@ return (
 key={s.id}
 onClick={() => setScale(s)}
 className={cn(
- 'surface p-4 text-right transition-all relative overflow-hidden flex items-center gap-3 rounded-xl',
+ 'surface p-4 text-right transition-all relative overflow-hidden flex items-center gap-3 rounded-[3px]',
 active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
  )}
  >
@@ -108,7 +108,7 @@ className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
  )}
  <span
 className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
 active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
  )}
  >
@@ -129,13 +129,13 @@ active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-mute
 
  <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch">
  {/* Map Preview Area */}
- <div className="surface-elevated bg-bg relative overflow-hidden border border-border/50 rounded-xl">
+ <div className="surface-elevated bg-bg relative overflow-hidden border border-border/50 rounded-[3px]">
  <ScalePreview scale={scale} />
  </div>
 
  {/* Sidebar Controls & Info */}
  <div className="space-y-4">
- <div className="surface-elevated p-5 rounded-xl">
+ <div className="surface-elevated p-5 rounded-[3px]">
  <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
  מחשבון"מה המרחק?"
  </div>
@@ -151,7 +151,7 @@ max={100}
 step={0.1}
 value={mapDistance}
 onChange={(e) => setMapDistance(Number(e.target.value) || 0)}
-className="w-24 bg-bg-accent border border-border rounded-lg px-3 py-2 font-display font-medium tracking-wide text-xl tabular-nums focus:border-accent outline-none transition-colors"
+className="w-24 bg-bg-accent border border-border rounded-[3px] px-3 py-2 font-display font-medium tracking-wide text-xl tabular-nums focus:border-accent outline-none transition-colors"
  />
  <span className="text-fg-muted text-sm pb-2.5">ס״מ במפה</span>
  </div>
@@ -193,7 +193,7 @@ initial={{ opacity: 0, x: 20 }}
 animate={{ opacity: 1, x: 0 }}
 exit={{ opacity: 0, x: -20 }}
 transition={{ duration: 0.2 }}
-className="surface p-5 border-r-2 border-accent rounded-xl"
+className="surface p-5 border-r-2 border-accent rounded-[3px]"
  >
  <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
  רזולוציה קרטוגרפית
@@ -314,7 +314,7 @@ return (
 initial={{ opacity: 0, y: 20 }}
 whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true }}
-className="mt-8 surface-elevated p-6 rounded-xl"
+className="mt-8 surface-elevated p-6 rounded-[3px]"
  >
  <div className="flex gap-4 items-start">
  <Icon name="globe" size={24} className="text-accent-cool shrink-0 mt-0.5" />
@@ -336,7 +336,7 @@ className="mt-8 surface-elevated p-6 rounded-xl"
  />
  </div>
 
- <div className="mt-6 p-4 bg-accent-cool/5 rounded-lg border border-accent-cool/10 text-xs text-fg-muted flex items-center gap-3">
+ <div className="mt-6 p-4 bg-accent-cool/5 rounded-[3px] border border-accent-cool/10 text-xs text-fg-muted flex items-center gap-3">
  <svg
 width="16"
 height="16"

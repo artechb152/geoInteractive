@@ -33,3 +33,17 @@ qa-output/
 # Playwright MCP session logs and ad-hoc QA screenshots
 .playwright-mcp/
 /geo09-*.png
+# Ad-hoc QA render screenshots at repo root (throwaway). referenceImageDesign.png
+# is the design target and stays tracked — none of these patterns match it.
+/design-approval-*.png
+/cards-grid*.png
+/card-*.png
+/qa-verify-*.png
+/mobile-*.png
+
+# QA screenshots (session artifacts)
+.playwright-mcp/
+qa-*.png
+/progress-card-*.png
+/topic01-*.png
+/topic02-*.png

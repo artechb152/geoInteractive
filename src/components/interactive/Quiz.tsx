@@ -90,7 +90,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
             <li
               key={q.id}
               className={cn(
-                'relative rounded-2xl border bg-bg-elevated p-3.5 md:p-4 transition-colors duration-300 ease-snap',
+                'relative rounded-[4px] border bg-bg-elevated p-3.5 md:p-4 transition-colors duration-300 ease-snap',
                 !submitted && 'border-border',
                 submitted && isCorrect && 'border-status-ok/40',
                 submitted && !isCorrect && inRetry && 'border-status-warn/40',
@@ -126,7 +126,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       disabled={locked}
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))}
                       className={cn(
-                        'w-full text-right px-3.5 py-2.5 rounded-xl border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
+                        'w-full text-right px-3.5 py-2.5 rounded-[3px] border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
                         // pre-submit + active retry (options stay pickable)
                         !locked && isPicked && !inRetry && 'border-accent-hover bg-accent/10 text-accent font-medium',
                         !locked && isPicked && inRetry && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
@@ -172,7 +172,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                     transition={{ duration: 0.3, ease: easeSnap }}
                     className="overflow-hidden"
                   >
-                    <div className="p-3 rounded-xl text-sm md:text-[15px] border border-status-warn/40 bg-status-warn/5 leading-relaxed">
+                    <div className="p-3 rounded-[3px] text-sm md:text-[15px] border border-status-warn/40 bg-status-warn/5 leading-relaxed">
                       <div className="flex gap-2.5 items-start">
                         <span
                           className="grid place-items-center size-5 shrink-0 rounded-full mt-0.5 bg-status-warn/25 text-status-warn"
@@ -190,7 +190,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                         <button
                           type="button"
                           onClick={() => revealAnswer(q.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border text-fg-muted hover:text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-medium border border-border text-fg-muted hover:text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
                         >
                           <Eye className="size-3.5" aria-hidden />
                           הצג תשובה
@@ -212,7 +212,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                   >
                     <div
                       className={cn(
-                        'p-3 rounded-xl text-sm md:text-[15px] border flex gap-2.5 items-start leading-relaxed',
+                        'p-3 rounded-[3px] text-sm md:text-[15px] border flex gap-2.5 items-start leading-relaxed',
                         isCorrect
                           ? 'border-status-ok/30 bg-status-ok/5'
                           : 'border-status-warn/40 bg-status-warn/5',
@@ -247,7 +247,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
       </ol>
 
       {/* ── Footer: submit / score ──────────────────────────────────── */}
-      <div className="rounded-2xl border border-border bg-bg-elevated p-3.5 md:p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-[4px] border border-border bg-bg-elevated p-3.5 md:p-4 flex flex-wrap items-center justify-between gap-4">
         {submitted ? (
           <>
             <div className="flex items-center gap-3">
@@ -273,7 +273,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-border text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[3px] text-sm font-medium border border-border text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
             >
               <RotateCcw className="size-4" aria-hidden />
               ניסיון נוסף
@@ -291,7 +291,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
               disabled={!allAnswered}
               onClick={() => setSubmitted(true)}
               className={cn(
-                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-bg-elevated bg-accent hover:bg-accent-hover transition-all',
+                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] font-medium text-bg-elevated bg-accent hover:bg-accent-hover transition-all',
                 'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent',
               )}
             >

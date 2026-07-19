@@ -27,6 +27,27 @@ export type Lesson = {
   tags: string[];
 };
 
+/** slug של קובץ המיני-דיורמה ב-public/assets/isometric לכל מספר שיעור */
+const DIORAMA_SLUGS: Record<number, string> = {
+  1: 'strategy-terrain',
+  2: 'map-reading',
+  3: 'navigation',
+  4: 'landforms',
+  5: 'mobility',
+  6: 'los',
+  7: 'weather',
+  8: 'logistics',
+  9: 'chokepoints',
+  10: 'urban',
+  11: 'borders',
+  12: 'gis-layers',
+};
+
+/** נתיב תמונת המיני-דיורמה של שיעור לפי מספרו */
+export function lessonDioramaSrc(number: number): string {
+  return `/assets/isometric/lesson-${String(number).padStart(2, '0')}-${DIORAMA_SLUGS[number]}.png`;
+}
+
 export const lessons: Lesson[] = [
   {
     id: 'topic-01',

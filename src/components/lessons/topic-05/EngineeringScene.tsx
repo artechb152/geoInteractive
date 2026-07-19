@@ -133,7 +133,7 @@ export function EngineeringScene() {
                 >
                   <span
                     className={cn(
-                      'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                      'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
                       isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >

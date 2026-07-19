@@ -223,7 +223,7 @@ export function AsymmetricScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.08 }}
-            className="surface-elevated rounded-2xl p-6 flex flex-col border border-border"
+            className="surface-elevated rounded-[4px] p-6 flex flex-col border border-border"
           >
             <div className="mb-3">
               <div className="font-display font-bold text-lg leading-tight text-fg">
@@ -357,7 +357,7 @@ export function AsymmetricScene() {
 /* ─────────────────────── 3-COL COMPARISON TABLE ─────────────────────── */
 function TypologyTable() {
   return (
-    <div className="surface-elevated overflow-hidden rounded-2xl">
+    <div className="surface-elevated overflow-hidden rounded-[4px]">
       <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr] border-b border-border-strong">
         <div className="p-4 bg-bg-accent/40">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">השוואה</div>
@@ -522,7 +522,7 @@ function TimeAsymmetry() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-bg-accent/30 p-5 mt-4">
+      <div className="rounded-[3px] border border-border bg-bg-accent/30 p-5 mt-4">
         <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">התובנה</div>
         <p className="text-sm text-fg leading-relaxed text-pretty">
           המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. השחקן הלא-סדיר נלחם רק בחזית אחת. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.
@@ -574,7 +574,7 @@ function DragExercise({
         </p>
       </div>
 
-      <div className="surface-elevated p-4 rounded-2xl mb-3">
+      <div className="surface-elevated p-4 rounded-[4px] mb-3">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
           ארגונים לסיווג ({pool.length})
         </div>
@@ -682,7 +682,7 @@ function OrgChip({
       onClick={onSelect}
       className={cn(
         'group inline-flex items-center gap-2 text-right transition-all border',
-        compact ? 'px-2.5 py-1.5 rounded-md' : 'px-3 py-2 rounded-lg',
+        compact ? 'px-2.5 py-1.5 rounded-md' : 'px-3 py-2 rounded-[3px]',
         submitted && isCorrect && 'border-status-ok/50 bg-status-ok/10',
         submitted && isWrong && 'border-status-danger/50 bg-status-danger/10',
         !submitted && isSelected && state === 'pool' && 'border-fg bg-bg-accent',
@@ -749,7 +749,7 @@ function CategoryBin({
       animate={{ scale: isOver ? 1.01 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'rounded-xl border bg-bg-elevated p-4 transition-colors flex flex-col gap-3 min-h-[180px]',
+        'rounded-[3px] border bg-bg-elevated p-4 transition-colors flex flex-col gap-3 min-h-[180px]',
         isOver || (selectedOrg && !isOver) ? 'border-fg' : 'border-border',
       )}
     >
@@ -764,7 +764,7 @@ function CategoryBin({
         {orgsHere.length === 0 ? (
           <div
             className={cn(
-              'flex-1 min-h-[80px] rounded-lg flex items-center justify-center text-sm font-display font-semibold transition-colors',
+              'flex-1 min-h-[80px] rounded-[3px] flex items-center justify-center text-sm font-display font-semibold transition-colors',
               isOver ? 'bg-bg-accent text-fg' : selectedOrg ? 'bg-bg-accent/40 text-fg-muted' : 'text-fg-dim bg-bg-accent/40',
             )}
           >

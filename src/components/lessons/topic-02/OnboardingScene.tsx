@@ -153,7 +153,7 @@ title={
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isExpanded ? 'bg-brand-dark text-bg-elevated border-brand-dark' : isPassed ? 'bg-status-ok/15 text-status-ok' : 'bg-bg-accent text-fg-muted'
                     )}
                   >

@@ -95,7 +95,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המושג
@@ -107,7 +107,7 @@ title = {
             "תחנה מרכזית" אחת שבה נפגשים כל כלי התחבורה: <strong className="text-fg">ים, רכבת, כביש ואוויר</strong>. לדוגמה — נמל ים שצמוד לתחנת רכבת ולידו כביש מהיר, כך שאפשר להעביר ארגז ממטוס ישר למשאית.
           </p>
         </div>
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המשמעות הצבאית
@@ -124,7 +124,7 @@ title = {
       {/* Main visualization + controls */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Hub map */}
-        <div className="surface-elevated bg-bg-accent/30 p-4 rounded-2xl overflow-hidden">
+        <div className="surface-elevated bg-bg-accent/30 p-4 rounded-[4px] overflow-hidden">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
               <span className="size-1.5 rounded-full bg-accent" aria-hidden />
@@ -167,7 +167,7 @@ title = {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="surface-elevated p-5 rounded-2xl border-r-4 border-r-brand/40"
+              className="surface-elevated p-5 rounded-[4px] border-r-4 border-r-brand/40"
             >
               <div className="flex items-center gap-3 mb-3">
                 <Icon name={meta.icon} size={32} className="text-brand-dark shrink-0" />
@@ -207,7 +207,7 @@ title = {
                 type="button"
                 onClick={() => setDestroyed(destroyed === selected ? null : selected)}
                 className={cn(
-                  'w-full mt-4 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all',
+                  'w-full mt-4 px-4 py-2.5 rounded-[3px] font-bold text-sm flex items-center justify-center gap-2 transition-all',
                   destroyed === selected
                     ? 'bg-status-ok text-bg hover:scale-[0.99]'
                     : 'bg-status-danger text-bg hover:scale-[1.02] active:scale-[0.98]'
@@ -223,7 +223,7 @@ title = {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="surface p-4 rounded-xl bg-status-danger/5"
+              className="surface p-4 rounded-[3px] bg-status-danger/5"
             >
               <div className="text-sm font-display font-semibold text-status-danger mb-1 tracking-wider">השפעה אסטרטגית (מצב משבר)</div>
               <p className="text-xs text-fg-muted leading-relaxed">
@@ -255,7 +255,7 @@ title = {
           <p className="text-sm text-fg leading-relaxed mb-3">
             זהו נמל שחפרו אותו מספיק עמוק אל תוך המים, כך שהוא מסוגל לקלוט את ספינות הענק: נושאות מטוסים, מכליות דלק וספינות מטען עצומות. מדובר בשער העיקרי של המדינה.
           </p>
-          <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
+          <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
             <div className="text-sm font-display font-semibold text-terrain-sky mb-1 tracking-wider">שליטה או השמדה</div>
             <p className="text-xs text-fg-muted leading-relaxed">
               אם אתה שולט בנמל - האספקה תזרום מבחוץ ללא הפסקה. אבל אם האויב מפציץ אותו או חוסם אותו במוקשים ימיים - העורק שמחבר אותך לעולם נחתך לחלוטין.
@@ -280,7 +280,7 @@ title = {
           <p className="text-sm text-fg leading-relaxed mb-3">
             דמיינו מקום אחד שבו נפגשים שדה תעופה, קווי רכבת כבדה וכבישים מהירים. הקסם כאן הוא שאפשר להעביר את הארגז מהמטוס ישר לרכבת, ומשם למשאית - כמעט באפס זמן ומאמץ.
           </p>
-          <div className="surface p-3 rounded-lg bg-bg-accent/30 border border-border">
+          <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
             <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">השפעת פגיעה</div>
             <p className="text-xs text-fg-muted leading-relaxed">
               פגיעה מדויקת בנקודה הזו לא רק מונעת מאוכל ודלק להגיע לחיילים בחזית, אלא תוקעת את הכלכלה של המדינה כולה. מקומות כאלה נחשבים ל"מרכז הכובד" של המדינה – הבטן הרכה שחייבים להגן עליה בכל מחיר.
@@ -308,7 +308,7 @@ function HubMap({
   const hubY = 40;
 
   return (
-    <div className="relative w-full h-full min-h-[260px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[260px] rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         {/* Map-paper grid — matches LOCMap / ContoursScene ShapeMap so all
             diagrams in the course read as one family. */}

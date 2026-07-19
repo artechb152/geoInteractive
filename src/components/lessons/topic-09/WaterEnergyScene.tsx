@@ -105,7 +105,7 @@ title = {
           content, not a footnote. Left: term + definition headline;
           right: a stat-hero case study (95% of Egypt's water from the
           Nile) with the cause-and-effect under it. */}
-      <div className="surface-elevated p-6 sm:p-8 rounded-2xl mb-12 grid md:grid-cols-[1.2fr_1fr] gap-6 md:gap-8 items-start">
+      <div className="surface-elevated p-6 sm:p-8 rounded-[4px] mb-12 grid md:grid-cols-[1.2fr_1fr] gap-6 md:gap-8 items-start">
         <div>
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-2.5">
             <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
@@ -119,7 +119,7 @@ title = {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-bg p-5 sm:p-6">
+        <div className="rounded-[3px] border border-border bg-bg p-5 sm:p-6">
           <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-3">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המקרה הקלאסי · מצרים · אתיופיה
@@ -142,7 +142,7 @@ title = {
 
       {/* Dam simulator */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
-        <div className="surface-elevated p-4 rounded-2xl">
+        <div className="surface-elevated p-4 rounded-[4px]">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               סכר במעלה הנהר · השפעה על המורד
@@ -159,7 +159,7 @@ title = {
         </div>
 
         <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-2xl">
+          <div className="surface-elevated p-5 rounded-[4px]">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               מידת סגירת הסכר
             </div>
@@ -182,18 +182,18 @@ title = {
               <span>סגור</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-              <div className="surface p-2 rounded-lg text-center">
+              <div className="surface p-2 rounded-[3px] text-center">
                 <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">זרימה במורד</div>
                 <div className="font-display font-bold text-lg text-accent tabular-nums">{downstreamFlow}%</div>
               </div>
-              <div className="surface p-2 rounded-lg text-center">
+              <div className="surface p-2 rounded-[3px] text-center">
                 <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">מים במאגר</div>
                 <div className="font-display font-bold text-lg text-accent-cool tabular-nums">{damClosure}%</div>
               </div>
             </div>
           </div>
 
-          <div className="surface p-3 rounded-xl text-xs text-fg-muted bg-bg-accent/30 border border-border">
+          <div className="surface p-3 rounded-[3px] text-xs text-fg-muted bg-bg-accent/30 border border-border">
             <strong className="text-fg block mb-1">תרחיש לדוגמה:</strong>
             אם המדינה שאצלה הסכר סוגרת אותו ל-70% למשך חצי שנה, מיליוני אזרחים במדינה התלויה יישארו בלי מים נקיים לשתייה וחקלאות. בהיסטוריה, מצוקה כזו בדיוק היא עילה מרכזית לפרוץ מלחמות.
           </div>
@@ -211,7 +211,7 @@ title = {
               key={e.id}
               onClick={() => setActiveEnergy(e.id)}
               className={cn(
-                'surface p-3 text-right transition-all rounded-xl flex items-center gap-2',
+                'surface p-3 text-right transition-all rounded-[3px] flex items-center gap-2',
                 isActive ? `${e.border} ${e.bg}` : 'hover:border-border-strong'
               )}
             >
@@ -234,7 +234,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-6', ePick.border.replace('border-', 'border-r-'))}
+          className={cn('surface-elevated p-6 rounded-[4px] border-r-4 mb-6', ePick.border.replace('border-', 'border-r-'))}
         >
           <div className="flex items-center gap-3 mb-4">
             <Icon name={ePick.icon} size={32} className={cn(ePick.color, 'shrink-0')} />
@@ -287,7 +287,7 @@ function DamSimulator({ closure, status }: { closure: number; status: 'normal' |
   const reservoirHeight = 8 + (closure / 100) * 18;
   const downstreamOpacity = (100 - closure) / 100;
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         <defs>
           <linearGradient id="sky-dam" x1="0" y1="0" x2="0" y2="1">

@@ -1,62 +1,45 @@
-import Link from 'next/link';
 import { lessons } from '@/lib/lessons';
+import { LessonCard } from '@/components/LessonCard';
+import { ContinueLearningButton } from './ContinueLearningButton';
 
 /**
- * "מה לומדים בקורס" — landing-page directory of all 12 lessons.
- *
- * Layout: a strict 3-column × 4-row grid. The page direction is RTL,
- * so grid items naturally flow right-to-left: row 1 holds lessons
- * 1·2·3 from right to left, row 2 holds 4·5·6, etc.
- *
- * Each cell is a small "magazine" card — a coloured orange banner at
- * the top stamped with the lesson number, then the short title and
- * subtitle. The whole card is a Link to the lesson page.
+ * "תכנית הלימודים" — גריד 12 השיעורים (design-system §22.2).
+ * כרטיסים לבנים אחידים, מספר שיעור כתום, asset קטן לכל שיעור,
+ * CTA להמשך מהנקודה האחרונה.
  */
 export function LessonsGrid() {
   return (
     <section
-      id="lessons"
-      className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24"
-      aria-labelledby="lessons-heading"
+      id="syllabus"
+      className="mx-auto w-full max-w-[1400px] scroll-mt-[calc(var(--header-h)+1rem)] px-4 py-14 sm:px-6 lg:px-8 md:py-20"
+      aria-labelledby="syllabus-heading"
     >
-      <div className="mb-10 md:mb-12">
-        <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase mb-2">
-          תוכנית הקורס · 12 שיעורים
+      <div className="mb-8 flex flex-col gap-5 md:mb-10 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="section-eyebrow">מסלול הקורס · 12 שיעורים ברצף אחד</p>
+          <h2
+            id="syllabus-heading"
+            className="mt-2 font-display text-3xl font-extrabold tracking-tight text-balance leading-tight md:text-4xl"
+          >
+            תכנית הלימודים
+          </h2>
+          <span aria-hidden className="mt-3 flex items-center gap-1.5">
+            <span className="block h-1.5 w-16 bg-accent" />
+            <span className="block size-1.5 rotate-45 bg-brand-dark" />
+          </span>
+          <p className="mt-3 max-w-3xl text-base text-fg-muted md:text-lg">
+            מסע של 12 שלבים — מקריאת מפה בסיסית ועד GEOINT מבצעי. כל שיעור עומד
+            לבדו אבל בנוי על קודמו.
+          </p>
         </div>
-        <h2
-          id="lessons-heading"
-          className="font-display font-bold text-2xl md:text-4xl text-balance leading-tight mb-2"
-        >
-          מה לומדים <span className="text-accent-hover">בקורס</span>
-        </h2>
-        <p className="text-fg-muted text-base md:text-lg max-w-3xl">
-          מסע של 12 שלבים — מקריאת מפה בסיסית ועד GEOINT מבצעי. כל שיעור עומד
-          לבדו אבל בנוי על קודמו.
-        </p>
+        <div className="shrink-0">
+          <ContinueLearningButton />
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 md:gap-4">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {lessons.map((lesson) => (
-          <Link
-            key={lesson.id}
-            href={`/lessons/${lesson.id}/`}
-            className="group flex flex-col rounded-md overflow-hidden border border-border bg-bg-elevated hover:border-accent transition-colors"
-          >
-            {/* Banner — orange masthead with the lesson number */}
-            <div className="bg-accent text-bg-elevated px-3 py-1.5 text-xs sm:text-sm font-display font-bold">
-              <span>שיעור {lesson.number}</span>
-            </div>
-
-            {/* Body — short title + one-line subtitle */}
-            <div className="p-3 sm:p-4 flex-1 flex flex-col">
-              <h3 className="font-display font-bold text-sm sm:text-base leading-snug text-balance text-fg group-hover:text-accent-hover transition-colors">
-                {lesson.shortTitle}
-              </h3>
-              <p className="mt-1 text-[11px] sm:text-xs text-fg-muted leading-snug line-clamp-2 text-pretty">
-                {lesson.subtitle}
-              </p>
-            </div>
-          </Link>
+          <LessonCard key={lesson.id} lesson={lesson} />
         ))}
       </div>
     </section>

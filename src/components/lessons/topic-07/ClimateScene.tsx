@@ -129,7 +129,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המושג
@@ -141,7 +141,7 @@ title = {
             מצב שבו צורת השטח יוצרת מזג אוויר שונה באזור קטן: עמק שלוכד קור ולחות ויוצר ערפל, לעומת הר פתוח עם ראות מצוינת — שני עולמות במרחק קילומטר.
           </p>
         </div>
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             המדדים שמכריעים
@@ -156,7 +156,7 @@ title = {
       </div>
 
       {/* Section 1: Micro-climate side-by-side */}
-      <div className="surface-elevated p-5 sm:p-6 rounded-2xl mb-12">
+      <div className="surface-elevated p-5 sm:p-6 rounded-[4px] mb-12">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
           אקלים מקומי · אותו אזור, שתי מציאויות
         </div>
@@ -172,7 +172,7 @@ title = {
                 type="button"
                 onClick={() => setActiveSpot(spot.id)}
                 className={cn(
-                  'surface p-4 text-right transition-all rounded-xl flex flex-col gap-3 relative overflow-hidden',
+                  'surface p-4 text-right transition-all rounded-[3px] flex flex-col gap-3 relative overflow-hidden',
                   isActive
                     ? 'border-accent bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -187,7 +187,7 @@ title = {
                 <div className="flex items-center gap-3">
                   <span
                     className={cn(
-                      'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isActive
                         ? 'bg-accent text-bg-elevated border-accent'
                         : 'bg-bg-accent text-fg-muted border-border',
@@ -231,7 +231,7 @@ title = {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.2 }}
-              className={cn('mt-3 p-3 rounded-xl border-2 text-xs leading-relaxed', sp.border, sp.bg)}
+              className={cn('mt-3 p-3 rounded-[3px] border-2 text-xs leading-relaxed', sp.border, sp.bg)}
             >
               <strong className={cn('block mb-1', sp.color)}>איך זה משפיע בשטח:</strong>
               {sp.ops}
@@ -245,7 +245,7 @@ title = {
       {/* Section 2: Climatic load calculator */}
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch mb-10">
         {/* Status visualization */}
-        <div className="surface-elevated p-5 rounded-2xl flex flex-col">
+        <div className="surface-elevated p-5 rounded-[4px] flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מצב גופני (סטטוס)
@@ -263,7 +263,7 @@ title = {
           <PhysioGauge score={strain.score} mode={strain.mode} status={status} />
 
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="surface p-3 rounded-lg">
+            <div className="surface p-3 rounded-[3px]">
               <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">מרגיש כמו</div>
               <div className="font-display font-bold text-2xl tabular-nums text-accent">
                 {strain.mode === 'heat'
@@ -272,7 +272,7 @@ title = {
               </div>
               <div className="text-[10px] text-fg-dim mt-0.5">לעומת {temp}° בחוץ</div>
             </div>
-            <div className="surface p-3 rounded-lg">
+            <div className="surface p-3 rounded-[3px]">
               <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">צריכת מים נדרשת</div>
               <div className="font-display font-bold text-2xl tabular-nums text-accent">
                 {water.toFixed(1)}<span className="text-sm text-fg-muted"> ליטר לשעה</span>
@@ -308,7 +308,7 @@ title = {
         </div>
 
         {/* Sliders */}
-        <div className="surface-elevated p-5 rounded-2xl space-y-4">
+        <div className="surface-elevated p-5 rounded-[4px] space-y-4">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
             מדדי מזג אוויר
           </div>
@@ -340,7 +340,7 @@ title = {
             color="text-fg"
           />
 
-          <div className="pt-3 border-t border-border-subtle text-xs text-fg-muted bg-bg-accent/20 rounded-lg p-3 leading-relaxed">
+          <div className="pt-3 border-t border-border-subtle text-xs text-fg-muted bg-bg-accent/20 rounded-[3px] p-3 leading-relaxed">
             <strong className="text-fg block mb-1">תנסו בעצמכם:</strong>
             הורידו את הטמפרטורה ל-10°C- והעלו את הרוח ל-30 קמ"ש. שימו לב איך הטמפרטורה ש"מרגישים" צונחת הרבה מתחת לזו האמיתית בגלל הרוח. לאפקט הזה קוראים ״אפקט מקרר הרוח״ (Wind Chill).
           </div>
@@ -352,7 +352,7 @@ title = {
 
 function MicroClimateViz({ active }: { active: Spot }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent/40">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden bg-bg-accent/40">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         {/* Parent card carries the warm cream background. */}
 

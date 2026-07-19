@@ -2,9 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * שפת דף הבית (design lock) — Modern Military Map על נייר קרם.
+ * חתימות ויזואליות:
+ *   - קנבס קרם (paper.page) עם מרקם קווי-גובה tan עדין.
+ *   - כרטיסים לבנים מוגבהים: רדיוס גדול, קו-שיער tanline, צל card-soft חם.
+ *   - דיו זית (olive.ink) לטקסט; מרווה/זית כמבטא מפה צבאית.
+ *   - כתום (ember) אך ורק לפעולה/פוקוס/פרוגרס — לעולם לא דקורטיבי.
+ *   - פאנל pine כהה כמשקל-נגד יחיד (התקדמות) — לא פסי פיקוד.
+ */
+
 @layer base {
   :root {
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    /* גובה ה-AppHeader הגלובלי — שורה אחת רכה. */
+    --header-h: 4rem;
+    /* נשמר עבור .oct/.oct-sm — עדיין בשימוש במסכים מחוץ להיקף ה-pass הזה
+       (בית/סילבוס/overview/prototypes). לא בשימוש ב-shell/topic-03 החדשים. */
+    --notch: 0.55rem;
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --header-h: 5rem;
+    }
   }
 
   html {
@@ -32,45 +53,103 @@
 }
 
 @layer components {
+  /* ── פלטת אוקטגון — פינות קטומות בארבע הפינות ─────────────── */
+  .oct {
+    clip-path: polygon(
+      var(--notch) 0,
+      calc(100% - var(--notch)) 0,
+      100% var(--notch),
+      100% calc(100% - var(--notch)),
+      calc(100% - var(--notch)) 100%,
+      var(--notch) 100%,
+      0 calc(100% - var(--notch)),
+      0 var(--notch)
+    );
+  }
+
+  .oct-sm {
+    clip-path: polygon(
+      0.3rem 0,
+      calc(100% - 0.3rem) 0,
+      100% 0.3rem,
+      100% calc(100% - 0.3rem),
+      calc(100% - 0.3rem) 100%,
+      0.3rem 100%,
+      0 calc(100% - 0.3rem),
+      0 0.3rem
+    );
+  }
+
+  /* ── לשונית תיקייה (folder tab) — טרפז קטום למעלה ─────────── */
+  .tab-folder {
+    clip-path: polygon(0.7rem 0, calc(100% - 0.7rem) 0, 100% 100%, 0 100%);
+  }
+
+  /* ── משטחים — נשמרים בשמות הישנים כי סצנות קיימות משתמשות בהם;
+        הביטוי (design lock): כרטיס לבן על קרם, רדיוס גדול, קו-שיער
+        tanline עדין, צל card-soft חם ───────────────────────────── */
   .surface {
-    @apply bg-bg-card border border-border rounded-2xl;
+    @apply bg-bg-card border border-border/60 rounded-2xl;
   }
 
   .surface-elevated {
-    @apply bg-bg-elevated border border-border rounded-2xl shadow-elevated;
+    @apply bg-bg-elevated border border-border/60 rounded-2xl shadow-elevated;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border tracking-wide;
   }
 
+  /* ── כפתורים ישנים בתוך סצנות — מיושרים לשפת דף הבית (כמו ui/Button) ── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-display font-bold
            transition-all duration-200 ease-snap select-none;
   }
 
   .btn-primary {
-    @apply btn bg-accent text-bg-elevated hover:bg-accent-hover active:scale-[0.98];
+    @apply btn bg-cta-ember text-white shadow-cta-ember hover:brightness-105 active:translate-y-px;
   }
 
   .btn-secondary {
-    @apply btn bg-accent text-bg-elevated hover:bg-accent-hover active:scale-[0.98];
+    @apply btn bg-paper-bright/70 text-fg border border-border hover:bg-paper-bright active:translate-y-px;
   }
 
   .btn-ghost {
-    @apply btn bg-transparent border border-accent/40 text-accent hover:bg-accent/10;
+    @apply btn bg-transparent font-semibold text-fg-muted hover:bg-bg-accent hover:text-fg;
   }
 
+  /* ── רקע גריד מדידה עדין ─────────────────────────────────── */
   .topo-bg {
     @apply bg-grid-pattern bg-grid;
   }
 
-  /* `gradient-text` is kept as a class for backwards compatibility with
-     existing headlines. It resolves to the darkest orange — h1 picks it
-     up naturally; lighter hierarchy for h2/h3 is set on those elements
-     themselves via `text-accent-hover` / `text-accent-deep`. */
+  /* `gradient-text` נשמר לתאימות עם כותרות קיימות — הכתום הכהה. */
   .gradient-text {
     @apply text-accent;
+  }
+
+  /* eyebrow אחיד — מרווה כהה, uppercase, tracking רחב (V2). */
+  .section-eyebrow {
+    @apply inline-flex items-center gap-2 text-[11px] font-display font-bold tracking-[0.22em] uppercase text-brand-dark;
+  }
+  .section-eyebrow::before {
+    content: '';
+    @apply inline-block size-1.5 rounded-full bg-accent;
+  }
+
+  /* ── שורת מטא עם מוביל נקודות (dossier) ──────────────────── */
+  .dotted-leader {
+    @apply flex items-baseline gap-2 text-sm;
+  }
+  .dotted-leader::after {
+    content: '';
+    @apply order-2 flex-1 border-b border-dotted border-brand-dark/30 translate-y-[-3px];
+  }
+
+  /* ── מספר-מתאר ענק — ספרות שקופות עם קו מתאר מרווה ───────── */
+  .outline-numeral {
+    @apply font-display font-extrabold text-transparent select-none;
+    -webkit-text-stroke: 2px rgba(91, 124, 92, 0.28);
   }
 }
 

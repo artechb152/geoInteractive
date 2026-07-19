@@ -131,7 +131,7 @@ title = {
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active
                         ? 'bg-brand-dark text-bg-elevated border-brand-dark'
                         : 'bg-bg-accent text-fg-muted border-border',
@@ -217,7 +217,7 @@ title = {
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            className={cn('surface-elevated p-5 rounded-2xl border-r-4', r.bg, r.border.replace('border-', 'border-r-'))}
+            className={cn('surface-elevated p-5 rounded-[4px] border-r-4', r.bg, r.border.replace('border-', 'border-r-'))}
           >
             <div className="flex items-center gap-3 mb-3">
               <Icon name={r.id === 'msr' ? 'truck' : 'compass'} size={32} className={cn(r.color, 'shrink-0')} />
@@ -267,7 +267,7 @@ function LOCMap({ disruption }: { disruption: Disruption }) {
   const asrActive = disruption !== 'none';
 
   return (
-    <div className="relative w-full h-full min-h-[220px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[220px] rounded-[3px] overflow-hidden">
       <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         {/* Subtle map-paper grid — matches other diagrams (ContoursScene
             ShapeMap, KillChainScene CoverageCellViz) so all maps in the

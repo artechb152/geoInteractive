@@ -8,13 +8,11 @@ import { DEMOS } from '@/components/recap-demos/demos';
  */
 export function RecapDemosTeaser() {
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 border-t border-border-subtle">
-      <div className="mb-10 md:mb-12">
-        <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase mb-2">
-          דמו · בדיקת פורמט
-        </div>
+    <section className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-14 md:py-20 border-t border-border-subtle">
+      <div className="mb-8 md:mb-10">
+        <p className="section-eyebrow mb-1.5">דמו · בדיקת פורמט</p>
         <h2 className="font-display font-bold text-2xl md:text-4xl text-balance leading-tight mb-2">
-          איך לסכם שיעור — <span className="text-accent-hover">4 דרכים אינטראקטיביות</span>
+          איך לסכם שיעור — 4 דרכים אינטראקטיביות
         </h2>
         <p className="text-fg-muted text-base md:text-lg max-w-3xl">
           בחר פורמט וכנס לניסיון — אותם 8 מושגים של שיעור 1, ארבעה אופנים שונים של תרגול
@@ -37,7 +35,7 @@ export function RecapDemosTeaser() {
               <div className="font-mono text-[10px] text-fg-dim tracking-widest mb-1.5">
                 {String(i + 1).padStart(2, '0')} / 04
               </div>
-              <h3 className="font-display font-bold text-lg mb-1.5 text-accent-deep group-hover:text-accent-hover transition-colors">
+              <h3 className="font-display font-bold text-lg mb-1.5 text-fg group-hover:text-brand-dark transition-colors">
                 {d.title}
               </h3>
               <p className="text-sm text-fg-muted leading-relaxed mb-4">{d.tagline}</p>

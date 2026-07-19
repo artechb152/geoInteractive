@@ -140,7 +140,7 @@ export function TrafficabilityScene() {
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch mb-10">
         {/* Visualization */}
-        <div className="surface-elevated p-5 rounded-2xl overflow-hidden flex flex-col">
+        <div className="surface-elevated p-5 rounded-[4px] overflow-hidden flex flex-col">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
             הדמיה: איך יתמודד {meta.label} בעלייה של {slope}%?
           </div>
@@ -165,7 +165,7 @@ export function TrafficabilityScene() {
                     type="button"
                     onClick={() => setVehicle(v.id)}
                     className={cn(
-                      'p-3 rounded-xl border-2 text-right transition-all relative overflow-hidden',
+                      'p-3 rounded-[3px] border-2 text-right transition-all relative overflow-hidden',
                       isActive
                         ? 'border-accent bg-bg-elevated'
                         : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -180,7 +180,7 @@ export function TrafficabilityScene() {
                     <div className="flex items-start gap-3 mb-2">
                       <span
                         className={cn(
-                          'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                          'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
                           isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
                         )}
                       >
@@ -237,7 +237,7 @@ export function TrafficabilityScene() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
                 className={cn(
-                  'mt-4 p-3 rounded-xl border-2 flex items-start gap-2.5',
+                  'mt-4 p-3 rounded-[3px] border-2 flex items-start gap-2.5',
                   status === 'ok' && 'border-status-ok/40 bg-status-ok/5',
                   status === 'caution' && 'border-status-warn/40 bg-status-warn/5',
                   status === 'fail' && 'border-status-danger/40 bg-status-danger/5'
@@ -292,7 +292,7 @@ export function TrafficabilityScene() {
               type="button"
               onClick={() => setActiveSoil(s.id)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-xl relative overflow-hidden',
+                'surface p-4 text-right transition-all rounded-[3px] relative overflow-hidden',
                 isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
@@ -305,7 +305,7 @@ export function TrafficabilityScene() {
               <div className="flex items-start gap-3">
                 <span
                   className={cn(
-                    'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',
+                    'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
                     isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
                   )}
                 >

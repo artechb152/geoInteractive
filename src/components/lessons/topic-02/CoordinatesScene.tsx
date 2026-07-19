@@ -56,7 +56,7 @@ title={
 
  {/* Concept · matched pair feature cards */}
  <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  השפה של הנ"צ
@@ -69,7 +69,7 @@ title={
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+ <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
  <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
  <span className="size-1.5 rounded-full bg-accent" aria-hidden />
  נקודת התורפה
@@ -91,7 +91,7 @@ key={s.id}
 initial={{ opacity: 0, y: 18 }}
 whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true }}
-className="surface-elevated p-6 border border-border/50 rounded-xl"
+className="surface-elevated p-6 border border-border/50 rounded-[3px]"
  >
  <div className="flex items-baseline justify-between mb-4">
  <div>
@@ -105,7 +105,7 @@ className="surface-elevated p-6 border border-border/50 rounded-xl"
 
  <div className="text-xs text-fg-muted mb-4 font-medium italic">{s.long}</div>
 
- <div className="surface p-4 mb-4 font-display font-medium tracking-wide text-sm border border-border/40 rounded-lg bg-bg/50">
+ <div className="surface p-4 mb-4 font-display font-medium tracking-wide text-sm border border-border/40 rounded-[3px] bg-bg/50">
  <div className="text-[10px] text-fg-dim mb-1 uppercase tracking-tighter">{s.format}</div>
  <div className="text-fg tabular-nums text-lg font-bold">{s.example}</div>
  </div>
@@ -161,7 +161,7 @@ return (
 initial={{ opacity: 0 }}
 whileInView={{ opacity: 1 }}
 viewport={{ once: true }}
-className="surface-elevated p-6 md:p-8 my-10 rounded-2xl border border-border/50"
+className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
  >
  <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
  <div>
@@ -189,7 +189,7 @@ max={100}
 step={1}
 value={shift}
 onChange={(e) => setShift(Number(e.target.value))}
-className="w-full h-2 bg-bg-accent rounded-lg appearance-none cursor-pointer accent-accent mb-2"
+className="w-full h-2 bg-bg-accent rounded-[3px] appearance-none cursor-pointer accent-accent mb-2"
  />
  <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mb-8">
  <span>0 מ׳</span>
@@ -198,7 +198,7 @@ className="w-full h-2 bg-bg-accent rounded-lg appearance-none cursor-pointer acc
  </div>
 
  <div className="grid md:grid-cols-[1fr_1.6fr] gap-8 items-stretch">
- <div className="surface p-6 flex flex-col justify-center rounded-xl bg-bg/30">
+ <div className="surface p-6 flex flex-col justify-center rounded-[3px] bg-bg/30">
  <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider font-bold">
  השלכה מבצעית בשטח
  </div>
@@ -218,7 +218,7 @@ dangerLevel === 'danger' && 'text-status-danger',
  </div>
  </div>
 
- <div className="surface relative aspect-video overflow-hidden rounded-xl border border-border/40">
+ <div className="surface relative aspect-video overflow-hidden rounded-[3px] border border-border/40">
  <ImpactMap shift={shift} />
  </div>
  </div>
@@ -295,7 +295,7 @@ return (
 initial={{ opacity: 0, y: 20 }}
 whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true }}
-className="surface-elevated p-8 rounded-xl flex flex-col md:flex-row gap-6 items-center"
+className="surface-elevated p-8 rounded-[3px] flex flex-col md:flex-row gap-6 items-center"
  >
  <Icon name="crosshair" size={48} className="text-accent shrink-0" />
  <div>

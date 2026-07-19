@@ -3,13 +3,11 @@
 import { motion } from 'framer-motion';
 
 /**
- * Section header used at the top of each Scene inside a lesson.
- * Single source of truth — every topic's local `./SceneHeader.tsx` re-exports this.
+ * SceneHeader — כותרת הסצנה בראש כרטיס הסצנה (Design 1, §13).
+ * מקור אמת יחיד — כל `./SceneHeader.tsx` של topic מייצא-מחדש מכאן.
  *
- * The small "01.0 · eyebrow" strip above the title was removed per a
- * site-wide design pass: the chapter h2 is the actual chapter heading,
- * so the smaller line was duplicate noise. `step` and `eyebrow` props
- * are kept (optional) so every existing caller continues to compile.
+ * כותרת כבדה, ממורכזת, ברוחב מצומצם לקריאות נוחה.
+ * `step`/`eyebrow` נשמרים אופציונליים לתאימות לאחור עם כל הקריאות הקיימות, אך אינם מוצגים עוד.
  */
 export function SceneHeader({
   title,
@@ -22,17 +20,17 @@ export function SceneHeader({
 }) {
   return (
     <motion.header
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="max-w-[67.2rem] mb-10"
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="mb-8"
     >
-      <h2 className="font-display font-bold tracking-tight text-balance leading-[1.05] text-[clamp(1.75rem,4.5vw,3.5rem)]">
+      <h2 className="mx-auto max-w-3xl text-center font-display font-extrabold tracking-tight text-balance leading-[1.1] text-black text-[clamp(1.875rem,3.8vw,2.875rem)]">
         {title}
       </h2>
       {intro && (
-        <p className="mt-5 text-fg-muted text-base sm:text-lg lg:text-xl leading-relaxed text-pretty">
+        <p className="mx-auto mt-4 max-w-2xl text-center text-lg leading-relaxed text-black sm:text-xl text-pretty">
           {intro}
         </p>
       )}

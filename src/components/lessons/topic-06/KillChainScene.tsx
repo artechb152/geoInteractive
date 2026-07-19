@@ -105,7 +105,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             השרשרת
@@ -117,7 +117,7 @@ title = {
             תהליך מחייב של ארבעה שלבים שמתחיל ברגע שמחפשים את המטרה ומסתיים רק כשווידאנו שהיא הושמדה. כל שלב חייב להסתיים בהצלחה כדי שאפשר יהיה לעבור לבא אחריו.
           </p>
         </div>
-        <div className="surface-elevated p-5 rounded-2xl">
+        <div className="surface-elevated p-5 rounded-[4px]">
           <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-accent mb-2">
             <span className="size-1.5 rounded-full bg-accent" aria-hidden />
             הסוד
@@ -132,7 +132,7 @@ title = {
       </div>
 
       {/* Chain visualization — 4 stages connected */}
-      <div className="surface-elevated p-5 sm:p-6 rounded-2xl mb-6">
+      <div className="surface-elevated p-5 sm:p-6 rounded-[4px] mb-6">
         <div className="text-sm font-display font-semibold text-fg-muted mb-4 tracking-wider text-center">
           לחצו על שלב כדי לראות את התלות שלו בקו הראייה
         </div>
@@ -147,7 +147,7 @@ title = {
                   type="button"
                   onClick={() => setActive(s.id)}
                   className={cn(
-                    'group flex flex-col items-center gap-2 relative w-full p-2 sm:p-3 rounded-xl transition-all',
+                    'group flex flex-col items-center gap-2 relative w-full p-2 sm:p-3 rounded-[3px] transition-all',
                     isActive && `${s.border} ${s.bg}`,
                     !isActive && 'hover:bg-bg-accent/40'
                   )}
@@ -194,7 +194,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-2xl border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
+          className={cn('surface-elevated p-6 rounded-[4px] border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
         >
           <div className="flex items-start gap-4 mb-5">
             <div className="flex-1">
@@ -207,7 +207,7 @@ title = {
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="surface p-4 rounded-xl bg-bg-accent/20">
+            <div className="surface p-4 rounded-[3px] bg-bg-accent/20">
               <div className={cn('text-sm font-display font-semibold mb-2 tracking-wider flex items-center gap-1.5', meta.color)}>
                 <Icon name="eye" size={11} />
                 למה צריך פה קו ראייה?
@@ -217,14 +217,14 @@ title = {
                 dangerouslySetInnerHTML={{ __html: meta.losRole }}
               />
             </div>
-            <div className="surface p-4 rounded-xl bg-bg-accent/20">
+            <div className="surface p-4 rounded-[3px] bg-bg-accent/20">
               <div className="text-sm font-display font-semibold text-fg mb-2 tracking-wider flex items-center gap-1.5">
                 <Icon name="spark" size={11} className="text-fg-muted" />
                 מה קורה כשקו הראייה נשבר
               </div>
               <p className="text-sm text-fg-muted leading-relaxed">{meta.failure}</p>
             </div>
-            <div className="surface p-4 rounded-xl bg-bg-accent/20">
+            <div className="surface p-4 rounded-[3px] bg-bg-accent/20">
               <div className="text-sm font-display font-semibold text-fg mb-2 tracking-wider flex items-center gap-1.5">
                 <Icon name="check" size={11} strokeWidth={2.5} className="text-fg-muted" />
                 איך מתמודדים
@@ -241,7 +241,7 @@ title = {
       <SoftDivider text="המושג שמחזיק את הכל יחד" />
 
       {/* Continuous coverage cell */}
-      <div className="surface-elevated p-6 rounded-2xl">
+      <div className="surface-elevated p-6 rounded-[4px]">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-center">
           <div>
             <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">

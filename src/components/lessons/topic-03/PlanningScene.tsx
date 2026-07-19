@@ -99,7 +99,7 @@ passed && !isActive && 'opacity-80'
  {isActive && (
  <motion.span
 layoutId="t3-route-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
  />
  )}
  <span
@@ -405,7 +405,7 @@ function RouteMap({ activeStep }: { activeStep: number }) {
         <motion.path
           d={routeD}
           fill="none"
-          stroke="#EB9E48"
+          className="stroke-accent"
           strokeWidth="0.5"
           strokeLinecap="round"
           strokeDasharray="1.4 1.1"
@@ -419,7 +419,7 @@ function RouteMap({ activeStep }: { activeStep: number }) {
         <motion.path
           d={routeD}
           fill="none"
-          stroke="#EB9E48"
+          className="stroke-accent"
           strokeWidth="1.7"
           strokeLinecap="round"
           opacity="0.28"
@@ -430,7 +430,7 @@ function RouteMap({ activeStep }: { activeStep: number }) {
         <motion.path
           d={routeD}
           fill="none"
-          stroke="#EB9E48"
+          className="stroke-accent"
           strokeWidth="0.85"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -471,9 +471,10 @@ function RouteMap({ activeStep }: { activeStep: number }) {
           const isActive = i === activeStep;
           const isPassed = i < activeStep;
           const filled = isTarget || isActive || isPassed;
-          const disc = isTarget ? '#EB9E48' : filled ? '#749C75' : '#FFFFFF';
-          const ringCol = isTarget ? '#d4842f' : '#5B7C5C';
-          const numCol = disc === '#FFFFFF' ? '#5B7C5C' : '#FFFFFF';
+          const fillClass = isTarget ? 'fill-accent' : filled ? 'fill-brand' : 'fill-bg-elevated';
+          // #d4842f is a bespoke deeper-orange ring shade for the target marker — no token matches it.
+          const ringColor = isTarget ? '#d4842f' : '#5B7C5C';
+          const numClass = filled ? 'fill-bg-elevated' : 'fill-brand-dark';
           const r = isTarget ? 2.7 : isActive ? 2.5 : 2.1;
           return (
             <motion.g
@@ -482,17 +483,17 @@ function RouteMap({ activeStep }: { activeStep: number }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45 + i * 0.1, duration: 0.4, ease }}
             >
-              <ellipse cx={p.x} cy={p.y + r + 0.5} rx={r * 0.85} ry={r * 0.3} fill="#3a3a3a" opacity="0.13" />
-              <circle cx={p.x} cy={p.y} r={r + 0.85} fill="#FFFFFF" />
+              <ellipse cx={p.x} cy={p.y + r + 0.5} rx={r * 0.85} ry={r * 0.3} className="fill-fg-muted" opacity="0.13" />
+              <circle cx={p.x} cy={p.y} r={r + 0.85} className="fill-bg-elevated" />
               {isActive && (
-                <circle cx={p.x} cy={p.y} r={r + 0.4} fill="none" stroke="#EB9E48" strokeWidth="0.4">
+                <circle cx={p.x} cy={p.y} r={r + 0.4} fill="none" className="stroke-accent" strokeWidth="0.4">
                   <animate attributeName="r" values={`${r + 0.4};${r + 3};${r + 0.4}`} dur="1.8s" repeatCount="indefinite" />
                   <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite" />
                 </circle>
               )}
-              <circle cx={p.x} cy={p.y} r={r} fill={disc} stroke={ringCol} strokeWidth={disc === '#FFFFFF' ? 0.4 : 0.3} />
-              {disc !== '#FFFFFF' && (
-                <ellipse cx={p.x} cy={p.y - r * 0.38} rx={r * 0.58} ry={r * 0.3} fill="#FFFFFF" opacity="0.2" />
+              <circle cx={p.x} cy={p.y} r={r} className={fillClass} stroke={ringColor} strokeWidth={!filled ? 0.4 : 0.3} />
+              {filled && (
+                <ellipse cx={p.x} cy={p.y - r * 0.38} rx={r * 0.58} ry={r * 0.3} className="fill-bg-elevated" opacity="0.2" />
               )}
               <text
                 x={p.x}
@@ -501,7 +502,7 @@ function RouteMap({ activeStep }: { activeStep: number }) {
                 dominantBaseline="central"
                 fontSize={isTarget ? 2.7 : 2.4}
                 fontWeight={700}
-                fill={numCol}
+                className={numClass}
                 style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}
               >
                 {isTarget ? 'B' : i + 1}
@@ -529,9 +530,9 @@ function RouteMap({ activeStep }: { activeStep: number }) {
 
         {/* ——— Map furniture ——— */}
         <g transform="translate(11 12)" opacity="0.6">
-          <circle r="3.4" fill="#FFFFFF" opacity="0.7" />
-          <circle r="3.4" fill="none" stroke="#C5B695" strokeWidth="0.2" />
-          <circle r="2.6" fill="none" stroke="#C5B695" strokeWidth="0.12" />
+          <circle r="3.4" className="fill-bg-elevated" opacity="0.7" />
+          <circle r="3.4" fill="none" className="stroke-border-strong" strokeWidth="0.2" />
+          <circle r="2.6" fill="none" className="stroke-border-strong" strokeWidth="0.12" />
           {[
             [0, -3.4, 0, -2.7],
             [0, 3.4, 0, 2.7],
@@ -540,20 +541,20 @@ function RouteMap({ activeStep }: { activeStep: number }) {
           ].map((t, i) => (
             <line key={'t' + i} x1={t[0]} y1={t[1]} x2={t[2]} y2={t[3]} stroke="#8a7c5c" strokeWidth="0.15" />
           ))}
-          <path d="M0 -2.3 L 0.7 0 L 0 0.5 L -0.7 0 Z" fill="#EB9E48" />
+          <path d="M0 -2.3 L 0.7 0 L 0 0.5 L -0.7 0 Z" className="fill-accent" />
           <path d="M0 2.3 L 0.7 0 L 0 -0.5 L -0.7 0 Z" fill="#9aa1a8" />
-          <text x="0" y="-3.85" textAnchor="middle" fontSize="1.7" fontWeight={700} fill="#5B7C5C" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
+          <text x="0" y="-3.85" textAnchor="middle" fontSize="1.7" fontWeight={700} className="fill-brand-dark" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
             צ
           </text>
         </g>
         <g transform="translate(7 70)" opacity="0.65">
-          <rect x="0" y="0" width="12" height="0.9" fill="#FFFFFF" stroke="#C5B695" strokeWidth="0.12" />
-          <rect x="0" y="0" width="3" height="0.9" fill="#5a6b4a" />
-          <rect x="6" y="0" width="3" height="0.9" fill="#5a6b4a" />
-          <text x="0" y="-0.7" textAnchor="middle" fontSize="1.5" fill="#6a6a6a" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
+          <rect x="0" y="0" width="12" height="0.9" className="fill-bg-elevated stroke-border-strong" strokeWidth="0.12" />
+          <rect x="0" y="0" width="3" height="0.9" className="fill-terrain-ridge" />
+          <rect x="6" y="0" width="3" height="0.9" className="fill-terrain-ridge" />
+          <text x="0" y="-0.7" textAnchor="middle" fontSize="1.5" className="fill-fg-dim" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
             0
           </text>
-          <text x="12" y="-0.7" textAnchor="middle" fontSize="1.5" fill="#6a6a6a" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
+          <text x="12" y="-0.7" textAnchor="middle" fontSize="1.5" className="fill-fg-dim" style={{ fontFamily: 'var(--font-rubik), system-ui, sans-serif' }}>
             500מ׳
           </text>
         </g>
@@ -613,7 +614,7 @@ aria-label="מרחק במטרים"
  </div>
  </div>
 
- <div className="surface p-6 rounded-2xl border-2 border-accent/20 flex flex-col items-center justify-center bg-accent/5">
+ <div className="surface p-6 rounded-2xl border border-accent/25 flex flex-col items-center justify-center bg-accent/5">
  <div className="text-[10px] font-display font-medium text-accent mb-2 uppercase tracking-widest">כמות צמדי צעדים משוערת</div>
  <div className="text-6xl font-display font-bold text-accent tabular-nums mb-2">{paces}</div>
  <div className="text-sm font-bold text-fg">זוגות צעדים</div>
@@ -623,13 +624,13 @@ aria-label="מרחק במטרים"
 
  <div className="mt-8 grid sm:grid-cols-2 gap-4">
  <div className="surface p-4 flex gap-3 items-start">
- <div className="size-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0 font-bold">1</div>
+ <div className="size-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent shrink-0 font-bold">1</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  <strong className="text-fg">מדידה מראש:</strong> כל אחד צועד קצת אחרת. תמדדו כמה צעדים כפולים לוקח לכם לעבור 100 מטרים במישור.
  </p>
  </div>
  <div className="surface p-4 flex gap-3 items-start">
- <div className="size-8 rounded-lg bg-status-warn/10 flex items-center justify-center text-status-warn shrink-0 font-bold">!</div>
+ <div className="size-8 rounded-xl bg-status-warn/10 flex items-center justify-center text-status-warn shrink-0 font-bold">!</div>
  <p className="text-xs text-fg-muted leading-relaxed">
  <strong className="text-fg">פקטור שטח:</strong> בעלייה הצעד מתקצר (תספרו יותר), בירידה הוא מתארך. נווט מנוסה יודע 'לפצות' על זה בספירה.
  </p>

@@ -158,7 +158,7 @@ title = {
               key={b.id}
               onClick={() => setActive(b.id)}
               className={cn(
-                'relative p-4 text-right transition-all duration-300 ease-snap rounded-2xl border flex items-center gap-3',
+                'relative p-4 text-right transition-all duration-300 ease-snap rounded-[4px] border flex items-center gap-3',
                 isActive
                   ? 'border-accent bg-bg-elevated'
                   : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -172,7 +172,7 @@ title = {
               )}
               <span
                 className={cn(
-                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                   isActive
                     ? 'bg-accent text-bg-elevated border-accent'
                     : 'bg-bg-accent text-fg-muted border-border'
@@ -201,7 +201,7 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="surface-elevated p-5 rounded-2xl mb-6"
+          className="surface-elevated p-5 rounded-[4px] mb-6"
         >
           <BorderVisualization border={meta} />
 
@@ -225,15 +225,15 @@ title = {
             </div>
 
             <div className="space-y-3">
-              <div className="surface p-3 rounded-lg bg-status-ok/5 border-status-ok/30">
+              <div className="surface p-3 rounded-[3px] bg-status-ok/5 border-status-ok/30">
                 <div className="text-sm font-display font-semibold text-status-ok mb-1 tracking-wider">חוזק</div>
                 <p className="text-xs text-fg-muted leading-relaxed">{meta.strength}</p>
               </div>
-              <div className="surface p-3 rounded-lg bg-status-warn/5 border-status-warn/30">
+              <div className="surface p-3 rounded-[3px] bg-status-warn/5 border-status-warn/30">
                 <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">חולשה</div>
                 <p className="text-xs text-fg-muted leading-relaxed">{meta.weakness}</p>
               </div>
-              <div className="surface p-3 rounded-lg bg-bg-accent/30">
+              <div className="surface p-3 rounded-[3px] bg-bg-accent/30">
                 <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה</div>
                 <p className="text-xs text-fg leading-relaxed italic">{meta.example}</p>
               </div>
@@ -268,7 +268,7 @@ title = {
 
 function BorderVisualization({ border }: { border: Border }) {
   return (
-    <div className="aspect-[16/9] relative rounded-xl overflow-hidden bg-bg-accent">
+    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden bg-bg-accent">
       <svg viewBox="0 0 100 56" className="w-full h-full">
         <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
 
@@ -400,7 +400,7 @@ function BorderVisualization({ border }: { border: Border }) {
 
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="surface p-2.5 rounded-lg">
+    <div className="surface p-2.5 rounded-[3px]">
       <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">{label}</div>
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((i) => (

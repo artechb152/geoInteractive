@@ -92,7 +92,7 @@ export function InsightCard({
   return (
     <article
       className={cn(
-        'bg-bg-elevated rounded-md p-3 md:p-3.5',
+        'bg-bg-elevated rounded-md p-3 md:p-3.5 h-full',
         className,
       )}
     >

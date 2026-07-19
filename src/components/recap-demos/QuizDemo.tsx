@@ -90,7 +90,7 @@ export function QuizDemo() {
       danger: 'border-status-danger/40 bg-status-danger/10 text-status-danger',
     }[tone];
     return (
-      <div className={cn('rounded-2xl border p-8 text-center', toneCls)}>
+      <div className={cn('rounded-[4px] border p-8 text-center', toneCls)}>
         <div className="font-display font-bold text-3xl mb-1">
           {score} / {total}
         </div>
@@ -109,7 +109,7 @@ export function QuizDemo() {
         <button
           type="button"
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] bg-accent text-bg-elevated font-semibold hover:bg-accent-hover transition-colors"
         >
           <RotateCcw className="size-4" aria-hidden /> נסה שוב
         </button>
@@ -148,7 +148,7 @@ export function QuizDemo() {
           transition={{ duration: 0.2 }}
         >
           {/* Definition card */}
-          <div className="rounded-2xl border border-accent/30 bg-accent/5 p-6 md:p-8 mb-6 text-center">
+          <div className="rounded-[4px] border border-accent/30 bg-accent/5 p-6 md:p-8 mb-6 text-center">
             <div className="text-[11px] font-display font-semibold tracking-wider text-accent uppercase mb-2">
               לאיזה מושג ההגדרה הזו שייכת?
             </div>
@@ -172,7 +172,7 @@ export function QuizDemo() {
                   onClick={() => pick(opt.id)}
                   disabled={picked !== null}
                   className={cn(
-                    'group rounded-xl border bg-bg-elevated px-4 py-3.5 text-right font-display font-semibold text-base transition-all',
+                    'group rounded-[3px] border bg-bg-elevated px-4 py-3.5 text-right font-display font-semibold text-base transition-all',
                     'flex items-center justify-between gap-3',
                     showOk && 'border-status-ok/60 bg-status-ok/10 text-status-ok',
                     showBad && 'border-status-danger/60 bg-status-danger/10 text-status-danger',

@@ -87,7 +87,7 @@ legend: [
 
 function Swatch({ kind, className }: { kind: LegendKind; className: string }) {
 if (kind === 'dot') return <span className={cn('size-2.5 rounded-full shrink-0', className)} />;
-if (kind === 'box') return <span className={cn('size-3 rounded-[3px] shrink-0', className)} />;
+if (kind === 'box') return <span className={cn('size-3 rounded-xl shrink-0', className)} />;
 if (kind === 'dash')
 return (
  <span className="inline-flex items-center gap-[2px] w-4 shrink-0">
@@ -135,7 +135,7 @@ isActive
  {isActive && (
  <motion.span
 layoutId="t3-combat-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
  />
  )}
  <button

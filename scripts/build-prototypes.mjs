@@ -11,15 +11,27 @@
  * pre-built public/prototypes/ may be present.
  */
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const PROTOTYPES = [
-  { name: 'terrain-3d', src: 'prototypes/terrain-3d' },
-  { name: 'terrain-overlay', src: 'prototypes/terrain-overlay' },
+  { name: 'terrain-3d', src: 'prototypes/terrain-3d', outDir: 'dist' },
+  { name: 'terrain-overlay', src: 'prototypes/terrain-overlay', outDir: 'dist' },
   // Clone idog2210/Pyramid3LevelsPrototype01 into prototypes/pyramid-3-levels/
   // and this will build it; until then it's skipped (source not found).
-  { name: 'pyramid-3-levels', src: 'prototypes/pyramid-3-levels' },
+  { name: 'pyramid-3-levels', src: 'prototypes/pyramid-3-levels', outDir: 'dist' },
+  // Clone idog2210/06082026ValleyCrossing3d into prototypes/valley-crossing-3d/
+  // — a Next.js app itself; its next.config.js sets output:'export' so
+  // `npm run build` emits a static out/ dir instead of a Vite dist/.
+  { name: 'valley-crossing-3d', src: 'prototypes/valley-crossing-3d', outDir: 'out' },
 ];
 
 const root = process.cwd();
@@ -37,6 +49,32 @@ for (const p of PROTOTYPES) {
   const dest = join(root, 'public', 'embeds', p.name);
   if (existsSync(dest)) rmSync(dest, { recursive: true, force: true });
   mkdirSync(dest, { recursive: true });
-  cpSync(join(src, 'dist'), dest, { recursive: true });
+  cpSync(join(src, p.outDir), dest, { recursive: true });
+  fixAbsoluteAssetPaths(dest);
   console.log(`[done]  ${p.name} → public/embeds/${p.name}/`);
+}
+
+/**
+ * The embeds are served from /embeds/<name>/, not the site root, so any
+ * root-absolute asset URL baked into a bundle (e.g. terrain-3d fetching
+ * `/textures/...`) 404s at runtime. Rewrite such references to be
+ * relative to the embed's index.html.
+ */
+function fixAbsoluteAssetPaths(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      fixAbsoluteAssetPaths(full);
+    } else if (/\.(js|css|html)$/.test(entry.name)) {
+      const before = readFileSync(full, 'utf8');
+      const after = before
+        .replaceAll('`/textures/', '`textures/')
+        .replaceAll('"/textures/', '"textures/')
+        .replaceAll("'/textures/", "'textures/");
+      if (after !== before) {
+        writeFileSync(full, after);
+        console.log(`[fix]   rewrote absolute /textures/ paths in ${full}`);
+      }
+    }
+  }
 }

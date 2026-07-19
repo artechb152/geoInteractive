@@ -26,6 +26,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { LessonNavContext } from '@/components/lesson/LessonShell';
 import type { LessonNavInfo } from '@/components/lesson/LessonShell';
+import { SceneStepContext } from './scene-context';
 import { recordSceneVisit } from '@/lib/last-visit';
 import { cn } from '@/lib/utils';
 
@@ -141,10 +142,9 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
 
   return (
     // xl+: the TOC is now a full-height drawer flush to the viewport
-    // start (right in RTL). Width is 160px, so 180px of padding-start
-    // leaves a clear 20px gap between the TOC's inner edge and the
-    // first column of lesson content.
-    <div className="relative scroll-mt-28 xl:ps-[180px]" ref={rootRef}>
+    // start (right in RTL). Width is 13vw, so we add a 20px gap on top
+    // of that to clear the TOC's inner edge from the lesson content.
+    <div className="relative scroll-mt-28 xl:ps-[calc(13vw+20px)]" ref={rootRef}>
       {/* Mobile / tablet sub-topic strip (everything below xl gets this) */}
       <ScenePagerMobile scenes={scenes} active={idx} onGoto={goto} lesson={currentLesson} />
 
@@ -161,7 +161,10 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
           exit={reduce ? undefined : { opacity: 0, y: -10 }}
           transition={{ duration: 0.28, ease: easeSnap }}
         >
-          <ActiveScene />
+          {/* SceneStepContext — נשאר זמין ל-SceneHeader המשותף לתאימות לאחור. */}
+          <SceneStepContext.Provider value={{ idx, total: scenes.length }}>
+            <ActiveScene />
+          </SceneStepContext.Provider>
         </motion.div>
       </AnimatePresence>
 
@@ -172,7 +175,7 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
             on the last lesson), because there's no further sub-topic
             in this lesson. */}
       {!isHook && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <PrevButton
             disabled={isFirst}
             label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
@@ -266,8 +269,8 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
    and the secondary lesson tabs strip, extending to the bottom of the
    viewport. Rectangular (no rounded corners), with a single inner
    border that separates it from the lesson content column. The
-   PagedLearn root adds `xl:ps-[180px]` so content sits clear of the
-   drawer. The top of the drawer now headlines the active lesson
+   PagedLearn root adds `xl:ps-[calc(13vw+20px)]` so content sits clear
+   of the drawer. The top of the drawer now headlines the active lesson
    (number + short title), since both were removed from the secondary
    header. */
 function ScenePagerDesktop({
@@ -283,24 +286,24 @@ function ScenePagerDesktop({
 }) {
   return (
     <aside
-      className="hidden xl:flex flex-col fixed start-0 top-12 bottom-0 z-20 w-[160px] overflow-y-auto bg-bg-elevated border-e border-border"
+      className="hidden xl:flex flex-col fixed start-0 top-[var(--header-h)] bottom-0 z-20 w-[13vw] overflow-y-auto bg-bg-elevated border-e border-border"
       aria-label="ניווט תתי-נושא"
     >
-      <div className="p-3 pt-3 flex-1 flex flex-col">
+      <div className="p-4 pt-4 flex-1 flex flex-col">
         {lesson && (
-          <div className="px-1.5 mb-4 pb-1.5 border-b border-border-subtle">
-            <div className="font-display font-bold text-accent text-base mb-1.5">
+          <div className="px-2 mb-6 pb-2.5 border-b border-border-subtle">
+            <div className="font-display font-bold text-accent text-xl mb-2">
               שיעור {lesson.number}
             </div>
-            <div className="font-display font-bold text-sm text-fg leading-tight text-balance">
+            <div className="font-display font-bold text-lg text-fg leading-tight text-balance">
               {lesson.shortTitle}
             </div>
           </div>
         )}
-        <div className="text-[10px] font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-1.5 mb-2">
+        <div className="text-xs font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-2 mb-3">
           תוכן השיעור
         </div>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
           {scenes.map((s, i) => {
             const isActive = i === active;
             const isPassed = i < active;
@@ -314,7 +317,7 @@ function ScenePagerDesktop({
                 onClick={() => onGoto(i)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'group flex items-center gap-2 px-2 py-1.5 rounded-md transition-all cursor-pointer text-right',
+                  'group flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer text-right',
                   isActive
                     ? 'bg-accent/15 text-fg'
                     : 'hover:bg-bg-accent text-fg-muted',
@@ -322,14 +325,14 @@ function ScenePagerDesktop({
               >
                 <span
                   className={cn(
-                    'size-1.5 rounded-full shrink-0 transition-colors',
+                    'size-2 rounded-full shrink-0 transition-colors',
                     reached ? 'bg-accent' : 'bg-fg',
                   )}
                   aria-hidden
                 />
                 <span
                   className={cn(
-                    'text-[12.5px] leading-snug transition-colors truncate',
+                    'text-base leading-snug transition-colors truncate',
                     isActive && 'font-semibold',
                   )}
                 >
@@ -340,8 +343,8 @@ function ScenePagerDesktop({
           })}
         </div>
 
-        <div className="mt-3 pt-3 border-t border-border-subtle px-1.5">
-          <div className="h-1 rounded-full bg-bg-accent overflow-hidden">
+        <div className="mt-4 pt-4 border-t border-border-subtle px-2">
+          <div className="h-1.5 rounded-full bg-bg-accent overflow-hidden">
             <motion.div
               className="h-full rounded-full bg-accent"
               animate={{ width: `${((active + 1) / scenes.length) * 100}%` }}
@@ -367,7 +370,7 @@ function ScenePagerMobile({
   lesson?: LessonNavInfo['current'];
 }) {
   return (
-    <div className="xl:hidden max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+    <div className="xl:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-6">
       {lesson && (
         <div className="mb-4 pb-3 border-b border-border-subtle">
           <div className="text-[10px] font-display font-semibold text-accent tracking-[0.2em] uppercase mb-0.5">
