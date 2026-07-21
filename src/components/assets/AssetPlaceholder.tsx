@@ -15,6 +15,7 @@ export function AssetPlaceholder({
   assetId,
   targetPath,
   note,
+  prompt,
   compact = false,
   className,
 }: {
@@ -23,6 +24,8 @@ export function AssetPlaceholder({
   /** הנתיב שבו הקובץ אמור לשבת, למשל "public/assets/isometric/lesson-03-navigation-hook.webp" */
   targetPath: string;
   note?: string;
+  /** Full AI image-generation brief (English), shown un-truncated so it can be copy-pasted into a generator. Not shown in compact mode. */
+  prompt?: string;
   compact?: boolean;
   className?: string;
 }) {
@@ -64,6 +67,14 @@ export function AssetPlaceholder({
           {note && (
             <span className="max-w-[94%] truncate rounded-sm bg-black/70 px-2 py-0.5 text-[10px] text-white">
               {note}
+            </span>
+          )}
+          {prompt && (
+            <span
+              dir="ltr"
+              className="max-w-[94%] overflow-y-auto rounded-sm bg-white/95 px-2 py-1.5 text-start text-[10px] leading-snug text-black whitespace-pre-wrap"
+            >
+              {prompt}
             </span>
           )}
         </>

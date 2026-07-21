@@ -2,11 +2,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 
 /* ─────────────────────────── 3-ACTOR TYPOLOGY ──────────────────────────
-   Neutral palette only — no per-actor colour, no icons, no English.
-   The three categories are distinguished by label + position. */
+   Neutral: no per-actor colour, no icon, no English on the 3 actor types
+   themselves — the three categories are distinguished by label + position
+   only. Icons/color ARE used elsewhere in this scene (pillars, tactics,
+   fronts, table rows) per docs/palette.md: shape/icon carries the
+   differentiation, `accent` orange stays reserved for single focal
+   moments, no new hues are introduced. */
 
 type ActorType = 'regular' | 'guerrilla' | 'terror';
 
@@ -63,6 +69,7 @@ const ACTORS: Record<ActorType, ActorMeta> = {
 /* ───────────────────────── 3-COL COMPARISON DATA ───────────────────── */
 type CompareRow = {
   label: string;
+  icon: IconName;
   regular: string;
   guerrilla: string;
   terror: string;
@@ -74,6 +81,7 @@ type CompareRow = {
 const COMPARE_ROWS: CompareRow[] = [
   {
     label: 'דוגמאות',
+    icon: 'people',
     regular: 'צה"ל, צבא ארה"ב, צבא רוסיה, בונדסוור גרמני',
     guerrilla: 'חיזבאללה, חות׳ים, טאליבאן (היסטורית), פאר"ק קולומביה',
     terror: 'אל-קאעידה, דאע"ש, בוקו חראם, אש-שבאב',
@@ -82,6 +90,7 @@ const COMPARE_ROWS: CompareRow[] = [
   },
   {
     label: 'תקציב שנתי',
+    icon: 'fuel',
     regular: 'עשרות עד מאות מיליארדי דולרים מתקציב המדינה',
     guerrilla: 'מאות מיליונים — מיסוי מקומי, נפט, סיוע איראני או אחר',
     terror: 'מיליונים — תרומות, פשע, הלבנת הון',
@@ -90,6 +99,7 @@ const COMPARE_ROWS: CompareRow[] = [
   },
   {
     label: 'מטרת לחימה ראשית',
+    icon: 'crosshair',
     regular: 'יחידות צבא אויב — קונבנציונאלי',
     guerrilla: 'יחידות צבא וסמלי שלטון — להחליש סדר קיים',
     terror: 'אזרחים — להפיץ פחד וליצור לחץ פוליטי',
@@ -98,6 +108,7 @@ const COMPARE_ROWS: CompareRow[] = [
   },
   {
     label: 'שטח שליטה',
+    icon: 'flag',
     regular: 'כל שטח המדינה הריבונית',
     guerrilla: 'אזורים מוגדרים — מעוזים, עמקים, רובעים',
     terror: 'אין טריטוריה — תאים פזורים בעולם',
@@ -106,6 +117,7 @@ const COMPARE_ROWS: CompareRow[] = [
   },
   {
     label: 'חוקי לחימה',
+    icon: 'shield',
     regular: 'מחוייב לדין בינלאומי (אמנת ז\'נבה)',
     guerrilla: 'מצהיר על מחויבות — מפר בפועל',
     terror: 'מתעלם לחלוטין',
@@ -115,12 +127,13 @@ const COMPARE_ROWS: CompareRow[] = [
 ];
 
 /* ───────────────────────── 3 PILLARS OF NON-STATE ──────────────────── */
-type Pillar = { id: string; label: string; oneLiner: string; detail: string };
+type Pillar = { id: string; label: string; icon: IconName; oneLiner: string; detail: string };
 
 const PILLARS: Pillar[] = [
   {
     id: 'persistence',
     label: 'ספיגה והתמדה',
+    icon: 'hourglass',
     oneLiner: 'הזמן עובד לטובתם. המטרה היא פשוט לשרוד את המכות.',
     detail:
       'השחקן הלא-סדיר מבין מראש שהוא לא יכול להשמיד צבא של מדינה, אז המטרה שלו היא פשוט לא להפסיד. מבחינתו, כל יום שבו הוא נשאר בחיים וממשיך לירות – נחשב לניצחון. הוא מנצל את העובדה שלמדינה יש "שעון חול": המלחמה עולה לה מיליארדים, חיילי המילואים נשחקים, ויש לחץ בינלאומי.',
@@ -128,6 +141,7 @@ const PILLARS: Pillar[] = [
   {
     id: 'deterrence',
     label: 'הרתעה אסימטרית',
+    icon: 'target',
     oneLiner: 'עוקפים את החזית – תוקפים את האזרחים בעורף במקום את החיילים.',
     detail:
       'כשהשחקן הלא-סדיר לא מצליח לחדור שריון של טנק או להפיל מטוסי קרב, הוא פשוט "מדלג" עליהם. במקום להילחם מול הצבא פנים אל פנים, הוא יורה טילים זולים ורחפנים ישירות על הערים של המדינה. המטרה היא לשתק את הכלכלה, לזרוע פאניקה ולגרום לאזרחים המפוחדים ללחוץ על הממשלה לעצור את המלחמה מיד.',
@@ -135,6 +149,7 @@ const PILLARS: Pillar[] = [
   {
     id: 'attrition',
     label: 'התשה',
+    icon: 'clock',
     oneLiner: 'להפוך את המלחמה לבוץ יקר, מתסכל וחסר תועלת.',
     detail:
       'השחקן הלא-סדיר עובד בשיטת "עקיצות קטנות": צלף יורה מהחלון ונעלם לפיר של מנהרה, או מטען חבלה קטן שמתפוצץ משום מקום. הלוחמים גורמים למדינה להוציא מאות אלפי דולרים על פצצות נגד מטרות ריקות או רחפנים מפלסטיק. הטפטוף המעצבן והבלתי פוסק הזה נועד לייאש את הצבא הסדיר ולגרום לו להרגיש שהוא מנסה להילחם ברוחות רפאים.',
@@ -208,12 +223,13 @@ const PILLAR_DECISIONS: PillarDecision[] = [
 ];
 
 /* ───────────────────────── 5 TACTICS OF NON-STATE ──────────────────── */
-type Tactic = { id: string; title: string; vignette: string; desc: string };
+type Tactic = { id: string; title: string; icon: IconName; vignette: string; desc: string };
 
 const TRAITS: Tactic[] = [
   {
     id: 'conceal',
     title: 'הסתרה והסוואה',
+    icon: 'mask',
     vignette: 'לוחם לא לובש מדים, לא נוסע בשיירת רכבים מאורגנת, ולא יוצא מבסיס קבוע — הוא נראה בדיוק כמו אזרח רגיל ברחוב.',
     desc:
       'החוק הראשון הוא לא לבלוט. אין מדים, אין שיירות ג\'יפים מאורגנות ואין בסיסים מסודרים. הלוחמים מתלבשים כמו אזרחים רגילים ונבלעים בסביבה. למה? כי הם מבינים שברגע שמטוס קרב או רחפן מזהה אותם – ייקח בדיוק 10 שניות להשמיד אותם.',
@@ -221,6 +237,7 @@ const TRAITS: Tactic[] = [
   {
     id: 'embed',
     title: 'להתערבב עם אזרחים',
+    icon: 'people',
     vignette: 'משגר טילים חונה בחצר בית ספר; חדר הפיקוד ממוקם קומה מתחת למחלקת ילדים בבית חולים.',
     desc:
       'במקום שדה קרב פתוח, הם ממקמים מפקדות ומשגרי טילים בתוך בתי חולים, בתי ספר ושכונות מגורים צפופות. זה תוקע את הצבא הסדיר בדילמה אכזרית: לתקוף ולחטוף אש מהעולם על פגיעה בחפים מפשע, או לוותר על חיסול המטרה ולתת להם לברוח?',
@@ -228,6 +245,7 @@ const TRAITS: Tactic[] = [
   {
     id: 'silence',
     title: 'להיות "שקטים" טכנולוגית',
+    icon: 'satellite',
     vignette: 'הלוחמים אספו את כל הסמארטפונים לפני היציאה למשימה, ומעבירים הוראות בפתק נייר ביד שליח.',
     desc:
       'איך מתחבאים מצבא שקולט כל שיחת טלפון ורואה הכל מהחלל? יורדים מהרדאר. עוזבים את הסמארטפונים ועוברים להעביר פתקים מנייר דרך שליחים. נמנעים מנסיעה ברכבים שפולטים חום שלוויינים יכולים לקלוט. אי אפשר לעשות מתקפת סייבר על פתק נייר.',
@@ -235,6 +253,7 @@ const TRAITS: Tactic[] = [
   {
     id: 'cheap',
     title: 'לפגוע בזול בנשק יקר',
+    icon: 'box',
     vignette: 'רחפן צעצוע שנקנה ברשת ב-300 דולר, עם רימון מאולתר מחובר לגחון, משבית טנק בשווי 5 מיליון דולר.',
     desc:
       'מתמטיקה פשוטה: למה לפתח תעשיית נשק אם אפשר לקנות רחפן צעצוע ב-300 דולר, לחבר לו רימון, ולשתק טנק טכנולוגי שעולה 5 מיליון דולר? האסטרטגיה היא כלכלית — להכריח את הצבא הסדיר לבזבז הון וטילי יירוט יקרים על איומים שעולים גרושים.',
@@ -242,6 +261,7 @@ const TRAITS: Tactic[] = [
   {
     id: 'optics',
     title: 'דעת הקהל היא שדה הקרב האמיתי',
+    icon: 'megaphone',
     vignette: 'תוך דקות מההפצצה, סרטון של הריסות ופצועים כבר עולה לרשתות החברתיות ומופץ ברחבי העולם.',
     desc:
       'הסמארטפון קטלני לא פחות מרובה. השחקן הלא-סדיר מתעד בניינים הרוסים ואזרחים פגועים ומפיץ ברשתות כדי לזעזע את העולם. הם יודעים שלחץ בינלאומי וסרטונים ויראליים יבלמו את הצבא הסדיר הרבה לפני שייגמרו לו הטילים.',
@@ -311,6 +331,19 @@ export function AsymmetricScene() {
         intro={`פעם, מלחמות היו פשוטות: צבא מול צבא. היום זה לא תמיד ככה. צבא רגיל של מדינה נפגש עם ארגוני גרילה (שיש להם שטח ושליטה) ועם ארגוני טרור (רשת תאים מפוזרת בלי שטח). שלושת השחקנים פועלים בלוגיקה שונה לגמרי — חוקי המלחמה משתנים בכל אחת מהזירות.`}
       />
 
+      {/* Hero illustration — sits on a bg-warm "platform" band per
+          docs/palette.md's illustration-base role. */}
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
+        <IsometricAsset
+          assetId="TOPIC01-ASYM-HERO"
+          src="/assets/isometric/topic-01-asymmetric-hero.webp"
+          alt="איור איזומטרי: הר גדול מול אוהלים מפוזרים, מסמל את האסימטריה בין צבא גדול לשחקן קטן"
+          aspect="21/9"
+          className="rounded-[3px]"
+          prompt="Isometric papercut illustration on a warm cream background (#FFFBF7). A large layered-paper fortress/mountain shape in sage green tones (#749C75 base, #5B7C5C shadow) sits on a warm peach platform (#FFDCB5), facing a scattered cluster of many small paper tent shapes in the same sage palette, connected by a thin dashed orange line (#EB9E48) between them. Flat layered-paper shading, soft edges, no text, no human figures, no weapons, no flags or insignia, generous empty cream space around the scene for text overlay."
+        />
+      </div>
+
       {/* 3-actor typology cards — neutral, label-only */}
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         {ACTORS_LIST.map((a, i) => (
@@ -379,12 +412,26 @@ export function AsymmetricScene() {
         viewport={{ once: true }}
         className="surface-elevated p-6 mt-8"
       >
-        <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
-          המסקנה: זורקים את ספר החוקים הישן לפח
+        <div className="grid sm:grid-cols-[1fr_auto] gap-5 items-center">
+          <div>
+            <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+              המסקנה: זורקים את ספר החוקים הישן לפח
+            </div>
+            <p className="text-fg leading-relaxed text-pretty">
+              צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
+            </p>
+          </div>
+          <div className="rounded-[4px] bg-warm/50 p-2 shrink-0">
+            <IsometricAsset
+              assetId="TOPIC01-ASYM-CLOSING"
+              src="/assets/isometric/topic-01-asymmetric-closing.webp"
+              alt="איור איזומטרי: מאזניים שצד אחד שלהם כבד ומתכופף וצד שני קליל ויציב, מסמל אסימטריה"
+              aspect="1/1"
+              className="rounded-[3px] w-[140px] sm:w-[160px]"
+              prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
+            />
+          </div>
         </div>
-        <p className="text-fg leading-relaxed text-pretty">
-          צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
-        </p>
       </motion.div>
     </section>
   );
@@ -461,7 +508,8 @@ function TypologyTable() {
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
-                <div className="p-4 bg-bg-accent/30 flex items-center">
+                <div className="p-4 bg-bg-accent/30 flex items-center gap-2">
+                  <Icon name={row.icon} size={16} className="text-fg-muted shrink-0" />
                   <div className="text-sm font-medium">{row.label}</div>
                 </div>
                 <div className="col-span-3 p-4 border-r border-border-subtle">
@@ -494,6 +542,7 @@ function TypologyTable() {
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
                 <div className="p-4 bg-bg-accent/30 flex items-center gap-2">
+                  <Icon name={row.icon} size={16} className="text-fg-muted shrink-0" />
                   <div className="text-sm font-medium">{row.label}</div>
                   {state !== 'skip' && (
                     <span
@@ -559,7 +608,8 @@ function PillarSimulator() {
   return (
     <div className="my-12">
       <div className="mb-5">
-        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+          <Icon name="compass" size={13} className="text-brand-dark" />
           סימולציה · מה הייתם עושים?
         </div>
         <h3 className="font-display font-bold text-xl leading-tight mb-1">
@@ -568,6 +618,17 @@ function PillarSimulator() {
         <p className="text-fg-muted text-sm">
           אתם מפקדים על ארגון לא-סדיר מול צבא גדול פי 100 מכם. בכל אחד משלושת רגעי ההחלטה — בחרו מה הייתם עושים.
         </p>
+      </div>
+
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
+        <IsometricAsset
+          assetId="TOPIC01-ASYM-PILLARS"
+          src="/assets/isometric/topic-01-asymmetric-pillars.webp"
+          alt="שלושה איורים איזומטריים קטנים: דמות יציבה, חץ מתעקל סביב קיר, שעון חול"
+          aspect="21/9"
+          className="rounded-[3px]"
+          prompt="Three small isometric papercut vignettes side by side on a cream background (#FFFBF7), each sitting on its own small warm peach platform (#FFDCB5): (1) a single sage-green paper figure standing still and grounded, (2) a sage-green paper arrow curving around a low wall toward a distant skyline silhouette, (3) a paper hourglass with a thin orange (#EB9E48) accent line at its narrow waist. Flat layered-paper style, soft shading, no realistic people, no weapons, no text."
+        />
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -633,7 +694,8 @@ function PillarDecisionCard({
       className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
     >
       <div className="mb-3">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
+        <div className="flex items-center gap-1.5 text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
+          <Icon name={pillar.icon} size={15} className="text-brand-dark shrink-0" />
           עמוד {index + 1}
         </div>
         {solved && (
@@ -691,7 +753,11 @@ function PillarDecisionCard({
    regular army breaks at its own point in time, while the non-state
    actor's single front never changes. */
 
-const FRONTLINE = { title: 'האויב בשטח', desc: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.' };
+const FRONTLINE: { title: string; desc: string; icon: IconName } = {
+  title: 'האויב בשטח',
+  desc: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.',
+  icon: 'crosshair',
+};
 
 const TIME_STEPS: { id: string; label: string; caption: string }[] = [
   {
@@ -721,11 +787,11 @@ const TIME_STEPS: { id: string; label: string; caption: string }[] = [
   },
 ];
 
-const INTERNAL_FRONTS: { title: string; desc: string; breaksAt: number }[] = [
-  { title: 'משרד האוצר', desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.', breaksAt: 1 },
-  { title: 'דעת הקהל', desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.', breaksAt: 2 },
-  { title: 'הפוליטיקה הפנימית', desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.', breaksAt: 3 },
-  { title: 'הבמה הבינלאומית', desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".', breaksAt: 4 },
+const INTERNAL_FRONTS: { title: string; desc: string; breaksAt: number; icon: IconName }[] = [
+  { title: 'משרד האוצר', desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.', breaksAt: 1, icon: 'fuel' },
+  { title: 'דעת הקהל', desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.', breaksAt: 2, icon: 'megaphone' },
+  { title: 'הפוליטיקה הפנימית', desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.', breaksAt: 3, icon: 'scale' },
+  { title: 'הבמה הבינלאומית', desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".', breaksAt: 4, icon: 'globe' },
 ];
 
 function TimeAsymmetry() {
@@ -738,10 +804,24 @@ function TimeAsymmetry() {
   return (
     <div className="my-12">
       <div className="mb-5">
-        <h3 className="font-display font-bold text-xl leading-tight mb-1">למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?</h3>
+        <h3 className="flex items-center gap-2 font-display font-bold text-xl leading-tight mb-1">
+          <Icon name="hourglass" size={20} className="text-brand-dark shrink-0" />
+          למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
+        </h3>
         <p className="text-fg-muted text-sm">
           גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
         </p>
+      </div>
+
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
+        <IsometricAsset
+          assetId="TOPIC01-ASYM-CLOCK"
+          src="/assets/isometric/topic-01-asymmetric-clock.webp"
+          alt="איור איזומטרי: שעון חול שראשו העליון בצורת בניין ממשל וראשו התחתון בצורת אוהל"
+          aspect="1/1"
+          className="rounded-[3px] max-w-[220px] mx-auto"
+          prompt="An isometric papercut hourglass illustration on a cream background (#FFFBF7), resting on a small warm peach base (#FFDCB5). Top chamber shaped like a tiny layered government-building dome in sage green (#749C75/#5B7C5C), bottom chamber shaped like a simple paper tent in the same sage tones, with a single thin orange (#EB9E48) trickle of small paper dots flowing from top to bottom. Flat paper-cut shading, centered composition, no text, no people."
+        />
       </div>
 
       {/* Timeline scrubber */}
@@ -750,7 +830,7 @@ function TimeAsymmetry() {
           <div aria-hidden className="absolute inset-x-0 top-3.5 h-0.5 bg-border" />
           <motion.div
             aria-hidden
-            className="absolute start-0 top-3.5 h-0.5 bg-fg"
+            className="absolute start-0 top-3.5 h-0.5 bg-accent"
             initial={false}
             animate={{ width: `${(step / lastStep) * 100}%` }}
             transition={{ type: 'spring', stiffness: 260, damping: 30 }}
@@ -766,9 +846,11 @@ function TimeAsymmetry() {
               <span
                 className={cn(
                   'size-7 rounded-full border-2 flex items-center justify-center text-[11px] font-display font-bold transition-colors',
-                  i <= step
-                    ? 'bg-fg text-bg-elevated border-fg'
-                    : 'bg-bg-elevated text-fg-dim border-border-strong group-hover:border-fg-muted',
+                  i === step
+                    ? 'bg-accent text-bg-elevated border-accent'
+                    : i < step
+                      ? 'bg-fg text-bg-elevated border-fg'
+                      : 'bg-bg-elevated text-fg-dim border-border-strong group-hover:border-fg-muted',
                 )}
               >
                 {i + 1}
@@ -776,7 +858,7 @@ function TimeAsymmetry() {
               <span
                 className={cn(
                   'text-[11px] font-display font-semibold tracking-wide whitespace-nowrap',
-                  i === step ? 'text-fg' : 'text-fg-dim',
+                  i === step ? 'text-accent' : 'text-fg-dim',
                 )}
               >
                 {s.label}
@@ -854,7 +936,7 @@ function TimeAsymmetry() {
           </div>
         </div>
 
-        <FrontRow index={0} title={FRONTLINE.title} desc={FRONTLINE.desc} regularActive nonStateActive />
+        <FrontRow index={0} title={FRONTLINE.title} desc={FRONTLINE.desc} icon={FRONTLINE.icon} regularActive nonStateActive />
 
         {INTERNAL_FRONTS.map((f, i) => (
           <FrontRow
@@ -862,6 +944,7 @@ function TimeAsymmetry() {
             index={i + 1}
             title={f.title}
             desc={f.desc}
+            icon={f.icon}
             regularActive={f.breaksAt <= step}
             nonStateActive={false}
           />
@@ -897,12 +980,14 @@ function FrontRow({
   index,
   title,
   desc,
+  icon,
   regularActive,
   nonStateActive,
 }: {
   index: number;
   title: string;
   desc: string;
+  icon: IconName;
   regularActive: boolean;
   nonStateActive: boolean;
 }) {
@@ -917,9 +1002,12 @@ function FrontRow({
         index % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
       )}
     >
-      <div className="p-3 sm:p-4 min-w-0">
-        <div className="font-display font-semibold text-sm leading-tight">{title}</div>
-        <div className="text-xs text-fg-muted leading-snug mt-0.5">{desc}</div>
+      <div className="p-3 sm:p-4 min-w-0 flex items-start gap-2.5">
+        <Icon name={icon} size={16} className="text-fg-muted shrink-0 mt-0.5" />
+        <div className="min-w-0">
+          <div className="font-display font-semibold text-sm leading-tight">{title}</div>
+          <div className="text-xs text-fg-muted leading-snug mt-0.5">{desc}</div>
+        </div>
       </div>
       <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
         <FrontMark active={regularActive} />
@@ -988,7 +1076,8 @@ function TacticMatchExercise() {
   return (
     <div className="my-12">
       <div className="mb-5">
-        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+          <Icon name="eye" size={13} className="text-brand-dark" />
           תרגול · זהו את הטקטיקה
         </div>
         <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
@@ -997,6 +1086,17 @@ function TacticMatchExercise() {
         <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
           לפני שתראו את שם הטקטיקה — קראו כל "דיווח שטח" קצר וגררו (או הקישו עליו ואז על שם הטקטיקה) אותו למקום המתאים. אחרי ששיבצתם את כל החמישה, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל אחת.
         </p>
+      </div>
+
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
+        <IsometricAsset
+          assetId="TOPIC01-ASYM-TACTICS"
+          src="/assets/isometric/topic-01-asymmetric-tactics.webp"
+          alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
+          aspect="16/9"
+          className="rounded-[3px]"
+          prompt="Isometric papercut illustration of a small layered terrain tile at dusk on a cream background (#FFFBF7): a warm peach ground platform (#FFDCB5), a few sage-green paper trees (#749C75), a winding paper dirt path, and one small abstract drone-like paper shape with a single orange (#EB9E48) accent light hovering above. No visible weapons, no people, flat paper-cut shading, small and simple composition, no text."
+        />
       </div>
 
       <div className="surface-elevated p-4 rounded-[4px] mb-3">
@@ -1165,6 +1265,7 @@ function TacticBin({
             {isCorrect ? '✓' : '✗'}
           </span>
         )}
+        <Icon name={tactic.icon} size={15} className="text-fg-muted shrink-0" />
         <div className="font-display font-bold text-sm leading-tight text-fg">{tactic.title}</div>
       </div>
 
