@@ -397,66 +397,157 @@ function TypologyTable() {
 }
 
 /* ───────────────────────── TIME ASYMMETRY ─────────────────────────── */
+/* Interactive "sand clock": a scrubbable timeline turns the static 5-vs-1
+   front table into a causal simulation — each internal front of the
+   regular army breaks at its own point in time, while the non-state
+   actor's single front never changes. */
 
-const OPPONENTS: { title: string; desc: string; regularActive: boolean; nonStateActive: boolean }[] = [
-  { title: 'האויב בשטח', desc: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.', regularActive: true, nonStateActive: true },
-  { title: 'משרד האוצר', desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.', regularActive: true, nonStateActive: false },
-  { title: 'דעת הקהל', desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.', regularActive: true, nonStateActive: false },
-  { title: 'הפוליטיקה הפנימית', desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.', regularActive: true, nonStateActive: false },
-  { title: 'הבמה הבינלאומית', desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".', regularActive: true, nonStateActive: false },
+const FRONTLINE = { title: 'האויב בשטח', desc: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.' };
+
+const TIME_STEPS: { id: string; label: string; caption: string }[] = [
+  {
+    id: 'day1',
+    label: 'יום 1',
+    caption: 'הלחימה רק התחילה. מבחוץ זה עוד נראה כמו "מלחמה פשוטה, צבא מול צבא" — רק חזית אחת פעילה משני הצדדים.',
+  },
+  {
+    id: 'week2',
+    label: 'שבוע 2',
+    caption: 'משרד האוצר מתחיל ללחוץ — המלחמה כבר עולה מיליארדי דולרים בשבוע, והמילואים נשחקים.',
+  },
+  {
+    id: 'month3',
+    label: 'חודש 3',
+    caption: 'דעת הקהל נשחקת — תמונות מהזירה ולוויות חיילים משפיעות על התמיכה הציבורית מיום ליום.',
+  },
+  {
+    id: 'year1',
+    label: 'שנה 1',
+    caption: 'הפוליטיקה הפנימית מתעוררת — ועדות חקירה, אופוזיציה, ולחץ קואליציוני מבית.',
+  },
+  {
+    id: 'year2',
+    label: 'שנה 2',
+    caption: 'הבמה הבינלאומית דורשת הפסקת אש — לחץ מהאו"ם, מבעלות ברית, ואיום בסנקציות.',
+  },
+];
+
+const INTERNAL_FRONTS: { title: string; desc: string; breaksAt: number }[] = [
+  { title: 'משרד האוצר', desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.', breaksAt: 1 },
+  { title: 'דעת הקהל', desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.', breaksAt: 2 },
+  { title: 'הפוליטיקה הפנימית', desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.', breaksAt: 3 },
+  { title: 'הבמה הבינלאומית', desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".', breaksAt: 4 },
 ];
 
 function TimeAsymmetry() {
+  const [step, setStep] = useState(0);
+  const lastStep = TIME_STEPS.length - 1;
+
+  const regularCount = 1 + INTERNAL_FRONTS.filter((f) => f.breaksAt <= step).length;
+  const nonStateCount = 1;
+
   return (
     <div className="my-12">
       <div className="mb-5">
         <h3 className="font-display font-bold text-xl leading-tight mb-1">למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?</h3>
         <p className="text-fg-muted text-sm">
-          המעצמה לא נלחמת רק באויב שמולה — היא לוחמת בו-זמנית בעוד 4 חזיתות פנימיות שכופות עליה לסיים. הגרילה והטרור — בחזית אחת בלבד.
+          גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
         </p>
       </div>
 
+      {/* Timeline scrubber */}
+      <div className="surface-elevated p-5 sm:p-6 mb-4">
+        <div className="relative flex items-center justify-between">
+          <div aria-hidden className="absolute inset-x-0 top-3.5 h-0.5 bg-border" />
+          <motion.div
+            aria-hidden
+            className="absolute start-0 top-3.5 h-0.5 bg-fg"
+            initial={false}
+            animate={{ width: `${(step / lastStep) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+          />
+          {TIME_STEPS.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setStep(i)}
+              aria-current={i === step}
+              className="relative z-10 flex flex-col items-center gap-1.5 group"
+            >
+              <span
+                className={cn(
+                  'size-7 rounded-full border-2 flex items-center justify-center text-[11px] font-display font-bold transition-colors',
+                  i <= step
+                    ? 'bg-fg text-bg-elevated border-fg'
+                    : 'bg-bg-elevated text-fg-dim border-border-strong group-hover:border-fg-muted',
+                )}
+              >
+                {i + 1}
+              </span>
+              <span
+                className={cn(
+                  'text-[11px] font-display font-semibold tracking-wide whitespace-nowrap',
+                  i === step ? 'text-fg' : 'text-fg-dim',
+                )}
+              >
+                {s.label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={step}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25 }}
+            className="text-sm text-fg leading-relaxed text-pretty mt-5 pt-4 border-t border-border-subtle"
+          >
+            {TIME_STEPS[step].caption}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="surface-elevated p-5 sm:p-6"
-        >
+        <div className="surface-elevated p-5 sm:p-6">
           <div className="text-xs font-display font-semibold tracking-wider text-fg-muted mb-1">
             צבא סדיר · מדינה
           </div>
           <div className="flex items-baseline gap-2">
-            <div className="font-display font-bold text-5xl tabular-nums text-fg leading-none">5</div>
+            <motion.div
+              key={regularCount}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="font-display font-bold text-5xl tabular-nums text-fg leading-none"
+            >
+              {regularCount}
+            </motion.div>
             <div className="text-sm text-fg-muted leading-tight">
-              חזיתות פעילות<br />בו-זמנית
+              חזיתות פעילות<br />כרגע
             </div>
           </div>
           <div className="text-xs text-fg-muted mt-3 leading-relaxed">
             צריך לנצח <strong className="text-fg">בכל אחת מהן</strong> — אחרת המלחמה נגמרת מבפנים.
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
-          className="surface-elevated p-5 sm:p-6"
-        >
+        <div className="surface-elevated p-5 sm:p-6">
           <div className="text-xs font-display font-semibold tracking-wider text-fg-muted mb-1">
             שחקן לא-סדיר · גרילה או טרור
           </div>
           <div className="flex items-baseline gap-2">
-            <div className="font-display font-bold text-5xl tabular-nums text-fg leading-none">1</div>
+            <div className="font-display font-bold text-5xl tabular-nums text-fg leading-none">{nonStateCount}</div>
             <div className="text-sm text-fg-muted leading-tight">
               חזית אחת<br />(לשרוד)
             </div>
           </div>
           <div className="text-xs text-fg-muted mt-3 leading-relaxed">
-            צריך רק <strong className="text-fg">לא לאבד אותה</strong> — וזה מספיק לניצחון.
+            צריך רק <strong className="text-fg">לא לאבד אותה</strong> — וזה מספיק לניצחון, בכל שלב בציר הזמן.
           </div>
-        </motion.div>
+        </div>
       </div>
 
       <div className="surface-elevated overflow-hidden">
@@ -474,39 +565,17 @@ function TimeAsymmetry() {
           </div>
         </div>
 
-        {OPPONENTS.map((o, i) => (
-          <motion.div
-            key={o.title}
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.06 }}
-            className={cn(
-              'grid grid-cols-[1fr_auto_auto] border-b border-border-subtle last:border-b-0',
-              i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
-            )}
-          >
-            <div className="p-3 sm:p-4 min-w-0">
-              <div className="font-display font-semibold text-sm leading-tight">{o.title}</div>
-              <div className="text-xs text-fg-muted leading-snug mt-0.5">{o.desc}</div>
-            </div>
-            <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
-              <span className={cn(
-                'inline-flex items-center justify-center size-7 rounded-full border text-sm font-display font-bold leading-none',
-                o.regularActive ? 'bg-fg/8 text-fg border-fg/30' : 'bg-bg-accent text-fg-dim border-border-subtle',
-              )}>
-                {o.regularActive ? '✓' : '—'}
-              </span>
-            </div>
-            <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
-              <span className={cn(
-                'inline-flex items-center justify-center size-7 rounded-full border text-sm font-display font-bold leading-none',
-                o.nonStateActive ? 'bg-fg/8 text-fg border-fg/30' : 'bg-bg-accent text-fg-dim border-border-subtle',
-              )}>
-                {o.nonStateActive ? '✓' : '—'}
-              </span>
-            </div>
-          </motion.div>
+        <FrontRow index={0} title={FRONTLINE.title} desc={FRONTLINE.desc} regularActive nonStateActive />
+
+        {INTERNAL_FRONTS.map((f, i) => (
+          <FrontRow
+            key={f.title}
+            index={i + 1}
+            title={f.title}
+            desc={f.desc}
+            regularActive={f.breaksAt <= step}
+            nonStateActive={false}
+          />
         ))}
 
         <div className="grid grid-cols-[1fr_auto_auto] bg-bg-accent/30 border-t border-border-strong">
@@ -514,10 +583,10 @@ function TimeAsymmetry() {
             <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">סך החזיתות</span>
           </div>
           <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[88px]">
-            <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">5</div>
+            <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">{regularCount}</div>
           </div>
           <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[88px]">
-            <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">1</div>
+            <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">{nonStateCount}</div>
           </div>
         </div>
       </div>
@@ -532,6 +601,61 @@ function TimeAsymmetry() {
         </p>
       </div>
     </div>
+  );
+}
+
+function FrontRow({
+  index,
+  title,
+  desc,
+  regularActive,
+  nonStateActive,
+}: {
+  index: number;
+  title: string;
+  desc: string;
+  regularActive: boolean;
+  nonStateActive: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ delay: index * 0.06 }}
+      className={cn(
+        'grid grid-cols-[1fr_auto_auto] border-b border-border-subtle last:border-b-0',
+        index % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
+      )}
+    >
+      <div className="p-3 sm:p-4 min-w-0">
+        <div className="font-display font-semibold text-sm leading-tight">{title}</div>
+        <div className="text-xs text-fg-muted leading-snug mt-0.5">{desc}</div>
+      </div>
+      <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
+        <FrontMark active={regularActive} />
+      </div>
+      <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
+        <FrontMark active={nonStateActive} />
+      </div>
+    </motion.div>
+  );
+}
+
+function FrontMark({ active }: { active: boolean }) {
+  return (
+    <motion.span
+      key={active ? 'on' : 'off'}
+      initial={{ scale: active ? 0.6 : 1, opacity: active ? 0.4 : 1 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+      className={cn(
+        'inline-flex items-center justify-center size-7 rounded-full border text-sm font-display font-bold leading-none',
+        active ? 'bg-fg/8 text-fg border-fg/30' : 'bg-bg-accent text-fg-dim border-border-subtle',
+      )}
+    >
+      {active ? '✓' : '—'}
+    </motion.span>
   );
 }
 
