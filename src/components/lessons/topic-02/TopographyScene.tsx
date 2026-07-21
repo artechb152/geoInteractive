@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import { STEEPNESS_RINGS, elevationOpacity } from './LayeredCartographyStage';
 type View = '3d' | 'photo' | 'topo';
 const VIEWS: { id: View; label: string; icon: IconName; pros: string[]; cons: string[]; whatItIs: string; whyItMatters: string }[] = [
  {
@@ -342,16 +343,16 @@ return (
  <line key={'gy' + i} x1="0" y1={i * 10} x2="100" y2={i * 10} className="stroke-border-subtle" strokeWidth="0.1" />
  ))}
 
- {/* Concentric contour lines forming a hill at center */}
- {[
- { rx: 35, ry: 24, opacity: 0.55 },
- { rx: 28, ry: 19, opacity: 0.6 },
- { rx: 22, ry: 15, opacity: 0.65 },
- { rx: 16, ry: 11, opacity: 0.7 },
- { rx: 10, ry: 7, opacity: 0.8 },
- { rx: 5, ry: 4, opacity: 0.95 },
- ].map((c, i) => (
- <ellipse key={i} cx="48" cy="38" rx={c.rx} ry={c.ry} fill="none" className="stroke-accent" strokeWidth={i === 5 ? 0.5 : 0.3} opacity={c.opacity} />
+ {/* Concentric contour lines forming a hill at center — the SAME
+ landform (`mixed` steepness) drawn again in the "קווי גובה" scene,
+ so this map and that one read as the same place, not two unrelated
+ hills that both happen to have rings */}
+ {STEEPNESS_RINGS.mixed.map((c, i) => (
+ <ellipse
+ key={i} cx="48" cy="38" rx={c.rx} ry={c.ry} fill="none" className="stroke-accent"
+ strokeWidth={i === STEEPNESS_RINGS.mixed.length - 1 ? 0.5 : 0.3}
+ opacity={elevationOpacity(i, STEEPNESS_RINGS.mixed.length)}
+ />
  ))}
 
  {/* Index contour every 5th — slightly bolder */}

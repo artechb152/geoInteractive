@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import { STEEPNESS_RINGS, TerrainMap, elevationColorHex, type Steepness } from './LayeredCartographyStage';
+import type { Cake3DRing } from './ContourCake3D';
 
 const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
   ssr: false,
@@ -16,12 +18,22 @@ const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
   ),
 });
 
+// Fixed radii for the top "hill anatomy" pairing (unrelated to the
+// gentle/steep/cliff selector below) — same formula ContoursAsMap already
+// used (`ringRx(i) = 40 - i*8`), so the 3D cake for this pairing now derives
+// from the exact same numbers as its 2D map instead of an approximately
+// matching, independently-tuned radius curve.
+const ANATOMY_RINGS: Cake3DRing[] = [10, 20, 30, 40, 50].map((h, i) => ({
+  h,
+  rx: 40 - i * 8,
+  color: elevationColorHex(i, 5),
+}));
+
 type Shape = {
-  id: string;
+  id: Steepness;
   label: string;
   desc: string;
-  contours: { rx: number; ry: number; cx?: number; cy?: number }[];
-  steepnessHint: 'gentle' | 'mixed' | 'steep' | 'cliff';
+  steepnessHint: Steepness;
 };
 
 const SHAPES: Shape[] = [
@@ -29,43 +41,18 @@ const SHAPES: Shape[] = [
     id: 'gentle',
     label: 'גבעה מתונה',
     desc: 'הקווים רחוקים זה מזה. זה אומר שהגובה משתנה לאט מאוד - זהו מדרון נוח. לוחם יכול לטפס כאן בקלות, וגם רכב שטח יעלה פה בלי להתאמץ.',
-    contours: [
-      { rx: 38, ry: 26 },
-      { rx: 28, ry: 19 },
-      { rx: 18, ry: 12 },
-      { rx: 8, ry: 5 },
-    ],
     steepnessHint: 'gentle',
   },
   {
     id: 'steep',
     label: 'הר תלול',
     desc: 'הקווים צפופים מאוד. זה אומר שתוך מרחק קצר אנחנו עולים הרבה בגובה. הטיפוס הרגלי יהיה קשה ומעייף, ורכבים לא יוכלו לעבור כאן בכלל.',
-    contours: [
-      { rx: 36, ry: 26 },
-      { rx: 32, ry: 22 },
-      { rx: 28, ry: 19 },
-      { rx: 24, ry: 16 },
-      { rx: 20, ry: 13 },
-      { rx: 16, ry: 11 },
-      { rx: 12, ry: 8 },
-      { rx: 8, ry: 5 },
-      { rx: 4, ry: 3 },
-    ],
     steepnessHint: 'steep',
   },
   {
     id: 'cliff',
     label: 'מצוק',
     desc: 'הקווים כמעט נוגעים אחד בשני. זוהי נפילה חדה או קיר סלע. השטח בלתי עביר ברגל ודורש ציוד טיפוס (סנפלינג) או עיקוף של המכשול.',
-    contours: [
-      { rx: 38, ry: 26 },
-      { rx: 32, ry: 23 },
-      { rx: 26, ry: 20 },
-      { rx: 22, ry: 17, cx: 52 },
-      { rx: 21, ry: 16, cx: 53 },
-      { rx: 20, ry: 16, cx: 54 },
-    ],
     steepnessHint: 'cliff',
   },
 ];
@@ -74,6 +61,18 @@ export function ContoursScene() {
   const [shapeId, setShapeId] = useState(SHAPES[0].id);
   const [activeRing, setActiveRing] = useState<number | null>(null);
   const shape = SHAPES.find((s) => s.id === shapeId)!;
+
+  const [shapeView, setShapeView] = useState<'2d' | '3d'>('2d');
+  const [shapeActiveRing, setShapeActiveRing] = useState<number | null>(null);
+  useEffect(() => setShapeActiveRing(null), [shapeId]);
+
+  const shapeRings = STEEPNESS_RINGS[shape.steepnessHint];
+  const shapeRings3d: Cake3DRing[] = shapeRings.map((r, i) => ({
+    h: r.h,
+    rx: r.rx,
+    color: elevationColorHex(i, shapeRings.length),
+  }));
+  const reduce = useReducedMotion();
 
   return (
     <section id="scene-contours" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -107,7 +106,7 @@ title={
               מבט תלת־ממדי · ההר כעוגת פרוסות
             </div>
             <div className="p-2">
-              <ContourCake3D activeRing={activeRing} setActiveRing={setActiveRing} />
+              <ContourCake3D rings={ANATOMY_RINGS} activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
             <div className="text-[11px] text-accent/80 font-medium text-center">
               גררו כדי לסובב · גלגלת לזום
@@ -145,8 +144,77 @@ title={
           </div>
 
           <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch mt-6">
-            <div className="bg-bg-accent/20 relative overflow-hidden rounded-xl border border-border/40">
-              <ShapeMap shape={shape} />
+            <div className="bg-bg-accent/20 relative overflow-hidden rounded-xl border border-border/40 flex flex-col">
+              <div className="flex items-center justify-center gap-1 p-1.5 border-b border-border/30" role="tablist" aria-label="מבט על צורת השטח">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={shapeView === '2d'}
+                  onClick={() => setShapeView('2d')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-2 text-xs font-display font-semibold transition-colors',
+                    shapeView === '2d' ? 'bg-accent/15 text-accent' : 'text-fg-muted hover:text-fg'
+                  )}
+                >
+                  <Icon name="layers" size={13} />
+                  מבט מלמעלה
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={shapeView === '3d'}
+                  onClick={() => setShapeView('3d')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-2 text-xs font-display font-semibold transition-colors',
+                    shapeView === '3d' ? 'bg-accent/15 text-accent' : 'text-fg-muted hover:text-fg'
+                  )}
+                >
+                  <Icon name="mountain" size={13} />
+                  מבט תלת־ממדי
+                </button>
+              </div>
+
+              <div className="flex-1 relative min-h-[240px]">
+                <AnimatePresence mode="wait">
+                  {shapeView === '2d' ? (
+                    <motion.div
+                      key="2d"
+                      initial={reduce ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: reduce ? 0 : 0.3 }}
+                      className="absolute inset-0"
+                    >
+                      <TerrainMap
+                        rings={shapeRings}
+                        activeRing={shapeActiveRing}
+                        onRingChange={setShapeActiveRing}
+                        labelEvery={shapeRings.length > 6 ? 2 : 1}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="3d"
+                      initial={reduce ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: reduce ? 0 : 0.3 }}
+                      className="absolute inset-0 flex items-center"
+                    >
+                      <ContourCake3D
+                        rings={shapeRings3d}
+                        activeRing={shapeActiveRing}
+                        setActiveRing={setShapeActiveRing}
+                        autoRotate={!reduce}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="text-[11px] text-accent/80 font-medium text-center py-1.5 border-t border-border/30">
+                {shapeView === '2d' ? 'רחפו או הקישו Tab על הקווים לבדוק גובה' : 'גררו כדי לסובב · גלגלת לזום'}
+              </div>
             </div>
 
             <AnimatePresence mode="wait">
@@ -258,40 +326,6 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
 
         {/* peak marker */}
         <path d={`M${CX} ${MAP_CY - 2.5} L${CX} ${MAP_CY + 2.5} M${CX - 2.5} ${MAP_CY} L${CX + 2.5} ${MAP_CY}`} className="stroke-accent" strokeWidth="0.5" />
-      </svg>
-    </div>
-  );
-}
-
-function ShapeMap({ shape }: { shape: Shape }) {
-  return (
-    <div className="relative w-full h-full min-h-[280px]">
-      <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        {Array.from({ length: 11 }).map((_, i) => (
-          <g key={i}>
-            <line x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle/30" strokeWidth="0.1" />
-            <line x1="0" y1={i * 7.5} x2="100" y2={i * 7.5} className="stroke-border-subtle/30" strokeWidth="0.1" />
-          </g>
-        ))}
-
-        {shape.contours.map((c, i) => (
-          <motion.ellipse
-            key={i}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            cx={c.cx ?? 50}
-            cy={c.cy ?? 38}
-            rx={c.rx}
-            ry={c.ry}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={i % 5 === 0 ? 0.7 : 0.3}
-            className="text-accent"
-            style={{ opacity: i % 5 === 0 ? 0.9 : 0.5 }}
-          />
-        ))}
-
-        <circle cx={50} cy={38} r="0.5" className="fill-accent" />
       </svg>
     </div>
   );

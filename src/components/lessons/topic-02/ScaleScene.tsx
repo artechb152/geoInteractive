@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import { STEEPNESS_RINGS, sampleRings } from './LayeredCartographyStage';
 type Scale = {
 id: '10k' | '50k' | '250k';
 ratio: number;
@@ -286,13 +287,10 @@ className="fill-border-strong font-display font-medium tabular-nums"
  })}
  <rect x="0" y="0" width="100" height="75" fill="none" className="stroke-border-strong/50" strokeWidth="0.15" />
 
- {/* Contours - Representing a hill */}
- {(detailLevel === 'high'
- ? [{ rx: 40, ry: 28 }, { rx: 32, ry: 22 }, { rx: 26, ry: 18 }, { rx: 20, ry: 14 }, { rx: 14, ry: 10 }, { rx: 8, ry: 6 }]
- : detailLevel === 'medium'
- ? [{ rx: 35, ry: 24 }, { rx: 25, ry: 17 }, { rx: 15, ry: 11 }, { rx: 7, ry: 5 }]
- : [{ rx: 30, ry: 22 }, { rx: 18, ry: 13 }]
- ).map((c, i) => (
+ {/* Contours - the SAME hill as ContoursScene's `mixed` steepness, just
+ shown with fewer rings at a smaller scale — this is literally what
+ "loses detail when you zoom out" means, not a separately-drawn shape */}
+ {sampleRings(STEEPNESS_RINGS.mixed, detailLevel === 'high' ? 6 : detailLevel === 'medium' ? 4 : 2).map((c, i) => (
  <ellipse key={i} cx="50" cy="38" rx={c.rx} ry={c.ry} fill="none" className="stroke-border-strong/60" strokeWidth={detailLevel === 'high' ? 0.2 : 0.4} />
  ))}
 

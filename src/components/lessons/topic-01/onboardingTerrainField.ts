@@ -111,7 +111,14 @@ function baseUndulation(x: number, z: number) {
 }
 
 const LAYER_HEIGHT = 0.19;
-const TERRACE_SOFTNESS = 0.3;
+// Lower softness = crisper terrace bands. A relief-model/sand-table reads as
+// distinct cut-paper strata (like the mockup's elevation rings); the
+// original 0.3 blended terraces into one smooth round mound with almost no
+// visible stepping, which is what made the mountains read as soft plastic
+// "balloon" hills instead of a sculpted terrain model. Combined with
+// flat-shading on the material (TerrainCanvas), each terrace now reads as
+// a distinct near-flat "paper layer" with a hard edge to the next.
+const TERRACE_SOFTNESS = 0.09;
 export const TERRAIN_MAX_HEIGHT = 2.6;
 
 function terrace(h: number) {
@@ -130,7 +137,9 @@ function contourIntensity(rawHeight: number, river: number) {
   const t = rawHeight / LAYER_HEIGHT;
   const frac = t - Math.floor(t);
   const distToBoundary = Math.min(frac, 1 - frac);
-  const line = 1 - smoothstep(distToBoundary, 0, 0.07);
+  // Thinner band than before — reads as an engraved contour line at the
+  // terrace edge rather than a thick painted stripe.
+  const line = 1 - smoothstep(distToBoundary, 0, 0.045);
   return line * (1 - river);
 }
 

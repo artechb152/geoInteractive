@@ -1,9 +1,32 @@
 'use client';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+
+// Visual displacement of the impact dot on the schematic tactical grid —
+// exaggerated for legibility, not to map scale. Shared by the renderer and
+// the drag-to-shift pointer math so the dot you drag is the dot that moves.
+function impactOffset(shift: number) {
+  return { x: Math.min(38, shift * 0.38), y: shift * 0.15 };
+}
+
+// Synthetic ITM training-grid anchor — reuses the same illustrative pair
+// already shown in the ITM system card above (666250 / 178350) as the
+// "intended" target, so the two numbers on screen are consistent with each
+// other. `shift` (already expressed in real meters by the slider) is
+// applied along a fixed bearing to get an exact, deterministic "actual"
+// coordinate — this is what makes the existing slider/drag motion return a
+// precise נ"צ, not just a qualitative danger level.
+const ITM_ANCHOR = { e: 666250, n: 178350 };
+const BEARING = { ue: 0.82, un: 0.57 };
+function domainToItm(shift: number) {
+  return {
+    e: Math.round(ITM_ANCHOR.e + shift * BEARING.ue),
+    n: Math.round(ITM_ANCHOR.n + shift * BEARING.un),
+  };
+}
 type System = {
 id: 'itm' | 'wgs84';
 short: string;
@@ -162,6 +185,7 @@ className={cn('flex flex-col py-2', i === 0 ? 'md:pe-8' : 'md:ps-8 md:border-s b
 }
 function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: number) => void }) {
 const dangerLevel = shift < 15 ? 'safe' : shift < 40 ? 'warn' : 'danger';
+const actual = domainToItm(shift);
 const consequenceText =
 shift < 15
  ? 'בסדר: הסטייה קטנה מאוד. הירי עדיין יפול בתוך אזור המטרה.'
@@ -219,11 +243,35 @@ dangerLevel === 'danger' && 'bg-status-danger text-white',
  )}>
  {dangerLevel === 'safe' ? '✓ סטטוס: תקין' : dangerLevel === 'warn' ? '! סטטוס: סיכון' : '✗ סטטוס: סטייה קריטית'}
  </div>
+
+ <div className="mt-5 pt-4 border-t border-border-subtle space-y-1.5">
+ <div className="flex items-center justify-between gap-2 text-xs">
+ <span className="text-fg-dim font-display font-medium tracking-wide">נ"צ מיועד (ITM)</span>
+ <span dir="ltr" className="tabular-nums font-bold text-fg-muted">{ITM_ANCHOR.e} / {ITM_ANCHOR.n}</span>
+ </div>
+ <div className="flex items-center justify-between gap-2 text-xs">
+ <span className="text-fg-dim font-display font-medium tracking-wide">נ"צ בפועל (ITM)</span>
+ <span
+ dir="ltr"
+ className={cn(
+ 'tabular-nums font-bold',
+ dangerLevel === 'safe' && 'text-status-ok',
+ dangerLevel === 'warn' && 'text-status-warn',
+ dangerLevel === 'danger' && 'text-status-danger',
+ )}
+ >
+ {actual.e} / {actual.n}
+ </span>
+ </div>
+ </div>
  </div>
 
  {/* Column 2 — impact map */}
- <div className="relative min-h-[220px] md:min-h-0 aspect-video md:aspect-auto overflow-hidden md:border-s md:border-e border-border/60 md:px-6">
- <ImpactMap shift={shift} />
+ <div className="relative w-full min-h-[220px] md:min-h-0 aspect-video md:aspect-auto overflow-hidden md:border-s md:border-e border-border/60 md:px-6">
+ <ImpactMap shift={shift} onShiftChange={setShift} />
+ <div className="absolute bottom-1 inset-x-0 text-center text-[10px] text-fg-dim pointer-events-none">
+ גררו את נקודת הפגיעה, או השתמשו בחצים למקלדת
+ </div>
  </div>
 
  {/* Column 3 — consequence callout */}
@@ -259,12 +307,64 @@ dangerLevel === 'danger' && 'text-status-danger',
  </motion.div>
  );
 }
-function ImpactMap({ shift }: { shift: number }) {
+// The impact point only ever moves along this fixed vector (out of the
+// target, matching the direction drawn by the dashed displacement line) —
+// dragging the point is really a 1-D control, so a drag position is
+// resolved by projecting the pointer onto this same vector and solving
+// for `shift`.
+const IMPACT_DIR = { x: 0.38, y: -0.15 };
+const IMPACT_DIR_LEN2 = IMPACT_DIR.x * IMPACT_DIR.x + IMPACT_DIR.y * IMPACT_DIR.y;
+
+function ImpactMap({ shift, onShiftChange }: { shift: number; onShiftChange: (n: number) => void }) {
+const reduce = useReducedMotion();
+const svgRef = useRef<SVGSVGElement>(null);
+const draggingRef = useRef(false);
  // Offset logic for the SVG impact point
-const offsetX = Math.min(38, shift * 0.38);
-const offsetY = shift * 0.15;
+const { x: offsetX, y: offsetY } = impactOffset(shift);
+
+function pointerToUserSpace(clientX: number, clientY: number) {
+const svg = svgRef.current;
+if (!svg) return null;
+const pt = svg.createSVGPoint();
+pt.x = clientX;
+pt.y = clientY;
+const ctm = svg.getScreenCTM();
+if (!ctm) return null;
+const loc = pt.matrixTransform(ctm.inverse());
+return { x: loc.x, y: loc.y };
+}
+
+function updateFromPointer(clientX: number, clientY: number) {
+const p = pointerToUserSpace(clientX, clientY);
+if (!p) return;
+const dx = p.x - 50;
+const dy = p.y - 32;
+const proj = (dx * IMPACT_DIR.x + dy * IMPACT_DIR.y) / IMPACT_DIR_LEN2;
+onShiftChange(Math.round(Math.min(100, Math.max(0, proj))));
+}
+
+function handlePointerDown(e: React.PointerEvent<SVGGElement>) {
+draggingRef.current = true;
+e.currentTarget.setPointerCapture(e.pointerId);
+updateFromPointer(e.clientX, e.clientY);
+}
+function handlePointerMove(e: React.PointerEvent<SVGGElement>) {
+if (!draggingRef.current) return;
+updateFromPointer(e.clientX, e.clientY);
+}
+function handlePointerUp(e: React.PointerEvent<SVGGElement>) {
+draggingRef.current = false;
+if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+}
+function handleKeyDown(e: React.KeyboardEvent<SVGGElement>) {
+if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); onShiftChange(Math.min(100, shift + 2)); }
+else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); onShiftChange(Math.max(0, shift - 2)); }
+else if (e.key === 'Home') { e.preventDefault(); onShiftChange(0); }
+else if (e.key === 'End') { e.preventDefault(); onShiftChange(100); }
+}
+
 return (
- <svg viewBox="0 0 100 56" className="w-full h-full" preserveAspectRatio="none">
+ <svg ref={svgRef} viewBox="0 0 100 56" className="w-full h-full" preserveAspectRatio="none">
  <defs>
  <radialGradient id="targetGrad" cx="50%" cy="50%" r="50%">
  <stop offset="0%" className="text-accent-cool" stopColor="currentColor" stopOpacity="0.3" />
@@ -295,12 +395,33 @@ return (
       >מטרה מבוקשת</text>
  </g>
 
- {/* Impact Point */}
- <motion.g animate={{ x: offsetX, y: -offsetY }} transition={{ type: 'spring', stiffness: 50 }}>
+ {/* Impact Point — draggable along the displacement vector, or nudge with arrow keys */}
+ <motion.g
+ animate={{ x: offsetX, y: -offsetY }}
+ transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 50 }}
+ tabIndex={0}
+ role="slider"
+ aria-label="נקודת פגיעה בפועל — גררו או השתמשו בחצי המקלדת לשינוי גודל הסטייה"
+ aria-valuemin={0}
+ aria-valuemax={100}
+ aria-valuenow={shift}
+ aria-valuetext={`${shift} מטר סטייה`}
+ onPointerDown={handlePointerDown}
+ onPointerMove={handlePointerMove}
+ onPointerUp={handlePointerUp}
+ onKeyDown={handleKeyDown}
+ style={{ touchAction: 'none' }}
+ className="cursor-grab active:cursor-grabbing outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4"
+ >
+ <circle cx="50" cy="32" r="6" fill="transparent" />
  <circle cx="50" cy="32" r="1.2" className="fill-accent-hot" />
  <circle cx="50" cy="32" r="5" fill="none" className="stroke-accent-hot/40" strokeWidth="0.3">
+ {!reduce && (
+ <>
  <animate attributeName="r" values="3;7;3" dur="1.5s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.8;0.1;0.8" dur="1.5s" repeatCount="indefinite" />
+ </>
+ )}
  </circle>
  <text x="50" y="26" textAnchor="middle" className="fill-accent-hot text-[2.8px] font-display font-bold tracking-tighter"
         paintOrder="stroke"

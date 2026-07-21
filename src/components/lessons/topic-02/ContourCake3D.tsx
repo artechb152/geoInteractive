@@ -9,45 +9,78 @@ import { OrbitControls, Html } from '@react-three/drei';
  * Each contour interval is an actual stacked cylinder (a terrace), so the
  * relationship between the side-on 3D solid and the top-down contour map is
  * literal rather than illustrated: looking straight down the +Y axis you'd
- * see exactly the nested rings drawn in `ContoursAsMap`.
+ * see exactly the nested rings the caller passed in `rings`.
  *
- * Index 0 = lowest band (10 m, widest, bottom); last index = peak (50 m,
- * narrowest, top). Colours run sand → green as we climb, matching the map's
- * elevation ramp. Hovering a terrace lifts `activeRing` so the corresponding
- * ring highlights in the top-down view (and vice-versa).
+ * `rings` is ordered outer(lowest)→inner(peak) — the same ordering/shape as
+ * a top-down contour map (see LayeredCartographyStage's `ContourRing[]`).
+ * Radius is derived from `rx` by a fixed scale, so a caller that swaps in a
+ * different ring stack (gentle/steep/cliff) gets a 3D model whose footprint
+ * and height genuinely match the 2D lines — not two coincidentally-similar
+ * pictures. Terrace thickness is constant (one contour interval = one
+ * terrace), so a taller stack (e.g. `steep`, 9 rings) renders as a taller,
+ * narrower cake than a shorter one (e.g. `gentle`, 4 rings) — the same
+ * causal link ("more/closer lines = steeper") the 2D map shows via ring
+ * spacing, made spatial.
  *
  * Rendered client-only via `next/dynamic` (Canvas can't SSR).
  */
 
 const ACCENT = '#EB9E48';
 
-// Elevation ramp — low sand to high green, mirrors the 2D map bands.
-const BANDS = [
-  { h: 10, color: '#d8bd83' },
-  { h: 20, color: '#c2a26b' },
-  { h: 30, color: '#8a9a55' },
-  { h: 40, color: '#6f8050' },
-  { h: 50, color: '#5a6b4a' },
-];
+const RADIUS_SCALE = 2.15 / 40; // 3D units per terrain-domain rx unit
+const TERRACE_THICK = 0.24; // 3D units per 10 m contour interval
 
-const THICK = 0.44;                       // terrace height (one contour interval)
-const radiusAt = (i: number) => 2.15 - i * 0.38;  // bottom widest → peak narrowest
-const yAt = (i: number) => i * THICK + THICK / 2; // stacked on top of each other
+export type Cake3DRing = { h: number; rx: number; color: string };
+
+/**
+ * Which terraces get a floating height label. Naive "every Nth index"
+ * thinning still lets two labels collide when the last couple of rings
+ * happen to sit at nearly the same radius (e.g. `cliff`'s near-vertical
+ * top) — close in index AND close in space. So: thin by index gap first,
+ * then drop any trailing label that ended up too close (in radius) to the
+ * peak label, which always wins.
+ */
+function labeledIndices(rings: Cake3DRing[]): boolean[] {
+  const n = rings.length;
+  const labeled = new Array(n).fill(false);
+  if (n === 0) return labeled;
+  labeled[0] = true;
+  const minIndexGap = Math.max(1, Math.ceil(n / 5));
+  let lastShown = 0;
+  for (let i = 1; i < n - 1; i++) {
+    if (i - lastShown >= minIndexGap) {
+      labeled[i] = true;
+      lastShown = i;
+    }
+  }
+  if (n > 1) {
+    const peak = rings[n - 1];
+    for (let i = n - 2; i >= 0 && labeled[i]; i--) {
+      if (Math.abs(rings[i].rx - peak.rx) < 3) labeled[i] = false;
+      else break;
+    }
+    labeled[n - 1] = true;
+  }
+  return labeled;
+}
 
 function Terrace({
+  ring,
   i,
   active,
+  showLabel,
   onHover,
   onLeave,
 }: {
+  ring: Cake3DRing;
   i: number;
   active: boolean;
+  showLabel: boolean;
   onHover: (n: number) => void;
   onLeave: () => void;
 }) {
-  const r = radiusAt(i);
-  const y = yAt(i);
-  const band = BANDS[i];
+  const r = ring.rx * RADIUS_SCALE;
+  const y = i * TERRACE_THICK + TERRACE_THICK / 2;
 
   return (
     <group>
@@ -61,9 +94,9 @@ function Terrace({
         }}
         onPointerOut={() => onLeave()}
       >
-        <cylinderGeometry args={[r, r, THICK, 64]} />
+        <cylinderGeometry args={[r, r, TERRACE_THICK, 64]} />
         <meshStandardMaterial
-          color={active ? ACCENT : band.color}
+          color={active ? ACCENT : ring.color}
           emissive={active ? ACCENT : '#000000'}
           emissiveIntensity={active ? 0.45 : 0}
           roughness={0.9}
@@ -72,30 +105,31 @@ function Terrace({
       </mesh>
 
       {/* Contour edge on the top rim — this is the "line" you'd see on a map. */}
-      <mesh position={[0, y + THICK / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[r - 0.035, r, 64]} />
+      <mesh position={[0, y + TERRACE_THICK / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[Math.max(r - 0.035, 0.001), r, 64]} />
         <meshBasicMaterial color={active ? ACCENT : '#2f3322'} transparent opacity={active ? 0.95 : 0.5} />
       </mesh>
 
-      {/* Height label floating at the terrace edge. */}
-      <Html position={[r + 0.28, y, 0]} center distanceFactor={7} className="pointer-events-none select-none">
-        <span
-          className="px-1.5 py-0.5 text-xs font-display font-bold tabular-nums rounded-md whitespace-nowrap shadow-sm"
-          style={{
-            color: active ? ACCENT : '#4a4a3a',
-            background: 'rgba(255,255,255,0.92)',
-          }}
-        >
-          {band.h} מ׳
-        </span>
-      </Html>
+      {/* Height label floating at the terrace edge — thinned on tall stacks. */}
+      {(showLabel || active) && (
+        <Html position={[r + 0.28, y, 0]} center distanceFactor={7} className="pointer-events-none select-none">
+          <span
+            className="px-1.5 py-0.5 text-xs font-display font-bold tabular-nums rounded-md whitespace-nowrap shadow-sm"
+            style={{
+              color: active ? ACCENT : '#4a4a3a',
+              background: 'rgba(255,255,255,0.92)',
+            }}
+          >
+            {ring.h} מ׳
+          </span>
+        </Html>
+      )}
     </group>
   );
 }
 
 /** Vertical height axis with an arrowhead + label. */
-function HeightAxis() {
-  const top = yAt(BANDS.length - 1) + THICK / 2 + 0.4;
+function HeightAxis({ top }: { top: number }) {
   return (
     <group position={[-2.7, 0, 0]}>
       <mesh position={[0, top / 2, 0]}>
@@ -107,10 +141,7 @@ function HeightAxis() {
         <meshBasicMaterial color="#9a9486" />
       </mesh>
       <Html position={[0, top + 0.25, 0]} center distanceFactor={7} className="pointer-events-none select-none">
-        <span
-          className="text-xs font-display font-bold whitespace-nowrap"
-          style={{ color: '#6a6456' }}
-        >
+        <span className="text-xs font-display font-bold whitespace-nowrap" style={{ color: '#6a6456' }}>
           גובה ↑
         </span>
       </Html>
@@ -119,12 +150,20 @@ function HeightAxis() {
 }
 
 export default function ContourCake3D({
+  rings,
   activeRing,
   setActiveRing,
+  autoRotate = true,
 }: {
+  rings: Cake3DRing[];
   activeRing: number | null;
   setActiveRing: (n: number | null) => void;
+  autoRotate?: boolean;
 }) {
+  const stackTop = rings.length * TERRACE_THICK;
+  const axisTop = stackTop + 0.4;
+  const labeled = labeledIndices(rings);
+
   return (
     <div className="aspect-video sm:aspect-square max-h-[300px] w-full mx-auto cursor-grab active:cursor-grabbing">
       <Canvas
@@ -148,18 +187,20 @@ export default function ContourCake3D({
         />
 
         {/* Centre the stack vertically around the origin. */}
-        <group position={[0, -(yAt(BANDS.length - 1) + THICK / 2) / 2, 0]}>
-          {BANDS.map((_, i) => (
+        <group position={[0, -stackTop / 2, 0]}>
+          {rings.map((ring, i) => (
             <Terrace
               key={i}
+              ring={ring}
               i={i}
               active={activeRing === i}
+              showLabel={labeled[i]}
               onHover={setActiveRing}
               onLeave={() => setActiveRing(null)}
             />
           ))}
 
-          <HeightAxis />
+          <HeightAxis top={axisTop} />
 
           {/* Soft contact shadow under the base. */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
@@ -175,7 +216,7 @@ export default function ContourCake3D({
           maxDistance={9}
           minPolarAngle={0.35}
           maxPolarAngle={Math.PI / 2.05}
-          autoRotate
+          autoRotate={autoRotate}
           autoRotateSpeed={0.7}
           enableDamping
           dampingFactor={0.08}
