@@ -142,29 +142,41 @@ const PILLARS: Pillar[] = [
 ];
 
 /* ───────────────────────── 5 TACTICS OF NON-STATE ──────────────────── */
-const TRAITS: { title: string; desc: string }[] = [
+type Tactic = { id: string; title: string; vignette: string; desc: string };
+
+const TRAITS: Tactic[] = [
   {
+    id: 'conceal',
     title: 'הסתרה והסוואה',
+    vignette: 'לוחם לא לובש מדים, לא נוסע בשיירת רכבים מאורגנת, ולא יוצא מבסיס קבוע — הוא נראה בדיוק כמו אזרח רגיל ברחוב.',
     desc:
       'החוק הראשון הוא לא לבלוט. אין מדים, אין שיירות ג\'יפים מאורגנות ואין בסיסים מסודרים. הלוחמים מתלבשים כמו אזרחים רגילים ונבלעים בסביבה. למה? כי הם מבינים שברגע שמטוס קרב או רחפן מזהה אותם – ייקח בדיוק 10 שניות להשמיד אותם.',
   },
   {
+    id: 'embed',
     title: 'להתערבב עם אזרחים',
+    vignette: 'משגר טילים חונה בחצר בית ספר; חדר הפיקוד ממוקם קומה מתחת למחלקת ילדים בבית חולים.',
     desc:
       'במקום שדה קרב פתוח, הם ממקמים מפקדות ומשגרי טילים בתוך בתי חולים, בתי ספר ושכונות מגורים צפופות. זה תוקע את הצבא הסדיר בדילמה אכזרית: לתקוף ולחטוף אש מהעולם על פגיעה בחפים מפשע, או לוותר על חיסול המטרה ולתת להם לברוח?',
   },
   {
+    id: 'silence',
     title: 'להיות "שקטים" טכנולוגית',
+    vignette: 'הלוחמים אספו את כל הסמארטפונים לפני היציאה למשימה, ומעבירים הוראות בפתק נייר ביד שליח.',
     desc:
       'איך מתחבאים מצבא שקולט כל שיחת טלפון ורואה הכל מהחלל? יורדים מהרדאר. עוזבים את הסמארטפונים ועוברים להעביר פתקים מנייר דרך שליחים. נמנעים מנסיעה ברכבים שפולטים חום שלוויינים יכולים לקלוט. אי אפשר לעשות מתקפת סייבר על פתק נייר.',
   },
   {
+    id: 'cheap',
     title: 'לפגוע בזול בנשק יקר',
+    vignette: 'רחפן צעצוע שנקנה ברשת ב-300 דולר, עם רימון מאולתר מחובר לגחון, משבית טנק בשווי 5 מיליון דולר.',
     desc:
       'מתמטיקה פשוטה: למה לפתח תעשיית נשק אם אפשר לקנות רחפן צעצוע ב-300 דולר, לחבר לו רימון, ולשתק טנק טכנולוגי שעולה 5 מיליון דולר? האסטרטגיה היא כלכלית — להכריח את הצבא הסדיר לבזבז הון וטילי יירוט יקרים על איומים שעולים גרושים.',
   },
   {
+    id: 'optics',
     title: 'דעת הקהל היא שדה הקרב האמיתי',
+    vignette: 'תוך דקות מההפצצה, סרטון של הריסות ופצועים כבר עולה לרשתות החברתיות ומופץ ברחבי העולם.',
     desc:
       'הסמארטפון קטלני לא פחות מרובה. השחקן הלא-סדיר מתעד בניינים הרוסים ואזרחים פגועים ומפיץ ברשתות כדי לזעזע את העולם. הם יודעים שלחץ בינלאומי וסרטונים ויראליים יבלמו את הצבא הסדיר הרבה לפני שייגמרו לו הטילים.',
   },
@@ -316,33 +328,7 @@ export function AsymmetricScene() {
 
       <TimeAsymmetry />
 
-      {/* TRAITS */}
-      <div className="my-12">
-        <div className="mb-5">
-          <h3 className="font-display font-bold text-xl leading-tight mb-1">
-            חמש טקטיקות של השחקן הלא-סדיר
-          </h3>
-          <p className="text-fg-muted text-sm">
-            איך הוא משתמש במרחב, באוכלוסייה ובטכנולוגיה כדי לשרוד מול ענק.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {TRAITS.map((t, i) => (
-            <motion.div
-              key={t.title}
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06 }}
-              className="surface p-5 relative overflow-hidden"
-            >
-              <h4 className="font-display font-semibold mb-1.5 leading-tight">{t.title}</h4>
-              <p className="text-sm text-fg-muted leading-relaxed">{t.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+      <TacticMatchExercise />
 
       <DragExercise
         placement={placement}
@@ -669,6 +655,258 @@ function TimeAsymmetry() {
         </p>
       </div>
     </div>
+  );
+}
+
+/* ─────────────────── TACTIC MATCH — FIELD REPORTS ──────────────────── */
+/* Matching exercise: 5 short "field report" vignettes, each matched to
+   exactly one of the 5 tactic slots (unlike CategoryBin, a slot holds at
+   most one item). Full title + explanation reveal once matched. */
+
+function TacticMatchExercise() {
+  const [placement, setPlacement] = useState<Record<string, string | null>>(
+    Object.fromEntries(TRAITS.map((t) => [t.id, null])),
+  );
+  const [selected, setSelected] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const pool = TRAITS.filter((t) => placement[t.id] == null);
+  const allPlaced = TRAITS.every((t) => placement[t.id] != null);
+  const correctCount = TRAITS.filter((t) => placement[t.id] === t.id).length;
+
+  const place = (vignetteId: string, binId: string | null) => {
+    setPlacement((prev) => {
+      const next = { ...prev };
+      if (binId) {
+        for (const key of Object.keys(next)) {
+          if (next[key] === binId) next[key] = null;
+        }
+      }
+      next[vignetteId] = binId;
+      return next;
+    });
+    setSelected(null);
+    setSubmitted(false);
+  };
+
+  const reset = () => {
+    setPlacement(Object.fromEntries(TRAITS.map((t) => [t.id, null])));
+    setSelected(null);
+    setSubmitted(false);
+  };
+
+  return (
+    <div className="my-12">
+      <div className="mb-5">
+        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+          תרגול · זהו את הטקטיקה
+        </div>
+        <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
+          חמש טקטיקות של השחקן הלא-סדיר
+        </h3>
+        <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
+          לפני שתראו את שם הטקטיקה — קראו כל "דיווח שטח" קצר וגררו (או הקישו עליו ואז על שם הטקטיקה) אותו למקום המתאים. אחרי ששיבצתם את כל החמישה, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל אחת.
+        </p>
+      </div>
+
+      <div className="surface-elevated p-4 rounded-[4px] mb-3">
+        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
+          דיווחי שטח ({pool.length})
+        </div>
+        {pool.length === 0 ? (
+          <div className="text-center text-sm text-fg-muted py-4">
+            שיבצתם את כל הדיווחים. {submitted ? 'בדקו את התוצאה למטה.' : 'לחצו "בדוק תשובות".'}
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-2">
+            {pool.map((t) => (
+              <VignetteChip
+                key={t.id}
+                tactic={t}
+                isSelected={selected === t.id}
+                onSelect={() => setSelected(selected === t.id ? null : t.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {TRAITS.map((t) => (
+          <TacticBin
+            key={t.id}
+            tactic={t}
+            occupant={TRAITS.find((v) => placement[v.id] === t.id) ?? null}
+            selected={selected}
+            submitted={submitted}
+            onPlace={place}
+          />
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-fg-muted">
+          {!submitted && !allPlaced && `שובצו ${TRAITS.length - pool.length} מתוך ${TRAITS.length}`}
+          {!submitted && allPlaced && 'הכל מוכן — לחצו לבדיקה'}
+          {submitted && (
+            <span className={cn('font-display font-bold', correctCount === TRAITS.length ? 'text-status-ok' : 'text-fg')}>
+              ציון: {correctCount}/{TRAITS.length} {correctCount === TRAITS.length && '· מצוין!'}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={reset}
+            className="px-4 py-2 rounded-md font-medium text-sm border border-border text-fg-muted hover:bg-bg-accent transition-colors"
+          >
+            איפוס
+          </button>
+          {!submitted && (
+            <button
+              type="button"
+              onClick={() => setSubmitted(true)}
+              disabled={!allPlaced}
+              className={cn(
+                'px-4 py-2 rounded-md font-bold text-sm transition-colors',
+                allPlaced
+                  ? 'bg-fg text-bg-elevated hover:bg-fg-muted'
+                  : 'bg-bg-accent text-fg-dim cursor-not-allowed',
+              )}
+            >
+              בדוק תשובות
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VignetteChip({
+  tactic,
+  isSelected,
+  onSelect,
+}: {
+  tactic: Tactic;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/tactic', tactic.id);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onClick={onSelect}
+      className={cn(
+        'text-right p-3 rounded-[3px] border transition-all cursor-grab active:cursor-grabbing',
+        isSelected ? 'border-fg bg-bg-accent' : 'border-border bg-bg-elevated hover:border-fg-muted',
+      )}
+    >
+      <p className="text-sm leading-relaxed text-fg">{tactic.vignette}</p>
+    </button>
+  );
+}
+
+function TacticBin({
+  tactic,
+  occupant,
+  selected,
+  submitted,
+  onPlace,
+}: {
+  tactic: Tactic;
+  occupant: Tactic | null;
+  selected: string | null;
+  submitted: boolean;
+  onPlace: (vignetteId: string, binId: string | null) => void;
+}) {
+  const [isOver, setIsOver] = useState(false);
+  const isCorrect = submitted && occupant?.id === tactic.id;
+  const isWrong = submitted && occupant != null && occupant.id !== tactic.id;
+
+  return (
+    <motion.div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsOver(true);
+      }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/tactic');
+        if (id) onPlace(id, tactic.id);
+        setIsOver(false);
+      }}
+      onClick={() => {
+        if (submitted) return;
+        if (occupant) {
+          onPlace(occupant.id, null);
+          return;
+        }
+        if (selected) onPlace(selected, tactic.id);
+      }}
+      animate={{ scale: isOver ? 1.02 : 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      className={cn(
+        'rounded-[3px] border bg-bg-elevated p-4 flex flex-col gap-2 min-h-[160px] transition-colors',
+        isOver
+          ? 'border-fg'
+          : submitted
+            ? isCorrect
+              ? 'border-status-ok/50'
+              : isWrong
+                ? 'border-status-danger/50'
+                : 'border-border'
+            : 'border-border',
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        {submitted && occupant && (
+          <span
+            className={cn(
+              'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
+              isCorrect ? 'bg-status-ok/15 text-status-ok' : 'bg-status-danger/15 text-status-danger',
+            )}
+          >
+            {isCorrect ? '✓' : '✗'}
+          </span>
+        )}
+        <div className="font-display font-bold text-sm leading-tight text-fg">{tactic.title}</div>
+      </div>
+
+      {occupant ? (
+        <div className="flex-1 min-w-0">
+          {submitted ? (
+            <div className="space-y-1">
+              <div
+                className={cn(
+                  'text-[11px] font-display font-bold tracking-wide',
+                  isCorrect ? 'text-status-ok' : 'text-status-danger',
+                )}
+              >
+                {isCorrect ? 'התאמה נכונה' : `הדיווח הזה שייך בעצם ל: ${occupant.title}`}
+              </div>
+              <p className="text-xs text-fg-muted leading-snug">{occupant.desc}</p>
+            </div>
+          ) : (
+            <div className="text-xs text-fg-muted leading-snug">דיווח משובץ — הקישו כדי לבטל</div>
+          )}
+        </div>
+      ) : (
+        <div
+          className={cn(
+            'flex-1 min-h-[60px] rounded-[3px] flex items-center justify-center text-xs font-display font-semibold transition-colors',
+            isOver ? 'bg-bg-accent text-fg' : selected ? 'bg-bg-accent/40 text-fg-muted' : 'text-fg-dim bg-bg-accent/40',
+          )}
+        >
+          {isOver ? 'שחרר כאן' : selected ? 'הקש לשיבוץ כאן' : 'גרור לכאן'}
+        </div>
+      )}
+    </motion.div>
   );
 }
 
