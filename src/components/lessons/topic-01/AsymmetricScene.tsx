@@ -141,6 +141,72 @@ const PILLARS: Pillar[] = [
   },
 ];
 
+/* ─────────────── "מה הייתם עושים?" — PER-PILLAR DECISION SIM ───────────── */
+type PillarChoice = { id: string; label: string; outcome: 'correct' | 'wrong'; feedback: string };
+type PillarDecision = { pillarId: string; prompt: string; choices: PillarChoice[] };
+
+const PILLAR_DECISIONS: PillarDecision[] = [
+  {
+    pillarId: 'persistence',
+    prompt:
+      'עברו שבועיים מתחילת הלחימה. הצבא שמולכם גדול וחזק פי 100 מכם, ואי אפשר להכריע אותו בקרב ישיר. מה תבחרו לעשות?',
+    choices: [
+      {
+        id: 'big-battle',
+        label: 'לרכז את כל הכוח למתקפה אחת גדולה שתכריע את המלחמה',
+        outcome: 'wrong',
+        feedback:
+          'קרב גדול וחד-פעמי מול צבא גדול פי 100 הוא כמעט תמיד התאבדות טקטית — גם אם תצליחו לפגוע בו, לא תוכלו "לנצח" אותו במשחק שהוא הכי טוב בו.',
+      },
+      {
+        id: 'survive',
+        label: 'להימנע מהכרעה, ופשוט להישאר בחיים ולהמשיך לירות יום אחרי יום',
+        outcome: 'correct',
+        feedback: 'בדיוק — הזמן עצמו הוא הנשק שלכם.',
+      },
+    ],
+  },
+  {
+    pillarId: 'deterrence',
+    prompt:
+      'ניסיתם לפגוע ישירות בשריון ובחיל האוויר של האויב — וזה לא עבד, הטכנולוגיה שלו פשוט טובה מדי. מה השלב הבא?',
+    choices: [
+      {
+        id: 'more-military',
+        label: 'להשקיע עוד יותר משאבים בניסיון לשפר את היכולת לפגוע בכוחות הצבאיים שלו',
+        outcome: 'wrong',
+        feedback:
+          'זה בדיוק המשחק שבו תמיד תפסידו — למעצמה יש תמיד טכנולוגיה טובה וזולה יותר מכם בזירה הזאת.',
+      },
+      {
+        id: 'skip-front',
+        label: 'לדלג על החזית הצבאית ולתקוף ישירות את הערים והאזרחים בעורף',
+        outcome: 'correct',
+        feedback: 'בדיוק — עוקפים את מה שהוא חזק בו, ותוקפים את מה שהוא לא יכול להגן עליו.',
+      },
+    ],
+  },
+  {
+    pillarId: 'attrition',
+    prompt: 'אין לכם סיכוי לנצח בקרב גדול אחד. איך בכל זאת תשחקו בהדרגה את הצבא הסדיר?',
+    choices: [
+      {
+        id: 'one-big-op',
+        label: 'לתכנן מבצע ענק אחד שיפתיע את כולם וישנה את התמונה בבת אחת',
+        outcome: 'wrong',
+        feedback:
+          'מבצע ענק וחד-פעמי חושף אתכם — ברגע שהאויב מזהה אותו, יש לו את כל הכוח הדרוש כדי לחסל אתכם באש אחת.',
+      },
+      {
+        id: 'small-stings',
+        label: 'לבצע הרבה "עקיצות קטנות" — צלף כאן, מטען שם — בלי הפסקה ובלי דפוס קבוע',
+        outcome: 'correct',
+        feedback: 'בדיוק — טפטוף מתמיד ובלתי צפוי שוחק את הסבלנות והתקציב של הצד החזק.',
+      },
+    ],
+  },
+];
+
 /* ───────────────────────── 5 TACTICS OF NON-STATE ──────────────────── */
 type Tactic = { id: string; title: string; vignette: string; desc: string };
 
@@ -289,42 +355,7 @@ export function AsymmetricScene() {
 
       <TypologyTable />
 
-      {/* PILLARS */}
-      <div className="my-12">
-        <div className="mb-5">
-          <h3 className="font-display font-bold text-xl leading-tight mb-1">
-            שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
-          </h3>
-          <p className="text-fg-muted text-sm">
-            לא משנה אם זה ארגון גרילה או רשת טרור — הם חולקים את אותה אסטרטגיית-יסוד מול הצבא הסדיר.
-          </p>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-3">
-          {PILLARS.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
-            >
-              <div className="mb-3">
-                <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
-                  עמוד {i + 1}
-                </div>
-                <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance">
-                  {p.label}
-                </h4>
-              </div>
-
-              <p className="text-sm leading-relaxed text-fg-muted mb-3">{p.oneLiner}</p>
-              <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">{p.detail}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+      <PillarSimulator />
 
       <TimeAsymmetry />
 
@@ -516,6 +547,141 @@ function TypologyTable() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ───────────────── "מה הייתם עושים?" — PILLAR SIMULATOR UI ─────────────── */
+
+function PillarSimulator() {
+  const [solved, setSolved] = useState<Record<string, boolean>>({});
+  const solvedCount = Object.values(solved).filter(Boolean).length;
+
+  return (
+    <div className="my-12">
+      <div className="mb-5">
+        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+          סימולציה · מה הייתם עושים?
+        </div>
+        <h3 className="font-display font-bold text-xl leading-tight mb-1">
+          שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
+        </h3>
+        <p className="text-fg-muted text-sm">
+          אתם מפקדים על ארגון לא-סדיר מול צבא גדול פי 100 מכם. בכל אחד משלושת רגעי ההחלטה — בחרו מה הייתם עושים.
+        </p>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {PILLAR_DECISIONS.map((d, i) => {
+          const pillar = PILLARS.find((p) => p.id === d.pillarId)!;
+          return (
+            <PillarDecisionCard
+              key={d.pillarId}
+              index={i}
+              decision={d}
+              pillar={pillar}
+              solved={!!solved[d.pillarId]}
+              onSolved={() => setSolved((s) => ({ ...s, [d.pillarId]: true }))}
+            />
+          );
+        })}
+      </div>
+
+      <AnimatePresence>
+        {solvedCount === PILLARS.length && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-[3px] border border-border bg-bg-accent/30 p-5 mt-4"
+          >
+            <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">התובנה</div>
+            <p className="text-sm text-fg leading-relaxed text-pretty">
+              לא משנה אם זה ארגון גרילה או רשת טרור — הם חולקים את אותה אסטרטגיית-יסוד מול הצבא הסדיר: לשרוד, לעקוף, ולשחוק.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function PillarDecisionCard({
+  index,
+  decision,
+  pillar,
+  solved,
+  onSolved,
+}: {
+  index: number;
+  decision: PillarDecision;
+  pillar: Pillar;
+  solved: boolean;
+  onSolved: () => void;
+}) {
+  const [lastChoice, setLastChoice] = useState<PillarChoice | null>(null);
+
+  const pick = (choice: PillarChoice) => {
+    setLastChoice(choice);
+    if (choice.outcome === 'correct') onSolved();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
+    >
+      <div className="mb-3">
+        <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
+          עמוד {index + 1}
+        </div>
+        {solved && (
+          <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance">{pillar.label}</h4>
+        )}
+      </div>
+
+      {!solved ? (
+        <div className="flex-1 flex flex-col gap-3">
+          <p className="text-sm leading-relaxed text-fg-muted">{decision.prompt}</p>
+          <div className="flex flex-col gap-2">
+            {decision.choices.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pick(c)}
+                className={cn(
+                  'text-right p-3 rounded-[3px] border text-sm transition-colors',
+                  lastChoice?.id === c.id && lastChoice.outcome === 'wrong'
+                    ? 'border-status-danger/50 bg-status-danger/5'
+                    : 'border-border bg-bg-elevated hover:border-fg-muted',
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <AnimatePresence>
+            {lastChoice && lastChoice.outcome === 'wrong' && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="text-xs text-status-danger leading-snug overflow-hidden"
+              >
+                {lastChoice.feedback} נסו שוב.
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+      ) : (
+        <div className="flex-1">
+          <p className="text-xs text-status-ok font-display font-semibold mb-2">{lastChoice?.feedback}</p>
+          <p className="text-sm leading-relaxed text-fg-muted mb-3">{pillar.oneLiner}</p>
+          <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">{pillar.detail}</p>
+        </div>
+      )}
+    </motion.div>
   );
 }
 
