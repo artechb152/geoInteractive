@@ -61,37 +61,56 @@ const ACTORS: Record<ActorType, ActorMeta> = {
 };
 
 /* ───────────────────────── 3-COL COMPARISON DATA ───────────────────── */
-type CompareRow = { label: string; regular: string; guerrilla: string; terror: string };
+type CompareRow = {
+  label: string;
+  regular: string;
+  guerrilla: string;
+  terror: string;
+  /** Guess-before-reveal prompt shown before the row's answers are visible. */
+  riddle: string;
+  /** Which column the riddle's answer points to. */
+  answer: ActorType;
+};
 const COMPARE_ROWS: CompareRow[] = [
   {
     label: 'דוגמאות',
     regular: 'צה"ל, צבא ארה"ב, צבא רוסיה, בונדסוור גרמני',
     guerrilla: 'חיזבאללה, חות׳ים, טאליבאן (היסטורית), פאר"ק קולומביה',
     terror: 'אל-קאעידה, דאע"ש, בוקו חראם, אש-שבאב',
+    riddle: 'באיזו קטגוריה תמצאו גם את חיזבאללה וגם את החות\'ים — שני ארגונים ששולטים בפועל בשטח משלהם?',
+    answer: 'guerrilla',
   },
   {
     label: 'תקציב שנתי',
     regular: 'עשרות עד מאות מיליארדי דולרים מתקציב המדינה',
     guerrilla: 'מאות מיליונים — מיסוי מקומי, נפט, סיוע איראני או אחר',
     terror: 'מיליונים — תרומות, פשע, הלבנת הון',
+    riddle: 'מי משלושת השחקנים מתוקצב הכי דל — רק מיליונים בודדים, מתרומות, פשע והלבנת הון?',
+    answer: 'terror',
   },
   {
     label: 'מטרת לחימה ראשית',
     regular: 'יחידות צבא אויב — קונבנציונאלי',
     guerrilla: 'יחידות צבא וסמלי שלטון — להחליש סדר קיים',
     terror: 'אזרחים — להפיץ פחד וליצור לחץ פוליטי',
+    riddle: 'מי היחיד מבין השלושה שממוקד אך ורק ביחידות צבא יריבות, לפי כללי לחימה קונבנציונליים?',
+    answer: 'regular',
   },
   {
     label: 'שטח שליטה',
     regular: 'כל שטח המדינה הריבונית',
     guerrilla: 'אזורים מוגדרים — מעוזים, עמקים, רובעים',
     terror: 'אין טריטוריה — תאים פזורים בעולם',
+    riddle: 'מי משלושת השחקנים שולט בפועל בעיר בירה שלמה (כמו צנעא) ומפעיל שם שלטון אזרחי מקומי משלו?',
+    answer: 'guerrilla',
   },
   {
     label: 'חוקי לחימה',
     regular: 'מחוייב לדין בינלאומי (אמנת ז\'נבה)',
     guerrilla: 'מצהיר על מחויבות — מפר בפועל',
     terror: 'מתעלם לחלוטין',
+    riddle: 'מי היחיד מהשלושה שבאמת מחויב לחוקי הלחימה הבינלאומיים (אמנת ז\'נבה) — גם בהצהרה וגם בפועל?',
+    answer: 'regular',
   },
 ];
 
@@ -355,7 +374,39 @@ export function AsymmetricScene() {
 }
 
 /* ─────────────────────── 3-COL COMPARISON TABLE ─────────────────────── */
+/* Guess-before-reveal: each row starts as a riddle. The learner picks which
+   actor it describes, then the full row (all 3 columns) reveals with the
+   guess marked right/wrong. A "reveal without guessing" escape hatch stays
+   available per-row and for the whole table. */
+
+type RowAnswer = ActorType | 'skip';
+
 function TypologyTable() {
+  const [answers, setAnswers] = useState<Record<number, RowAnswer | undefined>>({});
+
+  const guessedCount = COMPARE_ROWS.reduce(
+    (n, _row, i) => (answers[i] && answers[i] !== 'skip' ? n + 1 : n),
+    0,
+  );
+  const correctCount = COMPARE_ROWS.reduce(
+    (n, row, i) => (answers[i] === row.answer ? n + 1 : n),
+    0,
+  );
+
+  const guess = (rowIndex: number, choice: RowAnswer) => {
+    setAnswers((prev) => ({ ...prev, [rowIndex]: choice }));
+  };
+
+  const revealAll = () => {
+    setAnswers((prev) => {
+      const next = { ...prev };
+      COMPARE_ROWS.forEach((_row, i) => {
+        if (next[i] === undefined) next[i] = 'skip';
+      });
+      return next;
+    });
+  };
+
   return (
     <div className="surface-elevated overflow-hidden rounded-[4px]">
       <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr] border-b border-border-strong">
@@ -372,26 +423,112 @@ function TypologyTable() {
         ))}
       </div>
 
-      {COMPARE_ROWS.map((row, i) => (
-        <motion.div
-          key={row.label}
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ delay: i * 0.05 }}
-          className={cn(
-            'grid grid-cols-[1.1fr_1fr_1fr_1fr] border-b border-border-subtle last:border-b-0',
-            i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
-          )}
-        >
-          <div className="p-4 bg-bg-accent/30 flex items-center">
-            <div className="text-sm font-medium">{row.label}</div>
-          </div>
-          <div className="p-4 border-r border-border-subtle text-sm text-fg leading-snug">{row.regular}</div>
-          <div className="p-4 border-r border-border-subtle text-sm text-fg leading-snug">{row.guerrilla}</div>
-          <div className="p-4 border-r border-border-subtle text-sm text-fg leading-snug">{row.terror}</div>
-        </motion.div>
-      ))}
+      {COMPARE_ROWS.map((row, i) => {
+        const state = answers[i];
+        const revealed = state !== undefined;
+        return (
+          <motion.div
+            key={row.label}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ delay: i * 0.05 }}
+            className={cn(
+              'border-b border-border-subtle last:border-b-0',
+              i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
+            )}
+          >
+            {!revealed ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
+              >
+                <div className="p-4 bg-bg-accent/30 flex items-center">
+                  <div className="text-sm font-medium">{row.label}</div>
+                </div>
+                <div className="col-span-3 p-4 border-r border-border-subtle">
+                  <p className="text-sm text-fg leading-relaxed text-pretty mb-3">{row.riddle}</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ACTORS_LIST.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => guess(i, a.id)}
+                        className="px-2 py-2 rounded-md border border-border bg-bg-elevated text-xs sm:text-sm font-display font-semibold text-fg hover:border-fg-muted hover:bg-bg-accent transition-colors"
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => guess(i, 'skip')}
+                    className="mt-2 text-[11px] text-fg-dim hover:text-fg-muted underline underline-offset-2"
+                  >
+                    גלה בלי לנחש
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
+              >
+                <div className="p-4 bg-bg-accent/30 flex items-center gap-2">
+                  <div className="text-sm font-medium">{row.label}</div>
+                  {state !== 'skip' && (
+                    <span
+                      className={cn(
+                        'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
+                        state === row.answer
+                          ? 'bg-status-ok/15 text-status-ok'
+                          : 'bg-status-danger/15 text-status-danger',
+                      )}
+                    >
+                      {state === row.answer ? '✓' : '✗'}
+                    </span>
+                  )}
+                </div>
+                {ACTORS_LIST.map((a) => {
+                  const isAnswer = a.id === row.answer;
+                  const isWrongGuess = state !== 'skip' && state === a.id && !isAnswer;
+                  return (
+                    <div
+                      key={a.id}
+                      className={cn(
+                        'p-4 border-r border-border-subtle text-sm text-fg leading-snug',
+                        state !== 'skip' && isAnswer && 'bg-status-ok/10',
+                        isWrongGuess && 'bg-status-danger/10',
+                      )}
+                    >
+                      {row[a.id]}
+                    </div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </motion.div>
+        );
+      })}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 p-4 bg-bg-accent/20 border-t border-border-strong">
+        <div className="text-xs text-fg-muted">
+          {guessedCount === 0
+            ? 'נחשו לפני שתראו — לחצו על השחקן המתאים בכל שורה'
+            : `${correctCount}/${guessedCount} ניחושים נכונים`}
+        </div>
+        {guessedCount + Object.values(answers).filter((v) => v === 'skip').length < COMPARE_ROWS.length && (
+          <button
+            type="button"
+            onClick={revealAll}
+            className="text-xs font-display font-semibold text-fg-muted hover:text-fg underline underline-offset-2"
+          >
+            גלה את כל הטבלה
+          </button>
+        )}
+      </div>
     </div>
   );
 }
