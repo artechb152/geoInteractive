@@ -414,24 +414,22 @@ export function AsymmetricScene() {
       >
         <div className="grid sm:grid-cols-[1fr_auto] gap-5 items-center">
           <div>
-            <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+            <div className="text-xl sm:text-2xl font-display font-extrabold text-fg mb-1.5 tracking-wide">
               המסקנה: זורקים את ספר החוקים הישן לפח
             </div>
             <p className="text-fg leading-relaxed text-pretty">
               צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
             </p>
           </div>
-          <div className="rounded-[4px] bg-bg-elevated p-2 shrink-0">
-            <IsometricAsset
-              assetId="TOPIC01-ASYM-CLOSING"
-              src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
-              alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
-              aspect="1/1"
-              fit="contain"
-              className="rounded-[3px] w-[140px] sm:w-[160px]"
-              prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
-            />
-          </div>
+          <IsometricAsset
+            assetId="TOPIC01-ASYM-CLOSING"
+            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
+            alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
+            aspect="1/1"
+            fit="contain"
+            className="rounded-[3px] w-[140px] sm:w-[160px] shrink-0"
+            prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
+          />
         </div>
       </motion.div>
     </section>
@@ -1076,28 +1074,25 @@ function TacticMatchExercise() {
 
   return (
     <div className="my-12">
-      <div className="mb-5">
-        <div className="flex items-center gap-1.5 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
-          <Icon name="eye" size={13} className="text-brand-dark" />
-          תרגול · זהו את הטקטיקה
+      <div className="rounded-[4px] border border-border-subtle bg-bg p-4 sm:p-5 mb-5">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
+              חמש טקטיקות של השחקן הלא-סדיר
+            </h3>
+            <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
+              לפני שתראו את שם הטקטיקה — קראו כל "דיווח שטח" קצר וגררו (או הקישו עליו ואז על שם הטקטיקה) אותו למקום המתאים. אחרי ששיבצתם את כל החמישה, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל אחת.
+            </p>
+          </div>
+          <IsometricAsset
+            assetId="TOPIC01-ASYM-TACTICS"
+            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
+            alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
+            aspect="16/9"
+            className="rounded-[3px] h-20 sm:h-28 w-auto shrink-0"
+            prompt="Isometric papercut illustration of a small layered terrain tile at dusk on a cream background (#FFFBF7): a warm peach ground platform (#FFDCB5), a few sage-green paper trees (#749C75), a winding paper dirt path, and one small abstract drone-like paper shape with a single orange (#EB9E48) accent light hovering above. No visible weapons, no people, flat paper-cut shading, small and simple composition, no text."
+          />
         </div>
-        <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
-          חמש טקטיקות של השחקן הלא-סדיר
-        </h3>
-        <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
-          לפני שתראו את שם הטקטיקה — קראו כל "דיווח שטח" קצר וגררו (או הקישו עליו ואז על שם הטקטיקה) אותו למקום המתאים. אחרי ששיבצתם את כל החמישה, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל אחת.
-        </p>
-      </div>
-
-      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
-        <IsometricAsset
-          assetId="TOPIC01-ASYM-TACTICS"
-          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
-          alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
-          aspect="16/9"
-          className="rounded-[3px]"
-          prompt="Isometric papercut illustration of a small layered terrain tile at dusk on a cream background (#FFFBF7): a warm peach ground platform (#FFDCB5), a few sage-green paper trees (#749C75), a winding paper dirt path, and one small abstract drone-like paper shape with a single orange (#EB9E48) accent light hovering above. No visible weapons, no people, flat paper-cut shading, small and simple composition, no text."
-        />
       </div>
 
       <div className="surface-elevated p-4 rounded-[4px] mb-3">
