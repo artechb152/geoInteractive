@@ -336,7 +336,7 @@ export function AsymmetricScene() {
       <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
         <IsometricAsset
           assetId="TOPIC01-ASYM-HERO"
-          src="/assets/isometric/topic-01-asymmetric-hero.webp"
+          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-HERO.png"
           alt="איור איזומטרי: הר גדול מול אוהלים מפוזרים, מסמל את האסימטריה בין צבא גדול לשחקן קטן"
           aspect="21/9"
           className="rounded-[3px]"
@@ -424,7 +424,7 @@ export function AsymmetricScene() {
           <div className="rounded-[4px] bg-warm/50 p-2 shrink-0">
             <IsometricAsset
               assetId="TOPIC01-ASYM-CLOSING"
-              src="/assets/isometric/topic-01-asymmetric-closing.webp"
+              src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
               alt="איור איזומטרי: מאזניים שצד אחד שלהם כבד ומתכופף וצד שני קליל ויציב, מסמל אסימטריה"
               aspect="1/1"
               className="rounded-[3px] w-[140px] sm:w-[160px]"
@@ -623,7 +623,7 @@ function PillarSimulator() {
       <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
         <IsometricAsset
           assetId="TOPIC01-ASYM-PILLARS"
-          src="/assets/isometric/topic-01-asymmetric-pillars.webp"
+          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-PILLARS.png"
           alt="שלושה איורים איזומטריים קטנים: דמות יציבה, חץ מתעקל סביב קיר, שעון חול"
           aspect="21/9"
           className="rounded-[3px]"
@@ -816,7 +816,7 @@ function TimeAsymmetry() {
       <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
         <IsometricAsset
           assetId="TOPIC01-ASYM-CLOCK"
-          src="/assets/isometric/topic-01-asymmetric-clock.webp"
+          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOCK.png"
           alt="איור איזומטרי: שעון חול שראשו העליון בצורת בניין ממשל וראשו התחתון בצורת אוהל"
           aspect="1/1"
           className="rounded-[3px] max-w-[220px] mx-auto"
@@ -1091,7 +1091,7 @@ function TacticMatchExercise() {
       <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
         <IsometricAsset
           assetId="TOPIC01-ASYM-TACTICS"
-          src="/assets/isometric/topic-01-asymmetric-tactics.webp"
+          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
           alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
           aspect="16/9"
           className="rounded-[3px]"
