@@ -427,7 +427,7 @@ export function AsymmetricScene() {
             alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
             aspect="1/1"
             fit="contain"
-            className="rounded-[3px] w-[140px] sm:w-[160px] shrink-0"
+            className="rounded-[3px] w-[140px] sm:w-[160px] shrink-0 bg-bg-elevated"
             prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
           />
         </div>
