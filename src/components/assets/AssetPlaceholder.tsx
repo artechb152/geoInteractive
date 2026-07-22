@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -30,6 +33,20 @@ export function AssetPlaceholder({
   className?: string;
 }) {
   const fullNote = `PLACEHOLDER — צריך להפיק asset ב-Magnific · ${assetId} · ${targetPath}${note ? ` · ${note}` : ''}`;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!prompt) return;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API unavailable (e.g. insecure context) — the prompt
+      // text below is still manually selectable as a fallback.
+    }
+  };
+
   return (
     <div
       role="img"
@@ -70,12 +87,21 @@ export function AssetPlaceholder({
             </span>
           )}
           {prompt && (
-            <span
-              dir="ltr"
-              className="max-w-[94%] overflow-y-auto rounded-sm bg-white/95 px-2 py-1.5 text-start text-[10px] leading-snug text-black whitespace-pre-wrap"
-            >
-              {prompt}
-            </span>
+            <div className="max-w-[94%] flex flex-col items-stretch gap-1">
+              <span
+                dir="ltr"
+                className="select-text cursor-text rounded-sm bg-white/95 px-2 py-1.5 text-start text-[10px] leading-snug text-black whitespace-pre-wrap"
+              >
+                {prompt}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="select-none self-center rounded-sm bg-black px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-black/80"
+              >
+                {copied ? 'הועתק ✓' : 'העתק prompt'}
+              </button>
+            </div>
           )}
         </>
       )}
