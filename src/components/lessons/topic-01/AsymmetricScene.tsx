@@ -803,25 +803,25 @@ function TimeAsymmetry() {
 
   return (
     <div className="my-12">
-      <div className="mb-5">
-        <h3 className="flex items-center gap-2 font-display font-bold text-xl leading-tight mb-1">
-          <Icon name="hourglass" size={20} className="text-brand-dark shrink-0" />
-          למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
-        </h3>
-        <p className="text-fg-muted text-sm">
-          גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
-        </p>
-      </div>
-
-      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
-        <IsometricAsset
-          assetId="TOPIC01-ASYM-CLOCK"
-          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOCK.png"
-          alt="איור איזומטרי: שעון חול שראשו העליון בצורת בניין ממשל וראשו התחתון בצורת אוהל"
-          aspect="1/1"
-          className="rounded-[3px] max-w-[220px] mx-auto"
-          prompt="An isometric papercut hourglass illustration on a cream background (#FFFBF7), resting on a small warm peach base (#FFDCB5). Top chamber shaped like a tiny layered government-building dome in sage green (#749C75/#5B7C5C), bottom chamber shaped like a simple paper tent in the same sage tones, with a single thin orange (#EB9E48) trickle of small paper dots flowing from top to bottom. Flat paper-cut shading, centered composition, no text, no people."
-        />
+      <div className="grid sm:grid-cols-[auto_1fr] gap-4 items-center mb-5">
+        <div className="rounded-[4px] bg-warm/50 p-2 shrink-0 mx-auto sm:mx-0">
+          <IsometricAsset
+            assetId="TOPIC01-ASYM-CLOCK"
+            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOCK.png"
+            alt="איור איזומטרי: שעון חול שראשו העליון בצורת בניין ממשל וראשו התחתון בצורת אוהל"
+            aspect="1/1"
+            className="rounded-[3px] w-[140px] sm:w-[160px]"
+            prompt="An isometric papercut hourglass illustration on a cream background (#FFFBF7), resting on a small warm peach base (#FFDCB5). Top chamber shaped like a tiny layered government-building dome in sage green (#749C75/#5B7C5C), bottom chamber shaped like a simple paper tent in the same sage tones, with a single thin orange (#EB9E48) trickle of small paper dots flowing from top to bottom. Flat paper-cut shading, centered composition, no text, no people."
+          />
+        </div>
+        <div>
+          <h3 className="font-display font-bold text-xl leading-tight mb-1">
+            למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
+          </h3>
+          <p className="text-fg-muted text-sm">
+            גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
+          </p>
+        </div>
       </div>
 
       {/* Timeline scrubber */}
