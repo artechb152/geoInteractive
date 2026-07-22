@@ -412,24 +412,26 @@ export function AsymmetricScene() {
         viewport={{ once: true }}
         className="surface-elevated p-6 mt-8"
       >
-        <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
-          <IsometricAsset
-            assetId="TOPIC01-ASYM-CLOSING"
-            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
-            alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
-            aspect="16/9"
-            fit="contain"
-            className="rounded-[3px]"
-            prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
-          />
-        </div>
-        <div>
-          <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
-            המסקנה: זורקים את ספר החוקים הישן לפח
+        <div className="grid sm:grid-cols-[1fr_auto] gap-5 items-center">
+          <div>
+            <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+              המסקנה: זורקים את ספר החוקים הישן לפח
+            </div>
+            <p className="text-fg leading-relaxed text-pretty">
+              צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
+            </p>
           </div>
-          <p className="text-fg leading-relaxed text-pretty">
-            צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
-          </p>
+          <div className="rounded-[4px] bg-bg-elevated p-2 shrink-0">
+            <IsometricAsset
+              assetId="TOPIC01-ASYM-CLOSING"
+              src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
+              alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
+              aspect="1/1"
+              fit="contain"
+              className="rounded-[3px] w-[140px] sm:w-[160px]"
+              prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
+            />
+          </div>
         </div>
       </motion.div>
     </section>
