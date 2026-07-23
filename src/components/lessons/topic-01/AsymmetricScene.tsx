@@ -733,7 +733,7 @@ function PillarDecisionCard({
  * intentionally NOT the papercut-isometric illustration language used
  * elsewhere in this file; these render as plain flat UI icons. */
 const ICON_PROMPT_STYLE =
-  'flat modern vector icon, simple bold outline with solid fill in a single burnt-orange color (#D97E2B), transparent background, minimal geometric shapes, centered, no text, no shadow, no gradient, no 3D or isometric or papercut styling, clean UI icon like Lucide or Phosphor icon sets, 128x128px';
+  'flat modern vector icon, simple bold black outline with solid black fill on transparent background, monochrome black and white, minimal geometric shapes, centered, no text, no shadow, no gradient, no color, no 3D or isometric or papercut styling, clean UI icon like Lucide or Phosphor icon sets, 128x128px';
 
 const FRONTLINE: { title: string; desc: string; iconAssetId: string; iconPrompt: string } = {
   title: 'האויב בשטח',
@@ -1082,7 +1082,7 @@ function FrontRow({
           fit="contain"
           compactPlaceholder
           prompt={iconPrompt}
-          className="size-5 shrink-0 mt-0.5 rounded-[3px]"
+          className="size-9 shrink-0 mt-0.5 rounded-[3px] bg-transparent"
         />
         <div className="min-w-0">
           <div className="font-display font-semibold text-sm leading-tight">{title}</div>
