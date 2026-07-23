@@ -55,6 +55,9 @@ const C = {
   enemyDeep: '#832c1a',
   chokepoint: '#EB9E48',
   fog: '#f3e9dc',
+  // Darker shade of `blue` for the friendly marker's beacon tip — same
+  // pattern as enemyCommand/enemyDeep being darker shades of `enemy`.
+  blueDeep: '#3f7bb0',
 };
 
 /** Blue force pin — visible only in `flat` (the user becomes it after). */
@@ -102,7 +105,27 @@ const POVS: Record<Feature, POV> = {
   },
 };
 
+// Tracks `prefers-reduced-motion` for every useFrame callback in this file.
+// A module-level flag (read directly inside useFrame, not React state) —
+// same pattern as `currentZoom` in onboarding-edit-mode.tsx — avoids
+// prop-drilling through every animated mesh (camera, terrain blend, idle
+// marker pulses) while still updating live if the OS setting changes.
+let prefersReducedMotion = false;
+
+function useTrackReducedMotion() {
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    prefersReducedMotion = mq.matches;
+    const onChange = (e: MediaQueryListEvent) => {
+      prefersReducedMotion = e.matches;
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+}
+
 export default function TerrainCanvas({ feature }: { feature: Feature }) {
+  useTrackReducedMotion();
   // Features accumulate, mirroring the original SVG: once added a
   // feature stays on through subsequent steps.
   const showRiver = feature === 'river' || feature === 'narrow';
@@ -137,15 +160,17 @@ export default function TerrainCanvas({ feature }: { feature: Feature }) {
             separation between foreground props, the mid-ground terrain and
             the distant enemy/mountain silhouette, without hazing out
             close-up detail. */}
-        <fog attach="fog" args={[C.fog, 7, 20]} />
+        <fog attach="fog" args={[C.fog, 8, 19]} />
 
-        <ambientLight intensity={0.5} />
-        <hemisphereLight color="#fff1d6" groundColor="#8f6f45" intensity={0.38} />
-        {/* Cinematic key light — lower angle than pass 1 for longer, more
-            directional shadows and stronger form definition. */}
+        {/* Soft, warm, museum-relief-model lighting — brighter ambient/fill
+            than a cinematic key-light rig so the model never reads as dark
+            or dramatic; the key light still gives enough directionality to
+            sculpt the terraces without hard black shadow faces. */}
+        <ambientLight intensity={0.62} />
+        <hemisphereLight color="#fff3dc" groundColor="#9a7c54" intensity={0.46} />
         <directionalLight
           position={[7, 6.5, 4]}
-          intensity={1.95}
+          intensity={1.5}
           color="#ffdca0"
           castShadow
           shadow-mapSize={[2048, 2048]}
@@ -157,10 +182,10 @@ export default function TerrainCanvas({ feature }: { feature: Feature }) {
         />
         {/* Cool fill from the opposite side — keeps shadow faces readable
             without flattening the key light's contrast. */}
-        <directionalLight position={[-6, 3.5, -3.5]} intensity={0.32} color="#a9c7db" />
+        <directionalLight position={[-6, 3.5, -3.5]} intensity={0.42} color="#a9c7db" />
         {/* Faint rim/back light — just enough to catch ridge edges without
             veiling the shadow side into an overall wash. */}
-        <directionalLight position={[-1.5, 2.6, -9]} intensity={0.22} color="#ffcf94" />
+        <directionalLight position={[-1.5, 2.6, -9]} intensity={0.24} color="#ffcf94" />
 
         <TerrainSurface feature={feature} />
 
@@ -204,6 +229,21 @@ function CameraDirector({ feature }: { feature: Feature }) {
   useFrame((_, delta) => {
     const target = POVS[feature];
 
+    // Reduced motion: cut straight to the target POV instead of a damped
+    // cinematic pan — the step change is still fully communicated (the
+    // camera IS at the new vantage point), just without the motion.
+    if (prefersReducedMotion) {
+      camera.position.set(...target.pos);
+      currentLook.current.set(...target.look);
+      const perspective = camera as THREE.PerspectiveCamera;
+      if (perspective.fov !== target.fov) {
+        perspective.fov = target.fov;
+        perspective.updateProjectionMatrix();
+      }
+      camera.lookAt(currentLook.current);
+      return;
+    }
+
     camera.position.x = THREE.MathUtils.damp(camera.position.x, target.pos[0], LAMBDA, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, target.pos[1], LAMBDA, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, target.pos[2], LAMBDA, delta);
@@ -232,6 +272,11 @@ function AnimatedFeature({ show, children }: { show: boolean; children: ReactNod
   const target = show ? 1 : 0;
   useFrame((_, delta) => {
     if (!ref.current) return;
+    if (prefersReducedMotion) {
+      ref.current.scale.setScalar(Math.max(0.0001, target));
+      ref.current.visible = target > 0.02;
+      return;
+    }
     const next = THREE.MathUtils.damp(ref.current.scale.x, target, 7, delta);
     ref.current.scale.setScalar(Math.max(0.0001, next));
     ref.current.visible = next > 0.02;
@@ -349,12 +394,23 @@ function paintTerrain(geometry: THREE.BufferGeometry, blends: FeatureBlends) {
 
     tone.copy(GROUND_LOW);
     tone.lerp(GROUND_DEEP, smoothstep01(sample.shade, 0.02, 0.16) * 0.5);
-    tone.lerp(MTN_LIGHT, smoothstep01(sample.shade, 0.09, 0.3));
-    tone.lerp(MTN_DARK, smoothstep01(sample.shade, 0.3, 0.62));
-    tone.lerp(ROCK, smoothstep01(sample.shade, 0.7, 0.92) * 0.8 + slope * 0.2);
-    tone.lerp(PEAK_HIGHLIGHT, smoothstep01(sample.shade, 0.93, 1.0) * 0.8);
+    // Foothills stay sand/rock longer before vegetation takes over (a wider
+    // 0.12–0.34 band instead of 0.09–0.3) — reads as sun-bleached lower
+    // slopes rather than solid green from the base up.
+    tone.lerp(MTN_LIGHT, smoothstep01(sample.shade, 0.12, 0.34) * 0.92);
+    tone.lerp(MTN_DARK, smoothstep01(sample.shade, 0.34, 0.6));
+    // Rock breaks through earlier and more heavily near the crest, AND
+    // scales strongly with slope (not just absolute height) — steep hill
+    // flanks expose stone the way real terrain does, which is what
+    // actually breaks up a silhouette from reading as a solid green
+    // "balloon": most of a mountain's visible surface from any camera
+    // angle is its sloped flank, not its summit.
+    tone.lerp(ROCK, Math.min(1, smoothstep01(sample.shade, 0.6, 0.88) * 0.85 + slope * 0.5));
+    tone.lerp(PEAK_HIGHLIGHT, smoothstep01(sample.shade, 0.9, 1.0) * 0.85);
     tone.lerp(RIVER_TINT, sample.river * 0.6);
-    tone.lerp(CREASE, sample.contour * 0.26 + slope * 0.13);
+    // Stronger terrace-edge + slope darkening — doubles as a cheap
+    // ambient-occlusion stand-in (creases and steep faces read as shadowed).
+    tone.lerp(CREASE, sample.contour * 0.34 + slope * 0.2);
 
     // Tiny deterministic grain so flat shelves don't read as a pasted-on
     // flat colour patch.
@@ -385,11 +441,16 @@ function TerrainSurface({ feature }: { feature: Feature }) {
     const targetNarrow = feature === 'narrow' ? 1 : 0;
 
     const b = blendsRef.current;
-    const next: FeatureBlends = {
-      mountain: THREE.MathUtils.damp(b.mountain, targetMountain, BLEND_LAMBDA, delta),
-      river: THREE.MathUtils.damp(b.river, targetRiver, BLEND_LAMBDA, delta),
-      narrow: THREE.MathUtils.damp(b.narrow, targetNarrow, BLEND_LAMBDA, delta),
-    };
+    // Reduced motion: the terrain sculpts straight to the new shape instead
+    // of morphing over ~1s — the step's meaning (this is now a mountain /
+    // river / chokepoint) is unchanged, just without the animated reveal.
+    const next: FeatureBlends = prefersReducedMotion
+      ? { mountain: targetMountain, river: targetRiver, narrow: targetNarrow }
+      : {
+          mountain: THREE.MathUtils.damp(b.mountain, targetMountain, BLEND_LAMBDA, delta),
+          river: THREE.MathUtils.damp(b.river, targetRiver, BLEND_LAMBDA, delta),
+          narrow: THREE.MathUtils.damp(b.narrow, targetNarrow, BLEND_LAMBDA, delta),
+        };
 
     const changed =
       Math.abs(next.mountain - b.mountain) > BLEND_EPSILON ||
@@ -410,7 +471,14 @@ function TerrainSurface({ feature }: { feature: Feature }) {
         <meshStandardMaterial color={C.rim} roughness={0.92} metalness={0} />
       </mesh>
       <mesh geometry={geometry} receiveShadow castShadow position={[0, 0.002, 0]}>
-        <meshStandardMaterial vertexColors roughness={0.94} metalness={0} />
+        {/* flatShading: each terrace face reads as a distinct near-flat
+            "paper layer" with a hard edge to the next, instead of smooth
+            vertex-interpolated normals blending every terrace into one
+            continuous round mound (the core of the old "plastic balloon
+            hill" look). Geometry density (56×50 segments) keeps this from
+            reading as coarse low-poly game art — it's a fine, deliberate
+            facet grain, not a handful of giant triangles. */}
+        <meshStandardMaterial vertexColors roughness={0.88} metalness={0} flatShading />
       </mesh>
     </group>
   );
@@ -419,20 +487,29 @@ function TerrainSurface({ feature }: { feature: Feature }) {
 /* ---------------- river ---------------- */
 
 function RiverWater({ show }: { show: boolean }) {
-  // Narrower than the carved trench (which spans the full sloped bank
-  // width) so the sculpted terrain banks stay visible around the water.
+  // Two stacked bands instead of one flat-color box — a wider, lighter
+  // "shallow bank" layer plus a narrower, deeper-toned central channel —
+  // reads as natural water with depth instead of a solid Lego-blue slab.
+  // Both narrower than the carved trench so the sculpted terrain banks
+  // stay visible around the water.
   return (
     <AnimatedFeature show={show}>
-      <mesh position={[0, -0.075, RIVER_Z]} receiveShadow>
-        <boxGeometry args={[9.4, 0.045, 1.85]} />
-        <meshStandardMaterial
-          color={C.riverDeep}
-          roughness={0.15}
-          metalness={0.15}
-          emissive={C.river}
-          emissiveIntensity={0.1}
-        />
-      </mesh>
+      <group position={[0, 0, RIVER_Z]}>
+        <mesh position={[0, -0.078, 0]} receiveShadow>
+          <boxGeometry args={[9.4, 0.04, 1.85]} />
+          <meshStandardMaterial color={C.river} roughness={0.4} metalness={0.05} />
+        </mesh>
+        <mesh position={[0, -0.07, 0]} receiveShadow>
+          <boxGeometry args={[9.4, 0.04, 1.15]} />
+          <meshStandardMaterial
+            color={C.riverDeep}
+            roughness={0.32}
+            metalness={0.08}
+            emissive={C.river}
+            emissiveIntensity={0.04}
+          />
+        </mesh>
+      </group>
     </AnimatedFeature>
   );
 }
@@ -463,12 +540,12 @@ function Bridge({ show, showLabel }: { show: boolean; showLabel: boolean }) {
           <meshStandardMaterial
             color={C.bridgeAccent}
             emissive={C.bridgeAccent}
-            emissiveIntensity={0.7}
-            roughness={0.4}
+            emissiveIntensity={0.4}
+            roughness={0.55}
           />
         </mesh>
-        <GlowSprite position={[0, 0.3, 0.9]} color={C.bridgeAccent} scale={0.6} opacity={0.18} />
-        <GlowSprite position={[0, 0.3, -0.9]} color={C.bridgeAccent} scale={0.6} opacity={0.18} />
+        <GlowSprite position={[0, 0.3, 0.9]} color={C.bridgeAccent} scale={0.5} opacity={0.11} />
+        <GlowSprite position={[0, 0.3, -0.9]} color={C.bridgeAccent} scale={0.5} opacity={0.11} />
         {/* Pylons piercing into the river — 4 corners. */}
         {[
           [-0.7, 1.05],
@@ -504,50 +581,32 @@ function Chokepoint({ show }: { show: boolean }) {
   // No text label here (unlike the bridge/forces): at this POV's very close,
   // wide-FOV angle a screen-space Html label consistently projects off the
   // edge of the frame and clips against the card's overflow-hidden edge.
-  // The glowing double-ring plus the terrain walls physically closing in
-  // around it already read as "chokepoint" without needing text.
+  // A single restrained ring plus the terrain walls physically closing in
+  // around it already read as "chokepoint" — a second pulsing outer ring
+  // read as a video-game "target lock" HUD, so it's gone; the remaining
+  // ring pulses only very slightly, like a marked waypoint on a relief
+  // model rather than an animated UI element.
   const ringRef = useRef<THREE.Mesh>(null);
-  const outerRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
+    if (prefersReducedMotion || !ringRef.current) return;
     const t = clock.getElapsedTime();
-    if (ringRef.current) {
-      const pulse = 1 + Math.sin(t * 2.4) * 0.14;
-      ringRef.current.scale.set(pulse, pulse, 1);
-      const m = ringRef.current.material as THREE.MeshStandardMaterial;
-      m.opacity = 0.65 + Math.sin(t * 2.4) * 0.2;
-    }
-    if (outerRef.current) {
-      const pulse2 = 1 + Math.sin(t * 2.4 + Math.PI * 0.5) * 0.1;
-      outerRef.current.scale.set(pulse2, pulse2, 1);
-      const m2 = outerRef.current.material as THREE.MeshStandardMaterial;
-      m2.opacity = 0.35 + Math.sin(t * 2.4 + Math.PI * 0.5) * 0.15;
-    }
+    const pulse = 1 + Math.sin(t * 1.6) * 0.05;
+    ringRef.current.scale.set(pulse, pulse, 1);
   });
 
   return (
     <AnimatedFeature show={show}>
       <group position={[0, 0, -2.2]}>
-        <GlowSprite position={[0, 0.06, 0]} color={C.chokepoint} scale={1.1} opacity={0.22} />
-        {/* Thin outer ring — game-HUD "target lock" read. */}
-        <mesh ref={outerRef} position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.78, 0.02, 12, 48]} />
+        <GlowSprite position={[0, 0.05, 0]} color={C.chokepoint} scale={0.85} opacity={0.12} />
+        <mesh ref={ringRef} position={[0, 0.045, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.58, 0.035, 12, 48]} />
           <meshStandardMaterial
             color={C.chokepoint}
             emissive={C.chokepoint}
-            emissiveIntensity={0.7}
+            emissiveIntensity={0.35}
+            roughness={0.5}
             transparent
-            opacity={0.4}
-          />
-        </mesh>
-        {/* Inner solid ring — the primary accent. */}
-        <mesh ref={ringRef} position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.52, 0.065, 16, 48]} />
-          <meshStandardMaterial
-            color={C.chokepoint}
-            emissive={C.chokepoint}
-            emissiveIntensity={0.9}
-            transparent
-            opacity={0.7}
+            opacity={0.55}
           />
         </mesh>
       </group>
@@ -574,14 +633,14 @@ function BlueArmyMarker({
   const groupRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }, delta) => {
-    if (haloRef.current) {
+    if (haloRef.current && !prefersReducedMotion) {
       const t = clock.getElapsedTime();
       const pulse = 1 + Math.sin(t * 1.6) * 0.22;
       haloRef.current.scale.set(pulse, pulse, 1);
     }
     if (groupRef.current) {
       const target = hidden ? 0 : 1;
-      const next = THREE.MathUtils.damp(groupRef.current.scale.x, target, 5, delta);
+      const next = prefersReducedMotion ? target : THREE.MathUtils.damp(groupRef.current.scale.x, target, 5, delta);
       groupRef.current.scale.setScalar(Math.max(0.0001, next));
       groupRef.current.visible = next > 0.02;
     }
@@ -589,36 +648,36 @@ function BlueArmyMarker({
 
   return (
     <group ref={groupRef} position={position}>
-      <GlowSprite position={[0, 0.05, 0]} color={C.blue} scale={0.9} opacity={0.18} />
+      <GlowSprite position={[0, 0.05, 0]} color={C.blue} scale={0.8} opacity={0.13} />
       <mesh ref={haloRef} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.46, 0.66, 32]} />
         <meshStandardMaterial
           color={C.blue}
           transparent
-          opacity={0.35}
+          opacity={0.24}
           emissive={C.blue}
-          emissiveIntensity={0.6}
+          emissiveIntensity={0.3}
+          roughness={0.6}
         />
       </mesh>
       <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[0.42, 32]} />
-        <meshStandardMaterial color={C.blue} roughness={0.45} />
+        <meshStandardMaterial color={C.blue} roughness={0.7} />
       </mesh>
-      <mesh castShadow position={[0, 0.28, 0]}>
-        <cylinderGeometry args={[0.18, 0.22, 0.55, 16]} />
-        <meshStandardMaterial color={C.blue} roughness={0.5} />
-      </mesh>
-      <mesh castShadow position={[0, 0.68, 0]}>
-        <coneGeometry args={[0.22, 0.28, 16]} />
-        <meshStandardMaterial color={C.blue} roughness={0.5} />
-      </mesh>
+      {/* Same faceted beacon-marker language as the enemy formation's unit
+          tokens, scaled up — reads as "our position" without becoming a
+          toy soldier figure. */}
+      <UnitMarker x={0} z={0} scale={2.1} color={C.blue} accentColor={C.blueDeep} />
       {/* Conditionally mounted (not just scaled/hidden via the group) —
           an Html label left mounted inside a scaled-to-0 group can still
           render at a stale screen position once the camera moves far
-          enough for the projection to land back inside the frame. */}
+          enough for the projection to land back inside the frame.
+          Nudged right + up from the marker (was dead-centre) so it clears
+          the visual frame's rounded edge at the `flat` POV instead of
+          being clipped by the card's overflow-hidden. */}
       {!hidden && (
       <Html
-        position={[0, 1.18, 0]}
+        position={[0.35, 1.15, 0]}
         center
         distanceFactor={6}
         className="pointer-events-none select-none"
@@ -636,60 +695,56 @@ function BlueArmyMarker({
 }
 
 /**
- * Small stylised soldier — tapered torso, shoulders (for a human
- * silhouette width, not a plain pin), a rounded head and a darker domed
- * helmet for definition. Deliberately abstract/low-poly (no gear, no
- * weapon) — just enough shape language to read as "a person," not a
- * cone or chess pawn.
+ * Minimal operational unit marker — a faceted base "counter" chip, a slim
+ * mast and a beacon tip. Reads as an abstract map/beacon marker (like a
+ * surveyed unit token on a relief model), deliberately NOT a soldier
+ * figure: no torso, limbs or helmet silhouette. The hexagonal facets echo
+ * the terrain's cut-paper terracing instead of a smooth toy-plastic
+ * rounded shape.
  */
-function Soldier({
+function UnitMarker({
   x,
   z,
   rotationY = 0,
   scale = 1,
-  color = C.enemy,
-  helmetColor = C.enemyCommand,
+  color,
+  accentColor,
 }: {
   x: number;
   z: number;
   rotationY?: number;
   scale?: number;
-  color?: string;
-  helmetColor?: string;
+  color: string;
+  accentColor?: string;
 }) {
   return (
     <group position={[x, 0, z]} rotation={[0, rotationY, 0]} scale={scale}>
-      {/* Legs/torso — tapers slightly toward the shoulders. */}
-      <mesh castShadow position={[0, 0.13, 0]}>
-        <cylinderGeometry args={[0.075, 0.1, 0.26, 10]} />
-        <meshStandardMaterial color={color} roughness={0.6} />
+      {/* Base counter/chip. */}
+      <mesh castShadow position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.095, 0.11, 0.06, 6]} />
+        <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
-      {/* Shoulders — gives the torso human width instead of reading as a
-          plain pillar. */}
-      <mesh castShadow position={[0, 0.25, 0]}>
-        <boxGeometry args={[0.21, 0.06, 0.14]} />
-        <meshStandardMaterial color={color} roughness={0.6} />
+      {/* Slim mast. */}
+      <mesh castShadow position={[0, 0.135, 0]}>
+        <cylinderGeometry args={[0.013, 0.018, 0.15, 6]} />
+        <meshStandardMaterial color={color} roughness={0.7} />
       </mesh>
-      {/* Head. */}
-      <mesh castShadow position={[0, 0.35, 0]}>
-        <sphereGeometry args={[0.075, 12, 10]} />
-        <meshStandardMaterial color={color} roughness={0.5} />
-      </mesh>
-      {/* Domed helmet, in the darker shade, so the head reads distinctly
-          at a glance instead of blending into the body silhouette. */}
-      <mesh castShadow position={[0, 0.385, 0]} scale={[1, 0.62, 1]}>
-        <sphereGeometry args={[0.088, 12, 8]} />
-        <meshStandardMaterial color={helmetColor} roughness={0.5} />
+      {/* Beacon tip, in the darker accent shade so it reads distinctly
+          against the mast at a glance. */}
+      <mesh castShadow position={[0, 0.235, 0]}>
+        <coneGeometry args={[0.05, 0.075, 6]} />
+        <meshStandardMaterial color={accentColor ?? color} roughness={0.6} />
       </mesh>
     </group>
   );
 }
 
 /**
- * Enemy force — a wedge of seven small red soldiers plus a central
- * "command" figure, sitting on a translucent red ground footprint with a
- * pulsing halo. Reads as "a hostile formation occupying this ground,"
- * not as a single round map pin.
+ * Enemy force — a wedge of seven small unit markers plus a slightly
+ * larger central "command" marker, sitting on a translucent red ground
+ * footprint with a soft halo. Reads as "a hostile formation occupying
+ * this ground," not as a single round map pin — and not as a toy-soldier
+ * squad either.
  */
 function EnemyForce({
   position,
@@ -700,7 +755,7 @@ function EnemyForce({
 }) {
   const haloRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
-    if (!haloRef.current) return;
+    if (!haloRef.current || prefersReducedMotion) return;
     const t = clock.getElapsedTime();
     const pulse = 1 + Math.sin(t * 1.5) * 0.16;
     haloRef.current.scale.set(pulse, pulse, 1);
@@ -723,37 +778,37 @@ function EnemyForce({
         <circleGeometry args={[1.5, 36]} />
         <meshStandardMaterial color={C.crease} roughness={0.95} transparent opacity={0.22} />
       </mesh>
-      <GlowSprite position={[0, 0.08, -0.15]} color={C.enemy} scale={1.3} opacity={0.13} />
-      {/* Pulsing ground halo (always present — gives the formation
-          visual weight even at distance). */}
+      <GlowSprite position={[0, 0.08, -0.15]} color={C.enemy} scale={1.3} opacity={0.1} />
+      {/* Soft ground halo (always present — gives the formation visual
+          weight even at distance) — gentle pulse, not a video-game glow. */}
       <mesh ref={haloRef} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.95, 1.35, 36]} />
         <meshStandardMaterial
           color={C.enemy}
           transparent
-          opacity={0.32}
+          opacity={0.22}
           emissive={C.enemy}
-          emissiveIntensity={0.5}
+          emissiveIntensity={0.28}
+          roughness={0.6}
         />
       </mesh>
       {/* Solid red footprint so the formation reads as occupied ground. */}
       <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[0.95, 36]} />
-        <meshStandardMaterial color={C.enemy} roughness={0.55} transparent opacity={0.4} />
+        <meshStandardMaterial color={C.enemy} roughness={0.7} transparent opacity={0.35} />
       </mesh>
 
-      {/* Wedge of small soldiers, each an individual humanoid figure.
-          Slight deterministic yaw per unit so the formation reads as
-          individually-facing soldiers, not a stamped row of identical
-          toys. */}
+      {/* Wedge of small unit markers. Slight deterministic yaw per unit so
+          the formation reads as individually-placed tokens, not a stamped
+          repeated pattern. */}
       {units.map(([x, z], i) => (
-        <Soldier key={i} x={x} z={z} rotationY={Math.sin(i * 12.9) * 0.35} />
+        <UnitMarker key={i} x={x} z={z} rotationY={Math.sin(i * 12.9) * 0.35} color={C.enemy} accentColor={C.enemyCommand} />
       ))}
 
-      {/* Central command soldier — bigger, darker uniform, sits a bit
-          back of the wedge centre. Gives the formation a "leader" focal
-          point and helps readability at distance. */}
-      <Soldier x={0} z={-0.2} scale={1.35} color={C.enemyCommand} helmetColor={C.enemyDeep} />
+      {/* Central command marker — bigger, darker accent, sits a bit back
+          of the wedge centre. Gives the formation a "leader" focal point
+          and helps readability at distance. */}
+      <UnitMarker x={0} z={-0.2} scale={1.3} color={C.enemyCommand} accentColor={C.enemyDeep} />
 
       {showLabel && (
         <Html
@@ -928,18 +983,21 @@ function PathTube({ curve }: { curve: THREE.CatmullRomCurve3 }) {
         <meshStandardMaterial
           color={C.pathArrow}
           emissive={C.pathArrow}
-          emissiveIntensity={0.4}
-          roughness={0.45}
+          emissiveIntensity={0.24}
+          roughness={0.6}
         />
       </mesh>
-      {/* Flattened 4-sided chevron/blade tip instead of a spike cone —
-          reads like a game waypoint marker. */}
-      <mesh position={tipPos} quaternion={tipQuat} scale={[1.3, 0.5, 1.3]} castShadow>
+      {/* Flattened 4-sided chevron/blade tip, toned down from an earlier
+          brighter/glossier pass that read as a video-game waypoint marker —
+          lower emissive + added roughness keeps it a matte route arrow
+          painted onto the relief model instead of a glowing HUD icon. */}
+      <mesh position={tipPos} quaternion={tipQuat} scale={[1.15, 0.45, 1.15]} castShadow>
         <coneGeometry args={[0.19, 0.34, 4]} />
         <meshStandardMaterial
           color={C.pathArrow}
           emissive={C.pathArrow}
-          emissiveIntensity={0.55}
+          emissiveIntensity={0.3}
+          roughness={0.55}
         />
       </mesh>
     </group>

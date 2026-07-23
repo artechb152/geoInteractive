@@ -12,10 +12,9 @@ import { OnboardingEditProvider, EditableBlock, EditableFrame } from './onboardi
 
 export type Feature = 'flat' | 'mountain' | 'river' | 'narrow';
 
-// 3D visualization is client-only (WebGL needs a browser) and split out so
-// three.js doesn't end up in the initial bundle for the rest of the lesson.
-const TerrainCanvas = dynamic(() => import('./TerrainCanvas'), {
-  ssr: false,
+// Split out via next/dynamic so the frame-player (and its canvas/preload
+// logic) doesn't end up in the initial bundle for the rest of the lesson.
+const SceneOnboardingFramePlayer = dynamic(() => import('./SceneOnboardingFramePlayer'), {
   loading: () => <TerrainStageLoading />,
 });
 
@@ -223,16 +222,9 @@ title={
         </EditableBlock>
 
         {/* Visualization — second child → LEFT in RTL. EditableFrame (not
-            EditableBlock) so it doesn't add a wrapper div: an extra div here
-            made the WebGL canvas's ResizeObserver race during viewport
-            resizes, leaving the terrain rendered at a stale, too-small scale.
-            [&_canvas]:!w-full/[&_canvas]:!h-full — the permanent scene-wide
-            `zoom: 0.86` (onboarding-edit-mode.tsx) makes r3f's ResizeObserver
-            read a post-zoom size and re-apply it as literal px, which the
-            browser then zooms AGAIN, shrinking the canvas inside this frame.
-            Forcing percentage sizing sidesteps that double-zoom entirely. */}
-        <EditableFrame id="visual-frame" label="לוח תלת-ממדי">
-        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px] [&_canvas]:!w-full [&_canvas]:!h-full">
+            EditableBlock) so it doesn't add a wrapper div. */}
+        <EditableFrame id="visual-frame" label="סרטון תצוגה">
+        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px] [&_video]:!w-full [&_video]:!h-full">
           <TerrainStage feature={step} />
         </div>
         </EditableFrame>
@@ -277,9 +269,7 @@ title={
 function TerrainStage({ feature }: { feature: Feature }) {
   return (
     <div className="relative w-full h-full">
-      {/* WebGL scene. The Canvas renders transparent so the parent
-          card's cream tint reads through any uncovered margin. */}
-      <TerrainCanvas feature={feature} />
+      <SceneOnboardingFramePlayer targetState={feature} />
     </div>
   );
 }
@@ -289,7 +279,7 @@ function TerrainStageLoading() {
     <div className="w-full h-full min-h-[280px] flex items-center justify-center">
       <div className="flex items-center gap-2 text-fg-dim text-xs font-display">
         <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
-        <span>טוען תצוגה תלת-ממדית...</span>
+        <span>טוען...</span>
       </div>
     </div>
   );
