@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { motion, useSpring, useMotionValueEvent } from 'framer-motion';
+import { useEffect, useId, useRef, useState } from 'react';
+import { motion, useSpring, useMotionValueEvent, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -80,21 +80,21 @@ displayAzimuth < 22 || displayAzimuth >= 338 ? 'צפון'
  : displayAzimuth < 292 ? 'מערב'
  : 'צפון־מערב';
 return (
- <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
- <div className="space-y-4">
- <div className="surface-elevated p-5 sm:p-6">
- <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
+ <div className="relative overflow-hidden rounded-2xl border border-border shadow-elevated bg-bg-elevated select-none">
+ {/* Single navigation-instrument board: a 2-col / 2-row grid on desktop (data
+     block + card share the right column, the compass spans both rows on the
+     left) that collapses to plain DOM-order stacking on mobile — data block,
+     then compass, then the back-azimuth card — via the `lg:` grid placement
+     below being inert until that breakpoint. */}
+ <div className="relative grid gap-8 p-6 sm:p-8 lg:gap-x-10 lg:p-10 lg:grid-cols-[1fr_1.3fr]">
+ {/* 1. Title, 2. slider, 3–7. big azimuth / direction / back-azimuth / equation / note
+     — first in DOM → right in RTL, top on mobile */}
+ <div className="lg:col-start-1 lg:row-start-1 flex flex-col gap-5 lg:border-e lg:border-border-subtle/70 lg:pe-8">
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  תנו למצפן סיבוב — בחרו כיוון
  </div>
- <div className="flex items-baseline gap-3 mb-4">
- <div className="font-display font-bold text-5xl tabular-nums text-accent">
- {displayAzimuth}°
- </div>
- <div className="text-fg-muted text-sm">
- כיוון: <strong className="text-fg">{direction}</strong>
- </div>
- </div>
 
+ <div>
  <input
 type="range"
 min={0}
@@ -104,122 +104,187 @@ value={azimuth}
 onChange={(e) => setAzimuth(Number(e.target.value))}
 className="w-full accent-accent"
 aria-label="אזימוט"
+aria-valuetext={`${displayAzimuth} מעלות, כיוון ${direction}`}
  />
- <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-1">
+ <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mt-1.5">
  <span>0° צפון</span>
  <span>90° מזרח</span>
  <span>180° דרום</span>
  <span>270° מערב</span>
  </div>
-
- <div className="mt-5 pt-4 border-t border-border-subtle">
- <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
- אזימוט חוזר (הדרך חזרה)
  </div>
- <div className="flex items-center gap-3">
- <span className="font-display font-medium tracking-wide text-fg-muted text-sm">
- {displayAzimuth}° {displayAzimuth >= 180 ? '−' : '+'} 180° =
- </span>
- <span className="font-display font-bold text-3xl tabular-nums text-accent-cool">
+
+ <div>
+ <div className="font-mono font-bold text-6xl sm:text-7xl leading-none tabular-nums text-fg">
+ {displayAzimuth}<span className="text-3xl sm:text-4xl text-accent-hot align-top">°</span>
+ </div>
+ <div className="mt-2 text-lg sm:text-xl font-display font-semibold text-fg-muted">
+ {direction}
+ </div>
+
+ <div className="mt-4 pt-4 border-t border-border-subtle flex items-baseline gap-2.5">
+ <span className="text-xs font-display font-semibold text-fg-dim tracking-wider">אזימוט חוזר</span>
+ <span className="font-mono font-bold text-2xl sm:text-3xl tabular-nums text-accent-cool">
  {back}°
  </span>
  </div>
- <p className="text-xs text-fg-muted mt-2 leading-relaxed">
+ <div className="mt-2 font-mono text-sm text-fg-muted tabular-nums">
+ {displayAzimuth}° {displayAzimuth >= 180 ? '−' : '+'} 180° = {back}°
+ </div>
+ <p className="mt-2 text-xs text-fg-muted leading-relaxed">
  הלכתם ליעד ב-{displayAzimuth}°? כדי לחזור בדיוק הביתה לנקודת המוצא, אתם צריכים את הדרך ההפוכה: {back}°.
  </p>
  </div>
  </div>
 
- <div className="surface p-4 flex gap-3 items-start">
- <Icon name="spark" size={18} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-xs leading-relaxed">
- <strong className="text-fg">מתי משתמשים באזימוט חוזר?</strong>
- <br />
- כדי לחזור הביתה בבטחה, כדי לוודא שחברים שלכם נמצאים במיקום הנכון, או כדי לבצע נסיגה חכמה דרך נתיב שכבר בדקתם וסימנתם כבטוח.
+ {/* The compass instrument — second in DOM → left in RTL, spans both rows on
+     desktop so it sits beside the whole data + card stack; falls between them
+     on mobile. Sized to be the visual centerpiece: large on desktop, never
+     stretched on mobile. */}
+ <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 relative flex flex-col items-center justify-center gap-4">
+ <div className="relative aspect-square w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[440px]">
+ {/* Circular contact shadow — a rounded-full box shadow reads as the
+     instrument's own cast shadow on the table, not a rectangular card shadow */}
+ <div aria-hidden className="absolute inset-[3%] rounded-full shadow-pine-card" />
+ <CompassDial angle={angle} />
  </div>
+ <div className="relative flex items-center gap-4 text-[11px] font-display font-medium tracking-wide text-fg-muted">
+ <span className="inline-flex items-center gap-1.5">
+ <span className="h-[3px] w-4 rounded-full bg-accent-hot" aria-hidden />
+ אזימוט
+ </span>
+ <span className="inline-flex items-center gap-1.5">
+ <span
+className="h-[3px] w-4 rounded-full bg-accent-cool/60"
+aria-hidden
+style={{ backgroundImage: 'repeating-linear-gradient(90deg, currentColor 0 3px, transparent 3px 5px)' }}
+ />
+ אזימוט חוזר
+ </span>
  </div>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 flex flex-col items-center justify-center">
- <CompassDial angle={angle} />
+ {/* 8–9. "When to use it" + dynamic example card — third in DOM → sits under
+     the data block at bottom of the shared column on desktop, but after the
+     compass on mobile (see grid note above). */}
+ <div className="lg:col-start-1 lg:row-start-2 lg:border-e lg:border-border-subtle/70 lg:pe-8">
+ <div className="rounded-xl border border-border-subtle bg-bg-elevated p-4 sm:p-5">
+ <h4 className="text-sm font-display font-semibold text-fg tracking-wide mb-2">מתי משתמשים באזימוט חוזר?</h4>
+ <p className="text-xs text-fg-muted leading-relaxed">
+ כדי לחזור הביתה בבטחה, כדי לוודא שחברים שלכם נמצאים במיקום הנכון, או כדי לבצע נסיגה חכמה דרך נתיב שכבר בדקתם וסימנתם כבטוח.
+ </p>
+ <div className="mt-3 pt-3 border-t border-border-subtle/70">
+ <div className="text-[11px] font-display font-semibold text-fg-dim tracking-wider mb-1">דוגמה</div>
+ <p className="text-xs text-fg leading-relaxed">
+ אם הלכתם באזימוט <strong className="font-mono">{displayAzimuth}°</strong>, האזימוט החוזר לנקודת המוצא הוא{' '}
+ <strong className="font-mono text-accent-cool">{back}°</strong>.
+ </p>
+ </div>
+ </div>
+ </div>
  </div>
  </div>
  );
 }
 /**
- * Drives a single damped-spring angle toward `target`. Shared by the digit readout
- * and the dial needle so they can never drift apart — see AzimuthExplorer.
+ * Drives a single damped-spring angle toward `target`, always taking the shortest
+ * rotational path (so 359°→0° sweeps forward 1°, never backward through 358°).
+ * Shared by the digit readout and the dial needle so they can never drift apart
+ * — see AzimuthExplorer. Under prefers-reduced-motion, the raw target is returned
+ * directly and the spring is left idle.
  */
 function useSmoothedAngle(target: number) {
+const reduceMotion = useReducedMotion();
 const spring = useSpring(target, { stiffness: 170, damping: 22, mass: 0.6 });
 const [angle, setAngle] = useState(target);
+const unwrapped = useRef(target);
 useEffect(() => {
-spring.set(target);
+const currentMod = ((unwrapped.current % 360) + 360) % 360;
+let delta = (target - currentMod) % 360;
+if (delta > 180) delta -= 360;
+else if (delta < -180) delta += 360;
+unwrapped.current += delta;
+spring.set(unwrapped.current);
  }, [target, spring]);
 useMotionValueEvent(spring, 'change', (v) => setAngle(v));
-return angle;
+return reduceMotion ? target : angle;
 }
 function CompassDial({ angle }: { angle: number }) {
+const uid = useId();
+const faceClipId = `compass-face-clip-${uid}`;
+const needleShadowId = `compass-needle-shadow-${uid}`;
 return (
- <div className="relative aspect-square w-full max-w-[320px]">
- <svg viewBox="-50 -50 100 100" className="w-full h-full">
- {/* Outer ring */}
- <circle cx="0" cy="0" r="44" className="fill-bg-card stroke-border" strokeWidth="0.4" />
- <circle cx="0" cy="0" r="40" className="fill-bg-elevated stroke-border-subtle" strokeWidth="0.3" />
+ <svg
+viewBox="-50 -50 100 100"
+className="relative w-full h-full"
+preserveAspectRatio="xMidYMid meet"
+aria-hidden="true"
+ >
+ <defs>
+ <clipPath id={faceClipId}>
+ <circle cx="0" cy="0" r="40" />
+ </clipPath>
+ {/* #38432E below is the literal value of the `fg` token — filter flood-color
+     can't reference Tailwind classes, so it's duplicated here rather than
+     inventing a new color. */}
+ <filter id={needleShadowId} x="-80%" y="-80%" width="260%" height="260%">
+ <feDropShadow dx="0.3" dy="0.5" stdDeviation="0.4" floodColor="#38432E" floodOpacity="0.25" />
+ </filter>
+ </defs>
 
- {/* Tick marks */}
- {Array.from({ length: 36 }).map((_, i) => {
-const a = (i * 10 - 90) * (Math.PI / 180);
-const isBig = i % 3 === 0;
+ {/* Housing — a single solid, monochrome ring (no gradient), a crisp edge on
+     its own boundary, and a thin seam where it meets the face */}
+ <circle cx="0" cy="0" r="45.1" className="fill-border-strong" />
+ <circle cx="0" cy="0" r="45.1" className="fill-none stroke-fg/20" strokeWidth="0.3" />
+ <circle cx="0" cy="0" r="40.6" className="fill-bg" />
+ <circle cx="0" cy="0" r="40.6" className="fill-none stroke-fg/25" strokeWidth="0.45" />
+
+ {/* Faint topographic contour texture, clipped to the face — no labels or roads */}
+ <g clipPath={`url(#${faceClipId})`} opacity="0.4" fill="none" className="stroke-border-strong" strokeWidth="0.3">
+ <path d="M -32,-11 C -20,-19 -8,-5 6,-15 C 18,-23 28,-11 35,-17" />
+ <path d="M -30,5 C -16,-1 -2,13 12,3 C 22,-3 30,7 37,1" />
+ <path d="M -27,19 C -15,27 -1,17 13,25 C 21,29 27,19 33,23" />
+ <path d="M -13,-3 C -7,-9 3,-7 7,-3 C 11,1 7,7 1,5 C -5,3 -9,1 -13,-3 Z" opacity="0.7" />
+ </g>
+
+ {/* Tick marks — 5° minor / 10° medium / 30° major, thin ink-toned hairlines */}
+ {Array.from({ length: 72 }).map((_, i) => {
+const deg = i * 5;
+const isMajor = deg % 30 === 0;
+const isMedium = !isMajor && deg % 10 === 0;
+const a = ((deg - 90) * Math.PI) / 180;
+const outer = 39.6;
+const inner = isMajor ? 32.2 : isMedium ? 35.4 : 37.7;
 return (
  <line
-key={i}
-x1={Math.cos(a) * (isBig ? 36 : 38)}
-y1={Math.sin(a) * (isBig ? 36 : 38)}
-x2={Math.cos(a) * 40}
-y2={Math.sin(a) * 40}
-className={isBig ? 'stroke-fg-muted' : 'stroke-border-strong'}
-strokeWidth={isBig ? 0.4 : 0.25}
+key={deg}
+x1={Math.cos(a) * inner}
+y1={Math.sin(a) * inner}
+x2={Math.cos(a) * outer}
+y2={Math.sin(a) * outer}
+className={isMajor ? 'stroke-fg/65' : isMedium ? 'stroke-fg-muted/55' : 'stroke-fg-dim/45'}
+strokeWidth={isMajor ? 0.55 : isMedium ? 0.32 : 0.2}
+strokeLinecap="round"
  />
  );
  })}
 
- {/* Cardinal labels */}
- {[
- { angle: 0, label: 'N', class: 'fill-accent font-bold' },
- { angle: 90, label: 'E', class: 'fill-fg-muted' },
- { angle: 180, label: 'S', class: 'fill-fg-muted' },
- { angle: 270, label: 'W', class: 'fill-fg-muted' },
- ].map((m) => {
-const a = ((m.angle - 90) * Math.PI) / 180;
-const x = Math.cos(a) * 32;
-const y = Math.sin(a) * 32;
-return (
- <text
-key={m.label}
-x={x}
-y={y + 1.5}
-textAnchor="middle"
-className={cn('text-[4px] font-display', m.class)}
- >
- {m.label}
- </text>
- );
- })}
-
- {/* Azimuth degree numbers (every 30°) */}
+ {/* Degree numbers every 30°, except the cardinal points (which get letters below).
+     Medium weight, minimal halo — reads as printed on the instrument, not a sticker. */}
  {[30, 60, 120, 150, 210, 240, 300, 330].map((deg) => {
 const a = ((deg - 90) * Math.PI) / 180;
+const r = 27.4;
 return (
  <text
 key={deg}
-x={Math.cos(a) * 32}
-y={Math.sin(a) * 32 + 1}
+x={Math.cos(a) * r}
+y={Math.sin(a) * r + 1.1}
 textAnchor="middle"
-className="fill-fg-dim text-[2.5px] font-display font-bold"
+className="fill-fg-muted font-mono font-medium text-[3.4px]"
         paintOrder="stroke"
         stroke="#ffffff"
-        strokeWidth="0.9"
+        strokeOpacity="0.55"
+        strokeWidth="0.32"
         strokeLinejoin="round"
       >
  {deg}
@@ -227,23 +292,46 @@ className="fill-fg-dim text-[2.5px] font-display font-bold"
  );
  })}
 
+ {/* Cardinal letters — same dark ink as the numbers; N is only a size/weight step up */}
+ {[
+ { deg: 0, label: 'N', primary: true },
+ { deg: 90, label: 'E', primary: false },
+ { deg: 180, label: 'S', primary: false },
+ { deg: 270, label: 'W', primary: false },
+ ].map((c) => {
+const a = ((c.deg - 90) * Math.PI) / 180;
+const r = 25;
+return (
+ <text
+key={c.label}
+x={Math.cos(a) * r}
+y={Math.sin(a) * r + (c.primary ? 2.2 : 1.9)}
+textAnchor="middle"
+className={cn(
+ 'font-display fill-fg',
+c.primary ? 'font-bold text-[7px]' : 'font-semibold text-[5.6px]'
+ )}
+        paintOrder="stroke"
+        stroke="#ffffff"
+        strokeOpacity="0.5"
+        strokeWidth="0.35"
+        strokeLinejoin="round"
+      >
+ {c.label}
+ </text>
+ );
+ })}
+
+ {/* Static contact shadow beneath the needle pivot */}
+ <ellipse cx="0.5" cy="1.3" rx="3.2" ry="1.5" className="fill-fg/8" />
+
  {/* Azimuth + back-azimuth needles, anchored at the dial center */}
- <CompassNeedles angle={angle} />
+ <CompassNeedles angle={angle} needleShadowId={needleShadowId} />
 
- {/* Center pin */}
- <circle cx="0" cy="0" r="2" className="fill-bg stroke-accent" strokeWidth="0.5" />
- <circle cx="0" cy="0" r="0.7" className="fill-accent" />
+ {/* Center pin — a plain rivet, not an eye: one thin ring, one small dot, no highlight */}
+ <circle cx="0" cy="0" r="2.6" className="fill-bg stroke-fg-dim/70" strokeWidth="0.4" />
+ <circle cx="0" cy="0" r="1.1" className="fill-fg-dim" />
  </svg>
-
- <div className="absolute bottom-2 inset-x-0 flex justify-center gap-3 text-[10px] font-display font-medium tracking-wide">
- <span className="flex items-center gap-1 text-accent">
- <span className="size-2 bg-accent" /> אזימוט
- </span>
- <span className="flex items-center gap-1 text-accent-cool">
- <span className="size-2 bg-accent-cool" /> חוזר
- </span>
- </div>
- </div>
  );
 }
 /**
@@ -255,201 +343,508 @@ className="fill-fg-dim text-[2.5px] font-display font-bold"
  * (see useSmoothedAngle) that drives the digit readout, so needle and number can
  * never disagree.
  */
-function CompassNeedles({ angle }: { angle: number }) {
+function CompassNeedles({ angle, needleShadowId }: { angle: number; needleShadowId: string }) {
 return (
  <>
- {/* Back azimuth (azimuth + 180°), dashed cool */}
+ {/* Back azimuth (azimuth + 180°) — secondary: thin dashed line + small open
+     chevron, cool color already used for "reference" directions elsewhere in
+     this lesson (ThreeNorthsCard). Clearly lighter-weight than the main needle. */}
  <g transform={`rotate(${angle + 180})`}>
- <line x1="0" y1="0" x2="0" y2="-29" className="stroke-accent-cool/70" strokeWidth="1" strokeDasharray="1.6 1.2" strokeLinecap="round" />
- <polygon points="0,-36 -4,-28 4,-28" className="fill-accent-cool/80" />
+ <line
+x1="0"
+y1="-3"
+x2="0"
+y2="-19"
+className="stroke-accent-cool/50"
+strokeWidth="0.8"
+strokeDasharray="1.3 1.2"
+strokeLinecap="round"
+ />
+ <polyline
+points="-1.6,-16.5 0,-19.5 1.6,-16.5"
+className="stroke-accent-cool/65"
+strokeWidth="0.7"
+fill="none"
+strokeLinecap="round"
+strokeLinejoin="round"
+ />
  </g>
- {/* Forward azimuth, solid accent */}
- <g transform={`rotate(${angle})`}>
- <line x1="0" y1="0" x2="0" y2="-29" className="stroke-accent" strokeWidth="1.6" strokeLinecap="round" />
- <polygon points="0,-36 -4.5,-28 4.5,-28" className="fill-accent" />
+ {/* Forward azimuth — primary: a narrow, sharp navigation needle (not a flat
+     triangle). Two layers only: a dark red-orange body (accent-hot, the same
+     "serious" semantic accent as the reference), plus a lighter facet along
+     one edge for volume — no gradient, no glow. A small, subtle drop shadow
+     and a short south tail complete the real-needle read. */}
+ <g transform={`rotate(${angle})`} filter={`url(#${needleShadowId})`}>
+ <polygon points="0,3 -1,7.2 0,6 1,7.2" className="fill-fg-dim/60" />
+ <polygon points="0,-30 -1.6,-9 0,-3.2 1.6,-9" className="fill-accent-hot" />
+ <polygon points="0,-30 0,-3.2 1.6,-9" className="fill-accent/55" />
  </g>
  </>
  );
 }
-function ThreeNorthsCard() {
-const [active, setActive] = useState<'magnetic' | 'grid' | 'true'>('magnetic');
-const NORTHS = {
-magnetic: {
-label: 'צפון מגנטי',
-english: 'Magnetic North',
-color: 'text-accent-hot',
-bg: 'bg-accent-hot/10',
-border: 'border-accent-hot',
-angle: 7, // visualization offset
-who: 'המצפן שביד שלכם',
-what: 'הכיוון שאליו נמשכת מחט המצפן. הוא"נצמד" למגנט הענק של כדור הארץ, אבל המגנט הזה קצת זז כל שנה.',
-why: 'יתרון: עובד תמיד, בלי סוללות. חיסרון: צריך לתקן את הסטייה שלו כשמשווים אותו למפה.',
- },
-grid: {
-label: 'צפון רשת',
-english: 'Grid North',
-color: 'text-accent',
-bg: 'bg-accent/10',
-border: 'border-accent',
-angle: 0,
-who: 'המפה הצבאית',
-what: 'הצפון של המפות. אלו הקווים הישרים שמודפסים על הנייר. זה הצפון הכי נוח לחישובים בתוך החמ"ל.',
-why: 'יתרון: קל לתכנון נ"צ ומסלולים. חיסרון: הוא לא תואם בדיוק את המצפן או את הכוכבים.',
- },
-true: {
-label: 'צפון אמיתי',
-english: 'True North',
-color: 'text-accent-cool',
-bg: 'bg-accent-cool/10',
-border: 'border-accent-cool',
-angle: -3,
-who: 'כוכבים, GPS וניווט מתקדם',
-what: 'הנקודה המדויקת של הקוטב הצפוני. שם נמצא כוכב הצפון. זהו כיוון קבוע ויציב שלא משתנה לעולם.',
-why: 'יתרון: הכי מדויק שיש. חיסרון: אי אפשר למדוד אותו עם מצפן פשוט בשטח.',
- },
- };
-const meta = NORTHS[active];
-return (
- <div className="surface-elevated p-6 sm:p-8">
- <div className="mb-6">
- <h3 className="font-display font-bold text-xl leading-tight mb-1">הצפון הוא לא אחד: הכירו את שלושת הצפונים</h3>
- <p className="text-fg-muted text-sm">
- זה נשמע מבלבל, אבל בשטח יש 3 סוגי"צפון". כדי לא ללכת לאיבוד, אתם חייבים להכיר את ההבדלים ביניהם.
- </p>
- </div>
+type NorthId = 'magnetic' | 'grid' | 'true';
 
- <div className="grid lg:grid-cols-[1fr_1fr] gap-6 items-stretch">
- <div className="space-y-3">
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
- {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n], i) => {
-const isActive = id === active;
-return (
- <button
-key={id}
-onClick={() => setActive(id)}
-className={cn(
- 'surface p-3 text-right transition-all rounded-xl relative overflow-hidden flex items-center gap-3',
-isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
- )}
- >
- {isActive && (
- <motion.span
-layoutId="t3-norths-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
- />
- )}
- <span
-className={cn(
- 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm tabular-nums',
-isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
- )}
- >
- {i + 1}
- </span>
- <div className="flex-1 min-w-0 text-right">
- <div className="font-display font-bold text-base text-fg leading-tight">
- {n.label}
- </div>
- <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{n.english}</div>
- </div>
- </button>
- );
- })}
- </div>
+interface NorthMeta {
+  label: string;
+  english: string;
+  /** text-* token — also read as the SVG label/arrow color via currentColor */
+  color: string;
+  /** bg tint (10% opacity) — kept for potential reuse, not used for the card border anymore */
+  bg: string;
+  /** border-* token — kept for potential reuse, not used for the card border anymore */
+  border: string;
+  /** degrees from vertical, fan-out for the map diagram only — not real declination data */
+  angle: number;
+  who: string;
+  what: string;
+  why: string;
+}
 
- <div className={cn('surface-elevated p-5 border-r-4 transition-colors', meta.border)}>
- <div className={cn('text-sm font-display font-semibold mb-2 tracking-wider', meta.color)}>
- {meta.label}
- </div>
- <dl className="space-y-2.5 text-sm">
- <div>
- <dt className="text-fg-dim text-xs mb-0.5">במה משתמשים?</dt>
- <dd className="text-fg">{meta.who}</dd>
- </div>
- <div>
- <dt className="text-fg-dim text-xs mb-0.5">מה זה בעצם?</dt>
- <dd className="text-fg leading-relaxed">{meta.what}</dd>
- </div>
- <div>
- <dt className="text-fg-dim text-xs mb-0.5">למה כן? / למה לא?</dt>
- <dd className="text-fg-muted leading-relaxed">{meta.why}</dd>
- </div>
- </dl>
- </div>
- </div>
+const NORTHS: Record<NorthId, NorthMeta> = {
+  magnetic: {
+    label: 'צפון מגנטי',
+    english: 'Magnetic North',
+    color: 'text-accent-hot',
+    bg: 'bg-accent-hot/10',
+    border: 'border-accent-hot',
+    angle: -30,
+    who: 'המצפן שביד שלכם',
+    what: 'הכיוון שאליו נמשכת מחט המצפן. הוא "נצמד" למגנט הענק של כדור הארץ, אבל המגנט הזה קצת זז כל שנה.',
+    why: 'יתרון: עובד תמיד, בלי סוללות. חיסרון: צריך לתקן את הסטייה שלו כשמשווים אותו למפה.',
+  },
+  grid: {
+    label: 'צפון רשת',
+    english: 'Grid North',
+    color: 'text-terrain-olive',
+    bg: 'bg-terrain-olive/10',
+    border: 'border-terrain-olive',
+    angle: 14,
+    who: 'המפה הצבאית',
+    what: 'הצפון של המפות. אלו הקווים הישרים שמודפסים על הנייר. זה הצפון הכי נוח לחישובים בתוך החמ"ל.',
+    why: 'יתרון: קל לתכנון נ"צ ומסלולים. חיסרון: הוא לא תואם בדיוק את המצפן או את הכוכבים.',
+  },
+  true: {
+    label: 'צפון אמיתי',
+    english: 'True North',
+    color: 'text-brand-dark',
+    bg: 'bg-brand-dark/10',
+    border: 'border-brand-dark',
+    angle: 0,
+    who: 'כוכבים, GPS וניווט מתקדם',
+    what: 'הנקודה המדויקת של הקוטב הצפוני. שם נמצא כוכב הצפון. זהו כיוון קבוע ויציב שלא משתנה לעולם.',
+    why: 'יתרון: הכי מדויק שיש. חיסרון: אי אפשר למדוד אותו עם מצפן פשוט בשטח.',
+  },
+};
 
- <div className="surface aspect-square sm:aspect-auto sm:min-h-[280px] flex flex-col items-center justify-center p-6 relative overflow-hidden gap-3">
- <svg viewBox="-50 -50 100 100" className="w-full h-full max-w-[260px]">
- <circle cx="0" cy="0" r="40" className="fill-bg-elevated stroke-border" strokeWidth="0.4" />
+const NORTH_IDS: NorthId[] = ['magnetic', 'grid', 'true'];
 
- {Object.entries(NORTHS).map(([id, n]) => {
-const isActive = id === active;
-const a = ((n.angle - 90) * Math.PI) / 180;
-const x = Math.cos(a) * 36;
-const y = Math.sin(a) * 36;
-return (
- <g key={id}>
- <motion.line
-x1="0"
-y1="0"
-x2={x}
-y2={y}
-className={cn('transition-all', n.color)}
-stroke="currentColor"
-strokeWidth={isActive ? 1.2 : 0.5}
-opacity={isActive ? 1 : 0.45}
- />
- <motion.polygon
-points={`${x},${y} ${x - 1.5},${y + 3} ${x + 1.5},${y + 3}`}
-transform={`rotate(${n.angle} ${x} ${y})`}
-className={n.color}
-fill="currentColor"
-opacity={isActive ? 1 : 0.5}
-animate={{ opacity: isActive ? 1 : 0.5 }}
- />
- </g>
- );
- })}
+/** Placeholder glyph per north type — swapped for a real photo once Magnific assets land (see NorthTypeIcon). */
+const NORTH_ICONS: Record<NorthId, IconName> = {
+  magnetic: 'compass',
+  grid: 'crosshair',
+  true: 'star',
+};
 
- <circle cx="0" cy="0" r="1.8" className="fill-bg stroke-fg" strokeWidth="0.4" />
- <text x="0" y="48" textAnchor="middle" className="fill-fg-dim text-[3px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
+/** Future Magnific renders (transparent background) land at these paths. */
+const NORTH_ICON_ASSET_SRC: Record<NorthId, string> = {
+  magnetic: '/assets/isometric/lesson-03-north-magnetic.png',
+  grid: '/assets/isometric/lesson-03-north-grid.png',
+  true: '/assets/isometric/lesson-03-north-true.png',
+};
+
+/**
+ * Flip to true once real renders exist at NORTH_ICON_ASSET_SRC. Until then
+ * every card shows the thin geometric Icon placeholder below — never a
+ * broken <img>. If a file ever fails to load post-flip, onError falls back
+ * to the same placeholder rather than showing a broken-image icon.
+ */
+const useGeneratedNorthIcons = false;
+
+/**
+ * NorthTypeIcon — intentionally frameless: no border/background/shadow/tile
+ * around the glyph, since the future Magnific asset is a transparent-bg PNG
+ * meant to sit directly on the card, not inside a container.
+ */
+function NorthTypeIcon({ id, active, colorClass }: { id: NorthId; active: boolean; colorClass: string }) {
+  const [broken, setBroken] = useState(false);
+  const showImage = useGeneratedNorthIcons && !broken;
+  return (
+    <span
+      data-asset-slot={`north-icon-${id}`}
+      data-asset-src={NORTH_ICON_ASSET_SRC[id]}
+      className="relative flex size-12 shrink-0 items-center justify-center sm:size-14"
+    >
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
+        <img
+          src={NORTH_ICON_ASSET_SRC[id]}
+          alt=""
+          className="size-full object-contain"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <Icon
+          name={NORTH_ICONS[id]}
+          size={26}
+          strokeWidth={1.3}
+          className={cn(colorClass, 'transition-opacity duration-200', active ? 'opacity-80' : 'opacity-40')}
+        />
+      )}
+    </span>
+  );
+}
+
+function NorthChoiceCard({
+  id,
+  meta,
+  isActive,
+  onSelect,
+}: {
+  id: NorthId;
+  meta: NorthMeta;
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={isActive}
+      className={cn(
+        'flex w-[210px] shrink-0 items-center gap-3 rounded-xl border p-3 text-right transition-all duration-200 ease-snap lg:w-full lg:shrink',
+        isActive
+          ? 'scale-[1.01] border-border-strong/50 bg-bg-card shadow-elevated'
+          : 'border-border/60 bg-bg-accent/30 hover:border-border-strong/40 hover:bg-bg-card',
+      )}
+    >
+      <NorthTypeIcon id={id} active={isActive} colorClass={meta.color} />
+      <span className="min-w-0 flex-1">
+        <span
+          className={cn(
+            'block font-display text-[15px] leading-tight transition-colors',
+            isActive ? cn(meta.color, 'font-bold') : 'font-semibold text-fg',
+          )}
+        >
+          {meta.label}
+        </span>
+        <span className="mt-0.5 block font-display text-[11px] font-medium tracking-wide text-fg-dim" dir="ltr">
+          {meta.english}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+// ── Map diagram geometry — a small polar coordinate system anchored at a
+//    single bottom-center origin; all three arrows and their angle-arcs are
+//    derived from it so the fan-out stays internally consistent. Angles are
+//    asymmetric on purpose so the visual gap matches which printed number
+//    (6.2° vs 2.3°) it illustrates — bigger gap next to the bigger number. ──
+const MAP_ORIGIN = { x: 250, y: 308 };
+const MAP_SHAFT_LEN = 225;
+const MAP_HEAD_LEN = 20;
+const MAP_HEAD_HALF = 9;
+const MAP_ARC_RADIUS = 125;
+const MAP_ARC_NUMBER_RADIUS = 142;
+const MAP_TOTAL_ARC_RADIUS = 165;
+const MAP_TOTAL_NUMBER_RADIUS = 182;
+
+function mapPolar(angleDeg: number, radius: number) {
+  const rad = (angleDeg * Math.PI) / 180;
+  return { x: MAP_ORIGIN.x + Math.sin(rad) * radius, y: MAP_ORIGIN.y - Math.cos(rad) * radius };
+}
+
+/** Triangular arrowhead perpendicular to the shaft direction — works at any angle. */
+function mapArrowHead(angleDeg: number) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const tip = mapPolar(angleDeg, MAP_SHAFT_LEN);
+  const back = mapPolar(angleDeg, MAP_SHAFT_LEN - MAP_HEAD_LEN);
+  const px = Math.cos(rad);
+  const py = Math.sin(rad);
+  return {
+    tip,
+    back,
+    left: { x: back.x - px * MAP_HEAD_HALF, y: back.y - py * MAP_HEAD_HALF },
+    right: { x: back.x + px * MAP_HEAD_HALF, y: back.y + py * MAP_HEAD_HALF },
+  };
+}
+
+function mapArcPath(fromDeg: number, toDeg: number, radius: number) {
+  const p1 = mapPolar(fromDeg, radius);
+  const p2 = mapPolar(toDeg, radius);
+  const sweep = toDeg > fromDeg ? 1 : 0;
+  return `M ${p1.x} ${p1.y} A ${radius} ${radius} 0 0 ${sweep} ${p2.x} ${p2.y}`;
+}
+
+function NorthArrow({
+  angle,
+  colorClass,
+  label,
+  english,
+  isActive,
+  reduceMotion,
+}: {
+  angle: number;
+  colorClass: string;
+  label: string;
+  english: string;
+  isActive: boolean;
+  reduceMotion: boolean;
+}) {
+  const head = mapArrowHead(angle);
+  const shaftEnd = mapPolar(angle, MAP_SHAFT_LEN - MAP_HEAD_LEN);
+  const isVertical = angle === 0;
+  const away = angle > 0 ? 1 : angle < 0 ? -1 : 0;
+  const labelX = isVertical ? MAP_ORIGIN.x : head.tip.x + away * 22;
+  const labelY = isVertical ? head.tip.y - 40 : head.tip.y + 6;
+  const anchor = isVertical ? 'middle' : away > 0 ? 'start' : 'end';
+  const transition = { duration: reduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] as const };
+
+  return (
+    // direction:ltr pins text-anchor start/end to a fixed, predictable edge
+    // regardless of the page's RTL cascade — the Hebrew glyphs inside still
+    // shape correctly (a single-script run always reads right-to-left on its
+    // own), only the start/end ↔ left/right mapping is what gets fixed here.
+    <g style={{ direction: 'ltr' }}>
+      <motion.line
+        x1={MAP_ORIGIN.x}
+        y1={MAP_ORIGIN.y}
+        x2={shaftEnd.x}
+        y2={shaftEnd.y}
+        stroke="currentColor"
+        strokeLinecap="round"
+        className={colorClass}
+        animate={{ opacity: isActive ? 1 : 0.35, strokeWidth: isActive ? 4 : 2 }}
+        transition={transition}
+      />
+      <motion.polygon
+        points={`${head.tip.x},${head.tip.y} ${head.left.x},${head.left.y} ${head.right.x},${head.right.y}`}
+        fill="currentColor"
+        className={colorClass}
+        animate={{ opacity: isActive ? 1 : 0.35 }}
+        transition={transition}
+      />
+      <text
+        x={labelX}
+        y={labelY}
+        textAnchor={anchor}
+        fill="currentColor"
+        className={cn(
+          'font-display transition-all duration-200',
+          isActive ? cn(colorClass, 'text-[17px] font-bold') : 'text-fg-dim text-[13px] font-medium',
+        )}
       >
- *ההפרש מוגזם להמחשה ויזואלית
- </text>
- </svg>
+        {label}
+      </text>
+      <text
+        x={labelX}
+        y={labelY + 16}
+        textAnchor={anchor}
+        fill="currentColor"
+        className="text-fg-dim font-display text-[11px] font-medium tracking-wide"
+      >
+        {english}
+      </text>
+    </g>
+  );
+}
 
- <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs">
- {(Object.entries(NORTHS) as [keyof typeof NORTHS, typeof NORTHS[keyof typeof NORTHS]][]).map(([id, n]) => {
-const isActive = id === active;
-return (
- <div
-key={id}
-className={cn(
- 'flex items-center gap-1.5 transition-opacity',
-isActive ? 'opacity-100' : 'opacity-50'
- )}
- >
- <span className={cn('inline-block size-2.5 rounded-full', n.color)} style={{ backgroundColor: 'currentColor' }} />
- <span className={cn('font-display font-semibold tracking-wide whitespace-nowrap', n.color)}>{n.label}</span>
- </div>
- );
- })}
- </div>
- </div>
- </div>
+const MAP_BG_ASSET_SRC = '/assets/isometric/lesson-03-three-norths-map-bg.webp';
 
- <div className="mt-5 surface p-4 flex gap-3 items-start">
- <Icon name="spark" size={18} className="text-status-warn shrink-0 mt-0.5" />
- <div className="text-xs leading-relaxed">
- <strong className="text-fg">שימו לב:</strong> אם תמדדו כיוון במצפן ותסמנו אותו ישר על המפה בלי"לתקן" את הסטייה - תפספסו את המטרה. בישראל הסטייה קטנה, אבל בניווטים ארוכים כל מעלה קובעת.
- </div>
- </div>
- </div>
- );
+/**
+ * Flip to true once a real topographic-map render exists at MAP_BG_ASSET_SRC
+ * (cream paper, many faint contour lines, organic terrain, a few faint
+ * tracks, near-invisible cartographic grid — background texture only, no
+ * arrows/labels/numbers baked in, those stay SVG/React on top). Until then
+ * this falls back to a flat cream field + the existing faint SVG contour
+ * lines drawn in NorthsDiagram — never a broken <img>. onError re-falls-back
+ * if a future file ever fails to load.
+ */
+const useGeneratedMapBackground = false;
+
+function NorthsMapBackground() {
+  const [broken, setBroken] = useState(false);
+  const showImage = useGeneratedMapBackground && !broken;
+  return (
+    <div
+      aria-hidden
+      data-asset-slot="three-norths-map-bg"
+      data-asset-src={MAP_BG_ASSET_SRC}
+      className="absolute inset-0 overflow-hidden"
+    >
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
+        <img src={MAP_BG_ASSET_SRC} alt="" className="size-full object-cover" onError={() => setBroken(true)} />
+      ) : (
+        <>
+          <div className="absolute inset-0 bg-[#FBF6EC]" />
+          <div className="topo-bg absolute inset-0 opacity-[0.08]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.03] via-transparent to-brand/[0.06]" />
+        </>
+      )}
+    </div>
+  );
+}
+
+function NorthsDiagram({ active }: { active: NorthId }) {
+  const reduceMotion = !!useReducedMotion();
+  const drawOrder = [...NORTH_IDS.filter((id) => id !== active), active];
+
+  const arc1Path = mapArcPath(NORTHS.magnetic.angle, NORTHS.true.angle, MAP_ARC_RADIUS);
+  const arc2Path = mapArcPath(NORTHS.true.angle, NORTHS.grid.angle, MAP_ARC_RADIUS);
+  const totalArcPath = mapArcPath(NORTHS.magnetic.angle, NORTHS.grid.angle, MAP_TOTAL_ARC_RADIUS);
+  const num1 = mapPolar((NORTHS.magnetic.angle + NORTHS.true.angle) / 2, MAP_ARC_NUMBER_RADIUS);
+  const num2 = mapPolar((NORTHS.true.angle + NORTHS.grid.angle) / 2, MAP_ARC_NUMBER_RADIUS);
+  const numTotal = mapPolar((NORTHS.magnetic.angle + NORTHS.grid.angle) / 2, MAP_TOTAL_NUMBER_RADIUS);
+  const arc1Relevant = active === 'magnetic' || active === 'true';
+  const arc2Relevant = active === 'grid' || active === 'true';
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-border/50">
+      <NorthsMapBackground />
+      <svg
+        viewBox="0 0 500 340"
+        className="relative h-auto w-full"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={`תרשים שלושת כיווני הצפון. הכיוון הנבחר כרגע: ${NORTHS[active].label}`}
+      >
+        {/* faint contour lines — illustrative texture only, no real geography */}
+        <g fill="none" className="stroke-border-strong" strokeWidth="0.7" opacity="0.28">
+          <path d="M10,70 C 100,45 180,95 280,65 C 350,42 430,70 490,52" />
+          <path d="M6,130 C 110,105 190,145 290,115 C 360,92 440,120 494,102" />
+          <path d="M10,210 C 110,190 200,225 300,198 C 370,178 440,205 492,190" />
+          <path d="M20,260 C 120,242 210,270 310,248 C 380,232 440,255 486,242" />
+        </g>
+
+        {/* total angular spread — neutral, widest ring */}
+        <path d={totalArcPath} fill="none" className="stroke-fg-dim" strokeWidth="1.2" strokeDasharray="2 3" opacity="0.5" />
+        {/* per-pair angular differences — tinted to the type they border, lit up a little when that pair is relevant to the active choice */}
+        <path
+          d={arc1Path}
+          fill="none"
+          stroke="currentColor"
+          className={cn(NORTHS.magnetic.color, 'transition-opacity duration-200')}
+          strokeWidth="1.4"
+          strokeDasharray="3 3"
+          opacity={arc1Relevant ? 0.75 : 0.5}
+        />
+        <path
+          d={arc2Path}
+          fill="none"
+          stroke="currentColor"
+          className={cn(NORTHS.grid.color, 'transition-opacity duration-200')}
+          strokeWidth="1.4"
+          strokeDasharray="3 3"
+          opacity={arc2Relevant ? 0.75 : 0.5}
+        />
+
+        {/* illustrative angular-difference values — not current real-world declination data */}
+        <text x={num1.x} y={num1.y} textAnchor="middle" fill="currentColor" className="text-fg font-display text-[15px] font-semibold">
+          6.2°
+        </text>
+        <text x={num2.x} y={num2.y} textAnchor="middle" fill="currentColor" className="text-fg font-display text-[15px] font-semibold">
+          2.3°
+        </text>
+        <text x={numTotal.x} y={numTotal.y} textAnchor="middle" fill="currentColor" className="text-fg font-display text-[13px] font-semibold">
+          סה״כ 8.5°
+        </text>
+
+        {drawOrder.map((id) => (
+          <NorthArrow
+            key={id}
+            angle={NORTHS[id].angle}
+            colorClass={NORTHS[id].color}
+            label={NORTHS[id].label}
+            english={NORTHS[id].english}
+            isActive={id === active}
+            reduceMotion={reduceMotion}
+          />
+        ))}
+
+        {/* origin waypoint — neutral, not tied to any one north's color */}
+        <circle cx={MAP_ORIGIN.x} cy={MAP_ORIGIN.y} r="8" className="fill-bg stroke-fg-dim/70" strokeWidth="1.6" />
+        <circle cx={MAP_ORIGIN.x} cy={MAP_ORIGIN.y} r="3.8" className="fill-fg-dim" />
+      </svg>
+    </div>
+  );
+}
+
+function NorthInfoPanel({ meta }: { meta: NorthMeta }) {
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-border/60 bg-bg-card p-5">
+      <span className={cn('mb-3 block h-[3px] w-8 rounded-full', meta.color)} style={{ backgroundColor: 'currentColor' }} aria-hidden />
+      <h4 className="font-display leading-tight">
+        <span className={cn('block text-lg font-bold sm:text-xl', meta.color)}>{meta.label}</span>
+        <span className="mt-0.5 block text-xs font-medium tracking-wide text-fg-dim" dir="ltr">
+          {meta.english}
+        </span>
+      </h4>
+      <dl className="mt-4 space-y-3.5 text-sm">
+        <div>
+          <dt className="mb-0.5 font-display text-xs font-semibold tracking-wide text-fg-dim">במה משתמשים?</dt>
+          <dd className="text-fg">{meta.who}</dd>
+        </div>
+        <div>
+          <dt className="mb-0.5 font-display text-xs font-semibold tracking-wide text-fg-dim">מה זה בעצם?</dt>
+          <dd className="leading-relaxed text-fg">{meta.what}</dd>
+        </div>
+        <div>
+          <dt className="mb-0.5 font-display text-xs font-semibold tracking-wide text-fg-dim">למה כן? / למה לא?</dt>
+          <dd className="leading-relaxed text-fg-muted">{meta.why}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function ThreeNorthsCard() {
+  const [active, setActive] = useState<NorthId>('magnetic');
+  const meta = NORTHS[active];
+
+  return (
+    <div className="surface-elevated p-6 sm:p-8">
+      <div className="mb-6 text-center sm:mb-8">
+        <h3 className="font-display text-xl font-bold leading-tight text-fg sm:text-2xl">
+          הצפון הוא לא אחד: הכירו את שלושת הצפונים
+        </h3>
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-fg sm:text-base">
+          זה נשמע מבלבל, אבל בשטח יש 3 סוגי "צפון". כדי לא ללכת לאיבוד, אתם חייבים להכיר את ההבדלים ביניהם.
+        </p>
+      </div>
+
+      {/* [ בחירה ] [ תרשים ] [ מידע ] בסדר-DOM, ש-order מסדר מחדש לרצף
+          1→2→3 שממופה בעקביות הן לערימת המובייל (למעלה→מטה) והן, ב-RTL,
+          לרצועה 1=ימין/2=מרכז/3=שמאל בדסקטופ — ולכן אין צורך ב-lg:order
+          נפרד לכל שבירת-מסך. */}
+      <div className="grid items-stretch gap-4 lg:grid-cols-[0.85fr_1.9fr_1fr] lg:gap-6">
+        <div
+          className="order-1 flex gap-2.5 overflow-x-auto pb-1 lg:flex-col lg:gap-3 lg:overflow-visible lg:pb-0"
+          role="group"
+          aria-label="בחירת סוג צפון"
+        >
+          {NORTH_IDS.map((id) => (
+            <NorthChoiceCard key={id} id={id} meta={NORTHS[id]} isActive={id === active} onSelect={() => setActive(id)} />
+          ))}
+        </div>
+
+        <div className="order-2">
+          <NorthsDiagram active={active} />
+        </div>
+
+        <div className="order-3">
+          <NorthInfoPanel meta={meta} />
+        </div>
+      </div>
+
+      <div className="mt-5 surface p-4 flex gap-3 items-start">
+        <Icon name="spark" size={18} className="text-status-warn shrink-0 mt-0.5" />
+        <div className="text-xs leading-relaxed">
+          <strong className="text-fg">שימו לב:</strong> אם תמדדו כיוון במצפן ותסמנו אותו ישר על המפה בלי "לתקן" את הסטייה - תפספסו את המטרה. בישראל הסטייה קטנה, אבל בניווטים ארוכים כל מעלה קובעת.
+        </div>
+      </div>
+    </div>
+  );
 }
 function GpsDeniedCard() {
 const items: { icon: IconName; title: string; desc: string }[] = [

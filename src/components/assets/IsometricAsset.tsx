@@ -31,6 +31,7 @@ export function IsometricAsset({
   fit = 'cover',
   compactPlaceholder = false,
   eager = false,
+  prompt,
   className,
 }: {
   /** מזהה נכס מטבלת §20, למשל "LESSON-03-HOOK" */
@@ -44,6 +45,8 @@ export function IsometricAsset({
   compactPlaceholder?: boolean;
   /** טעינה מיידית — למשל תוכן שדורש גלילה אופקית פנימית שבה loading="lazy" לא מזהה נראות נכון */
   eager?: boolean;
+  /** Full AI image-generation brief shown on the placeholder until `src` resolves. */
+  prompt?: string;
   className?: string;
 }) {
   const [status, setStatus] = useState<'pending' | 'ready' | 'missing'>('pending');
@@ -71,6 +74,7 @@ export function IsometricAsset({
           assetId={assetId}
           targetPath={`public${src}`}
           note="להפיק ב-Magnific לפי prompt"
+          prompt={prompt}
           compact={compactPlaceholder}
         />
       )}

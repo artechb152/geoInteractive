@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 type View = '3d' | 'photo' | 'topo';
 const VIEWS: { id: View; label: string; icon: IconName; pros: string[]; cons: string[]; whatItIs: string; whyItMatters: string }[] = [
@@ -227,153 +228,41 @@ className="flex-1 min-h-[18rem]"
 }
 
 // ==========================================
-// פונקציות הציור – איורים מבוססי קוד SVG
+// תצוגות – איורים מבוססי תמונה
 // ==========================================
 function View3D() {
-return (
- <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
- {/* Sky */}
- <rect x="0" y="0" width="100" height="75" className="fill-bg-elevated" />
-
- {/* Back ridges */}
- <path d="M0 50 L25 32 L45 42 L65 28 L85 38 L100 30 L100 75 L0 75 Z" className="fill-terrain-ridge/55" />
-
- {/* Front mountain */}
- <path d="M0 60 L20 45 L40 38 L55 25 L70 35 L85 48 L100 55 L100 75 L0 75 Z" className="fill-terrain-olive/75" />
-
- {/* Ridge lines */}
- <path d="M0 60 L20 45 L40 38 L55 25 L70 35 L85 48 L100 55" fill="none" className="stroke-fg" strokeWidth="0.3" opacity="0.4" />
-
- {/* Sun */}
- <circle cx="80" cy="15" r="4" className="fill-accent/60" />
-
- {/* Label */}
- <text x="55" y="22" textAnchor="middle" className="fill-fg text-[3px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >פסגה · 412 מ׳</text>
- </svg>
- );
+  return (
+    <IsometricAsset
+      assetId="TOPIC02-TOPO-3D"
+      src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-3D.png"
+      alt="איור איזומטרי: מודל תלת-ממדי של הר, מציג את פני השטח כמו דגם מוקטן"
+      aspect="4/3"
+      className="w-full h-full object-cover rounded-[3px]"
+      prompt="Isometric papercut illustration of a 3D terrain model of a mountain, layered-paper shading, warm cream background, no text."
+    />
+  );
 }
 function ViewPhoto() {
- // Pseudo-aerial photo — patches of color
-return (
- <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
- <defs>
- <radialGradient id="photo-vignette">
- <stop offset="60%" stopColor="transparent" />
- <stop offset="100%" stopColor="black" stopOpacity="0.3" />
- </radialGradient>
- </defs>
-
- {/* Patchy aerial-like terrain */}
- <rect x="0" y="0" width="100" height="75" className="fill-terrain-ridge/40" />
- <ellipse cx="35" cy="40" rx="28" ry="22" className="fill-terrain-olive/50" />
- <ellipse cx="70" cy="50" rx="22" ry="18" className="fill-terrain-sand/40" />
- <ellipse cx="50" cy="25" rx="16" ry="10" className="fill-terrain-ridge/60" />
- {/* Roads */}
- <path d="M0 55 Q 40 50 60 48 T 100 45" fill="none" className="stroke-fg-muted" strokeWidth="0.6" opacity="0.5" />
- {/* Building cluster */}
- {[
- [40, 50], [42, 52], [44, 50], [46, 51],
- [70, 55], [72, 53],
- ].map(([x, y], i) => (
- <rect key={i} x={x} y={y} width="1.2" height="1.2" className="fill-fg/60" />
- ))}
- {/*"Camera grain" */}
- {Array.from({ length: 30 }).map((_, i) => {
-const x = (i * 37) % 100;
-const y = (i * 17) % 75;
-return <circle key={i} cx={x} cy={y} r="0.2" className="fill-fg/20" />;
- })}
- <rect x="0" y="0" width="100" height="75" fill="url(#photo-vignette)" />
- </svg>
- );
+  return (
+    <IsometricAsset
+      assetId="TOPIC02-TOPO-PHOTO"
+      src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-PHOTO.png"
+      alt="תצלום אווירי של שטח, מבט ישר מלמעלה"
+      aspect="4/3"
+      className="w-full h-full object-cover rounded-[3px]"
+      prompt="Aerial photograph style illustration of terrain viewed from directly above, warm cream background, no text."
+    />
+  );
 }
 function ViewTopo() {
-return (
- <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
- <rect x="0" y="0" width="100" height="75" className="fill-bg" />
-
- {/* Grid */}
- {Array.from({ length: 10 }).map((_, i) => (
- <line key={'gx' + i} x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle" strokeWidth="0.1" />
- ))}
- {Array.from({ length: 8 }).map((_, i) => (
- <line key={'gy' + i} x1="0" y1={i * 10} x2="100" y2={i * 10} className="stroke-border-subtle" strokeWidth="0.1" />
- ))}
-
- {/* Concentric contour lines forming a hill at center */}
- {[
- { rx: 35, ry: 24, opacity: 0.55 },
- { rx: 28, ry: 19, opacity: 0.6 },
- { rx: 22, ry: 15, opacity: 0.65 },
- { rx: 16, ry: 11, opacity: 0.7 },
- { rx: 10, ry: 7, opacity: 0.8 },
- { rx: 5, ry: 4, opacity: 0.95 },
- ].map((c, i) => (
- <ellipse key={i} cx="48" cy="38" rx={c.rx} ry={c.ry} fill="none" className="stroke-accent" strokeWidth={i === 5 ? 0.5 : 0.3} opacity={c.opacity} />
- ))}
-
- {/* Index contour every 5th — slightly bolder */}
- <ellipse cx="48" cy="38" rx="35" ry="24" fill="none" className="stroke-accent" strokeWidth="0.5" opacity="0.7" />
-
- {/* Height labels */}
- <text x="48" y="36" textAnchor="middle" className="fill-accent text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >412</text>
- <text x="48" y="40" textAnchor="middle" className="fill-fg-muted text-[2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >מ׳</text>
- <text x="13" y="60" className="fill-fg-muted text-[2.2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >300</text>
- <text x="79" y="55" className="fill-fg-muted text-[2.2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >350</text>
-
- {/* Symbol: small triangle = peak marker */}
- <polygon points="48,33 46,37 50,37" className="fill-accent" />
-
- {/* Path/road */}
- <path d="M5 65 Q 25 60 40 55 L 50 38" fill="none" className="stroke-fg-muted" strokeWidth="0.4" strokeDasharray="1.2 0.8" />
-
- {/* Building */}
- <rect x="20" y="58" width="2" height="2" className="fill-fg" />
- <text x="22" y="63" className="fill-fg-muted text-[2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >מבנה</text>
-
- {/* Coordinate corner */}
- <text x="2" y="73" className="fill-fg-dim text-[2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >N31°45'</text>
- <text x="84" y="73" className="fill-fg-dim text-[2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >E35°12'</text>
- </svg>
- );
+  return (
+    <IsometricAsset
+      assetId="TOPIC02-TOPO-MAP"
+      src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-MAP.png"
+      alt="מפה טופוגרפית עם קווי גובה המתארים שטח תלת-ממדי על גבי דף שטוח"
+      aspect="4/3"
+      className="w-full h-full object-cover rounded-[3px]"
+      prompt="Topographic map illustration with contour lines, papercut style, warm cream background, no text."
+    />
+  );
 }
