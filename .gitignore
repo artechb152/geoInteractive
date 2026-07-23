@@ -47,3 +47,6 @@ qa-*.png
 /progress-card-*.png
 /topic01-*.png
 /topic02-*.png
+
+# git worktree checkouts (other branches' working dirs) — never commit these
+.worktrees/

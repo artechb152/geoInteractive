@@ -333,12 +333,12 @@ export function AsymmetricScene() {
 
       {/* Hero illustration — sits on a bg-warm "platform" band per
           docs/palette.md's illustration-base role. */}
-      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
+      <div className="-mt-4 rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
         <IsometricAsset
           assetId="TOPIC01-ASYM-HERO"
-          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-HERO.png"
+          src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-HERO.png"
           alt="איור איזומטרי: הר גדול מול אוהלים מפוזרים, מסמל את האסימטריה בין צבא גדול לשחקן קטן"
-          aspect="21/9"
+          aspect="16/9"
           className="rounded-[3px]"
           prompt="Isometric papercut illustration on a warm cream background (#FFFBF7). A large layered-paper fortress/mountain shape in sage green tones (#749C75 base, #5B7C5C shadow) sits on a warm peach platform (#FFDCB5), facing a scattered cluster of many small paper tent shapes in the same sage palette, connected by a thin dashed orange line (#EB9E48) between them. Flat layered-paper shading, soft edges, no text, no human figures, no weapons, no flags or insignia, generous empty cream space around the scene for text overlay."
         />
@@ -410,7 +410,7 @@ export function AsymmetricScene() {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="surface-elevated p-6 mt-8"
+        className="surface-elevated p-5 sm:p-6 mt-8"
       >
         <div className="grid sm:grid-cols-[1fr_auto] gap-5 items-center">
           <div>
@@ -423,11 +423,11 @@ export function AsymmetricScene() {
           </div>
           <IsometricAsset
             assetId="TOPIC01-ASYM-CLOSING"
-            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
+            src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
             alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
             aspect="1/1"
             fit="contain"
-            className="rounded-[3px] w-[220px] sm:w-[280px] shrink-0 bg-bg-elevated"
+            className="rounded-[3px] w-[150px] sm:w-[180px] shrink-0 bg-bg-elevated"
             prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
           />
         </div>
@@ -622,7 +622,7 @@ function PillarSimulator() {
       <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
         <IsometricAsset
           assetId="TOPIC01-ASYM-PILLARS"
-          src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-PILLARS.png"
+          src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-PILLARS.png"
           alt="שלושה איורים איזומטריים קטנים: דמות יציבה, חץ מתעקל סביב קיר, שעון חול"
           aspect="21/9"
           className="rounded-[3px]"
@@ -806,7 +806,7 @@ function TimeAsymmetry() {
         <div className="rounded-[4px] bg-warm/50 p-2 shrink-0 mx-auto sm:mx-0">
           <IsometricAsset
             assetId="TOPIC01-ASYM-CLOCK"
-            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-CLOCK.png"
+            src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-CLOCK.png"
             alt="איור איזומטרי: שעון חול שראשו העליון בצורת בניין ממשל וראשו התחתון בצורת אוהל"
             aspect="1/1"
             className="rounded-[3px] w-[140px] sm:w-[160px]"
@@ -1086,7 +1086,7 @@ function TacticMatchExercise() {
           </div>
           <IsometricAsset
             assetId="TOPIC01-ASYM-TACTICS"
-            src="/assets/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
+            src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
             alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
             aspect="16/9"
             className="rounded-[3px] h-20 sm:h-28 w-auto shrink-0"
