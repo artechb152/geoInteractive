@@ -485,7 +485,6 @@ function CategoryBin({
     >
       {/* Header */}
       <div className="flex items-center gap-3 p-3 pr-4">
-        <Icon name={meta.zoomIcon} size={28} className={cn('shrink-0', meta.text)} />
         <div className="flex-1 min-w-0">
           <div className={cn('font-display font-bold leading-tight', meta.text)}>
             {meta.label}
@@ -602,19 +601,6 @@ function ScenarioChip({
       aria-pressed={isSelected}
     >
       <div className="flex items-start gap-2">
-        <div
-          className={cn(
-            'rounded-md flex items-center justify-center shrink-0',
-            compact ? 'size-6' : 'size-7',
-            isCorrect
-              ? 'bg-status-ok/15 text-status-ok'
-              : isWrong
-              ? 'bg-status-danger/15 text-status-danger'
-              : 'bg-bg-accent text-fg-muted'
-          )}
-        >
-          <Icon name={scenario.icon} size={compact ? 12 : 14} />
-        </div>
         <p className={cn('flex-1 leading-snug', compact ? 'text-xs' : 'text-sm')}>
           {scenario.text}
         </p>

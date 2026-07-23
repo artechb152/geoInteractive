@@ -549,12 +549,6 @@ className={cn(
 isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
  )}
  >
- {isActive && (
- <motion.span
- layoutId="t4-slope-bar"
- className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
- />
- )}
  <span
  className={cn(
  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',

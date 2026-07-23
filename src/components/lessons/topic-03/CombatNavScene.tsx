@@ -132,12 +132,6 @@ isActive
  : 'hover:border-border-strong hover:bg-bg-accent/30'
  )}
  >
- {isActive && (
- <motion.span
-layoutId="t3-combat-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
- />
- )}
  <button
 type="button"
 onClick={() => setActive(m.id)}

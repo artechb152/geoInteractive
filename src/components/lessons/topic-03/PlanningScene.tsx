@@ -96,12 +96,6 @@ isActive ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:
 passed && !isActive && 'opacity-80'
  )}
  >
- {isActive && (
- <motion.span
-layoutId="t3-route-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
- />
- )}
  <span
 className={cn(
  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all',

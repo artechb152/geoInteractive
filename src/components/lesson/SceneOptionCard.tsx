@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 /**
@@ -33,13 +32,6 @@ export function SceneOptionCard({
   className?: string;
   'aria-controls'?: string;
 }) {
-  const rail = (
-    <span
-      aria-hidden
-      className="absolute inset-y-0 end-0 w-1 rounded-s-full bg-brand-dark"
-    />
-  );
-
   return (
     <button
       type="button"
@@ -52,16 +44,6 @@ export function SceneOptionCard({
         className,
       )}
     >
-      {active &&
-        (layoutId ? (
-          <motion.span
-            layoutId={layoutId}
-            aria-hidden
-            className="absolute inset-y-0 end-0 w-1 rounded-s-full bg-brand-dark"
-          />
-        ) : (
-          rail
-        ))}
       <span className="flex items-start gap-3">
         {badge !== undefined && (
           <span

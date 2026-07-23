@@ -130,16 +130,10 @@ export function OnboardingScene() {
                   aria-controls={`step-panel-${s.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  {active && (
-                    <motion.span
-                      layoutId="t3-onb-step-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
-                    />
-                  )}
                   <span
                     className={cn(
                       'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active ? 'bg-brand-dark text-bg-elevated border-brand-dark' : passed ? 'bg-status-ok/15 text-status-ok border-status-ok/30' : 'bg-bg-accent text-fg-muted border-border'
+                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
@@ -188,14 +182,12 @@ export function OnboardingScene() {
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
                         <div className="mt-3">
                           <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
-                            <Icon name="eye" size={14} />
                             מה אתה עושה בשלב הזה?
                           </div>
                           <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
                         </div>
                         <div className="pt-2 border-t border-border-subtle">
                           <div className="text-sm font-display font-semibold text-brand-dark mb-1.5 tracking-wider flex items-center gap-1.5">
-                            <Icon name="spark" size={14} />
                             ולמה זה משנה?
                           </div>
                           <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>

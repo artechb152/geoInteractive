@@ -29,6 +29,7 @@ export function IsometricAsset({
   alt,
   aspect = '16/9',
   fit = 'cover',
+  position = 'center',
   compactPlaceholder = false,
   eager = false,
   prompt,
@@ -42,6 +43,8 @@ export function IsometricAsset({
   alt: string;
   aspect?: AssetAspect;
   fit?: 'cover' | 'contain';
+  /** נקודת עיגון ל-object-position כש-fit="cover" — לשליטה איזה חלק מהתמונה נחתך */
+  position?: 'center' | 'top' | 'bottom';
   compactPlaceholder?: boolean;
   /** טעינה מיידית — למשל תוכן שדורש גלילה אופקית פנימית שבה loading="lazy" לא מזהה נראות נכון */
   eager?: boolean;
@@ -93,6 +96,8 @@ export function IsometricAsset({
           className={cn(
             'absolute inset-0 size-full transition-opacity duration-300',
             fit === 'cover' ? 'object-cover' : 'object-contain',
+            fit === 'cover' && position === 'top' && 'object-top',
+            fit === 'cover' && position === 'bottom' && 'object-bottom',
             status === 'ready' ? 'opacity-100' : 'opacity-0',
           )}
         />

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
@@ -65,6 +65,13 @@ const ACTORS: Record<ActorType, ActorMeta> = {
   guerrilla: ACTORS_LIST[1],
   terror: ACTORS_LIST[2],
 };
+
+const ACTOR_FIELD_ROWS: { key: keyof ActorMeta; label: string }[] = [
+  { key: 'identity', label: 'זהות' },
+  { key: 'goals', label: 'מטרות' },
+  { key: 'targets', label: 'מטרות לחימה' },
+  { key: 'structure', label: 'מבנה' },
+];
 
 /* ───────────────────────── 3-COL COMPARISON DATA ───────────────────── */
 type CompareRow = {
@@ -333,19 +340,26 @@ export function AsymmetricScene() {
 
       {/* Hero illustration — sits on a bg-warm "platform" band per
           docs/palette.md's illustration-base role. */}
-      <div className="-mt-4 rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
+      <div className="-mt-10 rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
         <IsometricAsset
           assetId="TOPIC01-ASYM-HERO"
           src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-HERO.png"
           alt="איור איזומטרי: הר גדול מול אוהלים מפוזרים, מסמל את האסימטריה בין צבא גדול לשחקן קטן"
           aspect="16/9"
+          position="top"
           className="rounded-[3px]"
           prompt="Isometric papercut illustration on a warm cream background (#FFFBF7). A large layered-paper fortress/mountain shape in sage green tones (#749C75 base, #5B7C5C shadow) sits on a warm peach platform (#FFDCB5), facing a scattered cluster of many small paper tent shapes in the same sage palette, connected by a thin dashed orange line (#EB9E48) between them. Flat layered-paper shading, soft edges, no text, no human figures, no weapons, no flags or insignia, generous empty cream space around the scene for text overlay."
         />
       </div>
 
-      {/* 3-actor typology cards — neutral, label-only */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      {/* 3-actor typology cards — neutral, label-only.
+          Each actor is still its own card (motion.div, border, shadow,
+          fade-in-on-scroll) — but on desktop the three cards subgrid their
+          internal rows off a shared 7-row parent grid, so the divider under
+          the intro line and each dt/dd pair auto-size to the tallest cell
+          and land at the same height in every card. Mobile drops the
+          subgrid (row alignment is moot in a single column) below. */}
+      <div className="hidden md:grid md:grid-cols-3 gap-4 mb-6" style={{ gridTemplateRows: 'repeat(7, auto)' }}>
         {ACTORS_LIST.map((a, i) => (
           <motion.div
             key={a.id}
@@ -353,36 +367,53 @@ export function AsymmetricScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.08 }}
-            className="surface-elevated rounded-[4px] p-6 flex flex-col border border-border"
+            className="grid surface-elevated rounded-[4px] p-6 border border-border"
+            style={{ gridTemplateRows: 'subgrid', gridRow: '1 / span 7' }}
           >
-            <div className="mb-3">
-              <div className="font-display font-bold text-lg leading-tight text-fg">
-                {a.label}
+            <div style={{ gridRow: 1 }}>
+              <div className="font-display font-bold text-lg leading-tight text-fg">{a.label}</div>
+              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
+                {a.shortDesc}
               </div>
+            </div>
+            <p className="text-sm text-fg leading-relaxed text-pretty self-start pt-3" style={{ gridRow: 2 }}>
+              {a.oneLiner}
+            </p>
+            <div className="border-t border-border-subtle self-end mt-4" style={{ gridRow: 3 }} />
+            {ACTOR_FIELD_ROWS.map((field, ri) => (
+              <div
+                key={field.key}
+                className={cn('text-xs self-start', ri === 0 && 'pt-3')}
+                style={{ gridRow: 4 + ri }}
+              >
+                <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">{field.label}</dt>
+                <dd className="text-fg leading-relaxed">{a[field.key]}</dd>
+              </div>
+            ))}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Mobile fallback — simple per-actor stack, no cross-column alignment needed */}
+      <div className="grid md:hidden gap-4 mb-6">
+        {ACTORS_LIST.map((a) => (
+          <div key={a.id} className="surface-elevated rounded-[4px] p-6 flex flex-col border border-border">
+            <div className="mb-3">
+              <div className="font-display font-bold text-lg leading-tight text-fg">{a.label}</div>
               <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
                 {a.shortDesc}
               </div>
             </div>
             <p className="text-sm text-fg leading-relaxed text-pretty mb-4">{a.oneLiner}</p>
             <dl className="text-xs space-y-2.5 pt-3 border-t border-border-subtle mt-auto">
-              <div>
-                <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">זהות</dt>
-                <dd className="text-fg leading-relaxed">{a.identity}</dd>
-              </div>
-              <div>
-                <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">מטרות</dt>
-                <dd className="text-fg leading-relaxed">{a.goals}</dd>
-              </div>
-              <div>
-                <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">מטרות לחימה</dt>
-                <dd className="text-fg leading-relaxed">{a.targets}</dd>
-              </div>
-              <div>
-                <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">מבנה</dt>
-                <dd className="text-fg leading-relaxed">{a.structure}</dd>
-              </div>
+              {ACTOR_FIELD_ROWS.map((field) => (
+                <div key={field.key}>
+                  <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">{field.label}</dt>
+                  <dd className="text-fg leading-relaxed">{a[field.key]}</dd>
+                </div>
+              ))}
             </dl>
-          </motion.div>
+          </div>
         ))}
       </div>
 
@@ -442,32 +473,11 @@ export function AsymmetricScene() {
    guess marked right/wrong. A "reveal without guessing" escape hatch stays
    available per-row and for the whole table. */
 
-type RowAnswer = ActorType | 'skip';
-
 function TypologyTable() {
-  const [answers, setAnswers] = useState<Record<number, RowAnswer | undefined>>({});
+  const [answers, setAnswers] = useState<Record<number, ActorType | undefined>>({});
 
-  const guessedCount = COMPARE_ROWS.reduce(
-    (n, _row, i) => (answers[i] && answers[i] !== 'skip' ? n + 1 : n),
-    0,
-  );
-  const correctCount = COMPARE_ROWS.reduce(
-    (n, row, i) => (answers[i] === row.answer ? n + 1 : n),
-    0,
-  );
-
-  const guess = (rowIndex: number, choice: RowAnswer) => {
+  const guess = (rowIndex: number, choice: ActorType) => {
     setAnswers((prev) => ({ ...prev, [rowIndex]: choice }));
-  };
-
-  const revealAll = () => {
-    setAnswers((prev) => {
-      const next = { ...prev };
-      COMPARE_ROWS.forEach((_row, i) => {
-        if (next[i] === undefined) next[i] = 'skip';
-      });
-      return next;
-    });
   };
 
   return (
@@ -507,8 +517,7 @@ function TypologyTable() {
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
-                <div className="p-4 bg-bg-accent/30 flex items-center gap-2">
-                  <Icon name={row.icon} size={16} className="text-fg-muted shrink-0" />
+                <div className="p-4 bg-bg-accent/30 flex items-center">
                   <div className="text-sm font-medium">{row.label}</div>
                 </div>
                 <div className="col-span-3 p-4 border-r border-border-subtle">
@@ -525,13 +534,6 @@ function TypologyTable() {
                       </button>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => guess(i, 'skip')}
-                    className="mt-2 text-[11px] text-fg-dim hover:text-fg-muted underline underline-offset-2"
-                  >
-                    גלה בלי לנחש
-                  </button>
                 </div>
               </motion.div>
             ) : (
@@ -541,30 +543,27 @@ function TypologyTable() {
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
                 <div className="p-4 bg-bg-accent/30 flex items-center gap-2">
-                  <Icon name={row.icon} size={16} className="text-fg-muted shrink-0" />
                   <div className="text-sm font-medium">{row.label}</div>
-                  {state !== 'skip' && (
-                    <span
-                      className={cn(
-                        'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
-                        state === row.answer
-                          ? 'bg-status-ok/15 text-status-ok'
-                          : 'bg-status-danger/15 text-status-danger',
-                      )}
-                    >
-                      {state === row.answer ? '✓' : '✗'}
-                    </span>
-                  )}
+                  <span
+                    className={cn(
+                      'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
+                      state === row.answer
+                        ? 'bg-status-ok/15 text-status-ok'
+                        : 'bg-status-danger/15 text-status-danger',
+                    )}
+                  >
+                    {state === row.answer ? '✓' : '✗'}
+                  </span>
                 </div>
                 {ACTORS_LIST.map((a) => {
                   const isAnswer = a.id === row.answer;
-                  const isWrongGuess = state !== 'skip' && state === a.id && !isAnswer;
+                  const isWrongGuess = state === a.id && !isAnswer;
                   return (
                     <div
                       key={a.id}
                       className={cn(
                         'p-4 border-r border-border-subtle text-sm text-fg leading-snug',
-                        state !== 'skip' && isAnswer && 'bg-status-ok/10',
+                        isAnswer && 'bg-status-ok/10',
                         isWrongGuess && 'bg-status-danger/10',
                       )}
                     >
@@ -577,23 +576,6 @@ function TypologyTable() {
           </motion.div>
         );
       })}
-
-      <div className="flex flex-wrap items-center justify-between gap-2 p-4 bg-bg-accent/20 border-t border-border-strong">
-        <div className="text-xs text-fg-muted">
-          {guessedCount === 0
-            ? 'נחשו לפני שתראו — לחצו על השחקן המתאים בכל שורה'
-            : `${correctCount}/${guessedCount} ניחושים נכונים`}
-        </div>
-        {guessedCount + Object.values(answers).filter((v) => v === 'skip').length < COMPARE_ROWS.length && (
-          <button
-            type="button"
-            onClick={revealAll}
-            className="text-xs font-display font-semibold text-fg-muted hover:text-fg underline underline-offset-2"
-          >
-            גלה את כל הטבלה
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -606,20 +588,7 @@ function PillarSimulator() {
 
   return (
     <div className="my-12">
-      <div className="mb-5">
-        <div className="flex items-center gap-1.5 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
-          <Icon name="compass" size={13} className="text-brand-dark" />
-          סימולציה · מה הייתם עושים?
-        </div>
-        <h3 className="font-display font-bold text-xl leading-tight mb-1">
-          שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
-        </h3>
-        <p className="text-fg-muted text-sm">
-          אתם מפקדים על ארגון לא-סדיר מול צבא גדול פי 100 מכם. בכל אחד משלושת רגעי ההחלטה — בחרו מה הייתם עושים.
-        </p>
-      </div>
-
-      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-5">
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
         <IsometricAsset
           assetId="TOPIC01-ASYM-PILLARS"
           src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-PILLARS.png"
@@ -628,6 +597,15 @@ function PillarSimulator() {
           className="rounded-[3px]"
           prompt="Three small isometric papercut vignettes side by side on a cream background (#FFFBF7), each sitting on its own small warm peach platform (#FFDCB5): (1) a single sage-green paper figure standing still and grounded, (2) a sage-green paper arrow curving around a low wall toward a distant skyline silhouette, (3) a paper hourglass with a thin orange (#EB9E48) accent line at its narrow waist. Flat layered-paper style, soft shading, no realistic people, no weapons, no text."
         />
+      </div>
+
+      <div className="mb-5 text-center">
+        <h3 className="font-display font-bold text-xl leading-tight mb-1">
+          שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
+        </h3>
+        <p className="text-fg-muted text-sm">
+          אתם מפקדים על ארגון לא-סדיר מול צבא גדול פי 100 מכם. בכל אחד משלושת רגעי ההחלטה — בחרו מה הייתם עושים.
+        </p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -693,8 +671,7 @@ function PillarDecisionCard({
       className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
     >
       <div className="mb-3">
-        <div className="flex items-center gap-1.5 text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
-          <Icon name={pillar.icon} size={15} className="text-brand-dark shrink-0" />
+        <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
           עמוד {index + 1}
         </div>
         {solved && (
@@ -705,7 +682,7 @@ function PillarDecisionCard({
       {!solved ? (
         <div className="flex-1 flex flex-col gap-3">
           <p className="text-sm leading-relaxed text-fg-muted">{decision.prompt}</p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 mt-auto">
             {decision.choices.map((c) => (
               <button
                 key={c.id}
@@ -752,10 +729,17 @@ function PillarDecisionCard({
    regular army breaks at its own point in time, while the non-state
    actor's single front never changes. */
 
-const FRONTLINE: { title: string; desc: string; icon: IconName } = {
+/** Reusable style suffix for the Magnific icon-generation prompts below —
+ * intentionally NOT the papercut-isometric illustration language used
+ * elsewhere in this file; these render as plain flat UI icons. */
+const ICON_PROMPT_STYLE =
+  'flat modern vector icon, simple bold outline with solid fill in a single burnt-orange color (#D97E2B), transparent background, minimal geometric shapes, centered, no text, no shadow, no gradient, no 3D or isometric or papercut styling, clean UI icon like Lucide or Phosphor icon sets, 128x128px';
+
+const FRONTLINE: { title: string; desc: string; iconAssetId: string; iconPrompt: string } = {
   title: 'האויב בשטח',
   desc: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.',
-  icon: 'crosshair',
+  iconAssetId: 'TOPIC01-ASYM-ICON-FRONTLINE',
+  iconPrompt: `A crosshair / target reticle icon, ${ICON_PROMPT_STYLE}`,
 };
 
 const TIME_STEPS: { id: string; label: string; caption: string }[] = [
@@ -786,11 +770,35 @@ const TIME_STEPS: { id: string; label: string; caption: string }[] = [
   },
 ];
 
-const INTERNAL_FRONTS: { title: string; desc: string; breaksAt: number; icon: IconName }[] = [
-  { title: 'משרד האוצר', desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.', breaksAt: 1, icon: 'fuel' },
-  { title: 'דעת הקהל', desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.', breaksAt: 2, icon: 'megaphone' },
-  { title: 'הפוליטיקה הפנימית', desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.', breaksAt: 3, icon: 'scale' },
-  { title: 'הבמה הבינלאומית', desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".', breaksAt: 4, icon: 'globe' },
+const INTERNAL_FRONTS: { title: string; desc: string; breaksAt: number; iconAssetId: string; iconPrompt: string }[] = [
+  {
+    title: 'משרד האוצר',
+    desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.',
+    breaksAt: 1,
+    iconAssetId: 'TOPIC01-ASYM-ICON-TREASURY',
+    iconPrompt: `A stack of coins with a small downward arrow icon (shrinking budget / treasury), ${ICON_PROMPT_STYLE}`,
+  },
+  {
+    title: 'דעת הקהל',
+    desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.',
+    breaksAt: 2,
+    iconAssetId: 'TOPIC01-ASYM-ICON-PUBLIC-OPINION',
+    iconPrompt: `A megaphone icon (public opinion / protest), ${ICON_PROMPT_STYLE}`,
+  },
+  {
+    title: 'הפוליטיקה הפנימית',
+    desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.',
+    breaksAt: 3,
+    iconAssetId: 'TOPIC01-ASYM-ICON-POLITICS',
+    iconPrompt: `A government building / parliament icon with columns and a triangular roof, ${ICON_PROMPT_STYLE}`,
+  },
+  {
+    title: 'הבמה הבינלאומית',
+    desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".',
+    breaksAt: 4,
+    iconAssetId: 'TOPIC01-ASYM-ICON-INTERNATIONAL',
+    iconPrompt: `A globe icon with latitude/longitude grid lines (international stage / diplomacy), ${ICON_PROMPT_STYLE}`,
+  },
 ];
 
 function TimeAsymmetry() {
@@ -824,47 +832,8 @@ function TimeAsymmetry() {
       </div>
 
       {/* Timeline scrubber */}
-      <div className="surface-elevated p-5 sm:p-6 mb-4">
-        <div className="relative flex items-center justify-between">
-          <div aria-hidden className="absolute inset-x-0 top-3.5 h-0.5 bg-border" />
-          <motion.div
-            aria-hidden
-            className="absolute start-0 top-3.5 h-0.5 bg-accent"
-            initial={false}
-            animate={{ width: `${(step / lastStep) * 100}%` }}
-            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
-          />
-          {TIME_STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setStep(i)}
-              aria-current={i === step}
-              className="relative z-10 flex flex-col items-center gap-1.5 group"
-            >
-              <span
-                className={cn(
-                  'size-7 rounded-full border-2 flex items-center justify-center text-[11px] font-display font-bold transition-colors',
-                  i === step
-                    ? 'bg-accent text-bg-elevated border-accent'
-                    : i < step
-                      ? 'bg-fg text-bg-elevated border-fg'
-                      : 'bg-bg-elevated text-fg-dim border-border-strong group-hover:border-fg-muted',
-                )}
-              >
-                {i + 1}
-              </span>
-              <span
-                className={cn(
-                  'text-[11px] font-display font-semibold tracking-wide whitespace-nowrap',
-                  i === step ? 'text-accent' : 'text-fg-dim',
-                )}
-              >
-                {s.label}
-              </span>
-            </button>
-          ))}
-        </div>
+      <div className="surface-elevated p-5 sm:p-6 pt-10 mb-4">
+        <TimelineScrubber step={step} lastStep={lastStep} onChange={setStep} steps={TIME_STEPS} />
 
         <AnimatePresence mode="wait">
           <motion.p
@@ -873,51 +842,11 @@ function TimeAsymmetry() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="text-sm text-fg leading-relaxed text-pretty mt-5 pt-4 border-t border-border-subtle"
+            className="text-sm text-fg leading-relaxed text-pretty text-center mt-8"
           >
             {TIME_STEPS[step].caption}
           </motion.p>
         </AnimatePresence>
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        <div className="surface-elevated p-5 sm:p-6">
-          <div className="text-xs font-display font-semibold tracking-wider text-fg-muted mb-1">
-            צבא סדיר · מדינה
-          </div>
-          <div className="flex items-baseline gap-2">
-            <motion.div
-              key={regularCount}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="font-display font-bold text-5xl tabular-nums text-fg leading-none"
-            >
-              {regularCount}
-            </motion.div>
-            <div className="text-sm text-fg-muted leading-tight">
-              חזיתות פעילות<br />כרגע
-            </div>
-          </div>
-          <div className="text-xs text-fg-muted mt-3 leading-relaxed">
-            צריך לנצח <strong className="text-fg">בכל אחת מהן</strong> — אחרת המלחמה נגמרת מבפנים.
-          </div>
-        </div>
-
-        <div className="surface-elevated p-5 sm:p-6">
-          <div className="text-xs font-display font-semibold tracking-wider text-fg-muted mb-1">
-            שחקן לא-סדיר · גרילה או טרור
-          </div>
-          <div className="flex items-baseline gap-2">
-            <div className="font-display font-bold text-5xl tabular-nums text-fg leading-none">{nonStateCount}</div>
-            <div className="text-sm text-fg-muted leading-tight">
-              חזית אחת<br />(לשרוד)
-            </div>
-          </div>
-          <div className="text-xs text-fg-muted mt-3 leading-relaxed">
-            צריך רק <strong className="text-fg">לא לאבד אותה</strong> — וזה מספיק לניצחון, בכל שלב בציר הזמן.
-          </div>
-        </div>
       </div>
 
       <div className="surface-elevated overflow-hidden">
@@ -935,7 +864,15 @@ function TimeAsymmetry() {
           </div>
         </div>
 
-        <FrontRow index={0} title={FRONTLINE.title} desc={FRONTLINE.desc} icon={FRONTLINE.icon} regularActive nonStateActive />
+        <FrontRow
+          index={0}
+          title={FRONTLINE.title}
+          desc={FRONTLINE.desc}
+          iconAssetId={FRONTLINE.iconAssetId}
+          iconPrompt={FRONTLINE.iconPrompt}
+          regularActive
+          nonStateActive
+        />
 
         {INTERNAL_FRONTS.map((f, i) => (
           <FrontRow
@@ -943,7 +880,8 @@ function TimeAsymmetry() {
             index={i + 1}
             title={f.title}
             desc={f.desc}
-            icon={f.icon}
+            iconAssetId={f.iconAssetId}
+            iconPrompt={f.iconPrompt}
             regularActive={f.breaksAt <= step}
             nonStateActive={false}
           />
@@ -962,10 +900,13 @@ function TimeAsymmetry() {
         </div>
       </div>
 
-      <div className="rounded-[3px] border border-border bg-bg-accent/30 p-5 mt-4">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">התובנה</div>
+      <div className="surface-elevated p-5 sm:p-6 mt-4">
+        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">התובנה</div>
+
         <p className="text-sm text-fg leading-relaxed text-pretty">
-          המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. השחקן הלא-סדיר נלחם רק בחזית אחת. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.
+          זו לא רק שאלה של מספרים — זה הבדל בכללי המשחק. הצבא הסדיר חייב <strong className="text-fg">לנצח בכל אחת</strong> מ-5 החזיתות, כי הפסד באחת מהן מספיק כדי להפיל את כל המלחמה. השחקן הלא-סדיר צריך <strong className="text-fg">רק לא לאבד</strong> את החזית היחידה שלו — וזה כבר מספיק לו לניצחון, בכל שלב בציר הזמן.
+          <br /><br />
+          המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.
           <strong className="text-fg block mt-2">
             ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20 — לא כי הפסידה בקרבות, אלא כי קרסה ב-4 החזיתות האחרות.
           </strong>
@@ -975,18 +916,149 @@ function TimeAsymmetry() {
   );
 }
 
+/* Draggable RTL timeline: track runs inline-start (right, step 0) →
+   inline-end (left, last step). Handle is pointer-draggable along the
+   track and snaps to the nearest step; ticks remain clickable too. */
+function TimelineScrubber({
+  step,
+  lastStep,
+  onChange,
+  steps,
+}: {
+  step: number;
+  lastStep: number;
+  onChange: (i: number) => void;
+  steps: { id: string; label: string }[];
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
+  // Continuous 0..1 position while the pointer is down, so the handle
+  // glides with the cursor instead of hopping tick-to-tick; null once
+  // released, at which point `pct` falls back to the snapped step and
+  // the spring transition eases it into place.
+  const [dragFraction, setDragFraction] = useState<number | null>(null);
+
+  const fractionFromClientX = (clientX: number) => {
+    const el = trackRef.current;
+    if (!el) return step / lastStep;
+    const rect = el.getBoundingClientRect();
+    const pxFraction = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    // RTL: inline-start (fraction 0) sits at the visual right edge.
+    return 1 - pxFraction;
+  };
+
+  const handlePointerMove = (clientX: number) => {
+    const fraction = fractionFromClientX(clientX);
+    setDragFraction(fraction);
+    const nextStep = Math.round(fraction * lastStep);
+    if (nextStep !== step) onChange(nextStep);
+  };
+
+  const startDrag = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    handlePointerMove(e.clientX);
+
+    const onMove = (ev: PointerEvent) => handlePointerMove(ev.clientX);
+    const onUp = () => {
+      setDragging(false);
+      setDragFraction(null);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  };
+
+  const pct = (dragging && dragFraction !== null ? dragFraction : step / lastStep) * 100;
+
+  return (
+    <div
+      ref={trackRef}
+      onPointerDown={startDrag}
+      className="relative h-9 select-none touch-none cursor-pointer"
+    >
+      <div aria-hidden className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-border" />
+      <motion.div
+        aria-hidden
+        className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-accent"
+        initial={false}
+        style={{ insetInlineStart: 0 }}
+        animate={{ width: `${pct}%` }}
+        transition={dragging ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
+      />
+
+      {steps.map((s, i) => (
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => onChange(i)}
+          aria-current={i === step}
+          aria-label={s.label}
+          style={{ insetInlineStart: `${(i / lastStep) * 100}%`, translate: '50% -50%' }}
+          className="absolute top-1/2 z-10 flex items-center justify-center"
+        >
+          <span
+            className={cn(
+              'block rounded-full transition-colors',
+              i <= step ? 'size-2.5 bg-accent' : 'size-2.5 bg-border-strong hover:bg-fg-muted',
+            )}
+          />
+        </button>
+      ))}
+
+      <motion.div
+        role="slider"
+        tabIndex={0}
+        aria-valuemin={0}
+        aria-valuemax={lastStep}
+        aria-valuenow={step}
+        aria-valuetext={steps[step].label}
+        onPointerDown={startDrag}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight') onChange(Math.max(0, step - 1));
+          if (e.key === 'ArrowLeft') onChange(Math.min(lastStep, step + 1));
+        }}
+        initial={false}
+        animate={{ insetInlineStart: `${pct}%` }}
+        transition={dragging ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
+        style={{ translate: '50% -50%' }}
+        className="absolute top-1/2 z-20 size-6 -mt-px rounded-full border-2 border-accent bg-bg-elevated shadow-md cursor-grab active:cursor-grabbing"
+      />
+
+      <div className="absolute inset-x-0 top-full mt-2 flex items-center justify-between">
+        {steps.map((s, i) => (
+          <span
+            key={s.id}
+            className={cn(
+              'text-[11px] font-display font-semibold tracking-wide whitespace-nowrap',
+              i === step ? 'text-accent' : 'text-fg-dim',
+            )}
+          >
+            {s.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FrontRow({
   index,
   title,
   desc,
-  icon,
+  iconAssetId,
+  iconPrompt,
   regularActive,
   nonStateActive,
 }: {
   index: number;
   title: string;
   desc: string;
-  icon: IconName;
+  iconAssetId: string;
+  iconPrompt: string;
   regularActive: boolean;
   nonStateActive: boolean;
 }) {
@@ -1002,7 +1074,16 @@ function FrontRow({
       )}
     >
       <div className="p-3 sm:p-4 min-w-0 flex items-start gap-2.5">
-        <Icon name={icon} size={16} className="text-fg-muted shrink-0 mt-0.5" />
+        <IsometricAsset
+          assetId={iconAssetId}
+          src={`/assets/lessons/topic01/scene-asymmetric/icons/${iconAssetId}.png`}
+          alt=""
+          aspect="1/1"
+          fit="contain"
+          compactPlaceholder
+          prompt={iconPrompt}
+          className="size-5 shrink-0 mt-0.5 rounded-[3px]"
+        />
         <div className="min-w-0">
           <div className="font-display font-semibold text-sm leading-tight">{title}</div>
           <div className="text-xs text-fg-muted leading-snug mt-0.5">{desc}</div>
@@ -1097,7 +1178,7 @@ function TacticMatchExercise() {
 
       <div className="surface-elevated p-4 rounded-[4px] mb-3">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
-          דיווחי שטח ({pool.length})
+          דיווחי שטח
         </div>
         {pool.length === 0 ? (
           <div className="text-center text-sm text-fg-muted py-4">
@@ -1132,7 +1213,6 @@ function TacticMatchExercise() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-fg-muted">
-          {!submitted && !allPlaced && `שובצו ${TRAITS.length - pool.length} מתוך ${TRAITS.length}`}
           {!submitted && allPlaced && 'הכל מוכן — לחצו לבדיקה'}
           {submitted && (
             <span className={cn('font-display font-bold', correctCount === TRAITS.length ? 'text-status-ok' : 'text-fg')}>
@@ -1261,7 +1341,6 @@ function TacticBin({
             {isCorrect ? '✓' : '✗'}
           </span>
         )}
-        <Icon name={tactic.icon} size={15} className="text-fg-muted shrink-0" />
         <div className="font-display font-bold text-sm leading-tight text-fg">{tactic.title}</div>
       </div>
 
@@ -1269,18 +1348,15 @@ function TacticBin({
         <div className="flex-1 min-w-0">
           {submitted ? (
             <div className="space-y-1">
-              <div
-                className={cn(
-                  'text-[11px] font-display font-bold tracking-wide',
-                  isCorrect ? 'text-status-ok' : 'text-status-danger',
-                )}
-              >
-                {isCorrect ? 'התאמה נכונה' : `הדיווח הזה שייך בעצם ל: ${occupant.title}`}
-              </div>
+              {isCorrect && (
+                <div className="text-[11px] font-display font-bold tracking-wide text-status-ok">
+                  התאמה נכונה
+                </div>
+              )}
               <p className="text-xs text-fg-muted leading-snug">{occupant.desc}</p>
             </div>
           ) : (
-            <div className="text-xs text-fg-muted leading-snug">דיווח משובץ — הקישו כדי לבטל</div>
+            <div className="text-xs text-fg-muted leading-snug">{occupant.vignette}</div>
           )}
         </div>
       ) : (
