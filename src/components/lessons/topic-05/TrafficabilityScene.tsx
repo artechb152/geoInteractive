@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 
 type Vehicle = 'wheeled' | 'tracked';
@@ -136,6 +137,19 @@ export function TrafficabilityScene() {
             <li>· <strong className="text-fg">לחץ סגולי (הלחץ על האדמה)</strong> — איך המשקל של הרכב מתפזר על הקרקע. תחשבו על הליכה בבוץ עם עקבים לעומת מגפי גומי רחבים. ככל שהגלגלים או השרשראות ("זחלים") של הרכב רחבים יותר, המשקל מתפזר על שטח גדול יותר, והלחץ יורד. בגלל זה לטנק יש פחות סיכוי לשקוע מאשר לג'יפ רגיל.</li>
           </ul>
         </InsightCard>
+      </div>
+
+      {/* Lead-in vignette — same small side-view treatment as topic-01's
+          PILLARS/CLOCK vignettes, placed before the interactive stage. */}
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
+        <IsometricAsset
+          assetId="TOPIC05-TRAFFICABILITY-HERO"
+          src="/assets/lessons/topic05/scene-trafficability/TOPIC05-TRAFFICABILITY-HERO.png"
+          alt="איור פפרקאט בפרספקטיבת צד: רכב פשוט מטפס במדרון עם קשת זווית כתומה, מסמל עבירות שטח"
+          aspect="21/9"
+          className="rounded-[3px]"
+          prompt="A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a small simplified paper vehicle silhouette climbing a sage-green (#749C75) slope, with a thin orange (#EB9E48) angle-arc marking the incline near its wheels. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space for text overlay."
+        />
       </div>
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch mb-10">

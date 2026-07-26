@@ -208,7 +208,7 @@ title = {
                     <span className="font-display text-sm font-bold">{i + 1}</span>
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-semibold leading-tight text-fg">
+                    <div className="font-display font-bold leading-tight text-black text-base md:text-lg">
                       {l.label}
                     </div>
                     <div className="font-display font-medium tracking-wide text-[11px] text-fg-dim mt-0.5">
@@ -217,7 +217,7 @@ title = {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                  <div className="inline-flex items-center gap-2 text-base font-display font-bold tracking-wider text-black mt-3 mb-1.5">
                     <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                     מה השכבה הזו עושה
                   </div>
@@ -226,19 +226,19 @@ title = {
                       <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-1">
                         יכולת
                       </div>
-                      <p className="text-sm text-fg leading-relaxed text-pretty">{l.capability}</p>
+                      <p className="text-base text-black leading-relaxed text-pretty">{l.capability}</p>
                     </div>
                     <div>
                       <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-1">
                         עלות
                       </div>
-                      <p className="text-sm text-fg-muted leading-relaxed text-pretty">{l.cost}</p>
+                      <p className="text-base text-black leading-relaxed text-pretty">{l.cost}</p>
                     </div>
                     <div>
                       <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1">
                         מה היא מחליפה
                       </div>
-                      <p className="text-sm text-fg leading-relaxed text-pretty">{l.replaces}</p>
+                      <p className="text-base text-black leading-relaxed text-pretty">{l.replaces}</p>
                     </div>
                   </div>
                 </AccordionContent>

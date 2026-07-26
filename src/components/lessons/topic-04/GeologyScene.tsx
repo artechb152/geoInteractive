@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 type Rock = {
 id: 'igneous' | 'sediment' | 'metamorphic';
@@ -87,6 +88,20 @@ title = {
   </>
 }intro='גיאולוגיה היא"תורת הסלע". היא מסבירה איך נוצר החומר שנמצא לנו מתחת לרגליים ואיך הוא מעצב את ההרים והעמקים שמעליו. בלי להבין את המבנה הפנימי של הקרקע, לא נוכל להעריך נכון את האתגרים שהשטח מציב לנו.'
  />
+
+ {/* Hero illustration — geological cross-section, same bg-warm "platform"
+     treatment as the topic-01 hero (docs/palette.md illustration-base role). */}
+ <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
+ <IsometricAsset
+ assetId="TOPIC04-GEOLOGY-HERO"
+ src="/assets/lessons/topic04/scene-geology/TOPIC04-GEOLOGY-HERO.png"
+ alt="איור פפרקאט בפרספקטיבת צד: חתך רוחב של שכבות סלע — יסוד, משקע ומותמר — מתחת לגבעה עם דגל כתום בפסגה"
+ aspect="16/9"
+ position="top"
+ className="rounded-[3px]"
+ prompt="A minimalist papercut illustration in flat side-view (a cross-section profile, not isometric or top-down): a vertical wedge of layered terrain, like a small paper diorama sliced open to reveal what's underneath. Three distinct rock-layer bands stacked in profile — a jagged dark charcoal (#3a3a3a) crystalline layer at the base, a smooth sand-toned (#C2A26B) sedimentary layer in the middle, and a folded sage-green (#749C75) banded layer near the top — with one small paper hill silhouette rising above the surface line, and a single thin orange (#EB9E48) marker flag planted at its peak. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat layered-paper cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space around the scene for text overlay."
+ />
+ </div>
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
  <article className="surface-elevated p-5 sm:p-6 rounded-[4px]">

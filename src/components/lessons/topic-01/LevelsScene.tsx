@@ -136,7 +136,7 @@ export function LevelsScene() {
 
       {/* === Comparison Matrix === */}
       <div className="surface-elevated p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 pb-5 border-b border-border-subtle">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-5 pb-5 border-b border-border-subtle">
           <div className="shrink-0 mx-auto sm:mx-0">
             <SVGPyramidStatic />
           </div>
@@ -328,11 +328,11 @@ function SVGPyramidStatic() {
   const bottomCap = { y: 98, left: 44, right: 56 };
 
   return (
-    <svg viewBox="0 0 100 110" className="w-[120px] sm:w-[110px]" aria-hidden>
+    <svg viewBox="0 0 100 110" className="w-[150px] sm:w-[220px]" aria-hidden>
       <polygon
         points={`${order[0].left},${order[0].y - 3} ${order[0].right},${order[0].y - 3} ${bottomCap.right},${bottomCap.y + 2} ${bottomCap.left},${bottomCap.y + 2}`}
         className="fill-bg-card stroke-border"
-        strokeWidth="0.5"
+        strokeWidth="0.6"
       />
       {order.map((r, i) => {
         const next = order[i + 1] ?? bottomCap;
@@ -343,13 +343,13 @@ function SVGPyramidStatic() {
             <polygon
               points={points}
               className={cn(meta.fillClass, 'stroke-current', meta.text)}
-              strokeWidth="0.6"
+              strokeWidth="0.8"
             />
             <text
               x="50"
               y={(r.y + next.y) / 2 + 1.5}
               textAnchor="middle"
-              className={cn('text-[5px] font-display font-bold', meta.text)}
+              className={cn('text-[6px] font-display font-bold', meta.text)}
             >
               {meta.label}
             </text>

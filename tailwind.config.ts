@@ -146,10 +146,32 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        // — Shimmer loading demos (src/app/shimmer-demos) —
+        'shimmer-sweep': {
+          '0%': { backgroundPosition: '-150% 0' },
+          '100%': { backgroundPosition: '150% 0' },
+        },
+        'satellite-orbit': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        'contour-ping': {
+          '0%': { transform: 'scale(0.3)', opacity: '0.55' },
+          '80%': { opacity: '0' },
+          '100%': { transform: 'scale(1.6)', opacity: '0' },
+        },
+        'globe-meridian': {
+          '0%, 100%': { transform: 'scaleX(1)' },
+          '50%': { transform: 'scaleX(0.05)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
         'accordion-up': 'accordion-up 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+        'shimmer-sweep': 'shimmer-sweep 2.2s linear infinite',
+        'satellite-orbit': 'satellite-orbit 6s linear infinite',
+        'contour-ping': 'contour-ping 2.4s cubic-bezier(0,0,0.2,1) infinite',
+        'globe-meridian': 'globe-meridian 4s ease-in-out infinite',
       },
     },
   },

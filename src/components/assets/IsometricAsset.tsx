@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { AssetPlaceholder } from './AssetPlaceholder';
+import { ShimmerOverlay } from '@/components/shimmer-demos/ShimmerVariants';
 
 type AssetAspect = '16/9' | '21/9' | '1/1' | '4/3';
 
@@ -34,6 +35,7 @@ export function IsometricAsset({
   eager = false,
   prompt,
   className,
+  pendingEffect = 'shimmer',
 }: {
   /** מזהה נכס מטבלת §20, למשל "LESSON-03-HOOK" */
   assetId: string;
@@ -51,11 +53,24 @@ export function IsometricAsset({
   /** Full AI image-generation brief shown on the placeholder until `src` resolves. */
   prompt?: string;
   className?: string;
+  /**
+   * מה מוצג בזמן ש-status === 'pending' (הקובץ קיים אך עדיין נטען):
+   * 'shimmer' — שכבת shimmer "גלובוס וויירפריים"; 'none' — כלום (לדף הבית,
+   * שבו הכול צריך פשוט להופיע מהרגע הראשון בלי מצב-ביניים ויזואלי).
+   * ה-placeholder הרועש ל-status === 'missing' אינו מושפע מהדגל הזה —
+   * נכס חסר תמיד נשאר גלוי ורועש, בכל מקום.
+   */
+  pendingEffect?: 'shimmer' | 'none';
 }) {
   const [status, setStatus] = useState<'pending' | 'ready' | 'missing'>('pending');
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
+    // src ריק = אין נכס מוגדר בכלל — 'missing' מיידי, לעולם לא shimmer שנתקע לנצח.
+    if (src.length === 0) {
+      setStatus('missing');
+      return;
+    }
     // תמונה יכולה להיטען (מהמטמון או מכיוון שהיא כבר בתצוגה) לפני ש-React
     // מספיק לחבר את מאזין onLoad — אירוע ה-load מוחמץ ו-status נתקע ב-pending.
     setStatus(imgRef.current?.complete && imgRef.current.naturalWidth > 0 ? 'ready' : 'pending');
@@ -72,7 +87,7 @@ export function IsometricAsset({
       data-asset-status={status}
       className={cn('relative overflow-hidden bg-bg', ASPECT_CLASS[aspect], className)}
     >
-      {status !== 'ready' && (
+      {status === 'missing' && (
         <AssetPlaceholder
           assetId={assetId}
           targetPath={`public${src}`}
@@ -81,6 +96,7 @@ export function IsometricAsset({
           compact={compactPlaceholder}
         />
       )}
+      {status === 'pending' && pendingEffect === 'shimmer' && <ShimmerOverlay variant={3} />}
       {status !== 'missing' && src.length > 0 && (
         // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
         <img

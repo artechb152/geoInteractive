@@ -1,12 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { IntelCard } from '@/components/lesson/IntelCard';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { Icon, type IconName } from '@/components/Icon';
-import { cn } from '@/lib/utils';
+import { SoftDivider } from '@/components/lesson/SoftDivider';
+import {
+  StepAccordionItem,
+  AccordionSection,
+  AccordionKicker,
+  AccordionSectionTitle,
+  AccordionSectionText,
+} from '@/components/lesson/StepAccordion';
+import { type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 
 type View = 'flat' | 'mountain' | 'valley' | 'analyzed';
 
@@ -109,7 +117,20 @@ title = {
 }        intro="תייר רואה נוף יפה; מפקד רואה הזדמנויות ומכשולים. כדי להבין את שדה הקרב, עלינו לקלף את השכבות של פני השטח (המורפולוגיה). בוא נראה איך אותו הר משתנה ב-4 שלבים — מהמבט התמים ועד לניתוח הצבאי שיכריע את הקרב."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      {/* Lead-in vignette — same small side-view treatment as topic-01's
+          PILLARS/CLOCK vignettes, placed before the interactive stage. */}
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
+        <IsometricAsset
+          assetId="TOPIC04-ONBOARDING-HERO"
+          src="/assets/lessons/topic04/scene-onboarding/TOPIC04-ONBOARDING-HERO.png"
+          alt="איור פפרקאט בפרספקטיבת צד: הר אחד מחולק לשני חצאים — צד גולמי מול צד עם קווי גובה ודגל, מסמל קריאת שטח"
+          aspect="21/9"
+          className="rounded-[3px]"
+          prompt="A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a single mountain silhouette in sage green (#749C75/#5B7C5C), split down the middle — one half plain and bare, the other half marked with a thin orange (#EB9E48) contour-line ring near the summit and one small orange flag at the peak, as if the same mountain is being read two different ways. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space for text overlay."
+        />
+      </div>
+
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         {/* Accordion list — first child → RIGHT in RTL (text on right) */}
         <div className="space-y-3">
           {STEPS.map((s, i) => {
@@ -117,96 +138,28 @@ title = {
             const expanded = expandedStep === s.id;
             const passed = STEPS.findIndex((x) => x.id === view) > i;
             return (
-              <div
+              <StepAccordionItem
                 key={s.id}
-                className={cn(
-                  'surface overflow-hidden transition-all duration-300 ease-snap',
-                  active
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  passed && !active && 'opacity-80'
-                )}
+                index={i}
+                label={s.label}
+                active={active}
+                expanded={expanded}
+                passed={passed}
+                onToggle={() => handleStepClick(s.id)}
+                panelId={`t4-onb-panel-${s.id}`}
               >
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(s.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`t4-onb-panel-${s.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="t4-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
-                    )}
-                  >
-                    {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`t4-onb-panel-${s.id}`}
-                      id={`t4-onb-panel-${s.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
-                          למה זה משנה
-                        </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
-                          {s.popupTitle}
-                        </h4>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
-                          {s.popupBody}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                <AccordionSection>
+                  <AccordionKicker>למה זה משנה</AccordionKicker>
+                  <AccordionSectionTitle>{s.popupTitle}</AccordionSectionTitle>
+                  <AccordionSectionText>{s.popupBody}</AccordionSectionText>
+                </AccordionSection>
+              </StepAccordionItem>
             );
           })}
         </div>
 
         {/* Visualization — second child → LEFT in RTL */}
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px]">
           <TerrainStage view={view} />
         </div>
       </div>
@@ -419,16 +372,6 @@ function TerrainStage({ view }: { view: View }) {
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
         אותו הר · 4 שכבות הסתכלות
       </div>
-    </div>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 
 type Mode = 'natural' | 'artificial' | 'mobility' | 'counter';
@@ -103,6 +104,19 @@ export function EngineeringScene() {
         <InsightCard tone="cool" icon="spark" label="חוק הברזל בשטח">
           לעולם אל תסמכו על מכשול אחד בלבד. השילוב החכם בין מה שהטבע נתן (כמו מצוק או נהר) למה שההנדסה מספקת (כמו מוקשים או חומות) הופך כל נחל תמים למלכודת, וכל עמק ל"קופסת הריגה" (אזור קטלני שקשה מאוד לצאת ממנו). זה בדיוק ההבדל בין צבא שסתם נמצא בשטח, לבין צבא שגורם לשטח לעבוד בשבילו.
         </InsightCard>
+      </div>
+
+      {/* Lead-in vignette — same small side-view treatment as topic-01's
+          PILLARS/CLOCK vignettes, placed before the interactive stage. */}
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
+        <IsometricAsset
+          assetId="TOPIC05-ENGINEERING-HERO"
+          src="/assets/lessons/topic05/scene-engineering/TOPIC05-ENGINEERING-HERO.png"
+          alt="איור פפרקאט בפרספקטיבת צד: נהר וגדה עם מוקשים וגדר תיל, מסמל שילוב מכשול טבעי ומלאכותי"
+          aspect="21/9"
+          className="rounded-[3px]"
+          prompt="A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a narrow blue-gray river gap cutting through a sage-green (#749C75) terrain bank, with a few small orange (#EB9E48) mine-dot markers scattered along the near bank and a thin dashed wire-fence line beside them. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space for text overlay."
+        />
       </div>
 
       <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start mb-12">

@@ -14,10 +14,12 @@ type DimData = {
   english: string;
   icon: IconName;
   altitude: string;
+  coreFactIcon: IconName;
+  coreFact: string;
   threats: string[];
-  advantages: string[];
   weakness: string;
   example: string;
+  exampleTag: string;
   color: string;
   bg: string;
   border: string;
@@ -30,19 +32,16 @@ const DIMS: DimData[] = [
     english: 'Above Ground · Vertical',
     icon: 'mountain',
     altitude: '5–150 מ׳ מעל הקרקע',
+    coreFactIcon: 'eye',
+    coreFact: 'יתרון תצפית: מגדלים הם "גבעות בטון" ששולטות על השטח',
     threats: [
-      'צלפים המסתתרים בגגות עם טילי כתף (RPG) או נשק קל',
-      'ירי טילי נ"ט (נגד טנקים) מלמעלה — פוגע בגג הטנק, שזו הנקודה הכי פגיעה שלו',
-      'זריקת מטענים, רימונים או חפצים על שיירות מתוך חלונות',
-      'שימוש בגגות כנקודות תצפית כדי לאסוף מודיעין על תנועת הכוחות',
-    ],
-    advantages: [
-      'שדה ראייה רחב שמאפשר לשלוט על כל האזור',
-      'יתרון הגובה — האויב נמצא למטה וקל יותר לפגוע בו',
-      'יכולת לברוח ולהיעלם דרך מעברים פנימיים בין בניינים',
+      'צלפים על גגות עם טילי כתף (RPG) או נשק קל',
+      'ירי טילי נ"ט מלמעלה — פוגע בגג הטנק, הנקודה הכי פגיעה שלו',
+      'זריקת מטענים ורימונים על שיירות מתוך חלונות',
     ],
     weakness: 'חשיפה קטלנית מהאוויר. מי שנמצא על הגג גלוי לחלוטין לרחפנים, מסוקים ומטוסי קרב. בנוסף, למרות שלצלף יש זווית מצוינת, קשה לו מאוד לברוח מהר ממגדל גבוה.',
     example: 'בקרב על מוסול שבעיראק, צלפי דאעש פעלו מתוך מגדלי משרדים גבוהים. כוחות הקואליציה (בהובלת ארה"ב) הצליחו לפגוע בהם רק אחרי שאיתרו אותם במדויק מהאוויר והשתמשו בטילים מונחים.',
+    exampleTag: 'מוסול, עיראק',
     color: 'text-accent-hot',
     bg: 'bg-accent-hot/10',
     border: 'border-accent-hot/40',
@@ -53,19 +52,16 @@ const DIMS: DimData[] = [
     english: 'Street Level',
     icon: 'crosshair',
     altitude: '0–5 מ׳ — הקרקע',
+    coreFactIcon: 'crosshair',
+    coreFact: 'חשיפה מ-360°: איום בו-זמנית מלמעלה, מהצדדים ומלמטה',
     threats: [
-      'מטעני חבלה מוסתרים (IED) בתוך קירות, מתחת לאספלט או בתוך רכבים חונים',
-      'ירי פתאומי מטווח אפס מתוך סמטאות צדדיות',
-      'מארבים שמחכים לחיילים כמעט בכל פינת רחוב',
+      'מטעני חבלה (IED) בתוך קירות, מתחת לאספלט או ברכבים חונים',
+      'מארבים ואש פתאומית מטווח אפס מתוך סמטאות צדדיות',
       'קרבות פנים-אל-פנים במרחק של מטרים בודדים',
     ],
-    advantages: [
-      'חופש תנועה המאפשר להתקדם למספר רב של כיוונים',
-      'אפשרות להכניס ציוד כבד כמו טנקים, נגמ"שים ודחפורים',
-      'מכשירי הקשר והקליטה הסלולרית עובדים בצורה חלקה',
-    ],
-    weakness: 'החיילים ברחוב הם המטרה הנוחה ביותר. הם מותקפים מכל הכיוונים — מלמעלה (גגות), מהצדדים (חלונות) ומלמטה (מנהרות). הצורך להיות דרוכים ב-360 מעלות יוצר לחץ מנטלי (קוגניטיבי) עצום.',
+    weakness: 'החיילים ברחוב הם המטרה הנוחה ביותר — הם מותקפים מכל הכיוונים בו-זמנית: מלמעלה (גגות), מהצדדים (חלונות) ומלמטה (מנהרות).',
     example: 'במלחמת צ\'צ\'ניה (1994), טור טנקים רוסי נכנס לרחוב הראשי של העיר גרוזני וחטף אש משלושה כיוונים בו-זמנית. הכוח נלכד, ובתוך 3 שעות בלבד כ-100 רכבים משוריינים הושמדו לחלוטין.',
+    exampleTag: 'גרוזני, צ\'צ\'ניה 1994',
     color: 'text-accent',
     bg: 'bg-accent/10',
     border: 'border-accent/40',
@@ -76,20 +72,16 @@ const DIMS: DimData[] = [
     english: 'Subterranean',
     icon: 'layers',
     altitude: '5–30 מ׳ מתחת לקרקע',
+    coreFactIcon: 'satellite',
+    coreFact: 'GPS-Denied: בלתי ניתן לאיתור מהאוויר, מלוויין או ממכ"ם',
     threats: [
-      'מחבלים שמגיחים מהאדמה בהפתעה מאחורי הכוח הצבאי',
-      'מלכוד פתחי המנהרות במטעני חבלה קטלניים',
-      'סכנת חטיפה של חיילים אל תוך פיר מנהרה',
-      'העברת נשק ולוחמים ממקום למקום מתחת לאף של הצבא',
-    ],
-    advantages: [
-      '"רואה ואינו נראה" — אין קליטת GPS, כך שאי אפשר לאתר אותך מרחוק',
-      'מסתור מושלם מהאוויר — מצלמות החום של המטוסים לא מסוגלות לחדור את האדמה',
-      'נתיבי מילוט סודיים שמאפשרים לתקוף ולהיעלם מיד',
-      'אחסון בטוח של משגרי טילים, נשק ותחמושת',
+      'מחבלים שמגיחים מהאדמה בהפתעה מאחורי הכוח',
+      'מלכוד פתחי המנהרות במטענים קטלניים',
+      'העברת נשק ולוחמים ממקום למקום מתחת לאף הצבא',
     ],
     weakness: 'הלוחמים מתמודדים עם חוסר חמצן, תנועה איטית וקושי לירות בתוך מנהרה צרה. בנוסף, המנהרה פועלת כמו "תיבת תהודה" גדולה — החיילים שנמצאים בחוץ יכולים לשמוע כל רעש או צעד שקורה בפנים.',
     example: 'בעזה (2023), העולם נחשף ל"מטרו" של חמאס: רשת מנהרות התקפיות באורך של מאות קילומטרים. פתחי המנהרות הוסתרו בכוונה מתחת לבתי חולים, בתי ספר ומסגדים, במטרה לשלב באופן קטלני בין תקיפה מהאדמה לבין הסתתרות בתוך אוכלוסייה אזרחית.',
+    exampleTag: 'עזה, 2023',
     color: 'text-status-danger',
     bg: 'bg-status-danger/10',
     border: 'border-status-danger/40',
@@ -98,7 +90,13 @@ const DIMS: DimData[] = [
 
 export function ThreeDimScene() {
   const [activeDim, setActiveDim] = useState<Dim>('above');
+  const [showDetails, setShowDetails] = useState(false);
   const meta = DIMS.find((d) => d.id === activeDim)!;
+
+  const selectDim = (d: Dim) => {
+    setActiveDim(d);
+    setShowDetails(false);
+  };
 
   return (
     <section id="scene-threedim" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,105 +120,140 @@ title = {
         </div>
       </div>
 
-      {/* 3D Cross-section visualization */}
-      <div className="surface-elevated p-4 rounded-[4px] mb-6 overflow-hidden">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
-            חתך צד של לחימה בעיר · לחצו על הממדים למטה
+      {/* Cross-section diagram + dimension detail panel, side by side */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-12 items-start">
+        {/* Diagram column (visually left, inline-end) */}
+        <div className="order-1 lg:order-2 w-full lg:flex-1 surface-elevated p-4 rounded-[4px] overflow-hidden">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+              חתך צד של לחימה בעיר
+            </div>
+            <div className={cn('chip', meta.border, meta.bg, meta.color)}>
+              <Icon name={meta.icon} size={12} />
+              <span className="font-mono">{meta.label}</span>
+            </div>
           </div>
-          <div className={cn('chip', meta.border, meta.bg, meta.color)}>
-            <Icon name={meta.icon} size={12} />
-            <span className="font-mono">{meta.label}</span>
+
+          {/* Persistent zone legend — orients the eye before any click */}
+          <div className="flex items-center gap-4 mb-3 flex-wrap">
+            {DIMS.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => selectDim(d.id)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 text-[11px] font-mono transition-colors',
+                  activeDim === d.id ? d.color : 'text-fg-dim hover:text-fg-muted'
+                )}
+              >
+                <span className={cn('inline-block size-2 rounded-full', d.bg.replace('/10', ''))} />
+                {d.label}
+              </button>
+            ))}
           </div>
+
+          <CrossSection activeDim={activeDim} onSelect={selectDim} />
         </div>
 
-        <CrossSection activeDim={activeDim} onSelect={setActiveDim} />
-      </div>
+        {/* Info column: dimension selector + details (visually right, inline-start) */}
+        <div className="order-2 lg:order-1 w-full lg:w-[400px] lg:shrink-0 flex flex-col gap-3">
+          <div className="grid grid-cols-3 gap-2">
+            {DIMS.map((d) => {
+              const isActive = activeDim === d.id;
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => selectDim(d.id)}
+                  className={cn(
+                    'surface p-3 text-right transition-all rounded-[3px] flex items-center gap-2',
+                    isActive ? `${d.border} ${d.bg}` : 'hover:border-border-strong'
+                  )}
+                >
+                  <Icon name={d.icon} size={22} className={cn(d.color, 'shrink-0')} />
+                  <div className="min-w-0">
+                    <div className={cn('font-display font-bold text-xs leading-tight', isActive && d.color)}>
+                      {d.label}
+                    </div>
+                    <div className="text-[9px] font-mono text-fg-dim mt-0.5">{d.altitude}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Dimension selector + details */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {DIMS.map((d) => {
-          const isActive = activeDim === d.id;
-          return (
-            <button
-              key={d.id}
-              onClick={() => setActiveDim(d.id)}
-              className={cn(
-                'surface p-4 text-right transition-all rounded-[3px] flex items-center gap-3',
-                isActive ? `${d.border} ${d.bg}` : 'hover:border-border-strong'
-              )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={meta.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+              className={cn('surface-elevated p-5 rounded-[4px] border-r-4', meta.border.replace('border-', 'border-r-'))}
             >
-              <Icon name={d.icon} size={28} className={cn(d.color, 'shrink-0')} />
-              <div className="min-w-0">
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && d.color)}>
-                  {d.label}
+              <div className="mb-3">
+                <div className={cn('text-xs font-display font-semibold mb-1 tracking-wider', meta.color)}>
+                  {meta.english} · {meta.altitude}
                 </div>
-                <div className="text-[10px] font-mono text-fg-dim mt-0.5">{d.altitude}</div>
+                <h3 className="font-display font-bold text-xl leading-tight text-accent-deep">{meta.label}</h3>
               </div>
-            </button>
-          );
-        })}
+
+              {/* Core doctrine fact — the one thing to remember about this dimension */}
+              <div className={cn('flex items-start gap-2 p-2.5 rounded-[3px] mb-3', meta.bg)}>
+                <Icon name={meta.coreFactIcon} size={15} className={cn(meta.color, 'shrink-0 mt-0.5')} />
+                <p className={cn('text-xs font-display font-semibold leading-snug', meta.color)}>{meta.coreFact}</p>
+              </div>
+
+              <div className="surface p-3 rounded-[3px] bg-status-danger/5 border-status-danger/30 mb-3">
+                <div className="text-xs font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
+                  <Icon name="crosshair" size={11} />
+                  איומים
+                </div>
+                <ul className="space-y-1.5 text-sm">
+                  {meta.threats.map((t) => (
+                    <li key={t} className="flex gap-2">
+                      <Icon name="spark" size={11} className="text-status-danger shrink-0 mt-1" />
+                      <span className="text-fg leading-relaxed">{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setShowDetails((v) => !v)}
+                className="w-full flex items-center justify-between gap-2 text-xs font-display font-semibold text-fg-muted hover:text-fg py-1.5 px-1"
+              >
+                <span>פרטים נוספים: חולשה ודוגמה מבצעית</span>
+                <Icon
+                  name="arrow-left"
+                  size={12}
+                  className={cn('transition-transform shrink-0', showDetails ? '-rotate-90' : 'rotate-90')}
+                />
+              </button>
+
+              <AnimatePresence initial={false}>
+                {showDetails && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="surface p-3 rounded-[3px] mt-2 mb-3">
+                      <div className={cn('text-xs font-display font-semibold mb-1.5 tracking-wider', meta.color)}>החיסרון המרכזי (נקודת התורפה)</div>
+                      <p className="text-sm text-fg-muted leading-relaxed">{meta.weakness}</p>
+                    </div>
+
+                    <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
+                      <div className="text-xs font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה מבצעית · {meta.exampleTag}</div>
+                      <p className="text-xs text-fg-muted leading-relaxed italic">"{meta.example}"</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-
-      {/* Active dimension details */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={meta.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-[4px] border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
-        >
-          <div className="mb-5">
-            <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', meta.color)}>
-              {meta.english} · {meta.altitude}
-            </div>
-            <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div className="surface p-4 rounded-[3px] bg-status-danger/5 border-status-danger/30">
-              <div className="text-sm font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
-                <Icon name="crosshair" size={11} />
-                איומים
-              </div>
-              <ul className="space-y-1.5 text-sm">
-                {meta.threats.map((t) => (
-                  <li key={t} className="flex gap-2">
-                    <Icon name="spark" size={11} className="text-status-danger shrink-0 mt-1" />
-                    <span className="text-fg leading-relaxed">{t}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="surface p-4 rounded-[3px] bg-status-ok/5 border-status-ok/30">
-              <div className="text-sm font-display font-semibold text-status-ok mb-2 tracking-wider flex items-center gap-1.5">
-                <Icon name="shield" size={11} />
-                היתרונות (למי ששולט במרחב)
-              </div>
-              <ul className="space-y-1.5 text-sm">
-                {meta.advantages.map((a) => (
-                  <li key={a} className="flex gap-2">
-                    <Icon name="check" size={11} strokeWidth={2.5} className="text-status-ok shrink-0 mt-1" />
-                    <span className="text-fg leading-relaxed">{a}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="surface p-4 rounded-[3px] mb-3">
-            <div className={cn('text-sm font-display font-semibold mb-1.5 tracking-wider', meta.color)}>החיסרון המרכזי (נקודת התורפה)</div>
-            <p className="text-sm text-fg-muted leading-relaxed">{meta.weakness}</p>
-          </div>
-
-          <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
-            <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה מבצעית</div>
-            <p className="text-xs text-fg-muted leading-relaxed italic">"{meta.example}"</p>
-          </div>
-        </motion.div>
-      </AnimatePresence>
 
       {/* Key insight: combined threat */}
       <div className="">
@@ -237,12 +270,68 @@ title = {
               דאעש במוסול, חמאס בעזה והצ'צ'נים בגרוזני הוכיחו דבר אחד: אסטרטגיה עירונית מנצחת בנויה על <strong className="text-fg">שילוב ממדים</strong>. צלף יורה מהגג (למעלה), בורח מיד אל פיר במרתף (למטה), ומופיע מחדש בקצה השני של העיר. כשהצבא פורץ אל הבניין כדי לתפוס אותו — הוא כבר מזמן לא שם.
               <strong className="text-fg block mt-1.5">איך צבא מודרני מתמודד עם זה?</strong> בעזרת שילוב טכנולוגיות בעצמו: כלבים ורובוטים לגילוי מנהרות, רחפנים זעירים שסורקים חלונות, מכ"מים שרואים דרך קירות, ויחידות קומנדו שמתמחות בלחימה בחושך המוחלט שמתחת לאדמה.
             </p>
+            <p className="text-sm text-fg-muted leading-relaxed text-pretty mt-2">
+              <strong className="text-fg">עומס קוגניטיבי:</strong> הצורך להיות דרוכים ב-360 מעלות בו-זמנית — מעלה, מהצדדים ומלמטה — יוצר לחץ מנטלי עצום על הלוחמים ומאט את קצב ההתקדמות של הכוח בשטח העירוני.
+            </p>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+function SvgLabel({
+  x,
+  y,
+  text,
+  fontSize = 2.6,
+  textClassName,
+  chipClassName = 'fill-bg-elevated/85',
+}: {
+  x: number;
+  y: number;
+  text: string;
+  fontSize?: number;
+  textClassName: string;
+  chipClassName?: string;
+}) {
+  // Always center-anchored: RTL page direction flips the meaning of
+  // textAnchor="start"/"end" on inline SVG <text>, clipping the label —
+  // "middle" is the only anchor that stays correct regardless of direction.
+  const w = text.length * fontSize * 0.6 + fontSize * 1.4;
+  const h = fontSize * 1.7;
+
+  return (
+    <g>
+      <rect x={x - w / 2} y={y - h * 0.65} width={w} height={h} rx={h * 0.28} className={chipClassName} />
+      <text
+        x={x}
+        y={y}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={fontSize}
+        className={cn('font-display font-bold', textClassName)}
+      >
+        {text}
+      </text>
+    </g>
+  );
+}
+
+const BUILDINGS = [
+  { x: 6, w: 7, h: 24 },
+  { x: 15, w: 6, h: 14 },
+  { x: 23, w: 9, h: 19 },
+  { x: 35, w: 7, h: 26 },
+  { x: 44, w: 8, h: 12 },
+  { x: 56, w: 6, h: 21 },
+  { x: 65, w: 9, h: 15 },
+  { x: 77, w: 7, h: 23 },
+  { x: 87, w: 8, h: 17 },
+];
+
+const SKY_BOTTOM = 30;
+const STREET_BOTTOM = 38;
 
 function CrossSection({ activeDim, onSelect }: { activeDim: Dim; onSelect: (d: Dim) => void }) {
   return (
@@ -259,37 +348,47 @@ function CrossSection({ activeDim, onSelect }: { activeDim: Dim; onSelect: (d: D
           </linearGradient>
         </defs>
 
-        {/* Sky */}
-        <rect x="0" y="0" width="100" height="34" fill="url(#sky-cross)" />
-        {/* Earth */}
-        <rect x="0" y="34" width="100" height="22" fill="url(#earth)" opacity="0.85" />
+        {/* Sky zone */}
+        <rect x="0" y="0" width="100" height={SKY_BOTTOM} fill="url(#sky-cross)" />
+        {/* Street zone — its own band, not just a boundary line */}
+        <rect x="0" y={SKY_BOTTOM} width="100" height={STREET_BOTTOM - SKY_BOTTOM} fill="#C9B892" />
+        {/* Earth zone */}
+        <rect x="0" y={STREET_BOTTOM} width="100" height={56 - STREET_BOTTOM} fill="url(#earth)" opacity="0.92" />
+        {/* Seams between zones */}
+        <line x1="0" y1={SKY_BOTTOM} x2="100" y2={SKY_BOTTOM} stroke="#E8DCC4" strokeWidth="0.5" />
+        <line x1="0" y1={STREET_BOTTOM} x2="100" y2={STREET_BOTTOM} stroke="#4a3d29" strokeWidth="0.4" opacity="0.6" />
 
         {/* === ABOVE GROUND zone === */}
-        <g
-          onClick={() => onSelect('above')}
-          style={{ cursor: 'pointer' }}
-          opacity={activeDim === 'above' ? 1 : 0.7}
-        >
-          {/* High-rises */}
-          {[
-            { x: 6, w: 7, h: 28 },
-            { x: 15, w: 6, h: 18 },
-            { x: 23, w: 9, h: 23 },
-            { x: 35, w: 7, h: 30 },
-            { x: 44, w: 8, h: 16 },
-            { x: 56, w: 6, h: 25 },
-            { x: 65, w: 9, h: 19 },
-            { x: 77, w: 7, h: 27 },
-            { x: 87, w: 8, h: 21 },
-          ].map((b, i) => (
+        <g onClick={() => onSelect('above')} style={{ cursor: 'pointer' }}>
+          <rect x="0" y="0" width="100" height={SKY_BOTTOM} fill="transparent" />
+          {activeDim === 'above' && <rect x="0" y="0" width="100" height={SKY_BOTTOM} className="fill-accent-hot/10" />}
+
+          {BUILDINGS.map((b, i) => (
             <g key={i}>
-              <rect x={b.x} y={34 - b.h} width={b.w} height={b.h} className={cn(activeDim === 'above' ? 'fill-accent-hot/30' : 'fill-terrain-ridge/35', 'stroke-terrain-ridge')} strokeWidth="0.2" />
+              <rect
+                x={b.x}
+                y={SKY_BOTTOM - b.h}
+                width={b.w}
+                height={b.h}
+                className={cn(
+                  activeDim === 'above' ? 'fill-accent-hot/35 stroke-accent-hot' : 'fill-terrain-ridge/45 stroke-terrain-ridge/70'
+                )}
+                strokeWidth="0.25"
+              />
               {Array.from({ length: Math.floor(b.h / 3) }).map((_, f) => (
-                <rect key={f} x={b.x + 0.6} y={34 - b.h + 1.5 + f * 3} width={b.w - 1.2} height="0.8" className="fill-accent-cool" opacity="0.4" />
+                <rect
+                  key={f}
+                  x={b.x + 0.6}
+                  y={SKY_BOTTOM - b.h + 1.5 + f * 3}
+                  width={b.w - 1.2}
+                  height="0.8"
+                  className="fill-accent-cool"
+                  opacity="0.5"
+                />
               ))}
             </g>
           ))}
-          {/* Sniper marker on tallest building */}
+
           {activeDim === 'above' && (
             <g>
               <circle cx="38" cy="6" r="1.4" className="fill-accent-hot" />
@@ -297,110 +396,118 @@ function CrossSection({ activeDim, onSelect }: { activeDim: Dim; onSelect: (d: D
                 <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
                 <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" />
               </circle>
-              <line x1="38" y1="6" x2="80" y2="32" className="stroke-accent-hot" strokeWidth="0.3" strokeDasharray="0.8 0.5" />
-              <text x="38" y="3" textAnchor="middle" className="fill-accent-hot font-display font-bold font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">צלף</text>
+              <line x1="38" y1="6" x2="80" y2={SKY_BOTTOM + 4} className="stroke-accent-hot" strokeWidth="0.35" strokeDasharray="1 0.6" />
+              <polygon
+                points="-1.6,-1 1.6,0 -1.6,1"
+                transform={`translate(80, ${SKY_BOTTOM + 4}) rotate(34)`}
+                className="fill-accent-hot"
+              />
+              <SvgLabel x={38} y={2.6} text="צלף" fontSize={2.4} textClassName="fill-accent-hot" />
+              <SvgLabel x={60} y={19} text="קו ראייה" fontSize={1.9} textClassName="fill-accent-hot" />
             </g>
           )}
-          <text x={activeDim === 'above' ? 5 : 5} y="6" className={cn('font-display font-bold', activeDim === 'above' ? 'fill-accent-hot' : 'fill-fg-dim')} fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
-            מעל הקרקע
-          </text>
+
+          <SvgLabel x={17} y={3.4} text="מעל הקרקע" fontSize={3} textClassName={activeDim === 'above' ? 'fill-accent-hot' : 'fill-fg-muted'} />
         </g>
 
-        {/* Ground line */}
-        <line x1="0" y1="34" x2="100" y2="34" className="stroke-fg" strokeWidth="0.4" />
-        <text x="50" y="33" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="1.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">— פני הקרקע —</text>
+        {/* === STREET LEVEL zone === */}
+        <g onClick={() => onSelect('street')} style={{ cursor: 'pointer' }}>
+          <rect x="0" y={SKY_BOTTOM} width="100" height={STREET_BOTTOM - SKY_BOTTOM} fill="transparent" />
+          {activeDim === 'street' && (
+            <rect x="0" y={SKY_BOTTOM} width="100" height={STREET_BOTTOM - SKY_BOTTOM} className="fill-accent/15" />
+          )}
 
-        {/* === STREET LEVEL === */}
-        <g
-          onClick={() => onSelect('street')}
-          style={{ cursor: 'pointer' }}
-          opacity={activeDim === 'street' ? 1 : 0.7}
-        >
           {/* Soldier */}
-          <circle cx="50" cy="32" r="1.4" className={cn(activeDim === 'street' ? 'fill-accent' : 'fill-accent-cool')} />
-          <line x1="50" y1="33.5" x2="52" y2="34" className="stroke-fg" strokeWidth="0.4" />
+          <circle cx="50" cy="34" r="1.5" className={cn(activeDim === 'street' ? 'fill-accent' : 'fill-fg-muted')} />
+          <line x1="50" y1="35.3" x2="52" y2="35.8" className="stroke-fg" strokeWidth="0.4" />
 
           {/* Vehicle */}
-          <rect x="62" y="31.5" width="6" height="2.5" rx="0.4" className={cn(activeDim === 'street' ? 'fill-accent' : 'fill-accent-cool/80')} />
-          <circle cx="63.5" cy="34.2" r="0.5" className="fill-fg" />
-          <circle cx="66.5" cy="34.2" r="0.5" className="fill-fg" />
+          <rect x="62" y="32.7" width="6" height="2.8" rx="0.4" className={cn(activeDim === 'street' ? 'fill-accent' : 'fill-fg-muted/70')} />
+          <circle cx="63.5" cy="35.6" r="0.5" className="fill-fg" />
+          <circle cx="66.5" cy="35.6" r="0.5" className="fill-fg" />
 
-          {activeDim === 'street' && (
-            <g>
-              {/* IED markers */}
-              {[28, 72].map((x, i) => (
-                <g key={i}>
-                  <rect x={x - 1} y="32" width="2" height="2" className="fill-status-danger" />
-                  <text x={x} y="30" textAnchor="middle" className="fill-status-danger font-display font-bold font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">IED</text>
-                </g>
-              ))}
-            </g>
-          )}
+          {activeDim === 'street' &&
+            [28, 72].map((x, i) => (
+              <g key={i}>
+                <rect x={x - 1} y="33.3" width="2" height="2" className="fill-status-danger" />
+                <SvgLabel x={x} y={31.4} text="IED" fontSize={2} textClassName="fill-status-danger" />
+              </g>
+            ))}
+
+          <SvgLabel
+            x={50}
+            y={STREET_BOTTOM - 1.6}
+            text="רחוב · פני הקרקע"
+            fontSize={2.2}
+            textClassName={activeDim === 'street' ? 'fill-accent' : 'fill-fg-muted'}
+          />
         </g>
 
-        {/* === UNDERGROUND === */}
-        <g
-          onClick={() => onSelect('below')}
-          style={{ cursor: 'pointer' }}
-          opacity={activeDim === 'below' ? 1 : 0.7}
-        >
-          {/* Tunnel network */}
+        {/* === UNDERGROUND zone === */}
+        <g onClick={() => onSelect('below')} style={{ cursor: 'pointer' }}>
+          <rect x="0" y={STREET_BOTTOM} width="100" height={56 - STREET_BOTTOM} fill="transparent" />
+          {activeDim === 'below' && (
+            <rect x="0" y={STREET_BOTTOM} width="100" height={56 - STREET_BOTTOM} className="fill-status-danger/10" />
+          )}
+
           <path
             d="M5 42 L 30 42 L 30 48 L 56 48 L 56 44 L 80 44 L 80 50 L 95 50"
             fill="none"
-            className={cn(activeDim === 'below' ? 'stroke-accent-hot' : 'stroke-accent-hot/50')}
-            strokeWidth="0.6"
+            className={cn(activeDim === 'below' ? 'stroke-status-danger' : 'stroke-status-danger/60')}
+            strokeWidth="0.7"
           />
           <path
             d="M22 52 L 38 52 L 38 46 L 65 46"
             fill="none"
-            className={cn(activeDim === 'below' ? 'stroke-accent-hot/80' : 'stroke-accent-hot/40')}
-            strokeWidth="0.5"
+            className={cn(activeDim === 'below' ? 'stroke-status-danger/85' : 'stroke-status-danger/55')}
+            strokeWidth="0.55"
           />
 
-          {/* Vertical shafts */}
           {[12, 38, 62, 86].map((x, i) => (
-            <line key={i} x1={x} y1="34" x2={x} y2="42" className={cn(activeDim === 'below' ? 'stroke-accent-hot' : 'stroke-accent-hot/50')} strokeWidth="0.4" strokeDasharray="0.6 0.4" />
+            <line
+              key={i}
+              x1={x}
+              y1={STREET_BOTTOM}
+              x2={x}
+              y2="42"
+              className={cn(activeDim === 'below' ? 'stroke-status-danger' : 'stroke-status-danger/60')}
+              strokeWidth="0.45"
+              strokeDasharray="0.7 0.5"
+            />
           ))}
 
-          {/* Tunnel rooms / nodes */}
           {[18, 40, 70].map((x, i) => (
-            <rect key={i} x={x - 2} y="42" width="4" height="6" className={cn(activeDim === 'below' ? 'fill-accent-hot/30 stroke-accent-hot' : 'fill-accent-hot/15 stroke-accent-hot/50')} strokeWidth="0.3" />
+            <rect
+              key={i}
+              x={x - 2}
+              y="42"
+              width="4"
+              height="6"
+              className={cn(
+                activeDim === 'below' ? 'fill-status-danger/35 stroke-status-danger' : 'fill-status-danger/20 stroke-status-danger/60'
+              )}
+              strokeWidth="0.35"
+            />
           ))}
 
           {activeDim === 'below' && (
-            <g>
-              {/* Underground figure */}
-              <motion.circle
-                r="0.8"
-                className="fill-accent-hot"
-                animate={{ cx: [10, 90], cy: [42, 50] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-              />
-              <text x="50" y="55" textAnchor="middle" className="fill-accent-hot font-display font-bold font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-                רשת מנהרות · אין קליטת לווינים (GPS)
-              </text>
-            </g>
+            <motion.circle
+              r="0.9"
+              className="fill-status-danger"
+              initial={{ cx: 10, cy: 42 }}
+              animate={{ cx: [10, 90], cy: [42, 50] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+            />
           )}
-          {activeDim !== 'below' && (
-            <text x="50" y="55" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-              תת-קרקע
-            </text>
-          )}
-        </g>
 
-        {/* Depth labels (left side) */}
-        {[
-          { y: 5, label: '+150 מ׳' },
-          { y: 18, label: '+50 מ׳' },
-          { y: 34, label: '0' },
-          { y: 44, label: '-10 מ׳' },
-          { y: 54, label: '-25 מ׳' },
-        ].map((d, i) => (
-          <text key={i} x="2" y={d.y + 0.7} className="fill-fg-dim font-display font-bold" fontSize="1.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">
-            {d.label}
-          </text>
-        ))}
+          <SvgLabel
+            x={50}
+            y={54.2}
+            text={activeDim === 'below' ? 'רשת מנהרות · GPS-Denied' : 'תת-קרקע'}
+            fontSize={activeDim === 'below' ? 2.5 : 2.2}
+            textClassName={activeDim === 'below' ? 'fill-status-danger' : 'fill-fg-muted'}
+          />
+        </g>
       </svg>
     </div>
   );

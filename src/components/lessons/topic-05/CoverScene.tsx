@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 
 type Category = 'cover-only' | 'concealment-only' | 'both' | 'neither';
@@ -98,6 +99,20 @@ export function CoverScene() {
 }
         intro='זה ההבדל הכי חשוב שתלמדו: הסתרה רק מונעת מהאויב לראות אתכם. מחסה עוצר את הפגיעה. מי שמתבלבל בין השניים בשטח ומתחבא מאחורי שיח בזמן ירי — מסכן את החיים שלו.'
       />
+
+      {/* Hero illustration — rock (cover) vs. bush (concealment only), same
+          bg-warm "platform" treatment as the topic-01 hero. */}
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
+        <IsometricAsset
+          assetId="TOPIC05-COVER-HERO"
+          src="/assets/lessons/topic05/scene-cover/TOPIC05-COVER-HERO.png"
+          alt="איור פפרקאט בפרספקטיבת צד: סלע מוצק עם סמל מגן כתום לצד שיח ירוק עם קו מקווקו כתום — ניגוד בין מחסה להסתרה בלבד"
+          aspect="16/9"
+          position="top"
+          className="rounded-[3px]"
+          prompt="Two small papercut vignettes side by side in flat side-view (elevation profile, not isometric), each sitting on its own low paper platform: one vignette shows a solid charcoal-gray (#3a3a3a) paper boulder silhouette with a small orange (#EB9E48) shield glyph floating beside it; the other shows a soft sage-green (#749C75) paper bush/shrub silhouette with a thin dashed orange (#EB9E48) outline traced around it, suggesting visual concealment only. Cream background (#FFFBF7), warm peach platforms (#FFDCB5). Flat layered-paper cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space around the scene for text overlay."
+        />
+      </div>
 
       {/* Comparison cards */}
       <div className="grid md:grid-cols-2 gap-3 mb-10">

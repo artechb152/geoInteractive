@@ -1,11 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { IntelCard } from '@/components/lesson/IntelCard';
-import { Icon, type IconName } from '@/components/Icon';
+import { SoftDivider } from '@/components/lesson/SoftDivider';
+import {
+  StepAccordionItem,
+  AccordionSection,
+  AccordionKicker,
+  AccordionSectionTitle,
+  AccordionSectionText,
+} from '@/components/lesson/StepAccordion';
+import { type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
 type Layer = {
@@ -109,7 +117,7 @@ export function OnboardingScene() {
   }
 
   return (
-    <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="02.0"
         eyebrow="לפני שמתחילים"
@@ -121,105 +129,34 @@ title={
                 intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שקופים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {LAYERS.map((l, i) => {
             const isOn = i < step;
             const isExpanded = expanded === l.id;
             const isPassed = isOn && !isExpanded;
             return (
-              <div
+              <StepAccordionItem
                 key={l.id}
-                className={cn(
-                  'surface overflow-hidden transition-all duration-300 ease-snap',
-                  isExpanded
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  isPassed && 'opacity-80'
-                )}
+                index={i}
+                label={l.label}
+                active={isExpanded}
+                expanded={isExpanded}
+                passed={isPassed}
+                onToggle={() => clickLayer(i)}
+                panelId={`layer-panel-${l.id}`}
               >
-                <button
-                  type="button"
-                  onClick={() => clickLayer(i)}
-                  aria-expanded={isExpanded}
-                  aria-controls={`layer-panel-${l.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
-                >
-                  {isExpanded && (
-                    <motion.span
-                      layoutId="t2-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      isExpanded || isPassed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted'
-                    )}
-                  >
-                    {isPassed ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
-                    )}
-                  </span>
-
-                  <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium leading-tight', isExpanded && 'text-brand-dark')}>{l.label}</div>
-                  </div>
-
-                  <motion.span
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', isExpanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {isExpanded && (
-                    <motion.div
-                      key={`panel-${l.id}`}
-                      id={`layer-panel-${l.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
-                          מה השכבה הזו מוסיפה
-                        </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
-                          {l.popupTitle}
-                        </h4>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
-                          {l.popupBody}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                <AccordionSection>
+                  <AccordionKicker>מה השכבה הזו מוסיפה</AccordionKicker>
+                  <AccordionSectionTitle>{l.popupTitle}</AccordionSectionTitle>
+                  <AccordionSectionText>{l.popupBody}</AccordionSectionText>
+                </AccordionSection>
+              </StepAccordionItem>
             );
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px]">
           <LayeredMap enabled={enabled} />
         </div>
       </div>
@@ -355,16 +292,6 @@ function Toggle({ on }: { on: boolean }) {
         animate={{ x: on ? -16 : -2 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       />
-    </div>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );
 }

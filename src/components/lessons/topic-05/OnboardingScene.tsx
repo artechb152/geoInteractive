@@ -1,12 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { IntelCard } from '@/components/lesson/IntelCard';
-import { Icon, type IconName } from '@/components/Icon';
-import { cn } from '@/lib/utils';
+import { SoftDivider } from '@/components/lesson/SoftDivider';
+import {
+  StepAccordionItem,
+  AccordionSection,
+  AccordionKicker,
+  AccordionSectionTitle,
+  AccordionSectionText,
+} from '@/components/lesson/StepAccordion';
+import { type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 
 type View = 'access' | 'obstacles' | 'cover' | 'concealment';
 
@@ -110,101 +118,47 @@ title = {
         intro='עבור רובנו השטח הוא סתם "נוף", אבל מפקד צבאי מסתכל עליו כעל חידה שצריך לפתור. בואו נראה איך מנתחים תא שטח לקראת תנועה (מושג שנקרא בשפה הצבאית "תמרון"), דרך 4 שאלות מפתח – החל מהשאלה הבסיסית ביותר ("האם בכלל אפשר לעבור פה?") ועד לשאלות של חיים ומוות.'
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      {/* Lead-in vignette — same small side-view treatment as topic-01's
+          PILLARS/CLOCK vignettes, placed before the interactive stage. */}
+      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
+        <IsometricAsset
+          assetId="TOPIC05-ONBOARDING-HERO"
+          src="/assets/lessons/topic05/scene-onboarding/TOPIC05-ONBOARDING-HERO.png"
+          alt="איור פפרקאט בפרספקטיבת צד: מסלול מקווקו כתום חוצה נהר וסלע בין נקודת התחלה לדגל יעד, מסמל תמרון בשטח"
+          aspect="21/9"
+          className="rounded-[3px]"
+          prompt="A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a low terrain silhouette in sage green (#749C75/#5B7C5C) with a thin dashed orange (#EB9E48) path hopping between a small paper boulder and a narrow blue-gray river gap, connecting one small cool-toned dot marker at the start to one small orange flag at the far end. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space for text overlay."
+        />
+      </div>
+
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
             const expanded = expandedStep === s.id;
             const passed = STEPS.findIndex((x) => x.id === view) > i;
             return (
-              <div
+              <StepAccordionItem
                 key={s.id}
-                className={cn(
-                  'surface overflow-hidden transition-all duration-300 ease-snap',
-                  active
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  passed && !active && 'opacity-80'
-                )}
+                index={i}
+                label={s.label}
+                active={active}
+                expanded={expanded}
+                passed={passed}
+                onToggle={() => handleStepClick(s.id)}
+                panelId={`t5-onb-panel-${s.id}`}
               >
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(s.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`t5-onb-panel-${s.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="t5-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
-                    )}
-                  >
-                    {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`t5-onb-panel-${s.id}`}
-                      id={`t5-onb-panel-${s.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
-למה זה חשוב?                        </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
-                          {s.popupTitle}
-                        </h4>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
-                          {s.popupBody}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                <AccordionSection>
+                  <AccordionKicker>למה זה חשוב?</AccordionKicker>
+                  <AccordionSectionTitle>{s.popupTitle}</AccordionSectionTitle>
+                  <AccordionSectionText>{s.popupBody}</AccordionSectionText>
+                </AccordionSection>
+              </StepAccordionItem>
             );
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px]">
           <ManeuverStage view={view} />
         </div>
       </div>
@@ -434,16 +388,6 @@ function ManeuverStage({ view }: { view: View }) {
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
         4 שכבות לתנועה חכמה בשטח
       </div>
-    </div>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +20,10 @@ type VegType = {
   cover: string;
   concealment: string;
   mobility: string;
-  density: number; // 1-4 visual density indicator
+  /** Magnific asset id, e.g. "TOPIC05-VEG-HERBACEOUS" — file lives at
+   *  public/assets/lessons/topic05/scene-vegetation/<iconAssetId>.png */
+  iconAssetId: string;
+  iconPrompt: string;
 };
 
 const VEGETATION: VegType[] = [
@@ -33,7 +37,8 @@ const VEGETATION: VegType[] = [
     cover: 'אפסי. הצמחייה נמוכה מדי ולא מסוגלת להגן פיזית מפני פגיעות אש או רסיסים.',
     concealment: 'נמוכה. מספקת הסתרה רק כששוכבים על הקרקע — אדם שהולך או רץ ייחשף מיד.',
     mobility: 'מצוינת. השטח פתוח ללא מכשולים, וכלים כבדים (כמו טנקים ונגמ"שים) יכולים לנוע בחופשיות.',
-    density: 1,
+    iconAssetId: 'TOPIC05-VEG-HERBACEOUS',
+    iconPrompt: "A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a short strip of open bare ground with only a handful of thin blade-like grass tufts in muted olive green (#7A8A3F), spaced far apart, most of the sand-toned (#C2A26B) ground visible between them, no shrubs or trees. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space around the scene for card layout.",
   },
   {
     id: 'batta',
@@ -45,7 +50,8 @@ const VEGETATION: VegType[] = [
     cover: 'מינימלי. השיחים קטנים וחלשים מכדי לעצור קליעים, כך שאין הגנה אמיתית.',
     concealment: 'בינונית. מסתירה אדם שזוחל או כורע ברך, אך לא אדם שעומד או הולך רגיל.',
     mobility: 'טובה. רכבים עם שרשראות זחל (כמו טנקים) יעברו בקלות, אך רכבים על גלגלים יזדקקו לדרך מסודרת.',
-    density: 2,
+    iconAssetId: 'TOPIC05-VEG-BATHA',
+    iconPrompt: "A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a row of small rounded low shrubs in sage green (#749C75), each roughly knee-height, spaced apart with clear gaps of sand-toned (#C2A26B) ground visible between them. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space around the scene for card layout.",
   },
   {
     id: 'griga',
@@ -57,7 +63,8 @@ const VEGETATION: VegType[] = [
     cover: 'משתנה. שיחים חזקים מסוימים (כמו אלון מצוי) עשויים לעצור רסיסים קטנים, אך לא יגנו מפני ירי של נשק קל.',
     concealment: 'גבוהה. הצמחייה מספיק סבוכה כך שאפילו ממרחק של 20 מטרים יהיה קשה מאוד להבחין בכם.',
     mobility: 'מוגבלת. התנועה הרגלית קשה ואיטית, ורכבים כבדים חייבים להיצמד לשבילים קיימים או שיידרשו דחפורים כדי לפלס להם דרך.',
-    density: 3,
+    iconAssetId: 'TOPIC05-VEG-GARIGUE',
+    iconPrompt: "A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a dense row of medium rounded shrubs in dark sage green (#5B7C5C), taller and fuller than low bushes, touching or nearly touching each other with only thin slivers of sand-toned (#C2A26B) ground visible between them. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space around the scene for card layout.",
   },
   {
     id: 'forest',
@@ -69,7 +76,8 @@ const VEGETATION: VegType[] = [
     cover: 'טובה נקודתית. גזעי העצים העבים יכולים לשמש כמחסה ולתפקד כמו סלע שאפשר להסתתר מאחוריו ולהתגונן מירי.',
     concealment: 'גבוהה ביותר. בחורש סגור, כמעט בלתי אפשרי לזהות תנועה ממבט מהאוויר (רחפנים או מטוסים).',
     mobility: 'איטית מאוד. יש מעט מאוד שבילים לרכבים, וכוחות רגליים חייבים לנוע בטור צפוף. השטח מלא בנקודות חנק — אזורים צרים שקל לאויב לארוב בהם.',
-    density: 4,
+    iconAssetId: 'TOPIC05-VEG-FOREST',
+    iconPrompt: "A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a tight row of simplified paper trees with round canopy tops on thin charcoal (#3a3a3a) trunks, dark sage green (#5B7C5C) canopies overlapping into one continuous closed canopy line, the ground fully hidden beneath the foliage. Cream background (#FFFBF7), warm peach ground base (#FFDCB5). Flat paper-cut cutout shading, soft edges, no text, no human figures, no weapons, generous empty cream space around the scene for card layout.",
   },
 ];
 
@@ -149,7 +157,7 @@ title = {
 
       {/* 4 vegetation types */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {VEGETATION.map((v, i) => {
+        {VEGETATION.map((v) => {
           const isActive = active === v.id;
           return (
             <button
@@ -161,28 +169,20 @@ title = {
                 isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
               )}
             >
-              {isActive && (
-                <motion.span
-                  layoutId="t5-veg-bar"
-                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                />
-              )}
-              <VegSilhouette density={v.density} />
-              <div className="flex items-start gap-3">
-                <span
-                  className={cn(
-                    'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
-                    isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
-                  )}
-                >
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display font-bold text-base text-fg leading-tight">
-                    {v.label}
-                  </div>
-                  <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{v.english} · {v.height}</div>
+              <IsometricAsset
+                assetId={v.iconAssetId}
+                src={`/assets/lessons/topic05/scene-vegetation/${v.iconAssetId}.png`}
+                alt={`איור פפרקאט בפרספקטיבת צד: ${v.label} (${v.english})`}
+                aspect="4/3"
+                position="bottom"
+                className="aspect-[2/1] rounded-[3px] bg-bg-elevated"
+                prompt={v.iconPrompt}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="font-display font-bold text-base text-fg leading-tight">
+                  {v.label}
                 </div>
+                <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">{v.english} · {v.height}</div>
               </div>
             </button>
           );
@@ -324,86 +324,6 @@ title = {
         </span>
       </InsightCard>
     </section>
-  );
-}
-
-function VegSilhouette({ density }: { density: number }) {
-  // Map to palette tokens: terrain-olive=#7a8a3f, brand=#749C75, brand-dark=#5B7C5C, terrain-ridge=#5a6b4a
-  const colors = ['#7a8a3f', '#749C75', '#5B7C5C', '#5a6b4a'];
-  const color = colors[density - 1];
-
-  return (
-    <div className="aspect-[2/1] relative w-full">
-      <svg viewBox="0 0 100 50" className="w-full h-full rounded-[3px]">
-        <rect x="0" y="0" width="100" height="50" className="fill-bg-accent" />
-        {/* Ground line */}
-        <line x1="0" y1="42" x2="100" y2="42" className="stroke-border-strong" strokeWidth="0.3" opacity="0.4" />
-
-        {density === 1 && (
-          // herbaceous: tiny strokes
-          Array.from({ length: 30 }).map((_, i) => {
-            const x = (i * 3.5) % 100;
-            return (
-              <line
-                key={i}
-                x1={x}
-                y1="42"
-                x2={x + 0.5}
-                y2="40"
-                stroke={color}
-                strokeWidth="0.3"
-              />
-            );
-          })
-        )}
-        {density === 2 && (
-          // batta: short bushes
-          Array.from({ length: 14 }).map((_, i) => {
-            const x = 5 + (i * 7);
-            return (
-              <ellipse
-                key={i}
-                cx={x}
-                cy="38"
-                rx="2.2"
-                ry="3.5"
-                fill={color}
-                opacity="0.85"
-              />
-            );
-          })
-        )}
-        {density === 3 && (
-          // griga: medium shrubs
-          Array.from({ length: 8 }).map((_, i) => {
-            const x = 8 + (i * 12);
-            return (
-              <ellipse
-                key={i}
-                cx={x}
-                cy="33"
-                rx="4.5"
-                ry="7"
-                fill={color}
-                opacity="0.9"
-              />
-            );
-          })
-        )}
-        {density === 4 && (
-          // forest: tall trees with canopy
-          Array.from({ length: 6 }).map((_, i) => {
-            const x = 8 + (i * 16);
-            return (
-              <g key={i}>
-                <line x1={x} y1="42" x2={x} y2="30" className="stroke-fg" strokeWidth="1" />
-                <ellipse cx={x} cy="22" rx="7" ry="10" fill={color} opacity="0.95" />
-              </g>
-            );
-          })
-        )}
-      </svg>
-    </div>
   );
 }
 

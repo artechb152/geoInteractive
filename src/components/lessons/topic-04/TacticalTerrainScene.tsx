@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 type Type = 'commanding' | 'key' | 'dead';
 type TypeData = {
@@ -93,6 +94,19 @@ intro='בשדה הקרב, לכל פיסת אדמה יש"תג מחיר" צבאי.
  שטח שולט = להחזיק בכל מחיר. שטח חיוני = לאבטח כי אי אפשר בלעדיו. שטח מת = לנצל לתחבולה. כל קטגוריה מובילה לפעולה אחרת לחלוטין בשטח.
  </p>
  </article>
+ </div>
+
+ {/* Lead-in vignette — same small side-view treatment as topic-01's
+     PILLARS vignette, placed before the interactive tactical map. */}
+ <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
+ <IsometricAsset
+ assetId="TOPIC04-TACTICAL-VIGNETTE"
+ src="/assets/lessons/topic04/scene-tactical/TOPIC04-TACTICAL-VIGNETTE.png"
+ alt="שלושה איורי פפרקאט קטנים בפרספקטיבת צד: פסגה שולטת, גשר-צומת חיוני, ושקע נסתר — שלושת סוגי השטח הטקטי"
+ aspect="21/9"
+ className="rounded-[3px]"
+ prompt="Three small papercut vignettes side by side in flat side-view (elevation profile, not isometric), each sitting on its own low paper platform: (1) a tall sage-green (#749C75) peak silhouette with a thin orange (#EB9E48) ring near its summit, (2) a narrow paper bridge/junction shape over a thin blue-gray gap with a small orange dot marker on it, (3) a shallow dip or hollow in the terrain shaded dark sage (#5B7C5C), tucked behind a low ridge so it reads as hidden. Cream background (#FFFBF7), warm peach platforms (#FFDCB5). Flat layered-paper cutout shading, soft shading, no realistic people, no weapons, no text."
+ />
  </div>
 
  <TacticalMap activeType={active} showAll={showAll} setShowAll={setShowAll} />

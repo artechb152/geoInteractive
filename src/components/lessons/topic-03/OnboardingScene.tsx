@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { IntelCard } from '@/components/lesson/IntelCard';
-import { Icon, type IconName } from '@/components/Icon';
-import { cn } from '@/lib/utils';
+import { SoftDivider } from '@/components/lesson/SoftDivider';
+import {
+  StepAccordionItem,
+  AccordionSection,
+  AccordionSectionLabel,
+  AccordionSectionText,
+} from '@/components/lesson/StepAccordion';
+import { type IconName } from '@/components/Icon';
 
 type Phase = 'plan' | 'start' | 'travel' | 'arrive';
 
@@ -106,102 +112,37 @@ export function OnboardingScene() {
         intro="דמיין שאתה צריך להוביל קבוצה ממקום A למקום B — בלילה, בשטח שאתה לא מכיר. בוא נראה ביחד מה זה אומר בפועל, צעד אחר צעד."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = phase === s.id;
             const expanded = expandedStep === s.id;
             const passed = STEPS.findIndex((x) => x.id === phase) > i;
             return (
-              <div
+              <StepAccordionItem
                 key={s.id}
-                className={cn(
-                  'surface overflow-hidden transition-all duration-300 ease-snap',
-                  active
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  passed && !active && 'opacity-80'
-                )}
+                index={i}
+                label={s.label}
+                active={active}
+                expanded={expanded}
+                passed={passed}
+                onToggle={() => handleStepClick(s.id)}
+                panelId={`step-panel-${s.id}`}
               >
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(s.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`step-panel-${s.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
-                >
-                  <span
-                    className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
-                    )}
-                  >
-                    {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>
-                      {s.label}
-                    </div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`panel-${s.id}`}
-                      id={`step-panel-${s.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
-                        <div className="mt-3">
-                          <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
-                            מה אתה עושה בשלב הזה?
-                          </div>
-                          <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
-                        </div>
-                        <div className="pt-2 border-t border-border-subtle">
-                          <div className="text-sm font-display font-semibold text-brand-dark mb-1.5 tracking-wider flex items-center gap-1.5">
-                            ולמה זה משנה?
-                          </div>
-                          <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                <AccordionSection>
+                  <AccordionSectionLabel>מה אתה עושה בשלב הזה?</AccordionSectionLabel>
+                  <AccordionSectionText>{s.caption}</AccordionSectionText>
+                </AccordionSection>
+                <AccordionSection bordered>
+                  <AccordionSectionLabel>ולמה זה משנה?</AccordionSectionLabel>
+                  <AccordionSectionText>{s.insight}</AccordionSectionText>
+                </AccordionSection>
+              </StepAccordionItem>
             );
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px]">
           <MissionStage phase={phase} />
         </div>
       </div>
@@ -484,15 +425,5 @@ function PhaseOverlay({ phase }: { phase: Phase }) {
       >✓ הגעה</text>
       </motion.g>
     </>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
-    </div>
   );
 }

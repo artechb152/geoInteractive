@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 
 const TERMS = [
   { term: 'עבירות (Trafficability)',  def: 'יכולת פיזית של הקרקע לתמוך במעבר כלי תחת לחץ סגולי נתון.' },
@@ -64,25 +65,36 @@ function CompletionBanner() {
       <div className="absolute -end-16 -top-16 size-48 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
       <div className="absolute -start-16 -bottom-16 size-48 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
 
-      <div className="relative flex items-center gap-4 sm:gap-5">
-        <div className="relative shrink-0">
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="size-14 rounded-full bg-accent/20 absolute inset-0"
-          />
-          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg-elevated">
-            <Icon name="check" size={28} strokeWidth={3} />
+      <div className="relative grid sm:grid-cols-[1fr_auto] gap-5 items-center">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <div className="relative shrink-0">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+              className="size-14 rounded-full bg-accent/20 absolute inset-0"
+            />
+            <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg-elevated">
+              <Icon name="check" size={28} strokeWidth={3} />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
+              כל הכבוד · סיימת את שיעור הניידות והתמרון
+            </div>
+            <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
+              עכשיו אתה רואה שטח <span className="gradient-text">בעיניים של מתכנן תמרון</span>
+            </div>
           </div>
         </div>
-        <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור הניידות והתמרון
-          </div>
-          <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה שטח <span className="gradient-text">בעיניים של מתכנן תמרון</span>
-          </div>
-        </div>
+        <IsometricAsset
+          assetId="TOPIC05-RECAP-CLOSING"
+          src="/assets/lessons/topic05/scene-recap/TOPIC05-RECAP-CLOSING.png"
+          alt="איור פפרקאט בפרספקטיבת צד: מסלול מקווקו כתום מתפתל בין מכשולי שטח לעבר דגל כתום, מסמל תכנון תמרון"
+          aspect="1/1"
+          fit="contain"
+          className="aspect-auto rounded-[3px] w-[220px] h-[300px] shrink-0 bg-bg-elevated mx-auto sm:mx-0"
+          prompt="A minimalist papercut illustration in flat side-view (elevation profile, not isometric): a low sage-green (#749C75/#5B7C5C) terrain silhouette with two small undulations, viewed straight from the side like a paper diorama slice. A thin dashed orange (#EB9E48) line hops along the terrain's contour, passing beside a small paper boulder and a shallow ditch fold, toward one small orange flag planted at the far end. Cream background (#FFFBF7), warm peach base (#FFDCB5). Flat paper-cut cutout shading, minimal composition, generous empty cream space, no text, no people, no weapons."
+        />
       </div>
     </motion.div>
   );

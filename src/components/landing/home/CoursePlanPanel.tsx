@@ -244,6 +244,7 @@ function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean 
         fit="contain"
         compactPlaceholder
         eager
+        pendingEffect="none"
         className="mt-[23px] h-[219px] w-full bg-transparent mix-blend-multiply [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black_50%,transparent_78%)]"
       />
       <h3 className="mt-[23px] whitespace-pre-line text-[20px] font-bold leading-snug text-olive-ink">

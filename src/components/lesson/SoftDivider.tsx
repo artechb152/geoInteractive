@@ -6,7 +6,7 @@ export function SoftDivider({ text }: { text: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
       <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold tracking-wider text-fg-muted">
+      <span className="text-base font-display font-bold text-black tracking-wider">
         {text}
       </span>
       <div className="h-px flex-1 bg-border-subtle" />
