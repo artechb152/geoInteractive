@@ -1,12 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ImageIcon } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { IntelCard } from '@/components/lesson/IntelCard';
-import { Icon, type IconName } from '@/components/Icon';
+import { type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import { OnboardingEditProvider, EditableBlock, EditableFrame } from './onboarding-edit-mode';
 
@@ -85,21 +86,8 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
 
 export function OnboardingScene() {
   const [step, setStep] = useState<Feature>('flat');
-  // Whether the current step's explanation panel is expanded; null = collapsed.
-  // Defaults to the first step being open so the user sees content immediately.
-  const [expandedStep, setExpandedStep] = useState<Feature | null>('flat');
-
-  const handleStepClick = (id: Feature) => {
-    if (expandedStep === id) {
-      // Clicking the open panel collapses it (the visualization on the left
-      // stays — `step` doesn't change).
-      setExpandedStep(null);
-    } else {
-      // Open this step and update the visualization to match.
-      setStep(id);
-      setExpandedStep(id);
-    }
-  };
+  const activeIndex = STEPS.findIndex((s) => s.id === step);
+  const activeStep = STEPS[activeIndex];
 
   return (
     <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
@@ -117,117 +105,103 @@ title={
       />
       </EditableBlock>
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
-        {/* Control panel — first child → RIGHT in RTL (text on right). */}
-        <EditableBlock id="accordion-panel" label="פאנל השלבים" className="space-y-3">
-          {STEPS.map((s, i) => {
-            const active = step === s.id;
-            const expanded = expandedStep === s.id;
-            const passed = STEPS.findIndex((x) => x.id === step) > i;
-            return (
-              <div
-                key={s.id}
-                className={cn(
-                  'surface overflow-hidden transition-all duration-300 ease-snap',
-                  active
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  passed && !active && 'opacity-80'
-                )}
-              >
+      {/* Full-width video stage — step text + switcher buttons overlay the
+          frame itself instead of living in a side panel. */}
+      <EditableFrame id="visual-frame" label="סרטון תצוגה">
+      <div className="surface-elevated bg-bg relative overflow-hidden w-full aspect-video md:aspect-[2.15/1] min-h-[360px] md:min-h-[440px] [&_video]:!w-full [&_video]:!h-full">
+        <TerrainStage feature={step} />
+
+        {/* Scrim so overlaid text/buttons stay legible over any frame. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/45"
+        />
+
+        {/* Step text (right) + "why it matters" (left) — both inline-end-
+            anchored to their own side via `justify-between` on a row that
+            respects the container's writing direction (dir="rtl" on
+            <html>), rather than relying on block auto-margin distribution.
+            Both blocks stay RTL/right-aligned internally. NOTE: this
+            project's tailwindcss-rtl plugin maps `text-end` to the native
+            CSS `text-align: end` keyword, which under dir="rtl" is the
+            LEFT edge — `text-start` is the one that renders right-aligned
+            here, not `text-end`. */}
+        <div className="absolute inset-x-0 top-0 p-5 md:p-8 flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="max-w-lg rounded-2xl border border-white/15 bg-black/60 p-4 text-start shadow-lg backdrop-blur-sm md:p-5"
+            >
+              <h3 className="font-display font-bold text-white text-2xl md:text-3xl leading-snug text-balance">
+                {activeStep.label}
+              </h3>
+              <p className="mt-3 text-white text-base md:text-lg leading-relaxed text-pretty">
+                {activeStep.caption}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="max-w-md rounded-2xl border border-white/15 bg-black/60 p-4 text-start shadow-lg backdrop-blur-sm md:p-5"
+            >
+              <h4 className="font-display font-bold text-white text-2xl md:text-3xl leading-snug">ולמה זה משנה?</h4>
+              <p className="mt-3 text-white text-base md:text-lg leading-relaxed text-pretty">{activeStep.insight}</p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Frame switcher — buttons live within the video's own width. */}
+        <div className="absolute inset-x-0 bottom-0 p-4 md:p-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+            {STEPS.map((s, i) => {
+              const active = step === s.id;
+              return (
                 <button
+                  key={s.id}
                   type="button"
-                  onClick={() => handleStepClick(s.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`step-panel-${s.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
+                  onClick={() => setStep(s.id)}
+                  aria-pressed={active}
+                  aria-label={s.label}
+                  className={cn(
+                    'flex items-center gap-2 rounded-full border px-3.5 py-2 md:px-4 md:py-2.5 backdrop-blur-md transition-all duration-200 ease-snap text-xs md:text-sm font-display font-bold',
+                    active
+                      ? 'bg-brand-dark border-brand-dark text-white shadow-sm'
+                      : 'bg-black/30 border-white/25 text-white/85 hover:bg-black/45 hover:text-white'
+                  )}
                 >
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
+                      'flex items-center justify-center size-5 rounded-full text-[11px] shrink-0',
+                      active ? 'bg-white/25' : 'bg-white/15'
                     )}
                   >
-                    {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
-                    )}
+                    {i + 1}
                   </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
-                      {s.label}
-                    </div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
+                  <span className="hidden sm:inline">{s.label}</span>
                 </button>
-
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`panel-${s.id}`}
-                      id={`step-panel-${s.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
-                        <div className="mt-3">
-                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                            מה קורה בשלב הזה?
-                          </div>
-                          <p className="text-base leading-relaxed text-black">{s.caption}</p>
-                        </div>
-                        <div className="pt-2 border-t border-border-subtle">
-                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                            ולמה זה משנה?
-                          </div>
-                          <p className="text-base leading-relaxed text-black">{s.insight}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </EditableBlock>
-
-        {/* Visualization — second child → LEFT in RTL. EditableFrame (not
-            EditableBlock) so it doesn't add a wrapper div. */}
-        <EditableFrame id="visual-frame" label="סרטון תצוגה">
-        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px] [&_video]:!w-full [&_video]:!h-full">
-          <TerrainStage feature={step} />
+              );
+            })}
+          </div>
         </div>
-        </EditableFrame>
       </div>
+      </EditableFrame>
 
       <SoftDivider text="ועכשיו 4 סיפורים אמיתיים מההיסטוריה" />
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid gap-5 sm:grid-cols-2">
         {HISTORICAL.map((h, i) => (
           <EditableBlock key={h.headline} id={`history-card-${i}`} label={`כרטיס היסטורי ${i + 1}`}>
-            <IntelCard
+            <HistoricalStoryCard
               place={h.place}
               headline={
                 <EditableBlock as="span" nested id={`history-card-${i}-title`} label={`כותרת כרטיס ${i + 1}`} className="block">
@@ -239,8 +213,6 @@ title={
                   {h.lesson}
                 </EditableBlock>
               }
-              icon={h.icon}
-              accent={h.accent}
             />
           </EditableBlock>
         ))}
@@ -255,6 +227,43 @@ title={
 
     </OnboardingEditProvider>
     </section>
+  );
+}
+
+function HistoricalStoryCard({
+  place,
+  headline,
+  lesson,
+}: {
+  place: string;
+  headline: ReactNode;
+  lesson: ReactNode;
+}) {
+  return (
+    <article className="h-full rounded-2xl border border-tanline-contour/70 bg-paper-bright/75 px-6 py-7 shadow-card-soft sm:px-8 sm:py-8">
+      <div className="flex items-start gap-5 sm:gap-7">
+        <div className="min-w-0 flex-1">
+          <p className="mb-3 text-base font-bold text-olive-ink [word-spacing:-0.03em] sm:text-lg">
+            {place}
+          </p>
+          <h3 className="text-balance font-display text-2xl font-bold leading-snug text-olive-ink sm:text-3xl">
+            {headline}
+          </h3>
+          <div aria-hidden="true" className="mt-4 h-0.5 w-9 rounded-full bg-ember-deep" />
+        </div>
+
+        <ImageIcon
+          role="img"
+          aria-label="מיקום שמור לאיור"
+          className="mt-7 size-16 shrink-0 text-olive-ink sm:size-20"
+          strokeWidth={1.6}
+        />
+      </div>
+
+      <p className="mt-4 text-pretty text-base leading-8 text-olive-ink sm:text-lg sm:leading-9">
+        {lesson}
+      </p>
+    </article>
   );
 }
 

@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { PageShell } from '@/components/landing/home/PageShell';
 import { HomeHeader } from '@/components/landing/home/HomeHeader';
 import { HomeHero } from '@/components/landing/home/HomeHero';
-import { FeaturesRow } from '@/components/landing/home/FeaturesRow';
 import { CoursePlanPanel } from '@/components/landing/home/CoursePlanPanel';
 import { ProgressCard } from '@/components/landing/home/ProgressCard';
 import { PrototypesSection } from '@/components/landing/home/PrototypesSection';
@@ -22,7 +21,6 @@ export default function HomePage() {
     <PageShell>
       <HomeHeader />
       <HomeHero />
-      <FeaturesRow />
       {/* פס תחתון: ProgressCard ראשון ב-DOM = ימין ויזואלי ב-RTL, כמו במוקאפ.
           כשפרקי הקורס נפתחים לרשת המלאה, הם דורסים גם את מקום ProgressCard. */}
       <div

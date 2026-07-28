@@ -49,7 +49,7 @@ Accents: orange is used *only* for action/active (CTAs, flag, active lesson, "01
 
 | Token | Hex | Usage |
 |---|---|---|
-| `--bg-page` | `#F3E9DC` | page canvas (slightly lighter `#F4E9DC` top → `#F0E5D6` bottom) |
+| `--bg-page` | `#F6EEE2` | page canvas — brightened per 2026-07-28 design tweak (was `#F3E9DC`); gradient `#F7EEE2` top → `#F3EADC` bottom |
 | `--bg-contour` | `#C9A56B` @ 18–25% opacity | faint topo contour lines + dashed route on canvas |
 | `--surface-card` | `#F8F2E7` | feature cards, lesson cards, secondary button, pill buttons |
 | `--surface-panel` | `#F6EFE6` | course-plan panel (barely darker than cards inside it — cards read lighter) |
@@ -70,7 +70,7 @@ Illustration palette (for asset briefs, not UI): terrain greens `#6E7A4E / #5561
 
 ## 4. Typography
 
-Hebrew geometric sans; letterforms are angular with flat terminals — best match **Heebo** (fallback: `"Noto Sans Hebrew", Assistant, sans-serif`). One family, weight-driven hierarchy.
+Hebrew geometric sans; letterforms are angular with flat terminals — **Assistant** (was Heebo/Rubik, switched per 2026-07-28 design tweak; fallback: `"Noto Sans Hebrew", Heebo, sans-serif`). One family, weight-driven hierarchy.
 
 | Element | Size | Weight | Line-height | Color |
 |---|---|---|---|---|

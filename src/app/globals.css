@@ -16,7 +16,7 @@
   :root {
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     /* גובה ה-AppHeader הגלובלי — שורה אחת רכה. */
-    --header-h: 4rem;
+    --header-h: 3rem;
     /* נשמר עבור .oct/.oct-sm — עדיין בשימוש במסכים מחוץ להיקף ה-pass הזה
        (בית/סילבוס/overview/prototypes). לא בשימוש ב-shell/topic-03 החדשים. */
     --notch: 0.55rem;
@@ -24,7 +24,7 @@
 
   @media (min-width: 1024px) {
     :root {
-      --header-h: 5rem;
+      --header-h: 3.5rem;
     }
   }
 

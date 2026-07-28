@@ -54,7 +54,7 @@ const C = {
   enemyCommand: '#b83a22',
   enemyDeep: '#832c1a',
   chokepoint: '#EB9E48',
-  fog: '#f3e9dc',
+  fog: '#f6eee2',
   // Darker shade of `blue` for the friendly marker's beacon tip — same
   // pattern as enemyCommand/enemyDeep being darker shades of `enemy`.
   blueDeep: '#3f7bb0',

@@ -15,8 +15,8 @@ const config: Config = {
         //   (paper/olive/ember/tanline below). Values are shared, never new.
         //   Every inner screen inherits the Home look through these tokens. —
         bg: {
-          // cream paper canvas (= paper.page)
-          DEFAULT: '#F3E9DC',
+          // cream paper canvas (= paper.page) — brightened
+          DEFAULT: '#F6EEE2',
           // white elevated cards on the cream field (reference style)
           elevated: '#FFFFFF',
           card: '#FFFFFF',
@@ -72,7 +72,7 @@ const config: Config = {
         // — Landing redesign palette (design/design-spec.md, sampled from design/mockup.png) —
         // Additive namespaces only; existing pages keep bg/fg/accent/brand untouched.
         paper: {
-          page: '#F3E9DC',
+          page: '#F6EEE2',
           card: '#F8F2E7',
           panel: '#F6EFE6',
           bright: '#FDFBF3',
@@ -129,7 +129,7 @@ const config: Config = {
         // — Landing redesign gradients (design/design-spec.md §3) —
         'cta-ember': 'linear-gradient(to bottom, #E08A38, #C96714)',
         'pine-grad': 'linear-gradient(135deg, #374133, #283223)',
-        'paper-grad': 'linear-gradient(to bottom, #F4E9DC, #F0E5D6)',
+        'paper-grad': 'linear-gradient(to bottom, #F7EEE2, #F3EADC)',
       },
       backgroundSize: {
         grid: '32px 32px',

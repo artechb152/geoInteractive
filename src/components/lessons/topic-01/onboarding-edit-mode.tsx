@@ -1648,8 +1648,8 @@ function EditModeToolbar() {
               className="border border-border rounded px-1.5 py-1 text-xs"
             >
               <option value="">ברירת מחדל</option>
-              <option value="sans">Heebo (גוף)</option>
-              <option value="display">Rubik (כותרות)</option>
+              <option value="sans">Assistant (גוף)</option>
+              <option value="display">Assistant (כותרות)</option>
             </select>
           </label>
 

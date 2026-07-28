@@ -10,7 +10,6 @@ type Level = 'strategic' | 'operational' | 'tactical';
 
 type LevelMeta = {
   label: string;
-  english: string;
   who: string;
   zoom: string;
   zoomIcon: IconName;
@@ -26,58 +25,47 @@ type LevelMeta = {
 const LEVELS: Record<Level, LevelMeta> = {
   strategic: {
     label: 'אסטרטגית',
-    english: 'Strategic',
     who: 'הדרג המדיני (הממשלה) והרמטכ"ל',
     zoom: '"מבט מלוויין" (גלובלי) – מדינות שלמות, יבשות ואוקיינוסים.',
     zoomIcon: 'globe',
     time: 'חודשים עד שנים. החלטות שמשפיעות על דורות.',
     example: 'האם המדינה יוצאת למלחמה כוללת? עם אילו מדינות חותמים ברית? החלטות תקציב דרמטיות, למשל – להפסיק לייצר טנקים ולרכוש צוללות במקום.',
-    borderActive: 'border-accent-intel',
-    bgActive: 'bg-accent-intel/15',
-    text: 'text-accent-intel',
-    fillClass: 'fill-accent-intel/30',
+    borderActive: 'border-brand-dark',
+    bgActive: 'bg-brand/10',
+    text: 'text-brand-dark',
+    fillClass: 'fill-brand/30',
     zoomLevel: 1,
   },
   operational: {
     label: 'אופרטיבית',
-    english: 'Operational',
     who: 'אלופי הפיקודים ומפקדי האוגדות — דרג הביניים שמחבר בין החזון לשטח.',
     zoom: '"מבט רחב ב-Waze" (אזורי) – עשרות עד מאות קילומטרים.',
     zoomIcon: 'layers',
     time: 'ימים, שבועות או חודשים.',
     example: 'תכנון איך להזרים 30,000 חיילים ומאות טנקים לחזית מבלי ליצור פקק תנועה ענק ופגיע, והחלטה איפה להקים עבורם מאגרי דלק ענקיים בשטח.',
     borderActive: 'border-accent',
-    bgActive: 'bg-accent/15',
+    bgActive: 'bg-accent/10',
     text: 'text-accent',
     fillClass: 'fill-accent/30',
     zoomLevel: 2,
   },
   tactical: {
     label: 'טקטית',
-    english: 'Tactical',
     who: 'המפקדים בשטח (מג"דים, מ"פים) ועד החייל הבודד בקצה.',
     zoom: '"Street View" (מקומי) – נמדד במטרים: סלע בודד, חלון בבניין או ערוץ נחל.',
     zoomIcon: 'crosshair',
     time: 'שניות, דקות או שעות ספורות. החלטות של חיים ומוות ב"כאן ועכשיו".',
     example: 'בחירת סלע ספציפי שיסתיר חייל מצלף, החלטה מאיזו זווית לפרוץ לבניין כדי שהשמש תסנוור את האויב, ובאיזה ערוץ נחל הפלוגה תתגנב בשקט בלי להתגלות.',
-    borderActive: 'border-terrain-sand',
-    bgActive: 'bg-terrain-sand/15',
-    text: 'text-terrain-sand',
-    fillClass: 'fill-terrain-sand/30',
+    borderActive: 'border-brand',
+    bgActive: 'bg-brand/10',
+    text: 'text-brand',
+    fillClass: 'fill-brand/30',
     zoomLevel: 3,
   },
 };
 
 // In RTL, first column → right side. Strategic = broadest = right.
 const LEVEL_ORDER: Level[] = ['strategic', 'operational', 'tactical'];
-
-type MatrixRowKey = 'who' | 'zoom' | 'time' | 'example';
-const MATRIX_ROWS: { key: MatrixRowKey; label: string }[] = [
-  { key: 'who', label: 'מי מחליט?' },
-  { key: 'zoom', label: 'זום מרחבי' },
-  { key: 'time', label: 'אופק זמן' },
-  { key: 'example', label: 'דוגמה מבצעית' },
-];
 
 const SCENARIOS: { text: string; correct: Level; icon: IconName }[] = [
   { text: 'מפקד פלוגה מאתר עמדת מקלע אויב על שלוחה', correct: 'tactical', icon: 'crosshair' },
@@ -131,30 +119,14 @@ export function LevelsScene() {
             <span className="gradient-text">שלוש רמות המלחמה</span> · אותה המערכה, ברזולוציות שונות
           </>
         }
-        intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
+        intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. החליפו בין שלוש העדשות וראו איך כל שינוי בקנה המידה משנה גם את מקבל ההחלטה, אופק הזמן וסוג המשימה."
       />
 
-      {/* === Comparison Matrix === */}
-      <div className="surface-elevated p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 pb-5 border-b border-border-subtle">
-          <div className="shrink-0 mx-auto sm:mx-0">
-            <SVGPyramidStatic />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-display font-bold text-xl leading-tight mb-1">
-              שלוש הרמות במבט אחד
-            </h3>
-            <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-              למעלה (אסטרטגית) — רחב, איטי, רחוק. למטה (טקטית) — צמוד, מהיר, כאן ועכשיו. ביניהן (אופרטיבית) — דרג הביניים שמתרגם מטרות מדיניות לתנועה בשטח.
-            </p>
-          </div>
-        </div>
-
-        <ComparisonMatrix />
-      </div>
+      <WarZoomExplorer />
 
       {/* === Practice: Drag scenarios into bins === */}
-      <div className="mt-12">
+      <div className="relative mt-12 overflow-hidden rounded-[3px] border border-border bg-bg-elevated p-4 shadow-elevated sm:p-6">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-brand-dark via-brand to-accent" />
         <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
           <div>
             <h3 className="font-display font-bold text-xl leading-tight mb-1">תרגול גרירה</h3>
@@ -193,7 +165,7 @@ export function LevelsScene() {
         />
 
         {/* 3 Category Bins */}
-        <div className="grid md:grid-cols-3 gap-3 mb-6">
+        <div className="grid md:grid-cols-3 gap-4 mb-6">
           {LEVEL_ORDER.map((level) => (
             <CategoryBin
               key={level}
@@ -239,124 +211,220 @@ export function LevelsScene() {
   );
 }
 
-function ComparisonMatrix() {
+function WarZoomExplorer() {
+  const [activeLevel, setActiveLevel] = useState<Level>('strategic');
+  const meta = LEVELS[activeLevel];
+  const activeIndex = LEVEL_ORDER.indexOf(activeLevel);
+  const pyramidLayers: {
+    level: Level;
+    points: string;
+    depthPoints: string;
+    labelY: number;
+  }[] = [
+    {
+      level: 'tactical',
+      points: '148,32 212,32 244,101 116,101',
+      depthPoints: '116,101 244,101 250,112 110,112',
+      labelY: 70,
+    },
+    {
+      level: 'operational',
+      points: '110,126 250,126 286,203 74,203',
+      depthPoints: '74,203 286,203 292,214 68,214',
+      labelY: 168,
+    },
+    {
+      level: 'strategic',
+      points: '68,222 292,222 336,316 24,316',
+      depthPoints: '24,316 336,316 330,327 30,327',
+      labelY: 270,
+    },
+  ];
+  const detailRows: { label: string; value: string }[] = [
+    { label: 'מי מחליט?', value: meta.who },
+    { label: 'מה רואים?', value: meta.zoom },
+    { label: 'אופק הזמן', value: meta.time },
+  ];
+
   return (
-    <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-      <table className="w-full border-separate border-spacing-0 text-sm">
-        <thead>
-          <tr>
-            <th
-              scope="col"
-              className="hidden sm:table-cell pb-4 px-3 text-right text-sm font-display font-semibold text-fg-muted tracking-wider whitespace-nowrap align-bottom w-[110px]"
-            >
-              ממד
-            </th>
-            {LEVEL_ORDER.map((id) => {
-              const meta = LEVELS[id];
+    <div className="surface-elevated relative overflow-hidden p-4 sm:p-6 lg:p-8">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute -end-24 -top-24 size-72 rounded-full border border-brand/10" />
+        <div className="absolute -end-10 -top-10 size-44 rounded-full border border-brand/10" />
+        <div className="absolute -bottom-28 start-1/3 size-64 rounded-full border border-accent/10" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-brand-dark via-brand to-accent" />
+      </div>
+
+      <div className="relative grid items-center gap-8 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-10">
+        {/* Interactive pyramid — first in RTL, therefore rendered on the right. */}
+        <div className="relative mx-auto w-full max-w-[360px] py-2 lg:py-4">
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <motion.div
+              animate={{
+                scale: 1 + activeIndex * 0.08,
+                opacity: 0.18 - activeIndex * 0.025,
+              }}
+              transition={{ type: 'spring', stiffness: 150, damping: 24 }}
+              className={cn(
+                'absolute start-1/2 top-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full border',
+                meta.borderActive
+              )}
+            />
+            <motion.div
+              animate={{
+                scale: 0.72 + activeIndex * 0.09,
+                opacity: 0.12,
+              }}
+              transition={{ type: 'spring', stiffness: 150, damping: 24 }}
+              className={cn(
+                'absolute start-1/2 top-1/2 size-64 -translate-x-1/2 -translate-y-1/2 rounded-full border',
+                meta.borderActive
+              )}
+            />
+            <div className="absolute inset-y-5 start-1/2 w-px bg-gradient-to-b from-transparent via-border-strong/50 to-transparent" />
+            <div className="absolute inset-x-3 top-1/2 h-px bg-gradient-to-l from-transparent via-border-strong/30 to-transparent" />
+          </div>
+
+          <svg
+            viewBox="0 0 360 350"
+            className="relative z-10 mx-auto w-full overflow-visible"
+            role="tablist"
+            aria-label="בחירת רמת מלחמה מתוך הפירמידה"
+          >
+            {pyramidLayers.map(({ level, points, depthPoints, labelY }) => {
+              const item = LEVELS[level];
+              const isActive = activeLevel === level;
               return (
-                <th
-                  key={id}
-                  scope="col"
-                  className="pb-4 px-3 text-right align-bottom"
+                <motion.g
+                  key={level}
+                  id={`war-level-${level}`}
+                  role="tab"
+                  tabIndex={0}
+                  aria-selected={isActive}
+                  aria-controls="war-level-panel"
+                  aria-label={`הרמה ה${item.label}`}
+                  onClick={() => setActiveLevel(level)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setActiveLevel(level);
+                    }
+                  }}
+                  animate={{
+                    scale: isActive ? 1.035 : 1,
+                    x: isActive ? -3 : 0,
+                    opacity: isActive ? 1 : 0.68,
+                  }}
+                  whileHover={{ scale: isActive ? 1.035 : 1.018, opacity: 1 }}
+                  whileTap={{ scale: 0.985 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 25 }}
+                  style={{ transformOrigin: `180px ${labelY}px` }}
+                  className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Icon name={meta.zoomIcon} size={28} className={cn('shrink-0', meta.text)} />
-                    <div className="min-w-0">
-                      <div
-                        className={cn(
-                          'font-display font-bold text-base leading-tight',
-                          meta.text
-                        )}
-                      >
-                        {meta.label}
-                      </div>
-                      <div className="text-[10px] font-mono text-fg-dim mt-0.5">
-                        {meta.english}
-                      </div>
-                    </div>
-                  </div>
-                </th>
+                  <polygon
+                    points={depthPoints}
+                    fill="currentColor"
+                    className={cn('opacity-35', item.text)}
+                    aria-hidden
+                  />
+                  <polygon
+                    points={points}
+                    stroke="currentColor"
+                    strokeWidth={isActive ? 3 : 1.5}
+                    className={cn(
+                      'transition-all duration-200',
+                      item.text,
+                      item.fillClass,
+                      isActive ? 'drop-shadow-lg' : 'drop-shadow-sm'
+                    )}
+                  />
+                  {isActive && (
+                    <polygon
+                      points={points}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      className={cn('pointer-events-none opacity-15', item.text)}
+                      aria-hidden
+                    />
+                  )}
+                  <text
+                    x="180"
+                    y={labelY + 2}
+                    textAnchor="middle"
+                    className={cn(
+                      'pointer-events-none fill-current font-display font-bold',
+                      isActive ? 'text-[17px]' : 'text-[15px]',
+                      item.text
+                    )}
+                  >
+                    {item.label}
+                  </text>
+                </motion.g>
               );
             })}
-          </tr>
-        </thead>
-        <tbody>
-          {MATRIX_ROWS.map((row) => (
-            <tr key={row.key}>
-              <th
-                scope="row"
-                className="hidden sm:table-cell py-4 px-3 text-right align-top text-sm font-display font-semibold text-fg-muted tracking-wider whitespace-nowrap border-t border-border-subtle"
-              >
-                {row.label}
-              </th>
-              {LEVEL_ORDER.map((id) => {
-                const meta = LEVELS[id];
-                return (
-                  <td
-                    key={id}
-                    className="py-4 px-3 text-right align-top leading-relaxed border-t border-border-subtle"
-                  >
-                    <div className="sm:hidden text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">
-                      {row.label}
-                    </div>
-                    <span
-                      className={cn(
-                        row.key === 'example'
-                          ? 'text-fg-muted text-pretty text-xs sm:text-sm'
-                          : 'text-fg text-xs sm:text-sm'
-                      )}
-                    >
-                      {meta[row.key]}
-                    </span>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+          </svg>
+        </div>
 
-function SVGPyramidStatic() {
-  const order: { id: Level; y: number; left: number; right: number }[] = [
-    { id: 'strategic', y: 8, left: 5, right: 95 },
-    { id: 'operational', y: 40, left: 22, right: 78 },
-    { id: 'tactical', y: 70, left: 36, right: 64 },
-  ];
-  const bottomCap = { y: 98, left: 44, right: 56 };
-
-  return (
-    <svg viewBox="0 0 100 110" className="w-[120px] sm:w-[110px]" aria-hidden>
-      <polygon
-        points={`${order[0].left},${order[0].y - 3} ${order[0].right},${order[0].y - 3} ${bottomCap.right},${bottomCap.y + 2} ${bottomCap.left},${bottomCap.y + 2}`}
-        className="fill-bg-card stroke-border"
-        strokeWidth="0.5"
-      />
-      {order.map((r, i) => {
-        const next = order[i + 1] ?? bottomCap;
-        const meta = LEVELS[r.id];
-        const points = `${r.left},${r.y} ${r.right},${r.y} ${next.right},${next.y} ${next.left},${next.y}`;
-        return (
-          <g key={r.id}>
-            <polygon
-              points={points}
-              className={cn(meta.fillClass, 'stroke-current', meta.text)}
-              strokeWidth="0.6"
-            />
-            <text
-              x="50"
-              y={(r.y + next.y) / 2 + 1.5}
-              textAnchor="middle"
-              className={cn('text-[5px] font-display font-bold', meta.text)}
+        {/* All explanatory content stays together on the left. */}
+        <div
+          id="war-level-panel"
+          role="tabpanel"
+          aria-labelledby={`war-level-${activeLevel}`}
+          className="min-w-0"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeLevel}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{ duration: 0.2 }}
             >
-              {meta.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+              <div className="mb-4 border-b border-border-subtle pb-4">
+                <div className="min-w-0">
+                  <h4 className={cn('font-display text-2xl font-bold sm:text-3xl', meta.text)}>
+                    הרמה ה{meta.label}
+                  </h4>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg sm:text-base">
+                    {activeLevel === 'strategic'
+                      ? 'רואים את המערכה מלמעלה: המטרה היא לקבוע לאן המדינה הולכת ומה היא מוכנה להשקיע.'
+                      : activeLevel === 'operational'
+                        ? 'מתרגמים את הכיוון לתכנית: מחברים בין זירות, כוחות, זמן ולוגיסטיקה.'
+                        : 'נמצאים בתוך האירוע: השטח, האויב והדקות הקרובות קובעים את ההחלטה.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {detailRows.map((row) => (
+                  <div
+                    key={row.label}
+                    className="bg-bg-accent/60 p-3.5"
+                  >
+                    <div className="mb-2">
+                      <span className="text-xs font-display font-semibold text-fg-muted">
+                        {row.label}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed text-fg">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 bg-bg-card p-4 sm:p-5">
+                <div className="mb-2">
+                  <span className="text-xs font-display font-semibold text-fg-muted">
+                    כך נראית החלטה ברמה הזאת
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed text-fg-muted">{meta.example}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -392,8 +460,8 @@ function ScenarioPool({
       animate={{ scale: isOver ? 1.005 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'bg-bg-elevated p-4 mb-6 rounded-[3px] border transition-colors duration-200',
-        isOver ? 'border-brand' : 'border-border',
+        'bg-bg-accent/60 p-4 mb-6 rounded-[3px] border transition-all duration-200',
+        isOver ? 'border-brand bg-brand/10 shadow-paper' : 'border-border',
       )}
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -474,17 +542,17 @@ function CategoryBin({
       animate={{ scale: isOver ? 1.015 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'relative bg-bg-elevated rounded-[3px] overflow-hidden flex flex-col transition-colors duration-200',
-        'border',
+        'relative bg-bg-elevated rounded-[3px] overflow-hidden flex flex-col transition-all duration-200 shadow-elevated',
+        'border border-t-4',
         isOver
-          ? meta.borderActive
+          ? cn(meta.borderActive, meta.bgActive, 'shadow-paper')
           : isWaitingForTap
-            ? cn(meta.borderActive, 'cursor-pointer')
-            : 'border-border',
+            ? cn(meta.borderActive, meta.bgActive, 'cursor-pointer')
+            : cn('border-border', meta.borderActive),
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-3 pr-4">
+      <div className={cn('flex items-center gap-3 border-b border-border-subtle p-4', meta.bgActive)}>
         <div className="flex-1 min-w-0">
           <div className={cn('font-display font-bold leading-tight', meta.text)}>
             {meta.label}
@@ -498,7 +566,7 @@ function CategoryBin({
       </div>
 
       {/* Body */}
-      <div className="p-3 pt-0 flex-1 min-h-[140px]">
+      <div className="p-3 flex-1 min-h-[140px]">
         {scenariosInBin.length === 0 ? (
           <motion.div
             animate={{
@@ -508,7 +576,7 @@ function CategoryBin({
                   ? 'rgba(235, 158, 72, 0.06)'
                   : 'rgba(0, 0, 0, 0.015)',
             }}
-            className="h-full min-h-[120px] rounded-[3px] flex flex-col items-center justify-center gap-2 transition-colors"
+            className="h-full min-h-[120px] rounded-[3px] border border-dashed border-border flex flex-col items-center justify-center gap-2 transition-colors"
           >
             {isOver && (
               <motion.span
@@ -589,7 +657,7 @@ function ScenarioChip({
         onSelect();
       }}
       className={cn(
-        'surface cursor-grab active:cursor-grabbing transition-all',
+        'surface cursor-grab active:cursor-grabbing transition-all hover:-translate-y-0.5 hover:shadow-elevated',
         compact ? 'p-2.5' : 'p-3',
         isSelected && 'border-accent ring-2 ring-accent/40',
         isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/5',

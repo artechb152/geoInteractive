@@ -1,19 +1,21 @@
 import type { Metadata } from 'next';
-import { Heebo, Rubik } from 'next/font/google';
+import { Assistant } from 'next/font/google';
 import './globals.css';
 import { AppHeader } from '@/components/ui/AppHeader';
 
-const heebo = Heebo({
+// Assistant מחליף את Heebo/Rubik — משפחה אחת, היררכיה לפי משקל (עדכון עיצוב 2026-07-28).
+const heebo = Assistant({
   subsets: ['hebrew', 'latin'],
   variable: '--font-heebo',
   display: 'swap',
+  weight: ['300', '400', '500', '600', '700'],
 });
 
-const rubik = Rubik({
+const rubik = Assistant({
   subsets: ['hebrew', 'latin'],
   variable: '--font-rubik',
   display: 'swap',
-  weight: ['500', '600', '700', '800'],
+  weight: ['600', '700', '800'],
 });
 
 export const metadata: Metadata = {

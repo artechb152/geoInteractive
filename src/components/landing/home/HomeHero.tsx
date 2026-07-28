@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useCourseProgress } from '@/lib/course-progress';
+import { Button } from '@/components/ui/Button';
 import { HomeTerrainDiorama } from './HomeTerrainDiorama';
 
 /**
@@ -32,17 +32,17 @@ export function HomeHero() {
           לקרוא מפה. להעריך מרחב. לקבל החלטות בשטח.
         </p>
 
-        <Link
+        <Button
           href={progress.continueHref}
           aria-label={
             progress.started
               ? `המשך ללמוד — שיעור ${String(progress.visit?.topicNumber).padStart(2, '0')}, ${progress.visit?.topicShortTitle}`
               : 'המשך ללמוד — התחלת השיעור הראשון'
           }
-          className="mt-9 flex h-[50px] w-[330px] items-center justify-center gap-2.5 rounded-xl bg-cta-ember text-lg font-bold text-white shadow-cta-ember transition duration-150 ease-snap hover:brightness-105 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-page"
+          className="mt-9 h-[50px] w-[330px] text-lg"
         >
           <span>המשך ללמוד</span>
-        </Link>
+        </Button>
 
         <button
           type="button"

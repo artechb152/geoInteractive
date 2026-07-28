@@ -228,9 +228,9 @@ function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean 
       aria-label={`שיעור ${lesson.num} — ${lesson.title.replace('\n', ' ')}`}
       draggable={false}
       className={cn(
-        'relative flex flex-col items-center rounded-2xl bg-paper-card px-[18px] pb-[28px] pt-[28px] text-center shadow-card-soft transition duration-150 ease-snap hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-panel',
+        'relative flex flex-col items-center rounded-2xl bg-paper-card px-[18px] pb-5 pt-5 text-center shadow-card-soft transition duration-150 ease-snap hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-panel',
         compact ? 'shrink-0' : 'w-full',
-        compact && 'h-[437px] w-[225px]',
+        compact && 'h-[318px] w-[225px]',
       )}
     >
       <span dir="ltr" className="text-[44px] font-extrabold leading-none text-olive-ink">
@@ -244,9 +244,9 @@ function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean 
         fit="contain"
         compactPlaceholder
         eager
-        className="mt-[23px] h-[219px] w-full bg-transparent mix-blend-multiply [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black_50%,transparent_78%)]"
+        className="mt-4 h-[150px] w-full bg-transparent mix-blend-multiply [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black_50%,transparent_78%)]"
       />
-      <h3 className="mt-[23px] whitespace-pre-line text-[20px] font-bold leading-snug text-olive-ink">
+      <h3 className="mt-4 whitespace-pre-line text-[20px] font-bold leading-snug text-olive-ink">
         {lesson.title}
       </h3>
     </Link>

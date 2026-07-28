@@ -286,7 +286,7 @@ function ScenePagerDesktop({
 }) {
   return (
     <aside
-      className="hidden xl:flex flex-col fixed start-0 top-[var(--header-h)] bottom-0 z-20 w-[13vw] overflow-y-auto bg-bg-elevated border-e border-border"
+      className="hidden xl:flex flex-col fixed start-0 top-[var(--header-h)] bottom-0 z-20 w-[13vw] overflow-y-auto bg-bg border-e border-border"
       aria-label="ניווט תתי-נושא"
     >
       <div className="p-4 pt-4 flex-1 flex flex-col">
