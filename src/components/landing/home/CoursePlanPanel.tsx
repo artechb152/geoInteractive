@@ -7,6 +7,7 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { lessons, lessonDioramaSrc } from '@/lib/lessons';
+import { lessonScenes } from '@/lib/lesson-scenes';
 
 /**
  * CoursePlanPanel — פאנל "פרקי הקורס" (design/carouselMockUpHomePage.png).
@@ -21,6 +22,7 @@ type LessonItem = {
   num: string;
   title: string;
   img: string;
+  chapters: string[];
 };
 
 /** תוויות מאושרות במוקאפ ל-01–07; 08–12 נופלים חזרה ל-shortTitle */
@@ -34,12 +36,17 @@ const APPROVED_TITLES: Record<string, string> = {
   'topic-07': 'אקלים ומזג אוויר',
 };
 
+const FRAMING_SCENE_IDS = new Set(['hook', 'onboarding', 'recap']);
+
 /** סדר עולה 01→12 — תחת dir="rtl" הילד הראשון ב-DOM מוצג ימני ביותר */
 const ALL_LESSONS: LessonItem[] = lessons.map((l) => ({
   id: l.id,
   num: String(l.number).padStart(2, '0'),
   title: APPROVED_TITLES[l.id] ?? l.shortTitle,
   img: lessonDioramaSrc(l.number),
+  chapters: (lessonScenes[l.id] ?? [])
+    .filter((s) => !FRAMING_SCENE_IDS.has(s.id))
+    .map((s) => s.label),
 }));
 
 /** שכפול הרשימה פי 3 כדי לאפשר גלילה אינסופית עם קפיצה בלתי מורגשת בין העותקים */
@@ -228,7 +235,7 @@ function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean 
       aria-label={`שיעור ${lesson.num} — ${lesson.title.replace('\n', ' ')}`}
       draggable={false}
       className={cn(
-        'relative flex flex-col items-center rounded-2xl bg-paper-card px-[18px] pb-[28px] pt-[28px] text-center shadow-card-soft transition duration-150 ease-snap hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-panel',
+        'group/hover relative flex flex-col items-center rounded-2xl bg-paper-card px-[18px] pb-[28px] pt-[28px] text-center shadow-card-soft transition duration-150 ease-snap hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-soft focus-visible:ring-offset-2 focus-visible:ring-offset-paper-panel',
         compact ? 'shrink-0' : 'w-full',
         compact && 'h-[437px] w-[225px]',
       )}
@@ -249,6 +256,22 @@ function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean 
       <h3 className="mt-[23px] whitespace-pre-line text-[20px] font-bold leading-snug text-olive-ink">
         {lesson.title}
       </h3>
+
+      {lesson.chapters.length > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-2xl bg-olive-ink/95 px-4 py-6 opacity-0 transition-opacity duration-150 ease-snap group-hover/hover:opacity-100 group-focus-visible/hover:opacity-100"
+        >
+          <span className="text-[13px] font-bold text-paper-card/80">ראשי פרקים</span>
+          <ul className="flex flex-col gap-1.5">
+            {lesson.chapters.map((chapter) => (
+              <li key={chapter} className="text-[14px] font-medium leading-snug text-paper-card">
+                {chapter}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Link>
   );
 }
