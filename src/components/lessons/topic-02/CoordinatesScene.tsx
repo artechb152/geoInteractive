@@ -22,7 +22,7 @@ short: 'ITM',
 long: 'רשת ישראל החדשה (Israeli Transverse Mercator)',
 scope: 'השפה הצבאית של ישראל',
 format: 'שני מספרים שלמים במטרים: מזרח (Easting) וצפון (Northing)',
-example: '666250 / 178350',
+example: '178350 / 666250',
 pros: ['הדיוק הכי גבוה בתוך גבולות המדינה', 'מספרים שלמים וקצרים - קל לדווח בקשר', 'השפה העיקרית של המפות הצבאיות בשטח'],
 cons: ['לא תעבוד מחוץ לגבולות ישראל', 'דורשת"תרגום" מתמטי קטן כדי להסתנכרן עם מכשירי GPS'],
 color: 'text-accent',
@@ -140,6 +140,10 @@ className="surface-elevated p-6 border border-border/50 rounded-[3px]"
 
  {/* Simulation */}
  <DatumShiftDemo shift={shift} setShift={setShift} />
+
+ {/* Digit-by-digit anatomy + hands-on pinpoint drill */}
+ <DigitAnatomy />
+ <GridReferenceExercise />
 
  {/* Final Summary Component */}
  <CoordinateAnatomy />
@@ -289,6 +293,397 @@ strokeDasharray="0.5 0.5"
  </svg>
  );
 }
+/* ─────────────────── DIGIT ANATOMY — WHAT EACH DIGIT MEANS ─────────────── */
+/* Grid-square constants shared with the pinpoint drill below, so the
+   worked example here and the interactive exercise refer to the same
+   printed km-square (178 east / 666 north) — matching the corrected ITM
+   example above (easting-first ordering). */
+const GRID_EAST_KM = '178';
+const GRID_NORTH_KM = '666';
+
+function DigitAnatomy() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
+    >
+      <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+        אנטומיה של נ&quot;צ: מה כל ספרה אומרת
+      </div>
+      <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight mb-4 text-balance">
+        נ&quot;צ הוא לא מספר קסם — הוא שתי כתובות מדויקות, אחת בתוך השנייה
+      </h3>
+      <p className="text-fg leading-relaxed text-pretty mb-6 max-w-3xl">
+        קוראים תמיד <strong className="text-fg">מזרח קודם, צפון אחר-כך</strong> — ואף פעם לא הפוך. בכל אחת משתי המחציות, שלוש הספרות הראשונות הן מספר משבצת הקילומטר <strong className="text-fg">המודפס על המפה עצמה</strong>; הספרות שאחריהן הן המיקום המדויק בתוך אותה משבצת, שאותו מודדים בעזרת <strong className="text-fg">מד קואורדינטות (&quot;מדקו&quot;)</strong> — סרגל שקוף שמחלק כל משבצת קילומטר לעשרה חלקים שווים.
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-4 mb-6">
+        <DigitGroup label="מזרח · Easting" value="1783" color="text-accent" />
+        <DigitGroup label="צפון · Northing" value="6667" color="text-accent-cool" />
+      </div>
+
+      <div className="surface p-4 sm:p-5 rounded-[3px] bg-bg/40 border border-border/40">
+        <p className="text-sm text-fg-muted leading-relaxed">
+          <strong className="text-fg">כל ספרה נוספת בתוך המשבצת מדייקת את המיקום פי 10 בכל ציר בנפרד:</strong> נ&quot;צ של 6 ספרות ({GRID_EAST_KM} / {GRID_NORTH_KM}) מצביע רק על משבצת קילומטר שלמה; נ&quot;צ של 8 ספרות (ספרה נוספת בכל צד, כמו בתרגיל שלמטה) מדייק עוד פי 10 בכל ציר; נ&quot;צ של 10 ספרות מדייק עוד פי 10 נוסף. אבל שימו לב — <strong className="text-fg">אורך הנ&quot;צ לא הופך אתכם למדויקים יותר מהמפה ומהעין שלכם.</strong> קריאה ארוכה בלי הערכה זהירה בשטח נותנת רק ביטחון-יתר מסוכן.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+function DigitGroup({ label, value, color }: { label: string; value: string; color: string }) {
+  const km = value.slice(0, 3);
+  const fine = value.slice(3);
+  return (
+    <div className="surface p-4 sm:p-5 rounded-[3px] border border-border/40 bg-bg/30">
+      <div className={cn('text-xs font-display font-semibold tracking-wider mb-3', color)}>{label}</div>
+      <div className="font-display font-bold text-3xl tabular-nums mb-3">
+        <span className={color}>{km}</span>
+        <span className="text-fg">{fine}</span>
+      </div>
+      <div className="flex flex-col gap-1 text-[11px] text-fg-muted leading-snug">
+        <span className="flex items-center gap-1.5">
+          <span className={cn('inline-block size-1.5 rounded-full shrink-0', color.replace('text-', 'bg-'))} />
+          מספר משבצת ק&quot;מ — מודפס על המפה
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block size-1.5 rounded-full bg-fg-dim shrink-0" />
+          מיקום בתוך המשבצת — נמדד במדקו
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── PINPOINT DRILL — "דקירת נ&quot;צ" ──────────────────── */
+/* Scaffolding + fading (per interactions-and-practice.md): a narrated
+   worked example first (Walkthrough), then independent practice with
+   near-transfer variants (Practice) — each click computes the grid
+   reference of the cell the learner picked and checks it against the
+   target, satisfying the "click a point, get a correctness check of the
+   computed נ"צ" requirement. Both share one 10×10 GridSquare so a cell's
+   (eDigit, nDigit) IS its own reference — no pointer-position math needed. */
+
+type GridTarget = { eDigit: number; nDigit: number };
+
+const DEMO_TARGET: GridTarget = { eDigit: 4, nDigit: 7 };
+
+const PRACTICE_TARGETS: GridTarget[] = [
+  { eDigit: 2, nDigit: 8 },
+  { eDigit: 7, nDigit: 3 },
+  { eDigit: 5, nDigit: 5 },
+];
+
+function refOf(t: GridTarget) {
+  return `${GRID_EAST_KM}${t.eDigit} / ${GRID_NORTH_KM}${t.nDigit}`;
+}
+
+function GridSquare({
+  interactive,
+  onCellClick,
+  highlightCol,
+  highlightRow,
+  target,
+  guess,
+}: {
+  interactive: boolean;
+  onCellClick?: (eDigit: number, nDigit: number) => void;
+  highlightCol?: number;
+  highlightRow?: number;
+  target?: GridTarget;
+  guess?: GridTarget & { correct: boolean };
+}) {
+  return (
+    <div className="w-full max-w-[340px] mx-auto">
+      <div className="flex items-center justify-between px-1 mb-1.5 text-[10px] font-display font-semibold tracking-wide text-fg-dim">
+        <span>צפון (Northing) {GRID_NORTH_KM}–{Number(GRID_NORTH_KM) + 1}</span>
+      </div>
+      <div className="relative aspect-square rounded-[3px] border border-border-strong overflow-hidden bg-bg-elevated">
+        {/* viewBox extends left+bottom of the 0..100 grid so axis tick digits
+            sit in their own margin, instead of both axes' "0" tick colliding
+            in the bottom-left corner cell. */}
+        <svg viewBox="-14 0 114 114" className="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden>
+          <rect x="0" y="0" width="100" height="100" className="fill-bg-elevated stroke-border-strong" strokeWidth="0.6" />
+          {Array.from({ length: 9 }).map((_, i) => (
+            <g key={i}>
+              <line x1={(i + 1) * 10} y1="0" x2={(i + 1) * 10} y2="100" className="stroke-border/30" strokeWidth="0.3" />
+              <line x1="0" y1={(i + 1) * 10} x2="100" y2={(i + 1) * 10} className="stroke-border/30" strokeWidth="0.3" />
+            </g>
+          ))}
+          {highlightCol !== undefined && (
+            <rect x={highlightCol * 10} y="0" width="10" height="100" className="fill-accent/12" />
+          )}
+          {highlightRow !== undefined && (
+            <rect x="0" y={90 - highlightRow * 10} width="100" height="10" className="fill-accent-cool/12" />
+          )}
+          {/* easting ticks, below the square, ascending left→right (never mirrored) */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <text key={'e' + i} x={i * 10 + 5} y="107" textAnchor="middle" fontSize="4" className="fill-fg-dim font-display font-semibold">
+              {i}
+            </text>
+          ))}
+          {/* northing ticks, left of the square, ascending bottom→top */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <text key={'n' + i} x="-7" y={95 - i * 10 + 1.2} textAnchor="middle" fontSize="4" className="fill-fg-dim font-display font-semibold">
+              {i}
+            </text>
+          ))}
+          {target && (
+            <g transform={`translate(${target.eDigit * 10 + 5} ${95 - target.nDigit * 10})`}>
+              <circle r="3.2" fill="none" className="stroke-status-ok" strokeWidth="0.6" strokeDasharray="1.2 1" />
+              <circle r="0.9" className="fill-status-ok" />
+            </g>
+          )}
+          {guess && (
+            <g transform={`translate(${guess.eDigit * 10 + 5} ${95 - guess.nDigit * 10})`}>
+              <circle r="2.6" className={guess.correct ? 'fill-status-ok/70' : 'fill-status-danger/70'} />
+            </g>
+          )}
+        </svg>
+        {/* 10×10 clickable/focusable overlay — cell (col,row) IS (eDigit,nDigit).
+            Positioned in physical (non-logical) px because it must line up
+            exactly with the 0..100 grid square inside the -14..100 viewBox —
+            a diagram-alignment concern, not RTL text flow. */}
+        <div
+          className="absolute grid grid-cols-10 grid-rows-10"
+          style={{ left: `${(14 / 114) * 100}%`, right: 0, top: 0, bottom: `${(14 / 114) * 100}%` }}
+        >
+          {Array.from({ length: 10 }).flatMap((_, row) =>
+            Array.from({ length: 10 }).map((_, col) => {
+              const eDigit = col;
+              const nDigit = 9 - row;
+              return (
+                <button
+                  key={`${row}-${col}`}
+                  type="button"
+                  disabled={!interactive}
+                  aria-label={`משבצת ${GRID_EAST_KM}${eDigit} / ${GRID_NORTH_KM}${nDigit}`}
+                  onClick={() => onCellClick?.(eDigit, nDigit)}
+                  className={cn(
+                    'focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset',
+                    interactive && 'hover:bg-accent/8 cursor-pointer',
+                  )}
+                />
+              );
+            }),
+          )}
+        </div>
+      </div>
+      <div className="flex items-center justify-between px-1 mt-1.5 text-[10px] font-display font-semibold tracking-wide text-fg-dim">
+        <span>מזרח (Easting) {GRID_EAST_KM}–{Number(GRID_EAST_KM) + 1}</span>
+      </div>
+    </div>
+  );
+}
+
+const WALKTHROUGH_STEPS: { title: string; body: string; highlightCol?: number; highlightRow?: number; showTarget?: boolean }[] = [
+  {
+    title: '1 · המשבצת המודפסת',
+    body: `זו משבצת קילומטר בודדת מהמפה — בדיוק כמו הדוגמה שראיתם למעלה. הקווים המודפסים נותנים את שלוש הספרות הראשונות של כל ציר: מזרח ${GRID_EAST_KM}, צפון ${GRID_NORTH_KM}.`,
+  },
+  {
+    title: '2 · קודם מזרח',
+    body: 'מניחים את מד הקואורדינטות לאורך התחתית ומעריכים כמה חלקים מתוך עשרה הנקודה מרוחקת מהקו השמאלי — זו הספרה הרביעית בציר המזרח.',
+    highlightCol: DEMO_TARGET.eDigit,
+  },
+  {
+    title: '3 · אחר-כך צפון',
+    body: 'אותו דבר על הציר האנכי: סופרים כמה חלקים מתוך עשרה מהתחתית — זו הספרה הרביעית בציר הצפון.',
+    highlightRow: DEMO_TARGET.nDigit,
+  },
+  {
+    title: '4 · מרכיבים את הנ"צ',
+    body: `מחברים את שתי המחציות: מזרח ${GRID_EAST_KM}${DEMO_TARGET.eDigit}, צפון ${GRID_NORTH_KM}${DEMO_TARGET.nDigit}. זה נ"צ מלא של הנקודה — בסדר הנכון, מזרח לפני צפון.`,
+    highlightCol: DEMO_TARGET.eDigit,
+    highlightRow: DEMO_TARGET.nDigit,
+    showTarget: true,
+  },
+];
+
+function DigitWalkthrough() {
+  const [step, setStep] = useState(0);
+  const s = WALKTHROUGH_STEPS[step];
+  const last = step === WALKTHROUGH_STEPS.length - 1;
+  return (
+    <div className="grid md:grid-cols-[1fr_1.1fr] gap-6 items-center">
+      <div>
+        <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">שלב הדגמה — כך עושים את זה</div>
+        <AnimatePresence mode="wait">
+          <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
+            <h4 className="font-display font-bold text-lg leading-tight mb-2">{s.title}</h4>
+            <p className="text-sm text-fg-muted leading-relaxed mb-4">{s.body}</p>
+          </motion.div>
+        </AnimatePresence>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={step === 0}
+            onClick={() => setStep((v) => Math.max(0, v - 1))}
+            className="btn-secondary text-sm px-4 py-2 disabled:opacity-40"
+          >
+            הקודם
+          </button>
+          {!last && (
+            <button
+              type="button"
+              onClick={() => setStep((v) => Math.min(WALKTHROUGH_STEPS.length - 1, v + 1))}
+              className="btn-primary text-sm px-4 py-2"
+            >
+              הבא
+            </button>
+          )}
+        </div>
+      </div>
+      <GridSquare
+        interactive={false}
+        highlightCol={s.highlightCol}
+        highlightRow={s.highlightRow}
+        target={s.showTarget ? DEMO_TARGET : undefined}
+      />
+    </div>
+  );
+}
+
+function DigitPractice() {
+  const [index, setIndex] = useState(0);
+  const [attempt, setAttempt] = useState<(GridTarget & { correct: boolean }) | null>(null);
+  const [solvedCount, setSolvedCount] = useState(0);
+
+  const target = PRACTICE_TARGETS[index];
+  const done = index >= PRACTICE_TARGETS.length;
+
+  const handleClick = (eDigit: number, nDigit: number) => {
+    const correct = eDigit === target.eDigit && nDigit === target.nDigit;
+    setAttempt({ eDigit, nDigit, correct });
+    if (correct) setSolvedCount((c) => c + 1);
+  };
+
+  const next = () => {
+    setAttempt(null);
+    setIndex((i) => i + 1);
+  };
+
+  const reset = () => {
+    setAttempt(null);
+    setIndex(0);
+    setSolvedCount(0);
+  };
+
+  if (done) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-4xl font-display font-bold text-accent tabular-nums mb-2">
+          {solvedCount}/{PRACTICE_TARGETS.length}
+        </div>
+        <p className="text-fg-muted text-sm mb-4">דקירות נכונות מתוך {PRACTICE_TARGETS.length} תרגילים.</p>
+        <button type="button" onClick={reset} className="btn-secondary text-sm px-4 py-2">
+          תרגלו שוב
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-[1fr_1.1fr] gap-6 items-center">
+      <div>
+        <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
+          תרגול עצמאי — תרגיל {index + 1} מתוך {PRACTICE_TARGETS.length}
+        </div>
+        <p className="text-sm text-fg leading-relaxed mb-4">
+          דקרו על המפה את הנקודה בעלת הנ&quot;צ: <strong className="text-fg tabular-nums">{refOf(target)}</strong>
+        </p>
+        <AnimatePresence mode="wait">
+          {attempt && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                'rounded-[3px] border p-3 text-sm mb-4',
+                attempt.correct
+                  ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
+                  : 'border-status-danger/40 bg-status-danger/10 text-status-danger',
+              )}
+            >
+              {attempt.correct
+                ? `בדיוק! דקרתם ${refOf(attempt)} — תואם.`
+                : `דקרתם ${refOf(attempt)}, אבל הנ"צ המבוקש הוא ${refOf(target)} (מסומן בעיגול הירוק המקווקו). נסו שוב.`}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="flex gap-2">
+          {attempt && !attempt.correct && (
+            <button type="button" onClick={() => setAttempt(null)} className="btn-secondary text-sm px-4 py-2">
+              נסו שוב
+            </button>
+          )}
+          {attempt?.correct && (
+            <button type="button" onClick={next} className="btn-primary text-sm px-4 py-2">
+              התרגיל הבא
+            </button>
+          )}
+        </div>
+      </div>
+      <GridSquare
+        interactive={!attempt}
+        onCellClick={handleClick}
+        target={attempt && !attempt.correct ? target : undefined}
+        guess={attempt ?? undefined}
+      />
+    </div>
+  );
+}
+
+function GridReferenceExercise() {
+  const [mode, setMode] = useState<'demo' | 'practice'>('demo');
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <Icon name="crosshair" size={24} className="text-accent shrink-0" />
+        <div>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight text-balance">תרגיל: דקירת נ&quot;צ</h3>
+          <p className="text-sm text-fg-muted mt-1">קודם הדגמה מונחית, ואז מתרגלים לבד — לוחצים על המשבצת הנכונה ומקבלים בדיקה מיידית.</p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        <button
+          type="button"
+          onClick={() => setMode('demo')}
+          className={cn(
+            'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
+            mode === 'demo' ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
+          )}
+        >
+          1. הדגמה
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('practice')}
+          className={cn(
+            'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
+            mode === 'practice' ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
+          )}
+        >
+          2. תרגול עצמאי
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          {mode === 'demo' ? <DigitWalkthrough /> : <DigitPractice />}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 function CoordinateAnatomy() {
 return (
  <motion.div

@@ -17,6 +17,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -37,11 +38,16 @@ const PROTOTYPES = [
 const root = process.cwd();
 
 for (const p of PROTOTYPES) {
-  const src = join(root, p.src);
-  if (!existsSync(src)) {
+  const srcLink = join(root, p.src);
+  if (!existsSync(srcLink)) {
     console.warn(`[skip] ${p.name}: source not found at ${p.src}`);
     continue;
   }
+  // Resolve junctions/symlinks to their real path before building — Vite/
+  // Rollup realpath the project root internally, and building with a
+  // junction as cwd produces mismatched relative asset paths ("outside
+  // root" errors) when the two disagree.
+  const src = realpathSync(srcLink);
   console.log(`[build] ${p.name}`);
   execSync('npm install', { cwd: src, stdio: 'inherit' });
   execSync('npm run build', { cwd: src, stdio: 'inherit' });
