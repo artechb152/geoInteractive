@@ -27,7 +27,7 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'contours', label: 'קווי גובה' },
     { id: 'recap', label: 'סיכום' },
   ],
-  'topic-03': [
+  'topic-06': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
     { id: 'principles', label: 'עקרונות הניווט' },
@@ -35,7 +35,7 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'combatnav', label: 'ניווט קרבי' },
     { id: 'recap', label: 'סיכום' },
   ],
-  'topic-04': [
+  'topic-03': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
     { id: 'geology', label: 'גיאולוגיה' },
@@ -43,7 +43,7 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'tacticalterrain', label: 'שטח טקטי' },
     { id: 'recap', label: 'סיכום' },
   ],
-  'topic-05': [
+  'topic-04': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
     { id: 'trafficability', label: 'עבירות' },
@@ -52,7 +52,7 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'vegetation', label: 'תכסית וצומח' },
     { id: 'recap', label: 'סיכום' },
   ],
-  'topic-06': [
+  'topic-05': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
     { id: 'los', label: 'קו ראייה' },
@@ -141,10 +141,10 @@ export const difficultyLabels: Record<'foundation' | 'intermediate' | 'advanced'
 export const lessonAssets: Record<string, { card: string; hook: string; slug: string }> = {
   'topic-01': { slug: 'strategy-terrain', card: '/assets/isometric/lesson-01-strategy-terrain.png', hook: '/assets/isometric/lesson-01-strategy-terrain-hook.png' },
   'topic-02': { slug: 'map-reading', card: '/assets/isometric/lesson-02-map-reading.png', hook: '/assets/isometric/lesson-02-map-reading-hook.png' },
-  'topic-03': { slug: 'navigation', card: '/assets/isometric/lesson-03-navigation.png', hook: '/assets/isometric/lesson-03-navigation-hook.png' },
-  'topic-04': { slug: 'landforms', card: '/assets/isometric/lesson-04-landforms.png', hook: '/assets/isometric/lesson-04-landforms-hook.png' },
-  'topic-05': { slug: 'mobility', card: '/assets/isometric/lesson-05-mobility.png', hook: '/assets/isometric/lesson-05-mobility-hook.png' },
-  'topic-06': { slug: 'los', card: '/assets/isometric/lesson-06-los.png', hook: '/assets/isometric/lesson-06-los-hook.png' },
+  'topic-03': { slug: 'landforms', card: '/assets/isometric/lesson-03-landforms.png', hook: '/assets/isometric/lesson-03-landforms-hook.png' },
+  'topic-04': { slug: 'mobility', card: '/assets/isometric/lesson-04-mobility.png', hook: '/assets/isometric/lesson-04-mobility-hook.png' },
+  'topic-05': { slug: 'los', card: '/assets/isometric/lesson-05-los.png', hook: '/assets/isometric/lesson-05-los-hook.png' },
+  'topic-06': { slug: 'navigation', card: '/assets/isometric/lesson-06-navigation.png', hook: '/assets/isometric/lesson-06-navigation-hook.png' },
   'topic-07': { slug: 'weather', card: '/assets/isometric/lesson-07-weather.png', hook: '/assets/isometric/lesson-07-weather-hook.png' },
   'topic-08': { slug: 'logistics', card: '/assets/isometric/lesson-08-logistics.png', hook: '/assets/isometric/lesson-08-logistics-hook.png' },
   'topic-09': { slug: 'chokepoints', card: '/assets/isometric/lesson-09-chokepoints.png', hook: '/assets/isometric/lesson-09-chokepoints-hook.png' },
