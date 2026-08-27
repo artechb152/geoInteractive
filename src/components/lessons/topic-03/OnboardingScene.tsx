@@ -3,92 +3,96 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { IntelCard } from '@/components/lesson/IntelCard';
+import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
-type Phase = 'plan' | 'start' | 'travel' | 'arrive';
+type View = 'flat' | 'mountain' | 'valley' | 'analyzed';
 
 type Step = {
-  id: Phase;
+  id: View;
   label: string;
   icon: IconName;
-  caption: string;
-  insight: string;
+  popupTitle: string;
+  popupBody: string;
 };
 
 const STEPS: Step[] = [
   {
-    id: 'plan',
-    label: 'תכנון: המלחמה על המפה',
-    icon: 'flag',
-    caption: 'אתם יושבים בחמ"ל מול המפה. סימנתם מאיפה יוצאים (A) ולאן מגיעים (B). עכשיו הדילמה: האם ללכת בקו ישר ומהיר אבל חשוף לאויב, או במסלול עוקף, מוגן וארוך יותר?',
-    insight: 'ניווט מוצלח מתחיל בראש. החלטה נכונה עכשיו תחסוך לכם ברדק וטעויות בלילה, כשכבר יהיה מאוחר מדי לחשוב.',
-  },
-  {
-    id: 'start',
-    label: 'יציאה: נועלים כיוון',
-    icon: 'compass',
-    caption: 'יוצאים לדרך. שולפים מצפן ומודדים את הזווית המדויקת ליעד — זהו ה"אזימוט" (למשל: 47 מעלות). זה המצפן המוסרי שלכם לשעה הקרובה.',
-    insight: 'בשטח, "בערך" זה לא עובד. סטייה קטנה של 5 מעלות תגרום לכם לפספס את היעד ב-90 מטר על כל קילומטר של הליכה.',
-  },
-  {
-    id: 'travel',
-    label: 'בתנועה: "עיניים לשטח"',
+    id: 'flat',
+    label: 'מתחילים מהמראה התמים',
     icon: 'eye',
-    caption: 'אחרי 200 מטר, עוצרים לרגע. האם הגבעה שמימין והדקלים מימין נמצאים איפה שהמפה הבטיחה? אלו ה"עוגנים" שלכם — סימני דרך שמאשרים שאתם על הנתיב.',
-    insight: 'נווט טוב לא רק הולך, הוא "מדבר" עם השטח. תמיד תשוו בין מה שהעיניים רואות לבין מה שהמפה מספרת.',
+    popupTitle: 'מבט שטוח: רואים — אבל לא יודעים',
+    popupBody:
+      'מבט שטוח על הנוף. אנחנו רואים אדמה, סלעים וצמחייה, אבל חסר לנו המידע החשוב באמת: הגובה, העומק והמרחקים. בלי לנתח את צורת פני הקרקע (המורפולוגיה), אי אפשר לדעת איפה האויב יכול להסתתר או מאיפה כדאי להתקדם. הצבא לא יכול לקבל החלטות על סמך "תמונה יפה" בלבד.',
   },
   {
-    id: 'arrive',
-    label: 'הגעה: חותמת סופית',
-    icon: 'target',
-    caption: 'הגעתם לאזור היעד. איך תדעו שזה בדיוק זה? מחפשים "אימות": צומת דרכים מסוים או מבנה בולט. רק כשכל החלקים בפאזל מתאימים — אפשר להכריז: "הגענו".',
-    insight: 'להגיע לאזור זה קל, להגיע לנקודה המדויקת בערפל או בחושך — זה האתגר האמיתי. אל תנחשו, תוודאו.',
+    id: 'mountain',
+    label: 'מסמנים את הגובה',
+    icon: 'mountain',
+    popupTitle: 'גובה: היתרון הטופוגרפי הכי בסיסי',
+    popupBody:
+      'הוספת קווי גובה (קונטור) הופכת את המפה לתלת-ממדית. פתאום אפשר להבחין מהי פסגה ומהו עמק, וכמה הר הוא תלול. מי שתופס את השטח הגבוה רואה את האויב ראשון, יורה אליו ראשון ונהנה מיתרון לוגיסטי גדול — לכן צבאות לרוב נלחמים על הפסגות.',
+  },
+  {
+    id: 'valley',
+    label: 'מסמנים מה מסתתר',
+    icon: 'shield',
+    popupTitle: 'שטח מת: מה שמוסתר מהעין שווה זהב',
+    popupBody:
+      '"שטח מת" (Dead Space) הוא אזור שמוסתר מאיתנו בגלל כפלי קרקע או מצוקים — אנחנו לא יכולים לראות מה קורה בו ולא לירות אליו בקו ישר. מפקד חכם משתמש בשטח מת כדי להגניב כוחות אל היעד, להחביא מפקדה ולהגן על האספקה שלו. מה שלא רואים — לא יורים בו.',
+  },
+  {
+    id: 'analyzed',
+    label: 'התמונה הצבאית המלאה',
+    icon: 'crosshair',
+    popupTitle: 'שטח שולט + שטח חיוני = תוכנית הקרב',
+    popupBody:
+      'עכשיו מסמנים שני סוגי שטחים מיוחדים: "שטח שולט" — הנקודות שמהן רואים הכל ושולטים באש על השטח מסביב; ו"שטח חיוני" — נקודות שכל מי שעובר בשטח חייב לעבור דרכן, כמו צומת או מעבר. המפה כבר לא ציור, היא תוכנית עבודה: איפה לתפוס תצפית, איפה לחסום את האויב, ואיפה יקרה הקרב.',
   },
 ];
 
 const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
   {
-    headline: 'לנווט עם החושים: סוד המדבר',
-    place: 'נגב · אלפי שנים',
-    lesson: 'במשך דורות, הבדואים חצו מאות קילומטרים של חולות ללא מפה אחת. הם השתמשו בכוכבים, ברוח ובצורת הדיונות. ה-GPS לא חידש כלום — הוא רק הפך את זה ליותר קל.',
-    icon: 'star',
-    accent: 'text-accent-cool',
+    headline: 'ממעט טנקים על הפסגה — בלמו מאות בעמק',
+    place: 'בקעת הבכא · יום הכיפורים 1973',
+    lesson: 'במלחמת יום הכיפורים, הסורים שלחו מאות טנקים דרך עמקים מבלי לאבטח את השטח השולט מסביב. כוחות צה"ל שהתמקמו בכיפות (הפסגות) נהנו מעליונות בתצפית ובאש, ובלמו כוחות גדולים מהם פי 5.',
+    icon: 'mountain',
+    accent: 'text-accent',
   },
   {
-    headline: 'אבודים בערפל: לקחי יער הוורטגן',
-    place: 'גרמניה · 1944',
-    lesson: 'ב-1944, יחידות אמריקאיות שלמות איבדו התמצאות ביער עבות. בלי "סיפור דרך" מוכן מראש, הן הסתובבו במעגלים ונתפסו ע"י האויב. כשלא קוראים נכון את הקרקע, השטח הופך למלכודת.',
-    icon: 'compass',
-    accent: 'text-accent-hot',
-  },
-  {
-    headline: 'כשלוויינים שותקים: המלחמה המודרנית',
-    place: 'אוקראינה · 2022 ואילך',
-    lesson: 'בשדות הקרב של אוקראינה, ה-GPS לעיתים קרובות משובש וחסר תועלת. הלוחמים חזרו למקורות: מפת נייר ומצפן. מי שסומך רק על הטכנולוגיה — יישאר מאחור ברגע האמת.',
-    icon: 'satellite',
-    accent: 'text-accent-intel',
-  },
-  {
-    headline: 'מחיר הטעות: ניווט תחת אש',
-    place: 'דרום לבנון · 1997',
-    lesson: 'בפעילות מבצעית בלבנון, טעויות קטנות במיקום הובילו יחידות עילית למקומות לא מתוכננים ולקרבות קשים. בניווט קרבי, סטייה של מטרים ספורים יכולה להיות ההבדל בין הצלחה לאסון.',
+    headline: 'טור אמריקאי בוואדי — אש מ-3 כיוונים',
+    place: 'אפגניסטן · 2008',
+    lesson: 'יחידה אמריקאית התקדמה בתוך גיא (ואדי) צר. הטאליבן ניצל את השלוחות השולטות כדי לפתוח באש מ-3 כיוונים. התוצאה הייתה קטלנית, כי הכוח האמריקאי היה בנחיתות טופוגרפית מוחלטת בתוך העמק.',
     icon: 'crosshair',
     accent: 'text-status-danger',
+  },
+  {
+    headline: 'אוכף בין פסגות — עוקפים את ההגנה',
+    place: 'נורמנדי · קיץ 1944',
+    lesson: 'במקום לתקוף חזיתית פסגות מבוצרות, יחידה בריטית זיהתה אוכף — נקודת שפל נוחה למעבר בין שתי כיפות. המעבר דרך האוכף אפשר להם לעקוף את קווי ההגנה ולהפתיע את הגרמנים מהאגף.',
+    icon: 'check',
+    accent: 'text-status-ok',
+  },
+  {
+    headline: 'מבוצרים בעמק — בלי שטח שולט, בלי תקומה',
+    place: 'דיאן ביאן פו · ויאטנם 1954',
+    lesson: 'הצרפתים התמקמו בעמק עמוק והפקירו את השטח השולט (השלוחות והפסגות) לוייטנאמים. התוצאה: הכוח הצרפתי הפך למטרה נייחת בתוך "שטח השמדה", מה שהוביל לתבוסה מוחלטת במלחמה.',
+    icon: 'shield',
+    accent: 'text-status-warn',
   },
 ];
 
 export function OnboardingScene() {
-  const [phase, setPhase] = useState<Phase>('plan');
-  const [expandedStep, setExpandedStep] = useState<Phase | null>('plan');
+  const [view, setView] = useState<View>('flat');
+  const [expandedStep, setExpandedStep] = useState<View | null>('flat');
 
-  const handleStepClick = (id: Phase) => {
+  const handleStepClick = (id: View) => {
     if (expandedStep === id) {
       setExpandedStep(null);
     } else {
-      setPhase(id);
+      setView(id);
       setExpandedStep(id);
     }
   };
@@ -96,22 +100,22 @@ export function OnboardingScene() {
   return (
     <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
-        step="03.0"
+        step="04.0"
         eyebrow="לפני שמתחילים"
- title={
-          <>
-          ניווט מבצעי: הרבה מעבר ל<span className="gradient-text">קריאת מפה</span>
-          </>
-        }
-        intro="דמיין שאתה צריך להוביל קבוצה ממקום A למקום B — בלילה, בשטח שאתה לא מכיר. בוא נראה ביחד מה זה אומר בפועל, צעד אחר צעד."
+title = {
+  <>
+    <span className="gradient-text">איך לוחמים קוראים שטח — ולא רק מסתכלים עליו?</span>
+  </>
+}        intro="תייר רואה נוף יפה; מפקד רואה הזדמנויות ומכשולים. כדי להבין את שדה הקרב, עלינו לקלף את השכבות של פני השטח (המורפולוגיה). בוא נראה איך אותו הר משתנה ב-4 שלבים — מהמבט התמים ועד לניתוח הצבאי שיכריע את הקרב."
       />
 
       <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
         <div className="space-y-3">
           {STEPS.map((s, i) => {
-            const active = phase === s.id;
+            const active = view === s.id;
             const expanded = expandedStep === s.id;
-            const passed = STEPS.findIndex((x) => x.id === phase) > i;
+            const passed = STEPS.findIndex((x) => x.id === view) > i;
             return (
               <div
                 key={s.id}
@@ -127,12 +131,18 @@ export function OnboardingScene() {
                   type="button"
                   onClick={() => handleStepClick(s.id)}
                   aria-expanded={expanded}
-                  aria-controls={`step-panel-${s.id}`}
+                  aria-controls={`t4-onb-panel-${s.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
+                  {active && (
+                    <motion.span
+                      layoutId="t4-onb-bar"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                    />
+                  )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
@@ -143,9 +153,7 @@ export function OnboardingScene() {
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>
-                      {s.label}
-                    </div>
+                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
                   </div>
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
@@ -167,31 +175,27 @@ export function OnboardingScene() {
                     </svg>
                   </motion.span>
                 </button>
-
                 <AnimatePresence initial={false}>
                   {expanded && (
                     <motion.div
-                      key={`panel-${s.id}`}
-                      id={`step-panel-${s.id}`}
+                      key={`t4-onb-panel-${s.id}`}
+                      id={`t4-onb-panel-${s.id}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
-                        <div className="mt-3">
-                          <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
-                            מה אתה עושה בשלב הזה?
-                          </div>
-                          <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
+                          למה זה משנה
                         </div>
-                        <div className="pt-2 border-t border-border-subtle">
-                          <div className="text-sm font-display font-semibold text-brand-dark mb-1.5 tracking-wider flex items-center gap-1.5">
-                            ולמה זה משנה?
-                          </div>
-                          <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>
-                        </div>
+                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                          {s.popupTitle}
+                        </h4>
+                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                          {s.popupBody}
+                        </p>
                       </div>
                     </motion.div>
                   )}
@@ -201,12 +205,13 @@ export function OnboardingScene() {
           })}
         </div>
 
+        {/* Visualization — second child → LEFT in RTL */}
         <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
-          <MissionStage phase={phase} />
+          <TerrainStage view={view} />
         </div>
       </div>
 
-      <SoftDivider text="ניווט גרוע = חיים בסכנה" />
+      <SoftDivider text="כשלא קוראים נכון את ההר — המחיר עצום" />
 
       <div className="grid sm:grid-cols-2 gap-4">
         {HISTORICAL.map((h, i) => (
@@ -222,268 +227,199 @@ export function OnboardingScene() {
       </div>
 
       <ReadyCallout title="עכשיו אתם מוכנים">
-        <p>הבנת ש"ניווט" זה תהליך שלם — לא רק קריאת מפה. בשלוש הסצנות הבאות נלמד את הכלים בפועל:
-            <strong className="text-fg"> איך מחשבים אזימוט, איך מתכננים מסלול, ואיך מנווטים בשטח אויב</strong>.</p>
+        <p>הבנת ש"קריאת שטח" זה משהו שלם — לא ריגוש מהנוף. בשלוש הסצנות הבאות נצלול לעומק:
+            <strong className="text-fg"> מאיזה סלע ההר עשוי, איך לזהות 5 צורות נוף קלאסיות, ואיך מסווגים שטח לפי הערך הצבאי שלו</strong>.</p>
       </ReadyCallout>
     </section>
   );
 }
 
-function MissionStage({ phase }: { phase: Phase }) {
+function TerrainStage({ view }: { view: View }) {
+  const showHeights = view !== 'flat';
+  const showHidden = view === 'valley' || view === 'analyzed';
+  const showTactical = view === 'analyzed';
+
+  const peaks = [
+    { x: 18, y: 38, h: '420' },
+    { x: 50, y: 30, h: '540' },
+    { x: 82, y: 35, h: '480' },
+  ];
+
   return (
     <div className="relative w-full h-full">
-      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+      <svg viewBox="0 0 100 75" className="w-full h-full">
         <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
-        {/* Grid */}
-        {Array.from({ length: 10 }).map((_, i) => (
-          <line key={'gx' + i} x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle" strokeWidth="0.1" />
-        ))}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <line key={'gy' + i} x1="0" y1={i * 10} x2="100" y2={i * 10} className="stroke-border-subtle" strokeWidth="0.1" />
-        ))}
+        {/* Mountain silhouettes */}
+        <path
+          d="M0 65 L18 38 L34 55 L50 30 L66 48 L82 35 L100 60 L100 75 L0 75 Z"
+          className="fill-terrain-ridge/30 stroke-terrain-ridge/50"
+          strokeWidth="0.3"
+        />
+        <path
+          d="M0 70 L25 50 L45 60 L65 45 L85 58 L100 65 L100 75 L0 75 Z"
+          className="fill-terrain-sand/15"
+        />
 
-        {/* Terrain — hill landmark (גבעה): rounded grassy knoll */}
+        {/* Objective flag on the highest peak — always visible, in every step, so the
+            board itself keeps making the point: this is the ground armies fight for.
+            Planted at the peak marker's own bottom-right corner point so the pole reads
+            as rooted in the summit (and the ridge slope beneath it) in every state,
+            including 'flat' before the peak marker itself appears. */}
         <g>
-          <defs>
-            <linearGradient id="t3HillBody" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#8c9c57" />
-              <stop offset="1" stopColor="#5a6b4a" />
-            </linearGradient>
-          </defs>
-          {/* soft ground shadow */}
-          <ellipse cx="62" cy="32" rx="13" ry="1.6" className="fill-terrain-steel/16" />
-          <ellipse cx="61.6" cy="32.05" rx="8" ry="0.95" className="fill-terrain-steel/12" />
-          {/* dome body */}
-          <path d="M50 32 C50.5 24.5 55.5 19.4 62 19.4 C68.5 19.4 73.5 24.5 73.5 32 Z" fill="url(#t3HillBody)" />
-          {/* soft sunlit left shoulder */}
-          <path d="M53.4 30.2 C53.8 25.4 56.4 21.4 60 20.1 C58.4 22.6 56.9 26.4 55.6 30.2 Z" fill="rgba(225,232,196,0.20)" />
-          {/* soft shadow on right flank */}
-          <path d="M64 20.6 C69 21.7 73 25.6 73.5 32 L67.4 32 C68.4 27 66.9 23.1 64 20.6 Z" className="fill-terrain-steel/20" />
-          {/* crisp grassy outline */}
-          <path d="M50 32 C50.5 24.5 55.5 19.4 62 19.4 C68.5 19.4 73.5 24.5 73.5 32" fill="none" stroke="#4d6b4e" strokeWidth="0.4" strokeLinecap="round" />
-          {/* contour creases */}
-          <path d="M53.6 30 C57 27.6 67 27.6 70.4 30" fill="none" stroke="rgba(60,75,55,0.34)" strokeWidth="0.22" strokeLinecap="round" />
-          <path d="M55.6 27 C58.6 25.3 65.4 25.3 68.4 27" fill="none" stroke="rgba(60,75,55,0.26)" strokeWidth="0.2" strokeLinecap="round" />
-          {/* grass tufts for texture */}
-          <g stroke="#3f4d2f" strokeWidth="0.2" strokeLinecap="round" opacity="0.7" fill="none">
-            <path d="M60.4 21.4 l-0.35 -1.1 M61 21.3 l0 -1.2 M61.6 21.4 l0.35 -1.1" />
-            <path d="M57.4 24.4 l-0.3 -1 M57.9 24.3 l0.05 -1.05" />
-            <path d="M65.8 24.6 l0.3 -1 M65.3 24.5 l-0.05 -1.05" />
-            <path d="M62.6 26.6 l-0.3 -1 M63.1 26.6 l0.05 -1.05" />
-          </g>
-          {/* shrub on left slope */}
-          <g>
-            <line x1="56.3" y1="31.3" x2="56.3" y2="30.2" stroke="#6f5230" strokeWidth="0.26" strokeLinecap="round" />
-            <circle cx="56.3" cy="29.6" r="0.95" className="fill-terrain-olive" />
-            <circle cx="55.8" cy="30" r="0.7" fill="#8a9c4a" />
-            <circle cx="56.8" cy="30" r="0.62" fill="#6f7f37" />
-          </g>
-          {/* shrub on right slope */}
-          <g>
-            <line x1="67.6" y1="31.2" x2="67.6" y2="30.3" stroke="#6f5230" strokeWidth="0.24" strokeLinecap="round" />
-            <circle cx="67.6" cy="29.8" r="0.8" className="fill-terrain-olive" />
-            <circle cx="68.1" cy="30.1" r="0.6" fill="#8a9c4a" />
-          </g>
-          {/* rocks at the base */}
-          <path d="M52.6 32 a1.5 1.1 0 0 1 3 0 Z" className="fill-terrain-sand" />
-          <path d="M52.6 32 a1.5 1.1 0 0 1 1.5 -1.05 Z" fill="#d4b884" />
-          <path d="M70 32 a1.2 0.9 0 0 1 2.4 0 Z" className="fill-terrain-sand" />
-          <path d="M70 32 a1.2 0.9 0 0 1 1.2 -0.86 Z" fill="#d4b884" />
-          {/* base ground line */}
-          <line x1="50.3" y1="32" x2="73.7" y2="32" stroke="#6f5230" strokeWidth="0.3" strokeLinecap="round" opacity="0.55" />
-        </g>
-        <text x="62" y="36" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >גבעה</text>
-
-        {/* Palm grove landmark (דקלים) — three date palms */}
-        <g>
-          <ellipse cx="84" cy="61.9" rx="8.6" ry="1.35" className="fill-terrain-steel/16" />
-          <ellipse cx="83.7" cy="61.95" rx="5.0" ry="0.85" className="fill-terrain-steel/12" />
-          {/* right palm */}
-          <path d="M 88.18 62 Q 87.87 57.98 87.85 53.95 L 88.25 53.95 Q 88.28 57.98 89.03 62 Z" fill="#8a6a3f" />
-          <path d="M 88.25 53.95 Q 88.28 57.98 89.03 62 L 88.74 62 Q 88.06 57.98 88.15 53.95 Z" fill="#6f5230" opacity="0.5" />
-          <path d="M 88.14 60.05 Q 88.46 59.71 88.78 60.05" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <path d="M 88.06 58.04 Q 88.32 57.7 88.59 58.04" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <path d="M 87.98 56.02 Q 88.19 55.68 88.39 56.02" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <g opacity="0.95"><circle cx="88.15" cy="54.75" r="0.38" className="fill-terrain-sand" /><circle cx="88.6" cy="55.1" r="0.38" className="fill-terrain-sand" /><circle cx="89.05" cy="54.75" r="0.38" className="fill-terrain-sand" /><circle cx="88.42" cy="55.45" r="0.38" className="fill-terrain-sand" /><circle cx="88.88" cy="55.37" r="0.38" className="fill-terrain-sand" /></g>
-          <g fill="none" strokeLinecap="round" className="stroke-terrain-ridge" strokeWidth="0.5" opacity="0.55"><path d="M 88.3 53.6 Q 86.16 52.79 84.41 53.71" /><path d="M 88.3 53.6 Q 86.57 51.99 85.16 52.37" /><path d="M 88.3 53.6 Q 87.5 51.69 86.85 51.86" /><path d="M 88.3 53.6 Q 88.3 51.49 88.3 51.53" /><path d="M 88.3 53.6 Q 89.1 51.69 89.75 51.86" /><path d="M 88.3 53.6 Q 90.03 51.99 91.44 52.37" /><path d="M 88.3 53.6 Q 90.44 52.79 92.19 53.71" /></g>
-          <g fill="none" strokeLinecap="round" className="stroke-brand" strokeWidth="0.4"><path d="M 88.3 53.6 Q 86.16 52.63 84.41 53.55" /><path d="M 88.3 53.6 Q 86.57 51.83 85.16 52.21" /><path d="M 88.3 53.6 Q 87.5 51.53 86.85 51.7" /><path d="M 88.3 53.6 Q 88.3 51.33 88.3 51.37" /><path d="M 88.3 53.6 Q 89.1 51.53 89.75 51.7" /><path d="M 88.3 53.6 Q 90.03 51.83 91.44 52.21" /><path d="M 88.3 53.6 Q 90.44 52.63 92.19 53.55" /></g>
-          <circle cx="88.3" cy="53.6" r="0.5" className="fill-terrain-ridge" />
-          {/* left palm */}
-          <path d="M 78.7 62 Q 79.34 58.48 79.26 54.95 L 79.64 54.95 Q 79.72 58.48 79.5 62 Z" fill="#8a6a3f" />
-          <path d="M 79.64 54.95 Q 79.72 58.48 79.5 62 L 79.22 62 Q 79.5 58.48 79.54 54.95 Z" fill="#6f5230" opacity="0.5" />
-          <path d="M 78.89 60.3 Q 79.19 59.96 79.49 60.3" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <path d="M 79.03 58.54 Q 79.28 58.2 79.52 58.54" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <path d="M 79.17 56.77 Q 79.36 56.43 79.55 56.77" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <g opacity="0.95"><circle cx="79.15" cy="55.75" r="0.38" className="fill-terrain-sand" /><circle cx="79.6" cy="56.1" r="0.38" className="fill-terrain-sand" /><circle cx="80.05" cy="55.75" r="0.38" className="fill-terrain-sand" /><circle cx="79.42" cy="56.45" r="0.38" className="fill-terrain-sand" /><circle cx="79.88" cy="56.37" r="0.38" className="fill-terrain-sand" /></g>
-          <g fill="none" strokeLinecap="round" className="stroke-terrain-ridge" strokeWidth="0.5" opacity="0.55"><path d="M 79.3 54.6 Q 77.26 53.84 75.59 54.78" /><path d="M 79.3 54.6 Q 77.65 53.07 76.31 53.5" /><path d="M 79.3 54.6 Q 78.54 52.78 77.92 53.02" /><path d="M 79.3 54.6 Q 79.3 52.59 79.3 52.7" /><path d="M 79.3 54.6 Q 80.06 52.78 80.68 53.02" /><path d="M 79.3 54.6 Q 80.95 53.07 82.29 53.5" /><path d="M 79.3 54.6 Q 81.34 53.84 83.01 54.78" /></g>
-          <g fill="none" strokeLinecap="round" className="stroke-terrain-olive" strokeWidth="0.4"><path d="M 79.3 54.6 Q 77.26 53.68 75.59 54.62" /><path d="M 79.3 54.6 Q 77.65 52.91 76.31 53.34" /><path d="M 79.3 54.6 Q 78.54 52.62 77.92 52.86" /><path d="M 79.3 54.6 Q 79.3 52.43 79.3 52.54" /><path d="M 79.3 54.6 Q 80.06 52.62 80.68 52.86" /><path d="M 79.3 54.6 Q 80.95 52.91 82.29 53.34" /><path d="M 79.3 54.6 Q 81.34 53.68 83.01 54.62" /></g>
-          <circle cx="79.3" cy="54.6" r="0.5" className="fill-terrain-ridge" />
-          {/* center palm (tallest) */}
-          <path d="M 83.13 62 Q 82.8 57.48 82.73 52.95 L 83.18 52.95 Q 83.25 57.48 84.07 62 Z" fill="#8a6a3f" />
-          <path d="M 83.18 52.95 Q 83.25 57.48 84.07 62 L 83.79 62 Q 83.03 57.48 83.08 52.95 Z" fill="#6f5230" opacity="0.5" />
-          <path d="M 83.08 59.8 Q 83.44 59.46 83.8 59.8" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <path d="M 82.98 57.54 Q 83.28 57.2 83.58 57.54" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <path d="M 82.88 55.27 Q 83.11 54.93 83.35 55.27" fill="none" stroke="#6f5230" strokeWidth="0.16" strokeLinecap="round" opacity="0.6" />
-          <g opacity="0.95"><circle cx="83.15" cy="53.75" r="0.38" className="fill-terrain-sand" /><circle cx="83.6" cy="54.1" r="0.38" className="fill-terrain-sand" /><circle cx="84.05" cy="53.75" r="0.38" className="fill-terrain-sand" /><circle cx="83.42" cy="54.45" r="0.38" className="fill-terrain-sand" /><circle cx="83.88" cy="54.37" r="0.38" className="fill-terrain-sand" /></g>
-          <g fill="none" strokeLinecap="round" className="stroke-terrain-ridge" strokeWidth="0.5" opacity="0.55"><path d="M 83.3 52.6 Q 80.85 51.77 78.85 52.51" /><path d="M 83.3 52.6 Q 81.32 50.85 79.71 50.97" /><path d="M 83.3 52.6 Q 82.39 50.51 81.65 50.39" /><path d="M 83.3 52.6 Q 83.3 50.28 83.3 50.01" /><path d="M 83.3 52.6 Q 84.21 50.51 84.95 50.39" /><path d="M 83.3 52.6 Q 85.28 50.85 86.89 50.97" /><path d="M 83.3 52.6 Q 85.75 51.77 87.75 52.51" /></g>
-          <g fill="none" strokeLinecap="round" className="stroke-brand-dark" strokeWidth="0.4"><path d="M 83.3 52.6 Q 80.85 51.61 78.85 52.35" /><path d="M 83.3 52.6 Q 81.32 50.69 79.71 50.81" /><path d="M 83.3 52.6 Q 82.39 50.35 81.65 50.23" /><path d="M 83.3 52.6 Q 83.3 50.12 83.3 49.85" /><path d="M 83.3 52.6 Q 84.21 50.35 84.95 50.23" /><path d="M 83.3 52.6 Q 85.28 50.69 86.89 50.81" /><path d="M 83.3 52.6 Q 85.75 51.61 87.75 52.35" /></g>
-          <circle cx="83.3" cy="52.6" r="0.5" className="fill-terrain-ridge" />
-        </g>
-        <text x="84" y="68" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >דקלים</text>
-
-        {/* Start point A */}
-        <g>
-          <circle cx="15" cy="60" r="2.5" className="fill-accent-cool" />
-          <text x="15" y="56" textAnchor="middle" className="fill-accent-cool text-[3.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >A</text>
-          <text x="15" y="68" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >מוצא</text>
+          <line
+            x1={peaks[1].x + 2.6}
+            y1={peaks[1].y + 2.6}
+            x2={peaks[1].x + 2.6}
+            y2={peaks[1].y - 6.4}
+            className="stroke-accent-hot"
+            strokeWidth="0.55"
+            strokeLinecap="round"
+          />
+          <path
+            d={`M ${peaks[1].x + 2.6} ${peaks[1].y - 6.4} L ${peaks[1].x + 8.1} ${peaks[1].y - 4.6} L ${peaks[1].x + 2.6} ${peaks[1].y - 2.8} Z`}
+            className="fill-accent-hot"
+          />
         </g>
 
-        {/* End point B */}
-        <g>
-          <circle cx="88" cy="20" r="2.5" className="fill-accent-hot" />
-          <text x="88" y="16" textAnchor="middle" className="fill-accent-hot text-[3.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >B</text>
-          <text x="88" y="28" textAnchor="middle" className="fill-fg-muted text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >יעד</text>
-        </g>
+        {/* Peak markers + height labels */}
+        <motion.g initial={false} animate={{ opacity: showHeights ? 1 : 0 }} transition={{ duration: 0.4 }}>
+          {peaks.map((p, i) => {
+            const isCenter = i === 1;
+            // When tactical view is on, tuck the center peak's height label
+            // closer to the triangle so the "שטח שולט" header at the top has
+            // room to breathe.
+            const labelY = isCenter && showTactical ? p.y - 3.2 : p.y - 5;
+            return (
+              <g key={i}>
+                <polygon
+                  points={`${p.x},${p.y - 2.6} ${p.x - 2.6},${p.y + 2.6} ${p.x + 2.6},${p.y + 2.6}`}
+                  className="fill-accent"
+                />
+                <text
+                  x={p.x}
+                  y={labelY}
+                  textAnchor="middle"
+                  className="fill-accent font-display font-bold"
+                  fontSize="4.2"
+                  paintOrder="stroke"
+                  stroke="#ffffff"
+                  strokeWidth="1.3"
+                  strokeLinejoin="round"
+                >
+                  {p.h} מ׳
+                </text>
+              </g>
+            );
+          })}
+        </motion.g>
 
-        {/* Phase-specific overlays */}
-        <PhaseOverlay phase={phase} />
+        {/* Hidden valley (dead space) */}
+        <motion.g initial={false} animate={{ opacity: showHidden ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          <rect
+            x="33"
+            y="49"
+            width="20"
+            height="15"
+            rx="1.4"
+            className="fill-status-ok/25 stroke-status-ok/80"
+            strokeWidth="0.6"
+            strokeDasharray="1.4 0.9"
+          />
+          <text
+            x="43"
+            y="56"
+            textAnchor="middle"
+            className="fill-status-ok font-display font-bold"
+            fontSize="4.4"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1.4"
+            strokeLinejoin="round"
+          >
+            שטח מת
+          </text>
+          <text
+            x="43"
+            y="61"
+            textAnchor="middle"
+            className="fill-status-ok font-sans font-semibold"
+            fontSize="3"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          >
+            סמוי לאויב
+          </text>
+        </motion.g>
+
+        {/* Tactical overlay — commanding + key terrain */}
+        <motion.g initial={false} animate={{ opacity: showTactical ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+          {/* Commanding terrain — ring around the highest peak */}
+          <circle
+            cx="50"
+            cy="30"
+            r="8"
+            fill="none"
+            className="stroke-accent"
+            strokeWidth="0.7"
+            strokeDasharray="1.4 0.9"
+          />
+          <text
+            x="50"
+            y="9"
+            textAnchor="middle"
+            className="fill-accent font-display font-bold"
+            fontSize="4.6"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          >
+            שטח שולט
+          </text>
+
+          {/* Key terrain — supply junction */}
+          <circle cx="70" cy="58" r="2.6" className="fill-accent-hot" />
+          <circle cx="70" cy="58" r="2.6" fill="none" className="stroke-accent-hot/50" strokeWidth="0.4">
+            <animate attributeName="r" values="2.6;5;2.6" dur="2.4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.9;0;0.9" dur="2.4s" repeatCount="indefinite" />
+          </circle>
+          <text
+            x="70"
+            y="67.5"
+            textAnchor="middle"
+            className="fill-accent-hot font-display font-bold"
+            fontSize="4.2"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1.3"
+            strokeLinejoin="round"
+          >
+            שטח חיוני
+          </text>
+          <text
+            x="70"
+            y="72"
+            textAnchor="middle"
+            className="fill-accent-hot font-sans font-semibold"
+            fontSize="3"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          >
+            צומת אספקה
+          </text>
+        </motion.g>
       </svg>
 
       <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        משימה: A ← B · 8 ק"מ · לילה
+        אותו הר · 4 שכבות הסתכלות
       </div>
     </div>
-  );
-}
-
-function PhaseOverlay({ phase }: { phase: Phase }) {
-  return (
-    <>
-      {/* Plan: Show both paths as options */}
-      <motion.g
-        initial={false}
-        animate={{ opacity: phase === 'plan' ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        style={{ pointerEvents: phase === 'plan' ? 'auto' : 'none' }}
-      >
-        <line x1="15" y1="60" x2="88" y2="20" className="stroke-accent/50" strokeWidth="0.4" strokeDasharray="1.2 1" />
-        <line x1="15" y1="60" x2="40" y2="40" className="stroke-fg-dim/40" strokeWidth="0.3" strokeDasharray="0.8 0.8" />
-        <line x1="40" y1="40" x2="50" y2="50" className="stroke-fg-dim/40" strokeWidth="0.3" strokeDasharray="0.8 0.8" />
-        <line x1="50" y1="50" x2="88" y2="20" className="stroke-fg-dim/40" strokeWidth="0.3" strokeDasharray="0.8 0.8" />
-        <text x="50" y="38" className="fill-accent text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >ישיר</text>
-        <text x="35" y="48" className="fill-fg-dim text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >עוקף</text>
-      </motion.g>
-
-      {/* Start: Show azimuth */}
-      <motion.g
-        initial={false}
-        animate={{ opacity: phase === 'start' ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        style={{ pointerEvents: phase === 'start' ? 'auto' : 'none' }}
-      >
-        <line x1="15" y1="60" x2="88" y2="20" className="stroke-accent" strokeWidth="0.6" />
-        {/* Compass arc */}
-        <path d="M 25 60 A 10 10 0 0 1 22 53" fill="none" className="stroke-accent" strokeWidth="0.4" />
-        <text x="29" y="55" className="fill-accent text-[3px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >47°</text>
-        <text x="22" y="64" className="fill-accent text-[2.2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >אזימוט</text>
-      </motion.g>
-
-      {/* Travel: Walking with checkpoints */}
-      <motion.g
-        initial={false}
-        animate={{ opacity: phase === 'travel' ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        style={{ pointerEvents: phase === 'travel' ? 'auto' : 'none' }}
-      >
-        <line x1="15" y1="60" x2="50" y2="40" className="stroke-accent" strokeWidth="0.6" />
-        <line x1="50" y1="40" x2="88" y2="20" className="stroke-accent/40" strokeWidth="0.4" strokeDasharray="1 1" />
-        <circle cx="50" cy="40" r="2" className="fill-accent">
-          <animate attributeName="r" values="1.5;3;1.5" dur="2s" repeatCount="indefinite" />
-        </circle>
-        <text x="50" y="36" textAnchor="middle" className="fill-accent text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >אתה כאן</text>
-
-        {/* Visual reference lines to landmarks */}
-        <line x1="50" y1="40" x2="62" y2="25" className="stroke-accent-cool/50" strokeWidth="0.2" strokeDasharray="0.5 0.5" />
-        <line x1="50" y1="40" x2="84" y2="61" className="stroke-accent-cool/50" strokeWidth="0.2" strokeDasharray="0.5 0.5" />
-      </motion.g>
-
-      {/* Arrive: Reached B */}
-      <motion.g
-        initial={false}
-        animate={{ opacity: phase === 'arrive' ? 1 : 0 }}
-        transition={{ duration: 0.4 }}
-        style={{ pointerEvents: phase === 'arrive' ? 'auto' : 'none' }}
-      >
-        <line x1="15" y1="60" x2="88" y2="20" className="stroke-accent" strokeWidth="0.6" />
-        <circle cx="88" cy="20" r="6" fill="none" className="stroke-status-ok" strokeWidth="0.4">
-          <animate attributeName="r" values="4;9;4" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
-        </circle>
-        <text x="76" y="13" className="fill-status-ok text-[2.5px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >✓ הגעה</text>
-      </motion.g>
-    </>
   );
 }
 

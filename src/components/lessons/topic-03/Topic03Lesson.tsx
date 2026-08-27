@@ -2,19 +2,19 @@
 
 import { HookScene } from './HookScene';
 import { OnboardingScene } from './OnboardingScene';
-import { PrinciplesScene } from './PrinciplesScene';
-import { PlanningScene } from './PlanningScene';
-import { CombatNavScene } from './CombatNavScene';
+import { GeologyScene } from './GeologyScene';
+import { LandformsScene } from './LandformsScene';
+import { TacticalTerrainScene } from './TacticalTerrainScene';
 import { RecapScene } from './RecapScene';
 import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
 const SCENES: PagedScene[] = [
-  { id: 'hook',       label: 'פתיחה',                 Comp: HookScene },
-  { id: 'onboarding', label: 'לפני שמתחילים',  Comp: OnboardingScene },
-  { id: 'principles', label: 'עקרונות הניווט', Comp: PrinciplesScene },
-  { id: 'planning',   label: 'תכנון ציר',      Comp: PlanningScene },
-  { id: 'combatnav',  label: 'ניווט קרבי',     Comp: CombatNavScene },
-  { id: 'recap',      label: 'סיכום',          Comp: RecapScene },
+  { id: 'hook',            label: 'פתיחה',                Comp: HookScene },
+  { id: 'onboarding',      label: 'לפני שמתחילים', Comp: OnboardingScene },
+  { id: 'geology',         label: 'גיאולוגיה',     Comp: GeologyScene },
+  { id: 'landforms',       label: 'תבניות נוף',    Comp: LandformsScene },
+  { id: 'tacticalterrain', label: 'שטח טקטי',      Comp: TacticalTerrainScene },
+  { id: 'recap',           label: 'סיכום',         Comp: RecapScene },
 ];
 
 export function Topic03Lesson() {

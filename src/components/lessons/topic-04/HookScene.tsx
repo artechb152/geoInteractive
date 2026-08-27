@@ -8,7 +8,7 @@ export function HookScene() {
       id="scene-hook"
       className="min-h-[calc(100dvh-var(--header-h)-5rem)] relative flex items-center justify-center overflow-hidden"
     >
-      <BackdropTopo />
+      <BackdropPath />
 
       <motion.div
         initial={{ opacity: 0, y: 28 }}
@@ -17,14 +17,14 @@ export function HookScene() {
         className="relative z-10 text-center max-w-4xl px-6"
       >
         <h1 className="text-accent text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
-          אותו <span className="text-accent">הר</span>.
+          שיח <span className="text-accent">לא עוצר</span>
           <br />
-          שני צדדים <span className="text-accent">שונים לחלוטין</span>.
+          כדור.
         </h1>
 
         <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
-          בקרב, צורת ההר היא לא רקע. היא הכלי הכי חזק שיש לך —
-          או הכי מסוכן. בשיעור הזה תלמד לקרוא נוף כמו שמפקדים קוראים שדה קרב.
+          שני חיילים תופסים מחסה. אחד מאחורי סלע — השני מאחורי שיח עבות.
+          מבחוץ הם נראים זהים. רק אחד מהם יחיה. בשיעור הזה נלמד למה.
         </p>
         <motion.div
           initial={{ opacity: 0, y: 6 }}
@@ -46,7 +46,7 @@ export function HookScene() {
   );
 }
 
-function BackdropTopo() {
+function BackdropPath() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
       <svg
@@ -54,36 +54,71 @@ function BackdropTopo() {
         preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 w-full h-full"
       >
-        {/* Topographic contour rings forming a hill */}
+        {/* Animated movement paths through terrain */}
+        <motion.path
+          d="M5 75 Q 25 70 40 55 T 70 30 T 95 15"
+          fill="none"
+          stroke="currentColor"
+          className="text-accent"
+          strokeWidth="0.4"
+          strokeDasharray="2 1.5"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 0.25 }}
+          transition={{ duration: 3, delay: 0.5 }}
+        />
+        <motion.path
+          d="M5 75 L 25 60 L 30 45 L 50 40 L 70 25 L 90 18"
+          fill="none"
+          stroke="currentColor"
+          className="text-accent-cool"
+          strokeWidth="0.4"
+          strokeDasharray="1.5 1"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 0.25 }}
+          transition={{ duration: 3.4, delay: 0.8 }}
+        />
+
+        {/* Terrain hints: slopes */}
         {[
-          { rx: 42, ry: 30 },
-          { rx: 35, ry: 25 },
-          { rx: 28, ry: 20 },
-          { rx: 22, ry: 16 },
-          { rx: 16, ry: 11 },
-          { rx: 10, ry: 7 },
-          { rx: 5, ry: 3.5 },
-        ].map((c, i) => (
-          <motion.ellipse
+          { x1: 10, y1: 80, x2: 20, y2: 65 },
+          { x1: 30, y1: 70, x2: 45, y2: 55 },
+          { x1: 55, y1: 60, x2: 70, y2: 40 },
+          { x1: 75, y1: 45, x2: 88, y2: 25 },
+        ].map((s, i) => (
+          <motion.line
             key={i}
-            cx="50"
-            cy="52"
-            rx={c.rx}
-            ry={c.ry}
-            fill="none"
+            x1={s.x1}
+            y1={s.y1}
+            x2={s.x2}
+            y2={s.y2}
             stroke="currentColor"
-            className="text-accent"
-            strokeWidth="0.18"
-            opacity={0.18 - i * 0.018}
+            className="text-fg-dim"
+            strokeWidth="0.15"
             initial={{ pathLength: 0, opacity: 0 }}
-            animate={{ pathLength: 1, opacity: 0.18 - i * 0.018 }}
-            transition={{ duration: 2, delay: i * 0.12 }}
+            animate={{ pathLength: 1, opacity: 0.3 }}
+            transition={{ duration: 1.5, delay: 1 + i * 0.2 }}
           />
         ))}
 
-        {/* Peak marker */}
-        <polygon points="50,49 47,55 53,55" className="fill-accent" opacity="0.4" />
-        <circle cx="50" cy="52" r="0.8" className="fill-accent" />
+        {/* Start and end markers */}
+        <motion.circle
+          cx="5"
+          cy="75"
+          r="1.2"
+          className="fill-accent-cool"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 1.5 }}
+        />
+        <motion.circle
+          cx="95"
+          cy="15"
+          r="1.2"
+          className="fill-accent-hot"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 1.7 }}
+        />
       </svg>
 
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />

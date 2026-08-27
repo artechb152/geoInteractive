@@ -2,50 +2,66 @@
 
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'עבירות (Trafficability)',  def: 'יכולת פיזית של הקרקע לתמוך במעבר כלי תחת לחץ סגולי נתון.' },
-  { term: 'שיפוע 30% / 60%',           def: 'כלי גלגלי עד 30%, זחלילי עד 60%. מעל = החלקה והתהפכות.' },
-  { term: 'מסלע קשה',                  def: 'גיר, דולומיט, בזלת. נוף תלול, טרשים = חסימה למעבר רכב.' },
-  { term: 'מסלע רך',                   def: 'קרטון, חרסית. נוף מעוגל וניתן לפילוס הנדסי קל.' },
-  { term: 'חול רטוב',                  def: 'סכנת שקיעה בעצירה. תנועה רציפה בלבד; זחל אחד במים.' },
-  { term: 'מסדרון תמרון',              def: 'נתיב ארוך נטול מכשולים שמאפשר לאוגדה לזוז במלוא עוצמה.' },
-  { term: 'מכשול טבעי',                def: 'נהר, מצוק, יער עבות. שלד מערך ההגנה — אבל לא לבד.' },
-  { term: 'מכשול מלאכותי',             def: 'מוקשים, תעלת נ"ט, תלתלית. השלמה הנדסית למכשול טבעי.' },
-  { term: 'שילוב סינרגטי',              def: 'מכשול טבעי + מלאכותי = רשת עצירה כמעט בלתי עבירה.' },
-  { term: 'קידום ניידות',               def: 'Breaching: גשרים, פינוי מוקשים, פילוס דרכים — פריצה לעומק.' },
-  { term: 'שלילת ניידות',                def: 'Counter-Mobility: מיקוש, פיצוץ גשרים — תיעול לשטח השמדה.' },
-  { term: 'מחסה (Cover)',               def: 'הגנה פיזית קשיחה שעוצרת אש. סלע, בטון, קפל קרקע עבה.' },
-  { term: 'הסתרה (Concealment)',        def: 'מניעת *גילוי* בלבד. שיח, ערפל, חורש — לא עוצרים כדור.' },
-  { term: 'נקודת חנק',                  def: 'הצרה של חזית התנועה — מאפשרת השמדת כוח גדול בכוח קטן.' },
-  { term: 'בתה / גריגה / חורש',         def: 'תצורות צומח ים-תיכוניות לפי גובה: 0.5 / 0.5–2 / 2+ מטרים.' },
-  { term: 'מפנה צפוני / דרומי',         def: 'צפוני = פחות שמש = צומח צפוף. דרומי = חשוף = דליל.' },
-  { term: 'משולש החקלאות',              def: '3 שכבות לניתוח: הצמח, פעילות האדם, ארגון השטח.' },
+  { term: 'קו ראייה (LOS – Line of Sight)',           def: 'הקו הדמיוני והישר שמחבר בין התצפיתן למטרה. זה הבסיס לכל מה שאנחנו רואים (או לא רואים) בשטח.' },
+  { term: 'שבירת LOS / חסימת ראייה',    def: 'מצב שבו הר, עץ או בניין חותכים את קו הראייה שלנו, ומסתירים מאיתנו את המטרה לחלוטין.' },
+  { term: 'תבליט',                    def: 'תוואי השטח הטבעי (הרים, גבעות, עמקים). אלו המכשולים הקשים והקבועים ביותר שחוסמים לנו את הראייה.' },
+  { term: 'תכסית',                    def: 'כל מה שמכסה את הקרקע (בניינים, יערות, פרדסים). אלו מכשולים שיכולים להסתיר אותנו, ולפעמים אפשר גם לעקוף או להרוס אותם.' },
+  { term: 'קו נראות הדדית',           def: 'הנקודה המדויקת בפסגת הר שבה עוברים מהסתרה מוחלטת לחשיפה מלאה מול האויב. עובד ממש כמו מתג של אור.' },
+  { term: 'שטח מת (Dead Space)',     def: 'אזור שלגמרי מוסתר מהעיניים שלנו בגלל הר או בניין שמפריעים. המקום המושלם עבור האויב להתחבא בו.' },
+  { term: 'מודל גבהים (DEM)',        def: 'מפה תלת-ממדית בתוך המחשב, שבה לכל נקודה ופיקסל בשטח יש גובה משלו.' },
+  { term: 'ניתוח ראות (Viewshed)',   def: 'אלגוריתם שבודק מה אפשר לראות מנקודה מסוימת. צובע בירוק את מה שגלוי, ובאדום את מה שמוסתר.' },
+  { term: 'ראות מצטברת (Cumulative)', def: 'חיבור של כמה תצפיות יחד כדי לבדוק את כל הכיסוי שלנו, ולמצוא "אזורים עיוורים" שאף אחד לא מסתכל עליהם.' },
+  { term: 'מסלול חסכוני (Least-Cost Path)', def: 'המסלול שהכי קל פיזית ללכת בו, שגם מנצל "שטחים מתים" כדי שנוכל להתגנב בלי שיתפסו אותנו.' },
+  { term: 'שרשרת התקיפה (Kill Chain)', def: '4 שלבי חובה (איתור, נעילה, שיגור, בדיקת פגיעה) שכל אחד מהם חייב קו ראייה פתוח כדי להצליח.' },
+  { term: 'נעילה ויזואלית',           def: 'מצב שבו טיל חכם או מצלמה "ננעלים" על המטרה, וחייבים לראות אותה ברצף בלי שום הסתרה עד רגע הפגיעה.' },
+  { term: 'בדיקת תוצאות (BDA)',       def: 'השלב שלאחר התקיפה, שבו משיגים קו ראייה חדש (למשל עם רחפן) כדי לוודא שהמטרה באמת הושמדה.' },
+  { term: 'מרחב כיסוי רציף',          def: 'אזור שיש עליו מעקב מוחלט של מצלמות וחיישנים, כך שאי אפשר להתחבא בו או לחמוק ממנו.' },
 ];
 
 export function RecapScene() {
   return (
     <section id="scene-recap" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
-        step="05.5"
+        step="06.4"
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים שחובה להכיר, <span className="gradient-text">בדקה אחת</span>
           </>
         }
-        intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
+        intro="ריכזנו עבורכם את כל המושגים המרכזיים שלמדנו, עם הגדרה אחת קצרה וברורה לכל מושג. עברו עם העכבר כדי לקרוא."
       />
 
       <CompletionBanner />
 
       <div className="grid sm:grid-cols-2 gap-3">
-        {TERMS.map((t) => (
-          <InsightCard key={t.term} tone="accent" title={t.term}>
-            {t.def}
-          </InsightCard>
+        {TERMS.map((t, i) => (
+          <motion.div
+            key={t.term}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ delay: i * 0.04, duration: 0.4 }}
+            className="surface p-5 relative overflow-hidden"
+          >
+            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
+            <div className="relative flex items-start gap-3">
+              <span className="font-display font-medium tracking-wide text-xs text-accent mt-1 shrink-0">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="font-display font-bold mb-1 leading-tight">
+                  {t.term}
+                </div>
+                <div className="text-sm text-fg-muted leading-relaxed">
+                  {t.def}
+                </div>
+              </div>
+            </div>
+          </motion.div>
         ))}
       </div>
     </section>
@@ -77,10 +93,10 @@ function CompletionBanner() {
         </div>
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור הניידות והתמרון
+            כל הכבוד! · סיימתם את שיעור קווי הראייה
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה רואה שטח <span className="gradient-text">בעיניים של מתכנן תמרון</span>
+            עכשיו אתם מסתכלים על השטח ממש כמו <span className="gradient-text">מנתחי מודיעין</span>
           </div>
         </div>
       </div>

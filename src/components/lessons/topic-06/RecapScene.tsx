@@ -5,34 +5,31 @@ import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 
 const TERMS = [
-  { term: 'קו ראייה (LOS – Line of Sight)',           def: 'הקו הדמיוני והישר שמחבר בין התצפיתן למטרה. זה הבסיס לכל מה שאנחנו רואים (או לא רואים) בשטח.' },
-  { term: 'שבירת LOS / חסימת ראייה',    def: 'מצב שבו הר, עץ או בניין חותכים את קו הראייה שלנו, ומסתירים מאיתנו את המטרה לחלוטין.' },
-  { term: 'תבליט',                    def: 'תוואי השטח הטבעי (הרים, גבעות, עמקים). אלו המכשולים הקשים והקבועים ביותר שחוסמים לנו את הראייה.' },
-  { term: 'תכסית',                    def: 'כל מה שמכסה את הקרקע (בניינים, יערות, פרדסים). אלו מכשולים שיכולים להסתיר אותנו, ולפעמים אפשר גם לעקוף או להרוס אותם.' },
-  { term: 'קו נראות הדדית',           def: 'הנקודה המדויקת בפסגת הר שבה עוברים מהסתרה מוחלטת לחשיפה מלאה מול האויב. עובד ממש כמו מתג של אור.' },
-  { term: 'שטח מת (Dead Space)',     def: 'אזור שלגמרי מוסתר מהעיניים שלנו בגלל הר או בניין שמפריעים. המקום המושלם עבור האויב להתחבא בו.' },
-  { term: 'מודל גבהים (DEM)',        def: 'מפה תלת-ממדית בתוך המחשב, שבה לכל נקודה ופיקסל בשטח יש גובה משלו.' },
-  { term: 'ניתוח ראות (Viewshed)',   def: 'אלגוריתם שבודק מה אפשר לראות מנקודה מסוימת. צובע בירוק את מה שגלוי, ובאדום את מה שמוסתר.' },
-  { term: 'ראות מצטברת (Cumulative)', def: 'חיבור של כמה תצפיות יחד כדי לבדוק את כל הכיסוי שלנו, ולמצוא "אזורים עיוורים" שאף אחד לא מסתכל עליהם.' },
-  { term: 'מסלול חסכוני (Least-Cost Path)', def: 'המסלול שהכי קל פיזית ללכת בו, שגם מנצל "שטחים מתים" כדי שנוכל להתגנב בלי שיתפסו אותנו.' },
-  { term: 'שרשרת התקיפה (Kill Chain)', def: '4 שלבי חובה (איתור, נעילה, שיגור, בדיקת פגיעה) שכל אחד מהם חייב קו ראייה פתוח כדי להצליח.' },
-  { term: 'נעילה ויזואלית',           def: 'מצב שבו טיל חכם או מצלמה "ננעלים" על המטרה, וחייבים לראות אותה ברצף בלי שום הסתרה עד רגע הפגיעה.' },
-  { term: 'בדיקת תוצאות (BDA)',       def: 'השלב שלאחר התקיפה, שבו משיגים קו ראייה חדש (למשל עם רחפן) כדי לוודא שהמטרה באמת הושמדה.' },
-  { term: 'מרחב כיסוי רציף',          def: 'אזור שיש עליו מעקב מוחלט של מצלמות וחיישנים, כך שאי אפשר להתחבא בו או לחמוק ממנו.' },
+  { term: 'אזימוט',                    def: 'זווית במעלות (0–360) שאומרת באיזה כיוון בדיוק ללכת מצפון.' },
+  { term: 'אזימוט חוזר',               def: 'הכיוון ההפוך — לחזור משם שהגעת. מוסיפים/מחסרים 180°.' },
+  { term: 'צפון מגנטי',                def: 'הכיוון שאליו מצביע המצפן. זז כל שנה — לא בדיוק "צפון אמיתי".' },
+  { term: 'צפון רשת',                  def: 'הצפון לפי הקווים האנכיים על המפה. הכיוון שכל הרשת מתבססת עליו.' },
+  { term: 'צפון אמיתי',                def: 'ציר הסיבוב של כדור הארץ. שם נמצא כוכב הצפון.' },
+  { term: 'GPS-Denied',                def: 'מצב שבו אין GPS — האויב משבש, או נמצאים מתחת לאדמה.' },
+  { term: 'סיפור דרך',                 def: 'תוכנית מסלול כתובה מראש: מה רואים בכל שלב, ובאיזה סדר.' },
+  { term: 'ספירת צעדים (Pacing)',      def: 'מודדים מרחק על ידי ספירת זוגות צעדים × אורך הצעד.' },
+  { term: 'הליכת מעקה (Handrailing)',  def: 'הולכים במקביל לתוואי בולט (נחל, רכס) במקום בקו ישר.' },
+  { term: 'ניווט עיוור (Dead Reckoning)', def: 'אזימוט + צעדים בלבד, בלי לראות שטח. לסערות חול וערפל.' },
+  { term: 'שליטה בקצב',                def: 'קצב איטי ומאובטח בשטח חשוף, מהיר ורציף בשטח מוסתר.' },
 ];
 
 export function RecapScene() {
   return (
     <section id="scene-recap" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
-        step="06.4"
+        step="03.4"
         eyebrow="סיכום השיעור"
         title={
           <>
-            {TERMS.length} מושגים שחובה להכיר, <span className="gradient-text">בדקה אחת</span>
+            11 מושגים, <span className="gradient-text">דקה אחת</span>
           </>
         }
-        intro="ריכזנו עבורכם את כל המושגים המרכזיים שלמדנו, עם הגדרה אחת קצרה וברורה לכל מושג. עברו עם העכבר כדי לקרוא."
+        intro="כל מה שעברנו בשיעור — בהגדרה אחת קצרה לכל מושג."
       />
 
       <CompletionBanner />
@@ -44,7 +41,7 @@ export function RecapScene() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.04, duration: 0.4 }}
+            transition={{ delay: i * 0.05, duration: 0.4 }}
             className="surface p-5 relative overflow-hidden"
           >
             <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
@@ -75,28 +72,19 @@ function CompletionBanner() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className="mb-8 relative overflow-hidden rounded-[4px] border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7"
+      className="mb-8 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7"
     >
       <div className="absolute -end-16 -top-16 size-48 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
       <div className="absolute -start-16 -bottom-16 size-48 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
 
       <div className="relative flex items-center gap-4 sm:gap-5">
-        <div className="relative shrink-0">
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="size-14 rounded-full bg-accent/20 absolute inset-0"
-          />
-          <div className="relative size-14 rounded-full bg-accent flex items-center justify-center text-bg-elevated">
-            <Icon name="check" size={28} strokeWidth={3} />
-          </div>
-        </div>
+        <Icon name="check" size={48} strokeWidth={3} className="text-accent shrink-0" />
         <div className="flex-1">
           <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
-            כל הכבוד! · סיימתם את שיעור קווי הראייה
+            כל הכבוד · סיימת את שיעור הניווטים
           </div>
           <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתם מסתכלים על השטח ממש כמו <span className="gradient-text">מנתחי מודיעין</span>
+            עכשיו אתה יודע <span className="gradient-text">להגיע ליעד גם בלי GPS</span>
           </div>
         </div>
       </div>

@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { IntelCard } from '@/components/lesson/IntelCard';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
-type View = 'flat' | 'mountain' | 'valley' | 'analyzed';
+type View = 'access' | 'obstacles' | 'cover' | 'concealment';
 
 type Step = {
   id: View;
@@ -20,73 +20,73 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    id: 'flat',
-    label: 'מתחילים מהמראה התמים',
-    icon: 'eye',
-    popupTitle: 'מבט שטוח: רואים — אבל לא יודעים',
+    id: 'access',
+    label: 'האם אנחנו בכלל יכולים לעבור פה?',
+    icon: 'truck',
+    popupTitle: 'עבִירוּת: השאלה הראשונה לפני שזזים',
     popupBody:
-      'מבט שטוח על הנוף. אנחנו רואים אדמה, סלעים וצמחייה, אבל חסר לנו המידע החשוב באמת: הגובה, העומק והמרחקים. בלי לנתח את צורת פני הקרקע (המורפולוגיה), אי אפשר לדעת איפה האויב יכול להסתתר או מאיפה כדאי להתקדם. הצבא לא יכול לקבל החלטות על סמך "תמונה יפה" בלבד.',
+      `לפני שמתכננים מסלול, צריך לשאול שאלה פיזית פשוטה: האם אנחנו והרכבים שלנו מסוגלים בכלל לעבור פה? היכולת הזאת נקראת "עבירות", והיא תלויה בשני דברים עיקריים: עד כמה השטח תלול (השיפוע), ומה סוג האדמה (סלע קשה? חול שוקע? בוץ?). למשל, ג'יפ או משאית ייעצרו בעלייה של 30%, בזמן שטנק (שנע על שרשראות/זחלים) יצליח לטפס גם שיפוע של 60%. מעבר לזה, חול רטוב עלול לבלוע משאית פנימה, ושטח "טרשי" (מלא בסלעים חדים שבולטים החוצה) יקרע לה את הצמיגים. השורה התחתונה: אם השטח לא עביר — אי אפשר לבצע את המשימה.`,
   },
   {
-    id: 'mountain',
-    label: 'מסמנים את הגובה',
-    icon: 'mountain',
-    popupTitle: 'גובה: היתרון הטופוגרפי הכי בסיסי',
-    popupBody:
-      'הוספת קווי גובה (קונטור) הופכת את המפה לתלת-ממדית. פתאום אפשר להבחין מהי פסגה ומהו עמק, וכמה הר הוא תלול. מי שתופס את השטח הגבוה רואה את האויב ראשון, יורה אליו ראשון ונהנה מיתרון לוגיסטי גדול — לכן צבאות לרוב נלחמים על הפסגות.',
-  },
-  {
-    id: 'valley',
-    label: 'מסמנים מה מסתתר',
+    id: 'obstacles',
+    label: 'מה יעצור אותנו בדרך?',
     icon: 'shield',
-    popupTitle: 'שטח מת: מה שמוסתר מהעין שווה זהב',
+    popupTitle: 'מכשולים: כשהטבע והאויב משלבים כוחות',
     popupBody:
-      '"שטח מת" (Dead Space) הוא אזור שמוסתר מאיתנו בגלל כפלי קרקע או מצוקים — אנחנו לא יכולים לראות מה קורה בו ולא לירות אליו בקו ישר. מפקד חכם משתמש בשטח מת כדי להגניב כוחות אל היעד, להחביא מפקדה ולהגן על האספקה שלו. מה שלא רואים — לא יורים בו.',
+      'גם אם האדמה נוחה לנסיעה, האויב תמיד ינסה לעצור אותנו. לרוב הוא ייקח מכשול שהטבע יצר (כמו נחל שקשה לחצות) ויוסיף עליו מלכודות משלו: הוא יכול לפזר שדה מוקשים בדיוק על גדת הנחל, לפוצץ גשר, או לחפור תעלה עמוקה שנועדה לעצור טנקים (תעלת נ"ט). השילוב הזה הופך שטח פתוח למעין "מבצר". כדי להתגבר על זה, חיל ההנדסה מפעיל כלים כבדים כדי לפרוץ את הדרך מחדש (פעולה שנקראת בשפה הצבאית "קידום ניידות") — למשל באמצעות נטרול מוקשים, פריצת דרכים חדשות או הנחת גשרים ניידים.',
   },
   {
-    id: 'analyzed',
-    label: 'התמונה הצבאית המלאה',
-    icon: 'crosshair',
-    popupTitle: 'שטח שולט + שטח חיוני = תוכנית הקרב',
+    id: 'cover',
+    label: 'איפה אפשר להסתתר מאש?',
+    icon: 'mountain',
+    popupTitle: 'מחסה (Cover): מה באמת יכול לעצור כדור?',
     popupBody:
-      'עכשיו מסמנים שני סוגי שטחים מיוחדים: "שטח שולט" — הנקודות שמהן רואים הכל ושולטים באש על השטח מסביב; ו"שטח חיוני" — נקודות שכל מי שעובר בשטח חייב לעבור דרכן, כמו צומת או מעבר. המפה כבר לא ציור, היא תוכנית עבודה: איפה לתפוס תצפית, איפה לחסום את האויב, ואיפה יקרה הקרב.',
+      'בזמן לחימה, מי שנמצא בשטח פתוח וחשוף נמצא בסכנת חיים. לכן, מתכננים מסלול שמדלג בין נקודות "מחסה": סלע ענק, שקע עמוק באדמה, או קיר בטון עבה. מחסה אמיתי חייב להיות עשוי מחומר חזק ועבה מספיק כדי לעצור פיזית כדורים, רסיסים והדף של פיצוץ. להתחבא מאחורי שיח זה ממש לא מחסה. גם גזע עץ דק לא יעזור. רק עצם קשיח וגדול מספיק באמת יספק הגנה וישמור עליכם בחיים.',
+  },
+  {
+    id: 'concealment',
+    label: 'מה מסתיר אותנו מהעיניים של האויב?',
+    icon: 'eye',
+    popupTitle: 'הסתרה (Concealment): להיות רואים ואינם נראים',
+    popupBody:
+'בניגוד למחסה, הסתרה לא מגינה עלינו מפני פגיעה – היא רק מונעת מהאויב לגלות אותנו. שיח גדול, יער צפוף, ערפל, צל ואפילו קירות דקים במבנה נטוש, יכולים להעלים אותנו מהעין (ואפילו ממצלמות תרמיות שמזהות חום גוף), אבל אף אחד מהם לא יעצור כדור שנירה לעברנו. השילוב המושלם הוא "הסתרה + מחסה": ככה קשה מאוד למצוא אותנו, ואם במקרה התגלינו וירו עלינו – אנחנו מוגנים פיזית מאש.',
   },
 ];
 
 const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
   {
-    headline: 'ממעט טנקים על הפסגה — בלמו מאות בעמק',
-    place: 'בקעת הבכא · יום הכיפורים 1973',
-    lesson: 'במלחמת יום הכיפורים, הסורים שלחו מאות טנקים דרך עמקים מבלי לאבטח את השטח השולט מסביב. כוחות צה"ל שהתמקמו בכיפות (הפסגות) נהנו מעליונות בתצפית ובאש, ובלמו כוחות גדולים מהם פי 5.',
+    headline: 'לחצות תעלה ענקית בלילה אחד',
+    place: 'תעלת סואץ · מלחמת יום הכיפורים 1973 ',
+    lesson: 'תעלת סואץ היא תעלת מים עמוקה ורחבה שהיוותה מכשול טבעי עצום. כדי להעביר את הטנקים של צה"ל לתוך מצרים, חיל ההנדסה יצא למבצע מורכב תחת אש ובחסות החשיכה, ובנה גשרים צפים מעל המים. ההתגברות על המכשול הזה פתחה לכוחותינו את הדרך לעומק מצרים, אפשרה לנו לעבור להתקפה ושינתה לחלוטין את מהלך המלחמה.',
+    icon: 'wave',
+    accent: 'text-accent-cool',
+  },
+  {
+    headline: 'השיחים שעצרו טנקים ענקיים',
+    place: 'נורמנדי (צרפת) · קיץ 1944',
+    lesson: `באזור הלחימה בנורמנדי, השדות החקלאיים הופרדו בגדרות שנקראות "בוקאז'" – חומות של אדמה דחוסה שמעליהן צמחו שיחים סבוכים וקוצניים. הטנקים האמריקאים פשוט לא הצליחו לעבור דרכן! כל חלקה חקלאית קטנה הפכה למבצר טבעי, כי הגדרות האלו סיפקו לגרמנים גם מניעת ראייה ("הסתרה" בזכות השיחים) וגם הגנה פיזית ("מחסה" שעוצר כדורים בזכות סוללות האדמה). לבסוף, האמריקאים נאלצו לאלתר ולרתך "מזלגות" פלדה לקדמת הטנקים כדי לעקור את השיחים.`,
     icon: 'mountain',
-    accent: 'text-accent',
+    accent: 'text-terrain-ridge',
   },
   {
-    headline: 'טור אמריקאי בוואדי — אש מ-3 כיוונים',
-    place: 'אפגניסטן · 2008',
-    lesson: 'יחידה אמריקאית התקדמה בתוך גיא (ואדי) צר. הטאליבן ניצל את השלוחות השולטות כדי לפתוח באש מ-3 כיוונים. התוצאה הייתה קטלנית, כי הכוח האמריקאי היה בנחיתות טופוגרפית מוחלטת בתוך העמק.',
-    icon: 'crosshair',
-    accent: 'text-status-danger',
-  },
-  {
-    headline: 'אוכף בין פסגות — עוקפים את ההגנה',
-    place: 'נורמנדי · קיץ 1944',
-    lesson: 'במקום לתקוף חזיתית פסגות מבוצרות, יחידה בריטית זיהתה אוכף — נקודת שפל נוחה למעבר בין שתי כיפות. המעבר דרך האוכף אפשר להם לעקוף את קווי ההגנה ולהפתיע את הגרמנים מהאגף.',
-    icon: 'check',
-    accent: 'text-status-ok',
-  },
-  {
-    headline: 'מבוצרים בעמק — בלי שטח שולט, בלי תקומה',
-    place: 'דיאן ביאן פו · ויאטנם 1954',
-    lesson: 'הצרפתים התמקמו בעמק עמוק והפקירו את השטח השולט (השלוחות והפסגות) לוייטנאמים. התוצאה: הכוח הצרפתי הפך למטרה נייחת בתוך "שטח השמדה", מה שהוביל לתבוסה מוחלטת במלחמה.',
-    icon: 'shield',
+    headline: `הג'ונגל שנתן אשליה של ביטחון`,
+    place: 'מלחמת וייטנאם · 1965–1973',
+    lesson: `חיילים אמריקאים סמכו על צמחיית הג'ונגל הצפופה כדי להסתתר. הבעיה התחילה כשהתברר שגם מול קליעים של נשק קל, עלים וענפים לא עוצרים כלום. הלוחמים המקומיים (הוייטקונג) פשוט ירו בצרורות עיוורים לתוך הצמחייה ופגעו בהם בקלות. זה הוכיח בדרך הקשה שהסתרה היא ממש לא מחסה. הלקח: בשדה הקרב, מותר לסמוך רק על עצמים שיכולים פיזית לעצור כדור.`,
+    icon: 'eye',
     accent: 'text-status-warn',
+  },
+  {
+    headline: 'השילוב הקטלני: בונקרים בתוך יערות סבוכים',
+    place: 'דרום לבנון · מלחמת לבנון השנייה (2006)',
+    lesson: 'חיזבאללה בנה בונקרים תת-קרקעיים עמוקים ויצוקים מבטון, ומיקם אותם בדיוק בתוך יערות וצמחייה צפופה. העצים והשיחים מנעו ממטוסים ורחפנים לזהות את הפתחים מלמעלה ("הסתרה"), והבטון העבה שמתחת לאדמה הגן על המחבלים מפני ההפצצות ("מחסה"). זה היה שילוב מושלם של טבע והנדסה, שבגללו צה"ל הצליח לגלות את רוב העמדות האלה רק כשחיילים ממש הגיעו אליהן ברגל.',
+    icon: 'shield',
+    accent: 'text-status-danger',
   },
 ];
 
 export function OnboardingScene() {
-  const [view, setView] = useState<View>('flat');
-  const [expandedStep, setExpandedStep] = useState<View | null>('flat');
+  const [view, setView] = useState<View>('access');
+  const [expandedStep, setExpandedStep] = useState<View | null>('access');
 
   const handleStepClick = (id: View) => {
     if (expandedStep === id) {
@@ -100,17 +100,17 @@ export function OnboardingScene() {
   return (
     <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
-        step="04.0"
-        eyebrow="לפני שמתחילים"
+        step="05.0"
+        eyebrow="רגע לפני שמתחילים"
 title = {
   <>
-    <span className="gradient-text">איך לוחמים קוראים שטח — ולא רק מסתכלים עליו?</span>
+    <span className="gradient-text">איך יודעים אם כוח באמת יכול לעבור בשטח?</span>
   </>
-}        intro="תייר רואה נוף יפה; מפקד רואה הזדמנויות ומכשולים. כדי להבין את שדה הקרב, עלינו לקלף את השכבות של פני השטח (המורפולוגיה). בוא נראה איך אותו הר משתנה ב-4 שלבים — מהמבט התמים ועד לניתוח הצבאי שיכריע את הקרב."
+}
+        intro='עבור רובנו השטח הוא סתם "נוף", אבל מפקד צבאי מסתכל עליו כעל חידה שצריך לפתור. בואו נראה איך מנתחים תא שטח לקראת תנועה (מושג שנקרא בשפה הצבאית "תמרון"), דרך 4 שאלות מפתח – החל מהשאלה הבסיסית ביותר ("האם בכלל אפשר לעבור פה?") ועד לשאלות של חיים ומוות.'
       />
 
       <div className="grid md:grid-cols-[2fr_3fr] gap-6">
-        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -131,12 +131,12 @@ title = {
                   type="button"
                   onClick={() => handleStepClick(s.id)}
                   aria-expanded={expanded}
-                  aria-controls={`t4-onb-panel-${s.id}`}
+                  aria-controls={`t5-onb-panel-${s.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
                   {active && (
                     <motion.span
-                      layoutId="t4-onb-bar"
+                      layoutId="t5-onb-bar"
                       className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
                     />
                   )}
@@ -178,8 +178,8 @@ title = {
                 <AnimatePresence initial={false}>
                   {expanded && (
                     <motion.div
-                      key={`t4-onb-panel-${s.id}`}
-                      id={`t4-onb-panel-${s.id}`}
+                      key={`t5-onb-panel-${s.id}`}
+                      id={`t5-onb-panel-${s.id}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -188,8 +188,7 @@ title = {
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
                         <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
-                          למה זה משנה
-                        </div>
+למה זה חשוב?                        </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
                           {s.popupTitle}
                         </h4>
@@ -205,13 +204,12 @@ title = {
           })}
         </div>
 
-        {/* Visualization — second child → LEFT in RTL */}
         <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
-          <TerrainStage view={view} />
+          <ManeuverStage view={view} />
         </div>
       </div>
 
-      <SoftDivider text="כשלא קוראים נכון את ההר — המחיר עצום" />
+      <SoftDivider text="מאחורי כל קרב היסטורי גדול, עומד ניתוח נכון של השטח" />
 
       <div className="grid sm:grid-cols-2 gap-4">
         {HISTORICAL.map((h, i) => (
@@ -227,168 +225,55 @@ title = {
       </div>
 
       <ReadyCallout title="עכשיו אתם מוכנים">
-        <p>הבנת ש"קריאת שטח" זה משהו שלם — לא ריגוש מהנוף. בשלוש הסצנות הבאות נצלול לעומק:
-            <strong className="text-fg"> מאיזה סלע ההר עשוי, איך לזהות 5 צורות נוף קלאסיות, ואיך מסווגים שטח לפי הערך הצבאי שלו</strong>.</p>
+        <p>עכשיו בטח הבנתם שתנועה צבאית בשטח ("תמרון") היא הרבה יותר מסתם "ללכת ממקום למקום" – זה פאזל שלם של החלטות קריטיות. בחלקים הבאים של הקורס נצלול לעומק ונגלה: מה הופך אדמה לנוחה למעבר, איך חיל ההנדסה מתגבר על מכשולים בדרך, איך שורדים במקום פתוח וחשוף, ואיך עצים וצמחייה משנים את כל חוקי המשחק.</p>
       </ReadyCallout>
     </section>
   );
 }
 
-function TerrainStage({ view }: { view: View }) {
-  const showHeights = view !== 'flat';
-  const showHidden = view === 'valley' || view === 'analyzed';
-  const showTactical = view === 'analyzed';
-
-  const peaks = [
-    { x: 18, y: 38, h: '420' },
-    { x: 50, y: 30, h: '540' },
-    { x: 82, y: 35, h: '480' },
-  ];
+function ManeuverStage({ view }: { view: View }) {
+  const showObstacles = view === 'obstacles' || view === 'cover' || view === 'concealment';
+  const showCover = view === 'cover' || view === 'concealment';
+  const showConcealment = view === 'concealment';
 
   return (
     <div className="relative w-full h-full">
       <svg viewBox="0 0 100 75" className="w-full h-full">
         <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
-        {/* Mountain silhouettes */}
+        {/* Background ridges (slopes) */}
         <path
-          d="M0 65 L18 38 L34 55 L50 30 L66 48 L82 35 L100 60 L100 75 L0 75 Z"
-          className="fill-terrain-ridge/30 stroke-terrain-ridge/50"
+          d="M0 55 L20 40 L35 50 L55 30 L75 45 L100 35 L100 75 L0 75 Z"
+          className="fill-terrain-ridge/15 stroke-terrain-ridge/40"
           strokeWidth="0.3"
         />
         <path
-          d="M0 70 L25 50 L45 60 L65 45 L85 58 L100 65 L100 75 L0 75 Z"
+          d="M0 65 L25 55 L50 65 L75 55 L100 60 L100 75 L0 75 Z"
           className="fill-terrain-sand/15"
         />
 
-        {/* Objective flag on the highest peak — always visible, in every step, so the
-            board itself keeps making the point: this is the ground armies fight for.
-            Planted at the peak marker's own bottom-right corner point so the pole reads
-            as rooted in the summit (and the ridge slope beneath it) in every state,
-            including 'flat' before the peak marker itself appears. */}
+        {/* Start (A) and End (B) markers — always visible */}
         <g>
-          <line
-            x1={peaks[1].x + 2.6}
-            y1={peaks[1].y + 2.6}
-            x2={peaks[1].x + 2.6}
-            y2={peaks[1].y - 6.4}
-            className="stroke-accent-hot"
-            strokeWidth="0.55"
-            strokeLinecap="round"
-          />
-          <path
-            d={`M ${peaks[1].x + 2.6} ${peaks[1].y - 6.4} L ${peaks[1].x + 8.1} ${peaks[1].y - 4.6} L ${peaks[1].x + 2.6} ${peaks[1].y - 2.8} Z`}
-            className="fill-accent-hot"
-          />
+          <circle cx="10" cy="65" r="2.6" className="fill-accent-cool" />
+          <text
+            x="10"
+            y="60"
+            textAnchor="middle"
+            className="fill-accent-cool font-display font-bold"
+            fontSize="4.2"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1.3"
+            strokeLinejoin="round"
+          >
+            A
+          </text>
         </g>
-
-        {/* Peak markers + height labels */}
-        <motion.g initial={false} animate={{ opacity: showHeights ? 1 : 0 }} transition={{ duration: 0.4 }}>
-          {peaks.map((p, i) => {
-            const isCenter = i === 1;
-            // When tactical view is on, tuck the center peak's height label
-            // closer to the triangle so the "שטח שולט" header at the top has
-            // room to breathe.
-            const labelY = isCenter && showTactical ? p.y - 3.2 : p.y - 5;
-            return (
-              <g key={i}>
-                <polygon
-                  points={`${p.x},${p.y - 2.6} ${p.x - 2.6},${p.y + 2.6} ${p.x + 2.6},${p.y + 2.6}`}
-                  className="fill-accent"
-                />
-                <text
-                  x={p.x}
-                  y={labelY}
-                  textAnchor="middle"
-                  className="fill-accent font-display font-bold"
-                  fontSize="4.2"
-                  paintOrder="stroke"
-                  stroke="#ffffff"
-                  strokeWidth="1.3"
-                  strokeLinejoin="round"
-                >
-                  {p.h} מ׳
-                </text>
-              </g>
-            );
-          })}
-        </motion.g>
-
-        {/* Hidden valley (dead space) */}
-        <motion.g initial={false} animate={{ opacity: showHidden ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-          <rect
-            x="33"
-            y="49"
-            width="20"
-            height="15"
-            rx="1.4"
-            className="fill-status-ok/25 stroke-status-ok/80"
-            strokeWidth="0.6"
-            strokeDasharray="1.4 0.9"
-          />
+        <g>
+          <circle cx="90" cy="25" r="2.6" className="fill-accent-hot" />
           <text
-            x="43"
-            y="56"
-            textAnchor="middle"
-            className="fill-status-ok font-display font-bold"
-            fontSize="4.4"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1.4"
-            strokeLinejoin="round"
-          >
-            שטח מת
-          </text>
-          <text
-            x="43"
-            y="61"
-            textAnchor="middle"
-            className="fill-status-ok font-sans font-semibold"
-            fontSize="3"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1"
-            strokeLinejoin="round"
-          >
-            סמוי לאויב
-          </text>
-        </motion.g>
-
-        {/* Tactical overlay — commanding + key terrain */}
-        <motion.g initial={false} animate={{ opacity: showTactical ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-          {/* Commanding terrain — ring around the highest peak */}
-          <circle
-            cx="50"
-            cy="30"
-            r="8"
-            fill="none"
-            className="stroke-accent"
-            strokeWidth="0.7"
-            strokeDasharray="1.4 0.9"
-          />
-          <text
-            x="50"
-            y="9"
-            textAnchor="middle"
-            className="fill-accent font-display font-bold"
-            fontSize="4.6"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          >
-            שטח שולט
-          </text>
-
-          {/* Key terrain — supply junction */}
-          <circle cx="70" cy="58" r="2.6" className="fill-accent-hot" />
-          <circle cx="70" cy="58" r="2.6" fill="none" className="stroke-accent-hot/50" strokeWidth="0.4">
-            <animate attributeName="r" values="2.6;5;2.6" dur="2.4s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.9;0;0.9" dur="2.4s" repeatCount="indefinite" />
-          </circle>
-          <text
-            x="70"
-            y="67.5"
+            x="90"
+            y="21"
             textAnchor="middle"
             className="fill-accent-hot font-display font-bold"
             fontSize="4.2"
@@ -397,27 +282,157 @@ function TerrainStage({ view }: { view: View }) {
             strokeWidth="1.3"
             strokeLinejoin="round"
           >
-            שטח חיוני
+            B
           </text>
+        </g>
+
+        {/* Layer 1: Access — direct path with slope warnings */}
+        <motion.g initial={false} animate={{ opacity: view === 'access' ? 1 : 0.35 }} transition={{ duration: 0.4 }}>
+          <line
+            x1="10"
+            y1="65"
+            x2="90"
+            y2="25"
+            className="stroke-accent"
+            strokeWidth="0.5"
+            strokeDasharray="1.5 1"
+          />
           <text
-            x="70"
-            y="72"
+            x="50"
+            y="42"
             textAnchor="middle"
-            className="fill-accent-hot font-sans font-semibold"
+            className="fill-accent font-display font-bold"
+            fontSize="3.6"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          >
+            מסלול ישיר
+          </text>
+        </motion.g>
+
+        {/* Layer 2: Obstacles */}
+        <motion.g initial={false} animate={{ opacity: showObstacles ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          {/* River */}
+          <path
+            d="M0 50 Q 30 48 50 52 T 100 50"
+            fill="none"
+            className="stroke-terrain-sky"
+            strokeWidth="2"
+            opacity="0.7"
+          />
+          <text
+            x="22"
+            y="46"
+            textAnchor="middle"
+            className="fill-terrain-sky font-display font-bold"
+            fontSize="3"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.9"
+            strokeLinejoin="round"
+          >
+            נחל
+          </text>
+
+          {/* Minefield */}
+          <rect
+            x="55"
+            y="30"
+            width="14"
+            height="8"
+            rx="1"
+            className="fill-status-danger/25 stroke-status-danger"
+            strokeWidth="0.4"
+            strokeDasharray="1 0.5"
+          />
+          <text
+            x="62"
+            y="35.5"
+            textAnchor="middle"
+            className="fill-status-danger font-display font-bold"
+            fontSize="3"
+            paintOrder="stroke"
+            stroke="#ffffff"
+            strokeWidth="0.9"
+            strokeLinejoin="round"
+          >
+            שדה מוקשים
+          </text>
+        </motion.g>
+
+        {/* Layer 3: Cover spots (physical protection) */}
+        <motion.g initial={false} animate={{ opacity: showCover ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+          {[
+            { x: 25, y: 58 },
+            { x: 42, y: 45 },
+            { x: 78, y: 32 },
+          ].map((c, i) => (
+            <g key={i}>
+              <circle cx={c.x} cy={c.y} r="2.2" className="fill-terrain-ridge stroke-fg" strokeWidth="0.3" />
+              <text
+                x={c.x}
+                y={c.y - 3.5}
+                textAnchor="middle"
+                className="fill-terrain-ridge font-display font-bold"
+                fontSize="2.6"
+                paintOrder="stroke"
+                stroke="#ffffff"
+                strokeWidth="0.8"
+                strokeLinejoin="round"
+              >
+                סלע (נקודת מחסה)
+              </text>
+            </g>
+          ))}
+          {/* Cover-hopping path */}
+          <path
+            d="M10 65 L25 58 L42 45 L78 32 L90 25"
+            fill="none"
+            className="stroke-status-ok"
+            strokeWidth="0.7"
+            strokeDasharray="2 1"
+          />
+        </motion.g>
+
+        {/* Layer 4: Concealment (vegetation patches) */}
+        <motion.g initial={false} animate={{ opacity: showConcealment ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
+          {[
+            { x: 18, y: 60, r: 5 },
+            { x: 35, y: 50, r: 4 },
+            { x: 65, y: 55, r: 6 },
+            { x: 82, y: 38, r: 4.5 },
+          ].map((v, i) => (
+            <ellipse
+              key={i}
+              cx={v.x}
+              cy={v.y}
+              rx={v.r}
+              ry={v.r * 0.7}
+              className="fill-terrain-olive/45 stroke-terrain-olive/70"
+              strokeWidth="0.3"
+            />
+          ))}
+          <text
+            x="35"
+            y="69"
+            textAnchor="middle"
+            className="fill-terrain-olive font-display font-bold"
             fontSize="3"
             paintOrder="stroke"
             stroke="#ffffff"
             strokeWidth="1"
             strokeLinejoin="round"
           >
-            צומת אספקה
+            יער צפוף · הסתרה
           </text>
         </motion.g>
       </svg>
 
       <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        אותו הר · 4 שכבות הסתכלות
+        4 שכבות לתנועה חכמה בשטח
       </div>
     </div>
   );
