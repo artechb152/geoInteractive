@@ -177,7 +177,7 @@ export const quizzes: Record<string, Question[]> = {
     },
   ],
 
-  'topic-03': [
+  'topic-06': [
     {
       id: 'q1',
       stem: 'אזימוט המקורי הוא 75°. מהו האזימוט החוזר?',
@@ -265,7 +265,7 @@ export const quizzes: Record<string, Question[]> = {
     },
   ],
 
-  'topic-04': [
+  'topic-03': [
     {
       id: 'q1',
       stem: 'איזה כוח יוצר את "המקרו-טופוגרפיה" — רכסי הרים שלמים?',
@@ -353,7 +353,7 @@ export const quizzes: Record<string, Question[]> = {
     },
   ],
 
-  'topic-05': [
+  'topic-04': [
     {
       id: 'q1',
       stem: 'מהי מגבלת השיפוע האופיינית לכלים גלגליים?',
@@ -407,7 +407,7 @@ export const quizzes: Record<string, Question[]> = {
     },
   ],
 
-  'topic-06': [
+  'topic-05': [
     {
       id: 'q1',
       stem: 'מה משבירה קו ראייה (LOS)?',
