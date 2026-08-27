@@ -98,6 +98,10 @@ title = {
  כל שכבה עונה על שאלה אחת — לדוגמה: <strong className="text-fg">איפה גבוה? איפה עובר כביש? איפה יושב איום?</strong> מדליקים כמה שכבות יחד, וההצלבה ביניהן הופכת לתמונה אחת שאפשר להחליט לפיה.
  </p>
 
+ <p className="max-w-3xl text-base text-fg leading-relaxed text-pretty mb-6">
+  <strong className="text-fg">קואורדינטה</strong> היא הכתובת המדויקת של נקודה בשטח בתוך מערכת ייחוס נתונה — זוג מספרים שמצביע על מיקום אחד ויחיד, בלי תלות בשפה או בשיטת הסימון על המפה. זה מה ש-Georeferencing עושה בפועל: מחבר כל פיסת מידע — פיקסל בראסטר, נקודה בוקטור — לקואורדינטה שלה. ברגע שלכל שכבה יש אותה ״שפת מיקום״, אפשר להצליב תבליט, כבישים ואיומים בדיוק זה על זה. בלי זה, השכבות היו נופלות זו לצד זו, לא זו על זו.
+ </p>
+
  {/* Layer toggles */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
  {LAYERS.map((l) => {
@@ -160,6 +164,10 @@ isActive
  אותו שטח מבצעי · פעם כראסטר, פעם כוקטור
  </div>
 
+ <p className="text-sm text-fg-muted leading-relaxed text-pretty mb-4">
+  <strong className="text-fg">מהו ראסטר בפועל:</strong> הראסטר הוא הדרך שבה מחשב מייצג משטח רציף — הוא מחלק את השטח לרשת של תאים (פיקסלים), ולכל תא נותן ערך מספרי אחד: גובה, טמפרטורה, צפיפות צמחייה. ככל שהתא קטן יותר, כך הרזולוציה גבוהה יותר. בצבא, הראסטר המרכזי הוא DTM — מודל גובה ספרתי שמתאר את גובה הקרקע החשופה בלבד, ללא צמחייה ומבנים שנוספים כשכבות נפרדות, והוא הבסיס לחישובי LOS, נסתרות ושיפועים.
+ </p>
+
  <RasterVectorCompare />
 
  <div className="mt-4 surface p-4 rounded-[3px] flex gap-3 items-start">
@@ -171,6 +179,10 @@ isActive
  </div>
 
  <SoftDivider text="הכוח של וקטור · שאילתות חכמות" />
+
+ <p className="max-w-3xl text-sm text-fg-muted leading-relaxed text-pretty mb-4">
+ <strong className="text-fg">מה זו טבלת תכונות?</strong> כל אובייקט וקטורי במפה — כביש, מבנה, איום — הוא בעצם שורה בטבלה שיושבת מאחורי הצורה הגרפית שלו. כל עמודה בשורה היא תכונה: סוג, גובה, אוכלוסייה, רגישות. בלי הטבלה הזו, הצורה על המפה היא רק קו או מלבן. איתה, אפשר לשאול עליה שאלה ולקבל תשובה — לא רק להסתכל.
+ </p>
 
  {/* Vector query demo */}
  <div className="surface-elevated p-5 rounded-[4px] mb-12">
@@ -345,7 +357,7 @@ return (
  <div className="relative aspect-square">
  <img
 src={valleyAerial.src}
-alt="תצלום לוויין אמיתי של אזור כפרי הררי — כביש מתפתל, יישוב על גבעה ושדות חקלאיים. דוגמה לשכבת ראסטר: כל פיקסל מחזיק ערך אחד."
+alt="אורתופוטו של אזור כפרי הררי — כביש מתפתל, יישוב על גבעה ושדות חקלאיים. דוגמה לשכבת ראסטר: כל פיקסל מחזיק ערך אחד."
 className="absolute inset-0 h-full w-full object-cover"
 loading="lazy"
 draggable={false}
@@ -372,9 +384,12 @@ draggable={false}
  <span className="chip absolute bottom-2 start-2 border-border bg-bg-elevated/90 text-fg-muted backdrop-blur-sm">כל פיקסל = ערך אחד</span>
  </div>
  <figcaption className="border-t border-border-subtle bg-bg-elevated p-3">
- <div className="font-display font-bold text-sm text-fg leading-tight mb-0.5">תצלום לוויין · שכבת רקע רציפה</div>
+ <div className="font-display font-bold text-sm text-fg leading-tight mb-0.5">אורתופוטו · שכבת רקע רציפה</div>
  <p className="text-xs text-fg-muted leading-relaxed text-pretty">
  ערך לכל פיקסל: צבע, גובה, חום. מצוין ל<strong className="text-fg">תמונה של כל השטח</strong> — אבל אי אפשר לשאול אותו ״כמה מבנים יש?״
+ </p>
+ <p className="text-xs text-fg-muted leading-relaxed text-pretty mt-2">
+  <strong className="text-fg">זהו אורתופוטו</strong> — תמונה (אווירית או לוויינית) שעברה תיקון גיאומטרי (אורתורקטיפיקציה) שמסיר את עיוותי זווית הצילום וגובה השטח, כך שכל פיקסל יושב במיקום האמיתי שלו. בזכות זה אפשר למדוד עליו מרחקים ולהלביש עליו שכבות וקטוריות בדיוק — בתצלום רגיל (לא מתוקן) המרחקים משתבשים ליד הקצוות.
  </p>
  </figcaption>
  </figure>

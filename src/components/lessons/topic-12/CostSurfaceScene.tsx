@@ -165,6 +165,9 @@ intro="כל תא בשטח מקבל ציון קושי לתנועה — שיפוע
  <p className="text-base text-fg leading-relaxed text-pretty">
  ראסטר שבו כל פיקסל קיבל ציון של קושי לתנועה. <strong className="text-fg">עלות גבוהה</strong> = שיפוע, בוץ, נחל, איום אש. <strong className="text-fg">עלות נמוכה</strong> = כביש סלול, שטח מוסתר, מסלול בטוח.
  </p>
+ <p className="text-sm text-fg-muted leading-relaxed text-pretty mt-3">
+ <strong className="text-fg">"עלות" כאן היא לא מרחק ולא זמן</strong> — היא ציון מצטבר שנבנה מסכום גורמים: שיפוע (כמה קשה לטפס), מכשולים כמו נחל או שטח בנוי (כמה קשה לחצות או לעקוף), וקרבה לאיום (כמה מסוכן להיחשף). לכל גורם יש משקל שקובעים בסליידרים למטה — אותו תא בשטח יכול להיות "זול" במשימה שקטה ו"יקר" כשמעלים את משקל האיום.
+ </p>
  </div>
  <div className="surface-elevated p-6 rounded-[4px]">
  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
