@@ -186,7 +186,7 @@ title = {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="inline-flex items-center gap-2 text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           <span className="size-1.5 rounded-full bg-brand" aria-hidden />
                           מה קורה במצב הזה
                         </div>
