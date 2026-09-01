@@ -153,7 +153,7 @@ title={
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isExpanded || isPassed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted'
                     )}
                   >
@@ -165,7 +165,7 @@ title={
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-medium leading-tight', isExpanded && 'text-brand-dark')}>{l.label}</div>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">{l.label}</div>
                   </div>
 
                   <motion.span
@@ -201,13 +201,13 @@ title={
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           מה השכבה הזו מוסיפה
                         </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                        <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {l.popupTitle}
                         </h4>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                        <p className="text-base leading-relaxed text-black text-pretty">
                           {l.popupBody}
                         </p>
                       </div>

@@ -142,7 +142,7 @@ title = {
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
@@ -153,7 +153,7 @@ title = {
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>{s.label}</div>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">{s.label}</div>
                   </div>
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
@@ -187,12 +187,12 @@ title = {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="text-sm font-display font-semibold text-brand-dark mt-3 mb-2 tracking-wider">
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
 למה זה חשוב?                        </div>
                         <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
                           {s.popupTitle}
                         </h4>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                        <p className="text-base leading-relaxed text-black text-pretty">
                           {s.popupBody}
                         </p>
                       </div>

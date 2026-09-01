@@ -143,7 +143,7 @@ export function OnboardingScene() {
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className={cn('font-display font-semibold leading-tight transition-colors text-fg')}>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
                       {s.label}
                     </div>
                   </div>
@@ -181,16 +181,16 @@ export function OnboardingScene() {
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
                         <div className="mt-3">
-                          <div className="text-sm font-display font-semibold text-accent-cool mb-1.5 tracking-wider flex items-center gap-1.5">
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                             מה אתה עושה בשלב הזה?
                           </div>
-                          <p className="text-sm leading-relaxed text-fg">{s.caption}</p>
+                          <p className="text-base leading-relaxed text-black">{s.caption}</p>
                         </div>
                         <div className="pt-2 border-t border-border-subtle">
-                          <div className="text-sm font-display font-semibold text-brand-dark mb-1.5 tracking-wider flex items-center gap-1.5">
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                             ולמה זה משנה?
                           </div>
-                          <p className="text-sm leading-relaxed text-fg-muted">{s.insight}</p>
+                          <p className="text-base leading-relaxed text-black">{s.insight}</p>
                         </div>
                       </div>
                     </motion.div>
