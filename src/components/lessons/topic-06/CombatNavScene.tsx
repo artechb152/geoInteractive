@@ -150,7 +150,7 @@ isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
  <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  טכניקה {i + 1}
  </div>
- <div className={cn('font-display font-bold leading-tight', isActive ? 'text-brand-dark' : 'text-fg')}>
+ <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
  {m.label}
  </div>
  <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{m.english}</div>
@@ -188,31 +188,31 @@ className="overflow-hidden"
  >
  <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
  <div className="mt-3">
- <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
+ <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
  מה זה ולמה זה עובד
  </div>
- <p className="text-sm text-fg leading-relaxed">{m.detail}</p>
+ <p className="text-base leading-relaxed text-black">{m.detail}</p>
  </div>
 
  <div>
- <div className="text-sm font-display font-semibold text-accent-cool mb-1 tracking-wider">
+ <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
  מתי משתמשים בזה
  </div>
- <ul className="space-y-1.5 text-sm">
+ <ul className="space-y-1.5 text-base">
  {m.whenToUse.map((u) => (
  <li key={u} className="flex gap-2">
  <Icon name="check" size={14} className="text-accent-cool mt-0.5 shrink-0" strokeWidth={2.5} />
- <span className="text-fg leading-relaxed">{u}</span>
+ <span className="text-base leading-relaxed text-black">{u}</span>
  </li>
  ))}
  </ul>
  </div>
 
  <div className="pt-2 border-t border-border-subtle">
- <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+ <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
  דוגמה
  </div>
- <p className="text-sm text-fg-muted leading-relaxed">{m.example}</p>
+ <p className="text-base leading-relaxed text-black">{m.example}</p>
  </div>
  </div>
  </motion.div>
