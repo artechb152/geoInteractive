@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
@@ -13,12 +14,12 @@ label: 'מודל תלת־ממדי',
 icon: 'mountain',
 whatItIs: 'העתק מדויק של המציאות. ממש כמו דגם פלסטיק מוקטן של ההר או משחק מחשב.',
 pros: [
- 'הכי קל ואינטואיטיבי', 
+ 'הכי קל ואינטואיטיבי',
  'המוח מזהה מיד מה גבוה ומה נמוך, בלי שנצטרך ללמוד שום דבר מראש'
  ],
 cons: [
- 'קשה למדוד עליו מרחקים במדויק', 
- 'דורש מסך וחשמל', 
+ 'קשה למדוד עליו מרחקים במדויק',
+ 'דורש מסך וחשמל',
  'אי אפשר לקפל אותו לכיס ולקחת לשטח'
  ],
 whyItMatters: 'זהו כלי מעולה לתדרוך בחמ"ל. לוחמים יכולים"לעוף" וירטואלית מעל השטח לפני מבצע כדי להבין איך הוא ייראה במציאות.',
@@ -29,12 +30,12 @@ label: 'תצ״א (תצלום מהאוויר)',
 icon: 'eye',
 whatItIs: 'תמונה מציאותית שצולמה ממטוס, רחפן או לוויין, במבט ישר מלמעלה (ממעוף הציפור).',
 pros: [
- 'מראה את המציאות העדכנית ביותר', 
+ 'מראה את המציאות העדכנית ביותר',
  'רואים כל עץ, מבנה או שביל בדיוק כפי שהם נראים היום'
  ],
 cons: [
- 'התמונה חסרת עומק ונראית"מעוכה"', 
- 'אי אפשר לדעת אם כביש הוא תלול או מישורי', 
+ 'התמונה חסרת עומק ונראית"מעוכה"',
+ 'אי אפשר לדעת אם כביש הוא תלול או מישורי',
  'צמרות עצים יכולות להסתיר את מה שמתחתן'
  ],
 whyItMatters: 'התצ"א מצוינת כדי לדעת איפה יש מבנים ואיך נראה היעד, אבל בלי לדעת מה שיפוע ההר - אי אפשר לתכנן דרכה מסלול נסיעה בטוח.',
@@ -45,190 +46,190 @@ label: 'מפה טופוגרפית',
 icon: 'layers',
 whatItIs: 'שרטוט חכם על נייר או מסך, שמשתמש בסמלים מוסכמים וב"קווי גובה" כדי לתאר שטח תלת-ממדי על גבי דף שטוח.',
 pros: [
- 'מדויקת להפליא. מאפשרת מדידה מתמטית של מרחקים ושיפועים', 
- 'מסננת"רעשי רקע" שסתם מפריעים לעין', 
+ 'מדויקת להפליא. מאפשרת מדידה מתמטית של מרחקים ושיפועים',
+ 'מסננת"רעשי רקע" שסתם מפריעים לעין',
  'עובדת מעולה גם מודפסת בשטח'
  ],
 cons: [
- 'דורשת למידה ותרגול', 
+ 'דורשת למידה ותרגול',
  'מי שלא מכיר את"שפת המפה", יראה רק אוסף מבלבל של קווים ולא יבין מה הוא קורא'
  ],
 whyItMatters: 'המפה היא כלי העבודה מספר 1 של כל מפקד. היא משאירה רק את הנתונים הקריטיים לניווט, ומאפשרת לקבל החלטות מדויקות תחת לחץ.',
  },
 ];
 export function TopographyScene() {
-const [view, setView] = useState<View>('topo');
-const meta = VIEWS.find((v) => v.id === view)!;
-return (
- <section id="scene-topography" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
- <SceneHeader
-step="02.1"
-eyebrow="טופוגרפיה"
-title={
+  const [idx, setIdx] = useState(2); // default: מפה טופוגרפית
+  const reduce = useReducedMotion();
+  const total = VIEWS.length;
+  const meta = VIEWS[idx];
+  const isFirst = idx === 0;
+  const isLast = idx === total - 1;
+
+  return (
+    <section id="scene-topography" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <SceneHeader
+        step="02.1"
+        eyebrow="טופוגרפיה"
+        title={
           <>
-          ממרחב למישור: איך מתרגמים מציאות תלת-ממדית לתוך <span className="gradient-text">דף שטוח</span>?
+            ממרחב למישור: איך מתרגמים מציאות תלת-ממדית לתוך <span className="gradient-text">דף שטוח</span>?
           </>
         }
-        intro="טופוגרפיה = חקר צורת הקרקע (איפה יש הר, גבעה או עמק). את אותו ההר אפשר להציג ב-3 דרכים. לחצו על האפשרויות ובדקו מה היתרונות והחסרונות של כל אחת:"
- />
+        intro="טופוגרפיה = חקר צורת הקרקע (איפה יש הר, גבעה או עמק). את אותו ההר אפשר להציג ב-3 דרכים. עברו בין האפשרויות ובדקו מה היתרונות והחסרונות של כל אחת:"
+      />
 
- <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
- {/* Accordion list — first child → RIGHT in RTL (text on right) */}
- <div className="space-y-3">
- {VIEWS.map((v, i) => {
-const isActive = view === v.id;
-return (
- <div
-key={v.id}
-className={cn(
- 'surface overflow-hidden transition-all duration-300 ease-snap',
-isActive ? 'border-brand/45 bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]'
- )}
- >
- <button
-type="button"
-onClick={() => setView(v.id)}
-aria-expanded={isActive}
-className="w-full p-4 text-right flex items-center gap-3 relative"
- >
- <div className="flex-1 min-w-0">
- <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
- תצוגה {String(i + 1).padStart(2, '0')}
- </div>
- <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
- {v.label}
- </div>
- </div>
- <motion.span
-animate={{ rotate: isActive ? 180 : 0 }}
-transition={{ duration: 0.25 }}
-className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
- >
- <svg
-width="18"
-height="18"
-viewBox="0 0 24 24"
-fill="none"
-stroke="currentColor"
-strokeWidth="1.8"
-strokeLinecap="round"
-strokeLinejoin="round"
-aria-hidden
- >
- <path d="m6 9 6 6 6-6" />
- </svg>
- </motion.span>
- </button>
+      <div className="mb-12">
+        {/* Central content panel — one view at a time, full-width image, replaces the former accordion + cropped side-image layout */}
+        <div className="surface-elevated relative p-5 sm:p-8">
+          <span
+            aria-hidden
+            className="absolute bottom-4 end-4 size-9 rounded-[3px] flex items-center justify-center bg-brand-dark text-bg-elevated font-display text-sm font-bold"
+          >
+            {String(idx + 1).padStart(2, '0')}
+          </span>
 
- <AnimatePresence initial={false}>
- {isActive && (
- <motion.div
-key={`panel-${v.id}`}
-initial={{ height: 0, opacity: 0 }}
-animate={{ height: 'auto', opacity: 1 }}
-exit={{ height: 0, opacity: 0 }}
-transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-className="overflow-hidden"
- >
- <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-4">
- <div>
- <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5 mt-3">
- במילים פשוטות
- </div>
- <p className="text-base leading-relaxed text-black">{v.whatItIs}</p>
- </div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={meta.id}
+              initial={reduce ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduce ? undefined : { opacity: 0, y: -8 }}
+              transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="mb-5 text-center flex items-center justify-center gap-2">
+                <Icon name={meta.icon} size={16} className="text-brand-dark" />
+                <div className="font-display font-bold text-xl text-brand-dark leading-tight">{meta.label}</div>
+              </div>
 
- <div className="grid sm:grid-cols-2 gap-3">
- <div className="surface p-3">
- <div className="flex items-center gap-1.5 text-base font-display font-bold text-black mb-1.5 tracking-wider">
- <Icon name="check" size={12} strokeWidth={2.5} />
- מה היתרון
- </div>
- <ul className="space-y-1.5 text-base">
- {v.pros.map((p) => (
- <li key={p} className="flex gap-2">
- <span className="text-status-ok mt-0.5">·</span>
- <span className="text-black">{p}</span>
- </li>
- ))}
- </ul>
- </div>
+              <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 flex items-center justify-center h-40 sm:h-48">
+                {meta.id === '3d' && <View3D />}
+                {meta.id === 'photo' && <ViewPhoto />}
+                {meta.id === 'topo' && <ViewTopo />}
+              </div>
 
- <div className="surface p-3">
- <div className="flex items-center gap-1.5 text-base font-display font-bold text-black mb-1.5 tracking-wider">
- <svg
-width="12"
-height="12"
-viewBox="0 0 24 24"
-fill="none"
-stroke="currentColor"
-strokeWidth="2.5"
-strokeLinecap="round"
-strokeLinejoin="round"
-aria-hidden
- >
- <path d="M18 6 6 18M6 6l12 12" />
- </svg>
- מה הבעיה
- </div>
- <ul className="space-y-1.5 text-base">
- {v.cons.map((c) => (
- <li key={c} className="flex gap-2">
- <span className="text-status-warn mt-0.5">·</span>
- <span className="text-black">{c}</span>
- </li>
- ))}
- </ul>
- </div>
- </div>
+              <div className="mt-6 space-y-4">
+                <div>
+                  <div className="text-sm font-display font-bold text-black mb-1 tracking-wider">
+                    במילים פשוטות
+                  </div>
+                  <p className="text-sm leading-relaxed text-black">{meta.whatItIs}</p>
+                </div>
 
- <div className="surface p-3 flex gap-2.5 items-start">
- <Icon name="spark" size={18} className="text-brand-dark shrink-0 mt-0.5" />
- <div>
- <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
- למה זה חשוב
- </div>
- <p className="text-base leading-relaxed text-black text-pretty">{v.whyItMatters}</p>
- </div>
- </div>
- </div>
- </motion.div>
- )}
- </AnimatePresence>
- </div>
- );
- })}
- </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="surface p-3">
+                    <div className="flex items-center gap-1.5 text-sm font-display font-bold text-black mb-1 tracking-wider">
+                      <Icon name="check" size={12} strokeWidth={2.5} />
+                      מה היתרון
+                    </div>
+                    <ul className="space-y-1 text-sm">
+                      {meta.pros.map((p) => (
+                        <li key={p} className="flex gap-2">
+                          <span className="text-status-ok mt-0.5">·</span>
+                          <span className="text-black">{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
- {/* Visualization — second child → LEFT in RTL */}
- <div className="surface-elevated relative overflow-hidden h-full flex flex-col">
- <AnimatePresence mode="wait">
- <motion.div
-key={view}
-initial={{ opacity: 0, scale: 0.96 }}
-animate={{ opacity: 1, scale: 1 }}
-exit={{ opacity: 0, scale: 1.02 }}
-transition={{ duration: 0.3 }}
-className="flex-1 min-h-[18rem]"
- >
- {view === '3d' && <View3D />}
- {view === 'photo' && <ViewPhoto />}
- {view === 'topo' && <ViewTopo />}
- </motion.div>
- </AnimatePresence>
+                  <div className="surface p-3">
+                    <div className="flex items-center gap-1.5 text-sm font-display font-bold text-black mb-1 tracking-wider">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                      מה הבעיה
+                    </div>
+                    <ul className="space-y-1 text-sm">
+                      {meta.cons.map((c) => (
+                        <li key={c} className="flex gap-2">
+                          <span className="text-status-warn mt-0.5">·</span>
+                          <span className="text-black">{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
- <div className="absolute bottom-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-xs text-fg-muted">
- <Icon name={meta.icon} size={12} />
- {meta.label}
- </div>
- </div>
- </div>
- </section>
- );
+                <div className="surface p-3 flex gap-2.5 items-start">
+                  <Icon name="spark" size={18} className="text-brand-dark shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-display font-bold text-black mb-1 tracking-wider">
+                      למה זה חשוב
+                    </div>
+                    <p className="text-sm leading-relaxed text-black text-pretty">{meta.whyItMatters}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Prev / progress dots / Next — matches the LandformsScene pager convention.
+            RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setIdx((v) => Math.max(0, v - 1))}
+            disabled={isFirst}
+            aria-label="התצוגה הקודמת"
+            className={cn(
+              'size-11 flex items-center justify-center shrink-0 transition-colors',
+              isFirst
+                ? 'rounded-2xl border border-border-subtle text-fg-dim opacity-40 cursor-not-allowed'
+                : 'surface-elevated text-accent hover:bg-bg-accent cursor-pointer',
+            )}
+          >
+            <ChevronRight size={20} strokeWidth={1.8} aria-hidden />
+          </button>
+
+          <div className="flex items-center gap-1.5" role="tablist" aria-label="ניווט בין תצוגות">
+            {VIEWS.map((v, i) => {
+              const isActive = i === idx;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={v.label}
+                  onClick={() => setIdx(i)}
+                  className={cn('h-2 rounded-full transition-all', isActive ? 'w-6 bg-accent' : 'w-2 bg-fg hover:bg-fg-dim')}
+                />
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIdx((v) => Math.min(total - 1, v + 1))}
+            disabled={isLast}
+            aria-label="התצוגה הבאה"
+            className={cn(
+              'size-11 flex items-center justify-center shrink-0 transition-colors',
+              isLast
+                ? 'rounded-2xl border border-border-subtle text-fg-dim opacity-40 cursor-not-allowed'
+                : 'surface-elevated text-accent hover:bg-bg-accent cursor-pointer',
+            )}
+          >
+            <ChevronLeft size={20} strokeWidth={1.8} aria-hidden />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 // ==========================================
-// תצוגות – איורים מבוססי תמונה
+// תצוגות – איורים מבוססי תמונה (מוצגות במלואן, בלי חיתוך)
 // ==========================================
 function View3D() {
   return (
