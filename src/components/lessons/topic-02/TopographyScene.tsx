@@ -81,21 +81,21 @@ return (
  <div
 key={v.id}
 className={cn(
- 'surface overflow-hidden transition-colors',
-isActive ? 'border-brand-dark bg-brand/5' : 'hover:border-border-strong'
+ 'surface overflow-hidden transition-all duration-300 ease-snap',
+isActive ? 'border-brand/45 bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]'
  )}
  >
  <button
 type="button"
 onClick={() => setView(v.id)}
 aria-expanded={isActive}
-className="w-full p-4 text-right flex items-center gap-3"
+className="w-full p-4 text-right flex items-center gap-3 relative"
  >
  <div className="flex-1 min-w-0">
- <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+ <div className="text-sm font-display font-semibold text-black tracking-wider">
  תצוגה {String(i + 1).padStart(2, '0')}
  </div>
- <div className={cn('font-medium text-sm leading-tight', isActive && 'text-brand-dark')}>
+ <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
  {v.label}
  </div>
  </div>
@@ -132,15 +132,15 @@ className="overflow-hidden"
  >
  <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-4">
  <div>
- <div className="text-sm font-display font-semibold text-accent-cool mt-3 mb-1.5 tracking-wider">
+ <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5 mt-3">
  במילים פשוטות
  </div>
- <p className="text-sm text-fg leading-relaxed">{v.whatItIs}</p>
+ <p className="text-base leading-relaxed text-black">{v.whatItIs}</p>
  </div>
 
  <div className="grid sm:grid-cols-2 gap-3">
  <div className="surface p-3">
- <div className="flex items-center gap-2 text-sm font-display font-semibold text-status-ok mb-2 tracking-wider">
+ <div className="flex items-center gap-1.5 text-base font-display font-bold text-black mb-1.5 tracking-wider">
  <Icon name="check" size={12} strokeWidth={2.5} />
  מה היתרון
  </div>
@@ -155,7 +155,7 @@ className="overflow-hidden"
  </div>
 
  <div className="surface p-3">
- <div className="flex items-center gap-2 text-sm font-display font-semibold text-status-warn mb-2 tracking-wider">
+ <div className="flex items-center gap-1.5 text-base font-display font-bold text-black mb-1.5 tracking-wider">
  <svg
 width="12"
 height="12"
@@ -185,10 +185,10 @@ aria-hidden
  <div className="surface p-3 flex gap-2.5 items-start">
  <Icon name="spark" size={18} className="text-brand-dark shrink-0 mt-0.5" />
  <div>
- <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
+ <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
  למה זה חשוב
  </div>
- <p className="text-sm text-fg leading-relaxed text-pretty">{v.whyItMatters}</p>
+ <p className="text-base leading-relaxed text-black text-pretty">{v.whyItMatters}</p>
  </div>
  </div>
  </div>
