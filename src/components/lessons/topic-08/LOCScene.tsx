@@ -131,7 +131,7 @@ title = {
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active
                         ? 'bg-brand-dark text-bg-elevated border-brand-dark'
                         : 'bg-bg-accent text-fg-muted border-border',
@@ -140,7 +140,7 @@ title = {
                     <Icon name={d.icon} size={16} strokeWidth={2.5} />
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-semibold leading-tight text-fg">
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
                       {d.label}
                     </div>
                     <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
@@ -186,11 +186,11 @@ title = {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
-                        <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                        <div className="inline-flex items-center gap-2 text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           <span className="size-1.5 rounded-full bg-brand" aria-hidden />
                           מה קורה במצב הזה
                         </div>
-                        <p className="text-sm leading-relaxed text-fg-muted text-pretty">
+                        <p className="text-base leading-relaxed text-black text-pretty">
                           {d.desc}
                         </p>
                       </div>
