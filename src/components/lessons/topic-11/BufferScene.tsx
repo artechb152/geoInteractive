@@ -199,7 +199,7 @@ title = {
                   )}
                   <span
                     className={cn(
-                      'size-9 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isActive
                         ? 'bg-brand-dark text-bg-elevated border-brand-dark'
                         : 'bg-bg-accent text-fg-muted border-border',
@@ -208,7 +208,7 @@ title = {
                     <span className="font-display text-sm font-bold">{i + 1}</span>
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-semibold leading-tight text-fg">
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
                       {l.label}
                     </div>
                     <div className="font-display font-medium tracking-wide text-[11px] text-fg-dim mt-0.5">
@@ -217,28 +217,28 @@ title = {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wider text-brand-dark mt-3 mb-2.5">
+                  <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                     <span className="size-1.5 rounded-full bg-accent" aria-hidden />
                     מה השכבה הזו עושה
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-1">
+                      <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                         יכולת
                       </div>
-                      <p className="text-sm text-fg leading-relaxed text-pretty">{l.capability}</p>
+                      <p className="text-base leading-relaxed text-black">{l.capability}</p>
                     </div>
                     <div>
-                      <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-1">
+                      <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                         עלות
                       </div>
-                      <p className="text-sm text-fg-muted leading-relaxed text-pretty">{l.cost}</p>
+                      <p className="text-base leading-relaxed text-black">{l.cost}</p>
                     </div>
                     <div>
-                      <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1">
+                      <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                         מה היא מחליפה
                       </div>
-                      <p className="text-sm text-fg leading-relaxed text-pretty">{l.replaces}</p>
+                      <p className="text-base leading-relaxed text-black">{l.replaces}</p>
                     </div>
                   </div>
                 </AccordionContent>

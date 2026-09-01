@@ -26,7 +26,7 @@ const AccordionItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AccordionPrimitive.Item
     ref={ref}
-    className={cn('surface overflow-hidden transition-colors', className)}
+    className={cn('surface overflow-hidden transition-all duration-300 ease-snap', className)}
     {...props}
   />
 ));
@@ -40,7 +40,7 @@ const AccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        'w-full p-3 text-right flex items-center gap-3 relative',
+        'w-full p-4 text-right flex items-center gap-3 relative',
         '[&[data-state=open]>svg.chev]:rotate-180 [&[data-state=open]>svg.chev]:text-brand-dark',
         className,
       )}
@@ -62,10 +62,10 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
-    className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    className="overflow-hidden text-base data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     {...props}
   >
-    <div className={cn('px-3 pb-3 pt-1 border-t border-brand/20', className)}>{children}</div>
+    <div className={cn('px-4 pb-4 pt-1 border-t border-brand/20', className)}>{children}</div>
   </AccordionPrimitive.Content>
 ));
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
