@@ -92,7 +92,7 @@ aria-expanded={isActive}
 className="w-full p-4 text-right flex items-center gap-3 relative"
  >
  <div className="flex-1 min-w-0">
- <div className="text-sm font-display font-semibold text-black tracking-wider">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
  תצוגה {String(i + 1).padStart(2, '0')}
  </div>
  <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
@@ -144,11 +144,11 @@ className="overflow-hidden"
  <Icon name="check" size={12} strokeWidth={2.5} />
  מה היתרון
  </div>
- <ul className="space-y-1.5 text-sm">
+ <ul className="space-y-1.5 text-base">
  {v.pros.map((p) => (
  <li key={p} className="flex gap-2">
  <span className="text-status-ok mt-0.5">·</span>
- <span className="text-fg">{p}</span>
+ <span className="text-black">{p}</span>
  </li>
  ))}
  </ul>
@@ -171,11 +171,11 @@ aria-hidden
  </svg>
  מה הבעיה
  </div>
- <ul className="space-y-1.5 text-sm">
+ <ul className="space-y-1.5 text-base">
  {v.cons.map((c) => (
  <li key={c} className="flex gap-2">
  <span className="text-status-warn mt-0.5">·</span>
- <span className="text-fg">{c}</span>
+ <span className="text-black">{c}</span>
  </li>
  ))}
  </ul>

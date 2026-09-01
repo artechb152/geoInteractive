@@ -190,7 +190,7 @@ title = {
                         <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           למה זה משנה
                         </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                        <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {s.popupTitle}
                         </h4>
                         <p className="text-base leading-relaxed text-black text-pretty">

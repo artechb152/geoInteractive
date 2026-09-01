@@ -191,7 +191,7 @@ title = {
                           <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
                           למה זה משנה?
                         </div>
-                        <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">
+                        <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {s.popupTitle}
                         </h4>
                         <p
