@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -71,6 +72,18 @@ const LEVELS: Record<Level, LevelMeta> = {
 // In RTL, first column → right side. Strategic = broadest = right.
 const LEVEL_ORDER: Level[] = ['strategic', 'operational', 'tactical'];
 
+// Overlay position for each level's button on TOPIC01-LEVELS-DIORAMA.png,
+// tuned by eye against the rendered asset (its composition doesn't match
+// lesson1part3image1.png's reference photo, so this isn't measured from the
+// reference — see design/assumptions.md). `insetInlineEnd`/`insetBlockStart`
+// (distance from the visual left/top) are used throughout so the anchor is
+// expressed relative to the image's own content, not mirrored for RTL.
+const LEVEL_BUTTON_POSITION: Record<Level, CSSProperties> = {
+  strategic: { insetBlockStart: '8%', insetInlineEnd: '13%' },
+  operational: { insetBlockStart: '39%', insetInlineEnd: '63%' },
+  tactical: { insetBlockStart: '78%', insetInlineEnd: '74%' },
+};
+
 type MatrixRowKey = 'who' | 'zoom' | 'time' | 'example';
 const MATRIX_ROWS: { key: MatrixRowKey; label: string }[] = [
   { key: 'who', label: 'מי מחליט?' },
@@ -89,6 +102,7 @@ const SCENARIOS: { text: string; correct: Level; icon: IconName }[] = [
 ];
 
 export function LevelsScene() {
+  const [activeLevel, setActiveLevel] = useState<Level>('strategic');
   const [assignments, setAssignments] = useState<Record<number, Level>>({});
   const [submitted, setSubmitted] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<number | null>(null);
@@ -134,23 +148,80 @@ export function LevelsScene() {
         intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
       />
 
-      {/* === Comparison Matrix === */}
+      {/* === Level Selector === */}
       <div className="surface-elevated p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5 pb-5 border-b border-border-subtle">
-          <div className="shrink-0 mx-auto sm:mx-0">
-            <SVGPyramidStatic />
+        <div className="grid gap-5 md:grid-cols-[1fr_1.35fr] md:items-stretch">
+          {/* Active-level detail panel — first child → right in RTL. */}
+          <div className="flex flex-col justify-center min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeLevel}
+                id={`level-panel-${activeLevel}`}
+                role="tabpanel"
+                aria-labelledby={`level-tab-${activeLevel}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
+              >
+                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-subtle">
+                  <Icon
+                    name={LEVELS[activeLevel].zoomIcon}
+                    size={30}
+                    strokeWidth={2}
+                    className="shrink-0 text-accent"
+                  />
+                  <div className="min-w-0">
+                    <div className="font-display font-bold text-xl leading-tight text-accent">
+                      {LEVELS[activeLevel].label}
+                    </div>
+                    <div className="text-xs font-mono text-fg-dim mt-0.5">
+                      {LEVELS[activeLevel].english}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {MATRIX_ROWS.map((row) => (
+                    <div key={row.key}>
+                      <h4 className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-1">
+                        {row.label}
+                      </h4>
+                      <p className="text-sm sm:text-base text-fg leading-relaxed text-pretty">
+                        {LEVELS[activeLevel][row.key]}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-          <div className="flex-1">
-            <h3 className="font-display font-bold text-xl leading-tight mb-1">
-              שלוש הרמות במבט אחד
-            </h3>
-            <p className="text-sm text-fg-muted leading-relaxed text-pretty">
-              למעלה (אסטרטגית) — רחב, איטי, רחוק. למטה (טקטית) — צמוד, מהיר, כאן ועכשיו. ביניהן (אופרטיבית) — דרג הביניים שמתרגם מטרות מדיניות לתנועה בשטח.
-            </p>
+
+          {/* Diorama with overlay level buttons — second child → left in
+              RTL. Not mirrored: the asset renders as-is. */}
+          <div
+            role="tablist"
+            aria-label="בחר רמת מלחמה"
+            className="relative w-full overflow-hidden rounded-xl border border-border-subtle"
+            style={{ aspectRatio: '3 / 2' }}
+          >
+            <IsometricAsset
+              assetId="TOPIC01-LEVELS-DIORAMA"
+              src="/assets/lessons/topic01/scene-levels/TOPIC01-LEVELS-DIORAMA.png"
+              alt="איור איזומטרי: חדר מצב אסטרטגי למעלה, חדר בקרה אופרטיבי במרכז, וחיילים בזום טקטי קרוב בפינה התחתונה"
+              fit="cover"
+              className="absolute inset-0 size-full [aspect-ratio:auto]"
+            />
+            {LEVEL_ORDER.map((level) => (
+              <LevelButton
+                key={level}
+                level={level}
+                isActive={level === activeLevel}
+                onSelect={setActiveLevel}
+              />
+            ))}
           </div>
         </div>
-
-        <ComparisonMatrix />
       </div>
 
       {/* === Practice: Drag scenarios into bins === */}
@@ -239,124 +310,37 @@ export function LevelsScene() {
   );
 }
 
-function ComparisonMatrix() {
+// Only the active level gets the orange/accent treatment here (unlike the
+// pyramid/practice-bin sections below, which use a 3-color per-level
+// identity) — see design/assumptions.md for why this screen diverges.
+function LevelButton({
+  level,
+  isActive,
+  onSelect,
+}: {
+  level: Level;
+  isActive: boolean;
+  onSelect: (level: Level) => void;
+}) {
+  const meta = LEVELS[level];
   return (
-    <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-      <table className="w-full border-separate border-spacing-0 text-sm">
-        <thead>
-          <tr>
-            <th
-              scope="col"
-              className="hidden sm:table-cell pb-4 px-3 text-right text-sm font-display font-semibold text-fg-muted tracking-wider whitespace-nowrap align-bottom w-[110px]"
-            >
-              ממד
-            </th>
-            {LEVEL_ORDER.map((id) => {
-              const meta = LEVELS[id];
-              return (
-                <th
-                  key={id}
-                  scope="col"
-                  className="pb-4 px-3 text-right align-bottom"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon name={meta.zoomIcon} size={28} className={cn('shrink-0', meta.text)} />
-                    <div className="min-w-0">
-                      <div
-                        className={cn(
-                          'font-display font-bold text-base leading-tight',
-                          meta.text
-                        )}
-                      >
-                        {meta.label}
-                      </div>
-                      <div className="text-[10px] font-mono text-fg-dim mt-0.5">
-                        {meta.english}
-                      </div>
-                    </div>
-                  </div>
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {MATRIX_ROWS.map((row) => (
-            <tr key={row.key}>
-              <th
-                scope="row"
-                className="hidden sm:table-cell py-4 px-3 text-right align-top text-sm font-display font-semibold text-fg-muted tracking-wider whitespace-nowrap border-t border-border-subtle"
-              >
-                {row.label}
-              </th>
-              {LEVEL_ORDER.map((id) => {
-                const meta = LEVELS[id];
-                return (
-                  <td
-                    key={id}
-                    className="py-4 px-3 text-right align-top leading-relaxed border-t border-border-subtle"
-                  >
-                    <div className="sm:hidden text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">
-                      {row.label}
-                    </div>
-                    <span
-                      className={cn(
-                        row.key === 'example'
-                          ? 'text-fg-muted text-pretty text-xs sm:text-sm'
-                          : 'text-fg text-xs sm:text-sm'
-                      )}
-                    >
-                      {meta[row.key]}
-                    </span>
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function SVGPyramidStatic() {
-  const order: { id: Level; y: number; left: number; right: number }[] = [
-    { id: 'strategic', y: 8, left: 5, right: 95 },
-    { id: 'operational', y: 40, left: 22, right: 78 },
-    { id: 'tactical', y: 70, left: 36, right: 64 },
-  ];
-  const bottomCap = { y: 98, left: 44, right: 56 };
-
-  return (
-    <svg viewBox="0 0 100 110" className="w-[120px] sm:w-[110px]" aria-hidden>
-      <polygon
-        points={`${order[0].left},${order[0].y - 3} ${order[0].right},${order[0].y - 3} ${bottomCap.right},${bottomCap.y + 2} ${bottomCap.left},${bottomCap.y + 2}`}
-        className="fill-bg-card stroke-border"
-        strokeWidth="0.5"
-      />
-      {order.map((r, i) => {
-        const next = order[i + 1] ?? bottomCap;
-        const meta = LEVELS[r.id];
-        const points = `${r.left},${r.y} ${r.right},${r.y} ${next.right},${next.y} ${next.left},${next.y}`;
-        return (
-          <g key={r.id}>
-            <polygon
-              points={points}
-              className={cn(meta.fillClass, 'stroke-current', meta.text)}
-              strokeWidth="0.6"
-            />
-            <text
-              x="50"
-              y={(r.y + next.y) / 2 + 1.5}
-              textAnchor="middle"
-              className={cn('text-[5px] font-display font-bold', meta.text)}
-            >
-              {meta.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <button
+      type="button"
+      role="tab"
+      id={`level-tab-${level}`}
+      aria-selected={isActive}
+      aria-controls={`level-panel-${level}`}
+      onClick={() => onSelect(level)}
+      style={LEVEL_BUTTON_POSITION[level]}
+      className={cn(
+        'absolute px-4 py-2 rounded-full text-sm font-display font-bold shadow-elevated backdrop-blur-sm transition-all',
+        isActive
+          ? 'bg-accent text-bg-elevated scale-105'
+          : 'bg-fg/80 text-bg-elevated hover:bg-fg/95'
+      )}
+    >
+      {meta.label}
+    </button>
   );
 }
 
