@@ -1,42 +1,100 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
+import { Crosshair } from 'lucide-react';
+
+const HOOK_BG_SRC = '/assets/lessons/topic01/scene-hook/TOPIC01-HOOK-BG.png';
+
+/**
+ * Isometric terrain backdrop, portaled straight to `document.body` instead
+ * of rendered as a plain child of this scene. `PagedLearn` wraps every
+ * active scene in an animated `motion.div`; a `position:fixed` descendant
+ * of a transformed ancestor gets trapped as if `absolute` within that
+ * ancestor instead of the real viewport (framer-motion leaves a
+ * non-identity `transform` — even `translateY(0px)` — on that wrapper),
+ * which is why the image used to render scene-sized and visibly "grow"
+ * once the enter transition's transform settled. Portaling escapes that
+ * tree entirely, and — being scoped to this component's own mount/unmount
+ * — can't leak onto another scene or topic the way a global, event-driven
+ * singleton previously did.
+ */
+function HookBackdrop() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+
+    // The sticky sub-nav header (`לימוד`/`תרגול`/`בדיקת ידע`, see
+    // `data-lesson-tabs-header` in LessonShell.tsx) normally paints an
+    // opaque `bg-bg` so it reads as part of the cream content area — on
+    // this scene that cuts the backdrop off at the header's own edge
+    // instead of letting it run all the way to the top, and the tab
+    // labels/icons already read fine directly on the image. Drop the fill
+    // via inline style (wins over the Tailwind utility class on
+    // specificity) only while this scene is mounted, and restore it on
+    // cleanup so no other scene is ever affected.
+    const header = document.querySelector<HTMLElement>('[data-lesson-tabs-header]');
+    if (header) header.style.backgroundColor = 'transparent';
+    return () => {
+      if (header) header.style.backgroundColor = '';
+    };
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 -z-10 select-none bg-paper-page bg-cover bg-[position:left_center] bg-no-repeat"
+      style={{ backgroundImage: `url('${HOOK_BG_SRC}')` }}
+    />,
+    document.body,
+  );
+}
 
 export function HookScene() {
   return (
     <section
       id="scene-hook"
-      className="min-h-[calc(100dvh-var(--header-h)-5rem)] relative flex items-center justify-center overflow-hidden"
+      className="min-h-[calc(100dvh-var(--header-h)-5rem)] relative flex items-center justify-start overflow-hidden ps-6 pe-4 py-10 sm:ps-20 lg:ps-32"
     >
-      <BackdropConstellation />
+      <HookBackdrop />
 
       <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 text-center max-w-4xl px-6"
+        className="relative z-10 w-full max-w-[600px] bg-transparent px-6 py-12 text-center sm:px-8 sm:py-14"
       >
-<h1 className="text-[clamp(2.25rem,7vw,5.5rem)] font-bold tracking-tight text-balance leading-[1.05]">
+        <h1 className="text-[clamp(1.375rem,2.4vw,2.25rem)] font-display font-extrabold tracking-tight text-balance leading-[1.15] text-olive-ink">
           המרחב איננו רק זירת הפעולה.
           <br />
-          <span className="gradient-text text-accent">הוא המימד המערכתי שמכריע אותה.</span>
+          הוא המימד המערכתי <span className="text-ember">שמכריע אותה.</span>
         </h1>
 
-        <p className="mt-8 text-fg-muted text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-pretty">
+        <div aria-hidden className="relative my-8 flex items-center justify-center">
+          <div className="h-px w-full bg-tanline" />
+          <Crosshair className="absolute size-5 text-olive-ink/60" />
+        </div>
+
+        <p className="mx-auto max-w-md text-sm leading-relaxed text-olive-soft text-pretty sm:text-base">
           המלחמה המודרנית לא מוכרעת ביחס כוחות — היא מוכרעת ב-5 ממדים,
           3 רמות פיקוד, ובתלות במימד הזמן והמרחב. בשיעור הזה תבין
           איך המרחב הופך לשחקן הראשי, ולמה רחפן של 300 דולר מפיל מטוס של 80 מיליון.
         </p>
+
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.4, duration: 0.6 }}
-          className="mt-14 flex justify-center"
+          className="mt-10 flex justify-center"
         >
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('learn:next'))}
-            className="inline-flex items-center gap-3 px-7 py-3.5 rounded-[3px] bg-accent text-bg-elevated font-display font-semibold text-base hover:bg-accent-hover transition-all duration-200"
+            className="inline-flex items-center justify-center rounded-xl bg-cta-ember px-7 py-4 font-display text-base font-bold text-bg-elevated shadow-cta-ember transition-all duration-200 hover:brightness-105 active:translate-y-px"
             aria-label="התחל את השיעור"
           >
             <span>לחץ כדי להתחיל</span>
@@ -44,64 +102,5 @@ export function HookScene() {
         </motion.div>
       </motion.div>
     </section>
-  );
-}
-
-function BackdropConstellation() {
-  // Pseudo-random but deterministic dot field + concentric rings
-  const dots = Array.from({ length: 60 }, (_, i) => {
-    const seed = (i * 9301 + 49297) % 233280;
-    const x = (seed % 1000) / 10;
-    const y = ((seed * 13) % 1000) / 10;
-    const r = ((seed * 7) % 30) / 100 + 0.2;
-    return { x, y, r, delay: (i % 10) * 0.2 };
-  });
-
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-0">
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        className="absolute inset-0 w-full h-full"
-      >
-        {dots.map((d, i) => (
-          <circle
-            key={i}
-            cx={d.x}
-            cy={d.y}
-            r={d.r}
-            className="fill-fg/40"
-          >
-            <animate
-              attributeName="opacity"
-              values="0.2;0.6;0.2"
-              dur={`${3 + (i % 3)}s`}
-              begin={`${d.delay}s`}
-              repeatCount="indefinite"
-            />
-          </circle>
-        ))}
-      </svg>
-
-      <div className="absolute inset-0 flex items-center justify-center">
-        {[1, 2, 3, 4].map((i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full border border-accent/10"
-            style={{ width: `${i * 240}px`, height: `${i * 240}px` }}
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 0.5, scale: 1 }}
-            transition={{ duration: 1.4, delay: i * 0.12 }}
-          />
-        ))}
-        <motion.div
-          className="absolute size-2.5 rounded-full bg-accent"
-          animate={{ scale: [1, 1.5, 1] }}
-          transition={{ repeat: Infinity, duration: 2.5 }}
-        />
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-bg" />
-    </div>
   );
 }

@@ -80,7 +80,7 @@ export function LessonShell({
               reads as part of the content area, and there is no
               border / underline between the tabs and the lesson
               content below. ─────────────────────────── */}
-      <header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[13vw]">
+      <header data-lesson-tabs-header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[13vw]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"

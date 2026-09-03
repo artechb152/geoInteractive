@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { IntelCard } from '@/components/lesson/IntelCard';
-import { Icon, type IconName } from '@/components/Icon';
+import { HistoricalCasesPanel } from './HistoricalCasesPanel';
+import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import { OnboardingEditProvider, EditableBlock, EditableFrame } from './onboarding-edit-mode';
 
@@ -52,37 +52,6 @@ const STEPS: Step[] = [
   },
 ];
 
-const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
-  {
-    headline: 'הצבא הגדול בעולם נחרב — בלי קרב גדול',
-    place: 'נפוליאון פולש לרוסיה · 1812',
-    lesson: 'נפוליאון, השליט החזק באירופה, פלש לרוסיה עם 600,000 חיילים. הוא לא הפסיד בקרב — אבל המרחק העצום והחורף הקטלני הרגו 90% מהצבא לפני שהגיעו בכלל למוסקבה. המרחק והקור היו האויב האמיתי.',
-    icon: 'fuel',
-    accent: 'text-accent-cool',
-  },
-  {
-    headline: '32 ק"מ של מים שמרו על אימפריה',
-    place: 'בריטניה · 200 שנה',
-    lesson: 'תעלת למאנש היא רצועת הים בין אנגליה לצרפת — רק 32 ק"מ ברוחב הצר ביותר. אבל זה הספיק כדי למנוע פלישה צרפתית, גרמנית ונאצית במשך מאות שנים. רצועת המים הזו הייתה החייל הטוב ביותר של בריטניה.',
-    icon: 'wave',
-    accent: 'text-terrain-sky',
-  },
-  {
-    headline: 'ישראל ברוחבה הצר ביותר: 14 ק"מ בלבד',
-    place: 'אזור השרון · ישראל',
-    lesson: 'במרכז ישראל — מנתניה ועד הגבול הירדני — יש רק 14 ק"מ ברוחב. כלומר, צבא אויב יכול לכאורה לחצות את המדינה לשניים בכמה שעות נסיעה. זה מחייב תפיסה צבאית שונה לחלוטין מאשר במדינות גדולות כמו רוסיה או ארה"ב.',
-    icon: 'flag',
-    accent: 'text-accent-hot',
-  },
-  {
-    headline: 'מדינה קטנה ששרדה שתי מלחמות עולם',
-    place: 'שוויץ · 1914 ו-1939',
-    lesson: 'שוויץ — מדינה זעירה במרכז אירופה — לא נכבשה בשום מלחמה גדולה. ההרים הגבוהים שמקיפים אותה הופכים פלישה ליקרה ולמסוכנת מדי, גם בעיני צבא ענק כמו הצבא הנאצי. ההרים שווים יותר מצבא חזק.',
-    icon: 'mountain',
-    accent: 'text-terrain-ridge',
-  },
-];
-
 export function OnboardingScene() {
   const [step, setStep] = useState<Feature>('flat');
   // Whether the current step's explanation panel is expanded; null = collapsed.
@@ -108,18 +77,15 @@ export function OnboardingScene() {
       <SceneHeader
         step="01.0"
         eyebrow="לפני שמתחילים"
-title={
-          <>
-          <span className="gradient-text">איך גבעה רנדומלית, נהר או שביל צר הופכים לשובר השוויון של שדה הקרב?</span>
-          </>
-        }
-                intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר,  נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
+        underline
+        title="איך גבעה רנדומלית, נהר או שביל צר הופכים לשובר השוויון של שדה הקרב?"
+        intro="תארו לכם שני צבאות שעומדים להילחם. עכשיו, בואו נשחק עם השטח: תוסיפו הר,  נהר, ותראו איך כל שינוי טופוגרפי קטן משנה לגמרי את חוקי המשחק. לא צריך שום ידע צבאי – רק היגיון בריא"
       />
       </EditableBlock>
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-start">
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-stretch">
         {/* Control panel — first child → RIGHT in RTL (text on right). */}
-        <EditableBlock id="accordion-panel" label="פאנל השלבים" className="space-y-3">
+        <EditableBlock id="accordion-panel" label="פאנל השלבים" className="space-y-1">
           {STEPS.map((s, i) => {
             const active = step === s.id;
             const expanded = expandedStep === s.id;
@@ -144,18 +110,18 @@ title={
                 >
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
+                      <Icon name="check" size={18} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-base font-bold">{i + 1}</span>
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-lg md:text-xl">
                       {s.label}
                     </div>
                   </div>
@@ -165,8 +131,8 @@ title={
                     className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
-                      width="18"
-                      height="18"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -192,7 +158,7 @@ title={
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
-                        <div className="mt-3">
+                        <div className="mt-2">
                           <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                             מה קורה בשלב הזה?
                           </div>
@@ -216,35 +182,25 @@ title={
         {/* Visualization — second child → LEFT in RTL. EditableFrame (not
             EditableBlock) so it doesn't add a wrapper div. */}
         <EditableFrame id="visual-frame" label="סרטון תצוגה">
-        <div className="surface-elevated bg-bg relative overflow-hidden aspect-video min-h-[320px] [&_video]:!w-full [&_video]:!h-full">
+        {/* No aspect-video here on purpose: the row stretches this to match
+            the accordion column's height (items-stretch on the parent
+            grid), and TerrainStage's canvas already cover-fits whatever
+            box it's given (SceneOnboardingFramePlayer's drawCover), so it
+            never distorts. min-h is only a floor for a very short/empty
+            accordion state. */}
+        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[320px] h-full [&_video]:!w-full [&_video]:!h-full">
           <TerrainStage feature={step} />
+          <CornerMark corner="tl" />
+          <CornerMark corner="tr" />
+          <CornerMark corner="bl" />
+          <CornerMark corner="br" />
         </div>
         </EditableFrame>
       </div>
 
-      <SoftDivider text="ועכשיו 4 סיפורים אמיתיים מההיסטוריה" />
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        {HISTORICAL.map((h, i) => (
-          <EditableBlock key={h.headline} id={`history-card-${i}`} label={`כרטיס היסטורי ${i + 1}`}>
-            <IntelCard
-              place={h.place}
-              headline={
-                <EditableBlock as="span" nested id={`history-card-${i}-title`} label={`כותרת כרטיס ${i + 1}`} className="block">
-                  {h.headline}
-                </EditableBlock>
-              }
-              lesson={
-                <EditableBlock as="span" nested id={`history-card-${i}-text`} label={`טקסט כרטיס ${i + 1}`} className="block">
-                  {h.lesson}
-                </EditableBlock>
-              }
-              icon={h.icon}
-              accent={h.accent}
-            />
-          </EditableBlock>
-        ))}
-      </div>
+      <EditableBlock id="history-panel" label="פאנל 4 סיפורים היסטוריים" className="mt-20 mb-12">
+        <HistoricalCasesPanel />
+      </EditableBlock>
 
       <EditableBlock id="ready-callout" label="תיבת סיכום">
       <ReadyCallout title="עכשיו אתם מוכנים">
@@ -266,6 +222,53 @@ function TerrainStage({ feature }: { feature: Feature }) {
   );
 }
 
+const CORNER_MARK_PATH: Record<'tl' | 'tr' | 'bl' | 'br', string> = {
+  tl: 'M16,0 H0 V16',
+  tr: 'M0,0 H16 V16',
+  bl: 'M0,0 V16 H16',
+  br: 'M16,0 V16 H0',
+};
+
+const CORNER_MARK_POSITION: Record<'tl' | 'tr' | 'bl' | 'br', string> = {
+  tl: 'top-4 left-4',
+  tr: 'top-4 right-4',
+  bl: 'bottom-4 left-4',
+  br: 'bottom-4 right-4',
+};
+
+// Viewfinder-style corner brackets on the terrain video — "this is running
+// footage" framing. Positioned on the frame's physical corners (not
+// RTL start-/end-) since they belong to the video's own visual frame, the
+// same rule that keeps the terrain illustration itself from mirroring.
+function CornerMark({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
+  return (
+    <svg
+      aria-hidden
+      className={cn(
+        // Dark outline (4 chained zero-blur drop-shadows in one `filter`
+        // property — stacking separate drop-shadow-[…] utilities doesn't
+        // work, they all write the same --tw-drop-shadow var) so the
+        // light stroke reads on both bright sky and light terrain.
+        // overflow-visible: the bl/br strokes sit exactly on the viewBox
+        // edge (y=16) — inside a fractional-height (aspect-video) ancestor
+        // that pushes this bottom-positioned box to a sub-pixel offset, the
+        // SVG's default overflow:hidden clips that edge stroke away
+        // entirely, leaving only the vertical arm. Not an issue for the
+        // top marks since their stroke sits on the y=0 edge instead.
+        'pointer-events-none absolute z-10 overflow-visible text-paper-bright',
+        '[filter:drop-shadow(1px_0_0_rgba(0,0,0,0.75))_drop-shadow(-1px_0_0_rgba(0,0,0,0.75))_drop-shadow(0_1px_0_rgba(0,0,0,0.75))_drop-shadow(0_-1px_0_rgba(0,0,0,0.75))]',
+        CORNER_MARK_POSITION[corner],
+      )}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <path d={CORNER_MARK_PATH[corner]} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function TerrainStageLoading() {
   return (
     <div className="w-full h-full min-h-[280px] flex items-center justify-center">
@@ -273,16 +276,6 @@ function TerrainStageLoading() {
         <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
         <span>טוען...</span>
       </div>
-    </div>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-base font-display font-bold text-black tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );
 }

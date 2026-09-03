@@ -1,7 +1,18 @@
 # UI Consistency Recommendations
 
+## Shared design language
+
+## Reusable tokens and components
+
 ## Screen-specific findings
 
 ### topic-01 `#scene-levels`
 
 - 2026-09-03 (`/reference-to-ui-exact` against `lesson1part3image1.png`): the top card's new diorama + active-level detail panel intentionally uses only ONE accent color (orange/`accent`) for whichever level is active, with the other two buttons neutral-dark — unlike the tri-color per-level identity (`accent-intel` purple / `accent` orange / `terrain-sand` sand) used by this same file's pyramid-derived `LEVELS` data everywhere else (the drag-and-drop practice bins below it, untouched). This was a direct, explicit user correction against the reference, not an oversight — do not "fix" it back to tri-color in a future consistency pass without checking `design/assumptions.md`'s "Topic-01 levels scene" entry first.
+- 2026-09-03 (`/reference-to-ui-exact` against `lesson1part3image2.png`): fixed drop-box/zone-header position, zone-icon size, answer-card icon size, and answer-card icon side (now left, was right) in the drag-exercise practice section (`LevelZone`/`ScenarioChip`). See `design/assumptions.md`'s "Topic-01 drag-exercise practice section" entry for the CSS gotcha behind the position fix (padding-top % resolves against width, not height) and the measurement method used.
+
+## Open decisions
+
+- topic-01 `#scene-levels` drag-exercise section: pre-existing horizontal overflow at the project's 1440px target width (`document.body.scrollWidth` ≈1560px vs `clientWidth` 1440px). Confirmed present before the 2026-09-03 icon/position fixes (not introduced by them) and out of scope for that task (user asked to stay focused on 4 specific items). Needs its own investigation — likely something in the pool-sidebar + map grid (`grid-cols-[320px_1fr]`) not shrinking to fit at exactly 1440px. See `design/assumptions.md`.
+
+## Adopted decisions

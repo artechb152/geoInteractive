@@ -8,7 +8,7 @@ export type IconName =
   | 'pyramid' | 'layers' | 'eye' | 'shield'
   | 'arrow-right' | 'arrow-left' | 'check' | 'spark'
   | 'fuel' | 'clock' | 'box'
-  | 'scale' | 'people' | 'megaphone' | 'hourglass' | 'mask';
+  | 'scale' | 'people' | 'megaphone' | 'hourglass' | 'mask' | 'chevrons-down';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   globe: (
@@ -143,6 +143,7 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="16" cy="10" r="0.8" fill="currentColor" />
     </>
   ),
+  'chevrons-down': <path d="m7 6 5 5 5-5M7 13l5 5 5-5" />,
 };
 
 export function Icon({

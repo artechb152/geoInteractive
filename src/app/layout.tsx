@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Heebo, Rubik } from 'next/font/google';
 import './globals.css';
 import { AppHeader } from '@/components/ui/AppHeader';
+import { SiteBackground } from '@/components/ui/SiteBackground';
 
 const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
@@ -29,6 +30,9 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl" className={`${heebo.variable} ${rubik.variable}`}>
       <body className="overflow-x-clip">
+        {/* מרקם קווי-הגובה של דף הבית, מוחל גלובלית מאחורי כל התוכן
+            (דף הבית עצמו מוציא את עצמו — יש לו מרקם מכויל למוקאפ). */}
+        <SiteBackground />
         {/* Header גלובלי אחיד (design-system §7). קבוע למעלה בכל המסכים;
             התוכן יושב מתחתיו דרך pt לפי --header-h. */}
         <AppHeader />

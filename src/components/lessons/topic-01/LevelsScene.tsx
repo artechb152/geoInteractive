@@ -22,7 +22,11 @@ type LevelMeta = {
   text: string;
   fillClass: string;
   zoomLevel: number; // 1=widest, 3=closest
+  dragIcon: string; // category icon shown above the label in the drag exercise
+  dragSubtitle: string; // bullet-separated keywords under the label in the drag exercise
 };
+
+const DRAG_ASSET_BASE = '/assets/lessons/topic01/scene-levels/drag-exercise';
 
 const LEVELS: Record<Level, LevelMeta> = {
   strategic: {
@@ -38,6 +42,8 @@ const LEVELS: Record<Level, LevelMeta> = {
     text: 'text-accent-intel',
     fillClass: 'fill-accent-intel/30',
     zoomLevel: 1,
+    dragIcon: `${DRAG_ASSET_BASE}/strategic-purple.png`,
+    dragSubtitle: 'דרג לאומי • חזון • משאבים',
   },
   operational: {
     label: 'אופרטיבית',
@@ -52,6 +58,8 @@ const LEVELS: Record<Level, LevelMeta> = {
     text: 'text-accent',
     fillClass: 'fill-accent/30',
     zoomLevel: 2,
+    dragIcon: `${DRAG_ASSET_BASE}/operational-orange.png`,
+    dragSubtitle: 'מערכות • תיאום • מהלכים',
   },
   tactical: {
     label: 'טקטית',
@@ -66,11 +74,21 @@ const LEVELS: Record<Level, LevelMeta> = {
     text: 'text-terrain-sand',
     fillClass: 'fill-terrain-sand/30',
     zoomLevel: 3,
+    dragIcon: `${DRAG_ASSET_BASE}/tactical-gold.png`,
+    dragSubtitle: 'כוחות • אש • שטח',
   },
 };
 
 // In RTL, first column → right side. Strategic = broadest = right.
 const LEVEL_ORDER: Level[] = ['strategic', 'operational', 'tactical'];
+
+// TOPIC01-LEVELS-DRAG-BG.png has a fixed physical layout baked into the
+// artwork — strategic/purple-capitol on the left, tactical/tan-truck on
+// the right — which does not mirror for RTL (project rule: never mirror
+// illustrations). Grid children reverse in an RTL document (DOM child 1 →
+// rightmost column), so this list is LEVEL_ORDER reversed to land each
+// zone's overlay on the matching physical patch of the image.
+const DRAG_ZONE_ORDER: Level[] = ['tactical', 'operational', 'strategic'];
 
 // Overlay position for each level's button on TOPIC01-LEVELS-DIORAMA.png,
 // tuned by eye against the rendered asset (its composition doesn't match
@@ -92,13 +110,15 @@ const MATRIX_ROWS: { key: MatrixRowKey; label: string }[] = [
   { key: 'example', label: 'דוגמה מבצעית' },
 ];
 
-const SCENARIOS: { text: string; correct: Level; icon: IconName }[] = [
-  { text: 'מפקד פלוגה מאתר עמדת מקלע אויב על שלוחה', correct: 'tactical', icon: 'crosshair' },
-  { text: 'מטכ"ל מחליט לפתוח גזרה חדשה בצפון', correct: 'strategic', icon: 'globe' },
-  { text: 'אלוף הפיקוד מסנכרן תנועת אוגדה מול חיל אוויר', correct: 'operational', icon: 'layers' },
-  { text: 'נגד מפעיל מקלע מתחלף לעמדה סמוכה', correct: 'tactical', icon: 'target' },
-  { text: 'ראש ממשלה מאשר העברת תקציב הגנה לזירה אסיאתית', correct: 'strategic', icon: 'flag' },
-  { text: 'מפקדת חטיבה משריינת מתאמת ציר לוגיסטי עם פיקוד עורף', correct: 'operational', icon: 'truck' },
+// Event icon files are numbered 01–06 in drag-exercise/; each scenario below
+// carries the same-numbered icon (matched by filename, per design request).
+const SCENARIOS: { text: string; correct: Level; icon: string }[] = [
+  { text: 'מפקד פלוגה מאתר עמדת מקלע אויב על שלוחה', correct: 'tactical', icon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-EVENT-01.png` },
+  { text: 'מטכ"ל מחליט לפתוח גזרה חדשה בצפון', correct: 'strategic', icon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-EVENT-02.png` },
+  { text: 'אלוף הפיקוד מסנכרן תנועת אוגדה מול חיל אוויר', correct: 'operational', icon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-EVENT-03.png` },
+  { text: 'נגד מפעיל מקלע מתחלף לעמדה סמוכה', correct: 'tactical', icon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-EVENT-04.png` },
+  { text: 'ראש ממשלה מאשר העברת תקציב הגנה לזירה אסיאתית', correct: 'strategic', icon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-EVENT-05.png` },
+  { text: 'מפקדת חטיבה משריינת מתאמת ציר לוגיסטי עם פיקוד עורף', correct: 'operational', icon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-EVENT-06.png` },
 ];
 
 export function LevelsScene() {
@@ -136,90 +156,95 @@ export function LevelsScene() {
   };
 
   return (
-    <section id="scene-levels" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="01.1"
-        eyebrow="רמות המלחמה"
-        title={
-          <>
-            <span className="gradient-text">שלוש רמות המלחמה</span> · אותה המערכה, ברזולוציות שונות
-          </>
-        }
-        intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
-      />
+    <section id="scene-levels" className="px-4 sm:px-6 lg:px-8">
+      {/* Header + level-selector matrix keep the standard reading width;
+          only the drag exercise below (wrapped separately) is allowed to
+          run wider, close to the section's own edges. */}
+      <div className="max-w-6xl mx-auto">
+        <SceneHeader
+          step="01.1"
+          eyebrow="רמות המלחמה"
+          title={
+            <>
+              <span className="gradient-text">שלוש רמות המלחמה</span> · אותה המערכה, ברזולוציות שונות
+            </>
+          }
+          intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
+        />
 
-      {/* === Level Selector === */}
-      <div className="surface-elevated p-4 sm:p-6">
-        <div className="grid gap-5 md:grid-cols-[1fr_1.35fr] md:items-stretch">
-          {/* Active-level detail panel — first child → right in RTL. */}
-          <div className="flex flex-col justify-center min-w-0">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeLevel}
-                id={`level-panel-${activeLevel}`}
-                role="tabpanel"
-                aria-labelledby={`level-tab-${activeLevel}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-              >
-                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-subtle">
-                  <Icon
-                    name={LEVELS[activeLevel].zoomIcon}
-                    size={30}
-                    strokeWidth={2}
-                    className="shrink-0 text-accent"
-                  />
-                  <div className="min-w-0">
-                    <div className="font-display font-bold text-xl leading-tight text-accent">
-                      {LEVELS[activeLevel].label}
-                    </div>
-                    <div className="text-xs font-mono text-fg-dim mt-0.5">
-                      {LEVELS[activeLevel].english}
+        {/* === Level Selector === */}
+        <div className="surface-elevated p-4 sm:p-6">
+          <div className="grid gap-5 md:grid-cols-[1fr_1.35fr] md:items-stretch">
+            {/* Active-level detail panel — first child → right in RTL. */}
+            <div className="flex flex-col justify-center min-w-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeLevel}
+                  id={`level-panel-${activeLevel}`}
+                  role="tabpanel"
+                  aria-labelledby={`level-tab-${activeLevel}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
+                >
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-subtle">
+                    <Icon
+                      name={LEVELS[activeLevel].zoomIcon}
+                      size={30}
+                      strokeWidth={2}
+                      className="shrink-0 text-accent"
+                    />
+                    <div className="min-w-0">
+                      <div className="font-display font-bold text-xl leading-tight text-accent">
+                        {LEVELS[activeLevel].label}
+                      </div>
+                      <div className="text-xs font-mono text-fg-dim mt-0.5">
+                        {LEVELS[activeLevel].english}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-4">
-                  {MATRIX_ROWS.map((row) => (
-                    <div key={row.key}>
-                      <h4 className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-1">
-                        {row.label}
-                      </h4>
-                      <p className="text-sm sm:text-base text-fg leading-relaxed text-pretty">
-                        {LEVELS[activeLevel][row.key]}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+                  <div className="space-y-4">
+                    {MATRIX_ROWS.map((row) => (
+                      <div key={row.key}>
+                        <h4 className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-1">
+                          {row.label}
+                        </h4>
+                        <p className="text-sm sm:text-base text-fg leading-relaxed text-pretty">
+                          {LEVELS[activeLevel][row.key]}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-          {/* Diorama with overlay level buttons — second child → left in
-              RTL. Not mirrored: the asset renders as-is. */}
-          <div
-            role="tablist"
-            aria-label="בחר רמת מלחמה"
-            className="relative w-full overflow-hidden rounded-xl border border-border-subtle"
-            style={{ aspectRatio: '3 / 2' }}
-          >
-            <IsometricAsset
-              assetId="TOPIC01-LEVELS-DIORAMA"
-              src="/assets/lessons/topic01/scene-levels/TOPIC01-LEVELS-DIORAMA.png"
-              alt="איור איזומטרי: חדר מצב אסטרטגי למעלה, חדר בקרה אופרטיבי במרכז, וחיילים בזום טקטי קרוב בפינה התחתונה"
-              fit="cover"
-              className="absolute inset-0 size-full [aspect-ratio:auto]"
-            />
-            {LEVEL_ORDER.map((level) => (
-              <LevelButton
-                key={level}
-                level={level}
-                isActive={level === activeLevel}
-                onSelect={setActiveLevel}
+            {/* Diorama with overlay level buttons — second child → left in
+                RTL. Not mirrored: the asset renders as-is. */}
+            <div
+              role="tablist"
+              aria-label="בחר רמת מלחמה"
+              className="relative w-full overflow-hidden rounded-xl border border-border-subtle"
+              style={{ aspectRatio: '3 / 2' }}
+            >
+              <IsometricAsset
+                assetId="TOPIC01-LEVELS-DIORAMA"
+                src="/assets/lessons/topic01/scene-levels/TOPIC01-LEVELS-DIORAMA.png"
+                alt="איור איזומטרי: חדר מצב אסטרטגי למעלה, חדר בקרה אופרטיבי במרכז, וחיילים בזום טקטי קרוב בפינה התחתונה"
+                fit="cover"
+                className="absolute inset-0 size-full [aspect-ratio:auto]"
               />
-            ))}
+              {LEVEL_ORDER.map((level) => (
+                <LevelButton
+                  key={level}
+                  level={level}
+                  isActive={level === activeLevel}
+                  onSelect={setActiveLevel}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -254,28 +279,56 @@ export function LevelsScene() {
           )}
         </div>
 
-        {/* Pool of unassigned scenarios */}
-        <ScenarioPool
-          pool={pool}
-          selectedScenario={selectedScenario}
-          submitted={submitted}
-          onSelect={handleScenarioSelect}
-          onMoveScenario={moveScenario}
-        />
+        {/* Pool sidebar (right, RTL-first) + the three-zone diorama (left) */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-stretch mb-6">
+          <ScenarioPool
+            pool={pool}
+            selectedScenario={selectedScenario}
+            submitted={submitted}
+            onSelect={handleScenarioSelect}
+            onMoveScenario={moveScenario}
+          />
 
-        {/* 3 Category Bins */}
-        <div className="grid md:grid-cols-3 gap-3 mb-6">
-          {LEVEL_ORDER.map((level) => (
-            <CategoryBin
-              key={level}
-              level={level}
-              scenariosInBin={inBin(level)}
-              selectedScenario={selectedScenario}
-              submitted={submitted}
-              onSelect={handleScenarioSelect}
-              onMoveScenario={moveScenario}
+          {/* Zones diorama — TOPIC01-LEVELS-DRAG-BG.png supplies the
+              artwork only (no baked-in text); label/subtitle/drop-target
+              are overlaid in code per zone, evenly split into thirds to
+              match the background's own strategic|operational|tactical
+              layout. Not mirrored: the asset renders as-is. */}
+          <div
+            className="relative min-w-0 rounded-xl overflow-hidden border border-border-subtle aspect-auto sm:aspect-[1672/941]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
+            <img
+              src="/assets/lessons/topic01/scene-levels/drag-exercise/TOPIC01-LEVELS-DRAG-BG.png"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              className="absolute inset-0 size-full object-cover"
             />
-          ))}
+            {/* Below `sm`, the container has no aspect-ratio (the CSS
+                property makes an in-flow-auto height act like a fixed
+                height, clipping/overflowing rather than growing) — so the
+                overlay's own content sets the container's real height,
+                and nothing here needs to shrink past 3 lines of subtitle
+                text. At sm+ the reference's exact ratio takes over, where
+                zone content already fits comfortably inside it — the grid
+                is pinned to that box (`sm:absolute sm:inset-0`) so each
+                zone column has a real height for its own content to
+                anchor to via `top-[%]` (see LevelZone). */}
+            <div className="relative sm:absolute sm:inset-0 grid grid-cols-3">
+              {DRAG_ZONE_ORDER.map((level) => (
+                <LevelZone
+                  key={level}
+                  level={level}
+                  scenariosInBin={inBin(level)}
+                  selectedScenario={selectedScenario}
+                  submitted={submitted}
+                  onSelect={handleScenarioSelect}
+                  onMoveScenario={moveScenario}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Action buttons */}
@@ -376,7 +429,7 @@ function ScenarioPool({
       animate={{ scale: isOver ? 1.005 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'bg-bg-elevated p-4 mb-6 rounded-[3px] border transition-colors duration-200',
+        'bg-bg-elevated p-4 rounded-xl border flex flex-col min-w-0 transition-colors duration-200',
         isOver ? 'border-brand' : 'border-border',
       )}
     >
@@ -398,7 +451,7 @@ function ScenarioPool({
           לחץ "בדוק תשובות" כדי לראות תוצאות, או גרור משפט בחזרה לכאן כדי לסווג מחדש.
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 gap-2">
+        <div className="space-y-2.5">
           {pool.map(({ s, i }) => (
             <ScenarioChip
               key={i}
@@ -417,7 +470,10 @@ function ScenarioPool({
   );
 }
 
-function CategoryBin({
+// One of the 3 zones overlaid on TOPIC01-LEVELS-DRAG-BG.png. The whole
+// column is the drop/tap target (large hit area over the artwork); only
+// the dashed box is the visual "גררו לכאן" affordance from the reference.
+function LevelZone({
   level,
   scenariosInBin,
   selectedScenario,
@@ -434,10 +490,11 @@ function CategoryBin({
 }) {
   const [isOver, setIsOver] = useState(false);
   const meta = LEVELS[level];
-  const isWaitingForTap = selectedScenario != null && scenariosInBin.length === 0;
+  const isEmpty = scenariosInBin.length === 0;
+  const isWaitingForTap = selectedScenario != null && isEmpty;
 
   return (
-    <motion.div
+    <div
       onDragOver={(e) => {
         e.preventDefault();
         setIsOver(true);
@@ -455,70 +512,63 @@ function CategoryBin({
           onMoveScenario(selectedScenario, level);
         }
       }}
-      animate={{ scale: isOver ? 1.015 : 1 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'relative bg-bg-elevated rounded-[3px] overflow-hidden flex flex-col transition-colors duration-200',
-        'border',
-        isOver
-          ? meta.borderActive
-          : isWaitingForTap
-            ? cn(meta.borderActive, 'cursor-pointer')
-            : 'border-border',
+        'relative h-full min-w-0 text-center',
+        (isOver || isWaitingForTap) && 'cursor-pointer',
       )}
     >
-      {/* Header */}
-      <div className="flex items-center gap-3 p-3 pr-4">
-        <div className="flex-1 min-w-0">
-          <div className={cn('font-display font-bold leading-tight', meta.text)}>
-            {meta.label}
-          </div>
-          <div className="text-[11px] text-fg-muted mt-0.5">
-            {scenariosInBin.length === 0
-              ? 'ריק · מחכה למיון'
-              : `${scenariosInBin.length} ${scenariosInBin.length === 1 ? 'משפט' : 'משפטים'}`}
-          </div>
+      {/* `pt-[12%]` (a padding %) resolves against the column's WIDTH per
+          CSS spec, not its height — kept as-is for the mobile in-flow
+          layout below `sm`, where it happens to read fine. At `sm`+ the
+          column has a fixed aspect ratio (see the outer container), so
+          this switches to `top-[%]` on an absolutely-positioned block,
+          which DOES resolve against height — the only way to anchor this
+          content at a specific vertical fraction of the zone artwork. */}
+      <div className="flex flex-col items-center px-2.5 pt-[12%] sm:pt-0 sm:absolute sm:inset-x-0 sm:top-[26%]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
+        <img
+          src={meta.dragIcon}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="w-14 h-14 sm:w-[4.5rem] sm:h-[4.5rem] object-contain shrink-0"
+        />
+        <div className={cn('mt-2.5 font-display font-bold text-base sm:text-xl leading-tight', meta.text)}>
+          {meta.label}
         </div>
-      </div>
+        <div className="mt-1 text-[11px] sm:text-[13px] text-fg-muted leading-snug">
+          {meta.dragSubtitle}
+        </div>
 
-      {/* Body */}
-      <div className="p-3 pt-0 flex-1 min-h-[140px]">
-        {scenariosInBin.length === 0 ? (
-          <motion.div
-            animate={{
-              backgroundColor: isOver
-                ? 'rgba(116, 156, 117, 0.10)'
-                : isWaitingForTap
-                  ? 'rgba(235, 158, 72, 0.06)'
-                  : 'rgba(0, 0, 0, 0.015)',
-            }}
-            className="h-full min-h-[120px] rounded-[3px] flex flex-col items-center justify-center gap-2 transition-colors"
-          >
-            {isOver && (
-              <motion.span
-                animate={{ scale: 1.1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-                className={cn('inline-flex', meta.text)}
+        <motion.div
+          animate={{ scale: isOver ? 1.02 : 1 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+          className={cn(
+            'mt-3 w-full max-w-[220px] rounded-lg border-2 border-dashed px-3 py-3 transition-colors duration-200',
+            isEmpty ? 'flex flex-col items-center justify-center gap-1.5 min-h-[96px]' : 'space-y-1.5',
+            meta.borderActive,
+            isOver ? meta.bgActive : isWaitingForTap ? '' : 'opacity-50',
+          )}
+        >
+          {isEmpty ? (
+            <>
+              <span
+                className={cn(
+                  'text-sm font-display font-semibold tracking-wide',
+                  isOver ? meta.text : isWaitingForTap ? 'text-accent' : 'text-fg-muted',
+                )}
               >
-                <Icon name="check" size={18} strokeWidth={2.5} />
-              </motion.span>
-            )}
-            <span
-              className={cn(
-                'text-sm font-display font-semibold tracking-wider',
-                isOver
-                  ? meta.text
-                  : isWaitingForTap
-                    ? 'text-accent'
-                    : 'text-fg-muted',
-              )}
-            >
-              {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גרור לכאן'}
-            </span>
-          </motion.div>
-        ) : (
-          <div className="space-y-2">
-            {scenariosInBin.map(({ s, i }) => {
+                {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גררו לכאן'}
+              </span>
+              <Icon
+                name="chevrons-down"
+                size={16}
+                strokeWidth={2}
+                className={isOver ? meta.text : 'text-fg-dim'}
+              />
+            </>
+          ) : (
+            scenariosInBin.map(({ s, i }) => {
               const isCorrect = submitted && level === s.correct;
               const isWrong = submitted && level !== s.correct;
               return (
@@ -534,11 +584,11 @@ function CategoryBin({
                   compact
                 />
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -599,6 +649,14 @@ function ScenarioChip({
             )}
           />
         )}
+        {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
+        <img
+          src={scenario.icon}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className={cn('shrink-0 object-contain', compact ? 'size-8' : 'size-11')}
+        />
       </div>
       {submitted && isWrong && (
         <AnimatePresence>
