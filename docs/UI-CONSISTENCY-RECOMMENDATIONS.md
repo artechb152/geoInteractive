@@ -1,3 +1,7 @@
+# UI Consistency Recommendations
+
+## Screen-specific findings
+
 ### topic-01 `#scene-levels`
 
 - 2026-09-03 (`/reference-to-ui-exact` against `lesson1part3image1.png`): the top card's new diorama + active-level detail panel intentionally uses only ONE accent color (orange/`accent`) for whichever level is active, with the other two buttons neutral-dark — unlike the tri-color per-level identity (`accent-intel` purple / `accent` orange / `terrain-sand` sand) used by this same file's pyramid-derived `LEVELS` data everywhere else (the drag-and-drop practice bins below it, untouched). This was a direct, explicit user correction against the reference, not an oversight — do not "fix" it back to tri-color in a future consistency pass without checking `design/assumptions.md`'s "Topic-01 levels scene" entry first.
