@@ -436,8 +436,8 @@ children: React.ReactNode;
 }) {
 return (
  <div className={cn('relative overflow-hidden rounded-[28px] bg-pine-grad p-6 shadow-pine-card sm:p-8', className)}>
- <div className="grid items-center gap-6 sm:grid-cols-[1fr_1.4fr]">
- <div>
+ <div className="grid gap-6 sm:grid-cols-[1fr_1.4fr]">
+ <div className="flex flex-col justify-center">
  <div className="mb-1 text-sm font-display font-semibold tracking-wider text-accent">
  {eyebrow}
  </div>
