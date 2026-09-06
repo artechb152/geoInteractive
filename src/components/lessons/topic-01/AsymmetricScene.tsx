@@ -485,7 +485,7 @@ function ActorTypologySelector() {
               role="tab"
               id={`actor-tab-${a.id}`}
               aria-selected={isActive}
-              aria-controls={`actor-panel-${a.id}`}
+              aria-controls="actor-detail-panel"
               onClick={() => setActiveId(a.id)}
               className="relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border"
             >
@@ -493,6 +493,9 @@ function ActorTypologySelector() {
                 assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
                 src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER.png`}
                 alt=""
+                // `aspect` is nominal only — canceled below by the
+                // `[aspect-ratio:auto]` override className (the real
+                // source is ~3:1, not 1:1).
                 aspect="1/1"
                 fit="cover"
                 compactPlaceholder
@@ -527,8 +530,9 @@ function ActorTypologySelector() {
       <AnimatePresence mode="wait">
         <motion.div
           key={active.id}
-          id={`actor-panel-${active.id}`}
+          id="actor-detail-panel"
           role="tabpanel"
+          tabIndex={0}
           aria-labelledby={`actor-tab-${active.id}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -543,15 +547,31 @@ function ActorTypologySelector() {
             </h3>
             <p className="mt-3 text-sm sm:text-base leading-relaxed text-fg text-pretty">{active.oneLiner}</p>
             <div className="mt-4 border-t border-border-subtle" />
-            <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5">
-              {ACTOR_FIELD_ROWS.map((field) => (
+            {/* grid-cols-1 below sm: the reference mockup's own placeholder
+                text is much shorter than ACTOR_FIELD_ROWS' real values (2-4x
+                longer), so a fixed 2-up grid gets too narrow/tall on mobile —
+                stack single-column there, 2-up from sm+ where there's room. */}
+            <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
+              {ACTOR_FIELD_ROWS.map((field, i) => (
                 // Text is the FIRST child (→ right in RTL) and the icon
                 // circle is SECOND (→ left) — matches the reference's own
                 // per-cell composition (icon toward the visual left, label
                 // + value toward the visual right), confirmed by cropping
                 // the reference image at pixel level; not the same order
                 // as this file's unrelated FrontRow icon-first rows below.
-                <div key={field.key} className="flex items-start gap-2.5 min-w-0">
+                // Divider rules (sm+ only, once the grid is actually 2
+                // columns): border-s on column-2 cells reproduces the
+                // reference's vertical rule, border-t on row-2 cells
+                // reproduces its horizontal rule — together a "+" cross
+                // matching the reference, no extra divider markup needed.
+                <div
+                  key={field.key}
+                  className={cn(
+                    'flex items-start gap-2.5 min-w-0',
+                    i % 2 === 1 && 'sm:border-s sm:border-border-subtle sm:ps-4',
+                    i >= 2 && 'sm:border-t sm:border-border-subtle sm:pt-4',
+                  )}
+                >
                   <div className="min-w-0">
                     <div className="font-display font-semibold text-xs sm:text-sm tracking-wide text-fg mb-0.5">
                       {field.label}
@@ -565,6 +585,9 @@ function ActorTypologySelector() {
                       assetId={`TOPIC01-ASYM-ICON-${field.key.toUpperCase()}`}
                       src={`/assets/lessons/topic01/scene-asymmetric/icons/TOPIC01-ASYM-ICON-${field.key.toUpperCase()}.png`}
                       alt=""
+                      // `aspect` is real here (no `[aspect-ratio:auto]`
+                      // override on this call) — the icon PNGs are true
+                      // 1:1 squares, so this actually governs the box.
                       aspect="1/1"
                       fit="contain"
                       compactPlaceholder
@@ -585,19 +608,33 @@ function ActorTypologySelector() {
             <IsometricAsset
               assetId={`TOPIC01-ASYM-ACTOR-${active.id.toUpperCase()}`}
               src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${active.id.toUpperCase()}.png`}
-              alt={active.label}
+              // Empty: the adjacent <h3> heading two columns over already
+              // names this actor — an alt repeating it would be redundant,
+              // same treatment already used by the banner tabs above.
+              alt=""
+              // `aspect` is nominal only — canceled below by the
+              // `[aspect-ratio:auto]` override className (the real source
+              // is closer to 4:5 portrait, not 4:3).
               aspect="4/3"
               fit="cover"
               prompt={ACTOR_PORTRAIT_PROMPT[active.id]}
               className="absolute inset-0 size-full [aspect-ratio:auto]"
             />
+            {/* Caption lives INSIDE the scrim (not a sibling absolute box)
+                so the scrim's own height always tracks the caption's real
+                content height — if `shortDesc` ever wraps to 2 lines, the
+                scrim grows with it instead of the first line escaping onto
+                bare photo. `text-end` places it at the visual left
+                (inline-end), matching the reference — this <p> has no
+                inherited alignment otherwise, which would default to the
+                page's RTL `start` (visual right). */}
             <div
-              aria-hidden
               className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-fg/85 via-fg/15 to-transparent p-4 pt-12"
-            />
-            <p className="absolute inset-x-0 bottom-0 p-4 text-sm font-display font-medium text-bg-elevated">
-              {active.shortDesc}
-            </p>
+            >
+              <p className="text-end text-sm font-display font-medium text-bg-elevated">
+                {active.shortDesc}
+              </p>
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>
