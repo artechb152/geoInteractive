@@ -418,6 +418,50 @@ export function AsymmetricScene() {
    color) — same "accent-only active state" rule as the levels-scene
    selector, see design/assumptions.md. */
 
+/* Prompt-style suffixes for this component's own IsometricAsset calls — the
+   banner/portrait assets are real-world photographs and the field-grid
+   assets are flat UI icons, NOT the isometric-papercut illustration
+   language this file's OTHER IsometricAsset calls use (hero/closing/
+   pillars/clock/tactics above). Mirrors how FRONTLINE/INTERNAL_FRONTS
+   further below write prompts in their own flat-icon register via
+   ICON_PROMPT_STYLE, rather than reusing the papercut brief verbatim. */
+const ACTOR_PHOTO_PROMPT_STYLE =
+  'photorealistic documentary-style photography, natural daylight, muted earth-tone color grading, shallow depth of field, no text overlays, no logos, no visible faces in close-up, no state insignia or flags, wide-angle field/terrain setting';
+
+const ACTOR_ICON_PROMPT_STYLE =
+  'flat modern vector icon, simple bold black outline with solid black fill on transparent background, monochrome black and white, minimal geometric shapes, centered, no text, no shadow, no gradient, no color, no 3D or isometric or papercut styling, clean UI icon like Lucide or Phosphor icon sets, 128x128px';
+
+const ACTOR_BANNER_PROMPT: Record<ActorType, string> = {
+  regular: `A single-file column of uniformed soldiers marching with full backpacks and helmets across open hillside terrain, shot from behind, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+  guerrilla: `Two irregular fighters in mixed fatigues carrying backpacks, walking through dense green hillside brush, shot from behind, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+  terror: `A masked fighter wearing a scarf and tactical vest standing amid war-damaged, rubble-strewn urban buildings, shot from behind/side, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+};
+
+const ACTOR_PORTRAIT_PROMPT: Record<ActorType, string> = {
+  regular: `A closer single-file column of uniformed soldiers marching with full combat gear and backpacks along a dirt trail through hills, shot from behind, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+  guerrilla: `Two irregular fighters carrying backpacks, walking together through green hillside vegetation, shot from behind, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+  terror: `A masked fighter in a scarf standing alone in a bombed-out city street surrounded by rubble and damaged buildings, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+};
+
+/** Field-grid icon prompt, keyed on the same `ACTOR_FIELD_ROWS[i].key` this
+ * component already renders — a `switch` (not a `Record`) so TypeScript
+ * accepts the full `keyof ActorMeta` parameter type without a cast, even
+ * though only the 4 field keys are ever actually passed in. */
+function actorFieldIconPrompt(key: keyof ActorMeta): string {
+  switch (key) {
+    case 'identity':
+      return `An identification card / ID badge icon, ${ACTOR_ICON_PROMPT_STYLE}`;
+    case 'goals':
+      return `A crosshair / target reticle icon, ${ACTOR_ICON_PROMPT_STYLE}`;
+    case 'targets':
+      return `A shield icon, ${ACTOR_ICON_PROMPT_STYLE}`;
+    case 'structure':
+      return `An org-chart / hierarchy icon with connected nodes, ${ACTOR_ICON_PROMPT_STYLE}`;
+    default:
+      return ACTOR_ICON_PROMPT_STYLE;
+  }
+}
+
 function ActorTypologySelector() {
   const [activeId, setActiveId] = useState<ActorType>(ACTORS_LIST[0].id);
   const active = ACTORS[activeId];
@@ -443,7 +487,7 @@ function ActorTypologySelector() {
               aria-selected={isActive}
               aria-controls={`actor-panel-${a.id}`}
               onClick={() => setActiveId(a.id)}
-              className="relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border text-right"
+              className="relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border"
             >
               <IsometricAsset
                 assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
@@ -452,6 +496,7 @@ function ActorTypologySelector() {
                 aspect="1/1"
                 fit="cover"
                 compactPlaceholder
+                prompt={ACTOR_BANNER_PROMPT[a.id]}
                 className="absolute inset-0 size-full [aspect-ratio:auto]"
               />
               <div
@@ -460,7 +505,12 @@ function ActorTypologySelector() {
               />
               <span
                 className={cn(
-                  'relative z-10 flex h-full items-center justify-end px-3 sm:px-4 font-display text-sm sm:text-base font-bold leading-tight text-pretty',
+                  // justify-start packs toward inline-start (visual RIGHT
+                  // under this page's dir="rtl"), landing the label over
+                  // the scrim's solid side — justify-end would pack it
+                  // toward the visual left (main-end under RTL), over the
+                  // transparent/photo side instead.
+                  'relative z-10 flex h-full items-center justify-start px-3 sm:px-4 font-display text-sm sm:text-base font-bold leading-tight text-pretty',
                   isActive ? 'text-accent' : 'text-fg',
                 )}
               >
@@ -518,6 +568,7 @@ function ActorTypologySelector() {
                       aspect="1/1"
                       fit="contain"
                       compactPlaceholder
+                      prompt={actorFieldIconPrompt(field.key)}
                       className="size-6 sm:size-7 bg-transparent"
                     />
                   </div>
@@ -537,6 +588,7 @@ function ActorTypologySelector() {
               alt={active.label}
               aspect="4/3"
               fit="cover"
+              prompt={ACTOR_PORTRAIT_PROMPT[active.id]}
               className="absolute inset-0 size-full [aspect-ratio:auto]"
             />
             <div
