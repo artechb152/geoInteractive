@@ -352,70 +352,10 @@ export function AsymmetricScene() {
         />
       </div>
 
-      {/* 3-actor typology cards — neutral, label-only.
-          Each actor is still its own card (motion.div, border, shadow,
-          fade-in-on-scroll) — but on desktop the three cards subgrid their
-          internal rows off a shared 7-row parent grid, so the divider under
-          the intro line and each dt/dd pair auto-size to the tallest cell
-          and land at the same height in every card. Mobile drops the
-          subgrid (row alignment is moot in a single column) below. */}
-      <div className="hidden md:grid md:grid-cols-3 gap-4 mb-6" style={{ gridTemplateRows: 'repeat(7, auto)' }}>
-        {ACTORS_LIST.map((a, i) => (
-          <motion.div
-            key={a.id}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.08 }}
-            className="grid surface-elevated rounded-[4px] p-6 border border-border"
-            style={{ gridTemplateRows: 'subgrid', gridRow: '1 / span 7' }}
-          >
-            <div style={{ gridRow: 1 }}>
-              <div className="font-display font-bold text-lg leading-tight text-fg">{a.label}</div>
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
-                {a.shortDesc}
-              </div>
-            </div>
-            <p className="text-sm text-fg leading-relaxed text-pretty self-start pt-3" style={{ gridRow: 2 }}>
-              {a.oneLiner}
-            </p>
-            <div className="border-t border-border-subtle self-end mt-4" style={{ gridRow: 3 }} />
-            {ACTOR_FIELD_ROWS.map((field, ri) => (
-              <div
-                key={field.key}
-                className={cn('text-xs self-start', ri === 0 && 'pt-3')}
-                style={{ gridRow: 4 + ri }}
-              >
-                <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">{field.label}</dt>
-                <dd className="text-fg leading-relaxed">{a[field.key]}</dd>
-              </div>
-            ))}
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Mobile fallback — simple per-actor stack, no cross-column alignment needed */}
-      <div className="grid md:hidden gap-4 mb-6">
-        {ACTORS_LIST.map((a) => (
-          <div key={a.id} className="surface-elevated rounded-[4px] p-6 flex flex-col border border-border">
-            <div className="mb-3">
-              <div className="font-display font-bold text-lg leading-tight text-fg">{a.label}</div>
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
-                {a.shortDesc}
-              </div>
-            </div>
-            <p className="text-sm text-fg leading-relaxed text-pretty mb-4">{a.oneLiner}</p>
-            <dl className="text-xs space-y-2.5 pt-3 border-t border-border-subtle mt-auto">
-              {ACTOR_FIELD_ROWS.map((field) => (
-                <div key={field.key}>
-                  <dt className="font-display font-semibold tracking-wider mb-0.5 text-fg-muted">{field.label}</dt>
-                  <dd className="text-fg leading-relaxed">{a[field.key]}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        ))}
-      </div>
+      {/* Banner-tab selector + single active-actor detail panel — replaces
+          the former "all 3 at once" static card grid (see
+          design/assumptions.md, "Topic-01 asymmetric-actor tabs"). */}
+      <ActorTypologySelector />
 
       <TypologyTable />
 
@@ -464,6 +404,152 @@ export function AsymmetricScene() {
         </div>
       </motion.div>
     </section>
+  );
+}
+
+/* ───────────── BANNER-TAB SELECTOR + SINGLE DETAIL PANEL ───────────────
+   3 clickable photo banners (one per ACTORS_LIST entry, in array order —
+   `regular` lands at the visual right, matching this RTL page's inline-start
+   convention) drive one crossfaded detail panel below, showing only the
+   active actor's data. Pattern (state / AnimatePresence mode="wait" /
+   RTL DOM-order for the two-column panel) copied from
+   HistoricalCasesPanel.tsx and LevelsScene.tsx's own level-selector; only
+   ONE accent-colored treatment marks the active tab (bottom bar + label
+   color) — same "accent-only active state" rule as the levels-scene
+   selector, see design/assumptions.md. */
+
+function ActorTypologySelector() {
+  const [activeId, setActiveId] = useState<ActorType>(ACTORS_LIST[0].id);
+  const active = ACTORS[activeId];
+
+  return (
+    <div className="mb-6">
+      {/* Banner tabs — 3 equal columns at every width; each shows its
+          actor's pre-made *-BANNER.png cover-fit, with a scrim fading from
+          solid (visual right / inline-start, where the label sits) to
+          transparent (visual left, where the photo stays visible) — this
+          page is a fixed-RTL layout (no LTR variant), so the physical
+          `to-l` gradient direction is intentional here, matching existing
+          precedent elsewhere in this codebase (e.g. Footer.tsx). */}
+      <div role="tablist" aria-label="בחר סוג שחקן" className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-3">
+        {ACTORS_LIST.map((a) => {
+          const isActive = a.id === activeId;
+          return (
+            <button
+              key={a.id}
+              type="button"
+              role="tab"
+              id={`actor-tab-${a.id}`}
+              aria-selected={isActive}
+              aria-controls={`actor-panel-${a.id}`}
+              onClick={() => setActiveId(a.id)}
+              className="relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border text-right"
+            >
+              <IsometricAsset
+                assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
+                src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER.png`}
+                alt=""
+                aspect="1/1"
+                fit="cover"
+                compactPlaceholder
+                className="absolute inset-0 size-full [aspect-ratio:auto]"
+              />
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-l from-bg-elevated via-bg-elevated/85 to-transparent"
+              />
+              <span
+                className={cn(
+                  'relative z-10 flex h-full items-center justify-end px-3 sm:px-4 font-display text-sm sm:text-base font-bold leading-tight text-pretty',
+                  isActive ? 'text-accent' : 'text-fg',
+                )}
+              >
+                {a.label}
+              </span>
+              {isActive && (
+                <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-accent" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active.id}
+          id={`actor-panel-${active.id}`}
+          role="tabpanel"
+          aria-labelledby={`actor-tab-${active.id}`}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
+          className="surface-elevated grid overflow-hidden rounded-[4px] md:grid-cols-[1.15fr_1fr]"
+        >
+          {/* Text column — first DOM child → right in RTL. */}
+          <div className="flex flex-col p-6 sm:p-7 md:p-8">
+            <h3 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight text-fg">
+              {active.label}
+            </h3>
+            <p className="mt-3 text-sm sm:text-base leading-relaxed text-fg text-pretty">{active.oneLiner}</p>
+            <div className="mt-4 border-t border-border-subtle" />
+            <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5">
+              {ACTOR_FIELD_ROWS.map((field) => (
+                // Text is the FIRST child (→ right in RTL) and the icon
+                // circle is SECOND (→ left) — matches the reference's own
+                // per-cell composition (icon toward the visual left, label
+                // + value toward the visual right), confirmed by cropping
+                // the reference image at pixel level; not the same order
+                // as this file's unrelated FrontRow icon-first rows below.
+                <div key={field.key} className="flex items-start gap-2.5 min-w-0">
+                  <div className="min-w-0">
+                    <div className="font-display font-semibold text-xs sm:text-sm tracking-wide text-fg mb-0.5">
+                      {field.label}
+                    </div>
+                    <p className="text-xs sm:text-sm leading-relaxed text-fg-muted text-pretty">
+                      {active[field.key]}
+                    </p>
+                  </div>
+                  <div className="shrink-0 rounded-full bg-bg-accent p-2">
+                    <IsometricAsset
+                      assetId={`TOPIC01-ASYM-ICON-${field.key.toUpperCase()}`}
+                      src={`/assets/lessons/topic01/scene-asymmetric/icons/TOPIC01-ASYM-ICON-${field.key.toUpperCase()}.png`}
+                      alt=""
+                      aspect="1/1"
+                      fit="contain"
+                      compactPlaceholder
+                      className="size-6 sm:size-7 bg-transparent"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Photo column — second DOM child → left in RTL. Rounded corners
+              on its outer edges come free from the panel's own
+              `overflow-hidden` + radius (no separate framing needed here,
+              unlike HistoricalCasesPanel's inset map column). */}
+          <div className="relative min-h-[220px] md:min-h-0">
+            <IsometricAsset
+              assetId={`TOPIC01-ASYM-ACTOR-${active.id.toUpperCase()}`}
+              src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${active.id.toUpperCase()}.png`}
+              alt={active.label}
+              aspect="4/3"
+              fit="cover"
+              className="absolute inset-0 size-full [aspect-ratio:auto]"
+            />
+            <div
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-fg/85 via-fg/15 to-transparent p-4 pt-12"
+            />
+            <p className="absolute inset-x-0 bottom-0 p-4 text-sm font-display font-medium text-bg-elevated">
+              {active.shortDesc}
+            </p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
 
