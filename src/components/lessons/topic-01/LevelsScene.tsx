@@ -102,6 +102,18 @@ const LEVEL_BUTTON_POSITION: Record<Level, CSSProperties> = {
   tactical: { insetBlockStart: '78%', insetInlineEnd: '74%' },
 };
 
+// TOPIC01-LEVELS-DRAG-BG.png's orange ("operational") landmass isn't
+// centered in its own grid column — its visual center sits ~3 percentage
+// points of the full image width to the right of the column's midpoint
+// (measured by sampling the shape's left/right outline across its
+// height). Expressed as a fraction of the column's own width (since the
+// overlay div below spans the column edge-to-edge), that's a ~9%
+// translateX nudge; the other two zones' shapes are already centered in
+// their columns, so this map is empty for them.
+const ZONE_CONTENT_OFFSET: Partial<Record<Level, string>> = {
+  operational: '9%',
+};
+
 type MatrixRowKey = 'who' | 'zoom' | 'time' | 'example';
 const MATRIX_ROWS: { key: MatrixRowKey; label: string }[] = [
   { key: 'who', label: 'מי מחליט?' },
@@ -279,8 +291,15 @@ export function LevelsScene() {
           )}
         </div>
 
-        {/* Pool sidebar (right, RTL-first) + the three-zone diorama (left) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-stretch mb-6">
+        {/* Pool sidebar (right, RTL-first) + the three-zone diorama (left).
+            The diorama's own aspect-ratio forces it wider than its grid
+            column at this width, overflowing off the left edge of the
+            viewport — shifted right as one unit (both cards move together,
+            nothing resized) to reduce how much of the clipped zone is lost.
+            Capped at 84px: past that, the pool card would slide behind the
+            fixed course-outline sidebar (`<aside>` in the lesson layout) and
+            its drag targets would become unreachable. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-stretch mb-6 lg:translate-x-[84px]">
           <ScenarioPool
             pool={pool}
             selectedScenario={selectedScenario}
@@ -524,14 +543,17 @@ function LevelZone({
           this switches to `top-[%]` on an absolutely-positioned block,
           which DOES resolve against height — the only way to anchor this
           content at a specific vertical fraction of the zone artwork. */}
-      <div className="flex flex-col items-center px-2.5 pt-[12%] sm:pt-0 sm:absolute sm:inset-x-0 sm:top-[26%]">
+      <div
+        className="flex flex-col items-center px-2.5 pt-[12%] sm:pt-0 sm:absolute sm:inset-x-0 sm:top-[26%]"
+        style={ZONE_CONTENT_OFFSET[level] ? { transform: `translateX(${ZONE_CONTENT_OFFSET[level]})` } : undefined}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
         <img
           src={meta.dragIcon}
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="w-14 h-14 sm:w-[4.5rem] sm:h-[4.5rem] object-contain shrink-0"
+          className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0"
         />
         <div className={cn('mt-2.5 font-display font-bold text-base sm:text-xl leading-tight', meta.text)}>
           {meta.label}
@@ -655,7 +677,7 @@ function ScenarioChip({
           alt=""
           aria-hidden="true"
           draggable={false}
-          className={cn('shrink-0 object-contain', compact ? 'size-8' : 'size-11')}
+          className={cn('shrink-0 object-contain', compact ? 'size-11' : 'size-14')}
         />
       </div>
       {submitted && isWrong && (

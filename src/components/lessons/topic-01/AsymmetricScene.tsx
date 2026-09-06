@@ -338,20 +338,6 @@ export function AsymmetricScene() {
         intro={`פעם, מלחמות היו פשוטות: צבא מול צבא. היום זה לא תמיד ככה. צבא רגיל של מדינה נפגש עם ארגוני גרילה (שיש להם שטח ושליטה) ועם ארגוני טרור (רשת תאים מפוזרת בלי שטח). שלושת השחקנים פועלים בלוגיקה שונה לגמרי — חוקי המלחמה משתנים בכל אחת מהזירות.`}
       />
 
-      {/* Hero illustration — sits on a bg-warm "platform" band per
-          docs/palette.md's illustration-base role. */}
-      <div className="-mt-10 rounded-[4px] bg-warm/50 p-2 sm:p-3 mb-8">
-        <IsometricAsset
-          assetId="TOPIC01-ASYM-HERO"
-          src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-HERO.png"
-          alt="איור איזומטרי: הר גדול מול אוהלים מפוזרים, מסמל את האסימטריה בין צבא גדול לשחקן קטן"
-          aspect="16/9"
-          position="top"
-          className="rounded-[3px]"
-          prompt="Isometric papercut illustration on a warm cream background (#FFFBF7). A large layered-paper fortress/mountain shape in sage green tones (#749C75 base, #5B7C5C shadow) sits on a warm peach platform (#FFDCB5), facing a scattered cluster of many small paper tent shapes in the same sage palette, connected by a thin dashed orange line (#EB9E48) between them. Flat layered-paper shading, soft edges, no text, no human figures, no weapons, no flags or insignia, generous empty cream space around the scene for text overlay."
-        />
-      </div>
-
       {/* Banner-tab selector + single active-actor detail panel — replaces
           the former "all 3 at once" static card grid (see
           design/assumptions.md, "Topic-01 asymmetric-actor tabs"). */}
@@ -648,6 +634,52 @@ function ActorTypologySelector() {
    guess marked right/wrong. A "reveal without guessing" escape hatch stays
    available per-row and for the whole table. */
 
+/* Header photo strip re-uses the same actor banner PNGs already produced
+   for ActorTypologySelector's tabs above (TOPIC01-ASYM-ACTOR-*-BANNER.png)
+   — no new image assets for this table, per the reference's own "photo above
+   the column label" header treatment. */
+function TypologyTableHeader() {
+  return (
+    <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr] border-b border-border-strong">
+      <div className="p-4 bg-bg-accent/40 flex items-center">
+        <div className="font-display font-bold text-sm sm:text-base text-fg tracking-wide">השוואה</div>
+      </div>
+      {ACTORS_LIST.map((a) => (
+        <div key={a.id} className="flex flex-col border-r border-border-strong bg-bg-accent/20">
+          <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-2.5">
+            <div className="font-display font-bold text-sm sm:text-base leading-tight text-fg">{a.label}</div>
+            <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1 leading-tight">
+              {a.shortDesc}
+            </div>
+          </div>
+          <div className="relative mx-3 sm:mx-4 mb-3 sm:mb-4 h-16 sm:h-20 overflow-hidden rounded-[3px]">
+            <IsometricAsset
+              assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
+              src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER.png`}
+              alt=""
+              // `aspect` nominal only — canceled by `[aspect-ratio:auto]`,
+              // same convention as this file's other banner-image calls.
+              aspect="1/1"
+              fit="cover"
+              compactPlaceholder
+              className="absolute inset-0 size-full [aspect-ratio:auto]"
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Row-state treatment (active-riddle tint + border-s accent bar, checkmark
+   badge, per-cell right/wrong tint on reveal) mirrors the reference table's
+   own visual language for this same guess-before-reveal pattern — colors
+   stay on this file's existing tokens (bg-bg-accent, accent, status-ok/
+   danger), no new hues added. Every un-revealed row renders as an active
+   riddle (this table's existing any-order-answering behavior is unchanged);
+   the reference's single-locked-row gating is a different interaction
+   model and out of scope for a visual-only redesign — see
+   design/assumptions.md, "Topic-01 typology table restyle". */
 function TypologyTable() {
   const [answers, setAnswers] = useState<Record<number, ActorType | undefined>>({});
 
@@ -657,19 +689,7 @@ function TypologyTable() {
 
   return (
     <div className="surface-elevated overflow-hidden rounded-[4px]">
-      <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr] border-b border-border-strong">
-        <div className="p-4 bg-bg-accent/40">
-          <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">השוואה</div>
-        </div>
-        {ACTORS_LIST.map((a) => (
-          <div key={a.id} className="p-4 border-r border-border-strong bg-bg-accent/20">
-            <div className="font-display font-bold text-sm leading-tight text-fg">{a.label}</div>
-            <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1 leading-tight">
-              {a.shortDesc}
-            </div>
-          </div>
-        ))}
-      </div>
+      <TypologyTableHeader />
 
       {COMPARE_ROWS.map((row, i) => {
         const state = answers[i];
@@ -683,7 +703,7 @@ function TypologyTable() {
             transition={{ delay: i * 0.05 }}
             className={cn(
               'border-b border-border-subtle last:border-b-0',
-              i % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
+              !revealed && 'border-s-4 border-accent bg-bg-accent/25',
             )}
           >
             {!revealed ? (
@@ -692,18 +712,18 @@ function TypologyTable() {
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
-                <div className="p-4 bg-bg-accent/30 flex items-center">
-                  <div className="text-sm font-medium">{row.label}</div>
+                <div className="p-4 flex items-center">
+                  <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
                 </div>
-                <div className="col-span-3 p-4 border-r border-border-subtle">
-                  <p className="text-sm text-fg leading-relaxed text-pretty mb-3">{row.riddle}</p>
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-3 p-4 sm:p-5 border-r border-border-subtle">
+                  <p className="text-sm text-fg leading-relaxed text-pretty text-center mb-3">{row.riddle}</p>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {ACTORS_LIST.map((a) => (
                       <button
                         key={a.id}
                         type="button"
                         onClick={() => guess(i, a.id)}
-                        className="px-2 py-2 rounded-md border border-border bg-bg-elevated text-xs sm:text-sm font-display font-semibold text-fg hover:border-fg-muted hover:bg-bg-accent transition-colors"
+                        className="px-3 py-3 rounded-[4px] border border-border bg-bg-elevated text-xs sm:text-sm font-display font-semibold text-fg hover:border-fg-muted hover:bg-bg-accent transition-colors"
                       >
                         {a.label}
                       </button>
@@ -717,8 +737,8 @@ function TypologyTable() {
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
-                <div className="p-4 bg-bg-accent/30 flex items-center gap-2">
-                  <div className="text-sm font-medium">{row.label}</div>
+                <div className="p-4 flex items-center gap-2">
+                  <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
                   <span
                     className={cn(
                       'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
@@ -763,17 +783,6 @@ function PillarSimulator() {
 
   return (
     <div className="my-12">
-      <div className="rounded-[4px] bg-warm/50 p-2 sm:p-2.5 mb-5 max-w-2xl mx-auto">
-        <IsometricAsset
-          assetId="TOPIC01-ASYM-PILLARS"
-          src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-PILLARS.png"
-          alt="שלושה איורים איזומטריים קטנים: דמות יציבה, חץ מתעקל סביב קיר, שעון חול"
-          aspect="21/9"
-          className="rounded-[3px]"
-          prompt="Three small isometric papercut vignettes side by side on a cream background (#FFFBF7), each sitting on its own small warm peach platform (#FFDCB5): (1) a single sage-green paper figure standing still and grounded, (2) a sage-green paper arrow curving around a low wall toward a distant skyline silhouette, (3) a paper hourglass with a thin orange (#EB9E48) accent line at its narrow waist. Flat layered-paper style, soft shading, no realistic people, no weapons, no text."
-        />
-      </div>
-
       <div className="mb-5 text-center">
         <h3 className="font-display font-bold text-xl leading-tight mb-1">
           שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
@@ -985,25 +994,13 @@ function TimeAsymmetry() {
 
   return (
     <div className="my-12">
-      <div className="grid sm:grid-cols-[auto_1fr] gap-4 items-center mb-5">
-        <div className="rounded-[4px] bg-warm/50 p-2 shrink-0 mx-auto sm:mx-0">
-          <IsometricAsset
-            assetId="TOPIC01-ASYM-CLOCK"
-            src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-CLOCK.png"
-            alt="איור איזומטרי: שעון חול שראשו העליון בצורת בניין ממשל וראשו התחתון בצורת אוהל"
-            aspect="1/1"
-            className="rounded-[3px] w-[140px] sm:w-[160px]"
-            prompt="An isometric papercut hourglass illustration on a cream background (#FFFBF7), resting on a small warm peach base (#FFDCB5). Top chamber shaped like a tiny layered government-building dome in sage green (#749C75/#5B7C5C), bottom chamber shaped like a simple paper tent in the same sage tones, with a single thin orange (#EB9E48) trickle of small paper dots flowing from top to bottom. Flat paper-cut shading, centered composition, no text, no people."
-          />
-        </div>
-        <div>
-          <h3 className="font-display font-bold text-xl leading-tight mb-1">
-            למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
-          </h3>
-          <p className="text-fg-muted text-sm">
-            גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
-          </p>
-        </div>
+      <div className="mb-5">
+        <h3 className="font-display font-bold text-xl leading-tight mb-1">
+          למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
+        </h3>
+        <p className="text-fg-muted text-sm">
+          גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
+        </p>
       </div>
 
       {/* Timeline scrubber */}
