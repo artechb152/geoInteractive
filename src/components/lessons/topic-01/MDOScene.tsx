@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { MapPaperPanel } from '@/components/lesson/MapPaperPanel';
-import { LessonInsightStrip } from '@/components/lesson/LessonInsightStrip';
 import { Icon, type IconName } from '@/components/Icon';
+import { TopoField } from '@/components/ui/TopoField';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 type Domain = {
 id: string;
@@ -165,9 +166,9 @@ className="text-xs font-mono text-fg-dim hover:text-accent transition-colors fle
 
  <RealWorldExamples />
 
- <LessonInsightStrip eyebrow="המסקנה: החוליה החלשה" className="mt-6">
+ <ChokepointBand eyebrow="המסקנה: החוליה החלשה" className="mt-6">
 אי אפשר לנצח מלחמה היום רק עם הטנקים הכי טובים או חיל האוויר הכי חזק. מספיק שממד אחד נופל – וכל הצבא קורס איתו. צבא חכם מתכנן מכה שמשלבת את כל הממדים יחד, ובמקביל דואג"לנתק" לאויב את החיבורים שלו כדי לשתק אותו.
- </LessonInsightStrip>
+ </ChokepointBand>
  </section>
  );
 }
@@ -344,6 +345,10 @@ year: '2022 ואילך',
 desc:"אוקראינה בולמת צבא ענק בעזרת שילוב זירות: חיילים בשוחות (יבשה) מפעילים רחפנים קטלניים (אוויר) כדי לתקוף ספינות (ים), כשהם מנווטים דרך אינטרנט לווייני של 'סטארלינק' (חלל), בזמן שרוסיה מנסה להפיל להם את הרשת ללא הפסקה (סייבר).",
 icon: 'shield' as const,
 accent: 'text-accent-cool',
+domainIds: ['land', 'air', 'sea', 'space', 'cyber'],
+photoAssetId: 'TOPIC01-MDO-CASE-UKRAINE',
+photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-UKRAINE.png',
+photoAlt: 'חייל בשטח מפעיל רחפן תקיפה, בשמיים מעליו לוויין תקשורת',
  },
  {
 title:"החות'ים משתקים את הים האדום",
@@ -351,6 +356,10 @@ year: '2023–2024',
 desc: 'איך ארגון טרור מתימן משתק את הסחר העולמי? הם תוקפים אוניות סחר (ים) בעזרת כטב"מים וטילים (אוויר), ומקבלים מיקומים מדויקים על האוניות ממערכות ולוויינים של איראן (חלל וסייבר). הוכחה שגם ארגון קטן יכול לשלב ממדים.',
 icon: 'ship' as const,
 accent: 'text-accent-hot',
+domainIds: ['air', 'sea', 'space', 'cyber'],
+photoAssetId: 'TOPIC01-MDO-CASE-HOUTHIS',
+photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-HOUTHIS.png',
+photoAlt: 'אוניית סחר בים האדום, כטב"ם תוקף מהאוויר ותצפית חופית עוקבת',
  },
  {
 title: 'תקיפת איראן (אוקטובר 2024)',
@@ -358,15 +367,22 @@ year: '2024',
 desc:"מטוסי קרב (אוויר) הפציצו מטרות במרחק אלפי קילומטרים. כדי שזה יצליח, לוויינים (חלל) שידרו להם מיקום מדויק בזמן אמת, ולוחמי סייבר 'עיוורו' את מערכות ההגנה של איראן עוד לפני שהמטוסים התקרבו. שילוב מושלם ששמר על כוחותינו.",
 icon: 'plane' as const,
 accent: 'text-accent',
+domainIds: ['air', 'space'],
+photoAssetId: 'TOPIC01-MDO-CASE-IRAN',
+photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-IRAN.png',
+photoAlt: 'מטוס קרב בטיסה מעל שטח איראן, לוויין משדר מיקום ממעל',
  },
  ];
 return (
- <div className="mt-12">
- <div className="mb-5">
- <h3 className="font-display font-bold text-xl leading-tight mb-1">איך זה נראה בעולם האמיתי</h3>
- <p className="text-fg-muted text-sm">3 דוגמאות עכשוויות שבהן ראינו MDO בפועל</p>
+ <div className="relative mt-12 overflow-hidden">
+ <TopoField />
+ <div className="relative z-10">
+ <div className="mb-5 border-b border-border pb-5">
+ <h3 className="font-display text-2xl font-bold leading-tight sm:text-3xl">איך זה נראה בעולם האמיתי</h3>
+ <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+ <p className="mt-2 text-fg-muted text-sm">3 דוגמאות עכשוויות שבהן ראינו MDO בפועל</p>
  </div>
- <div className="grid md:grid-cols-3 gap-4">
+ <div className="grid md:grid-cols-3">
  {cases.map((c, i) => (
  <motion.article
 key={c.title}
@@ -374,19 +390,69 @@ initial={{ opacity: 0, y: 18 }}
 whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true, amount: 0.3 }}
 transition={{ delay: i * 0.08 }}
-className="surface p-5"
+className={cn(
+ 'px-4 py-2 text-center md:px-6',
+i > 0 && 'md:border-s md:border-border',
+ )}
  >
- <div className="flex items-start gap-3 mb-3">
- <div className="flex-1 min-w-0">
- <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
+ <div className="text-sm font-display font-semibold tracking-wider text-accent">
  {c.year}
  </div>
- <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mb-2">{c.title}</h4>
+ <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance mt-0.5 mb-3">{c.title}</h4>
+ <IsometricAsset
+assetId={c.photoAssetId}
+src={c.photoSrc}
+alt={c.photoAlt}
+aspect="4/3"
+fit="cover"
+className="rounded-[3px] [mask-image:radial-gradient(ellipse_at_center,black_55%,transparent_100%)]"
+ />
+ <p className="mt-3 text-sm text-fg-muted leading-relaxed text-pretty">{c.desc}</p>
+ <div className="mt-4 flex flex-wrap items-start justify-center gap-3">
+ {DOMAINS.filter((d) => c.domainIds.includes(d.id)).map((d) => (
+ <div key={d.id} className="flex flex-col items-center gap-1.5">
+ <div className="flex size-9 items-center justify-center rounded-full border border-border">
+ <Icon name={d.icon} size={16} className="text-fg" />
  </div>
+ <span className="text-[11px] text-fg-muted">{d.label}</span>
  </div>
- <p className="text-sm text-fg-muted leading-relaxed text-pretty">{c.desc}</p>
+ ))}
+ </div>
  </motion.article>
  ))}
+ </div>
+ </div>
+ </div>
+ );
+}
+function ChokepointBand({
+eyebrow,
+className,
+children,
+}: {
+eyebrow: React.ReactNode;
+className?: string;
+children: React.ReactNode;
+}) {
+return (
+ <div className={cn('relative overflow-hidden rounded-[28px] bg-pine-grad p-6 shadow-pine-card sm:p-8', className)}>
+ <div className="grid items-center gap-6 sm:grid-cols-[1fr_1.4fr]">
+ <div>
+ <div className="mb-1 text-sm font-display font-semibold tracking-wider text-accent">
+ {eyebrow}
+ </div>
+ <p className="leading-relaxed text-paper-bright/90">{children}</p>
+ </div>
+ <div className="relative min-h-[200px]">
+ <IsometricAsset
+assetId="TOPIC01-MDO-CHAIN-BROKEN"
+src="/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CHAIN-BROKEN.png"
+alt="שרשרת שבורה — סמל לחוליה חלשה המנתקת את החיבור בין הממדים"
+aspect="4/3"
+fit="cover"
+className="rounded-2xl [aspect-ratio:auto] h-full w-full"
+ />
+ </div>
  </div>
  </div>
  );
