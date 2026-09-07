@@ -429,6 +429,15 @@ const ACTOR_PORTRAIT_PROMPT: Record<ActorType, string> = {
   terror: `A masked fighter in a scarf standing alone in a bombed-out city street surrounded by rubble and damaged buildings, ${ACTOR_PHOTO_PROMPT_STYLE}`,
 };
 
+/** Drag-exercise category-bin header photos (`*-BIN.png`) — a wide establishing
+ * shot per actor (convoy / camp / ruined street), distinct from the banner-tab
+ * and portrait crops above which frame people up close. */
+const ACTOR_BIN_PROMPT: Record<ActorType, string> = {
+  regular: `A convoy of armored military vehicles carrying soldiers driving fast across a dusty desert road, mountains in the background, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+  guerrilla: `A hidden military tent camp with stacked supply crates pitched among rocks and pine trees on a mountainside, overlooking forested hills, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+  terror: `A narrow street lined with bombed-out, rubble-strewn residential buildings in a dense urban neighborhood, ${ACTOR_PHOTO_PROMPT_STYLE}`,
+};
+
 /** Field-grid icon prompt, keyed on the same `ACTOR_FIELD_ROWS[i].key` this
  * component already renders — a `switch` (not a `Record`) so TypeScript
  * accepts the full `keyof ActorMeta` parameter type without a cast, even
@@ -648,9 +657,6 @@ function TypologyTableHeader() {
         <div key={a.id} className="flex flex-col border-r border-border-strong bg-bg-accent/20">
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-2.5">
             <div className="font-display font-bold text-sm sm:text-base leading-tight text-fg">{a.label}</div>
-            <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1 leading-tight">
-              {a.shortDesc}
-            </div>
           </div>
           <div className="relative mx-3 sm:mx-4 mb-3 sm:mb-4 h-16 sm:h-20 overflow-hidden rounded-[3px]">
             <IsometricAsset
@@ -671,15 +677,14 @@ function TypologyTableHeader() {
   );
 }
 
-/* Row-state treatment (active-riddle tint + border-s accent bar, checkmark
-   badge, per-cell right/wrong tint on reveal) mirrors the reference table's
-   own visual language for this same guess-before-reveal pattern — colors
-   stay on this file's existing tokens (bg-bg-accent, accent, status-ok/
-   danger), no new hues added. Every un-revealed row renders as an active
-   riddle (this table's existing any-order-answering behavior is unchanged);
-   the reference's single-locked-row gating is a different interaction
-   model and out of scope for a visual-only redesign — see
-   design/assumptions.md, "Topic-01 typology table restyle". */
+/* Any-order answering: every row is its own independent riddle and stays
+   answerable at all times, regardless of whether earlier/later rows have
+   been guessed yet — no sequential lock, no "טרם הושלם" placeholder, and no
+   accent highlight singling out one row as "the active one". Reveal keeps
+   the existing per-cell correct/wrong tint (bg-status-ok/10 /
+   bg-status-danger/10) as pedagogical feedback, but drops the ✓/✗ badge —
+   see design/assumptions.md, "Topic-01 typology table restyle" for why this
+   supersedes the table's earlier sequential-lock behavior. */
 function TypologyTable() {
   const [answers, setAnswers] = useState<Record<number, ActorType | undefined>>({});
 
@@ -701,12 +706,9 @@ function TypologyTable() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ delay: i * 0.05 }}
-            className={cn(
-              'border-b border-border-subtle last:border-b-0',
-              !revealed && 'border-s-4 border-accent bg-bg-accent/25',
-            )}
+            className="border-b border-border-subtle last:border-b-0"
           >
-            {!revealed ? (
+            {revealed ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -715,41 +717,6 @@ function TypologyTable() {
                 <div className="p-4 flex items-center">
                   <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
                 </div>
-                <div className="col-span-3 p-4 sm:p-5 border-r border-border-subtle">
-                  <p className="text-sm text-fg leading-relaxed text-pretty text-center mb-3">{row.riddle}</p>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {ACTORS_LIST.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => guess(i, a.id)}
-                        className="px-3 py-3 rounded-[4px] border border-border bg-bg-elevated text-xs sm:text-sm font-display font-semibold text-fg hover:border-fg-muted hover:bg-bg-accent transition-colors"
-                      >
-                        {a.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
-              >
-                <div className="p-4 flex items-center gap-2">
-                  <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
-                  <span
-                    className={cn(
-                      'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
-                      state === row.answer
-                        ? 'bg-status-ok/15 text-status-ok'
-                        : 'bg-status-danger/15 text-status-danger',
-                    )}
-                  >
-                    {state === row.answer ? '✓' : '✗'}
-                  </span>
-                </div>
                 {ACTORS_LIST.map((a) => {
                   const isAnswer = a.id === row.answer;
                   const isWrongGuess = state === a.id && !isAnswer;
@@ -757,7 +724,7 @@ function TypologyTable() {
                     <div
                       key={a.id}
                       className={cn(
-                        'p-4 border-r border-border-subtle text-sm text-fg leading-snug',
+                        'p-4 sm:p-5 border-r border-border-subtle text-sm sm:text-base text-fg leading-relaxed',
                         isAnswer && 'bg-status-ok/10',
                         isWrongGuess && 'bg-status-danger/10',
                       )}
@@ -766,6 +733,31 @@ function TypologyTable() {
                     </div>
                   );
                 })}
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
+              >
+                <div className="p-4 flex items-center">
+                  <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
+                </div>
+                <div className="col-span-3 p-3 sm:p-4 border-r border-border-subtle">
+                  <p className="text-xs sm:text-sm text-fg leading-snug text-pretty text-center mb-2">{row.riddle}</p>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    {ACTORS_LIST.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => guess(i, a.id)}
+                        className="px-3 py-2 rounded-[4px] border border-border bg-bg-elevated text-xs sm:text-sm font-display font-semibold text-fg hover:border-fg-muted hover:bg-bg-accent transition-colors"
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             )}
           </motion.div>
@@ -792,7 +784,17 @@ function PillarSimulator() {
         </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      {/* Step-connector: a hairline spanning the 3 columns with a dot
+          centered above each card — purely decorative (no text), matching
+          the reference's 3-2-1 progress rail above the card row. */}
+      <div className="relative hidden sm:grid grid-cols-3 h-3 mb-3" aria-hidden>
+        <div className="absolute inset-x-6 top-1/2 h-px -translate-y-1/2 bg-border-strong/60" />
+        {PILLAR_DECISIONS.map((d) => (
+          <div key={d.pillarId} className="relative mx-auto size-2.5 rounded-full bg-border-strong/80" />
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
         {PILLAR_DECISIONS.map((d, i) => {
           const pillar = PILLARS.find((p) => p.id === d.pillarId)!;
           return (
@@ -852,57 +854,101 @@ function PillarDecisionCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 }}
-      className="surface text-right p-5 sm:p-6 relative overflow-hidden flex flex-col"
+      className="surface text-right relative overflow-hidden flex flex-col"
     >
-      <div className="mb-3">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
-          עמוד {index + 1}
-        </div>
+      {/* Banner — big pillar number + themed icon illustration, one source
+          PNG per pillar (…-1-/-2-/-3-BANNER, matching this card's
+          `index + 1`, same numbering as PILLAR_DECISIONS/"עמוד N" always
+          used). Replaces the former plain "עמוד N" text label — the number
+          is now baked into the artwork, as in the reference. */}
+      <div className="relative w-full shrink-0 aspect-[1983/793]">
+        <IsometricAsset
+          assetId={`TOPIC01-ASYM-PILLAR-${index + 1}-BANNER`}
+          src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-PILLAR-${index + 1}-BANNER.png`}
+          alt=""
+          aspect="4/3"
+          fit="cover"
+          className="absolute inset-0 size-full [aspect-ratio:auto]"
+        />
+      </div>
+
+      {/* Content — a fixed `min-h` (roomy enough for the longest "solved"
+          state across all 3 pillars) so the card's footprint is set from
+          first paint and never grows/shrinks as a choice reveals more or
+          less text; see design/assumptions.md for how this value was
+          measured. */}
+      <div className="flex flex-col gap-3 p-5 sm:p-6 min-h-[30rem]">
         {solved && (
           <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance">{pillar.label}</h4>
         )}
-      </div>
 
-      {!solved ? (
-        <div className="flex-1 flex flex-col gap-3">
-          <p className="text-sm leading-relaxed text-fg-muted">{decision.prompt}</p>
-          <div className="flex flex-col gap-2 mt-auto">
-            {decision.choices.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => pick(c)}
-                className={cn(
-                  'text-right p-3 rounded-[3px] border text-sm transition-colors',
-                  lastChoice?.id === c.id && lastChoice.outcome === 'wrong'
-                    ? 'border-status-danger/50 bg-status-danger/5'
-                    : 'border-border bg-bg-elevated hover:border-fg-muted',
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
+        {!solved ? (
+          <div className="flex-1 flex flex-col gap-3">
+            <p className="text-sm leading-relaxed text-fg-muted">{decision.prompt}</p>
+            <div className="flex flex-col gap-2">
+              {decision.choices.map((c) => {
+                const isWrongPick = lastChoice?.id === c.id && lastChoice.outcome === 'wrong';
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => pick(c)}
+                    className={cn(
+                      'flex items-center gap-2.5 text-right p-3 rounded-xl border text-sm transition-colors',
+                      isWrongPick
+                        ? 'border-status-danger/40 bg-status-danger/10'
+                        : 'border-border bg-bg-elevated hover:border-fg-muted',
+                    )}
+                  >
+                    {/* Radio indicator — inline-start (visual right under
+                        RTL), first DOM child in this flex row so it lands
+                        at the row's start edge next to the Hebrew text,
+                        matching the reference's right-anchored circles. */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'shrink-0 inline-flex items-center justify-center size-5 rounded-full text-[10px] font-bold leading-none',
+                        isWrongPick ? 'bg-status-danger text-white' : 'border-[1.5px] border-border-strong',
+                      )}
+                    >
+                      {isWrongPick && '✗'}
+                    </span>
+                    <span className="flex-1">{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <AnimatePresence>
+              {lastChoice && lastChoice.outcome === 'wrong' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <p className="text-xs text-status-danger leading-snug rounded-xl border border-status-danger/30 bg-status-danger/10 p-3">
+                    {lastChoice.feedback} נסו שוב.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <AnimatePresence>
-            {lastChoice && lastChoice.outcome === 'wrong' && (
-              <motion.p
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="text-xs text-status-danger leading-snug overflow-hidden"
+        ) : (
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="flex items-start gap-2.5 rounded-xl border border-status-ok/30 bg-status-ok/10 p-3">
+              <span
+                aria-hidden
+                className="mt-0.5 shrink-0 inline-flex items-center justify-center size-5 rounded-full bg-status-ok text-white text-[10px] font-bold leading-none"
               >
-                {lastChoice.feedback} נסו שוב.
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </div>
-      ) : (
-        <div className="flex-1">
-          <p className="text-xs text-status-ok font-display font-semibold mb-2">{lastChoice?.feedback}</p>
-          <p className="text-sm leading-relaxed text-fg-muted mb-3">{pillar.oneLiner}</p>
-          <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">{pillar.detail}</p>
-        </div>
-      )}
+                ✓
+              </span>
+              <p className="text-xs text-status-ok font-display font-semibold leading-snug">{lastChoice?.feedback}</p>
+            </div>
+            <p className="text-sm leading-relaxed text-fg-muted">{pillar.oneLiner}</p>
+            <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">{pillar.detail}</p>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -1297,10 +1343,13 @@ function TacticMatchExercise() {
   const [placement, setPlacement] = useState<Record<string, string | null>>(
     Object.fromEntries(TRAITS.map((t) => [t.id, null])),
   );
-  const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const pool = TRAITS.filter((t) => placement[t.id] == null);
+  // One-at-a-time flow: `current` is the next un-placed field report — the
+  // single "question" on screen. Placing it (correctly or not) immediately
+  // surfaces the next un-placed trait as the new `current`, purely as a
+  // side effect of TRAITS.find() re-running — no separate step/index state.
+  const current = TRAITS.find((t) => placement[t.id] == null) ?? null;
   const allPlaced = TRAITS.every((t) => placement[t.id] != null);
   const correctCount = TRAITS.filter((t) => placement[t.id] === t.id).length;
 
@@ -1315,13 +1364,11 @@ function TacticMatchExercise() {
       next[vignetteId] = binId;
       return next;
     });
-    setSelected(null);
     setSubmitted(false);
   };
 
   const reset = () => {
     setPlacement(Object.fromEntries(TRAITS.map((t) => [t.id, null])));
-    setSelected(null);
     setSubmitted(false);
   };
 
@@ -1348,35 +1395,37 @@ function TacticMatchExercise() {
         </div>
       </div>
 
-      <div className="surface-elevated p-4 rounded-[4px] mb-3">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
+      <div className="surface-elevated p-5 sm:p-6 rounded-[4px] mb-4">
+        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider text-center">
           דיווחי שטח
         </div>
-        {pool.length === 0 ? (
-          <div className="text-center text-sm text-fg-muted py-4">
-            שיבצתם את כל הדיווחים. {submitted ? 'בדקו את התוצאה למטה.' : 'לחצו "בדוק תשובות".'}
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 gap-2">
-            {pool.map((t) => (
-              <VignetteChip
-                key={t.id}
-                tactic={t}
-                isSelected={selected === t.id}
-                onSelect={() => setSelected(selected === t.id ? null : t.id)}
-              />
-            ))}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {current ? (
+            <motion.p
+              key={current.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+              className="max-w-2xl mx-auto text-center text-base sm:text-lg leading-relaxed text-fg text-pretty"
+            >
+              {current.vignette}
+            </motion.p>
+          ) : (
+            <div className="text-center text-sm text-fg-muted py-4">
+              שיבצתם את כל הדיווחים. {submitted ? 'בדקו את התוצאה למטה.' : 'לחצו "בדוק תשובות".'}
+            </div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
         {TRAITS.map((t) => (
-          <TacticBin
+          <TacticPhotoCard
             key={t.id}
             tactic={t}
             occupant={TRAITS.find((v) => placement[v.id] === t.id) ?? null}
-            selected={selected}
+            current={current}
             submitted={submitted}
             onPlace={place}
           />
@@ -1421,127 +1470,104 @@ function TacticMatchExercise() {
   );
 }
 
-function VignetteChip({
-  tactic,
-  isSelected,
-  onSelect,
-}: {
-  tactic: Tactic;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/tactic', tactic.id);
-        e.dataTransfer.effectAllowed = 'move';
-      }}
-      onClick={onSelect}
-      className={cn(
-        'text-right p-3 rounded-[3px] border transition-all cursor-grab active:cursor-grabbing',
-        isSelected ? 'border-fg bg-bg-accent' : 'border-border bg-bg-elevated hover:border-fg-muted',
-      )}
-    >
-      <p className="text-sm leading-relaxed text-fg">{tactic.vignette}</p>
-    </button>
-  );
-}
-
-function TacticBin({
+/* Photo-card tactic target: click-only (no drag). A click either (a) places
+   the current pending report into an empty card, or (b) un-places an
+   already-occupied card's report back into the pool — same swap semantics
+   the old drag/drop bins had, just without the drag half. Photos are the
+   real-world TOPIC01-ASYM-TACTIC-*.png assets generated for this exercise,
+   one per TRAITS id. */
+function TacticPhotoCard({
   tactic,
   occupant,
-  selected,
+  current,
   submitted,
   onPlace,
 }: {
   tactic: Tactic;
   occupant: Tactic | null;
-  selected: string | null;
+  current: Tactic | null;
   submitted: boolean;
   onPlace: (vignetteId: string, binId: string | null) => void;
 }) {
-  const [isOver, setIsOver] = useState(false);
   const isCorrect = submitted && occupant?.id === tactic.id;
   const isWrong = submitted && occupant != null && occupant.id !== tactic.id;
+  const clickable = !submitted && (occupant != null || current != null);
 
   return (
-    <motion.div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsOver(true);
-      }}
-      onDragLeave={() => setIsOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        const id = e.dataTransfer.getData('text/tactic');
-        if (id) onPlace(id, tactic.id);
-        setIsOver(false);
-      }}
+    <motion.button
+      type="button"
+      disabled={!clickable}
+      whileTap={clickable ? { scale: 0.97 } : undefined}
       onClick={() => {
         if (submitted) return;
         if (occupant) {
           onPlace(occupant.id, null);
           return;
         }
-        if (selected) onPlace(selected, tactic.id);
+        if (current) onPlace(current.id, tactic.id);
       }}
-      animate={{ scale: isOver ? 1.02 : 1 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'rounded-[3px] border bg-bg-elevated p-4 flex flex-col gap-2 min-h-[160px] transition-colors',
-        isOver
-          ? 'border-fg'
-          : submitted
-            ? isCorrect
-              ? 'border-status-ok/50'
-              : isWrong
-                ? 'border-status-danger/50'
-                : 'border-border'
-            : 'border-border',
+        // No max-w cap: the section itself is already bounded by max-w-6xl,
+        // so letting basis alone drive width keeps this reliably 3-per-row
+        // at sm+ (wrapping the last 2, centered) instead of a stray 4th
+        // card sneaking onto row 1 once a fixed cap makes cards narrow
+        // enough to fit four across.
+        'basis-[47%] sm:basis-[31%] text-right rounded-[4px] border bg-bg-elevated overflow-hidden flex flex-col transition-colors',
+        submitted
+          ? isCorrect
+            ? 'border-status-ok/50'
+            : isWrong
+              ? 'border-status-danger/50'
+              : 'border-border'
+          : occupant
+            ? 'border-fg'
+            : 'border-border hover:border-fg-muted',
+        !clickable && !occupant && 'opacity-60',
       )}
     >
-      <div className="flex items-center gap-1.5">
-        {submitted && occupant && (
+      <div className="relative h-28 sm:h-32 shrink-0 bg-bg-accent">
+        <IsometricAsset
+          assetId={`TOPIC01-ASYM-TACTIC-${tactic.id.toUpperCase()}`}
+          src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-TACTIC-${tactic.id.toUpperCase()}.png`}
+          alt=""
+          aspect="1/1"
+          fit="cover"
+          compactPlaceholder
+          className="absolute inset-0 size-full [aspect-ratio:auto]"
+        />
+        {occupant && (
           <span
             className={cn(
-              'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
-              isCorrect ? 'bg-status-ok/15 text-status-ok' : 'bg-status-danger/15 text-status-danger',
+              'absolute top-2 start-2 inline-flex items-center justify-center size-5 rounded-full text-[11px] font-bold leading-none',
+              submitted
+                ? isCorrect
+                  ? 'bg-status-ok text-bg-elevated'
+                  : 'bg-status-danger text-bg-elevated'
+                : 'bg-fg/85 text-bg-elevated',
             )}
           >
-            {isCorrect ? '✓' : '✗'}
+            {submitted ? (isCorrect ? '✓' : '✗') : '✓'}
           </span>
         )}
-        <div className="font-display font-bold text-sm leading-tight text-fg">{tactic.title}</div>
       </div>
 
-      {occupant ? (
-        <div className="flex-1 min-w-0">
-          {submitted ? (
-            <div className="space-y-1">
-              {isCorrect && (
-                <div className="text-[11px] font-display font-bold tracking-wide text-status-ok">
-                  התאמה נכונה
-                </div>
-              )}
-              <p className="text-xs text-fg-muted leading-snug">{occupant.desc}</p>
-            </div>
-          ) : (
-            <div className="text-xs text-fg-muted leading-snug">{occupant.vignette}</div>
-          )}
+      <div className="p-3 flex-1 flex flex-col gap-1.5">
+        <div className="font-display font-bold text-sm leading-tight text-fg text-center text-balance">
+          {tactic.title}
         </div>
-      ) : (
-        <div
-          className={cn(
-            'flex-1 min-h-[60px] rounded-[3px] flex items-center justify-center text-xs font-display font-semibold transition-colors',
-            isOver ? 'bg-bg-accent text-fg' : selected ? 'bg-bg-accent/40 text-fg-muted' : 'text-fg-dim bg-bg-accent/40',
-          )}
-        >
-          {isOver ? 'שחרר כאן' : selected ? 'הקש לשיבוץ כאן' : 'גרור לכאן'}
-        </div>
-      )}
-    </motion.div>
+
+        {submitted && occupant && (
+          <div className="pt-1.5 mt-0.5 border-t border-border-subtle space-y-1">
+            {isCorrect && (
+              <div className="text-[11px] font-display font-bold tracking-wide text-status-ok text-center">
+                התאמה נכונה
+              </div>
+            )}
+            <p className="text-[11px] text-fg-muted leading-snug">{occupant.desc}</p>
+          </div>
+        )}
+      </div>
+    </motion.button>
   );
 }
 
@@ -1660,6 +1686,11 @@ function DragExercise({
   );
 }
 
+/* Pill-shaped chip, per reference `lesson1part5image6.png`: rounded-full,
+   a drag-grip glyph at inline-start (pool state only — matches the
+   reference, which shows no grip once a chip has already been sorted into
+   a bin), org label + subtitle stacked inside. Visual restyle only — no
+   copy changed, both `label` and `subtitle` still render verbatim. */
 function OrgChip({
   org,
   state,
@@ -1691,17 +1722,16 @@ function OrgChip({
       }}
       onClick={onSelect}
       className={cn(
-        'group inline-flex items-center gap-2 text-right transition-all border',
-        compact ? 'px-2.5 py-1.5 rounded-md' : 'px-3 py-2 rounded-[3px]',
+        'group inline-flex items-center gap-2 text-right transition-all border rounded-full bg-bg-elevated',
+        compact ? 'px-2.5 py-1.5' : 'px-3.5 py-2',
         submitted && isCorrect && 'border-status-ok/50 bg-status-ok/10',
         submitted && isWrong && 'border-status-danger/50 bg-status-danger/10',
         !submitted && isSelected && state === 'pool' && 'border-fg bg-bg-accent',
-        !submitted && !isSelected && state === 'pool' && 'border-border bg-bg-elevated hover:border-fg-muted',
-        !submitted && state === 'bin' && 'border-border bg-bg-elevated',
+        !submitted && !isSelected && 'border-border hover:border-fg-muted',
         draggable && 'cursor-grab active:cursor-grabbing',
       )}
     >
-      {submitted && (
+      {submitted ? (
         <span
           className={cn(
             'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
@@ -1710,6 +1740,8 @@ function OrgChip({
         >
           {isCorrect ? '✓' : '✗'}
         </span>
+      ) : (
+        state === 'pool' && <Icon name="grip" size={14} className="shrink-0 text-fg-dim" />
       )}
       <span className="min-w-0">
         <span className={cn('block font-display font-semibold leading-tight', compact ? 'text-xs' : 'text-sm', 'text-fg')}>
@@ -1723,6 +1755,15 @@ function OrgChip({
   );
 }
 
+/* Photo-topped bin, per reference `lesson1part5image6.png`: the actor's
+   `*-BIN.png` establishing shot fills the top of the card with the actor
+   label overlaid (scrim + short accent rule, matching this file's existing
+   scrim-caption pattern in `ActorTypologySelector`'s photo column), then a
+   dashed drop-zone below with a circular "+" and "גרור לכאן" — same existing
+   copy as before, just restyled. Card radius reuses `rounded-2xl`, the same
+   token this file's own `PillarDecisionCard` already uses for its
+   photo-topped cards (see design/assumptions.md), rather than the
+   reference's own (unrelated app's) corner scale. */
 function CategoryBin({
   actor,
   orgsHere,
@@ -1759,74 +1800,105 @@ function CategoryBin({
       animate={{ scale: isOver ? 1.01 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={cn(
-        'rounded-[3px] border bg-bg-elevated p-4 transition-colors flex flex-col gap-3 min-h-[180px]',
+        'rounded-2xl border bg-bg-elevated overflow-hidden transition-colors flex flex-col',
         isOver || (selectedOrg && !isOver) ? 'border-fg' : 'border-border',
       )}
     >
-      <div>
-        <div className="font-display font-bold text-base leading-tight text-fg">{actor.label}</div>
-        <div className="text-[10px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
-          {orgsHere.length === 0 ? 'ריק · מחכה לסיווג' : `${orgsHere.length} סווגו כאן`}
+      <div className="relative">
+        <IsometricAsset
+          assetId={`TOPIC01-ASYM-ACTOR-${actor.id.toUpperCase()}-BIN`}
+          src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${actor.id.toUpperCase()}-BIN.png`}
+          alt=""
+          aspect="16/9"
+          fit="cover"
+          compactPlaceholder
+          prompt={ACTOR_BIN_PROMPT[actor.id]}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-3/4 bg-gradient-to-b from-bg-elevated/85 via-bg-elevated/25 to-transparent"
+        />
+        <div className="absolute inset-x-0 top-0 p-3 sm:p-4">
+          <div className="font-display font-extrabold text-lg sm:text-xl leading-tight text-fg text-pretty">
+            {actor.label}
+          </div>
+          <div aria-hidden className="mt-1.5 h-0.5 w-8 rounded-full bg-fg/70" />
+          <div className="mt-1.5 text-[10px] font-display font-medium tracking-wide text-fg-dim">
+            {orgsHere.length === 0 ? 'ריק · מחכה לסיווג' : `${orgsHere.length} סווגו כאן`}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col gap-2">
-        {orgsHere.length === 0 ? (
-          <div
-            className={cn(
-              'flex-1 min-h-[80px] rounded-[3px] flex items-center justify-center text-sm font-display font-semibold transition-colors',
-              isOver ? 'bg-bg-accent text-fg' : selectedOrg ? 'bg-bg-accent/40 text-fg-muted' : 'text-fg-dim bg-bg-accent/40',
-            )}
-          >
-            {isOver ? 'שחרר כאן' : selectedOrg ? 'הקש לסיווג כאן' : 'גרור לכאן'}
+      <div className="p-3 sm:p-4 flex flex-col gap-2">
+        <div
+          className={cn(
+            'min-h-[104px] rounded-2xl border border-dashed flex flex-col items-center justify-center gap-2 p-3 transition-colors',
+            isOver ? 'border-fg bg-bg-accent' : selectedOrg ? 'border-fg-muted bg-bg-accent/40' : 'border-border-strong/60',
+          )}
+        >
+          {orgsHere.length === 0 ? (
+            <>
+              <span
+                aria-hidden
+                className={cn(
+                  'inline-flex items-center justify-center size-9 rounded-full transition-colors',
+                  isOver ? 'bg-bg-accent text-fg' : 'bg-bg-accent/60 text-fg-muted',
+                )}
+              >
+                <Icon name="plus" size={18} />
+              </span>
+              <span className="text-sm font-display font-semibold text-fg-dim">
+                {isOver ? 'שחרר כאן' : selectedOrg ? 'הקש לסיווג כאן' : 'גרור לכאן'}
+              </span>
+            </>
+          ) : (
+            <AnimatePresence initial={false}>
+              <div className="flex flex-wrap justify-center gap-1.5 w-full">
+                {orgsHere.map((o) => {
+                  const isCorrect = submitted && o.correct === actor.id;
+                  const isWrong = submitted && o.correct !== actor.id;
+                  return (
+                    <motion.div
+                      key={o.id}
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                    >
+                      <OrgChip
+                        org={o}
+                        state="bin"
+                        isCorrect={isCorrect}
+                        isWrong={isWrong}
+                        submitted={submitted}
+                        compact
+                        onSelect={() => {
+                          if (submitted) return;
+                          onSelect(o.id);
+                        }}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </AnimatePresence>
+          )}
+        </div>
+
+        {/* Per-org feedback on wrong placements */}
+        {submitted && orgsHere.some((o) => o.correct !== actor.id) && (
+          <div className="pt-2 border-t border-border-subtle space-y-1.5">
+            {orgsHere
+              .filter((o) => o.correct !== actor.id)
+              .map((o) => (
+                <div key={o.id} className="text-[11px] text-fg leading-snug">
+                  <strong className="text-status-danger">{o.label}</strong>{' '}
+                  <span className="text-fg-muted">← {ACTORS[o.correct].label}.</span>{' '}
+                  <span className="text-fg-muted">{o.hint}</span>
+                </div>
+              ))}
           </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            <div className="flex flex-wrap gap-1.5">
-              {orgsHere.map((o) => {
-                const isCorrect = submitted && o.correct === actor.id;
-                const isWrong = submitted && o.correct !== actor.id;
-                return (
-                  <motion.div
-                    key={o.id}
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                  >
-                    <OrgChip
-                      org={o}
-                      state="bin"
-                      isCorrect={isCorrect}
-                      isWrong={isWrong}
-                      submitted={submitted}
-                      compact
-                      onSelect={() => {
-                        if (submitted) return;
-                        onSelect(o.id);
-                      }}
-                    />
-                  </motion.div>
-                );
-              })}
-            </div>
-          </AnimatePresence>
         )}
       </div>
-
-      {/* Per-org feedback on wrong placements */}
-      {submitted && orgsHere.some((o) => o.correct !== actor.id) && (
-        <div className="pt-2 border-t border-border-subtle space-y-1.5">
-          {orgsHere
-            .filter((o) => o.correct !== actor.id)
-            .map((o) => (
-              <div key={o.id} className="text-[11px] text-fg leading-snug">
-                <strong className="text-status-danger">{o.label}</strong>{' '}
-                <span className="text-fg-muted">← {ACTORS[o.correct].label}.</span>{' '}
-                <span className="text-fg-muted">{o.hint}</span>
-              </div>
-            ))}
-        </div>
-      )}
     </motion.div>
   );
 }
