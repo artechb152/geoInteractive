@@ -1,6 +1,6 @@
 # Plan: topic-01 `#scene-asymmetric` — 3-actor cards → banner-tab selector
 
-`/reference-to-ui-exact` against `lesson1part5image1.png` (repo root). Continues the same
+`/reference-to-ui-exact` against `lesson1part5image1.png` (`design/reference/lesson-01/`). Continues the same
 established convention as `docs/superpowers/plans/2026-09-03-topic01-levels-scene-redesign.md`
 (see `design/assumptions.md`'s "Topic-01 levels scene" section for the precedent this plan
 follows). Branch: work directly on `main` — this repo's established practice for this exact
@@ -198,7 +198,7 @@ out; this is a confirmed, intentional omission, not an oversight to flag as a co
    this commit (confirm via `git status` and add them explicitly by path, not `git add -A`,
    since other unrelated untracked/modified files exist in the working tree right now — do not
    touch or commit `src/components/lessons/topic-01/LevelsScene.tsx`, `AGENTS.md`, the
-   `lesson1part*image*.png` reference screenshots at the repo root, `.agents/skills/`, or
+   `lesson1part*image*.png` reference screenshots in `design/reference/lesson-01/`, `.agents/skills/`, or
    `public/assets/lessons/topic01/scene-mdo/` — none of those belong to this task).
 
 ### Report

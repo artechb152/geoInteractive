@@ -606,4 +606,7 @@ src/components/design-approval/
 - [ASSET_INTEGRATION_WORKFLOW.md](../../project-knowledge/ASSET_INTEGRATION_WORKFLOW.md) — שילוב נכסים שיגיעו מ-Magnific.
 - [MAGNIFIC_ASSET_PROMPTS.md](../../project-knowledge/MAGNIFIC_ASSET_PROMPTS.md) + [magnific_prompts_style_short_no_transparent_bg.md](../../project-knowledge/magnific_prompts_style_short_no_transparent_bg.md) — הפקת הנכסים (ברירת מחדל: ללא רקע שקוף).
 - [VISUAL_IDENTITY.md](../../project-knowledge/VISUAL_IDENTITY.md) — הקווים האדומים הוויזואליים הקבועים.
-- `referenceImageDesign.png` (שורש הריפו) — תמונת הרפרנס שמסמך זה מנתח.
+- `referenceImageDesign.png` — תמונת הרפרנס שמסמך זה מנתח. **הקובץ נמחק מהעץ ב-2026-09-08**
+  לבקשת המשתמש (ניקוי שורש הריפו). הניתוח במסמך הזה עומד בפני עצמו ונשאר מקור האמת;
+  אם צריך את התמונה עצמה היא זמינה בהיסטוריית git:
+  `git show 56f3d09:referenceImageDesign.png > referenceImageDesign.png`

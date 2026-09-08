@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { IntelCard } from '@/components/lesson/IntelCard';
+import { HistoricalCasesPanel } from './HistoricalCasesPanel';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -60,52 +60,27 @@ const LAYERS: Layer[] = [
   },
 ];
 
-const FACTS: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
-  {
-    headline: 'טעות של 100 מטר בגלל רשת ישנה',
-    place: 'ישראל • שנות ה-2000',
-    lesson: 'צה"ל שדרג את רשת הקואורדינטות שלו (השפה שמייצרת נקודות ציון - נ"צ). המעבר גרם לנקודות על המפה "לזוז" ב-100 מטר. תותחן שהשתמש במפה ישנה, עלול היה לפגוע בטעות בכוחותינו במקום באויב.',
-    icon: 'crosshair', // מתאים לרשת קואורדינטות ותותחנים
-    accent: 'text-accent-hot',
-  },
-  {
-    headline: 'לנחות בחוף הלא נכון',
-    place: 'חופי נורמנדי • 1944',
-    lesson: 'מבצע הנחיתה הגדול בהיסטוריה דרש מפות סופר-מפורטות ("קנה מידה גדול"). כל כוח קיבל מפה מדויקת של הגזרה שלו. אם היו משתמשים במפות כלליות, חיילים היו נוחתים עיוורים ישר אל תוך האש.',
-    icon: 'wave', // מתאים לנחיתה בחוף
-    accent: 'text-terrain-sky',
-  },
-  {
-    headline: 'לנווט כשהעיניים לא רואות כלום',
-    place: 'יערות בלגיה • דצמבר 1944',
-    lesson: 'נווט איבד את דרכו בסופת שלגים. כשהראות היא אפס, הדרך היחידה שלו לשרוד ולהבין אם הוא הולך לכיוון תהום או פסגה, הייתה "לדמיין" את צורת השטח דרך קווי הגובה המצוירים על המפה.',
-    icon: 'mountain', // מתאים לתבליט וקווי גובה
-    accent: 'text-terrain-ridge',
-  },
-  {
-    headline: 'מפת עולם משקרת במרחקים',
-    place: 'תכנון שיגור טילים',
-    lesson: 'אי אפשר "לשטח" כדור לדף נייר מבלי לעוות אותו. מפה שעובדת נהדר לניווט רגלי בעיר, תהיה שגויה לחלוטין בניסיון לחשב דרכה מסלול של טיל ארוך טווח.',
-    icon: 'globe', // מתאים להיטלים ועיוותים גלובליים
-    accent: 'text-accent-cool',
-  },
-];
-
 export function OnboardingScene() {
-  // Sequential build-up: `step` = how many layers from the top of LAYERS are active (0..5).
-  const [step, setStep] = useState(1);
+  // Sequential build-up: `activeIndex` is the layer currently driving the map
+  // (every layer up to and including it is lit). Tracked separately from
+  // `expandedLayer` so collapsing a panel leaves the card active and the map
+  // untouched -- the same two-state model as topic-01's onboarding accordion.
+  const [activeIndex, setActiveIndex] = useState(0);
   // Which layer's accordion panel is currently expanded (null = collapsed).
-  const [expanded, setExpanded] = useState<string | null>(LAYERS[0].id);
-  const enabled = new Set(LAYERS.slice(0, step).map((l) => l.id));
+  // Defaults to the first layer being open so the user sees content immediately.
+  const [expandedLayer, setExpandedLayer] = useState<string | null>(LAYERS[0].id);
+  const enabled = new Set(LAYERS.slice(0, activeIndex + 1).map((l) => l.id));
 
   function clickLayer(i: number) {
     const id = LAYERS[i].id;
-    if (expanded === id) {
-      setExpanded(null);
+    if (expandedLayer === id) {
+      // Clicking the open panel collapses it (the map on the left stays --
+      // `activeIndex` doesn't change).
+      setExpandedLayer(null);
       return;
     }
-    setStep(i + 1);
-    setExpanded(id);
+    setActiveIndex(i);
+    setExpandedLayer(id);
   }
 
   return (
@@ -121,61 +96,63 @@ title={
                 intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שקופים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
-        <div className="space-y-3">
+      {/* Widened the map column from 2fr:3fr (640px) to 725px at the 1440px
+          target. 32:68 is the widest split that still keeps every layer label
+          on one line -- measured: 320px wraps three of them, 330px is clear,
+          this leaves the column at 341px -- so the map grows without any type
+          being resized. The column cannot reach the SVG's 4:3 ratio outright
+          (a 617px-tall box would need 823px of width, squeezing the accordion
+          to ~240px and wrapping the labels), so the residual letterbox is
+          absorbed by the box background instead -- see bg-bg-accent below. */}
+      <div className="grid md:grid-cols-[32fr_68fr] gap-6">
+        <div className="space-y-1">
           {LAYERS.map((l, i) => {
-            const isOn = i < step;
-            const isExpanded = expanded === l.id;
-            const isPassed = isOn && !isExpanded;
+            const active = activeIndex === i;
+            const expanded = expandedLayer === l.id;
+            const passed = activeIndex > i;
             return (
               <div
                 key={l.id}
                 className={cn(
                   'surface overflow-hidden transition-all duration-300 ease-snap',
-                  isExpanded
+                  active
                     ? 'border-brand/45 bg-bg-elevated'
                     : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  isPassed && 'opacity-80'
+                  passed && !active && 'opacity-80'
                 )}
               >
                 <button
                   type="button"
                   onClick={() => clickLayer(i)}
-                  aria-expanded={isExpanded}
+                  aria-expanded={expanded}
                   aria-controls={`layer-panel-${l.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  {isExpanded && (
-                    <motion.span
-                      layoutId="t2-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
-                  )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      isExpanded || isPassed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
-                    {isPassed ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
+                    {passed && !active ? (
+                      <Icon name="check" size={18} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-base font-bold">{i + 1}</span>
                     )}
                   </span>
-
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">{l.label}</div>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-lg md:text-xl">
+                      {l.label}
+                    </div>
                   </div>
-
                   <motion.span
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    animate={{ rotate: expanded ? 180 : 0 }}
                     transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', isExpanded ? 'text-brand-dark' : 'text-fg-dim')}
+                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
-                      width="18"
-                      height="18"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -190,7 +167,7 @@ title={
                 </button>
 
                 <AnimatePresence initial={false}>
-                  {isExpanded && (
+                  {expanded && (
                     <motion.div
                       key={`panel-${l.id}`}
                       id={`layer-panel-${l.id}`}
@@ -200,7 +177,12 @@ title={
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                      {/* All five panels share one height so the column -- and the
+                          map box stretched beside it -- never resize as you click
+                          through. At the column width set above, layers 2/3/5 run to
+                          211px while 1 and 4 are a line shorter at 185px; this floor
+                          lifts the short ones to match rather than resizing type. */}
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 md:min-h-[211px]">
                         <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           מה השכבה הזו מוסיפה
                         </div>
@@ -219,24 +201,19 @@ title={
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        {/* bg-bg-accent, not bg-bg: the SVG's own base rect is bg-bg-accent,
+            so any letterboxing left by preserveAspectRatio="meet" now matches
+            the map's ground exactly instead of reading as two cream stripes. */}
+        <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px]">
           <LayeredMap enabled={enabled} />
         </div>
       </div>
 
-      <SoftDivider text="לקרוא מפה — להציל חיים" />
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        {FACTS.map((f, i) => (
-          <IntelCard
-            key={f.headline}
-            place={f.place}
-            headline={f.headline}
-            lesson={f.lesson}
-            icon={f.icon}
-            accent={f.accent}
-          />
-        ))}
+      {/* Historical examples — same panel layout as lesson 1
+          (topic-01/HistoricalCasesPanel.tsx). Replaced the IntelCard
+          grid; the four examples moved into the panel's CASES array. */}
+      <div className="mt-20 mb-12">
+        <HistoricalCasesPanel />
       </div>
 
       <ReadyCallout title="עכשיו אתם מוכנים">
@@ -250,7 +227,12 @@ title={
 function LayeredMap({ enabled }: { enabled: Set<string> }) {
   return (
     <div className="relative w-full h-full">
-      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+      {/* yMax, not yMid: the box is a little taller than the artwork's 4:3,
+          and anchoring to the bottom puts the whole remainder above the
+          skyline, where it is the same bg-bg-accent as the base rect and so
+          invisible. Centring it instead split the slack into a cream strip
+          under the terrain, which read as a band. */}
+      <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMax meet">
         <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
 
         {/* Base: terrain */}
@@ -359,12 +341,3 @@ function Toggle({ on }: { on: boolean }) {
   );
 }
 
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
-    </div>
-  );
-}

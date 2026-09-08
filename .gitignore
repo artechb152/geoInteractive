@@ -33,8 +33,9 @@ qa-output/
 # Playwright MCP session logs and ad-hoc QA screenshots
 .playwright-mcp/
 /geo09-*.png
-# Ad-hoc QA render screenshots at repo root (throwaway). referenceImageDesign.png
-# is the design target and stays tracked — none of these patterns match it.
+# Ad-hoc QA render screenshots at repo root (throwaway).
+# Reference images that must be KEPT live in design/reference/ (see its README),
+# never at the repo root — so everything these patterns match is safe to delete.
 /design-approval-*.png
 /cards-grid*.png
 /card-*.png
