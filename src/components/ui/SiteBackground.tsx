@@ -12,8 +12,8 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
-/** רקע השיעורים זז יחד עם הגלילה אך באיטיות — 30% ממהירות התוכן — לאפקט פרלקסה עדין. */
-const LESSON_BG_PARALLAX_FACTOR = 0.3;
+/** רקע השיעורים זז יחד עם הגלילה אך באיטיות — שמינית (1/8) ממהירות התוכן — לאפקט פרלקסה עדין. */
+const LESSON_BG_PARALLAX_FACTOR = 1 / 8;
 
 export function SiteBackground() {
   const pathname = usePathname();

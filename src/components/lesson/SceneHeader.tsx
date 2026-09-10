@@ -29,12 +29,12 @@ export function SceneHeader({
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="mb-8"
     >
-      <h2 className="mx-auto max-w-3xl text-center font-display font-extrabold tracking-tight text-balance leading-[1.1] text-olive-ink text-[clamp(1.875rem,3.8vw,2.875rem)]">
+      <h2 className="mx-auto max-w-3xl text-center font-display font-extrabold tracking-tight text-balance leading-[1.1] text-black text-[clamp(1.875rem,3.8vw,2.875rem)]">
         {title}
       </h2>
       {underline && <div aria-hidden className="mx-auto mt-5 h-1 w-14 rounded-full bg-accent" />}
       {intro && (
-        <p className="mx-auto mt-4 max-w-2xl text-center text-lg leading-relaxed text-olive-soft sm:text-xl text-pretty">
+        <p className="mx-auto mt-4 max-w-2xl text-center text-lg leading-relaxed text-black sm:text-xl text-pretty">
           {intro}
         </p>
       )}

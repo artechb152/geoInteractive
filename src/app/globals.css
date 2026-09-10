@@ -32,9 +32,6 @@
     direction: rtl;
     color-scheme: light;
     scroll-behavior: smooth;
-    /* Firefox: thin, tanline-colored thumb instead of the OS default. */
-    scrollbar-width: thin;
-    scrollbar-color: #DCCDB2 transparent;
   }
 
   body {
@@ -42,47 +39,17 @@
     font-feature-settings: 'kern', 'ss01';
   }
 
-  /* ── Custom scrollbar (Chromium/Safari) — replaces the OS default
-        gray scrollbar + up/down arrow buttons everywhere on the page.
-        Thumb = --border (tanline), a shade darker than --bg (paper.page),
-        so it reads as part of the cream canvas instead of a system control. ── */
+  /* ── Scrollbar hidden everywhere — scrolling still works, the
+        scrollbar itself is just never rendered. ── */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* legacy Edge/IE */
+  }
+
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: #DCCDB2;
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #C9A56B;
-  }
-
-  ::-webkit-scrollbar-button,
-  ::-webkit-scrollbar-button:vertical:start:decrement,
-  ::-webkit-scrollbar-button:vertical:end:increment,
-  ::-webkit-scrollbar-button:horizontal:start:decrement,
-  ::-webkit-scrollbar-button:horizontal:end:increment {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    /* Belt-and-suspenders: on some Chrome builds `display:none` alone
-       doesn't fully suppress the button's paint on a non-root (element-
-       level) scrollbar, even though it works for the document scrollbar.
-       Force it transparent/borderless too so nothing is visible even if
-       a 0×0 box still gets painted. */
-    background: transparent !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+    display: none; /* Chromium/Safari */
+    width: 0;
+    height: 0;
   }
 
   ::selection {
