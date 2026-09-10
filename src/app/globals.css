@@ -66,10 +66,23 @@
     background-color: #C9A56B;
   }
 
-  ::-webkit-scrollbar-button {
-    display: none;
-    width: 0;
-    height: 0;
+  ::-webkit-scrollbar-button,
+  ::-webkit-scrollbar-button:vertical:start:decrement,
+  ::-webkit-scrollbar-button:vertical:end:increment,
+  ::-webkit-scrollbar-button:horizontal:start:decrement,
+  ::-webkit-scrollbar-button:horizontal:end:increment {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    /* Belt-and-suspenders: on some Chrome builds `display:none` alone
+       doesn't fully suppress the button's paint on a non-root (element-
+       level) scrollbar, even though it works for the document scrollbar.
+       Force it transparent/borderless too so nothing is visible even if
+       a 0×0 box still gets painted. */
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   ::selection {
