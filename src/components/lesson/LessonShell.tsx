@@ -77,9 +77,19 @@ export function LessonShell({
     // Forcing this box to `ltr` keeps its scrollbar on the right, matching
     // the rest of the site, while the `rtl` wrapper inside keeps every bit
     // of actual content (text, flex order, icons) unaffected.
+    // `overflow-y-scroll` (not `-auto`) — Chrome's overlay scrollbars fade
+    // out at rest and only auto-hide/reappear on interaction, which read
+    // as "no scrollbar at all" on a quick glance. `scroll` keeps the
+    // track's gutter reserved & the thumb always painted, per request.
+    // On xl+, the TOC drawer (ScenePagerDesktop in PagedLearn.tsx) is a
+    // separate `fixed` panel flush against the physical-right edge — the
+    // same place this box's own scrollbar renders, which silently hid it
+    // completely. Fixed by insetting the drawer 15px from that edge
+    // instead (see ScenePagerDesktop), so this box stays full-width.
     <div
       dir="ltr"
-      className="fixed inset-x-0 top-[var(--header-h)] bottom-0 overflow-y-auto overscroll-contain bg-bg"
+      data-lesson-scroll
+      className="fixed inset-x-0 top-[var(--header-h)] bottom-0 overflow-y-scroll overscroll-contain"
     >
     <div dir="rtl" className="min-h-full flex flex-col">
       {/* ── Sticky secondary header — just the three tabs.
@@ -87,14 +97,14 @@ export function LessonShell({
               width (7vw, matching ScenePagerDesktop in PagedLearn.tsx)
               so it never crosses the white TOC strip, giving the
               impression that the tabs sit ABOVE the lesson content
-              column only. The bg is the page cream (`bg-bg`) so it
-              reads as part of the content area, and there is no
+              column only. Background is a flat opaque `#EBE9E4` so it
+              blends with the lesson content below it, and there is no
               border / underline between the tabs and the lesson
               content below. `top-0` (not `top-[var(--header-h)]`) —
               this header sticks within the lesson's own internal
               scroll container below, which already starts right
               under the fixed AppHeader. ─────────────────────────── */}
-      <header data-lesson-tabs-header className="sticky top-0 z-30 bg-bg xl:ms-[13vw]">
+      <header data-lesson-tabs-header className="sticky top-0 z-30 bg-[#EBE9E4] xl:ms-[13vw]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"

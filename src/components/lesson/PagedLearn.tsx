@@ -286,7 +286,11 @@ function ScenePagerDesktop({
 }) {
   return (
     <aside
-      className="hidden xl:flex flex-col fixed start-0 top-[var(--header-h)] bottom-0 z-20 w-[13vw] overflow-y-auto bg-bg-elevated border-e border-border"
+      // `start-[15px]` (not `start-0`) — leaves a 15px gutter clear at the
+      // true physical-right edge for LessonShell's own scrollbar (which
+      // renders behind/under this panel otherwise, since both are `fixed`
+      // at that same edge — see the comment on LessonShell's scroll box).
+      className="hidden xl:flex flex-col fixed start-[15px] top-[var(--header-h)] bottom-0 z-20 w-[13vw] overflow-y-auto bg-bg-elevated border-e border-border"
       aria-label="ניווט תתי-נושא"
     >
       <div className="p-4 pt-4 flex-1 flex flex-col">
