@@ -76,11 +76,13 @@ export function LessonShell({
               width (7vw, matching ScenePagerDesktop in PagedLearn.tsx)
               so it never crosses the white TOC strip, giving the
               impression that the tabs sit ABOVE the lesson content
-              column only. The bg is the page cream (`bg-bg`) so it
-              reads as part of the content area, and there is no
+              column only. Background is a pastel tint of `brand`
+              (the same green used for the active-tab label/underline
+              below) instead of flat page cream, so the header itself
+              reads clearly green at a glance, and there is no
               border / underline between the tabs and the lesson
               content below. ─────────────────────────── */}
-      <header data-lesson-tabs-header className="sticky top-[var(--header-h)] z-30 bg-bg xl:ms-[13vw]">
+      <header data-lesson-tabs-header className="sticky top-[var(--header-h)] z-30 bg-brand/35 xl:ms-[13vw]">
         <LayoutGroup id={`lesson-tabs-${lesson.id}`}>
           <nav
             className="me-auto pe-4 sm:pe-6 lg:pe-8 ps-0 flex gap-1 relative"
