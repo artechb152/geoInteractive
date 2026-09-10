@@ -39,6 +39,19 @@
     font-feature-settings: 'kern', 'ss01';
   }
 
+  /* ── Scrollbar hidden everywhere — scrolling still works, the
+        scrollbar itself is just never rendered. ── */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* legacy Edge/IE */
+  }
+
+  ::-webkit-scrollbar {
+    display: none; /* Chromium/Safari */
+    width: 0;
+    height: 0;
+  }
+
   ::selection {
     @apply bg-accent/30 text-fg;
   }
