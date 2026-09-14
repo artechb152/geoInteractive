@@ -353,6 +353,16 @@ const DEMO_FRAC_Y = 1 - (ANATOMY_NORTH_M / 1000 - MAP_NORTH_MIN) / WORLD_SPAN_KM
 
 const TERRAIN_MAP_SRC = '/reference-assets/coordinate-anatomy/terrain-map.png';
 
+// Helper: compute CSS background-position percentage to center a given image
+// fraction point inside a container scaled by `scalePct / 100`.
+function centeredBgPercent(frac: number, scale: number) {
+  // Solve for the CSS background-position percentage P such that the
+  // image point at fraction `frac` lands at the CENTER of the container —
+  // NOT at container-fraction P (those only coincide when frac === 0.5).
+  // scale = background-size expressed as a ratio (e.g. 6 for "600%").
+  return ((0.5 - frac * scale) / (1 - scale)) * 100;
+}
+
 function DigitAnatomy() {
   const reduce = useReducedMotion();
   const [precision, setPrecision] = useState<Precision>(8);
@@ -655,7 +665,7 @@ function AnatomyZoomInset({
         style={{
           backgroundImage: `url(${TERRAIN_MAP_SRC})`,
           backgroundSize: `${scalePct}% ${scalePct}%`,
-          backgroundPosition: `${DEMO_FRAC_X * 100}% ${DEMO_FRAC_Y * 100}%`,
+          backgroundPosition: `${centeredBgPercent(DEMO_FRAC_X, scalePct / 100)}% ${centeredBgPercent(DEMO_FRAC_Y, scalePct / 100)}%`,
         }}
         role="img"
         aria-label={showTenCell ? 'תקריב על תא של 10 מטר בתוך משבצת המאה מטר, מאותה מפה' : 'תקריב על משבצת הקילומטר, מאותה מפה'}
@@ -769,17 +779,6 @@ function refOf(t: GridTarget) {
   return `${GRID_EAST_KM}${t.eDigit} / ${GRID_NORTH_KM}${t.nDigit}`;
 }
 
-/* Reference-art grid card (design/reference/lesson-02/lesson2part5image4.png,
-   source art "ChatGPT Image Sep 14, 2026, 02_55_34 PM.png"): the 10×10 frame,
-   ruler ticks, corner brackets and 0–9 axis digits are baked into the art
-   itself (chroma-keyed to real alpha + trimmed — see design/assumptions.md).
-   GRID_INSET is measured directly off that art's own printed orange frame
-   (pixel-scanned on the 1206×1171 trimmed asset: left 51px/1206, right
-   1132px/1206, top 224px/1171, bottom 999px/1171) so the dynamic overlay
-   below lines up exactly with the printed grid lines. */
-const GRID_CARD_SRC = '/assets/lessons/topic02/scene-coordinates/TOPIC02-COORDINATES-GRID-CARD.webp';
-const GRID_INSET = { left: '4.2%', right: '6.1%', top: '19.1%', bottom: '14.7%' } as const;
-
 function GridSquare({
   interactive,
   onCellClick,
@@ -796,30 +795,40 @@ function GridSquare({
   guess?: GridTarget & { correct: boolean };
 }) {
   return (
-    <div className="w-full max-w-[360px] mx-auto">
+    <div className="w-full max-w-[340px] mx-auto">
       <div className="flex items-center justify-between px-1 mb-1.5 text-[10px] font-display font-semibold tracking-wide text-fg-dim">
         <span>צפון (Northing) {GRID_NORTH_KM}–{Number(GRID_NORTH_KM) + 1}</span>
       </div>
-      <div className="relative" style={{ aspectRatio: '1206 / 1171' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
-        <img
-          src={GRID_CARD_SRC}
-          alt=""
-          aria-hidden
-          draggable={false}
-          className="absolute inset-0 size-full pointer-events-none select-none"
-        />
-        {/* dynamic layer only (highlights + markers) — the frame/ticks/digits
-            live in the art. Positioned in physical (non-logical) px/%
-            because it must line up exactly with the printed grid inside the
-            art — a diagram-alignment concern, not RTL text flow. */}
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute" style={GRID_INSET} aria-hidden>
+      <div className="relative aspect-square rounded-[3px] border border-border-strong overflow-hidden bg-bg-elevated">
+        {/* viewBox extends left+bottom of the 0..100 grid so axis tick digits
+            sit in their own margin, instead of both axes' "0" tick colliding
+            in the bottom-left corner cell. */}
+        <svg viewBox="-14 0 114 114" className="absolute inset-0 w-full h-full" preserveAspectRatio="none" aria-hidden>
+          <rect x="0" y="0" width="100" height="100" className="fill-bg-elevated stroke-border-strong" strokeWidth="0.6" />
+          {Array.from({ length: 9 }).map((_, i) => (
+            <g key={i}>
+              <line x1={(i + 1) * 10} y1="0" x2={(i + 1) * 10} y2="100" className="stroke-border/30" strokeWidth="0.3" />
+              <line x1="0" y1={(i + 1) * 10} x2="100" y2={(i + 1) * 10} className="stroke-border/30" strokeWidth="0.3" />
+            </g>
+          ))}
           {highlightCol !== undefined && (
             <rect x={highlightCol * 10} y="0" width="10" height="100" className="fill-accent/12" />
           )}
           {highlightRow !== undefined && (
             <rect x="0" y={90 - highlightRow * 10} width="100" height="10" className="fill-accent-cool/12" />
           )}
+          {/* easting ticks, below the square, ascending left→right (never mirrored) */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <text key={'e' + i} x={i * 10 + 5} y="107" textAnchor="middle" fontSize="4" className="fill-fg-dim font-display font-semibold">
+              {i}
+            </text>
+          ))}
+          {/* northing ticks, left of the square, ascending bottom→top */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <text key={'n' + i} x="-7" y={95 - i * 10 + 1.2} textAnchor="middle" fontSize="4" className="fill-fg-dim font-display font-semibold">
+              {i}
+            </text>
+          ))}
           {target && (
             <g transform={`translate(${target.eDigit * 10 + 5} ${95 - target.nDigit * 10})`}>
               <circle r="3.2" fill="none" className="stroke-status-ok" strokeWidth="0.6" strokeDasharray="1.2 1" />
@@ -833,12 +842,13 @@ function GridSquare({
           )}
         </svg>
         {/* 10×10 clickable/focusable overlay — cell (col,row) IS (eDigit,nDigit).
-            dir="ltr" pins CSS Grid's column order to true left→right so cell
-            (eDigit=0) sits under the art's own printed "0" on the visual
-            LEFT, matching the baked easting ticks — under the page's dir=rtl
-            a plain grid-cols-10 reverses column order (right→left), which
-            would silently register clicks against the mirrored digit. */}
-        <div dir="ltr" className="absolute grid grid-cols-10 grid-rows-10" style={GRID_INSET}>
+            Positioned in physical (non-logical) px because it must line up
+            exactly with the 0..100 grid square inside the -14..100 viewBox —
+            a diagram-alignment concern, not RTL text flow. */}
+        <div
+          className="absolute grid grid-cols-10 grid-rows-10"
+          style={{ left: `${(14 / 114) * 100}%`, right: 0, top: 0, bottom: `${(14 / 114) * 100}%` }}
+        >
           {Array.from({ length: 10 }).flatMap((_, row) =>
             Array.from({ length: 10 }).map((_, col) => {
               const eDigit = col;
@@ -891,59 +901,51 @@ const WALKTHROUGH_STEPS: { title: string; body: string; highlightCol?: number; h
   },
 ];
 
-function useWalkthrough() {
+function DigitWalkthrough() {
   const [step, setStep] = useState(0);
   const s = WALKTHROUGH_STEPS[step];
   const last = step === WALKTHROUGH_STEPS.length - 1;
-
-  const grid = (
-    <GridSquare
-      interactive={false}
-      highlightCol={s.highlightCol}
-      highlightRow={s.highlightRow}
-      target={s.showTarget ? DEMO_TARGET : undefined}
-    />
-  );
-
-  const text = (
-    <>
-      <div className="outline-numeral text-[4.5rem] sm:text-[5.5rem] leading-none opacity-80 mb-1">
-        {String(step + 1).padStart(2, '0')}
-      </div>
-      <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">שלב הדגמה — כך עושים את זה</div>
-      <AnimatePresence mode="wait">
-        <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
-          <h4 className="font-display font-bold text-lg leading-tight mb-2">{s.title}</h4>
-          <p className="text-sm text-fg-muted leading-relaxed mb-4">{s.body}</p>
-        </motion.div>
-      </AnimatePresence>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={step === 0}
-          onClick={() => setStep((v) => Math.max(0, v - 1))}
-          className="btn-secondary text-sm px-4 py-2 disabled:opacity-40"
-        >
-          הקודם
-        </button>
-        {!last && (
+  return (
+    <div className="grid md:grid-cols-[1fr_1.1fr] gap-6 items-center">
+      <div>
+        <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">שלב הדגמה — כך עושים את זה</div>
+        <AnimatePresence mode="wait">
+          <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
+            <h4 className="font-display font-bold text-lg leading-tight mb-2">{s.title}</h4>
+            <p className="text-sm text-fg-muted leading-relaxed mb-4">{s.body}</p>
+          </motion.div>
+        </AnimatePresence>
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setStep((v) => Math.min(WALKTHROUGH_STEPS.length - 1, v + 1))}
-            className="btn-primary text-sm px-4 py-2 inline-flex items-center gap-1.5"
+            disabled={step === 0}
+            onClick={() => setStep((v) => Math.max(0, v - 1))}
+            className="btn-secondary text-sm px-4 py-2 disabled:opacity-40"
           >
-            הבא
-            <Icon name="arrow-left" size={16} />
+            הקודם
           </button>
-        )}
+          {!last && (
+            <button
+              type="button"
+              onClick={() => setStep((v) => Math.min(WALKTHROUGH_STEPS.length - 1, v + 1))}
+              className="btn-primary text-sm px-4 py-2"
+            >
+              הבא
+            </button>
+          )}
+        </div>
       </div>
-    </>
+      <GridSquare
+        interactive={false}
+        highlightCol={s.highlightCol}
+        highlightRow={s.highlightRow}
+        target={s.showTarget ? DEMO_TARGET : undefined}
+      />
+    </div>
   );
-
-  return { grid, text };
 }
 
-function usePractice() {
+function DigitPractice() {
   const [index, setIndex] = useState(0);
   const [attempt, setAttempt] = useState<(GridTarget & { correct: boolean }) | null>(null);
   const [solvedCount, setSolvedCount] = useState(0);
@@ -952,7 +954,7 @@ function usePractice() {
   const done = index >= PRACTICE_TARGETS.length;
 
   const handleClick = (eDigit: number, nDigit: number) => {
-    const correct = eDigit === target?.eDigit && nDigit === target?.nDigit;
+    const correct = eDigit === target.eDigit && nDigit === target.nDigit;
     setAttempt({ eDigit, nDigit, correct });
     if (correct) setSolvedCount((c) => c + 1);
   };
@@ -969,146 +971,114 @@ function usePractice() {
   };
 
   if (done) {
-    return {
-      done: true as const,
-      grid: null,
-      text: (
-        <div className="text-center py-8">
-          <div className="text-4xl font-display font-bold text-accent tabular-nums mb-2">
-            {solvedCount}/{PRACTICE_TARGETS.length}
-          </div>
-          <p className="text-fg-muted text-sm mb-4">דקירות נכונות מתוך {PRACTICE_TARGETS.length} תרגילים.</p>
-          <button type="button" onClick={reset} className="btn-secondary text-sm px-4 py-2">
-            תרגלו שוב
-          </button>
+    return (
+      <div className="text-center py-8">
+        <div className="text-4xl font-display font-bold text-accent tabular-nums mb-2">
+          {solvedCount}/{PRACTICE_TARGETS.length}
         </div>
-      ),
-    };
+        <p className="text-fg-muted text-sm mb-4">דקירות נכונות מתוך {PRACTICE_TARGETS.length} תרגילים.</p>
+        <button type="button" onClick={reset} className="btn-secondary text-sm px-4 py-2">
+          תרגלו שוב
+        </button>
+      </div>
+    );
   }
 
-  const grid = (
-    <GridSquare
-      interactive={!attempt}
-      onCellClick={handleClick}
-      target={attempt && !attempt.correct ? target : undefined}
-      guess={attempt ?? undefined}
-    />
+  return (
+    <div className="grid md:grid-cols-[1fr_1.1fr] gap-6 items-center">
+      <div>
+        <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
+          תרגול עצמאי — תרגיל {index + 1} מתוך {PRACTICE_TARGETS.length}
+        </div>
+        <p className="text-sm text-fg leading-relaxed mb-4">
+          דקרו על המפה את הנקודה בעלת הנ&quot;צ: <strong className="text-fg tabular-nums">{refOf(target)}</strong>
+        </p>
+        <AnimatePresence mode="wait">
+          {attempt && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                'rounded-[3px] border p-3 text-sm mb-4',
+                attempt.correct
+                  ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
+                  : 'border-status-danger/40 bg-status-danger/10 text-status-danger',
+              )}
+            >
+              {attempt.correct
+                ? `בדיוק! דקרתם ${refOf(attempt)} — תואם.`
+                : `דקרתם ${refOf(attempt)}, אבל הנ"צ המבוקש הוא ${refOf(target)} (מסומן בעיגול הירוק המקווקו). נסו שוב.`}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="flex gap-2">
+          {attempt && !attempt.correct && (
+            <button type="button" onClick={() => setAttempt(null)} className="btn-secondary text-sm px-4 py-2">
+              נסו שוב
+            </button>
+          )}
+          {attempt?.correct && (
+            <button type="button" onClick={next} className="btn-primary text-sm px-4 py-2">
+              התרגיל הבא
+            </button>
+          )}
+        </div>
+      </div>
+      <GridSquare
+        interactive={!attempt}
+        onCellClick={handleClick}
+        target={attempt && !attempt.correct ? target : undefined}
+        guess={attempt ?? undefined}
+      />
+    </div>
   );
-
-  const text = (
-    <>
-      <div className="outline-numeral text-[4.5rem] sm:text-[5.5rem] leading-none opacity-80 mb-1">
-        {String(index + 1).padStart(2, '0')}
-      </div>
-      <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
-        תרגול עצמאי — תרגיל {index + 1} מתוך {PRACTICE_TARGETS.length}
-      </div>
-      <p className="text-sm text-fg leading-relaxed mb-4">
-        דקרו על המפה את הנקודה בעלת הנ&quot;צ: <strong className="text-fg tabular-nums">{refOf(target)}</strong>
-      </p>
-      <AnimatePresence mode="wait">
-        {attempt && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-              'rounded-[3px] border p-3 text-sm mb-4',
-              attempt.correct
-                ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
-                : 'border-status-danger/40 bg-status-danger/10 text-status-danger',
-            )}
-          >
-            {attempt.correct
-              ? `בדיוק! דקרתם ${refOf(attempt)} — תואם.`
-              : `דקרתם ${refOf(attempt)}, אבל הנ"צ המבוקש הוא ${refOf(target)} (מסומן בעיגול הירוק המקווקו). נסו שוב.`}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <div className="flex gap-2">
-        {attempt && !attempt.correct && (
-          <button type="button" onClick={() => setAttempt(null)} className="btn-secondary text-sm px-4 py-2">
-            נסו שוב
-          </button>
-        )}
-        {attempt?.correct && (
-          <button type="button" onClick={next} className="btn-primary text-sm px-4 py-2 inline-flex items-center gap-1.5">
-            התרגיל הבא
-            <Icon name="arrow-left" size={16} />
-          </button>
-        )}
-      </div>
-    </>
-  );
-
-  return { done: false as const, grid, text };
 }
 
 function GridReferenceExercise() {
   const [mode, setMode] = useState<'demo' | 'practice'>('demo');
-  const demo = useWalkthrough();
-  const practice = usePractice();
-  const active = mode === 'demo' ? demo : practice;
-  const collapsed = mode === 'practice' && practice.done;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="surface-elevated relative overflow-hidden p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
+      className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 topo-bg opacity-10" />
-      <div className="relative grid md:grid-cols-[1fr_1.15fr] gap-8 md:gap-10 items-start">
-        {/* right column (inline-start) — static header + per-mode text, DOM-first per this codebase's RTL convention */}
+      <div className="flex items-center gap-3 mb-6">
+        <Icon name="crosshair" size={24} className="text-accent shrink-0" />
         <div>
-          <div className="flex items-start justify-between gap-3 mb-1">
-            <div className="flex items-center gap-3">
-              <Icon name="crosshair" size={24} className="text-accent shrink-0" />
-              <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight text-balance">תרגיל: דקירת נ&quot;צ</h3>
-            </div>
-            <Icon name="compass" size={26} className="text-fg-dim/50 shrink-0" aria-hidden />
-          </div>
-          <p className="text-sm text-fg-muted mb-6 max-w-md">קודם הדגמה מונחית, ואז מתרגלים לבד — לוחצים על המשבצת הנכונה ומקבלים בדיקה מיידית.</p>
-
-          <div className="flex gap-2 mb-6">
-            <button
-              type="button"
-              onClick={() => setMode('demo')}
-              className={cn(
-                'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
-                mode === 'demo' ? 'border-fg bg-fg text-bg-elevated' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
-              )}
-            >
-              1. הדגמה
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('practice')}
-              className={cn(
-                'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
-                mode === 'practice' ? 'border-fg bg-fg text-bg-elevated' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
-              )}
-            >
-              2. תרגול עצמאי
-            </button>
-          </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div key={mode + (collapsed ? '-done' : '')} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              {active.text}
-            </motion.div>
-          </AnimatePresence>
+          <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight text-balance">תרגיל: דקירת נ&quot;צ</h3>
+          <p className="text-sm text-fg-muted mt-1">קודם הדגמה מונחית, ואז מתרגלים לבד — לוחצים על המשבצת הנכונה ומקבלים בדיקה מיידית.</p>
         </div>
-
-        {/* left column (inline-end) — the grid card; empty once practice is done */}
-        {!collapsed && (
-          <AnimatePresence mode="wait">
-            <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-              {active.grid}
-            </motion.div>
-          </AnimatePresence>
-        )}
       </div>
+
+      <div className="flex gap-2 mb-6">
+        <button
+          type="button"
+          onClick={() => setMode('demo')}
+          className={cn(
+            'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
+            mode === 'demo' ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
+          )}
+        >
+          1. הדגמה
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('practice')}
+          className={cn(
+            'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
+            mode === 'practice' ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
+          )}
+        >
+          2. תרגול עצמאי
+        </button>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          {mode === 'demo' ? <DigitWalkthrough /> : <DigitPractice />}
+        </motion.div>
+      </AnimatePresence>
     </motion.div>
   );
 }
