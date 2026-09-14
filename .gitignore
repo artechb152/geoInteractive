@@ -51,3 +51,6 @@ qa-*.png
 
 # git worktree checkouts (other branches' working dirs) — never commit these
 .worktrees/
+
+# Machine-local Blender MCP runtime
+.blender-mcp-runtime/

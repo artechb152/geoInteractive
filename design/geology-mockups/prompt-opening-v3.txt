@@ -1,0 +1,26 @@
+Use case: ui-mockup. Create ONE high fidelity refined Hebrew RTL educational website component mockup, landscape 1440x800. This is a crop of ONLY TWO introductory information cards within the SAME existing geography lesson page, NOT a landing page. No page heading, navigation, logos, sidebar, footer, CTA, screen numbers or browser frame.
+
+User revision: previous design had irrelevant 3D terrain scenes and unnecessary icons. REMOVE ALL illustrations, photos, rocks, landscapes, diagrams, maps, 3D, isometric graphics, icons, pictograms and decorative badges. Deliver sophisticated TYPOGRAPHY-LED design with restrained contrast, precise alignment, generous readable spacing and understated editorial structure. It must feel like a mature modern learning interface, interesting without imagery. Do not fill empty space with decoration.
+
+Strict palette: warm cream page #F3E9DC, white/ivory #FDFBF3, olive ink #38432E, secondary olive #4A5240, fine tan #DCCDB2, restrained orange #D97E2B. No blue/purple or neon. Very faint fine contour texture only outside cards, almost invisible.
+
+Layout: two compact wide cards SIDE BY SIDE, right-to-left reading order, approx 570px width each and 330-370px height with 24px gutter. Visually cropped around this paired component with modest 60px exterior margin. Cards subtle 14px radius, thin tan outline, barely perceptible shadow, flat off-white surfaces. Right card has a thin orange accent at inline-start edge, left card has a subtle pale olive tint in its bottom text area. Keep both equal height and align text baselines. Avoid headings over 28px. Font Rubik-like Hebrew headings, Heebo-like 19px body, high-quality professional typesetting, correct Hebrew letter order and RTL. No fake tiny text. Use ONLY exact copy below, no added words.
+
+RIGHT CARD:
+Small muted eyebrow 'למה זה קריטי?'
+Prominent olive heading 'סוג הסלע משפיע על המשימה'
+Readable body with natural line breaks 'המסלע משפיע על עבירות הקרקע, על אפשרויות החפירה ועל יציבות העמדות.'
+Thin horizontal divider.
+Small muted label 'השאלה בשטח'
+A slightly stronger olive sentence 'האם אפשר לנוע כאן, לחפור ולהתבסס?'
+Use a very restrained orange underline under just 'משפיע על המשימה' in heading, not all text orange.
+
+LEFT CARD:
+Small muted eyebrow 'מה זה משנה בפועל?'
+Prominent olive heading on up to two lines 'מניחוש להחלטה מבצעית חכמה'
+Readable body 'הבנת המסלע עוזרת לבחור היכן לנוע, היכן לחפור והיכן להתבסס — בהתאם לתנאי השטח.'
+Thin horizontal divider.
+Small muted label 'המשמעות לתכנון'
+A slightly stronger olive sentence 'להתאים את התוכנית לקרקע שעליה פועלים.'
+
+The two bottom takeaway areas feel like integral parts of cards, not nested boxes. No icons whatsoever, no numbered labels. Elegant airy compact educational component, solid alignment, no illustration or hero imagery.

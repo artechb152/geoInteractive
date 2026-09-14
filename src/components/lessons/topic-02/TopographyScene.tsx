@@ -101,7 +101,7 @@ export function TopographyScene() {
                 <div className="font-display font-bold text-xl text-brand-dark leading-tight">{meta.label}</div>
               </div>
 
-              <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 flex items-center justify-center h-40 sm:h-48">
+              <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 flex items-center justify-center">
                 {meta.id === '3d' && <View3D />}
                 {meta.id === 'photo' && <ViewPhoto />}
                 {meta.id === 'topo' && <ViewTopo />}
@@ -238,7 +238,7 @@ function View3D() {
       src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-3D.png"
       alt="איור איזומטרי: מודל תלת-ממדי של הר, מציג את פני השטח כמו דגם מוקטן"
       aspect="4/3"
-      className="w-full h-full object-cover rounded-[3px]"
+      className="w-full max-w-2xl rounded-[3px]"
       prompt="Isometric papercut illustration of a 3D terrain model of a mountain, layered-paper shading, warm cream background, no text."
     />
   );
@@ -250,7 +250,7 @@ function ViewPhoto() {
       src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-PHOTO.png"
       alt="תצלום אווירי של שטח, מבט ישר מלמעלה"
       aspect="4/3"
-      className="w-full h-full object-cover rounded-[3px]"
+      className="w-full max-w-2xl rounded-[3px]"
       prompt="Aerial photograph style illustration of terrain viewed from directly above, warm cream background, no text."
     />
   );
@@ -262,7 +262,7 @@ function ViewTopo() {
       src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-MAP.png"
       alt="מפה טופוגרפית עם קווי גובה המתארים שטח תלת-ממדי על גבי דף שטוח"
       aspect="4/3"
-      className="w-full h-full object-cover rounded-[3px]"
+      className="w-full max-w-2xl rounded-[3px]"
       prompt="Topographic map illustration with contour lines, papercut style, warm cream background, no text."
     />
   );

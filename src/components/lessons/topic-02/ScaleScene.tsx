@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 type Scale = {
 id: '10k' | '50k' | '250k';
@@ -12,6 +13,7 @@ size: 'גדול' | 'בינוני' | 'קטן';
 use: string;
 who: string;
 detail: string[];
+mapAsset: { assetId: string; src: string; alt: string };
 };
 const SCALES: Scale[] = [
  {
@@ -22,6 +24,11 @@ size: 'גדול',
 who: 'מפת עיר / ניווט טקטי',
 use: 'תכנון פשיטה או מעצר ברמת הלוחם הבודד והצוות.',
 detail: ['"זום חזק" פנימה', 'רואים בניינים, גדרות ועצים בודדים', 'כל קו גובה = 5 מטרים'],
+mapAsset: {
+assetId: 'TOPIC02-SCALE-10K',
+src: '/assets/lessons/topic02/scene-scale/TOPIC02-SCALE-10K.webp',
+alt: 'צילום אוויר בקנה מידה 1:10,000 של יישוב בודד עם מבנים, כבישים ונחל',
+},
  },
  {
 id: '50k',
@@ -31,6 +38,11 @@ size: 'בינוני',
 who: 'ניווט רגלי - הסטנדרט הצה"לי',
 use: 'השפה המשותפת של הצבא. תכנון תנועת גדוד וחטיבה.',
 detail: ['איזון בין פירוט לשטח', 'רואים יישובים, ערוצי נחלים ודרכי עפר', 'כל קו גובה = 10 מטרים'],
+mapAsset: {
+assetId: 'TOPIC02-SCALE-50K',
+src: '/assets/lessons/topic02/scene-scale/TOPIC02-SCALE-50K.webp',
+alt: 'צילום אוויר בקנה מידה 1:50,000 של כמה יישובים, נחל וכבישים אזוריים',
+},
  },
  {
 id: '250k',
@@ -40,8 +52,16 @@ size: 'קטן',
 who: 'תכנון אסטרטגי / טיסות',
 use: 'ראיית"התמונה הגדולה". תנועת אוגדות ומטוסים במרחב.',
 detail: ['"זום החוצה" למבט על', 'רואים ערים ככתם ורק כבישים ארציים', 'קווי גובה כלליים (50-100 מ\')'],
+mapAsset: {
+assetId: 'TOPIC02-SCALE-250K',
+src: '/assets/lessons/topic02/scene-scale/TOPIC02-SCALE-250K.webp',
+alt: 'צילום אוויר בקנה מידה 1:250,000 של אזור נרחב הכולל ערים והרים',
+},
  },
 ];
+function IconPlaceholder({ className }: { className?: string }) {
+return <span aria-hidden className={cn('inline-block shrink-0 rounded-[3px] border border-dashed', className)} />;
+}
 export function ScaleScene() {
 const [scale, setScale] = useState<Scale>(SCALES[1]);
 const [mapDistance, setMapDistance] = useState(4); // cm
@@ -87,57 +107,78 @@ title={
  </div>
  </div>
 
- {/* Scale Selection — OnboardingScene step-card pattern */}
+ {/* Scale Selection — icon-topped segmented buttons (reference: lesson2part4image1.png) */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
  {SCALES.map((s) => {
 const active = s.id === scale.id;
 return (
- <button
+ <motion.button
 key={s.id}
 onClick={() => setScale(s)}
+whileTap={{ scale: 0.97 }}
+transition={{ duration: 0.15 }}
 className={cn(
- 'surface p-4 text-right transition-all relative overflow-hidden flex items-center gap-3 rounded-[3px]',
-active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
+ 'flex flex-col items-center text-center gap-2 px-4 py-5 rounded-[4px] transition-colors',
+active ? 'bg-cta-ember text-bg-elevated shadow-cta-ember' : 'bg-bg-elevated border border-border text-fg hover:border-accent/50'
  )}
  >
- {active && (
- <motion.span
-layoutId="t2-scale-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ <IconPlaceholder
+className={cn('size-10 transition-colors', active ? 'border-bg-elevated/40 bg-bg-elevated/15' : 'border-border bg-bg-accent')}
  />
- )}
- <span
-className={cn(
- 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all',
-active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
- )}
- >
- <span className="font-display font-bold text-sm tabular-nums">{s.size === 'גדול' ? 'L' : s.size === 'בינוני' ? 'M' : 'S'}</span>
- </span>
- <div className="flex-1 min-w-0 text-right">
- <div className="font-display font-bold text-base text-fg leading-tight">
- {s.label}
- </div>
- <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">
+ <span className="font-display font-bold text-lg tabular-nums">{s.label}</span>
+ <span className={cn('text-xs font-display font-medium tracking-wide', active ? 'text-bg-elevated/85' : 'text-fg-dim')}>
  קנה {s.size} · {s.who}
- </div>
- </div>
- </button>
+ </span>
+ </motion.button>
  );
  })}
  </div>
 
- <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch">
- {/* Map Preview Area */}
- <div className="surface-elevated bg-bg relative overflow-hidden border border-border/50 rounded-[3px]">
+ {/* Map + sidebar — one unified panel, map at inline-end, info sidebar at inline-start */}
+ <div className="surface-elevated overflow-hidden">
+ <div className="grid lg:grid-cols-[1fr_1.9fr] items-stretch">
+ {/* Map Preview Area — first in DOM (mobile: shown above sidebar), placed at inline-end via order on desktop */}
+ <div className="bg-bg relative overflow-hidden min-h-[320px] lg:order-2">
  <ScalePreview scale={scale} />
  </div>
 
  {/* Sidebar Controls & Info */}
- <div className="space-y-4">
- <div className="surface-elevated p-5 rounded-[3px]">
- <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+ <div className="p-5 sm:p-6 flex flex-col lg:order-1 lg:border-e lg:border-border-subtle">
+ <motion.div
+key={scale.id}
+initial={{ opacity: 0, x: 10 }}
+animate={{ opacity: 1, x: 0 }}
+transition={{ duration: 0.25, ease: 'easeOut' }}
+ >
+ <div className="flex items-center gap-2 mb-2.5">
+ <IconPlaceholder className="size-6 border-border bg-bg-accent" />
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
+ רזולוציה קרטוגרפית
+ </div>
+ </div>
+ <ul className="space-y-2 text-sm mb-4">
+ {scale.detail.map((d) => (
+ <li key={d} className="flex gap-2 items-start">
+ <Icon name="check" size={14} className="text-accent mt-0.5 shrink-0" strokeWidth={3} />
+ <span className="leading-tight">{d}</span>
+ </li>
+ ))}
+ </ul>
+ <div className="pt-3 border-t border-border-subtle">
+ <div className="flex items-center gap-2 mb-1">
+ <IconPlaceholder className="size-5 border-border bg-bg-accent" />
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">משימה אופיינית</div>
+ </div>
+ <div className="text-sm text-fg font-medium leading-relaxed">{scale.use}</div>
+ </div>
+ </motion.div>
+
+ <div className="mt-5 pt-5 border-t border-border-subtle">
+ <div className="flex items-center gap-2 mb-1">
+ <IconPlaceholder className="size-6 border-border bg-bg-accent" />
+ <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  מחשבון"מה המרחק?"
+ </div>
  </div>
  <div className="text-xs text-fg-muted mb-3">
  כמה נלך ברגל? מדדו בס"מ וקבלו את המרחק האמיתי
@@ -185,33 +226,7 @@ aria-hidden
  * טיפ: במפת 1:50,000, פשוט מחלקים את הס"מ ב-2 כדי לקבל ק"מ.
  </div>
  </div>
-
- <AnimatePresence mode="wait">
- <motion.div
-key={scale.id}
-initial={{ opacity: 0, x: 20 }}
-animate={{ opacity: 1, x: 0 }}
-exit={{ opacity: 0, x: -20 }}
-transition={{ duration: 0.2 }}
-className="surface p-5 border-r-2 border-accent rounded-[3px]"
- >
- <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
- רזולוציה קרטוגרפית
  </div>
- <ul className="space-y-2 text-sm mb-4">
- {scale.detail.map((d) => (
- <li key={d} className="flex gap-2 items-start">
- <Icon name="check" size={14} className="text-accent mt-0.5 shrink-0" strokeWidth={3} />
- <span className="leading-tight">{d}</span>
- </li>
- ))}
- </ul>
- <div className="pt-3 border-t border-border-subtle">
- <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">משימה אופיינית</div>
- <div className="text-sm text-fg font-medium leading-relaxed">{scale.use}</div>
- </div>
- </motion.div>
- </AnimatePresence>
  </div>
  </div>
 
@@ -220,93 +235,30 @@ className="surface p-5 border-r-2 border-accent rounded-[3px]"
  );
 }
 function ScalePreview({ scale }: { scale: Scale }) {
-const detailLevel = scale.id === '10k' ? 'high' : scale.id === '50k' ? 'medium' : 'low';
 return (
  <div className="relative w-full h-full min-h-[320px] bg-bg">
- <svg viewBox="0 0 100 75" className="w-full h-full select-none" preserveAspectRatio="xMidYMid meet">
- <rect x="0" y="0" width="100" height="75" className="fill-bg" />
-
- {/* Dynamic Grid based on scale */}
- {Array.from({ length: detailLevel === 'low' ? 6 : detailLevel === 'medium' ? 11 : 21 }).map((_, i) => {
-const step = detailLevel === 'low' ? 20 : detailLevel === 'medium' ? 10 : 5;
-return (
- <g key={i}>
- <line x1={i * step} y1="0" x2={i * step} y2="75" className="stroke-border-subtle" strokeWidth="0.05" />
- <line x1="0" y1={i * step} x2="100" y2={i * step} className="stroke-border-subtle" strokeWidth="0.05" />
- </g>
- );
- })}
-
- {/* Contours - Representing a hill */}
- {(detailLevel === 'high'
- ? [{ rx: 40, ry: 28 }, { rx: 32, ry: 22 }, { rx: 26, ry: 18 }, { rx: 20, ry: 14 }, { rx: 14, ry: 10 }, { rx: 8, ry: 6 }]
- : detailLevel === 'medium'
- ? [{ rx: 35, ry: 24 }, { rx: 25, ry: 17 }, { rx: 15, ry: 11 }, { rx: 7, ry: 5 }]
- : [{ rx: 30, ry: 22 }, { rx: 18, ry: 13 }]
- ).map((c, i) => (
- <ellipse key={i} cx="50" cy="38" rx={c.rx} ry={c.ry} fill="none" className="stroke-accent/40" strokeWidth={detailLevel === 'high' ? 0.2 : 0.4} />
- ))}
-
- {/* High Scale Details: Small houses, individual objects */}
- {detailLevel === 'high' && [
- [25, 55], [27, 56], [29, 54], [31, 56], [33, 55], [35, 57], [62, 50], [64, 52], [66, 51], [68, 50],
- ].map(([x, y], i) => (
- <rect key={i} x={x} y={y} width="1" height="1" className="fill-fg-muted" rx="0.2" />
- ))}
-
- {/* Medium Scale: Built-up area polygons */}
- {detailLevel === 'medium' && [
- [25, 55, 6, 4], [62, 50, 8, 5],
- ].map(([x, y, w, h], i) => (
- <rect key={i} x={x} y={y} width={w} height={h} className="fill-fg-muted/40 stroke-fg-muted/50" strokeWidth="0.1" />
- ))}
-
- {/* Low Scale: Large labeled regions */}
- {detailLevel === 'low' && [
- { x: 20, y: 50, w: 14, h: 10, label: 'גזרת תכנון א\'' },
- { x: 60, y: 45, w: 18, h: 12, label: 'גזרת תכנון ב\'' },
- ].map((p, i) => (
- <g key={i}>
- <rect x={p.x} y={p.y} width={p.w} height={p.h} className="fill-fg-muted/20 stroke-fg-muted/40" strokeWidth="0.2" />
- <text x={p.x + p.w / 2} y={p.y + p.h / 2 + 0.5} textAnchor="middle" className="fill-fg-dim text-[2.5px] font-display font-bold font-bold tracking-tighter"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >{p.label}</text>
- </g>
- ))}
-
- {/* Main Road */}
- <path d={detailLevel === 'low' ?"M0 60 L 100 50" :"M0 60 Q 30 58 50 56 T 100 50"} fill="none" className="stroke-accent/60" strokeWidth={detailLevel === 'high' ? 0.4 : 0.8} 
+ {SCALES.map((s) => (
+ <motion.div
+key={s.id}
+initial={false}
+animate={{ opacity: s.id === scale.id ? 1 : 0 }}
+transition={{ duration: 0.35, ease: 'easeInOut' }}
+className="absolute inset-0"
+style={{ zIndex: s.id === scale.id ? 1 : 0 }}
+ >
+ <IsometricAsset
+assetId={s.mapAsset.assetId}
+src={s.mapAsset.src}
+alt={s.mapAsset.alt}
+aspect="4/3"
+fit="cover"
+eager
+className="absolute inset-0 size-full [aspect-ratio:auto]"
  />
-
- {/* Scale Bar */}
- <g transform="translate(68, 68)">
- <rect x="0" y="0" width="22" height="1.5" className="fill-fg/20" />
- <rect x="0" y="0" width="11" height="1.5" className="fill-accent" />
- <text x="0" y="-1.5" className="fill-fg-dim text-[2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >0</text>
- <text x="22" y="-1.5" textAnchor="end" className="fill-fg-dim text-[2px] font-display font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
- {scale.id === '10k' ? '500 מ׳' : scale.id === '50k' ? '2.5 ק״מ' : '12.5 ק״מ'}
- </text>
- </g>
- </svg>
-
- <div className="absolute top-4 start-4 chip border-accent/20 bg-bg/80 backdrop-blur-md text-[10px] text-accent font-bold font-display tracking-wide px-2 py-1 rounded">
- {scale.label}
+ </motion.div>
+ ))}
  </div>
- </div>
- );
+);
 }
 function ProjectionCallout() {
 return (

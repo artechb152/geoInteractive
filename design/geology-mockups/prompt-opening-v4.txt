@@ -1,0 +1,17 @@
+Use case: ui-mockup. Generate ONE impressive professionally art-directed Hebrew RTL learning interface component mockup, landscape 1440x850. Only a PAIR OF CONTENT CARDS sitting in the middle of one existing lesson page. No header, sidebar, logo, hero, page title, page numbering, footer, navigation or CTA. User says previous plain text white cards were TOO MINIMALIST. They also rejected 3D terrain pictures and unnecessary icons. Solve this with a RICH TWO-DIMENSIONAL GRAPHIC COMPOSITION: high contrast, layered flat editorial surfaces, meaningful relationships between words, refined contour/strata linework embedded subtly, precise orange accents. Not just plain paragraphs in two empty rectangles. Absolutely NO icons, pictograms, photos, mountains, 3D, perspective, diorama, illustrations of vehicles or tools. Do not reintroduce big landing-page imagery.
+
+Palette exact warm cream #F3E9DC, ivory #FDFBF3, dark pine #2E3826, olive #38432E, tan #DCCDB2, orange #D97E2B. Professional contemporary scientific editorial UI. Hebrew Rubik bold headings and Heebo body, correct RTL text and no spelling errors. Two equal-width substantial cards about 560px wide, ~460px height, modest 18px radius, 24px gap, centered compact composition with 60px outside margin.
+
+RIGHT CARD: deep pine background, ivory readable text, subtle thin tan geological strata curves confined to bottom third with low contrast, flat graphic linework only. Small orange eyebrow 'למה זה קריטי?'. Large but component-sized title 'סוג הסלע משנה' next line 'את תנאי המשימה' with second line warm orange. Underneath short text 'מה שמתחת לרגליים משפיע על מה שאפשר לעשות מעל הקרקע.' Then a clear visual set of THREE horizontal editorial rows with subtle separators. Each row pairs a muted property at right with a strong ivory consequence at left, connected with a tiny thin line, not icons or badges:
+'קשיות הסלע' — 'אפשרויות חפירה'
+'סדקים ובליה' — 'יציבות'
+'סלע וקרקע' — 'עבירות'
+This is the main meaningful graphic inside this card. Let typography and alignment create interest. Tiny orange line termini allowed but no decorative dot clusters.
+
+LEFT CARD: bright ivory background with tasteful overlapping FLAT cream inset bands, thin tan outline and restrained shadow. Small olive eyebrow 'מה זה משנה בפועל?'. Bold olive title 'מניחוש' and next line 'להחלטה מבצעית חכמה', use orange rectangular highlight behind only word 'מניחוש' with dark olive lettering. Short body 'הבנת המסלע עוזרת להתאים את התכנון לתנאי השטח.' Below a compact distinctive RTL stepped text flow made of THREE flat full-width strips, slightly inset progressively by 12px toward the left, connected by thin vertical orange rule along right. Each strip contains a bold short label and short explanation:
+'מזהים' with 'ממה הקרקע בנויה'
+'מעריכים' with 'מה השטח מאפשר'
+'מתכננים' with 'היכן לנוע, לחפור ולהתבסס'
+Use subtle olive tint on the last strip and stronger olive text. No numbered circles and no icons.
+
+Both cards feel like a coherent designed duo, rich modern educational components with actual semantic visual structure, rather than a minimalist wireframe. High finish, clean linework, polished flat surfaces, impressive typography and restrained ornamental strata pattern. Outside cards warm cream with faint contour texture, no unrelated objects. Keep readable body text reasonably large and ample internal padding. Render only the specified Hebrew text, no extra invented labels or English.

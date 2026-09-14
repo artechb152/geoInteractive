@@ -59,7 +59,15 @@ export function IsometricAsset({
     // תמונה יכולה להיטען (מהמטמון או מכיוון שהיא כבר בתצוגה) לפני ש-React
     // מספיק לחבר את מאזין onLoad — אירוע ה-load מוחמץ ו-status נתקע ב-pending.
     setStatus(imgRef.current?.complete && imgRef.current.naturalWidth > 0 ? 'ready' : 'pending');
-  }, [src]);
+
+    // דפדפנים דוחים את הפענוח (decode) בפועל של תמונה עד לרגע שבו היא באמת
+    // מצוירת — גם אם eager, ואפילו עם decoding="async" — ולכן תמונה שמתחילה
+    // ב-opacity:0 (למשל בקרוסלה) גורמת לפריים "תקוע" בפעם הראשונה שהיא הופכת
+    // גלויה. decode() יזום מכריח פענוח א-סינכרוני מראש, מחוץ לנתיב הציור.
+    if (eager) {
+      imgRef.current?.decode?.().catch(() => {});
+    }
+  }, [src, eager]);
 
   const resolvedSrc = src.startsWith('/')
     ? `${process.env.NEXT_PUBLIC_BASE_PATH || ''}${src}`

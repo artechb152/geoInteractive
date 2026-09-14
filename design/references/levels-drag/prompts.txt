@@ -1,0 +1,39 @@
+logosPrompt
+Create a polished icon asset reference sheet, 3 by 3 grid of NINE separate circular medallion icons with ample even gutters. No text anywhere, no labels or numbers. All nine share EXACT same front-facing orthographic circular shape, diameter, shallow thickness, light from upper left, matte ivory limestone face (#F6EFE6), thin muted bronze rim, deep dark olive (#38432E) sculpted bas-relief symbol. Restrained photographic material realism like a finely crafted miniature military terrain model. Strong clear silhouettes that remain readable small, no distressed parchment, no purple or gold or orange colored symbols. Background solid warm off-white. 
+Row 1 left to right CATEGORY icons: globe surrounded by two laurel branches with three stars above; folded map with dashed route arrow and small flag; three helmeted soldiers within a crosshair.
+Row 2 left to right EVENT icons: binoculars looking toward a small ridge (observation); regional folded map with two directional arrows (opening a front); jet aircraft above a small tank (coordination).
+Row 3 left to right EVENT icons: one standing soldier carrying a machine gun; classical government building with columns; military logistics cargo truck.
+Equal optical symbol weight and inset margins. No extra pictograms. This sheet is a production art direction reference for Hebrew military geography lesson drag-and-drop UI. High resolution square image.
+
+mockupPrompt
+Use case: ui-mockup. Create a high-resolution polished DESKTOP WEB UI reference screenshot in landscape 16:9, approximately 1920x1080. Not a device mockup. Hebrew RTL military geography lesson drag-and-drop exercise.
+Input 1 is the exact map background to preserve. Input 2 is the nine-icon sheet: reuse these matching realistic olive limestone medallions consistently.
+Canvas warm cream #F3E9DC. Top right title in bold Rubik-style Hebrew: "תרגול גרירה". Below title the instruction "גררו כל משפט לקטגוריה המתאימה". No navigation header or lesson sidebar required: focus on this exercise only.
+Main layout: map on LEFT ~74% width, pool of SIX event cards in a white panel on RIGHT ~23% width, 24px gutter, generous exterior margins. Display entire map with its original 16:9 aspect and all three regions visible, NO cropping, NO mirroring. Panel aligned with map top. Preserve original map's olive region LEFT with government building, earth CENTER with arrows and flag, sand RIGHT with jeep and rivers at sides.
+Place THREE matching overlay groups horizontally centered within respective regions, with same vertical positions, about upper-middle map, leaving bottom miniature objects clearly visible.
+LEFT olive region: category medallion globe/laurels/stars from sheet top left; bold Hebrew "אסטרטגית"; below "דרג לאומי • חזון • משאבים".
+CENTER earth region: medallion folded map route from sheet top center; bold Hebrew "אופרטיבית"; below "מערכות • תיאום • מהלכים".
+RIGHT sand region: medallion three soldiers crosshair from sheet top right; bold Hebrew "טקטית"; below "כוחות • אש • שטח".
+Each medallion above its typography. Put each title/subtitle on a compact OPAQUE warm ivory label plaque, no text directly on busy terrain. Black/dark olive type, strong contrast, bold headings around 26px equivalent, subtitles around 18px. Under each plaque put an OPAQUE ivory rounded rectangular EMPTY drop target with a dark olive dashed outline, Hebrew "גררו לכאן" and small down chevrons. Same size all 3. Keep map visible around these compact overlays. No purple, no colored category titles, no translucency or opacity fading.
+RIGHT panel heading "אירועים למיון · 6". Below six evenly spaced warm-white rounded cards, each with dark readable right-aligned Hebrew and a small matching medallion at its right edge. Card exact texts and icons in top-to-bottom order:
+1 binoculars ridge icon: "מפקד פלוגה מאתר עמדת מקלע אויב על שלוחה"
+2 regional map arrows icon: "מטכ״ל מחליט לפתוח גזרה חדשה בצפון"
+3 aircraft and tank icon: "אלוף הפיקוד מסנכרן תנועת אוגדה מול חיל אוויר"
+4 soldier icon: "נגד מפעיל מקלע מתחלף לעמדה סמוכה"
+5 government building icon: "ראש ממשלה מאשר העברת תקציב הגנה לזירה אסיאתית"
+6 cargo truck icon: "מפקדת חטיבה משריינת מתאמת ציר לוגיסטי עם פיקוד עורף"
+Ensure all six cards fully visible, no clipping, no duplicate cards. Use compact Heebo-style Hebrew text with enough line spacing and 2-3 lines per card. Under exercise at bottom right a neutral inactive button labeled "נותרו 6 למיון". Only restrained bronze accents; orange reserved for active interaction but this is initial neutral state. No floating palette swatches, no English annotation, no arrows explaining design, no watermark. Accurate Hebrew spelling is critical. Professional clear usable UI composited over realistic map.
+
+strategicPrompt
+Extract and faithfully reproduce ONLY the TOP LEFT medallion from the reference sheet as ONE standalone high resolution square PNG with a truly transparent alpha background. This is the STRATEGIC category icon: dark olive globe, two laurel branches, three stars on ivory limestone round medallion with thin bronze rim. Preserve its material, color, front-facing camera and design exactly. Center one complete circular medallion filling 85% of the canvas. No other symbols, no text, no backdrop, no checkerboard drawn into image.
+
+operationalPrompt
+Extract and faithfully reproduce ONLY the TOP CENTER medallion from reference sheet as ONE standalone square PNG with truly transparent alpha background. OPERATIONAL category icon: folded map with dashed route arrow and small flag, dark olive bas relief on ivory limestone round medallion with thin bronze rim. Preserve its exact reference design, front-facing camera, lighting and colors. One complete circular medallion centered with a small consistent transparent margin. No other icons, no text, no backdrop, no drawn checkerboard.
+
+tacticalPrompt
+Extract and faithfully reproduce ONLY TOP RIGHT medallion from reference sheet as ONE standalone square PNG with truly transparent alpha background. TACTICAL category icon: THREE helmeted soldiers inside a crosshair, dark olive bas relief on ivory limestone round medallion with thin bronze rim. Preserve exact reference design, front-facing camera, lighting and colors. One complete circular medallion centered with a small transparent margin. No other icons, no text, no backdrop, no drawn checkerboard.
+
+noBackgroundPrompt
+Edit the supplied complete Hebrew drag exercise mockup. Preserve the map, all NINE medallions, six right-hand cards and their exact Hebrew, composition, borders, header, and footer. Targeted change: REMOVE the three opaque ivory title/subtitle plaques on the MAP. Restore continuous terrain behind them. Category titles and subtitles must float directly on the map, absolutely NO background box, pill, panel, gradient patch, or opaque label behind category text.
+For LEFT strategic and CENTER operational category title and subtitle use warm ivory #FDFBF3 with a restrained subtle dark text shadow (not thick outline). For RIGHT tactical title and subtitle use very dark olive #38432E. Keep headings bold and subtitles readable. Left text exact: "אסטרטגית" and "דרג לאומי • חזון • משאבים". Center text exact: "אופרטיבית" and "מערכות • תיאום • מהלכים". Right text exact: "טקטית" and "כוחות • אש • שטח".
+Also remove solid fill from three EMPTY dashed drop targets on the MAP so terrain is visible inside just like the original exercise. Keep dashed outlines and "גררו לכאן" with chevrons: ivory on left and center, dark olive on right. Keep these text marks at full opacity. No new panels, no local backplates. Right hand event cards remain ivory. This is a polished 16:9 visual reference. Preserve accurate Hebrew throughout.

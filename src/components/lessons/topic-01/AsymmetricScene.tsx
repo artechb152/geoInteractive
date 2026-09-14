@@ -230,7 +230,17 @@ const PILLAR_DECISIONS: PillarDecision[] = [
 ];
 
 /* ───────────────────────── 5 TACTICS OF NON-STATE ──────────────────── */
-type Tactic = { id: string; title: string; icon: IconName; vignette: string; desc: string };
+type Tactic = {
+  id: string;
+  title: string;
+  icon: IconName;
+  vignette: string;
+  /** 3–5 word paraphrase of `vignette`, shown under the tactic card once the
+   * report is placed there — replaces the plain "placed" checkmark that used
+   * to sit on the photo before the answers are checked. */
+  reportSummary: string;
+  desc: string;
+};
 
 const TRAITS: Tactic[] = [
   {
@@ -238,6 +248,7 @@ const TRAITS: Tactic[] = [
     title: 'הסתרה והסוואה',
     icon: 'mask',
     vignette: 'לוחם לא לובש מדים, לא נוסע בשיירת רכבים מאורגנת, ולא יוצא מבסיס קבוע — הוא נראה בדיוק כמו אזרח רגיל ברחוב.',
+    reportSummary: 'מתחזה לאזרח רגיל ברחוב',
     desc:
       'החוק הראשון הוא לא לבלוט. אין מדים, אין שיירות ג\'יפים מאורגנות ואין בסיסים מסודרים. הלוחמים מתלבשים כמו אזרחים רגילים ונבלעים בסביבה. למה? כי הם מבינים שברגע שמטוס קרב או רחפן מזהה אותם – ייקח בדיוק 10 שניות להשמיד אותם.',
   },
@@ -246,6 +257,7 @@ const TRAITS: Tactic[] = [
     title: 'להתערבב עם אזרחים',
     icon: 'people',
     vignette: 'משגר טילים חונה בחצר בית ספר; חדר הפיקוד ממוקם קומה מתחת למחלקת ילדים בבית חולים.',
+    reportSummary: 'משגר טילים בחצר בית-ספר',
     desc:
       'במקום שדה קרב פתוח, הם ממקמים מפקדות ומשגרי טילים בתוך בתי חולים, בתי ספר ושכונות מגורים צפופות. זה תוקע את הצבא הסדיר בדילמה אכזרית: לתקוף ולחטוף אש מהעולם על פגיעה בחפים מפשע, או לוותר על חיסול המטרה ולתת להם לברוח?',
   },
@@ -254,6 +266,7 @@ const TRAITS: Tactic[] = [
     title: 'להיות "שקטים" טכנולוגית',
     icon: 'satellite',
     vignette: 'הלוחמים אספו את כל הסמארטפונים לפני היציאה למשימה, ומעבירים הוראות בפתק נייר ביד שליח.',
+    reportSummary: 'בלי סמארטפונים, פתקים ביד שליח',
     desc:
       'איך מתחבאים מצבא שקולט כל שיחת טלפון ורואה הכל מהחלל? יורדים מהרדאר. עוזבים את הסמארטפונים ועוברים להעביר פתקים מנייר דרך שליחים. נמנעים מנסיעה ברכבים שפולטים חום שלוויינים יכולים לקלוט. אי אפשר לעשות מתקפת סייבר על פתק נייר.',
   },
@@ -262,6 +275,7 @@ const TRAITS: Tactic[] = [
     title: 'לפגוע בזול בנשק יקר',
     icon: 'box',
     vignette: 'רחפן צעצוע שנקנה ברשת ב-300 דולר, עם רימון מאולתר מחובר לגחון, משבית טנק בשווי 5 מיליון דולר.',
+    reportSummary: 'רחפן זול משבית טנק יקר',
     desc:
       'מתמטיקה פשוטה: למה לפתח תעשיית נשק אם אפשר לקנות רחפן צעצוע ב-300 דולר, לחבר לו רימון, ולשתק טנק טכנולוגי שעולה 5 מיליון דולר? האסטרטגיה היא כלכלית — להכריח את הצבא הסדיר לבזבז הון וטילי יירוט יקרים על איומים שעולים גרושים.',
   },
@@ -270,6 +284,7 @@ const TRAITS: Tactic[] = [
     title: 'דעת הקהל היא שדה הקרב האמיתי',
     icon: 'megaphone',
     vignette: 'תוך דקות מההפצצה, סרטון של הריסות ופצועים כבר עולה לרשתות החברתיות ומופץ ברחבי העולם.',
+    reportSummary: 'סרטון הריסות מופץ ברשת מהר',
     desc:
       'הסמארטפון קטלני לא פחות מרובה. השחקן הלא-סדיר מתעד בניינים הרוסים ואזרחים פגועים ומפיץ ברשתות כדי לזעזע את העולם. הם יודעים שלחץ בינלאומי וסרטונים ויראליים יבלמו את הצבא הסדיר הרבה לפני שייגמרו לו הטילים.',
   },
@@ -343,7 +358,9 @@ export function AsymmetricScene() {
           design/assumptions.md, "Topic-01 asymmetric-actor tabs"). */}
       <ActorTypologySelector />
 
-      <TypologyTable />
+      <div className="mt-10">
+        <TypologyTable />
+      </div>
 
       <PillarSimulator />
 
@@ -367,7 +384,7 @@ export function AsymmetricScene() {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="surface-elevated p-5 sm:p-6 mt-8"
+        className="surface-elevated p-5 sm:p-6 mt-16"
       >
         <div className="grid sm:grid-cols-[1fr_auto] gap-5 items-center">
           <div>
@@ -462,7 +479,7 @@ function ActorTypologySelector() {
   const active = ACTORS[activeId];
 
   return (
-    <div className="mb-6">
+    <div className="mb-10">
       {/* Banner tabs — 3 equal columns at every width; each shows its
           actor's pre-made *-BANNER.png cover-fit, with a scrim fading from
           solid (visual right / inline-start, where the label sits) to
@@ -471,10 +488,10 @@ function ActorTypologySelector() {
           `to-l` gradient direction is intentional here, matching existing
           precedent elsewhere in this codebase (e.g. Footer.tsx). */}
       <div role="tablist" aria-label="בחר סוג שחקן" className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-3">
-        {ACTORS_LIST.map((a) => {
+        {ACTORS_LIST.map((a, i) => {
           const isActive = a.id === activeId;
           return (
-            <button
+            <motion.button
               key={a.id}
               type="button"
               role="tab"
@@ -482,7 +499,11 @@ function ActorTypologySelector() {
               aria-selected={isActive}
               aria-controls="actor-detail-panel"
               onClick={() => setActiveId(a.id)}
-              className="relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ delay: i * 0.05, duration: 0.4 }}
+              className="group relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border transition-all duration-300 ease-snap hover:-translate-y-1 hover:border-brand-dark/50 hover:shadow-elevated"
             >
               <IsometricAsset
                 assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
@@ -508,8 +529,8 @@ function ActorTypologySelector() {
                   // the scrim's solid side — justify-end would pack it
                   // toward the visual left (main-end under RTL), over the
                   // transparent/photo side instead.
-                  'relative z-10 flex h-full items-center justify-start px-3 sm:px-4 font-display text-sm sm:text-base font-bold leading-tight text-pretty',
-                  isActive ? 'text-accent' : 'text-fg',
+                  'relative z-10 flex h-full items-center justify-start px-3 sm:px-4 font-display text-sm sm:text-base font-bold leading-tight text-pretty transition-colors',
+                  isActive ? 'text-accent' : 'text-fg group-hover:text-ember-deep',
                 )}
               >
                 {a.label}
@@ -517,7 +538,7 @@ function ActorTypologySelector() {
               {isActive && (
                 <span aria-hidden className="absolute inset-x-0 bottom-0 h-1 bg-accent" />
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -774,7 +795,7 @@ function PillarSimulator() {
   const solvedCount = Object.values(solved).filter(Boolean).length;
 
   return (
-    <div className="my-12">
+    <div className="my-16">
       <div className="mb-5 text-center">
         <h3 className="font-display font-bold text-xl leading-tight mb-1">
           שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
@@ -1039,7 +1060,7 @@ function TimeAsymmetry() {
   const nonStateCount = 1;
 
   return (
-    <div className="my-12">
+    <div className="my-16">
       <div className="mb-5">
         <h3 className="font-display font-bold text-xl leading-tight mb-1">
           למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
@@ -1373,7 +1394,7 @@ function TacticMatchExercise() {
   };
 
   return (
-    <div className="my-12">
+    <div className="my-16">
       <div className="rounded-[4px] border border-border-subtle bg-bg p-4 sm:p-5 mb-5">
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
@@ -1395,24 +1416,39 @@ function TacticMatchExercise() {
         </div>
       </div>
 
-      <div className="surface-elevated p-5 sm:p-6 rounded-[4px] mb-4">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider text-center">
+      <div className="surface-elevated p-5 sm:p-6 rounded-[4px] mb-4 relative overflow-hidden">
+        {/* Accent flash — an independent overlay keyed on the same id, so it
+            re-triggers every time the report switches regardless of the
+            text's own slide/fade, giving an unmissable "something just
+            changed" cue on top of the (subtler) text motion below. */}
+        <AnimatePresence>
+          <motion.span
+            key={`flash-${current?.id ?? 'done'}`}
+            aria-hidden
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="pointer-events-none absolute inset-0 rounded-[4px] bg-accent/15 ring-2 ring-accent/50"
+          />
+        </AnimatePresence>
+
+        <div className="relative text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider text-center">
           דיווחי שטח
         </div>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout" initial={false}>
           {current ? (
             <motion.p
               key={current.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-              className="max-w-2xl mx-auto text-center text-base sm:text-lg leading-relaxed text-fg text-pretty"
+              initial={{ opacity: 0, y: -26, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 26, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="relative max-w-2xl mx-auto text-center text-base sm:text-lg leading-relaxed text-fg text-pretty"
             >
               {current.vignette}
             </motion.p>
           ) : (
-            <div className="text-center text-sm text-fg-muted py-4">
+            <div className="relative text-center text-sm text-fg-muted py-4">
               שיבצתם את כל הדיווחים. {submitted ? 'בדקו את התוצאה למטה.' : 'לחצו "בדוק תשובות".'}
             </div>
           )}
@@ -1535,18 +1571,14 @@ function TacticPhotoCard({
           compactPlaceholder
           className="absolute inset-0 size-full [aspect-ratio:auto]"
         />
-        {occupant && (
+        {submitted && occupant && (
           <span
             className={cn(
               'absolute top-2 start-2 inline-flex items-center justify-center size-5 rounded-full text-[11px] font-bold leading-none',
-              submitted
-                ? isCorrect
-                  ? 'bg-status-ok text-bg-elevated'
-                  : 'bg-status-danger text-bg-elevated'
-                : 'bg-fg/85 text-bg-elevated',
+              isCorrect ? 'bg-status-ok text-bg-elevated' : 'bg-status-danger text-bg-elevated',
             )}
           >
-            {submitted ? (isCorrect ? '✓' : '✗') : '✓'}
+            {isCorrect ? '✓' : '✗'}
           </span>
         )}
       </div>
@@ -1556,14 +1588,16 @@ function TacticPhotoCard({
           {tactic.title}
         </div>
 
-        {submitted && occupant && (
+        {occupant && (
           <div className="pt-1.5 mt-0.5 border-t border-border-subtle space-y-1">
-            {isCorrect && (
+            {submitted && isCorrect && (
               <div className="text-[11px] font-display font-bold tracking-wide text-status-ok text-center">
                 התאמה נכונה
               </div>
             )}
-            <p className="text-[11px] text-fg-muted leading-snug">{occupant.desc}</p>
+            <p className="text-[11px] text-fg-muted leading-snug text-center">
+              {submitted ? occupant.desc : occupant.reportSummary}
+            </p>
           </div>
         )}
       </div>
@@ -1597,16 +1631,13 @@ function DragExercise({
   const pool = ORGS.filter((o) => placement[o.id] == null);
 
   return (
-    <div className="my-12">
+    <div className="my-16">
       <div className="mb-5">
-        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
-          תרגול · סווג שחקנים אמיתיים
-        </div>
         <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
           לאיזה סוג שייך כל ארגון?
         </h3>
         <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
-          גרור (או הקש על ארגון ואז על קטגוריה) את כל 9 הארגונים לקטגוריה הנכונה. אחרי שתשבץ את כולם, לחץ "בדוק תשובות" — וקבל הסבר אם טעית.
+          גרור את כל 9 הארגונים לקטגוריה הנכונה. אחרי שתשבץ את כולם, לחץ "בדוק תשובות" — וקבל הסבר אם טעית.
         </p>
       </div>
 
@@ -1649,7 +1680,6 @@ function DragExercise({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-fg-muted">
-          {!submitted && !allPlaced && `סווגת ${ORGS.length - pool.length} מתוך ${ORGS.length}`}
           {!submitted && allPlaced && 'הכל מוכן — לחץ לבדיקה'}
           {submitted && (
             <span className={cn('font-display font-bold', correctCount === ORGS.length ? 'text-status-ok' : 'text-fg')}>
@@ -1719,6 +1749,29 @@ function OrgChip({
         if (!draggable) return;
         e.dataTransfer.setData('text/org', org.id);
         e.dataTransfer.effectAllowed = 'move';
+
+        // Custom drag image: the browser's automatic snapshot of this pill
+        // includes the focus/outline box around it, so the drag ghost reads
+        // as a rectangle with the pill drawn inside it. Render a clean,
+        // outline-free clone instead so only the pill shape is visible.
+        const source = e.currentTarget;
+        const rect = source.getBoundingClientRect();
+        const clone = source.cloneNode(true) as HTMLElement;
+        clone.style.position = 'fixed';
+        clone.style.top = '-9999px';
+        clone.style.left = '-9999px';
+        clone.style.margin = '0';
+        clone.style.width = `${rect.width}px`;
+        clone.style.height = `${rect.height}px`;
+        clone.style.overflow = 'hidden';
+        clone.style.outline = 'none';
+        clone.style.boxShadow = 'none';
+        clone.style.pointerEvents = 'none';
+        document.body.appendChild(clone);
+        e.dataTransfer.setDragImage(clone, e.clientX - rect.left, e.clientY - rect.top);
+        requestAnimationFrame(() => {
+          document.body.removeChild(clone);
+        });
       }}
       onClick={onSelect}
       className={cn(
@@ -1823,9 +1876,6 @@ function CategoryBin({
             {actor.label}
           </div>
           <div aria-hidden className="mt-1.5 h-0.5 w-8 rounded-full bg-fg/70" />
-          <div className="mt-1.5 text-[10px] font-display font-medium tracking-wide text-fg-dim">
-            {orgsHere.length === 0 ? 'ריק · מחכה לסיווג' : `${orgsHere.length} סווגו כאן`}
-          </div>
         </div>
       </div>
 
@@ -1848,7 +1898,7 @@ function CategoryBin({
                 <Icon name="plus" size={18} />
               </span>
               <span className="text-sm font-display font-semibold text-fg-dim">
-                {isOver ? 'שחרר כאן' : selectedOrg ? 'הקש לסיווג כאן' : 'גרור לכאן'}
+                {isOver ? 'שחרר כאן' : 'גרור לכאן'}
               </span>
             </>
           ) : (

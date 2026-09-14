@@ -382,7 +382,7 @@ return (
  <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
  <p className="mt-2 text-fg-muted text-sm">3 דוגמאות עכשוויות שבהן ראינו MDO בפועל</p>
  </div>
- <div className="grid md:grid-cols-3">
+ <div className="grid gap-4 md:grid-cols-3">
  {cases.map((c, i) => (
  <motion.article
 key={c.title}
@@ -390,10 +390,7 @@ initial={{ opacity: 0, y: 18 }}
 whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true, amount: 0.3 }}
 transition={{ delay: i * 0.08 }}
-className={cn(
- 'px-4 py-2 text-center md:px-6',
-i > 0 && 'md:border-s md:border-border',
- )}
+className="surface px-4 py-5 text-center md:px-6"
  >
  <div className="text-sm font-display font-semibold tracking-wider text-accent">
  {c.year}
@@ -405,7 +402,7 @@ src={c.photoSrc}
 alt={c.photoAlt}
 aspect="4/3"
 fit="cover"
-className="rounded-[3px] [mask-image:radial-gradient(ellipse_at_center,black_55%,transparent_100%)]"
+className="rounded-[3px]"
  />
  <p className="mt-3 text-sm text-fg-muted leading-relaxed text-pretty">{c.desc}</p>
  <div className="mt-4 flex flex-wrap items-start justify-center gap-3">

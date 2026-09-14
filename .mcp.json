@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "blender": {
-      "command": "C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python39\\Scripts\\uvx.exe",
-      "args": ["blender-mcp"]
+      "command": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\.blender-mcp-runtime\\venv\\Scripts\\python.exe",
+      "args": ["-c", "from blender_mcp.server import main; main()"],
+      "env": {
+        "BLENDER_MCP_DISABLE_TELEMETRY": "1"
+      }
     }
   }
 }

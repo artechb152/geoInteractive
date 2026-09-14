@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 
@@ -125,13 +126,33 @@ export default function ContourCake3D({
   activeRing: number | null;
   setActiveRing: (n: number | null) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    // OrbitControls autoRotate keeps the canvas re-rendering every frame forever —
+    // pause the render loop while the diorama is scrolled out of view so it doesn't
+    // steal frame budget from animations elsewhere on the (single-page) lesson.
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+      rootMargin: '200px',
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="aspect-video sm:aspect-square max-h-[300px] w-full mx-auto cursor-grab active:cursor-grabbing">
+    <div
+      ref={containerRef}
+      className="aspect-video sm:aspect-square max-h-[300px] w-full mx-auto cursor-grab active:cursor-grabbing"
+    >
       <Canvas
         shadows
         camera={{ position: [3.8, 3.4, 4.8], fov: 42, near: 0.1, far: 50 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
+        frameloop={inView ? 'always' : 'never'}
       >
         <ambientLight intensity={0.6} />
         <hemisphereLight color="#ffe9c8" groundColor="#a87f4e" intensity={0.4} />
