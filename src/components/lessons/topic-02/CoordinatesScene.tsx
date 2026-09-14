@@ -345,12 +345,6 @@ function northToY(northKm: number) {
 const KM_EAST = Number(GRID_EAST_KM);
 const KM_NORTH = Number(GRID_NORTH_KM);
 
-// Fractional position of the demo anchor inside the full source image (0..1,
-// image-space: x rightward, y downward) — reused as-is for the zoom inset's
-// background-position, so the crop is always centred on the same point.
-const DEMO_FRAC_X = (ANATOMY_EAST_M / 1000 - MAP_EAST_MIN) / WORLD_SPAN_KM;
-const DEMO_FRAC_Y = 1 - (ANATOMY_NORTH_M / 1000 - MAP_NORTH_MIN) / WORLD_SPAN_KM;
-
 const TERRAIN_MAP_SRC = '/reference-assets/coordinate-anatomy/terrain-map.png';
 
 // Helper: compute CSS background-position percentage to center a given image
@@ -672,6 +666,16 @@ function AnatomyZoomInset({
   const cropKm = showTenCell ? 0.1 : 1;
   const scalePct = (WORLD_SPAN_KM / cropKm) * 100;
 
+  // Centre of the cell this crop actually frames — the whole km square
+  // (centre 178.5 / 666.5) at 6/8 digits, or the 100 m cell around the
+  // fixed anchor (which is that cell's own centre by construction) at 10
+  // digits. Centring on the fixed anchor at every precision would show the
+  // wrong patch of terrain once the crop widens back out to the km square.
+  const centerKmE = showTenCell ? ANATOMY_EAST_M / 1000 : KM_EAST + 0.5;
+  const centerKmN = showTenCell ? ANATOMY_NORTH_M / 1000 : KM_NORTH + 0.5;
+  const cropFracX = (centerKmE - MAP_EAST_MIN) / WORLD_SPAN_KM;
+  const cropFracY = 1 - (centerKmN - MAP_NORTH_MIN) / WORLD_SPAN_KM;
+
   const d1e = showHundredCell ? Number(east.fine[0]) : 0;
   const d1n = showHundredCell ? Number(north.fine[0]) : 0;
   const d2e = showTenCell ? Number(east.fine[1]) : 0;
@@ -691,8 +695,12 @@ function AnatomyZoomInset({
         layout === 'overlay'
           ? /* Physical placement (top/right, not logical start/end) — this
                diagram-internal anchor must not flip under RTL, exactly like
-               this same file's GridSquare overlay a few hundred lines down. */
-            'hidden lg:block lg:absolute lg:top-3 lg:right-3 lg:w-[38%]'
+               this same file's GridSquare overlay a few hundred lines down.
+               Width capped at 30% (not a rounder 38%) so this box's x-range
+               (70–100%) never overlaps the highlighted km-square's own
+               fixed x-range (50–66.7%) regardless of precision — the square
+               is always drawn at KM_EAST/KM_NORTH's position on the map. */
+            'hidden lg:block lg:absolute lg:top-3 lg:right-3 lg:w-[30%]'
           : 'lg:hidden w-full max-w-[200px] mx-auto',
       )}
     >
@@ -701,7 +709,7 @@ function AnatomyZoomInset({
         style={{
           backgroundImage: `url(${TERRAIN_MAP_SRC})`,
           backgroundSize: `${scalePct}% ${scalePct}%`,
-          backgroundPosition: `${centeredBgPercent(DEMO_FRAC_X, scalePct / 100)}% ${centeredBgPercent(DEMO_FRAC_Y, scalePct / 100)}%`,
+          backgroundPosition: `${centeredBgPercent(cropFracX, scalePct / 100)}% ${centeredBgPercent(cropFracY, scalePct / 100)}%`,
         }}
         role="img"
         aria-label={showTenCell ? 'תקריב על תא של 10 מטר בתוך משבצת המאה מטר, מאותה מפה' : 'תקריב על משבצת הקילומטר, מאותה מפה'}
