@@ -572,10 +572,46 @@ function AnatomyMap({
               <g key={i}>
                 <line x1={i * 100} y1="0" x2={i * 100} y2={MAP_VB} className="stroke-fg/20" strokeWidth="1" />
                 <line x1="0" y1={MAP_VB - i * 100} x2={MAP_VB} y2={MAP_VB - i * 100} className="stroke-fg/20" strokeWidth="1" />
-                <text x={i * 100 + 4} y={MAP_VB - 4} fontSize="11" textAnchor="start" className="fill-fg/50 font-display font-semibold">
+                {/* direction="ltr" is required here, not just textAnchor: under
+                    the page's RTL context, text-anchor="start" alone anchors to
+                    the visual RIGHT and grows leftward, which silently pushed
+                    every one of these numerals off-frame (worst at the two grid
+                    edges — the westmost/topmost label fully invisible, the
+                    eastmost clipped mid-digit). The last column/row also gets a
+                    boundary flip (anchor="end" / label-below-line) since it sits
+                    exactly on the viewBox edge and would otherwise overflow the
+                    container the other way once corrected to LTR. */}
+                <text
+                  x={i === WORLD_SPAN_KM ? i * 100 - 4 : i * 100 + 4}
+                  y={MAP_VB - 4}
+                  fontSize="11"
+                  textAnchor={i === WORLD_SPAN_KM ? 'end' : 'start'}
+                  direction="ltr"
+                  className="fill-fg/50 font-display font-semibold"
+                >
                   {eastKm}
                 </text>
-                <text x="4" y={MAP_VB - i * 100 - 6} fontSize="11" textAnchor="start" className="fill-fg/50 font-display font-semibold">
+                {/* i === 0's default "-6 above the line" position lands in the
+                    exact same bottom-corner band as every east-axis label
+                    (which all share y={MAP_VB - 4}) — pushed further up here
+                    so the two axes' numerals don't overlap at the origin.
+                    i === WORLD_SPAN_KM (top edge) is pushed further down than
+                    the minimum needed to stay in-frame, so it clears the
+                    top-start FrameCorners bracket occupying that same corner. */}
+                <text
+                  x="4"
+                  y={
+                    i === WORLD_SPAN_KM
+                      ? MAP_VB - i * 100 + 30
+                      : i === 0
+                        ? MAP_VB - 22
+                        : MAP_VB - i * 100 - 6
+                  }
+                  fontSize="11"
+                  textAnchor="start"
+                  direction="ltr"
+                  className="fill-fg/50 font-display font-semibold"
+                >
                   {northKm}
                 </text>
               </g>
