@@ -165,8 +165,10 @@ className="surface-elevated p-5 flex gap-3 items-start"
  </div>
  <div className="flex items-center gap-3">
  <button
+type="button"
 onClick={() => setMotionPaused((p) => !p)}
 aria-pressed={motionPaused}
+aria-label={motionPaused ? 'תנועה מושהית, לחץ להפעלה' : 'תנועה פעילה, לחץ להשהיה'}
 className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
  >
  {motionPaused ? 'הפעל תנועה' : 'השהה תנועה'}
@@ -180,7 +182,11 @@ className="text-xs font-mono text-fg-dim hover:text-accent transition-colors fle
  </button>
  </div>
  </div>
- <div className="surface-elevated overflow-hidden">
+ {/* No overflow-hidden here — the photo rounds its own corners below, but
+     the overlay (rings/pulses/chips) must stay free to bleed slightly
+     past the photo's edge for anchors close to it, e.g. "חלל" near the
+     top, without getting clipped mid-animation. */}
+ <div className="surface-elevated">
  <MDOFieldDiagram domains={DOMAINS} active={active} onToggle={toggle} paused={motionPaused} />
  </div>
  </div>
@@ -212,9 +218,56 @@ const EDGES: [string, string][] = [
 ['cyber', 'sea'],
 ];
 
+function quadPoint(a: [number, number], c: [number, number], b: [number, number], t: number): [number, number] {
+const u = 1 - t;
+return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
+}
+
+/** Sampled closest distance from a quadratic Bézier curve to a point — cheap
+    approximation (24 steps), fine for the anchor-clearance check below. */
+function minDistToCurve(a: [number, number], c: [number, number], b: [number, number], p: [number, number]) {
+let best = Infinity;
+for (let i = 0; i <= 24; i++) {
+const [x, y] = quadPoint(a, c, b, i / 24);
+best = Math.min(best, Math.hypot(x - p[0], y - p[1]));
+ }
+return best;
+}
+
+ // Ring radius (~32px at sm:size-16) converted back to field-photo units at
+ // roughly the diagram's rendered scale, plus the glow's spread — an arc
+ // passing closer than this to an anchor it doesn't connect to would visibly
+ // cut through that anchor's ring.
+const MIN_ANCHOR_CLEARANCE = 100;
+
+function rotateVec(v: [number, number], deg: number): [number, number] {
+const r = (deg * Math.PI) / 180;
+const cos = Math.cos(r);
+const sin = Math.sin(r);
+return [v[0] * cos - v[1] * sin, v[0] * sin + v[1] * cos];
+}
+
+// Small fan of angle/magnitude candidates tried around the base outward
+// bow, closest-to-base first, so the search prefers the smallest deviation
+// that still clears every anchor the edge doesn't touch.
+const CONTROL_ANGLES = [0, 25, -25, 45, -45, 65, -65, 85, -85];
+const CONTROL_MAGNITUDES = [1, 1.3, 1.7, 2.1];
+
 /** Quadratic-Bézier control point, bowed outward from the layout's centroid
-    so the 7 arcs fan out through open sky/sea instead of overlapping. */
-function edgeControl(a: [number, number], b: [number, number], centroid: [number, number]): [number, number] {
+    so the 7 arcs fan out through open sky/sea instead of overlapping. Pure
+    outward-magnitude escalation can't resolve every case — when an edge's
+    midpoint and a third anchor sit on the same side of the centroid, the
+    curve stays roughly collinear with that anchor no matter how far out it
+    bows. So candidates also rotate the bow direction, and pick the smallest
+    rotation (then smallest magnitude) that clears every other anchor by
+    MIN_ANCHOR_CLEARANCE; if nothing clears fully, fall back to whichever
+    candidate had the largest worst-case clearance. */
+function edgeControl(
+a: [number, number],
+b: [number, number],
+centroid: [number, number],
+avoid: [number, number][],
+): [number, number] {
 const mx = (a[0] + b[0]) / 2;
 const my = (a[1] + b[1]) / 2;
 let dx = mx - centroid[0];
@@ -223,8 +276,33 @@ const dlen = Math.hypot(dx, dy) || 1;
 dx /= dlen;
 dy /= dlen;
 const edgeLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
-const bow = Math.min(150, Math.max(45, edgeLen * 0.2));
-return [mx + dx * bow, my + dy * bow];
+const baseBow = Math.min(150, Math.max(45, edgeLen * 0.2));
+
+let best: [number, number] | null = null;
+let bestScore = -Infinity;
+let fallback: [number, number] = [mx + dx * baseBow, my + dy * baseBow];
+let fallbackClearance = -Infinity;
+
+for (const angle of CONTROL_ANGLES) {
+const [rx, ry] = rotateVec([dx, dy], angle);
+for (const mag of CONTROL_MAGNITUDES) {
+const bow = baseBow * mag;
+const control: [number, number] = [mx + rx * bow, my + ry * bow];
+const clearance = avoid.length ? Math.min(...avoid.map((p) => minDistToCurve(a, control, b, p))) : Infinity;
+if (clearance > fallbackClearance) {
+fallbackClearance = clearance;
+fallback = control;
+ }
+if (clearance >= MIN_ANCHOR_CLEARANCE) {
+const score = -Math.abs(angle) * 10 - mag;
+if (score > bestScore) {
+bestScore = score;
+best = control;
+ }
+ }
+ }
+ }
+return best ?? fallback;
 }
 
 function edgePath(a: [number, number], b: [number, number], c: [number, number]) {
@@ -262,10 +340,11 @@ const edges = useMemo(
 EDGES.map(([idA, idB]) => {
 const a = byId[idA];
 const b = byId[idB];
-const control = edgeControl(a.anchor, b.anchor, centroid);
+const avoid = domains.filter((d) => d.id !== idA && d.id !== idB).map((d) => d.anchor);
+const control = edgeControl(a.anchor, b.anchor, centroid, avoid);
 return { idA, idB, d: edgePath(a.anchor, b.anchor, control) };
  }),
-[byId, centroid],
+[byId, centroid, domains],
  );
 
 const reduceMotion = useReducedMotion();
@@ -289,6 +368,11 @@ return () => observer.disconnect();
 const motionEnabled = inView && !paused && !reduceMotion;
 
 return (
+ // Physical `left`/`top` (not inset-inline-start/logical) is deliberate
+ // throughout this component: every position here is a photo-pixel
+ // coordinate that must land on the same object regardless of page
+ // direction. Logical properties would mirror them under RTL, which is
+ // exactly what the brief prohibits for this image.
  <div ref={wrapRef} className="relative">
  <IsometricAsset
 assetId="TOPIC01-MDO-FIELD-DOMAINS"
@@ -297,7 +381,7 @@ alt="תצלום שטח מדומה שמשלב את חמשת הממדים: כלי 
 aspect="4/3"
 fit="contain"
 eager
-className="w-full"
+className="w-full rounded-2xl"
  />
 
  {/* Decorative connections layer — purely reinforces what the buttons
@@ -364,6 +448,11 @@ return (
  {domains.map((d) => {
 const isOn = active.has(d.id);
 const extra = d.id === 'space' ? ' · המחשה' : d.id === 'cyber' ? ' · רשת חוצת ממדים' : '';
+ // "יבשה" is grammatically feminine — every other domain label is
+ // masculine, so this is the only one needing the feminine form.
+const isFem = d.id === 'land';
+const activeWord = isFem ? 'פעילה' : 'פעיל';
+const inactiveWord = isFem ? 'לא פעילה' : 'לא פעיל';
 const leftPct = (d.anchor[0] / FIELD_W) * 100;
 const topPct = (d.anchor[1] / FIELD_H) * 100;
 return (
@@ -372,24 +461,31 @@ return (
 type="button"
 onClick={() => onToggle(d.id)}
 aria-pressed={isOn}
-aria-label={`${d.label}${extra}: ${isOn ? 'פעיל, לחץ לכיבוי' : 'לא פעיל, לחץ להפעלה'}`}
+aria-label={`${d.label}${extra}: ${isOn ? `${activeWord}, לחץ לכיבוי` : `${inactiveWord}, לחץ להפעלה`}`}
 className={cn(
  'absolute size-14 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-transparent transition-colors duration-200 sm:size-16',
  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
 isOn
  ? 'border-accent shadow-[0_0_0_4px_rgba(217,126,43,0.15)]'
- : 'border-dashed border-border-strong/90 opacity-70 hover:opacity-100 hover:border-accent'
+ // A light halo (not just the tan border) keeps the dashed ring
+ // readable over any patch of the photo — a dirt road or sand-toned
+ // slope would otherwise wash the plain tan border out.
+ : 'border-dashed border-border-strong opacity-80 shadow-[0_0_0_1.5px_rgba(253,251,243,0.9)] hover:opacity-100 hover:border-accent'
  )}
 style={{ left: `${leftPct}%`, top: `${topPct}%` }}
  />
- {/* Decorative — the button's aria-label already carries this text. */}
+ {/* Decorative — the button's aria-label already carries this text.
+     Wraps instead of a fixed nowrap width, and the left position is
+     clamped by the same half-width — otherwise the longest caption
+     (cyber's "· רשת חוצת ממדים") overflows the card's clipped edge,
+     since its anchor sits close to the right side of the photo. */}
  <span
 aria-hidden
-className="chip absolute flex -translate-x-1/2 items-center gap-1 whitespace-nowrap border-border/70 bg-bg-elevated/90 px-2 py-0.5 text-[11px] text-fg-muted backdrop-blur-sm"
-style={{ left: `${leftPct}%`, top: `calc(${topPct}% + 32px)` }}
+className="chip absolute flex w-max max-w-[124px] -translate-x-1/2 items-center gap-1 whitespace-normal text-center leading-snug border-border/70 bg-bg-elevated/90 px-2 py-0.5 text-[11px] text-fg-muted backdrop-blur-sm"
+style={{ left: `clamp(64px, ${leftPct}%, calc(100% - 64px))`, top: `calc(${topPct}% + 32px)` }}
  >
  <span className={cn('inline-block size-1.5 shrink-0 rounded-full', isOn ? 'bg-accent' : 'border border-fg-dim')} />
- <Icon name={d.icon} size={12} className={isOn ? 'text-accent' : 'text-fg-dim'} />
+ <Icon name={d.icon} size={12} className={cn('shrink-0', isOn ? 'text-accent' : 'text-fg-dim')} />
  {d.label}
 {extra}
  </span>
