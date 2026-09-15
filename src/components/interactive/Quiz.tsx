@@ -54,17 +54,16 @@ export function Quiz({ questions }: { questions: Question[] }) {
     });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {/* ── Header ──────────────────────────────────────────────────── */}
       <header className="space-y-3">
-        <div className="inline-flex items-center gap-2.5 text-sm md:text-[15px] font-display font-semibold tracking-wider text-fg-muted">
-          <ListChecks className="size-4 text-accent" aria-hidden />
+        <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
           בדיקת ידע
         </div>
-        <h2 className="font-display font-bold tracking-tight text-balance leading-tight text-[clamp(1.25rem,2.2vw,1.625rem)]">
+        <h2 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl text-balance">
           בדקו את עצמכם.
         </h2>
-        <p className="text-sm md:text-base text-fg-muted">
+        <p className="text-base leading-relaxed text-fg-muted">
           {questions.length} שאלות · בחרו תשובה אחת לכל שאלה
         </p>
       </header>
@@ -90,32 +89,30 @@ export function Quiz({ questions }: { questions: Question[] }) {
             <li
               key={q.id}
               className={cn(
-                'relative rounded-[4px] border bg-bg-elevated p-3.5 md:p-4 transition-colors duration-300 ease-snap',
+                'relative surface bg-bg-elevated p-4 transition-all duration-300 ease-snap',
                 !submitted && 'border-border',
-                submitted && isCorrect && 'border-status-ok/40',
-                submitted && !isCorrect && inRetry && 'border-status-warn/40',
-                submitted && !isCorrect && !inRetry && 'border-status-danger/40',
+                submitted && isCorrect && 'border-status-ok/50',
+                submitted && !isCorrect && 'border-status-danger/50',
               )}
             >
-              <div className="flex gap-3 items-start mb-3.5">
+              <div className="flex gap-3 items-center mb-3">
                 <span
                   className={cn(
-                    'grid place-items-center size-7 shrink-0 rounded-full font-display font-bold text-xs border transition-colors',
-                    !submitted && 'bg-bg-accent border-border text-fg-muted',
-                    submitted && isCorrect && 'bg-status-ok/15 border-status-ok/40 text-status-ok',
-                    submitted && !isCorrect && inRetry && 'bg-status-warn/10 border-status-warn/40 text-status-warn',
-                    submitted && !isCorrect && !inRetry && 'bg-status-danger/10 border-status-danger/40 text-status-danger',
+                    'size-11 rounded-xl flex items-center justify-center shrink-0 border font-display text-base font-bold transition-all duration-300 ease-snap',
+                    !submitted && 'bg-bg-accent text-fg-muted border-border',
+                    submitted && isCorrect && 'text-status-ok bg-status-ok/10 border-status-ok/50',
+                    submitted && !isCorrect && 'text-status-danger bg-status-danger/10 border-status-danger/50',
                   )}
                   aria-hidden
                 >
                   {i + 1}
                 </span>
-                <p className="font-display font-semibold text-sm md:text-[15px] leading-snug text-fg pt-0.5 text-balance">
+                <p className="font-display font-bold leading-tight text-black text-lg md:text-xl text-balance">
                   {q.stem}
                 </p>
               </div>
 
-              <div className="space-y-1.5 pr-[2.75rem] md:pr-[3.25rem]">
+              <div className="space-y-2 ps-14">
                 {q.options.map((o) => {
                   const isPicked = picked === o.id;
                   const isAnswer = o.id === q.correctId;
@@ -126,27 +123,27 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       disabled={locked}
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))}
                       className={cn(
-                        'w-full text-right px-3.5 py-2.5 rounded-[3px] border transition-all duration-200 ease-snap text-sm md:text-[15px] flex items-center gap-3',
+                        'w-full text-right px-4 py-3 rounded-xl border transition-all duration-300 ease-snap text-base leading-relaxed text-black flex items-center gap-3',
                         // pre-submit + active retry (options stay pickable)
-                        !locked && isPicked && !inRetry && 'border-accent-hover bg-accent/10 text-accent font-medium',
-                        !locked && isPicked && inRetry && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
-                        !locked && !isPicked && 'border-border hover:border-accent/40 hover:bg-accent/5 text-fg',
+                        !locked && isPicked && !inRetry && 'border-accent bg-accent/10',
+                        !locked && isPicked && inRetry && 'border-status-danger/50 bg-status-danger/10',
+                        !locked && !isPicked && 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                         // locked / answer shown
-                        showAnswer && isAnswer && 'border-status-ok/50 bg-status-ok/10 text-status-ok font-medium',
-                        showAnswer && isPicked && !isAnswer && 'border-status-danger/50 bg-status-danger/10 text-status-danger font-medium',
-                        showAnswer && !isPicked && !isAnswer && 'border-border-subtle opacity-55 text-fg-muted',
+                        showAnswer && isAnswer && 'bg-status-ok/10 border-status-ok/50',
+                        showAnswer && isPicked && !isAnswer && 'bg-status-danger/10 border-status-danger/50',
+                        showAnswer && !isPicked && !isAnswer && 'border-border-subtle opacity-45',
                         'disabled:cursor-default',
                       )}
                     >
                       <span
                         className={cn(
                           'grid place-items-center size-5 shrink-0 rounded-full border transition-colors',
-                          !locked && isPicked && !inRetry && 'border-accent-hover bg-accent-hover text-bg-elevated',
+                          !locked && isPicked && !inRetry && 'border-accent bg-accent text-bg-elevated',
                           !locked && isPicked && inRetry && 'border-status-danger bg-status-danger text-bg-elevated',
-                          !locked && !isPicked && 'border-border-strong',
+                          !locked && !isPicked && 'border-border',
                           showAnswer && isAnswer && 'border-status-ok bg-status-ok text-bg-elevated',
                           showAnswer && isPicked && !isAnswer && 'border-status-danger bg-status-danger text-bg-elevated',
-                          showAnswer && !isPicked && !isAnswer && 'border-border opacity-60',
+                          showAnswer && !isPicked && !isAnswer && 'border-border opacity-45',
                         )}
                         aria-hidden
                       >
@@ -155,7 +152,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                         {inRetry && isPicked && <X className="size-3" strokeWidth={3} />}
                         {!locked && isPicked && !inRetry && <span className="size-1.5 rounded-full bg-bg-elevated" />}
                       </span>
-                      <span className="flex-1 text-pretty leading-snug">{o.label}</span>
+                      <span className="flex-1 text-pretty leading-relaxed">{o.label}</span>
                     </button>
                   );
                 })}
@@ -172,27 +169,18 @@ export function Quiz({ questions }: { questions: Question[] }) {
                     transition={{ duration: 0.3, ease: easeSnap }}
                     className="overflow-hidden"
                   >
-                    <div className="p-3 rounded-[3px] text-sm md:text-[15px] border border-status-warn/40 bg-status-warn/5 leading-relaxed">
-                      <div className="flex gap-2.5 items-start">
-                        <span
-                          className="grid place-items-center size-5 shrink-0 rounded-full mt-0.5 bg-status-warn/25 text-status-warn"
-                          aria-hidden
-                        >
-                          <Lightbulb className="size-3" strokeWidth={2.5} />
-                        </span>
-                        <span className="text-fg text-pretty">
-                          <strong className="font-semibold text-status-warn me-1">עוד לא.</strong>
-                          <span className="text-fg-muted">{q.feedback?.[picked] ?? GENERIC_HINT}</span>
-                        </span>
-                      </div>
-                      <div className="mt-2.5 flex items-center justify-between gap-3 flex-wrap ps-7">
-                        <span className="text-xs text-fg-dim">בחרו תשובה אחרת ונסו שוב.</span>
+                    <div className="p-4 rounded-xl text-base leading-relaxed border border-status-danger/50 bg-status-danger/10">
+                      <span className="text-black text-pretty">
+                        <strong className="font-bold text-status-danger me-1">עוד לא.</strong>
+                        <span className="text-black">{q.feedback?.[picked] ?? GENERIC_HINT}</span>
+                      </span>
+                      <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                        <span className="text-sm text-fg-muted leading-snug">בחרו תשובה אחרת ונסו שוב.</span>
                         <button
                           type="button"
                           onClick={() => revealAnswer(q.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[3px] text-xs font-medium border border-border text-fg-muted hover:text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
+                          className="inline-flex items-center text-sm font-display font-semibold text-fg-muted hover:text-brand-dark transition-colors"
                         >
-                          <Eye className="size-3.5" aria-hidden />
                           הצג תשובה
                         </button>
                       </div>
@@ -212,16 +200,16 @@ export function Quiz({ questions }: { questions: Question[] }) {
                   >
                     <div
                       className={cn(
-                        'p-3 rounded-[3px] text-sm md:text-[15px] border flex gap-2.5 items-start leading-relaxed',
+                        'p-4 rounded-xl text-base leading-relaxed border flex gap-2.5 items-start',
                         isCorrect
-                          ? 'border-status-ok/30 bg-status-ok/5'
-                          : 'border-status-warn/40 bg-status-warn/5',
+                          ? 'border-status-ok/50 bg-status-ok/10'
+                          : 'border-status-danger/50 bg-status-danger/10',
                       )}
                     >
                       <span
                         className={cn(
                           'grid place-items-center size-5 shrink-0 rounded-full mt-0.5',
-                          isCorrect ? 'bg-status-ok/25 text-status-ok' : 'bg-status-warn/25 text-status-warn',
+                          isCorrect ? 'bg-status-ok text-bg-elevated' : 'bg-status-danger text-bg-elevated',
                         )}
                         aria-hidden
                       >
@@ -231,11 +219,11 @@ export function Quiz({ questions }: { questions: Question[] }) {
                           <X className="size-3" strokeWidth={3} />
                         )}
                       </span>
-                      <span className="text-fg text-pretty">
-                        <strong className={cn('font-semibold me-1', isCorrect ? 'text-status-ok' : 'text-status-warn')}>
+                      <span className="text-black text-pretty">
+                        <strong className={cn('font-bold me-1', isCorrect ? 'text-status-ok' : 'text-status-danger')}>
                           {isCorrect ? 'נכון.' : isRevealed ? 'התשובה הנכונה מסומנת למעלה.' : 'לא נכון.'}
                         </strong>
-                        <span className="text-fg-muted">{q.rationale}</span>
+                        <span className="text-black">{q.rationale}</span>
                       </span>
                     </div>
                   </motion.div>
@@ -247,41 +235,31 @@ export function Quiz({ questions }: { questions: Question[] }) {
       </ol>
 
       {/* ── Footer: submit / score ──────────────────────────────────── */}
-      <div className="rounded-[4px] border border-border bg-bg-elevated p-3.5 md:p-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="surface bg-bg-elevated p-4 flex flex-wrap items-center justify-between gap-4">
         {submitted ? (
           <>
-            <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  'grid place-items-center size-10 rounded-full',
-                  passed ? 'bg-brand/15 text-brand-dark border border-brand/30' : 'bg-status-warn/15 text-status-warn border border-status-warn/30',
-                )}
-                aria-hidden
-              >
-                <Trophy className="size-5" />
-              </span>
+            <div className="flex items-center">
               <div>
-                <div className="text-[11px] font-display font-semibold tracking-wider text-fg-dim uppercase">
+                <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
                   ציון
                 </div>
-                <div className="font-display font-bold text-xl text-fg leading-tight">
-                  <span className={cn(passed ? 'text-brand-dark' : 'text-status-warn')}>{score}</span>
-                  <span className="text-fg-dim font-medium">/{questions.length}</span>
+                <div className="font-display font-bold text-xl text-black leading-tight tabular-nums">
+                  <span className={cn(passed ? 'text-brand-dark' : 'text-status-danger')}>{score}</span>
+                  <span className="text-fg-muted font-medium">/{questions.length}</span>
                 </div>
               </div>
             </div>
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[3px] text-sm font-medium border border-border text-fg hover:bg-bg-accent hover:border-border-strong transition-colors"
+              className="btn-secondary"
             >
-              <RotateCcw className="size-4" aria-hidden />
               ניסיון נוסף
             </button>
           </>
         ) : (
           <>
-            <div className="text-sm text-fg-muted">
+            <div className="text-sm text-fg-muted leading-snug">
               {allAnswered
                 ? 'ענית על כל השאלות — מוכן לשלוח.'
                 : `${Object.keys(answers).length}/${questions.length} שאלות נענו`}
@@ -290,12 +268,8 @@ export function Quiz({ questions }: { questions: Question[] }) {
               type="button"
               disabled={!allAnswered}
               onClick={() => setSubmitted(true)}
-              className={cn(
-                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] font-medium text-bg-elevated bg-accent hover:bg-accent-hover transition-all',
-                'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent',
-              )}
+              className="btn-primary disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:active:translate-y-0"
             >
-              <Send className="size-4" aria-hidden />
               <span>שליחת תשובות</span>
             </button>
           </>

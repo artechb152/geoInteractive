@@ -90,21 +90,17 @@ export function InteractionPlaceholder({ kind }: { kind: InteractionKind }) {
     <div className="space-y-5">
       <header className="space-y-2">
         <p className="section-eyebrow">תרגול אינטראקטיבי</p>
-        <h2 className="font-display text-2xl font-bold tracking-tight text-balance">{m.title}</h2>
+        <h2 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl text-balance">{m.title}</h2>
         <p className="max-w-3xl text-fg-muted text-pretty leading-relaxed">{m.description}</p>
       </header>
 
       {/* placeholder מוצהר — שלא ייקרא כעיצוב סופי (design-system §19) */}
-      <div className="relative overflow-hidden rounded-[4px] border-2 border-dashed border-border-strong bg-bg">
-        <div className="absolute inset-0 topo-bg opacity-30" aria-hidden />
-        <div className="relative flex aspect-[16/9] flex-col items-center justify-center p-6 text-center">
-          <div className="mb-3 text-6xl opacity-80" aria-hidden>
-            {m.preview.split(' ')[0]}
-          </div>
-          <div className="max-w-md text-sm text-fg-muted">
+      <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-border bg-bg-accent">
+        <div className="flex aspect-[16/9] flex-col items-center justify-center p-6 text-center">
+          <div className="max-w-md text-sm text-fg-muted leading-snug">
             {m.preview.split(' ').slice(1).join(' ')}
           </div>
-          <div className="mt-6 chip border-accent/40 bg-accent/10 font-semibold text-accent">
+          <div className="mt-6 chip border-border bg-bg-accent text-fg-muted">
             הסימולטור בפיתוח — יתווסף לשיעור בגרסה הבאה
           </div>
         </div>
