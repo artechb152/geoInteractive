@@ -242,8 +242,8 @@ export function LevelsScene() {
       <div className="mt-12">
         <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
           <div>
-            <h3 className="font-display font-bold text-xl leading-tight mb-1">תרגול גרירה</h3>
-            <p className="text-fg-muted text-sm">
+            <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">תרגול גרירה<span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" /></h3>
+            <p className="mt-2 text-base leading-relaxed text-fg-muted">
               גרור (או הקש בנייד) כל משפט לקטגוריה המתאימה. אחרי שכל ה־{SCENARIOS.length} ימוינו — לחץ "בדוק תשובות".
             </p>
           </div>
@@ -252,15 +252,10 @@ export function LevelsScene() {
               className={cn(
                 'chip',
                 correctCount === SCENARIOS.length
-                  ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
-                  : 'border-status-warn/40 bg-status-warn/10 text-status-warn'
+                  ? 'border-status-ok/50 bg-status-ok/10 text-status-ok'
+                  : 'border-status-danger/50 bg-status-danger/10 text-status-danger'
               )}
             >
-              <Icon
-                name={correctCount === SCENARIOS.length ? 'check' : 'spark'}
-                size={14}
-                strokeWidth={2.5}
-              />
               <span className="font-mono">
                 {correctCount}/{SCENARIOS.length} נכון
               </span>
@@ -283,7 +278,7 @@ export function LevelsScene() {
             removed below along with it). `items-start` lets each card size
             itself independently: the diorama from its own aspect-ratio
             within its actual column width, full stop. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-start mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start mb-6">
           <ScenarioPool
             pool={pool}
             selectedScenario={selectedScenario}
@@ -298,7 +293,7 @@ export function LevelsScene() {
               match the background's own strategic|operational|tactical
               layout. Not mirrored: the asset renders as-is. */}
           <div
-            className="relative min-w-0 rounded-xl overflow-hidden border border-border-subtle aspect-auto sm:aspect-[1672/941]"
+            className="relative min-w-0 rounded-xl overflow-hidden border border-border aspect-auto sm:aspect-[1672/941]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
             <img
@@ -339,14 +334,8 @@ export function LevelsScene() {
           <button
             onClick={() => setSubmitted(true)}
             disabled={!allAssigned}
-            className={cn(
-              'px-6 py-3 rounded-[3px] font-bold transition-all flex items-center gap-2',
-              allAssigned
-                ? 'bg-accent text-bg-elevated hover:scale-105 active:scale-95'
-                : 'bg-bg-accent text-fg-dim border border-border cursor-not-allowed'
-            )}
+            className={cn('btn-primary', !allAssigned && 'opacity-45 cursor-not-allowed hover:brightness-100 active:translate-y-0')}
           >
-            <Icon name="check" size={16} strokeWidth={2.5} />
             {allAssigned
               ? 'בדוק תשובות'
               : `נותרו ${SCENARIOS.length - assignedCount} למיון`}
@@ -354,9 +343,8 @@ export function LevelsScene() {
           {(assignedCount > 0 || submitted) && (
             <button
               onClick={reset}
-              className="px-6 py-3 rounded-[3px] border border-border hover:border-border-strong font-medium text-sm flex items-center gap-2"
+              className="btn-secondary"
             >
-              <Icon name="spark" size={14} />
               אפס הכל
             </button>
           )}
@@ -481,10 +469,7 @@ function ScenarioPool({
       }}
       animate={{ scale: isOver ? 1.005 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={cn(
-        'bg-bg-elevated p-4 rounded-xl border flex flex-col min-w-0 transition-colors duration-200',
-        isOver ? 'border-brand' : 'border-border',
-      )}
+      className={cn('surface-elevated p-4 flex flex-col min-w-0 transition-colors duration-300 ease-snap', isOver && 'border-brand/45')}
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="text-sm font-display font-semibold text-fg tracking-wider">
@@ -493,7 +478,7 @@ function ScenarioPool({
             : '✓ כל המשפטים סווגו'}
         </div>
         {pool.length > 0 && (
-          <div className="text-xs text-fg-muted">
+          <div className="text-sm text-fg-muted">
             גרור משפט לאחת מ־3 הקטגוריות למטה
           </div>
         )}
@@ -504,7 +489,7 @@ function ScenarioPool({
           לחץ "בדוק תשובות" כדי לראות תוצאות, או גרור משפט בחזרה לכאן כדי לסווג מחדש.
         </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {pool.map(({ s, i }) => (
             <ScenarioChip
               key={i}
@@ -589,10 +574,10 @@ function LevelZone({
           draggable={false}
           className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0"
         />
-        <div className={cn('mt-2.5 font-display font-bold text-base sm:text-xl leading-tight', ZONE_LABEL_TEXT)}>
+        <div className={cn('mt-2.5 font-display font-bold leading-tight text-lg md:text-xl', ZONE_LABEL_TEXT)}>
           {meta.label}
         </div>
-        <div className={cn('mt-1 text-[11px] sm:text-[13px] leading-snug', ZONE_SUBTITLE_TEXT)}>
+        <div className={cn('mt-1 text-sm leading-snug', ZONE_SUBTITLE_TEXT)}>
           {meta.dragSubtitle}
         </div>
 
@@ -600,7 +585,7 @@ function LevelZone({
           animate={{ scale: isOver ? 1.02 : 1 }}
           transition={{ type: 'spring', stiffness: 320, damping: 26 }}
           className={cn(
-            'mt-3 w-full max-w-[220px] rounded-lg border-2 border-dashed px-3 py-3 transition-colors duration-200',
+            'mt-3 w-full max-w-[220px] rounded-xl border-2 border-dashed px-3 py-3 transition-colors duration-200 ease-snap',
             isEmpty ? 'flex flex-col items-center justify-center gap-1.5 min-h-[96px]' : 'space-y-1.5',
             isOver || isWaitingForTap ? ZONE_DASH_BORDER_ACTIVE : ZONE_DASH_BORDER,
             isOver ? ZONE_DASH_BG_ACTIVE : ZONE_DASH_BG_IDLE,
@@ -608,7 +593,7 @@ function LevelZone({
         >
           {isEmpty ? (
             <>
-              <span className={cn('text-sm font-display font-semibold tracking-wide', ZONE_HINT_TEXT)}>
+              <span className={cn('text-sm font-display font-semibold tracking-wider', ZONE_HINT_TEXT)}>
                 {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גררו לכאן'}
               </span>
               <Icon name="chevrons-down" size={16} strokeWidth={2} className="text-fg-muted" />
@@ -669,30 +654,27 @@ function ScenarioChip({
         onSelect();
       }}
       className={cn(
-        'surface cursor-grab active:cursor-grabbing transition-all',
+        'surface cursor-grab active:cursor-grabbing transition-all duration-300 ease-snap',
         compact ? 'p-2.5' : 'p-3',
-        isSelected && 'border-accent ring-2 ring-accent/40',
-        isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/5',
-        isWrong && !isSelected && 'border-status-danger/50 bg-status-danger/5',
-        !isSelected && !isCorrect && !isWrong && 'hover:border-border-strong'
+        isSelected && 'border-accent bg-accent/10 ring-2 ring-accent/40',
+        isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/10',
+        isWrong && !isSelected && 'border-status-danger/50 bg-status-danger/10',
+        !isSelected && !isCorrect && !isWrong && 'hover:border-brand/30 hover:bg-brand/[0.03]'
       )}
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
     >
       <div className="flex items-start gap-2">
-        <p className={cn('flex-1 leading-snug', compact ? 'text-xs' : 'text-sm')}>
+        <p className={cn('flex-1', compact ? 'text-xs leading-snug' : 'text-base leading-relaxed text-black')}>
           {scenario.text}
         </p>
-        {submitted && (isCorrect || isWrong) && (
+        {submitted && isCorrect && (
           <Icon
-            name={isCorrect ? 'check' : 'spark'}
+            name="check"
             size={compact ? 12 : 14}
             strokeWidth={2.5}
-            className={cn(
-              'shrink-0 mt-0.5',
-              isCorrect ? 'text-status-ok' : 'text-status-danger'
-            )}
+            className="shrink-0 mt-0.5 text-status-ok"
           />
         )}
         {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
@@ -709,7 +691,7 @@ function ScenarioChip({
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            className={cn('mt-1.5 text-[11px] text-status-danger leading-snug')}
+            className="mt-1.5 text-sm text-status-danger leading-snug"
           >
             הקטגוריה הנכונה: <strong>{LEVELS[scenario.correct].label}</strong>
           </motion.div>
