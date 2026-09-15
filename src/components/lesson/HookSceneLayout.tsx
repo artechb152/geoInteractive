@@ -119,7 +119,7 @@ export function HookSceneLayout({ bgSrc, title, body }: HookSceneLayoutProps) {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('learn:next'))}
-            className="inline-flex items-center justify-center rounded-xl bg-cta-ember px-7 py-4 font-display text-base font-bold text-bg-elevated shadow-cta-ember transition-all duration-200 hover:brightness-105 active:translate-y-px"
+            className="inline-flex items-center justify-center select-none rounded-xl bg-cta-ember px-7 py-4 font-display text-base font-bold text-white shadow-cta-ember transition-all duration-200 ease-snap hover:brightness-105 active:translate-y-px"
             aria-label="התחל את השיעור"
           >
             <span>לחץ כדי להתחיל</span>
