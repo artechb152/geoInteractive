@@ -460,14 +460,13 @@ onClick={() => onToggle(d.id)}
 aria-pressed={isOn}
 aria-label={`${d.label}${extra}: ${isOn ? `${activeWord}, לחץ לכיבוי` : `${inactiveWord}, לחץ להפעלה`}`}
 className={cn(
- 'absolute size-14 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-transparent transition-colors duration-200 sm:size-16',
- 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+ 'absolute size-14 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-transparent transition-all duration-200 ease-snap sm:size-16',
 isOn
- ? 'border-accent shadow-[0_0_0_4px_rgba(217,126,43,0.15)]'
+ ? 'border-accent shadow-[0_0_0_4px_theme(colors.accent.DEFAULT/15%)]'
  // A light halo (not just the tan border) keeps the dashed ring
  // readable over any patch of the photo — a dirt road or sand-toned
  // slope would otherwise wash the plain tan border out.
- : 'border-dashed border-border-strong opacity-80 shadow-[0_0_0_1.5px_rgba(253,251,243,0.9)] hover:opacity-100 hover:border-accent'
+ : 'border-dashed border-border opacity-80 shadow-[0_0_0_1.5px_theme(colors.paper.bright/90%)] hover:opacity-100'
  )}
 style={{ left: `${leftPct}%`, top: `${topPct}%` }}
  />
@@ -478,11 +477,10 @@ style={{ left: `${leftPct}%`, top: `${topPct}%` }}
      since its anchor sits close to the right side of the photo. */}
  <span
 aria-hidden
-className="chip absolute flex w-max max-w-[124px] -translate-x-1/2 items-center gap-1 whitespace-normal text-center leading-snug border-border/70 bg-bg-elevated/90 px-2 py-0.5 text-[11px] text-fg-muted backdrop-blur-sm"
+className="chip absolute flex w-max max-w-[124px] -translate-x-1/2 items-center whitespace-normal text-center leading-snug border-border/60 bg-bg-elevated text-fg-muted"
 style={{ left: `clamp(64px, ${leftPct}%, calc(100% - 64px))`, top: `calc(${topPct}% + 32px)` }}
  >
  <span className={cn('inline-block size-1.5 shrink-0 rounded-full', isOn ? 'bg-accent' : 'border border-fg-dim')} />
- <Icon name={d.icon} size={12} className={cn('shrink-0', isOn ? 'text-accent' : 'text-fg-dim')} />
  {d.label}
 {extra}
  </span>
