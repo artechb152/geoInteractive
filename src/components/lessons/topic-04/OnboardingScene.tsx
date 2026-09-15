@@ -182,12 +182,9 @@ title = {
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
                         <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          למה זה חשוב?
-                        </div>
-                        <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {s.popupTitle}
-                        </h4>
-                        <p className="text-base leading-relaxed text-black text-pretty">
+                        </div>
+                        <p className="text-base leading-relaxed text-black">
                           {s.popupBody}
                         </p>
                       </div>
