@@ -111,7 +111,7 @@ title = {
       />
 
       <div className="grid md:grid-cols-[32fr_68fr] gap-6">
-        <div className="space-y-3">
+        <div className="space-y-1">
           {STEPS.map((s, i) => {
             const active = view === s.id;
             const expanded = expandedStep === s.id;
@@ -181,6 +181,9 @@ title = {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                          למה זה חשוב?
+                        </div>
                         <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {s.popupTitle}
                         </h4>
