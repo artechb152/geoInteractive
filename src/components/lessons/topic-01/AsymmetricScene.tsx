@@ -1631,17 +1631,18 @@ function DragExercise({
   const pool = ORGS.filter((o) => placement[o.id] == null);
 
   return (
-    <div className="my-16">
+    <div className="mt-12">
       <div className="mb-5">
-        <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
+        <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl text-balance">
           לאיזה סוג שייך כל ארגון?
         </h3>
-        <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
+        <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+        <p className="mt-2 text-base leading-relaxed text-fg-muted text-pretty">
           גרור את כל 9 הארגונים לקטגוריה הנכונה. אחרי שתשבץ את כולם, לחץ "בדוק תשובות" — וקבל הסבר אם טעית.
         </p>
       </div>
 
-      <div className="surface-elevated p-4 rounded-[4px] mb-3">
+      <div className="surface-elevated p-5 sm:p-6 mb-4">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
           ארגונים לסיווג ({pool.length})
         </div>
@@ -1664,7 +1665,7 @@ function DragExercise({
         )}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-3 mb-4">
+      <div className="grid md:grid-cols-3 gap-4 mb-4">
         {ACTORS_LIST.map((a) => (
           <CategoryBin
             key={a.id}
@@ -1691,7 +1692,7 @@ function DragExercise({
           <button
             type="button"
             onClick={onReset}
-            className="px-4 py-2 rounded-md font-medium text-sm border border-border text-fg-muted hover:bg-bg-accent transition-colors"
+            className="btn-secondary"
           >
             איפוס
           </button>
@@ -1700,12 +1701,7 @@ function DragExercise({
               type="button"
               onClick={onSubmit}
               disabled={!allPlaced}
-              className={cn(
-                'px-4 py-2 rounded-md font-bold text-sm transition-colors',
-                allPlaced
-                  ? 'bg-fg text-bg-elevated hover:bg-fg-muted'
-                  : 'bg-bg-accent text-fg-dim cursor-not-allowed',
-              )}
+              className={cn('btn-primary', !allPlaced && 'opacity-45 cursor-not-allowed hover:brightness-100 active:translate-y-0')}
             >
               בדוק תשובות
             </button>
@@ -1775,20 +1771,20 @@ function OrgChip({
       }}
       onClick={onSelect}
       className={cn(
-        'group inline-flex items-center gap-2 text-right transition-all border rounded-full bg-bg-elevated',
+        'group inline-flex items-center gap-2 text-start transition-all duration-300 ease-snap border rounded-full bg-bg-elevated',
         compact ? 'px-2.5 py-1.5' : 'px-3.5 py-2',
         submitted && isCorrect && 'border-status-ok/50 bg-status-ok/10',
         submitted && isWrong && 'border-status-danger/50 bg-status-danger/10',
-        !submitted && isSelected && state === 'pool' && 'border-fg bg-bg-accent',
-        !submitted && !isSelected && 'border-border hover:border-fg-muted',
+        !submitted && isSelected && state === 'pool' && 'border-accent bg-accent/10',
+        !submitted && !isSelected && 'border-border hover:border-brand/30 hover:bg-brand/[0.03]',
         draggable && 'cursor-grab active:cursor-grabbing',
       )}
     >
       {submitted ? (
         <span
           className={cn(
-            'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-[10px] font-bold leading-none',
-            isCorrect ? 'bg-status-ok/15 text-status-ok' : 'bg-status-danger/15 text-status-danger',
+            'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-xs font-bold leading-none',
+            isCorrect ? 'bg-status-ok/10 text-status-ok' : 'bg-status-danger/10 text-status-danger',
           )}
         >
           {isCorrect ? '✓' : '✗'}
@@ -1800,7 +1796,7 @@ function OrgChip({
         <span className={cn('block font-display font-semibold leading-tight', compact ? 'text-xs' : 'text-sm', 'text-fg')}>
           {org.label}
         </span>
-        <span className="block text-[10px] font-display font-medium tracking-wide text-fg-dim mt-0.5 leading-tight">
+        <span className="block text-xs font-display font-semibold tracking-wider text-fg-muted mt-0.5 leading-tight">
           {org.subtitle}
         </span>
       </span>
@@ -1852,10 +1848,7 @@ function CategoryBin({
       }}
       animate={{ scale: isOver ? 1.01 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={cn(
-        'rounded-2xl border bg-bg-elevated overflow-hidden transition-colors flex flex-col',
-        isOver || (selectedOrg && !isOver) ? 'border-fg' : 'border-border',
-      )}
+      className="surface overflow-hidden transition-all duration-300 ease-snap flex flex-col"
     >
       <div className="relative">
         <IsometricAsset
@@ -1872,18 +1865,18 @@ function CategoryBin({
           className="absolute inset-x-0 top-0 h-3/4 bg-gradient-to-b from-bg-elevated/85 via-bg-elevated/25 to-transparent"
         />
         <div className="absolute inset-x-0 top-0 p-3 sm:p-4">
-          <div className="font-display font-extrabold text-lg sm:text-xl leading-tight text-fg text-pretty">
+          <div className="font-display font-bold leading-tight text-black text-lg md:text-xl text-pretty">
             {actor.label}
           </div>
           <div aria-hidden className="mt-1.5 h-0.5 w-8 rounded-full bg-fg/70" />
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 flex flex-col gap-2">
+      <div className="p-4 flex flex-col gap-2">
         <div
           className={cn(
-            'min-h-[104px] rounded-2xl border border-dashed flex flex-col items-center justify-center gap-2 p-3 transition-colors',
-            isOver ? 'border-fg bg-bg-accent' : selectedOrg ? 'border-fg-muted bg-bg-accent/40' : 'border-border-strong/60',
+            'min-h-[104px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 p-3 transition-all duration-200 ease-snap',
+            isOver ? 'border-accent bg-accent/20' : selectedOrg ? 'border-accent bg-accent/10' : 'border-accent/60 bg-paper-card/90',
           )}
         >
           {orgsHere.length === 0 ? (
@@ -1891,13 +1884,13 @@ function CategoryBin({
               <span
                 aria-hidden
                 className={cn(
-                  'inline-flex items-center justify-center size-9 rounded-full transition-colors',
-                  isOver ? 'bg-bg-accent text-fg' : 'bg-bg-accent/60 text-fg-muted',
+                  'inline-flex items-center justify-center size-9 rounded-full transition-all duration-200 ease-snap',
+                  isOver ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
                 )}
               >
                 <Icon name="plus" size={18} />
               </span>
-              <span className="text-sm font-display font-semibold text-fg-dim">
+              <span className="text-sm font-display font-semibold text-fg">
                 {isOver ? 'שחרר כאן' : 'גרור לכאן'}
               </span>
             </>
@@ -1940,7 +1933,7 @@ function CategoryBin({
             {orgsHere
               .filter((o) => o.correct !== actor.id)
               .map((o) => (
-                <div key={o.id} className="text-[11px] text-fg leading-snug">
+                <div key={o.id} className="text-sm text-fg-muted leading-snug">
                   <strong className="text-status-danger">{o.label}</strong>{' '}
                   <span className="text-fg-muted">← {ACTORS[o.correct].label}.</span>{' '}
                   <span className="text-fg-muted">{o.hint}</span>
