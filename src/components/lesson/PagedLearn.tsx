@@ -175,7 +175,7 @@ export function PagedLearn({ scenes }: { scenes: PagedScene[] }) {
             on the last lesson), because there's no further sub-topic
             in this lesson. */}
       {!isHook && (
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <PrevButton
             disabled={isFirst}
             label={isFirst ? '— תחילת השיעור —' : scenes[idx - 1].label}
@@ -207,10 +207,8 @@ function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: st
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] transition-colors',
-        disabled
-          ? 'border border-border-subtle text-fg-dim opacity-40 cursor-not-allowed'
-          : 'border border-accent/40 text-accent hover:bg-accent/10 cursor-pointer',
+        'btn-secondary text-sm md:text-[15px]',
+        disabled ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer',
       )}
       aria-label="תת הנושא הקודם"
     >
@@ -224,7 +222,7 @@ function NextButton({ label, onClick }: { label: string; onClick: () => void }) 
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] bg-accent text-bg-elevated hover:bg-accent-hover transition-colors cursor-pointer"
+      className="btn-primary text-sm md:text-[15px] cursor-pointer"
       aria-label="תת הנושא הבא"
     >
       <span className="truncate max-w-[20rem]">הבא · {label}</span>
@@ -246,7 +244,7 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
     return (
       <Link
         href={`/lessons/${next.id}/`}
-        className="inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] bg-accent text-bg-elevated hover:bg-accent-hover transition-colors cursor-pointer"
+        className="btn-primary text-sm md:text-[15px] cursor-pointer"
         aria-label="לשיעור הבא"
       >
         <span className="truncate max-w-[22rem]">השיעור הבא · {next.shortTitle}</span>
@@ -256,7 +254,7 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
   return (
     <Link
       href="/"
-      className="inline-flex items-center justify-center px-4 py-2.5 rounded-md font-medium text-sm md:text-[15px] bg-accent text-bg-elevated hover:bg-accent-hover transition-colors cursor-pointer"
+      className="btn-primary text-sm md:text-[15px] cursor-pointer"
       aria-label="סיום הקורס"
     >
       <span>סיום הקורס · חזרה לסילבוס</span>
@@ -292,7 +290,7 @@ function ScenePagerDesktop({
       <div className="p-4 pt-4 flex-1 flex flex-col">
         {lesson && (
           <div className="px-2 mb-6 pb-2.5 border-b border-border-subtle">
-            <div className="font-display font-bold text-accent text-xl mb-2">
+            <div className="text-sm font-display font-semibold tracking-wider text-fg-muted mb-2">
               שיעור {lesson.number}
             </div>
             <div className="font-display font-bold text-lg text-fg leading-tight text-balance">
@@ -300,7 +298,7 @@ function ScenePagerDesktop({
             </div>
           </div>
         )}
-        <div className="text-xs font-display font-semibold text-fg-muted tracking-[0.2em] uppercase px-2 mb-3">
+        <div className="text-sm font-display font-semibold tracking-wider text-fg-muted px-2 mb-3">
           תוכן השיעור
         </div>
         <div className="flex flex-col gap-1">
@@ -317,23 +315,23 @@ function ScenePagerDesktop({
                 onClick={() => onGoto(i)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'group flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer text-right',
+                  'group flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ease-snap cursor-pointer text-start',
                   isActive
-                    ? 'bg-accent/15 text-fg'
-                    : 'hover:bg-bg-accent text-fg-muted',
+                    ? 'border-accent bg-accent/10 text-black'
+                    : 'border-transparent text-fg-muted hover:border-brand/30 hover:bg-brand/[0.03]',
                 )}
               >
                 <span
                   className={cn(
                     'size-2 rounded-full shrink-0 transition-colors',
-                    reached ? 'bg-accent' : 'bg-fg',
+                    reached ? 'bg-accent' : 'bg-fg-dim',
                   )}
                   aria-hidden
                 />
                 <span
                   className={cn(
-                    'text-base leading-snug transition-colors truncate',
-                    isActive && 'font-semibold',
+                    'text-base leading-snug transition-colors text-balance',
+                    isActive && 'font-bold',
                   )}
                 >
                   {s.label}
@@ -370,10 +368,10 @@ function ScenePagerMobile({
   lesson?: LessonNavInfo['current'];
 }) {
   return (
-    <div className="xl:hidden max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+    <div className="xl:hidden max-w-lesson mx-auto px-4 sm:px-6 lg:px-8 mb-6">
       {lesson && (
         <div className="mb-4 pb-3 border-b border-border-subtle">
-          <div className="text-[10px] font-display font-semibold text-accent tracking-[0.2em] uppercase mb-0.5">
+          <div className="text-sm font-display font-semibold tracking-wider text-fg-muted mb-0.5">
             שיעור {lesson.number}
           </div>
           <h1 className="font-display font-bold text-lg sm:text-xl text-fg leading-tight text-balance">
@@ -381,7 +379,7 @@ function ScenePagerMobile({
           </h1>
         </div>
       )}
-      <div className="flex gap-1.5 min-w-max overflow-x-auto pb-2" role="tablist" aria-label="ניווט תתי-נושא">
+      <div className="flex gap-1.5 overflow-x-auto pb-2" role="tablist" aria-label="ניווט תתי-נושא">
         {scenes.map((s, i) => {
           const isActive = i === active;
           const isPassed = i < active;
@@ -394,12 +392,12 @@ function ScenePagerMobile({
               aria-selected={isActive}
               aria-label={`תת נושא: ${s.label}`}
               className={cn(
-                'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border',
+                'chip whitespace-nowrap transition-all duration-300 ease-snap',
                 isActive
-                  ? 'bg-accent text-bg-elevated font-bold border-accent'
+                  ? 'bg-accent text-white border-accent font-bold'
                   : isPassed
                     ? 'bg-bg-accent text-fg-muted border-border'
-                    : 'bg-bg-elevated text-fg-dim border-border hover:text-fg',
+                    : 'bg-bg-elevated text-fg-dim border-border hover:border-brand/30 hover:bg-brand/[0.03]',
               )}
             >
               {s.label}
