@@ -167,7 +167,7 @@ export function HistoricalCasesPanel() {
                 aria-expanded={isActive}
                 aria-controls="history-detail-panel"
                 className={cn(
-                  'relative rounded-2xl border p-4 text-right transition-all duration-300 ease-snap',
+                  'relative rounded-2xl border p-4 text-start transition-all duration-300 ease-snap',
                   isActive
                     ? 'border-ember bg-ember/20'
                     : 'border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.07]'
@@ -201,7 +201,7 @@ export function HistoricalCasesPanel() {
                 >
                   {c.place}
                 </div>
-                <div className="mt-2.5 overflow-hidden rounded-lg">
+                <div className="mt-2 overflow-hidden rounded-lg">
                   <IsometricAsset
                     assetId={c.previewAssetId}
                     src={c.previewSrc}
@@ -264,12 +264,12 @@ export function HistoricalCasesPanel() {
               {/* Text column — first child → right in RTL. */}
               <div className="flex flex-col p-6 md:p-8">
                 <h4 className="font-display text-2xl font-bold leading-snug text-fg md:text-3xl">{active.headline}</h4>
-                <div className="mt-1.5 font-display text-base font-semibold text-fg-muted">{active.place}</div>
-                <div className="mt-3 border-t border-fg/10" />
-                <p className="mt-3 text-base leading-relaxed text-fg md:text-lg">{active.lesson}</p>
+                <div className="mt-1.5 text-sm font-display font-semibold tracking-wider text-fg-muted">{active.place}</div>
+                <div className="mt-3 border-t border-border" />
+                <p className="mt-3 text-base leading-relaxed text-fg">{active.lesson}</p>
 
-                <div className="mt-4 rounded-xl bg-bg-accent px-4 py-3">
-                  <p className="text-base font-display font-bold text-accent">עובדה מרכזית: {active.stat}</p>
+                <div className="mt-3 rounded-xl bg-bg-accent px-4 py-3">
+                  <p className="text-base leading-relaxed text-black"><span className="font-display font-bold text-accent">עובדה מרכזית:</span> {active.stat}</p>
                 </div>
 
                 <div className="mt-3 rounded-xl bg-pine px-4 py-3.5">
