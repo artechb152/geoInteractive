@@ -1,7 +1,7 @@
 import { BrandEmblem } from '@/components/ui/BrandEmblem';
 
 /**
- * HomeHeader — כותרת פנימית של דף הבית (design/mockup.png, פס עליון).
+ * HomeHeader — כותרת פנימית של דף הבית (design/mockups/mockup.png, פס עליון).
  * מותג + לוגו האתר (BrandEmblem) בימין (inline-start).
  */
 export function HomeHeader() {

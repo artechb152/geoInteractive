@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { IntelCard } from '@/components/lesson/IntelCard';
+import { HistoricalCasesPanel } from './HistoricalCasesPanel';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -53,37 +53,6 @@ const STEPS: Step[] = [
   },
 ];
 
-const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
-  {
-    headline: 'ממעט טנקים על הפסגה — בלמו מאות בעמק',
-    place: 'בקעת הבכא · יום הכיפורים 1973',
-    lesson: 'במלחמת יום הכיפורים, הסורים שלחו מאות טנקים דרך עמקים מבלי לאבטח את השטח השולט מסביב. כוחות צה"ל שהתמקמו בכיפות (הפסגות) נהנו מעליונות בתצפית ובאש, ובלמו כוחות גדולים מהם פי 5.',
-    icon: 'mountain',
-    accent: 'text-accent',
-  },
-  {
-    headline: 'טור אמריקאי בוואדי — אש מ-3 כיוונים',
-    place: 'אפגניסטן · 2008',
-    lesson: 'יחידה אמריקאית התקדמה בתוך גיא (ואדי) צר. הטאליבן ניצל את השלוחות השולטות כדי לפתוח באש מ-3 כיוונים. התוצאה הייתה קטלנית, כי הכוח האמריקאי היה בנחיתות טופוגרפית מוחלטת בתוך העמק.',
-    icon: 'crosshair',
-    accent: 'text-status-danger',
-  },
-  {
-    headline: 'אוכף בין פסגות — עוקפים את ההגנה',
-    place: 'נורמנדי · קיץ 1944',
-    lesson: 'במקום לתקוף חזיתית פסגות מבוצרות, יחידה בריטית זיהתה אוכף — נקודת שפל נוחה למעבר בין שתי כיפות. המעבר דרך האוכף אפשר להם לעקוף את קווי ההגנה ולהפתיע את הגרמנים מהאגף.',
-    icon: 'check',
-    accent: 'text-status-ok',
-  },
-  {
-    headline: 'מבוצרים בעמק — בלי שטח שולט, בלי תקומה',
-    place: 'דיאן ביאן פו · ויאטנם 1954',
-    lesson: 'הצרפתים התמקמו בעמק עמוק והפקירו את השטח השולט (השלוחות והפסגות) לוייטנאמים. התוצאה: הכוח הצרפתי הפך למטרה נייחת בתוך "שטח השמדה", מה שהוביל לתבוסה מוחלטת במלחמה.',
-    icon: 'shield',
-    accent: 'text-status-warn',
-  },
-];
-
 export function OnboardingScene() {
   const [view, setView] = useState<View>('flat');
   const [expandedStep, setExpandedStep] = useState<View | null>('flat');
@@ -98,7 +67,7 @@ export function OnboardingScene() {
   };
 
   return (
-    <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="04.0"
         eyebrow="לפני שמתחילים"
@@ -109,7 +78,7 @@ title = {
 }        intro="תייר רואה נוף יפה; מפקד רואה הזדמנויות ומכשולים. כדי להבין את שדה הקרב, עלינו לקלף את השכבות של פני השטח (המורפולוגיה). בוא נראה איך אותו הר משתנה ב-4 שלבים — מהמבט התמים ועד לניתוח הצבאי שיכריע את הקרב."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      <div className="grid md:grid-cols-[32fr_68fr] gap-6">
         {/* Accordion list — first child → RIGHT in RTL (text on right) */}
         <div className="space-y-3">
           {STEPS.map((s, i) => {
@@ -134,26 +103,20 @@ title = {
                   aria-controls={`t4-onb-panel-${s.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  {active && (
-                    <motion.span
-                      layoutId="t4-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
-                  )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
+                      <Icon name="check" size={18} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-base font-bold">{i + 1}</span>
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">{s.label}</div>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-lg md:text-xl">{s.label}</div>
                   </div>
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
@@ -161,8 +124,8 @@ title = {
                     className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
-                      width="18"
-                      height="18"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -186,14 +149,11 @@ title = {
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 md:min-h-[236px]">
                         <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          למה זה משנה
-                        </div>
-                        <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {s.popupTitle}
-                        </h4>
-                        <p className="text-base leading-relaxed text-black text-pretty">
+                        </div>
+                        <p className="text-base leading-relaxed text-black">
                           {s.popupBody}
                         </p>
                       </div>
@@ -211,19 +171,12 @@ title = {
         </div>
       </div>
 
-      <SoftDivider text="כשלא קוראים נכון את ההר — המחיר עצום" />
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        {HISTORICAL.map((h, i) => (
-          <IntelCard
-            key={h.headline}
-            place={h.place}
-            headline={h.headline}
-            lesson={h.lesson}
-            icon={h.icon}
-            accent={h.accent}
-          />
-        ))}
+      {/* Historical examples — same panel layout as topic-02
+          (topic-02/HistoricalCasesPanel.tsx), per user request 2026-09-15.
+          Replaced the IntelCard grid; the four examples moved into the
+          panel's own CASES array (topic-03/HistoricalCasesPanel.tsx). */}
+      <div className="mt-20 mb-12">
+        <HistoricalCasesPanel />
       </div>
 
       <ReadyCallout title="עכשיו אתם מוכנים">
@@ -419,16 +372,6 @@ function TerrainStage({ view }: { view: View }) {
         <span className="size-1.5 rounded-full bg-accent animate-pulse" />
         אותו הר · 4 שכבות הסתכלות
       </div>
-    </div>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
     </div>
   );
 }

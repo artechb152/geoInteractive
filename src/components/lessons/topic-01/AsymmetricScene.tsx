@@ -355,7 +355,7 @@ export function AsymmetricScene() {
 
       {/* Banner-tab selector + single active-actor detail panel — replaces
           the former "all 3 at once" static card grid (see
-          design/assumptions.md, "Topic-01 asymmetric-actor tabs"). */}
+          design/docs/assumptions.md, "Topic-01 asymmetric-actor tabs"). */}
       <ActorTypologySelector />
 
       <div className="mt-10">
@@ -419,7 +419,7 @@ export function AsymmetricScene() {
    HistoricalCasesPanel.tsx and LevelsScene.tsx's own level-selector; only
    ONE accent-colored treatment marks the active tab (bottom bar + label
    color) — same "accent-only active state" rule as the levels-scene
-   selector, see design/assumptions.md. */
+   selector, see design/docs/assumptions.md. */
 
 /* Prompt-style suffixes for this component's own IsometricAsset calls — the
    banner/portrait assets are real-world photographs and the field-grid
@@ -704,7 +704,7 @@ function TypologyTableHeader() {
    accent highlight singling out one row as "the active one". Reveal keeps
    the existing per-cell correct/wrong tint (bg-status-ok/10 /
    bg-status-danger/10) as pedagogical feedback, but drops the ✓/✗ badge —
-   see design/assumptions.md, "Topic-01 typology table restyle" for why this
+   see design/docs/assumptions.md, "Topic-01 typology table restyle" for why this
    supersedes the table's earlier sequential-lock behavior. */
 function TypologyTable() {
   const [answers, setAnswers] = useState<Record<number, ActorType | undefined>>({});
@@ -896,7 +896,7 @@ function PillarDecisionCard({
       {/* Content — a fixed `min-h` (roomy enough for the longest "solved"
           state across all 3 pillars) so the card's footprint is set from
           first paint and never grows/shrinks as a choice reveals more or
-          less text; see design/assumptions.md for how this value was
+          less text; see design/docs/assumptions.md for how this value was
           measured. */}
       <div className="flex flex-col gap-3 p-5 sm:p-6 min-h-[30rem]">
         {solved && (
@@ -1815,7 +1815,7 @@ function OrgChip({
    dashed drop-zone below with a circular "+" and "גרור לכאן" — same existing
    copy as before, just restyled. Card radius reuses `rounded-2xl`, the same
    token this file's own `PillarDecisionCard` already uses for its
-   photo-topped cards (see design/assumptions.md), rather than the
+   photo-topped cards (see design/docs/assumptions.md), rather than the
    reference's own (unrelated app's) corner scale. */
 function CategoryBin({
   actor,

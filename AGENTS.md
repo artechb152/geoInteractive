@@ -4,22 +4,22 @@ This project must match the provided visual mockups as closely as possible ("pix
 
 ## Source of truth
 
-- Master mockup: @design/mockup.png (1402 × 1122 px — desktop design frame; measurements map ≈1:1 to CSS px)
-- Written spec with exact values: @design/design-spec.md
-- Section crops for close comparison: `design/mockup-header.png`, `design/mockup-hero.png`, `design/mockup-section-1.png`, `design/mockup-footer.png`
-- Latest implementation screenshot for diffing: `design/home-implemented-1440.png` / `design/current.png`
+- Master mockup: @design/mockups/mockup.png (1402 × 1122 px — desktop design frame; measurements map ≈1:1 to CSS px)
+- Written spec with exact values: @design/docs/design-spec.md
+- Section crops for close comparison: `design/mockups/mockup-header.png`, `design/mockups/mockup-hero.png`, `design/mockups/mockup-section-1.png`, `design/mockups/mockup-footer.png`
+- Latest implementation screenshot for diffing: `design/screenshots/home-implemented-1440.png` / `design/screenshots/current.png`
 
 ## Rules
 
 - Do not invent layout changes.
 - Do not simplify the design unless explicitly asked.
 - Prioritize visual fidelity over generic best practices.
-- Use exact spacing, colors, typography, radius, and shadows from `design/design-spec.md`. Colors there were pixel-sampled from the mockup — never substitute "close enough" Tailwind defaults.
+- Use exact spacing, colors, typography, radius, and shadows from `design/docs/design-spec.md`. Colors there were pixel-sampled from the mockup — never substitute "close enough" Tailwind defaults.
 - New color tokens require approval; approved landing tokens (paper/olive/ember/pine/tanline) live in `tailwind.config.ts`.
 - Work in small sections: header → hero → features → bottom band. Finish and verify one before starting the next.
 - After each implementation stage, render the page (Playwright screenshot at 1440px) and compare side-by-side against the matching mockup crop. Fix deltas before moving on.
 - Avoid changing unrelated files.
-- If a visual detail is uncertain, document the assumption in `design/assumptions.md` and continue — don't silently guess.
+- If a visual detail is uncertain, document the assumption in `design/docs/assumptions.md` and continue — don't silently guess.
 
 ## Hebrew / RTL
 

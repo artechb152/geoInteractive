@@ -69,7 +69,7 @@ const config: Config = {
           danger: '#ef4444',
           info: '#60a5fa',
         },
-        // — Landing redesign palette (design/design-spec.md, sampled from design/mockup.png) —
+        // — Landing redesign palette (design/docs/design-spec.md, sampled from design/mockups/mockup.png) —
         // Additive namespaces only; existing pages keep bg/fg/accent/brand untouched.
         paper: {
           page: '#F3E9DC',
@@ -103,6 +103,12 @@ const config: Config = {
       borderRadius: {
         '4xl': '2rem',
       },
+      maxWidth: {
+        // Lesson scene content width — matches the previous max-w-6xl cap
+        // these scenes used before `max-w-lesson` (topic-01/02, now also
+        // topic-05) started being written without the token existing.
+        lesson: '72rem',
+      },
       boxShadow: {
         glow: '0 0 40px -10px rgba(235, 158, 72, 0.45)',
         'glow-brand': '0 0 40px -10px rgba(116, 156, 117, 0.4)',
@@ -112,7 +118,7 @@ const config: Config = {
         // "דף על שולחן מפות" — קו דק קשיח + צל רך רחוק (שפת V2)
         paper:
           '0 1px 0 rgba(91, 124, 92, 0.10), 0 14px 28px -18px rgba(58, 58, 58, 0.30)',
-        // — Landing redesign shadows (design/design-spec.md §6) —
+        // — Landing redesign shadows (design/docs/design-spec.md §6) —
         'card-soft': '0 6px 18px rgba(90, 70, 40, 0.07)',
         'panel-soft': '0 8px 24px rgba(90, 70, 40, 0.06)',
         'pine-card': '0 10px 28px rgba(40, 50, 35, 0.25)',
@@ -126,7 +132,7 @@ const config: Config = {
         // subtle warm wash at the top of sections — gives the cream page a sunlight gradient
         'topo-fade':
           'radial-gradient(ellipse at top, rgba(255, 220, 181, 0.35), transparent 65%)',
-        // — Landing redesign gradients (design/design-spec.md §3) —
+        // — Landing redesign gradients (design/docs/design-spec.md §3) —
         'cta-ember': 'linear-gradient(to bottom, #E08A38, #C96714)',
         'pine-grad': 'linear-gradient(135deg, #374133, #283223)',
         'paper-grad': 'linear-gradient(to bottom, #F4E9DC, #F0E5D6)',

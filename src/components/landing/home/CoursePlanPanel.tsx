@@ -10,7 +10,7 @@ import { lessons, lessonDioramaSrc } from '@/lib/lessons';
 import { lessonScenes } from '@/lib/lesson-scenes';
 
 /**
- * CoursePlanPanel — פאנל "פרקי הקורס" (design/carouselMockUpHomePage.png).
+ * CoursePlanPanel — פאנל "פרקי הקורס" (design/mockups/carouselMockUpHomePage.png).
  * מחובר לנתוני הקורס האמיתיים (@/lib/lessons) וכולל גרירה/גלילה אמיתית
  * של השורה, שגולל לנצח (01→12→01…) על ידי שכפול הרשימה פי 3 וקפיצה
  * שקטה בין העותקים. "צפייה בכל השיעורים" פורש (עם אנימציה) רשת של כל

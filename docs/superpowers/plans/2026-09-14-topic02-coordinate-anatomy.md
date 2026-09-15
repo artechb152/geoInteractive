@@ -28,12 +28,12 @@
 - **Graduated CSS mask on the map raster only:** the `<img>` wrapper (not the SVG overlay, not the corner frames) gets `[mask-image:radial-gradient(...)]` (+ `-webkit-mask-image`) so the photographic map fades into the page's cream canvas at its edges — same technique already used in `src/components/landing/home/CoursePlanPanel.tsx`. Never apply a CSS filter/opacity fade that would degrade the source pixels used by the zoom.
 - **Interactive zones — exactly two, literally per the brief:** hovering/focusing/clicking-or-tapping the **first three digits** (km group) sets `activeZone = 'km'`; doing the same on the **last digit** (whichever is finest for the current precision) sets `activeZone = 'fine'`. At 10-digit precision the middle (hundred-metres) digit is styled orange but is NOT an independent hover target — only "first three" and "last digit" are interactive, per the literal spec text. Mouse-leave/blur clears back to `null`; click/tap sets the same zone (covers touch, which has no hover). At 6-digit precision there is no fine digit at all: render its button `disabled` (not removed, so the readout's height never changes) showing `–` instead of a digit.
 - **Precision selector — 3 options, segmented-button pattern already used lower in this same file** (`GridReferenceExercise`'s demo/practice toggle, ~line 655): plain `<button aria-pressed>`, DOM order 6→8→10 (so in RTL, 6 lands at visual right / coarsest-first, matching the mockup), with the existing `arrow-left` icon between adjacent options (already in `Icon.tsx`) as a decorative "advance" cue. Default precision is **8** (per the mockup and the brief).
-- **No leader lines from the map to the digit numbers, and no leader line from the km-square to the zoom inset — deliberate, documented simplification** (write this to `design/assumptions.md` in Task 2): the mockup's static dashed connector lines don't generalize once the numbers are dynamic (different precision = different position), and the interactive hover-sync (digit ↔ map highlight) already communicates the same relationship more robustly and accessibly than a static line would. This mirrors this project's own prior precedent of dropping a mockup's decorative dashed route for the same class of reason (`design/assumptions.md`, Topic-02 scale-picker entry).
+- **No leader lines from the map to the digit numbers, and no leader line from the km-square to the zoom inset — deliberate, documented simplification** (write this to `design/docs/assumptions.md` in Task 2): the mockup's static dashed connector lines don't generalize once the numbers are dynamic (different precision = different position), and the interactive hover-sync (digit ↔ map highlight) already communicates the same relationship more robustly and accessibly than a static line would. This mirrors this project's own prior precedent of dropping a mockup's decorative dashed route for the same class of reason (`design/docs/assumptions.md`, Topic-02 scale-picker entry).
 - **Corner frames:** reuse the existing `FrameCorners` component (`src/components/ui/FrameCorners.tsx`) — `tone="sage"` on the main map, `tone="accent"` on the zoom inset (ties the inset to the "active/zoomed" emphasis, matching the mockup's orange-bordered inset vs. the map's dark corner marks).
 - **No layout shift when precision changes:** the digit-readout card, the main map, and the zoom inset must all keep a constant rendered height across all three precision values (already guaranteed by disabling rather than removing the fine-digit button, and by the map/inset containers using fixed `aspect-square` boxes regardless of what's drawn inside).
 - **Motion:** short CSS transitions (`transition-colors`/`transition-all`) for highlight state changes, with `motion-reduce:transition-none` alongside every such class (Tailwind's built-in reduced-motion variant — no JS needed for these). The outer `motion.div` entrance (`whileInView` fade+rise, matching this file's sibling blocks) should gate on `useReducedMotion()` exactly like `TopographyScene.tsx` already does (`initial={reduce ? false : {...}}`).
 - **Accessibility:** every interactive element needs a real accessible name (`aria-label` on the digit buttons describing what will be highlighted; the precision buttons' visible text is enough); visible `focus-visible:ring-2 focus-visible:ring-accent` on all of them (existing project convention); the distinction between "km digits" and "fine digits" must be explained in visible text (the existing caption lines), never by color alone; the raster `<img>` needs a real Hebrew `alt` ("מפת שטח דמיונית להדגמה, ללא שיוך למיקום אמיתי" or equivalent); the zoom inset (a CSS background-image, which has no native alt) needs `role="img"` + `aria-label`.
-- **Verification method (this codebase's established convention, see `design/assumptions.md`'s many prior `/reference-to-ui-exact` entries):** headless Chrome via `puppeteer-core` (already in `node_modules`, no install needed) driving the local Chrome at `C:\Program Files\Google\Chrome\Application\chrome.exe`, run with `node --input-type=module -e "..."` from the repo root so bare `import` specifiers resolve against the project's own `node_modules` (no new script files need to be committed for this — verification scripts are throwaway, run inline via Bash, never written into the repo). The dev server is already running in the background on **http://localhost:3001** (port 3000 was taken by another process); the route is `http://localhost:3001/lessons/topic-02/#scene-coordinates` (client-side hash routing — `PagedLearn` reads `window.location.hash` on mount, so this URL deep-links straight into the Coordinates sub-topic). `whileInView` animations need an actual scroll pass (or a `viewport={{ once: true }}` + manual `window.scrollTo` loop) before they read as visible in a screenshot — see the audit's own baseline-capture script for the exact pattern.
+- **Verification method (this codebase's established convention, see `design/docs/assumptions.md`'s many prior `/reference-to-ui-exact` entries):** headless Chrome via `puppeteer-core` (already in `node_modules`, no install needed) driving the local Chrome at `C:\Program Files\Google\Chrome\Application\chrome.exe`, run with `node --input-type=module -e "..."` from the repo root so bare `import` specifiers resolve against the project's own `node_modules` (no new script files need to be committed for this — verification scripts are throwaway, run inline via Bash, never written into the repo). The dev server is already running in the background on **http://localhost:3001** (port 3000 was taken by another process); the route is `http://localhost:3001/lessons/topic-02/#scene-coordinates` (client-side hash routing — `PagedLearn` reads `window.location.hash` on mount, so this URL deep-links straight into the Coordinates sub-topic). `whileInView` animations need an actual scroll pass (or a `viewport={{ once: true }}` + manual `window.scrollTo` loop) before they read as visible in a screenshot — see the audit's own baseline-capture script for the exact pattern.
 
 ---
 
@@ -594,7 +594,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Files:**
 - Modify (only if deltas are found): `src/components/lessons/topic-02/CoordinatesScene.tsx` (same scope lock as Task 1 — only the `DigitAnatomy` block)
-- Modify: `design/assumptions.md` (append a new dated section)
+- Modify: `design/docs/assumptions.md` (append a new dated section)
 - Modify: `docs/UI-CONSISTENCY-RECOMMENDATIONS.md` (update the Topic-02 entry per that file's existing section skeleton — read it first, follow its established format)
 
 **Interfaces:**
@@ -627,7 +627,7 @@ await browser.close();
 "
 ```
 
-Replace `PLACEHOLDER_OUT_DIR` with a path under your own scratch/temp directory (never commit screenshots to the repo). Read the resulting PNG and compare it against `design/reference/lesson-02/lesson2part5image3.png` (already read once during the audit — re-read it now). List concrete deltas: wrong spacing, wrong color, text overflow/clipping, misaligned map/text columns, corner frames missing/misplaced. Fix every delta directly in `CoordinatesScene.tsx`, re-run this screenshot, repeat until no material mismatch remains (per this project's own `/reference-to-ui-exact` convention — see the many prior entries in `design/assumptions.md` for the expected rigor).
+Replace `PLACEHOLDER_OUT_DIR` with a path under your own scratch/temp directory (never commit screenshots to the repo). Read the resulting PNG and compare it against `design/reference/lesson-02/lesson2part5image3.png` (already read once during the audit — re-read it now). List concrete deltas: wrong spacing, wrong color, text overflow/clipping, misaligned map/text columns, corner frames missing/misplaced. Fix every delta directly in `CoordinatesScene.tsx`, re-run this screenshot, repeat until no material mismatch remains (per this project's own `/reference-to-ui-exact` convention — see the many prior entries in `design/docs/assumptions.md` for the expected rigor).
 
 - [ ] **Step 2: Screenshot at mobile width (390px) and check reading order + no horizontal scroll**
 
@@ -648,7 +648,7 @@ await page.screenshot({ path: 'PLACEHOLDER_OUT_DIR/task2-mobile-390.png', fullPa
 await browser.close();
 "
 ```
-Expected: `scrollWidth` not meaningfully greater than `clientWidth` (a few px of pre-existing page-chrome overflow is a known, already-logged, out-of-scope issue per `design/assumptions.md` — do not chase that; only fix overflow you can attribute to `DigitAnatomy` itself, e.g. via a DOM walk for elements wider than the viewport inside the section). Confirm visually (read the screenshot) that the order is: heading → digit readouts → map → zoom inset (stacked) → precision selector, with no clipped text and the map staying square (not letterboxed oddly).
+Expected: `scrollWidth` not meaningfully greater than `clientWidth` (a few px of pre-existing page-chrome overflow is a known, already-logged, out-of-scope issue per `design/docs/assumptions.md` — do not chase that; only fix overflow you can attribute to `DigitAnatomy` itself, e.g. via a DOM walk for elements wider than the viewport inside the section). Confirm visually (read the screenshot) that the order is: heading → digit readouts → map → zoom inset (stacked) → precision selector, with no clipped text and the map staying square (not letterboxed oddly).
 
 - [ ] **Step 3: Interaction + accessibility check**
 
@@ -683,7 +683,7 @@ await browser.close();
 ```
 Expected: every digit button has a non-empty `aria-label`; at 6-digit the second button in each `bdi` is `disabled` and reads `–`; at 10-digit the digits read `17835`/`66675`. Confirm no color-only distinction: the two caption lines under each readout must remain in the DOM/visible regardless of state (already true if Task 1 was followed — verify, don't just assume).
 
-- [ ] **Step 4: Update `design/assumptions.md`**
+- [ ] **Step 4: Update `design/docs/assumptions.md`**
 
 Append a new dated section (follow the file's existing format exactly — one bullet per assumption, most-recent section at the bottom):
 
@@ -713,7 +713,7 @@ Screenshot the entire `#scene-coordinates` section (all four sub-blocks: concept
 - [ ] **Step 7: Commit**
 
 ```bash
-git add design/assumptions.md docs/UI-CONSISTENCY-RECOMMENDATIONS.md src/components/lessons/topic-02/CoordinatesScene.tsx
+git add design/docs/assumptions.md docs/UI-CONSISTENCY-RECOMMENDATIONS.md src/components/lessons/topic-02/CoordinatesScene.tsx
 git commit -m "polish(topic-02): verify digit-anatomy panel across viewports, document assumptions
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"

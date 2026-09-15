@@ -36,7 +36,7 @@ export function AppHeader() {
     setOpen(false);
   }, [pathname]);
 
-  // דף הבית החדש (design/mockup.png) מביא Header פנימי משלו — אין Header גלובלי ב-/.
+  // דף הבית החדש (design/mockups/mockup.png) מביא Header פנימי משלו — אין Header גלובלי ב-/.
   if (pathname === '/') return null;
 
   return (

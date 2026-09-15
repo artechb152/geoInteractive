@@ -26,7 +26,7 @@ type HistoricalCase = {
 // stat/why are short takeaways distilled from `lesson` below (same source
 // facts, not new claims) so the detail panel can show a scannable
 // headline-fact + a generalized "why it matters" line, per the reference
-// mockup — see design/assumptions.md.
+// mockup — see design/docs/assumptions.md.
 const CASES: HistoricalCase[] = [
   {
     id: 'napoleon',

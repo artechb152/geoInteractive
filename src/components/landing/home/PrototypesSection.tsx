@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 /**
  * PrototypesSection — קישור לשני הפרוטוטיפים האינטראקטיביים, בתחתית דף
- * הבית החדש (design/mockup.png אינו כולל את הפס הזה — נוסף מעבר לספק,
+ * הבית החדש (design/mockups/mockup.png אינו כולל את הפס הזה — נוסף מעבר לספק,
  * בסגנון הטוקנים של Design 1: paper-card / olive-ink / ember).
  */
 

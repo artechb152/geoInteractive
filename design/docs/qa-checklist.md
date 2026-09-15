@@ -27,7 +27,7 @@
 
 ### topic-03 — `/lessons/topic-03`
 - ⬜ hook — `#scene-hook`
-- ⬜ onboarding — `#scene-onboarding`
+- ✅ **onboarding** — `#scene-onboarding` — נבדק 2026-09-15: התאמת עיצוב/רינדור/RTL בלבד ל-topic-02 (לא בוצעה בדיקת עברית/דיוק מקצועי בסבב הזה). תוקן: גודל תגיות/תוויות/שברון באקורדיון הותאם ל-topic-02, שכבת כותרת כפולה בפאנל הוסרה (כמו התיקון ב-topic-02), min-height הפאנל וריווח לפני המפריד תוקנו לפי מדידת Playwright בפועל. **עדכון:** בלוק הדוגמאות ההיסטוריות הוחלף מרשת IntelCard ל-`HistoricalCasesPanel` ייעודי לnושא 3 (כמו ב-topic-02) — קוד ואינטראקציה נבדקו חי (Playwright), אבל 8 קבצי תמונה עדיין חסרים (`TOPIC03-ONB-HIST-{PEAK,WADI,SADDLE,BOWL}[-PREVIEW].png`, ר' `design/docs/assumptions.md`) — פלייסהולדר מוצג עד שהמשתמש יפיק אותם.
 - ⬜ geology — `#scene-geology`
 - ⬜ rocks — `#scene-rocks`
 - ⬜ geology-forces — `#scene-geology-forces`

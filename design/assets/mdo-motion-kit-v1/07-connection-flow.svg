@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 240" role="img" aria-labelledby="title">
+<title id="title">קו חיבור עם פעימות זרימה כתומות</title>
+<style>@media(prefers-reduced-motion:reduce){.motion{display:none}}</style>
+<path id="route" d="M24 216 Q300 -160 576 216" fill="none" stroke="#D97E2B" stroke-width="2.5" opacity=".65"/>
+<g fill="#D97E2B"><circle cx="24" cy="216" r="5"/><circle cx="576" cy="216" r="5"/>
+<g class="motion"><circle r="4"><animateMotion dur="3s" repeatCount="indefinite" path="M24 216 Q300 -160 576 216"/></circle><circle r="4"><animateMotion dur="3s" begin="-1.5s" repeatCount="indefinite" path="M24 216 Q300 -160 576 216"/></circle></g></g></svg>

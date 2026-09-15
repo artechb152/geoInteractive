@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="title">
+<title id="title">אות סייבר כתום פועם</title>
+<style>@media(prefers-reduced-motion:reduce){.motion{display:none}}</style>
+<g fill="none" stroke="#D97E2B" stroke-width="2">
+<circle cx="100" cy="100" r="48" opacity=".65"/>
+<g class="motion"><circle cx="100" cy="100" r="50"><animate attributeName="r" values="50;88" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values=".65;0" dur="3s" repeatCount="indefinite"/></circle>
+<circle cx="100" cy="100" r="50"><animate attributeName="r" values="50;88" dur="3s" begin="-1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values=".65;0" dur="3s" begin="-1.5s" repeatCount="indefinite"/></circle></g>
+<rect x="78" y="78" width="44" height="44" rx="5" fill="#FDFBF3" fill-opacity=".9"/>
+<rect x="89" y="89" width="22" height="22" rx="2"/>
+<path d="M86 68v10m14-10v10m14-10v10M86 122v10m14-10v10m14-10v10M68 86h10m-10 14h10m-10 14h10M122 86h10m-10 14h10m-10 14h10"/>
+</g></svg>

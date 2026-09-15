@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "projectRoot": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive",
+  "approvedMockup": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\design\\mockups\\asymmetric-time-realistic-v3.png",
+  "assetSourceDirectory": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\design\\handoff\\asymmetric-time-v3\\assets",
+  "destinationDirectory": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\public\\assets\\lessons\\topic01\\scene-asymmetric\\time-pressure",
+  "format": "PNG",
+  "generatedWith": "Built-in image_gen tool",
+  "assets": [
+    {
+      "filename": "pressure-map-daylight.png",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 4171368,
+      "sha256": "8D1ABD036FC9805603EA00C5FD7A17D0C9CDBB05BB7BEF007FCB83DF9A7773C5",
+      "role": "Main stable background for every round. Render without cropping or mirroring.",
+      "alt": "המחשה של מרחב עירוני הררי ובו שישה מוקדים למפת לחצים; קווי ההשפעה וההסברים מוצגים בנפרד.",
+      "decorative": false,
+      "objectPosition": "center",
+      "sourceAbsolute": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\design\\handoff\\asymmetric-time-v3\\assets\\pressure-map-daylight.png",
+      "destinationAbsolute": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\public\\assets\\lessons\\topic01\\scene-asymmetric\\time-pressure\\pressure-map-daylight.png",
+      "publicUrl": "/assets/lessons/topic01/scene-asymmetric/time-pressure/pressure-map-daylight.png"
+    },
+    {
+      "filename": "irregular-landscape.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 2741994,
+      "sha256": "6C311535E2B044358BC47499C917CF783D8996935FF82C95488FD7207E59F054",
+      "role": "Decorative irregular-actor strip, village on right. Add light text scrim in CSS.",
+      "alt": "",
+      "decorative": true,
+      "objectPosition": "right center",
+      "sourceAbsolute": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\design\\handoff\\asymmetric-time-v3\\assets\\irregular-landscape.png",
+      "destinationAbsolute": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\public\\assets\\lessons\\topic01\\scene-asymmetric\\time-pressure\\irregular-landscape.png",
+      "publicUrl": "/assets/lessons/topic01/scene-asymmetric/time-pressure/irregular-landscape.png"
+    },
+    {
+      "filename": "takeaway-landscape.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 2899486,
+      "sha256": "D8F1B003AB0D4FE68B9424FEEC496A643F605880F0EE66EE372E74B122A38086",
+      "role": "Decorative takeaway strip, village on left. Text on opaque/light surface to right.",
+      "alt": "",
+      "decorative": true,
+      "objectPosition": "left center",
+      "sourceAbsolute": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\design\\handoff\\asymmetric-time-v3\\assets\\takeaway-landscape.png",
+      "destinationAbsolute": "C:\\Users\\idog2\\Desktop\\Programming\\Artech\\geoInteractive\\public\\assets\\lessons\\topic01\\scene-asymmetric\\time-pressure\\takeaway-landscape.png",
+      "publicUrl": "/assets/lessons/topic01/scene-asymmetric/time-pressure/takeaway-landscape.png"
+    }
+  ],
+  "basePathRule": "Prefix publicUrl with NEXT_PUBLIC_BASE_PATH once when rendering, following existing project convention.",
+  "mapCoordinates": {
+    "image": "pressure-map-daylight.png",
+    "viewBox": [
+      0,
+      0,
+      1536,
+      1024
+    ],
+    "units": "normalized fractions, x from physical left and y from top; independent of RTL",
+    "verification": "Estimated visually against the final generated asset; refine label offsets in rendered 1440px UI. Do not crop or mirror the map.",
+    "nodes": {
+      "center": {
+        "anchor": [
+          0.5,
+          0.53
+        ],
+        "label": [
+          0.5,
+          0.585
+        ]
+      },
+      "military": {
+        "anchor": [
+          0.48,
+          0.22
+        ],
+        "label": [
+          0.48,
+          0.3
+        ]
+      },
+      "international": {
+        "anchor": [
+          0.19,
+          0.38
+        ],
+        "label": [
+          0.19,
+          0.475
+        ]
+      },
+      "economy": {
+        "anchor": [
+          0.82,
+          0.385
+        ],
+        "label": [
+          0.82,
+          0.515
+        ]
+      },
+      "politics": {
+        "anchor": [
+          0.27,
+          0.73
+        ],
+        "label": [
+          0.27,
+          0.835
+        ]
+      },
+      "public": {
+        "anchor": [
+          0.745,
+          0.715
+        ],
+        "label": [
+          0.745,
+          0.82
+        ]
+      }
+    }
+  },
+  "rasterExclusions": [
+    "Hebrew labels",
+    "connection paths",
+    "active rings and badges",
+    "icons",
+    "buttons",
+    "progress steps",
+    "feedback",
+    "network diagram"
+  ],
+  "assetProvenance": "AI-generated fictional imagery for conceptual education, not documentary evidence or an accurate real-world map."
+}

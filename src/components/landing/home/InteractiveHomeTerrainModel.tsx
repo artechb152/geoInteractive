@@ -30,8 +30,8 @@ import { useReducedMotion } from 'framer-motion';
  * `prefers-reduced-motion`).
  *
  * Colours baked into the glb are the approved "illustration palette" from
- * design/design-spec.md §8 plus the ember accent from tailwind.config.ts —
- * see design/assumptions.md. Orange is confined to the flag's pennant only.
+ * design/docs/design-spec.md §8 plus the ember accent from tailwind.config.ts —
+ * see design/docs/assumptions.md. Orange is confined to the flag's pennant only.
  *
  * Rendered client-only via next/dynamic from HomeTerrainDiorama.tsx
  * (Canvas can't SSR); WebGL support + runtime errors are gated there.

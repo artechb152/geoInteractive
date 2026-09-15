@@ -2,7 +2,7 @@
 
 `/reference-to-ui-exact` against `lesson1part5image1.png` (`design/reference/lesson-01/`). Continues the same
 established convention as `docs/superpowers/plans/2026-09-03-topic01-levels-scene-redesign.md`
-(see `design/assumptions.md`'s "Topic-01 levels scene" section for the precedent this plan
+(see `design/docs/assumptions.md`'s "Topic-01 levels scene" section for the precedent this plan
 follows). Branch: work directly on `main` — this repo's established practice for this exact
 class of task (every prior `/reference-to-ui-exact` pass landed as direct commits on `main`;
 the one prior plan that named a feature branch turned out to be an ancestor of `main` by the
@@ -23,7 +23,7 @@ time work continued, i.e. no long-lived branch is actually in use for this workf
   hero `IsometricAsset`, or any of `TypologyTable`, `PillarSimulator`, `TimeAsymmetry`,
   `TacticMatchExercise`, `DragExercise`, or the closing "המסקנה" block. Do not touch any other
   file except to add the new/already-present asset files to the commit and to append to
-  `design/assumptions.md` / `docs/UI-CONSISTENCY-RECOMMENDATIONS.md` per the Verification
+  `design/docs/assumptions.md` / `docs/UI-CONSISTENCY-RECOMMENDATIONS.md` per the Verification
   section below.
 - Color/token rule: this file already uses the project's non-landing token namespace
   (`bg`/`fg`/`border`/`accent`/`status`, plus utility classes `surface-elevated`, `bg-warm`,
@@ -32,7 +32,7 @@ time work continued, i.e. no long-lived branch is actually in use for this workf
   `OnboardingScene.tsx`'s landing-redesign palette — a different visual system for a different
   part of the app) and do not add any new hex value. `tailwind.config.ts` documents `accent`
   (orange, `#D97E2B`) as "action/focus ONLY" for this namespace — use it for the one active/
-  selected state in this component, exactly like the precedent in `design/assumptions.md`'s
+  selected state in this component, exactly like the precedent in `design/docs/assumptions.md`'s
   "Topic-01 levels scene" entry (single accent-colored active state, neutral dark/muted for
   the other two) — even though the reference screenshot happens to render its own active-tab
   indicator in an olive-green tone; normalizing to this app's `accent` token for "currently
@@ -57,7 +57,7 @@ time work continued, i.e. no long-lived branch is actually in use for this workf
   - `IsometricAsset`'s `aspect` prop only accepts `'16/9' | '21/9' | '1/1' | '4/3'`. If a real
     asset's own aspect ratio doesn't cleanly match one of those (the wide banners almost
     certainly won't — they look close to 3:1), use the same technique already established in
-    `design/assumptions.md`'s "Diorama aspect" entry: a wrapper with a custom
+    `design/docs/assumptions.md`'s "Diorama aspect" entry: a wrapper with a custom
     `style={{ aspectRatio: '<measured w> / <measured h>' }}` and `IsometricAsset`
     `className="... [aspect-ratio:auto]"` so the real image renders uncropped instead of being
     squeezed into the nearest fixed preset.
@@ -171,7 +171,7 @@ out; this is a confirmed, intentional omission, not an oversight to flag as a co
 1. `npx tsc --noEmit` — fix any type errors.
 2. Screenshot `http://localhost:3000/lessons/topic-01/#scene-asymmetric` at 1440px width
    (Playwright — `npx --no-install playwright ...` or an ad-hoc script driving
-   `playwright-core`/`playwright`, matching the pattern described in `design/assumptions.md`).
+   `playwright-core`/`playwright`, matching the pattern described in `design/docs/assumptions.md`).
    Compare against `lesson1part5image1.png`, specifically the banner-tabs + detail-panel region
    only (the reference's header/CTA/footer chrome is explicitly out of scope, see above, and
    will legitimately not appear).
@@ -184,7 +184,7 @@ out; this is a confirmed, intentional omission, not an oversight to flag as a co
 4. Fix any material mismatch found and re-screenshot until clean. A named, specific limitation
    is acceptable to report as remaining — a silent, unverified claim of "matches the reference"
    is not.
-5. Append a dated entry to `design/assumptions.md` (new `##` heading, matching the existing
+5. Append a dated entry to `design/docs/assumptions.md` (new `##` heading, matching the existing
    "Topic-01 levels scene" entry's style) documenting: the `accent`-only active-tab decision
    and why (references the levels-scene precedent), the omitted lightbulb tip box and why, and
    the exact aspect-ratio technique used for the banner/photo images if a custom

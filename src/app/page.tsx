@@ -12,7 +12,7 @@ import { ProgressCard } from '@/components/landing/home/ProgressCard';
 import { PrototypesSection } from '@/components/landing/home/PrototypesSection';
 
 /**
- * דף הבית — מימוש סטטי pixel-accurate של design/mockup.png (1440px).
+ * דף הבית — מימוש סטטי pixel-accurate של design/mockups/mockup.png (1440px).
  * רכיבי V2 הישנים (landing/Hero וכו') נשארים על הדיסק אך אינם מיובאים יותר.
  */
 export default function HomePage() {

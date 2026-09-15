@@ -1,5 +1,5 @@
 /**
- * FeaturesRow — ארבעת כרטיסי היתרונות (design/mockup.png, פס אמצעי).
+ * FeaturesRow — ארבעת כרטיסי היתרונות (design/mockups/mockup.png, פס אמצעי).
  * הילד הראשון = הכרטיס הימני ב-RTL ("מפות אינטראקטיביות" במוקאפ).
  * האיורים כאן הם קירובי SVG שטוחים — יוחלפו בנכסי papercut כשיופקו
  * (חוב נכסים: HOME-FEATURE-{MAP,COMPASS,BINOCULARS,LAYERS}).

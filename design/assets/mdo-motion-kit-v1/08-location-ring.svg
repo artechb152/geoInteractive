@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 100" role="img" aria-labelledby="title">
+<title id="title">טבעת מיקום כתומה פועמת</title>
+<style>@media(prefers-reduced-motion:reduce){.motion{display:none}}</style>
+<g fill="none" stroke="#D97E2B" stroke-width="2"><ellipse cx="120" cy="50" rx="65" ry="20" opacity=".8"/>
+<ellipse class="motion" cx="120" cy="50" rx="65" ry="20"><animate attributeName="rx" values="65;106" dur="2s" repeatCount="indefinite"/><animate attributeName="ry" values="20;36" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="2s" repeatCount="indefinite"/></ellipse></g></svg>

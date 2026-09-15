@@ -168,15 +168,23 @@ whileInView={{ opacity: 1 }}
 viewport={{ once: true }}
 className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
  >
- <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
- <div>
- <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider font-bold">
- הדמיה מבצעית: מה קורה כשהשפה לא תואמת
- </div>
- <div className="font-display font-bold text-5xl tabular-nums">
- {shift}<span className="text-2xl text-fg-muted ms-2">מ׳ סטייה</span>
- </div>
- </div>
+ {/* Sidebar (right, DOM-first per this file's RTL convention) + map column
+     (left), matching the reference's proportions (map:sidebar ≈ 2.47:1,
+     pixel-measured off design/reference/lesson-02/lesson2part5image2.png).
+     The map keeps a fixed aspect ratio matching ImpactMap's own SVG viewBox
+     (100×56 → 25/14) instead of stretching to the sidebar's content height:
+     ImpactMap's overlay SVG uses preserveAspectRatio="none" so its shapes
+     (crosshair, deviation ring, impact marker) are only circular/undistorted
+     when the box's rendered aspect ratio equals the viewBox's — letting the
+     box's height instead track the sidebar (whose height shifts with the
+     "{shift} מ׳" digit count and the paragraph's line count) warped those
+     shapes and, through the shared grid track, could nudge the map's own
+     width too. The meter slider + its tick captions live inside this same
+     map column (not spanning the whole card) so they're exactly as wide as
+     the map above them, per this project's request. */}
+ <div className="grid md:grid-cols-[1fr_2.4fr] gap-6 md:gap-8 items-start mb-6">
+ <div className="flex flex-col gap-4 min-w-0">
+ <div className="flex flex-col items-start gap-3">
  <div className={cn(
  'px-4 py-2 rounded-full border text-sm font-bold transition-colors',
 dangerLevel === 'safe' && 'border-status-ok/40 bg-status-ok/10 text-status-ok',
@@ -185,25 +193,17 @@ dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-st
  )}>
  {dangerLevel === 'safe' ? '✓ סטטוס: תקין' : dangerLevel === 'warn' ? '! סטטוס: סיכון' : '✗ סטטוס: סטייה קריטית'}
  </div>
+ <div>
+ <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider font-bold">
+ הדמיה מבצעית: מה קורה כשהשפה לא תואמת
+ </div>
+ <div className="font-display font-bold text-5xl tabular-nums">
+ {shift}<span className="text-2xl text-fg-muted ms-2">מ׳ סטייה</span>
+ </div>
+ </div>
  </div>
 
- <input
-type="range"
-min={0}
-max={100}
-step={1}
-value={shift}
-onChange={(e) => setShift(Number(e.target.value))}
-className="w-full h-2 bg-bg-accent rounded-[3px] appearance-none cursor-pointer accent-accent mb-2"
- />
- <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim mb-8">
- <span>0 מ׳</span>
- <span>50 מ׳ (טווח רסיסים)</span>
- <span>100 מ׳ (החטאה מלאה)</span>
- </div>
-
- <div className="grid md:grid-cols-[1fr_1.6fr] gap-8 items-stretch">
- <div className="surface p-6 flex flex-col justify-center rounded-[3px] bg-bg/30">
+ <div className="surface p-6 flex flex-col justify-center rounded-[3px] bg-bg/30 flex-1">
  <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider font-bold">
  השלכה מבצעית בשטח
  </div>
@@ -222,9 +222,27 @@ dangerLevel === 'danger' && 'text-status-danger',
  <strong>התוצאה:</strong> בלי תרגום נכון ← הקואורדינטה תתפרש כמיקום אחר לגמרי.
  </div>
  </div>
+ </div>
 
- <div className="surface relative aspect-video overflow-hidden rounded-[3px] border border-border/40">
+ <div className="flex flex-col gap-3 min-w-0">
+ <div className="surface relative overflow-hidden rounded-[3px] border border-border/40 aspect-[25/14]">
  <ImpactMap shift={shift} />
+ </div>
+
+ <input
+type="range"
+min={0}
+max={100}
+step={1}
+value={shift}
+onChange={(e) => setShift(Number(e.target.value))}
+className="w-full h-2 bg-bg-accent rounded-[3px] appearance-none cursor-pointer accent-accent"
+ />
+ <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim">
+ <span>0 מ׳</span>
+ <span>50 מ׳ (טווח רסיסים)</span>
+ <span>100 מ׳ (החטאה מלאה)</span>
+ </div>
  </div>
  </div>
  </motion.div>
@@ -234,64 +252,196 @@ function ImpactMap({ shift }: { shift: number }) {
  // Offset logic for the SVG impact point
 const offsetX = Math.min(38, shift * 0.38);
 const offsetY = shift * 0.15;
+const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+// Dashed "deviation zone" ring around the target — grows with the measured
+// distance to the impact point but clamped so it never blows past the
+// 100×56 viewBox (unclamped, shift=100's ~41 unit distance would push the
+// ring off the top/bottom edges).
+const ringRadius = Math.min(20, 4 + distance * 0.4);
+// Label positions, expressed as % of the container (viewBox is 100×56,
+// mapped 1:1 onto the container by preserveAspectRatio="none" below, so an
+// x-unit already IS a %-of-width and a y-unit is %-of-56-of-height).
+// Solid HTML chips instead of in-SVG <text> — same convention as this
+// file's AnatomyZoomInset legend chip further down — so label legibility
+// never depends on a stroke-halo hack over the busy terrain art, and the
+// font size stays a real CSS px value instead of a viewBox-relative SVG
+// unit that would shrink at the single-column mobile breakpoint.
+const targetLeftPct = 50;
+const targetTopPct = (44 / 56) * 100;
+const impactLeftPct = 50 + offsetX;
+const impactTopPct = ((26 - offsetY) / 56) * 100;
+const midLeftPct = 50 + offsetX / 2;
+const midTopPct = ((32 - offsetY / 2) / 56) * 100;
+// Colors pixel-sampled from design/reference/lesson-02/lesson2part5image2.png
+// (medians of solid-fill/darkest-ink regions, paper background excluded).
+// Neither matches an existing token closely enough to reuse: accent.hot
+// (#e2553a) and status.danger (#ef4444) are both brighter/more orange than
+// the reference's muted brick-red / dark maroon.
+const IMPACT_RED = '#a8342a';
+const IMPACT_MAROON = '#7a1a12';
+// Scale-bar tick positions, in the same 100×56 SVG-unit space as the rest
+// of this overlay. Ticks are 0/50/100 — the same three checkpoints this
+// exact component's slider caption row already establishes ("0 מ׳" /
+// "50 מ׳ (טווח רסיסים)" / "100 מ׳ (החטאה מלאה)") — not new invented values,
+// unlike the reference's own 0/50/100/200 (this demo's shift never exceeds
+// 100) plus a UTM-style coordinate readout with no backing data here.
+const SCALE_X0 = 6;
+const SCALE_X50 = 20;
+const SCALE_X100 = 34;
+const SCALE_Y = 48;
 return (
- <svg viewBox="0 0 100 56" className="w-full h-full" preserveAspectRatio="none">
+ <>
+ {/* eslint-disable-next-line @next/next/no-img-element -- static export */}
+ <img
+src={DATUM_MAP_SRC}
+alt=""
+aria-hidden
+draggable={false}
+className="absolute inset-0 size-full object-cover"
+ />
+ <FrameCorners tone="sage" />
+ {/* North indicator — reference uses a bare solid triangle + "N", not a
+     circular icon chip; matched here as a small fixed-px HTML glyph (not
+     viewBox-relative, so it can't shrink at other breakpoints).
+     Physical corner (not logical start/end): like the terrain art itself,
+     a map orientation glyph must not move because the page is RTL — the
+     reference places it at the map's left, so that's where it stays. */}
+ <div className="absolute top-2 left-2 flex flex-col items-center text-fg/85" aria-hidden>
+ <span className="text-[9px] font-display font-bold leading-none mb-0.5">N</span>
+ <svg width="9" height="11" viewBox="0 0 10 12" fill="currentColor">
+ <path d="M5 0 L10 12 L5 9 L0 12 Z" />
+ </svg>
+ </div>
+
+ <svg viewBox="0 0 100 56" className="absolute inset-0 size-full" preserveAspectRatio="none" aria-hidden>
  <defs>
+ {/* Hardcoded hex, not var(--fg): this file's pre-existing var(--accent-cool)
+     gradient below had no matching CSS custom-property definition anywhere
+     in the project (confirmed by repo-wide search) — an SVG presentation
+     attribute referencing an undefined var() silently fails, so that stop
+     never actually painted. Using the literal fg hex (#38432E, from
+     tailwind.config.ts) avoids repeating that latent bug. */}
  <radialGradient id="targetGrad" cx="50%" cy="50%" r="50%">
- <stop offset="0%" stopColor="var(--accent-cool)" stopOpacity="0.3" />
- <stop offset="100%" stopColor="var(--accent-cool)" stopOpacity="0" />
+ <stop offset="0%" stopColor="#38432E" stopOpacity="0.25" />
+ <stop offset="100%" stopColor="#38432E" stopOpacity="0" />
  </radialGradient>
+ <marker id="impactArrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto-start-reverse">
+ <path d="M0,0 L10,5 L0,10 z" fill={IMPACT_RED} />
+ </marker>
  </defs>
- 
- <rect x="0" y="0" width="100" height="56" className="fill-bg-elevated" />
 
- {/* Tactical Grid Overlay */}
- {Array.from({ length: 11 }).map((_, i) => (
- <g key={i}>
- <line x1={i * 10} y1="0" x2={i * 10} y2="56" className="stroke-border/20" strokeWidth="0.1" />
- <line x1="0" y1={i * 5.6} x2="100" y2={i * 5.6} className="stroke-border/20" strokeWidth="0.1" />
- </g>
+ {/* Map grid overlay — light quarter-division lines over the terrain art */}
+ {[25, 50, 75].map((x) => (
+ <line key={`v${x}`} x1={x} y1="0" x2={x} y2="56" className="stroke-fg/20" strokeWidth="0.15" />
  ))}
+ {[14, 28, 42].map((y) => (
+ <line key={`h${y}`} x1="0" y1={y} x2="100" y2={y} className="stroke-fg/20" strokeWidth="0.15" />
+ ))}
+ <rect x="0" y="0" width="100" height="56" fill="none" className="stroke-fg/25" strokeWidth="0.2" />
 
- {/* Target Zone */}
+ {/* Deviation zone — dashed ring sized to the current shift */}
+ <circle cx="50" cy="32" r={ringRadius} fill="none" className="stroke-fg/45" strokeWidth="0.3" strokeDasharray="1.3 1.1" />
+
+ {/* Target Zone — crosshair marker (dark olive ink, matching the
+     reference — not accent-cool blue, which read as a WGS84/GPS color
+     cue that isn't actually in the reference art) */}
  <g>
- <circle cx="50" cy="32" r="8" fill="url(#targetGrad)" />
- <circle cx="50" cy="32" r="0.8" className="fill-accent-cool" />
- <circle cx="50" cy="32" r="6" fill="none" className="stroke-accent-cool/30" strokeWidth="0.2" strokeDasharray="1 1" />
- <text x="50" y="44" textAnchor="middle" className="fill-accent-cool/80 text-[2.8px] font-display font-bold font-bold"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >מטרה מבוקשת</text>
+ <circle cx="50" cy="32" r="7" fill="url(#targetGrad)" />
+ <circle cx="50" cy="32" r="2.2" fill="none" className="stroke-fg" strokeWidth="0.55" />
+ <line x1="46.6" y1="32" x2="53.4" y2="32" className="stroke-fg" strokeWidth="0.55" />
+ <line x1="50" y1="28.6" x2="50" y2="35.4" className="stroke-fg" strokeWidth="0.55" />
  </g>
 
  {/* Impact Point */}
  <motion.g animate={{ x: offsetX, y: -offsetY }} transition={{ type: 'spring', stiffness: 50 }}>
- <circle cx="50" cy="32" r="1.2" className="fill-accent-hot" />
- <circle cx="50" cy="32" r="5" fill="none" className="stroke-accent-hot/40" strokeWidth="0.3">
+ <circle cx="50" cy="32" r="1.2" fill={IMPACT_RED} />
+ <circle cx="50" cy="32" r="5" fill="none" stroke={IMPACT_RED} strokeOpacity="0.4" strokeWidth="0.3">
  <animate attributeName="r" values="3;7;3" dur="1.5s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.8;0.1;0.8" dur="1.5s" repeatCount="indefinite" />
  </circle>
- <text x="50" y="26" textAnchor="middle" className="fill-accent-hot text-[2.8px] font-display font-bold font-bold tracking-tighter"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >מיקום פגיעה בפועל</text>
  </motion.g>
 
- {/* Displacement line */}
+ {/* Displacement line — brick-red to match the reference, with a small
+     arrowhead at the impact end (also matching the reference) */}
  {shift > 4 && (
  <line
 x1="50" y1="32"
 x2={50 + offsetX} y2={32 - offsetY}
-className="stroke-status-danger/40"
-strokeWidth="0.2"
-strokeDasharray="0.5 0.5"
+stroke={IMPACT_RED}
+strokeOpacity="0.7"
+strokeWidth="0.25"
+strokeDasharray="0.6 0.6"
+markerEnd="url(#impactArrow)"
  />
  )}
+
+ {/* Scale bar — ticks at 0/50/100, reusing this component's own existing
+     scale checkpoints (see const comment above), not new invented values */}
+ <g className="stroke-fg" strokeWidth="0.4">
+ <line x1={SCALE_X0} y1={SCALE_Y} x2={SCALE_X100} y2={SCALE_Y} />
+ <line x1={SCALE_X0} y1={SCALE_Y - 1.4} x2={SCALE_X0} y2={SCALE_Y + 1.4} />
+ <line x1={SCALE_X50} y1={SCALE_Y - 1.4} x2={SCALE_X50} y2={SCALE_Y + 1.4} />
+ <line x1={SCALE_X100} y1={SCALE_Y - 1.4} x2={SCALE_X100} y2={SCALE_Y + 1.4} />
+ </g>
  </svg>
+
+ {/* Labels — solid HTML chips over the SVG, not in-SVG <text>: same
+     legibility convention as this file's AnatomyZoomInset legend chip
+     (fixed CSS px size, opaque backing) instead of a stroke-halo hack
+     over the busy terrain art. */}
+ <div
+className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2 py-0.5 text-[10px] font-display font-bold text-fg whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
+style={{ left: `${targetLeftPct}%`, top: `${targetTopPct}%` }}
+ >
+מטרה מבוקשת
+ </div>
+ <motion.div
+className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2 py-0.5 text-[10px] font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
+style={{ color: IMPACT_MAROON }}
+animate={{ left: `${impactLeftPct}%`, top: `${impactTopPct}%` }}
+transition={{ type: 'spring', stiffness: 50 }}
+ >
+מיקום פגיעה בפועל
+ </motion.div>
+ {/* Always mounted (never conditionally rendered) so crossing the
+     shift > 4 threshold only fades opacity in/out — mounting it fresh at
+     that moment made it pop in from wherever an unset left/top defaulted
+     to (the container's top-right corner) instead of sliding smoothly
+     from the displacement line's midpoint. */}
+ <motion.div
+className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-1.5 py-0.5 text-[9px] font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
+style={{ color: IMPACT_MAROON }}
+initial={{ opacity: 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
+animate={{ opacity: shift > 4 ? 1 : 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
+transition={{ left: { type: 'spring', stiffness: 50 }, top: { type: 'spring', stiffness: 50 }, opacity: { duration: 0.2 } }}
+ >
+{shift} מ׳
+ </motion.div>
+ <div
+className="absolute -translate-x-1/2 text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+style={{ left: `${SCALE_X0}%`, top: `${(SCALE_Y / 56) * 100 - 9}%` }}
+ >
+0
+ </div>
+ <div
+className="absolute -translate-x-1/2 text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+style={{ left: `${SCALE_X50}%`, top: `${(SCALE_Y / 56) * 100 - 9}%` }}
+ >
+50
+ </div>
+ <div
+className="absolute -translate-x-1/2 text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+style={{ left: `${SCALE_X100}%`, top: `${(SCALE_Y / 56) * 100 - 9}%` }}
+ >
+100
+ </div>
+ <div
+className="absolute text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+style={{ left: `${SCALE_X100 + 3}%`, top: `${(SCALE_Y / 56) * 100}%`, transform: 'translateY(-50%)' }}
+ >
+מ׳
+ </div>
+ </>
  );
 }
 /* ─────────────────── DIGIT ANATOMY — WHAT EACH DIGIT MEANS ─────────────── */
@@ -346,6 +496,12 @@ const KM_EAST = Number(GRID_EAST_KM);
 const KM_NORTH = Number(GRID_NORTH_KM);
 
 const TERRAIN_MAP_SRC = '/reference-assets/coordinate-anatomy/terrain-map.png';
+
+// Painterly topo backdrop for DatumShiftDemo's ImpactMap (reference:
+// design/reference/lesson-02/lesson2part5image2.png). Purely decorative —
+// the target/impact meaning is carried by the SVG overlay's own crosshair,
+// marker and <text> labels, not by this raster layer.
+const DATUM_MAP_SRC = '/assets/lessons/topic02/scene-coordinates/TOPIC02-COORDINATES-DATUM-MAP.webp';
 
 // Helper: compute CSS background-position percentage to center a given image
 // fraction point inside a container scaled by `scalePct / 100`.
@@ -406,10 +562,11 @@ function DigitAnatomy() {
           </div>
         </div>
 
-        <AnatomyMap precision={precision} activeZone={activeZone} east={east} north={north} />
+        <div className="flex flex-col gap-4">
+          <PrecisionSelector precision={precision} onChange={setPrecision} />
+          <AnatomyMap precision={precision} activeZone={activeZone} east={east} north={north} />
+        </div>
       </div>
-
-      <PrecisionSelector precision={precision} onChange={setPrecision} />
     </motion.div>
   );
 }
@@ -770,7 +927,7 @@ function PrecisionGlyph({ level, active }: { level: Precision; active: boolean }
 
 function PrecisionSelector({ precision, onChange }: { precision: Precision; onChange: (p: Precision) => void }) {
   return (
-    <div className="mt-8 pt-6 border-t border-border-subtle">
+    <div>
       <div className="text-sm font-display font-semibold text-fg mb-4">כל ספרה נוספת — פי 10 דיוק בכל ציר</div>
       <div role="group" aria-label="רמת דיוק הנ״צ" className="flex flex-wrap items-center gap-3 sm:gap-2">
         {PRECISION_OPTIONS.map((opt, i) => (
@@ -826,7 +983,7 @@ function refOf(t: GridTarget) {
 /* Reference-art grid card (design/reference/lesson-02/lesson2part5image4.png,
    source art "ChatGPT Image Sep 14, 2026, 02_55_34 PM.png"): the 10×10 frame,
    ruler ticks, corner brackets and 0–9 axis digits are baked into the art
-   itself (chroma-keyed to real alpha + trimmed — see design/assumptions.md).
+   itself (chroma-keyed to real alpha + trimmed — see design/docs/assumptions.md).
    GRID_INSET is measured directly off that art's own printed orange frame
    (pixel-scanned + visually verified with an overlay-gridline render on the
    1206×1171 trimmed asset: left 365px/1206, right 1132px/1206, top

@@ -1,8 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { MapPaperPanel } from '@/components/lesson/MapPaperPanel';
 import { Icon, type IconName } from '@/components/Icon';
 import { TopoField } from '@/components/ui/TopoField';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
@@ -14,43 +13,45 @@ english: string;
 icon: IconName;
 weakness: string;
 strength: string;
- // Position around the central sphere
-angle: number; // degrees
+ // Anchor point on the field photo (mdo-field-domains.png, 1448×1086px),
+ // measured from the left/top edge — never mirrored for RTL.
+anchor: [number, number];
 };
 const DOMAINS: Domain[] = [
  {
 id: 'land', label: 'יבשה', english: 'Land', icon: 'mountain',
 strength: 'מגפיים על הקרקע: הדרך היחידה להכריע באמת. רק חיילים יכולים להיכנס פיזית, לטהר מבנים, להסתכל לאויב בעיניים ולהחזיק בשטח.',
 weakness: 'בלי כוח קרקעי הכל וירטואלי: אפשר להפציץ ולצלם מלמעלה כמה שרוצים, אבל בלי חיילים על הקרקע אי אפשר באמת לכבוש כלום.',
-angle: -90,
+anchor: [850, 565],
  },
  {
 id: 'air', label: 'אוויר', english: 'Air', icon: 'plane',
 strength: 'האגרוף מהשמיים: מטוסי קרב ורחפנים שמחסלים מטרות בשניות, מחפים על החיילים מלמעלה ותוקפים עמוק בשטח האויב.',
 weakness: 'בלי הגנה אווירית השמיים פתוחים: החיילים למטה חשופים לחלוטין להפצצות, ואין מי שיעזור להם להשמיד איומים מרחוק.',
-angle: -18,
+anchor: [1075, 139],
  },
  {
 id: 'sea', label: 'ים', english: 'Sea', icon: 'ship',
 strength: 'העורק הפתוח: ספינות קרב וצוללות שמגנות על החופים, מאפשרות לתקוף בהפתעה, ודואגות שאספקת נשק ודלק תמשיך לזרום.',
 weakness: 'בלי שליטה בים המדינה במצור: אוניות מסע ואספקה לא מגיעות (קריטי במלחמה ארוכה), והחופים פרוצים לגמרי לפלישה.',
-angle: 54,
+anchor: [165, 502],
  },
  {
 id: 'space', label: 'חלל', english: 'Space', icon: 'satellite',
 strength: 'העיניים של הצבא: לוויינים שנותנים ניווט GPS מדויק לכל פגז, משדרים תמונות חיות של האויב ושומרים על קשר בין כולם.',
 weakness: 'בלי לוויינים הצבא עיוור וחירש: ה-GPS קורס (הטילים מפספסים והחיילים הולכים לאיבוד), ומערכות התקשורת נופלות.',
-angle: 126,
+anchor: [500, 82],
  },
  {
 id: 'cyber', label: 'סייבר', english: 'Cyber', icon: 'bolt',
 strength: 'הנשק השקוף: היכולת לשתק את האויב בלי לירות כדור אחד! לפרוץ לו למכשירי הקשר, לעוור לו את המכ"ם או לכבות לו את החשמל.',
 weakness: 'בלי חומת סייבר נהיה חשופים לגמרי: האקרים יוכלו לזייף מטרות לחיילים, לנתק קשר ולהפיל לנו תשתיות (חשמל, מים, בנקים).',
-angle: 198,
+anchor: [1330, 367],
  },
 ];
 export function MDOScene() {
 const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
+const [motionPaused, setMotionPaused] = useState(false);
 const allOn = active.size === DOMAINS.length;
 const allOff = active.size === 0;
 const missing = DOMAINS.filter((d) => !active.has(d.id));
@@ -72,18 +73,28 @@ title={
           <>
           המערכה המודרנית: שדה הקרב כבר מזמן לא מוגבל ל<span className="gradient-text">קרקע</span>
           </>
-        }intro='פעם צבאות נלחמו בשדה קרב שטוח, פנים מול פנים. היום מלחמה מזכירה משחק רשת מורכב שמתנהל ב-5 זירות במקביל. לחצו על כל זירה בפנטגון כדי"לכבות" אותה, ותראו איך כל הצבא שלכם מאבד כוח.'
+        }intro='פעם צבאות נלחמו בשדה קרב שטוח, פנים מול פנים. היום מלחמה מזכירה משחק רשת מורכב שמתנהל ב-5 זירות במקביל. לחצו על כל ממד בתמונת השטח כדי"לכבות" אותו, ותראו איך כל הצבא שלכם מאבד כוח.'
  />
 
- <div className="p-5 mb-6">
- <div className="flex gap-3 items-start">
- <Icon name="spark" size={20} className="text-accent-cool shrink-0 mt-0.5" />
- <div className="text-sm leading-relaxed">
- <strong className="text-fg">מה זה MDO?</strong>{' '}
- ראשי תיבות של <span className="font-mono text-accent-cool">Multi-Domain Operations</span> (מבצעים רב-ממדיים).
+ <div className="surface-elevated relative overflow-hidden mb-6 grid sm:grid-cols-[7fr_3fr]">
+ <div className="p-6 sm:p-8">
+ <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">מה זה MDO?</h3>
+ <span aria-hidden className="mt-2 mb-4 block h-1 w-10 rounded-full bg-accent" />
+ <p className="text-sm leading-relaxed text-fg-muted sm:text-base">
+ ראשי תיבות של <span className="font-mono text-brand-dark">Multi-Domain Operations</span> (מבצעים רב-ממדיים).
  במקום שחיל האוויר יילחם לבד והשריון לבד – הכל קורה ביחד. כל 5 הממדים עובדים מסונכרנים באותה שנייה בדיוק.
  זה"המולטי-טאסקינג" שבלעדיו שום צבא לא יכול לנצח היום.
+ </p>
  </div>
+ <div className="flex items-center justify-center bg-bg-accent p-6 sm:p-8">
+ <IsometricAsset
+ assetId="TOPIC01-MDO-PENTAGON-DIAGRAM"
+ src="/reference-assets/mdo-explainer-card/pentagon-diagram.png"
+ alt="דיאגרמת פנטגון: חמישה תחומי לחימה — יבשה, אוויר, ים, חלל וסייבר — מחוברים סביב MDO במרכז"
+ aspect="1/1"
+ fit="contain"
+ className="w-full max-w-[150px] bg-bg-accent sm:max-w-[180px]"
+ />
  </div>
  </div>
 
@@ -147,11 +158,19 @@ className="surface-elevated p-5 flex gap-3 items-start"
  </AnimatePresence>
  </div>
 
- <MapPaperPanel>
- <div className="flex items-center justify-between mb-4">
+ <div className="space-y-3">
+ <div className="flex flex-wrap items-center justify-between gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  לחץ על כל ממד כדי לכבות / להפעיל
  </div>
+ <div className="flex items-center gap-3">
+ <button
+onClick={() => setMotionPaused((p) => !p)}
+aria-pressed={motionPaused}
+className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
+ >
+ {motionPaused ? 'הפעל תנועה' : 'השהה תנועה'}
+ </button>
  <button
 onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
 className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
@@ -160,8 +179,11 @@ className="text-xs font-mono text-fg-dim hover:text-accent transition-colors fle
  הפעל הכל
  </button>
  </div>
- <SuperioritySphere domains={DOMAINS} active={active} onToggle={toggle} />
- </MapPaperPanel>
+ </div>
+ <div className="surface-elevated overflow-hidden">
+ <MDOFieldDiagram domains={DOMAINS} active={active} onToggle={toggle} paused={motionPaused} />
+ </div>
+ </div>
  </div>
 
  <RealWorldExamples />
@@ -172,165 +194,205 @@ className="text-xs font-mono text-fg-dim hover:text-accent transition-colors fle
  </section>
  );
 }
-function SuperioritySphere({
+/* Field-photo dimensions (mdo-field-domains.png) — the SVG overlay shares
+   this viewBox so lines/markers stay pinned to the same objects at any
+   container width. */
+const FIELD_W = 1448;
+const FIELD_H = 1086;
+
+/* Connections drawn between domains — a curated subset (not a complete
+   graph), chosen for teaching value rather than geometric completeness. */
+const EDGES: [string, string][] = [
+['land', 'air'],
+['land', 'sea'],
+['space', 'air'],
+['space', 'land'],
+['cyber', 'space'],
+['cyber', 'land'],
+['cyber', 'sea'],
+];
+
+/** Quadratic-Bézier control point, bowed outward from the layout's centroid
+    so the 7 arcs fan out through open sky/sea instead of overlapping. */
+function edgeControl(a: [number, number], b: [number, number], centroid: [number, number]): [number, number] {
+const mx = (a[0] + b[0]) / 2;
+const my = (a[1] + b[1]) / 2;
+let dx = mx - centroid[0];
+let dy = my - centroid[1];
+const dlen = Math.hypot(dx, dy) || 1;
+dx /= dlen;
+dy /= dlen;
+const edgeLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+const bow = Math.min(150, Math.max(45, edgeLen * 0.2));
+return [mx + dx * bow, my + dy * bow];
+}
+
+function edgePath(a: [number, number], b: [number, number], c: [number, number]) {
+return `M${a[0]} ${a[1]} Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
+}
+
+/**
+ * MDOFieldDiagram — realistic field photo with an orange, glowing SVG layer
+ * of Bézier connections drawn on top. Replaces the abstract pentagon
+ * diagram: the photo itself never moves/scales — only the connection
+ * lines, travelling light points and anchor pulses animate, and only
+ * between domains that are both switched on.
+ */
+function MDOFieldDiagram({
 domains,
 active,
 onToggle,
+paused,
 }: {
 domains: Domain[];
 active: Set<string>;
 onToggle: (id: string) => void;
+paused: boolean;
 }) {
-const allOn = active.size === domains.length;
-const radius = 38;
-return (
- <div className="relative aspect-square max-w-md mx-auto">
- <svg viewBox="-50 -50 100 100" className="w-full h-full">
+const byId = useMemo(() => Object.fromEntries(domains.map((d) => [d.id, d])), [domains]);
+const centroid = useMemo<[number, number]>(() => {
+const n = domains.length;
+const sx = domains.reduce((s, d) => s + d.anchor[0], 0);
+const sy = domains.reduce((s, d) => s + d.anchor[1], 0);
+return [sx / n, sy / n];
+ }, [domains]);
 
- {/* Pulse rings when allOn — colourless motion, identical timing to
-     the original design. Uses the central-sphere outline colour so
-     they read as the sphere "breathing" rather than separate FX. */}
- {allOn && (
+const edges = useMemo(
+() =>
+EDGES.map(([idA, idB]) => {
+const a = byId[idA];
+const b = byId[idB];
+const control = edgeControl(a.anchor, b.anchor, centroid);
+return { idA, idB, d: edgePath(a.anchor, b.anchor, control) };
+ }),
+[byId, centroid],
+ );
+
+const reduceMotion = useReducedMotion();
+const [inView, setInView] = useState(true);
+const wrapRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+const el = wrapRef.current;
+if (!el || typeof IntersectionObserver === 'undefined') return;
+ // Stop the travelling-light/pulse loops when the diagram scrolls off
+ // screen — same pattern as ContourCake3D's off-screen render pause.
+const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+rootMargin: '200px',
+ });
+observer.observe(el);
+return () => observer.disconnect();
+ }, []);
+
+ // Single switch for every looping SMIL animation below: off for reduced
+ // motion (static arcs), while paused (user toggle) and while off-screen.
+const motionEnabled = inView && !paused && !reduceMotion;
+
+return (
+ <div ref={wrapRef} className="relative">
+ <IsometricAsset
+assetId="TOPIC01-MDO-FIELD-DOMAINS"
+src="/assets/lessons/topic01/scene-mdo/mdo-field-domains.png"
+alt="תצלום שטח מדומה שמשלב את חמשת הממדים: כלי רכב צבאי על דרך עפר (יבשה), אוניית מלחמה בים (ים), מטוס קרב בשמיים (אוויר), לוויין המחשה למרחב החלל, ותורן תקשורת המסמן את מרחב הסייבר"
+aspect="4/3"
+fit="contain"
+eager
+className="w-full"
+ />
+
+ {/* Decorative connections layer — purely reinforces what the buttons
+     and status text below already state, so it's hidden from AT. */}
+ <svg
+viewBox={`0 0 ${FIELD_W} ${FIELD_H}`}
+preserveAspectRatio="xMidYMid meet"
+className="pointer-events-none absolute inset-0 size-full"
+aria-hidden="true"
+ >
+ <defs>
+ {/* Generous filter region so the soft glow never clips at a path's
+     bounding-box edge. */}
+ <filter id="mdoLineGlow" x="-60%" y="-60%" width="220%" height="220%">
+ <feGaussianBlur stdDeviation="6" />
+ </filter>
+ </defs>
+
+ {edges.map(({ idA, idB, d }) => {
+const bothActive = active.has(idA) && active.has(idB);
+return (
+ <g key={idA + idB} style={{ opacity: bothActive ? 1 : 0, transition: 'opacity 300ms ease' }}>
+ <path d={d} fill="none" stroke="#D97E2B" strokeWidth={9} opacity={0.28} filter="url(#mdoLineGlow)" />
+ <path d={d} fill="none" stroke="#D97E2B" strokeWidth={2.25} opacity={0.92} strokeLinecap="round" />
+ {motionEnabled && bothActive && (
  <>
- <circle cx="0" cy="0" r="22" fill="none" className="stroke-accent" strokeWidth="0.4" opacity="0.5">
- <animate attributeName="r" values="20;42;20" dur="3.5s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.6;0;0.6" dur="3.5s" repeatCount="indefinite" />
+ <circle r="4.5" fill="#D97E2B">
+ <animateMotion dur="4.2s" repeatCount="indefinite" path={d} />
  </circle>
- <circle cx="0" cy="0" r="22" fill="none" className="stroke-accent" strokeWidth="0.4" opacity="0.5">
- <animate attributeName="r" values="20;42;20" dur="3.5s" begin="1s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.6;0;0.6" dur="3.5s" begin="1s" repeatCount="indefinite" />
+ <circle r="4.5" fill="#D97E2B" opacity="0.75">
+ <animateMotion dur="4.2s" begin="-2.1s" repeatCount="indefinite" path={d} />
+ </circle>
+ <circle r="3.5" fill="#FDFBF3" opacity="0.9">
+ <animateMotion dur="4.2s" begin="-3.4s" repeatCount="indefinite" path={d} />
  </circle>
  </>
  )}
-
- {/* Central sphere — outline only, no fill. Solid when allOn,
-     dashed when partial. */}
- <circle cx="0" cy="0" r="22" fill="none" className={cn('transition-colors', allOn ? 'stroke-accent' : 'stroke-border')} strokeWidth="0.5" strokeDasharray={allOn ? '0' : '1 1.2'} />
-
- {/* Soft inner halo when allOn — barely-there ring that pulses
-     once per rotation, restoring the depth the central sphere had. */}
- {allOn && (
- <circle cx="0" cy="0" r="3" fill="none" className="stroke-accent" strokeWidth="0.25">
- <animate attributeName="r" values="2;8;2" dur="2.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.7;0;0.7" dur="2.4s" repeatCount="indefinite" />
- </circle>
- )}
-
- {/* Lines between consecutive active domains — break only the segments touching an inactive node */}
- {domains.map((d, i) => {
-const next = domains[(i + 1) % domains.length];
-if (!active.has(d.id) || !active.has(next.id)) return null;
-const a = (d.angle * Math.PI) / 180;
-const b = (next.angle * Math.PI) / 180;
-return (
- <motion.line
-key={d.id + next.id}
-initial={{ pathLength: 0, opacity: 0 }}
-animate={{ pathLength: 1, opacity: 1 }}
-transition={{ duration: 0.6, ease: 'easeOut' }}
-x1={Math.cos(a) * radius}
-y1={Math.sin(a) * radius}
-x2={Math.cos(b) * radius}
-y2={Math.sin(b) * radius}
-className="stroke-accent/40"
-strokeWidth="0.3"
-strokeDasharray="0.6 0.6"
- />
- );
- })}
-
- {/* Lines from each active domain to center — animated draw-in
-     when a domain comes online, plus a steady pulse along their
-     dashed length to feel like flowing data. */}
- {domains.filter((d) => active.has(d.id)).map((d) => {
-const a = (d.angle * Math.PI) / 180;
-return (
- <g key={'spoke-' + d.id}>
- <motion.line
-initial={{ pathLength: 0 }}
-animate={{ pathLength: 1 }}
-transition={{ duration: 0.5, ease: 'easeOut' }}
-x1="0"
-y1="0"
-x2={Math.cos(a) * radius}
-y2={Math.sin(a) * radius}
-className="stroke-accent/30"
-strokeWidth="0.25"
- />
- {/* Pulse dot travelling along the spoke into the centre */}
- <motion.circle
-r="0.6"
-className="fill-accent"
-animate={{
-cx: [Math.cos(a) * radius, 0],
-cy: [Math.sin(a) * radius, 0],
-opacity: [0.9, 0],
- }}
-transition={{ duration: 1.8, repeat: Infinity, ease: 'easeIn' }}
- />
  </g>
  );
  })}
 
- {/* Center label */}
- <text x="0" y="-1" textAnchor="middle" className={cn('text-[5px] font-display font-bold', allOn ? 'fill-accent' : 'fill-fg-dim')}>
- עליונות
- </text>
- <text x="0" y="5" textAnchor="middle" className={cn('text-[3.5px] font-display font-bold', allOn ? 'fill-accent/80' : 'fill-fg-dim')}
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
-MDO
- </text>
+ {domains.map((d) => {
+const isOn = active.has(d.id);
+return (
+ <g key={'ring-' + d.id} style={{ opacity: isOn ? 1 : 0, transition: 'opacity 300ms ease' }}>
+ <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="46" ry="30" fill="none" stroke="#D97E2B" strokeWidth="1.5" opacity="0.5" />
+ {motionEnabled && isOn && (
+ <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="46" ry="30" fill="none" stroke="#D97E2B" strokeWidth="1.5">
+ <animate attributeName="rx" values="46;78" dur="3.4s" repeatCount="indefinite" />
+ <animate attributeName="ry" values="30;52" dur="3.4s" repeatCount="indefinite" />
+ <animate attributeName="opacity" values="0.55;0" dur="3.4s" repeatCount="indefinite" />
+ </ellipse>
+ )}
+ </g>
+ );
+ })}
  </svg>
 
- {/* Domain nodes positioned absolutely on top */}
+ {/* Real, keyboard-operable controls — a transparent-fill ring (the hit
+     target) plus a caption chip below it. The ring never opaquely fills,
+     so the vehicle/satellite/mast baked into the photo stays visible in
+     every state — only the ring's border style and the chip communicate
+     on/off, both of which the button's own aria-label states directly. */}
  {domains.map((d) => {
-const a = (d.angle * Math.PI) / 180;
 const isOn = active.has(d.id);
- // px positioning relative to container center (50%, 50%)
-const tx = Math.cos(a) * 38; // % from center
-const ty = Math.sin(a) * 38;
+const extra = d.id === 'space' ? ' · המחשה' : d.id === 'cyber' ? ' · רשת חוצת ממדים' : '';
+const leftPct = (d.anchor[0] / FIELD_W) * 100;
+const topPct = (d.anchor[1] / FIELD_H) * 100;
 return (
- <div
-key={d.id}
-className="absolute -translate-x-1/2 -translate-y-1/2"
-style={{
-left: `${50 + tx}%`,
-top: `${50 + ty}%`,
- }}
- >
- <motion.button
+ <div key={d.id}>
+ <button
+type="button"
 onClick={() => onToggle(d.id)}
-whileHover={{ scale: isOn ? 1.05 : 1.08 }}
-whileTap={{ scale: 0.95 }}
-className={cn(
- 'group size-16 sm:size-[72px] rounded-[4px] border-2 transition-colors duration-200 flex flex-col items-center justify-center gap-0.5',
-isOn
- ? 'bg-bg-elevated border-accent'
- : 'bg-bg-card/80 border-border-strong opacity-50 hover:opacity-100 hover:border-accent hover:bg-accent/10'
- )}
 aria-pressed={isOn}
- >
- <Icon
-name={d.icon}
-size={22}
+aria-label={`${d.label}${extra}: ${isOn ? 'פעיל, לחץ לכיבוי' : 'לא פעיל, לחץ להפעלה'}`}
 className={cn(
- 'transition-colors',
-isOn ? 'text-accent' : 'text-fg-dim group-hover:text-accent'
+ 'absolute size-14 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-transparent transition-colors duration-200 sm:size-16',
+ 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+isOn
+ ? 'border-accent shadow-[0_0_0_4px_rgba(217,126,43,0.15)]'
+ : 'border-dashed border-border-strong/90 opacity-70 hover:opacity-100 hover:border-accent'
  )}
+style={{ left: `${leftPct}%`, top: `${topPct}%` }}
  />
+ {/* Decorative — the button's aria-label already carries this text. */}
  <span
-className={cn(
- 'text-xs font-medium transition-colors',
-isOn ? 'text-fg' : 'text-fg-dim group-hover:text-fg'
- )}
+aria-hidden
+className="chip absolute flex -translate-x-1/2 items-center gap-1 whitespace-nowrap border-border/70 bg-bg-elevated/90 px-2 py-0.5 text-[11px] text-fg-muted backdrop-blur-sm"
+style={{ left: `${leftPct}%`, top: `calc(${topPct}% + 32px)` }}
  >
+ <span className={cn('inline-block size-1.5 shrink-0 rounded-full', isOn ? 'bg-accent' : 'border border-fg-dim')} />
+ <Icon name={d.icon} size={12} className={isOn ? 'text-accent' : 'text-fg-dim'} />
  {d.label}
+{extra}
  </span>
- </motion.button>
  </div>
  );
  })}
@@ -470,7 +532,7 @@ off && 'text-status-danger',
  >
  {on && <><Icon name="check" size={14} strokeWidth={2.5} /> כוח מלא — שליטה מוחלטת</>}
  {off && <>הצבא משותק לחלוטין</>}
- {!on && !off && <>שליטה חלקית · {Math.round(pct)}% מהיכולת</>}
+ {!on && !off && <>שליטה חלקית — {count} מתוך 5 ממדים פעילים</>}
  </div>
 
  <div className="mt-4 h-1.5 rounded-full bg-bg-accent overflow-hidden">

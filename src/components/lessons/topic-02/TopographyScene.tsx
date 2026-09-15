@@ -80,7 +80,7 @@ export function TopographyScene() {
 
       <div className="mb-12">
         {/* Central content panel — one view at a time, full-width image, replaces the former accordion + cropped side-image layout */}
-        <div className="surface-elevated relative p-5 sm:p-8">
+        <div className="surface-elevated relative p-4 sm:p-6">
           <span
             aria-hidden
             className="absolute bottom-4 end-4 size-9 rounded-[3px] flex items-center justify-center bg-brand-dark text-bg-elevated font-display text-sm font-bold"
@@ -96,18 +96,18 @@ export function TopographyScene() {
               exit={reduce ? undefined : { opacity: 0, y: -8 }}
               transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="mb-5 text-center flex items-center justify-center gap-2">
+              <div className="mb-3 text-center flex items-center justify-center gap-2">
                 <Icon name={meta.icon} size={16} className="text-brand-dark" />
                 <div className="font-display font-bold text-xl text-brand-dark leading-tight">{meta.label}</div>
               </div>
 
-              <div className="rounded-[4px] bg-warm/50 p-2 sm:p-3 flex items-center justify-center">
+              <div className="max-w-2xl mx-auto rounded-[4px] bg-warm/50 p-2 sm:p-3 flex items-center justify-center">
                 {meta.id === '3d' && <View3D />}
                 {meta.id === 'photo' && <ViewPhoto />}
                 {meta.id === 'topo' && <ViewTopo />}
               </div>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-4 space-y-3">
                 <div>
                   <div className="text-sm font-display font-bold text-black mb-1 tracking-wider">
                     במילים פשוטות
@@ -238,7 +238,7 @@ function View3D() {
       src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-3D.png"
       alt="איור איזומטרי: מודל תלת-ממדי של הר, מציג את פני השטח כמו דגם מוקטן"
       aspect="4/3"
-      className="w-full max-w-2xl rounded-[3px]"
+      className="w-full rounded-[3px]"
       prompt="Isometric papercut illustration of a 3D terrain model of a mountain, layered-paper shading, warm cream background, no text."
     />
   );
@@ -250,7 +250,7 @@ function ViewPhoto() {
       src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-PHOTO.png"
       alt="תצלום אווירי של שטח, מבט ישר מלמעלה"
       aspect="4/3"
-      className="w-full max-w-2xl rounded-[3px]"
+      className="w-full rounded-[3px]"
       prompt="Aerial photograph style illustration of terrain viewed from directly above, warm cream background, no text."
     />
   );
@@ -262,7 +262,7 @@ function ViewTopo() {
       src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-MAP.png"
       alt="מפה טופוגרפית עם קווי גובה המתארים שטח תלת-ממדי על גבי דף שטוח"
       aspect="4/3"
-      className="w-full max-w-2xl rounded-[3px]"
+      className="w-full rounded-[3px]"
       prompt="Topographic map illustration with contour lines, papercut style, warm cream background, no text."
     />
   );

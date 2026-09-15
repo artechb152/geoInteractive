@@ -5,7 +5,7 @@ import { useCourseProgress } from '@/lib/course-progress';
 import { HomeTerrainDiorama } from './HomeTerrainDiorama';
 
 /**
- * HomeHero — פס ההירו (design/mockup.png): עמודת טקסט בימין (inline-start),
+ * HomeHero — פס ההירו (design/mockups/mockup.png): עמודת טקסט בימין (inline-start),
  * דיורמת שטח משמאל.
  * "המשך ללמוד" ⇒ קישור לשיעור האחרון שביקרו בו (topic-01 במכשיר טרי);
  * "סקירת הקורס" ⇒ גלילה חלקה אל פאנל תכנית הקורס (#syllabus).
@@ -55,7 +55,7 @@ export function HomeHero() {
 
       {/* דיורמת שטח — מודל תלת-ממדי אינטראקטיבי (home-hero-terrain.glb,
           מיוצא מ-geoHome.blend דרך Blender MCP), באותו יחס-ממדים (706×492)
-          כמו החיתוך המקורי מ-design/mockup.png; נופל חזרה לתמונה הסטטית
+          כמו החיתוך המקורי מ-design/mockups/mockup.png; נופל חזרה לתמונה הסטטית
           אם WebGL לא זמין. */}
       <div className="flex items-center justify-end">
         <div className="-mt-14 me-6 aspect-[706/492] w-full max-w-[725px]">

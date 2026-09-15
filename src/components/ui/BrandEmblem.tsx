@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 /**
- * BrandEmblem — לוגו האתר: שושנת מצפן זהובה-זיתית (design/mockup.png).
+ * BrandEmblem — לוגו האתר: שושנת מצפן זהובה-זיתית (design/mockups/mockup.png).
  * נכס SVG אחיד המשמש בכל מקום שנדרש בו לוגו (כותרת דף הבית, AppHeader
  * גלובלי וכו'). לא מתהפך ב-RTL.
  */

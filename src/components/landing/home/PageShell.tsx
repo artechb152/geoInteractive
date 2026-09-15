@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 /**
- * PageShell — יריעת הקרם של דף הבית החדש (design/mockup.png).
+ * PageShell — יריעת הקרם של דף הבית החדש (design/mockups/mockup.png).
  * קנבס paper-grad עם מרקם קווי גובה עדין + ציר מקווקו דקורטיבי.
  * מבטל את ה-padding הגלובלי של ה-AppHeader (שמוסתר ב-/).
  */

@@ -98,7 +98,7 @@ export function OnboardingScene() {
   };
 
   return (
-    <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="06.0"
         eyebrow="לפני שמתחילים"
@@ -110,8 +110,8 @@ title = {
         intro="הכל מתחיל ונגמר בשאלה אחת פשוטה: האם אני רואה את האויב, או שהוא מוסתר ממני? בואו נבין איך ניתוח של גבעה אחת פשוטה יכול ללמד אותנו מה אנחנו רואים, מה האויב רואה משם, ואיפה בדיוק עובר הקו שבו הכל מתהפך."
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
-        <div className="space-y-3">
+      <div className="grid md:grid-cols-[32fr_68fr] gap-6">
+        <div className="space-y-1">
           {STEPS.map((s, i) => {
             const active = view === s.id;
             const expanded = expandedStep === s.id;
@@ -134,26 +134,20 @@ title = {
                   aria-controls={`t6-onb-panel-${s.id}`}
                   className="w-full p-4 text-right flex items-center gap-3 relative"
                 >
-                  {active && (
-                    <motion.span
-                      layoutId="t6-onb-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                    />
-                  )}
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
                     )}
                   >
                     {passed && !active ? (
-                      <Icon name="check" size={16} strokeWidth={2.5} />
+                      <Icon name="check" size={18} strokeWidth={2.5} />
                     ) : (
-                      <span className="font-display text-sm font-bold">{i + 1}</span>
+                      <span className="font-display text-base font-bold">{i + 1}</span>
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">{s.label}</div>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-lg md:text-xl">{s.label}</div>
                   </div>
                   <motion.span
                     animate={{ rotate: expanded ? 180 : 0 }}
@@ -161,8 +155,8 @@ title = {
                     className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
-                      width="18"
-                      height="18"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -186,16 +180,12 @@ title = {
                       transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 md:min-h-[211px]">
                         <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
-                          למה זה משנה?
-                        </div>
-                        <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           {s.popupTitle}
-                        </h4>
+                        </div>
                         <p
-                          className="text-base leading-relaxed text-black text-pretty"
+                          className="text-base leading-relaxed text-black"
                           dangerouslySetInnerHTML={{ __html: s.popupBody }}
                         />
                       </div>
@@ -207,7 +197,7 @@ title = {
           })}
         </div>
 
-        <div className="surface-elevated bg-bg-accent/30 relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px]">
           <SightStage view={view} />
         </div>
       </div>
