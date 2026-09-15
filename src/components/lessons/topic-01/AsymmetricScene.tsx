@@ -671,15 +671,15 @@ function ActorTypologySelector() {
 function TypologyTableHeader() {
   return (
     <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr] border-b border-border-strong">
-      <div className="p-4 bg-bg-accent/40 flex items-center">
+      <div className="p-4 bg-bg-accent flex items-center">
         <div className="font-display font-bold text-sm sm:text-base text-fg tracking-wide">השוואה</div>
       </div>
       {ACTORS_LIST.map((a) => (
-        <div key={a.id} className="flex flex-col border-r border-border-strong bg-bg-accent/20">
+        <div key={a.id} className="flex flex-col border-s border-border-subtle bg-bg-accent">
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-2.5">
-            <div className="font-display font-bold text-sm sm:text-base leading-tight text-fg">{a.label}</div>
+            <div className="font-display font-bold leading-tight text-black text-lg md:text-xl">{a.label}</div>
           </div>
-          <div className="relative mx-3 sm:mx-4 mb-3 sm:mb-4 h-16 sm:h-20 overflow-hidden rounded-[3px]">
+          <div className="relative mx-3 sm:mx-4 mb-3 sm:mb-4 h-16 sm:h-20 overflow-hidden rounded-lg">
             <IsometricAsset
               assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
               src={`/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER.png`}
@@ -714,7 +714,7 @@ function TypologyTable() {
   };
 
   return (
-    <div className="surface-elevated overflow-hidden rounded-[4px]">
+    <div className="surface-elevated overflow-hidden">
       <TypologyTableHeader />
 
       {COMPARE_ROWS.map((row, i) => {
@@ -735,8 +735,8 @@ function TypologyTable() {
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
-                <div className="p-4 flex items-center">
-                  <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
+                <div className="p-4 flex items-center bg-bg-accent">
+                  <div className="text-base font-display font-bold text-black tracking-wider">{row.label}</div>
                 </div>
                 {ACTORS_LIST.map((a) => {
                   const isAnswer = a.id === row.answer;
@@ -745,7 +745,7 @@ function TypologyTable() {
                     <div
                       key={a.id}
                       className={cn(
-                        'p-4 sm:p-5 border-r border-border-subtle text-sm sm:text-base text-fg leading-relaxed',
+                        'p-4 border-s border-border-subtle text-base leading-relaxed text-black',
                         isAnswer && 'bg-status-ok/10',
                         isWrongGuess && 'bg-status-danger/10',
                       )}
@@ -761,18 +761,18 @@ function TypologyTable() {
                 animate={{ opacity: 1 }}
                 className="grid grid-cols-[1.1fr_1fr_1fr_1fr]"
               >
-                <div className="p-4 flex items-center">
-                  <div className="text-sm sm:text-base font-display font-bold text-fg">{row.label}</div>
+                <div className="p-4 flex items-center bg-bg-accent">
+                  <div className="text-base font-display font-bold text-black tracking-wider">{row.label}</div>
                 </div>
-                <div className="col-span-3 p-3 sm:p-4 border-r border-border-subtle">
-                  <p className="text-xs sm:text-sm text-fg leading-snug text-pretty text-center mb-2">{row.riddle}</p>
+                <div className="col-span-3 p-4 border-s border-border-subtle">
+                  <p className="text-base leading-relaxed text-black text-pretty text-center mb-2">{row.riddle}</p>
                   <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {ACTORS_LIST.map((a) => (
                       <button
                         key={a.id}
                         type="button"
                         onClick={() => guess(i, a.id)}
-                        className="px-3 py-2 rounded-[4px] border border-border bg-bg-elevated text-xs sm:text-sm font-display font-semibold text-fg hover:border-fg-muted hover:bg-bg-accent transition-colors"
+                        className="px-3 py-2 rounded-xl border border-border bg-bg-elevated text-sm font-display font-semibold text-black hover:border-brand/30 hover:bg-brand/[0.03] transition-all duration-300 ease-snap"
                       >
                         {a.label}
                       </button>
