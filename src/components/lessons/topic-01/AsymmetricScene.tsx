@@ -1394,14 +1394,15 @@ function TacticMatchExercise() {
   };
 
   return (
-    <div className="my-16">
-      <div className="rounded-[4px] border border-border-subtle bg-bg p-4 sm:p-5 mb-5">
+    <div className="mt-12">
+      <div className="mb-5">
         <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-2">
+            <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
               חמש טקטיקות של השחקן הלא-סדיר
             </h3>
-            <p className="text-fg-muted text-sm sm:text-base leading-relaxed text-pretty">
+            <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+            <p className="mt-2 text-base leading-relaxed text-fg-muted">
               לפני שתראו את שם הטקטיקה — קראו כל "דיווח שטח" קצר וגררו (או הקישו עליו ואז על שם הטקטיקה) אותו למקום המתאים. אחרי ששיבצתם את כל החמישה, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל אחת.
             </p>
           </div>
@@ -1410,13 +1411,13 @@ function TacticMatchExercise() {
             src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
             alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
             aspect="16/9"
-            className="rounded-[3px] h-20 sm:h-28 w-auto shrink-0"
+            className="rounded-xl h-20 sm:h-28 w-auto shrink-0"
             prompt="Isometric papercut illustration of a small layered terrain tile at dusk on a cream background (#FFFBF7): a warm peach ground platform (#FFDCB5), a few sage-green paper trees (#749C75), a winding paper dirt path, and one small abstract drone-like paper shape with a single orange (#EB9E48) accent light hovering above. No visible weapons, no people, flat paper-cut shading, small and simple composition, no text."
           />
         </div>
       </div>
 
-      <div className="surface-elevated p-5 sm:p-6 rounded-[4px] mb-4 relative overflow-hidden">
+      <div className="surface-elevated p-5 sm:p-6 mb-4 relative overflow-hidden">
         {/* Accent flash — an independent overlay keyed on the same id, so it
             re-triggers every time the report switches regardless of the
             text's own slide/fade, giving an unmissable "something just
@@ -1428,7 +1429,7 @@ function TacticMatchExercise() {
             initial={{ opacity: 0.9 }}
             animate={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="pointer-events-none absolute inset-0 rounded-[4px] bg-accent/15 ring-2 ring-accent/50"
+            className="pointer-events-none absolute inset-0 rounded-2xl bg-accent/15 ring-2 ring-accent/40"
           />
         </AnimatePresence>
 
@@ -1481,7 +1482,7 @@ function TacticMatchExercise() {
           <button
             type="button"
             onClick={reset}
-            className="px-4 py-2 rounded-md font-medium text-sm border border-border text-fg-muted hover:bg-bg-accent transition-colors"
+            className="btn-secondary"
           >
             איפוס
           </button>
@@ -1490,12 +1491,7 @@ function TacticMatchExercise() {
               type="button"
               onClick={() => setSubmitted(true)}
               disabled={!allPlaced}
-              className={cn(
-                'px-4 py-2 rounded-md font-bold text-sm transition-colors',
-                allPlaced
-                  ? 'bg-fg text-bg-elevated hover:bg-fg-muted'
-                  : 'bg-bg-accent text-fg-dim cursor-not-allowed',
-              )}
+              className={cn('btn-primary', !allPlaced && 'opacity-45 cursor-not-allowed hover:brightness-100 active:translate-y-0')}
             >
               בדוק תשובות
             </button>
@@ -1548,17 +1544,17 @@ function TacticPhotoCard({
         // at sm+ (wrapping the last 2, centered) instead of a stray 4th
         // card sneaking onto row 1 once a fixed cap makes cards narrow
         // enough to fit four across.
-        'basis-[47%] sm:basis-[31%] text-right rounded-[4px] border bg-bg-elevated overflow-hidden flex flex-col transition-colors',
+        'basis-[47%] sm:basis-[31%] text-start rounded-2xl border bg-bg-elevated overflow-hidden flex flex-col transition-all duration-300 ease-snap',
         submitted
           ? isCorrect
-            ? 'border-status-ok/50'
+            ? 'border-status-ok/50 bg-status-ok/10'
             : isWrong
-              ? 'border-status-danger/50'
+              ? 'border-status-danger/50 bg-status-danger/10'
               : 'border-border'
           : occupant
-            ? 'border-fg'
-            : 'border-border hover:border-fg-muted',
-        !clickable && !occupant && 'opacity-60',
+            ? 'border-accent bg-accent/10'
+            : 'border-border hover:border-brand/30 hover:bg-brand/[0.03]',
+        !clickable && !occupant && 'opacity-45 cursor-not-allowed',
       )}
     >
       <div className="relative h-28 sm:h-32 shrink-0 bg-bg-accent">
@@ -1574,7 +1570,7 @@ function TacticPhotoCard({
         {submitted && occupant && (
           <span
             className={cn(
-              'absolute top-2 start-2 inline-flex items-center justify-center size-5 rounded-full text-[11px] font-bold leading-none',
+              'absolute top-2 start-2 inline-flex items-center justify-center size-5 rounded-full text-xs font-bold leading-none',
               isCorrect ? 'bg-status-ok text-bg-elevated' : 'bg-status-danger text-bg-elevated',
             )}
           >
@@ -1583,19 +1579,19 @@ function TacticPhotoCard({
         )}
       </div>
 
-      <div className="p-3 flex-1 flex flex-col gap-1.5">
-        <div className="font-display font-bold text-sm leading-tight text-fg text-center text-balance">
+      <div className="p-4 flex-1 flex flex-col gap-1.5">
+        <div className="font-display font-bold leading-tight text-black text-lg md:text-xl text-center text-balance">
           {tactic.title}
         </div>
 
         {occupant && (
           <div className="pt-1.5 mt-0.5 border-t border-border-subtle space-y-1">
             {submitted && isCorrect && (
-              <div className="text-[11px] font-display font-bold tracking-wide text-status-ok text-center">
+              <div className="text-sm font-display font-semibold tracking-wider text-status-ok text-center">
                 התאמה נכונה
               </div>
             )}
-            <p className="text-[11px] text-fg-muted leading-snug text-center">
+            <p className="text-sm text-fg-muted leading-snug text-center">
               {submitted ? occupant.desc : occupant.reportSummary}
             </p>
           </div>
