@@ -14,13 +14,13 @@ design/reference/
 ```
 
 One folder per lesson, named `lesson-NN`. Keep the original filenames the user sent —
-`design/assumptions.md`, `docs/UI-CONSISTENCY-RECOMMENDATIONS.md` and inline code
+`design/docs/assumptions.md`, `docs/UI-CONSISTENCY-RECOMMENDATIONS.md` and inline code
 comments cite them by bare filename, so renaming breaks those citations.
 
 ## Notes
 
 - Some references come from unrelated apps and are cited for **visual language only**
-  (layout, card art, spacing) — not palette. See `design/assumptions.md` for which,
+  (layout, card art, spacing) — not palette. See `design/docs/assumptions.md` for which,
   and for the deliberate divergences from a reference that must not be "fixed" back.
 - Gaps in the numbering (e.g. no `lesson1part4image1`) are the user's own numbering,
   not missing files.

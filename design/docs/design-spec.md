@@ -1,6 +1,8 @@
 # Design Spec — Landing Page "גיאוגרפיה צבאית"
 
-Source: `design/mockup.png` (1402 × 1122 px → treat as desktop design frame at ~1400px; measurements map ≈1:1 to CSS px).
+This file is the pixel-fidelity source of truth for the homepage: exact colors, spacing, typography, radii and shadows, sampled from the master mockup.
+
+Source: `design/mockups/mockup.png` (1402 × 1122 px → treat as desktop design frame at ~1400px; measurements map ≈1:1 to CSS px).
 Style family: **isometric papercut** (matches approved visual direction). Colors below were pixel-sampled from the mockup.
 
 ---

@@ -1,6 +1,6 @@
 # Design Spec — Course Plan Carousel ("פרקי הקורס")
 
-Source: `design/carouselMockUpHomePage.png`. This mockup shows a **standalone/expanded view of the course-plan carousel** — likely a larger or dedicated-section variant of the `CoursePlanPanel` / `LessonCard` components already partially specified in `design/design-spec.md` §7 (Components list) and §5 (Course-plan panel spacing). Treat this file as the detailed spec for that carousel component specifically; it does not replace the full-page spec.
+Source: `design/mockups/carouselMockUpHomePage.png`. This mockup shows a **standalone/expanded view of the course-plan carousel** — likely a larger or dedicated-section variant of the `CoursePlanPanel` / `LessonCard` components already partially specified in `design/docs/design-spec.md` §7 (Components list) and §5 (Course-plan panel spacing). Treat this file as the detailed spec for that carousel component specifically; it does not replace the full-page spec.
 
 Style family: **isometric papercut**, same visual language as the master mockup (warm cream canvas, soft terrain dioramas, orange accent for active/progress state).
 
