@@ -139,7 +139,7 @@ const HISTORY_LIMIT = 50;
  * (CSS zoom: shrinks layout too, so heights/scroll stay correct).
  * The edit-mode view zoom multiplies on top of this.
  */
-const SCENE_SCALE = 0.86;
+const SCENE_SCALE = 1;
 
 // Baked from the user's edit-mode export (2026-07-06, second pass):
 // smaller history cards (400×284) and slightly raised composition.

@@ -20,7 +20,7 @@ export function ReadyCallout({
   children,
 }: ReadyCalloutProps) {
   return (
-    <section className="mt-8 bg-bg-elevated rounded-md p-5 md:p-6">
+    <section className="mt-8 surface-elevated p-5 md:p-6">
       <h3 className="font-display font-bold text-xl md:text-2xl leading-tight text-balance text-black mb-3">
         {title}
       </h3>

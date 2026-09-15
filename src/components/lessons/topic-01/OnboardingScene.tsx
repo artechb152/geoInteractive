@@ -190,15 +190,11 @@ export function OnboardingScene() {
             accordion state. */}
         <div className="surface-elevated bg-bg relative overflow-hidden min-h-[320px] h-full [&_video]:!w-full [&_video]:!h-full">
           <TerrainStage feature={step} />
-          <CornerMark corner="tl" />
-          <CornerMark corner="tr" />
-          <CornerMark corner="bl" />
-          <CornerMark corner="br" />
         </div>
         </EditableFrame>
       </div>
 
-      <EditableBlock id="history-panel" label="פאנל 4 סיפורים היסטוריים" className="mt-20 mb-12">
+      <EditableBlock id="history-panel" label="פאנל 4 סיפורים היסטוריים" className="mt-12 mb-12">
         <HistoricalCasesPanel />
       </EditableBlock>
 
@@ -272,7 +268,7 @@ function CornerMark({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
 function TerrainStageLoading() {
   return (
     <div className="w-full h-full min-h-[280px] flex items-center justify-center">
-      <div className="flex items-center gap-2 text-fg-dim text-xs font-display">
+      <div className="flex items-center gap-2 text-fg-dim text-sm font-display leading-snug">
         <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
         <span>טוען...</span>
       </div>
