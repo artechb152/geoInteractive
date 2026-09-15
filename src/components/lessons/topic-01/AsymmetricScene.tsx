@@ -797,12 +797,13 @@ function PillarSimulator() {
   const solvedCount = Object.values(solved).filter(Boolean).length;
 
   return (
-    <div className="my-16">
-      <div className="mb-5 text-center">
-        <h3 className="font-display font-bold text-xl leading-tight mb-1">
+    <div className="mt-12">
+      <div className="mb-5">
+        <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
           שלושה עמודי האסטרטגיה של השחקן הלא-סדיר
         </h3>
-        <p className="text-fg-muted text-sm">
+        <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+        <p className="mt-2 text-base leading-relaxed text-fg-muted">
           אתם מפקדים על ארגון לא-סדיר מול צבא גדול פי 100 מכם. בכל אחד משלושת רגעי ההחלטה — בחרו מה הייתם עושים.
         </p>
       </div>
@@ -838,10 +839,10 @@ function PillarSimulator() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-[3px] border border-border bg-bg-accent/30 p-5 mt-4"
+            className="rounded-xl border border-border bg-bg-accent p-5 mt-4"
           >
             <div className="text-sm font-display font-semibold text-fg-muted mb-1.5 tracking-wider">התובנה</div>
-            <p className="text-sm text-fg leading-relaxed text-pretty">
+            <p className="text-base leading-relaxed text-black text-pretty">
               לא משנה אם זה ארגון גרילה או רשת טרור — הם חולקים את אותה אסטרטגיית-יסוד מול הצבא הסדיר: לשרוד, לעקוף, ולשחוק.
             </p>
           </motion.div>
@@ -877,7 +878,7 @@ function PillarDecisionCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 }}
-      className="surface text-right relative overflow-hidden flex flex-col"
+      className="surface text-start relative overflow-hidden flex flex-col"
     >
       {/* Banner — big pillar number + themed icon illustration, one source
           PNG per pillar (…-1-/-2-/-3-BANNER, matching this card's
@@ -900,14 +901,14 @@ function PillarDecisionCard({
           first paint and never grows/shrinks as a choice reveals more or
           less text; see design/docs/assumptions.md for how this value was
           measured. */}
-      <div className="flex flex-col gap-3 p-5 sm:p-6 min-h-[30rem]">
+      <div className="flex flex-col gap-3 p-5 min-h-[30rem]">
         {solved && (
-          <h4 className="font-display font-bold text-base sm:text-lg leading-tight text-balance">{pillar.label}</h4>
+          <h4 className="font-display font-bold leading-tight text-black text-lg md:text-xl text-balance">{pillar.label}</h4>
         )}
 
         {!solved ? (
           <div className="flex-1 flex flex-col gap-3">
-            <p className="text-sm leading-relaxed text-fg-muted">{decision.prompt}</p>
+            <p className="text-base leading-relaxed text-black">{decision.prompt}</p>
             <div className="flex flex-col gap-2">
               {decision.choices.map((c) => {
                 const isWrongPick = lastChoice?.id === c.id && lastChoice.outcome === 'wrong';
@@ -917,10 +918,10 @@ function PillarDecisionCard({
                     type="button"
                     onClick={() => pick(c)}
                     className={cn(
-                      'flex items-center gap-2.5 text-right p-3 rounded-xl border text-sm transition-colors',
+                      'flex items-center gap-2.5 text-start p-3 rounded-xl border text-sm transition-all duration-300 ease-snap',
                       isWrongPick
-                        ? 'border-status-danger/40 bg-status-danger/10'
-                        : 'border-border bg-bg-elevated hover:border-fg-muted',
+                        ? 'border-status-danger/50 bg-status-danger/10'
+                        : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                     )}
                   >
                     {/* Radio indicator — inline-start (visual right under
@@ -931,7 +932,7 @@ function PillarDecisionCard({
                       aria-hidden
                       className={cn(
                         'shrink-0 inline-flex items-center justify-center size-5 rounded-full text-[10px] font-bold leading-none',
-                        isWrongPick ? 'bg-status-danger text-white' : 'border-[1.5px] border-border-strong',
+                        isWrongPick ? 'bg-status-danger text-white' : 'border-[1.5px] border-border',
                       )}
                     >
                       {isWrongPick && '✗'}
@@ -949,7 +950,7 @@ function PillarDecisionCard({
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <p className="text-xs text-status-danger leading-snug rounded-xl border border-status-danger/30 bg-status-danger/10 p-3">
+                  <p className="text-base leading-relaxed text-status-danger rounded-xl border border-status-danger/50 bg-status-danger/10 p-3">
                     {lastChoice.feedback} נסו שוב.
                   </p>
                 </motion.div>
@@ -958,7 +959,7 @@ function PillarDecisionCard({
           </div>
         ) : (
           <div className="flex-1 flex flex-col gap-3">
-            <div className="flex items-start gap-2.5 rounded-xl border border-status-ok/30 bg-status-ok/10 p-3">
+            <div className="flex items-start gap-2.5 rounded-xl border border-status-ok/50 bg-status-ok/10 p-3">
               <span
                 aria-hidden
                 className="mt-0.5 shrink-0 inline-flex items-center justify-center size-5 rounded-full bg-status-ok text-white text-[10px] font-bold leading-none"
@@ -968,7 +969,7 @@ function PillarDecisionCard({
               <p className="text-xs text-status-ok font-display font-semibold leading-snug">{lastChoice?.feedback}</p>
             </div>
             <p className="text-sm leading-relaxed text-fg-muted">{pillar.oneLiner}</p>
-            <p className="text-sm leading-relaxed text-fg pt-3 border-t border-border-subtle">{pillar.detail}</p>
+            <p className="text-base leading-relaxed text-black pt-3 border-t border-border-subtle">{pillar.detail}</p>
           </div>
         )}
       </div>
