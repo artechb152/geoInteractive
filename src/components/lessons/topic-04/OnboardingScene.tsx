@@ -98,7 +98,7 @@ export function OnboardingScene() {
   };
 
   return (
-    <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="05.0"
         eyebrow="רגע לפני שמתחילים"
@@ -110,7 +110,7 @@ title = {
         intro='עבור רובנו השטח הוא סתם "נוף", אבל מפקד צבאי מסתכל עליו כעל חידה שצריך לפתור. בואו נראה איך מנתחים תא שטח לקראת תנועה (מושג שנקרא בשפה הצבאית "תמרון"), דרך 4 שאלות מפתח – החל מהשאלה הבסיסית ביותר ("האם בכלל אפשר לעבור פה?") ועד לשאלות של חיים ומוות.'
       />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+      <div className="grid md:grid-cols-[32fr_68fr] gap-6">
         <div className="space-y-3">
           {STEPS.map((s, i) => {
             const active = view === s.id;
@@ -204,7 +204,7 @@ title = {
           })}
         </div>
 
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
+        <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px]">
           <ManeuverStage view={view} />
         </div>
       </div>
