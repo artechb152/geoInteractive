@@ -1063,18 +1063,19 @@ function TimeAsymmetry() {
   const nonStateCount = 1;
 
   return (
-    <div className="my-16">
+    <div className="mt-12">
       <div className="mb-5">
-        <h3 className="font-display font-bold text-xl leading-tight mb-1">
+        <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
           למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
         </h3>
-        <p className="text-fg-muted text-sm">
+        <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+        <p className="mt-2 text-base leading-relaxed text-fg-muted">
           גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
         </p>
       </div>
 
       {/* Timeline scrubber */}
-      <div className="surface-elevated p-5 sm:p-6 pt-10 mb-4">
+      <div className="surface-elevated p-5 sm:p-6 mb-4">
         <TimelineScrubber step={step} lastStep={lastStep} onChange={setStep} steps={TIME_STEPS} />
 
         <AnimatePresence mode="wait">
@@ -1084,7 +1085,7 @@ function TimeAsymmetry() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="text-sm text-fg leading-relaxed text-pretty text-center mt-8"
+            className="text-base leading-relaxed text-black text-pretty text-center mt-8"
           >
             {TIME_STEPS[step].caption}
           </motion.p>
@@ -1093,16 +1094,16 @@ function TimeAsymmetry() {
 
       <div className="surface-elevated overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_auto] border-b border-border-strong">
-          <div className="p-3 sm:p-4 bg-bg-accent/40">
-            <div className="text-xs font-display font-semibold text-fg-muted tracking-wider">
+          <div className="p-3 sm:p-4 bg-bg-accent">
+            <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
               מי באמת יכול להכריח אותך לסיים את המלחמה?
             </div>
           </div>
-          <div className="px-3 sm:px-4 py-3 bg-bg-accent/20 border-r border-border-strong text-center min-w-[88px]">
-            <div className="text-xs font-display font-semibold tracking-wider text-fg">סדיר</div>
+          <div className="px-3 sm:px-4 py-3 bg-bg-accent border-s border-border-subtle text-center min-w-[88px]">
+            <div className="text-sm font-display font-semibold tracking-wider text-fg">סדיר</div>
           </div>
-          <div className="px-3 sm:px-4 py-3 bg-bg-accent/20 border-r border-border-strong text-center min-w-[88px]">
-            <div className="text-xs font-display font-semibold tracking-wider text-fg">לא-סדיר</div>
+          <div className="px-3 sm:px-4 py-3 bg-bg-accent border-s border-border-subtle text-center min-w-[88px]">
+            <div className="text-sm font-display font-semibold tracking-wider text-fg">לא-סדיר</div>
           </div>
         </div>
 
@@ -1129,14 +1130,14 @@ function TimeAsymmetry() {
           />
         ))}
 
-        <div className="grid grid-cols-[1fr_auto_auto] bg-bg-accent/30 border-t border-border-strong">
+        <div className="grid grid-cols-[1fr_auto_auto] bg-bg-accent border-t border-border-strong">
           <div className="p-3 sm:p-4">
             <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">סך החזיתות</span>
           </div>
-          <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[88px]">
+          <div className="px-3 sm:px-4 py-3 border-s border-border-subtle text-center min-w-[88px]">
             <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">{regularCount}</div>
           </div>
-          <div className="px-3 sm:px-4 py-3 border-r border-border-subtle text-center min-w-[88px]">
+          <div className="px-3 sm:px-4 py-3 border-s border-border-subtle text-center min-w-[88px]">
             <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">{nonStateCount}</div>
           </div>
         </div>
@@ -1145,11 +1146,11 @@ function TimeAsymmetry() {
       <div className="surface-elevated p-5 sm:p-6 mt-4">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">התובנה</div>
 
-        <p className="text-sm text-fg leading-relaxed text-pretty">
-          זו לא רק שאלה של מספרים — זה הבדל בכללי המשחק. הצבא הסדיר חייב <strong className="text-fg">לנצח בכל אחת</strong> מ-5 החזיתות, כי הפסד באחת מהן מספיק כדי להפיל את כל המלחמה. השחקן הלא-סדיר צריך <strong className="text-fg">רק לא לאבד</strong> את החזית היחידה שלו — וזה כבר מספיק לו לניצחון, בכל שלב בציר הזמן.
+        <p className="text-base leading-relaxed text-black text-pretty">
+          זו לא רק שאלה של מספרים — זה הבדל בכללי המשחק. הצבא הסדיר חייב <strong className="text-black font-bold">לנצח בכל אחת</strong> מ-5 החזיתות, כי הפסד באחת מהן מספיק כדי להפיל את כל המלחמה. השחקן הלא-סדיר צריך <strong className="text-black font-bold">רק לא לאבד</strong> את החזית היחידה שלו — וזה כבר מספיק לו לניצחון, בכל שלב בציר הזמן.
           <br /><br />
           המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.
-          <strong className="text-fg block mt-2">
+          <strong className="text-black font-bold block mt-2">
             ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20 — לא כי הפסידה בקרבות, אלא כי קרסה ב-4 החזיתות האחרות.
           </strong>
         </p>
@@ -1244,8 +1245,8 @@ function TimelineScrubber({
         >
           <span
             className={cn(
-              'block rounded-full transition-colors',
-              i <= step ? 'size-2.5 bg-accent' : 'size-2.5 bg-border-strong hover:bg-fg-muted',
+              'block size-2.5 rounded-full transition-colors duration-200 ease-snap',
+              i <= step ? 'bg-accent' : 'bg-border-strong hover:bg-fg-muted',
             )}
           />
         </button>
@@ -1267,7 +1268,7 @@ function TimelineScrubber({
         animate={{ insetInlineStart: `${pct}%` }}
         transition={dragging ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
         style={{ translate: '50% -50%' }}
-        className="absolute top-1/2 z-20 size-6 -mt-px rounded-full border-2 border-accent bg-bg-elevated shadow-md cursor-grab active:cursor-grabbing"
+        className="absolute top-1/2 z-20 size-6 -mt-px rounded-full border-2 border-accent bg-bg-elevated shadow-elevated cursor-grab active:cursor-grabbing"
       />
 
       <div className="absolute inset-x-0 top-full mt-2 flex items-center justify-between">
@@ -1275,8 +1276,8 @@ function TimelineScrubber({
           <span
             key={s.id}
             className={cn(
-              'text-[11px] font-display font-semibold tracking-wide whitespace-nowrap',
-              i === step ? 'text-accent' : 'text-fg-dim',
+              'text-sm font-display font-semibold tracking-wider whitespace-nowrap',
+              i === step ? 'text-accent' : 'text-fg-muted',
             )}
           >
             {s.label}
@@ -1310,10 +1311,7 @@ function FrontRow({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
       transition={{ delay: index * 0.06 }}
-      className={cn(
-        'grid grid-cols-[1fr_auto_auto] border-b border-border-subtle last:border-b-0',
-        index % 2 === 0 ? 'bg-bg-card/40' : 'bg-transparent',
-      )}
+      className="grid grid-cols-[1fr_auto_auto] border-b border-border-subtle last:border-b-0"
     >
       <div className="p-3 sm:p-4 min-w-0 flex items-start gap-2.5">
         <IsometricAsset
@@ -1324,17 +1322,17 @@ function FrontRow({
           fit="contain"
           compactPlaceholder
           prompt={iconPrompt}
-          className="size-9 shrink-0 mt-0.5 rounded-[3px] bg-transparent"
+          className="size-9 shrink-0 mt-0.5 rounded-lg bg-transparent"
         />
         <div className="min-w-0">
-          <div className="font-display font-semibold text-sm leading-tight">{title}</div>
-          <div className="text-xs text-fg-muted leading-snug mt-0.5">{desc}</div>
+          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider leading-tight">{title}</div>
+          <div className="text-sm text-fg-muted leading-snug mt-0.5">{desc}</div>
         </div>
       </div>
-      <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
+      <div className="px-3 sm:px-4 py-3 border-s border-border-subtle flex items-center justify-center min-w-[88px]">
         <FrontMark active={regularActive} />
       </div>
-      <div className="px-3 sm:px-4 py-3 border-r border-border-subtle flex items-center justify-center min-w-[88px]">
+      <div className="px-3 sm:px-4 py-3 border-s border-border-subtle flex items-center justify-center min-w-[88px]">
         <FrontMark active={nonStateActive} />
       </div>
     </motion.div>
@@ -1349,8 +1347,8 @@ function FrontMark({ active }: { active: boolean }) {
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 18 }}
       className={cn(
-        'inline-flex items-center justify-center size-7 rounded-full border text-sm font-display font-bold leading-none',
-        active ? 'bg-fg/8 text-fg border-fg/30' : 'bg-bg-accent text-fg-dim border-border-subtle',
+        'inline-flex items-center justify-center size-7 rounded-full border text-base font-display font-bold leading-none',
+        active ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border',
       )}
     >
       {active ? '✓' : '—'}
