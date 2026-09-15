@@ -17,7 +17,6 @@ type LevelMeta = {
   zoomIcon: IconName;
   time: string;
   example: string;
-  fillClass: string;
   zoomLevel: number; // 1=widest, 3=closest
   dragIcon: string; // category icon shown above the label in the drag exercise
   dragSubtitle: string; // bullet-separated keywords under the label in the drag exercise
@@ -34,7 +33,6 @@ const LEVELS: Record<Level, LevelMeta> = {
     zoomIcon: 'globe',
     time: 'חודשים עד שנים. החלטות שמשפיעות על דורות.',
     example: 'האם המדינה יוצאת למלחמה כוללת? עם אילו מדינות חותמים ברית? החלטות תקציב דרמטיות, למשל – להפסיק לייצר טנקים ולרכוש צוללות במקום.',
-    fillClass: 'fill-accent-intel/30',
     zoomLevel: 1,
     dragIcon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-BADGE-STRATEGIC.png`,
     dragSubtitle: 'דרג לאומי • חזון • משאבים',
@@ -47,7 +45,6 @@ const LEVELS: Record<Level, LevelMeta> = {
     zoomIcon: 'layers',
     time: 'ימים, שבועות או חודשים.',
     example: 'תכנון איך להזרים 30,000 חיילים ומאות טנקים לחזית מבלי ליצור פקק תנועה ענק ופגיע, והחלטה איפה להקים עבורם מאגרי דלק ענקיים בשטח.',
-    fillClass: 'fill-accent/30',
     zoomLevel: 2,
     dragIcon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-BADGE-OPERATIONAL.png`,
     dragSubtitle: 'מערכות • תיאום • מהלכים',
@@ -60,7 +57,6 @@ const LEVELS: Record<Level, LevelMeta> = {
     zoomIcon: 'crosshair',
     time: 'שניות, דקות או שעות ספורות. החלטות של חיים ומוות ב"כאן ועכשיו".',
     example: 'בחירת סלע ספציפי שיסתיר חייל מצלף, החלטה מאיזו זווית לפרוץ לבניין כדי שהשמש תסנוור את האויב, ובאיזה ערוץ נחל הפלוגה תתגנב בשקט בלי להתגלות.',
-    fillClass: 'fill-terrain-sand/30',
     zoomLevel: 3,
     dragIcon: `${DRAG_ASSET_BASE}/TOPIC01-LEVELS-DRAG-BADGE-TACTICAL.png`,
     dragSubtitle: 'כוחות • אש • שטח',
@@ -214,24 +210,18 @@ export function LevelsScene() {
   };
 
   return (
-    <section id="scene-levels" className="px-4 sm:px-6 lg:px-8">
-      {/* Header keeps the narrower standard reading width; the levels
-          table below is deliberately NOT nested in this max-w-6xl wrapper
-          (see LevelsTable's own comment) — it runs to the section's own
-          wider edges instead. Same "allowed to run wider than the header"
-          precedent the drag exercise further down already uses. */}
-      <div className="max-w-6xl mx-auto">
-        <SceneHeader
-          step="01.1"
-          eyebrow="רמות המלחמה"
-          title={
-            <>
-              <span className="gradient-text">שלוש רמות המלחמה</span> · אותה המערכה, ברזולוציות שונות
-            </>
-          }
-          intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
-        />
-      </div>
+    <section id="scene-levels" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
+      <SceneHeader
+        step="01.1"
+        eyebrow="רמות המלחמה"
+        underline
+        title={
+          <>
+            <span className="gradient-text">שלוש רמות המלחמה</span> · אותה המערכה, ברזולוציות שונות
+          </>
+        }
+        intro="בדיוק כמו באפליקציית ניווט, המלחמה נראית לגמרי אחרת בהתאם ל'זום' שבו מסתכלים עליה. סרקו את המטריצה — בכל עמודה רמה אחרת, ובכל שורה ממד אחר: מי מחליט, איזה שטח, איזה אופק זמן."
+      />
 
       {/* === Levels table — one column per level (title + wide banner
           image), one row per dimension below. Replaces the earlier
@@ -378,30 +368,21 @@ export function LevelsScene() {
 // pedagogical copy (level labels, tagline, and all 4 who/zoom/time/example
 // values) is read unchanged from the existing LEVELS/LEVEL_TAGLINE/
 // MATRIX_ROWS data.
-//
-// Rendered by LevelsScene() as a sibling of (not nested inside) its
-// max-w-6xl header wrapper — but max-w-6xl (1152px) was never actually the
-// binding constraint: this scene's own <section> padding (px-4 sm:px-6
-// lg:px-8, 32px/side at lg+) already narrows its content box to ~1105px,
-// tighter than max-w-6xl. So just moving out of max-w-6xl was a no-op —
-// fixed here with a `-mx-4 sm:-mx-6 lg:-mx-8` breakout that cancels the
-// section's own padding for this element only, recovering the full ~1169px
-// section box (measured live at 1440px).
 function LevelsTable() {
   const labelColClass = 'hidden sm:block sm:w-[110px] lg:w-[130px] shrink-0';
   const gridColsClass = 'grid grid-cols-3 sm:grid-cols-[110px_repeat(3,1fr)] lg:grid-cols-[130px_repeat(3,1fr)]';
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 mb-4 surface-elevated overflow-hidden rounded-xl">
+    <div className="surface-elevated overflow-hidden">
       {/* Header row: level title + wide banner photo + tagline, one column per level. */}
       <div className={cn(gridColsClass, 'border-b border-border-strong')}>
-        <div className={cn(labelColClass, 'p-4 bg-bg-accent/40')} aria-hidden />
+        <div className={cn(labelColClass, 'p-4 bg-bg-accent')} aria-hidden />
         {LEVEL_ORDER.map((level) => {
           const meta = LEVELS[level];
           return (
-            <div key={level} className="flex flex-col border-s border-border-strong bg-bg-accent/20">
+            <div key={level} className="flex flex-col border-s border-border-subtle bg-bg-accent">
               <div className="px-4 pt-4 pb-2.5">
-                <h3 className="font-display text-lg sm:text-xl font-extrabold leading-tight text-fg">
+                <h3 className="font-display font-bold leading-tight text-black text-lg md:text-xl">
                   {meta.label}
                 </h3>
               </div>
@@ -410,7 +391,7 @@ function LevelsTable() {
                   `aspect` on IsometricAsset is nominal only, canceled by
                   `[aspect-ratio:auto]`, so the outer `aspect-[3/1]`
                   wrapper drives the real shape. */}
-              <div className="relative mx-4 mb-3 overflow-hidden rounded-[3px] aspect-[3/1]">
+              <div className="relative mx-4 mb-3 overflow-hidden rounded-lg aspect-[3/1]">
                 <IsometricAsset
                   assetId={`TOPIC01-LEVELS-${level.toUpperCase()}-BANNER`}
                   src={`${LEVEL_BANNER_BASE}/TOPIC01-LEVELS-${level.toUpperCase()}-BANNER.png`}
@@ -422,7 +403,7 @@ function LevelsTable() {
                   className="absolute inset-0 size-full [aspect-ratio:auto]"
                 />
               </div>
-              <p className="px-4 pb-4 text-xs sm:text-sm text-fg-muted leading-relaxed text-pretty">
+              <p className="px-4 pb-4 text-sm text-fg-muted leading-snug text-pretty">
                 {LEVEL_TAGLINE[level]}
               </p>
             </div>
@@ -433,13 +414,13 @@ function LevelsTable() {
       {/* One shared-label row per MATRIX_ROWS dimension. */}
       {MATRIX_ROWS.map((row) => (
         <div key={row.key} className={cn(gridColsClass, 'border-b border-border-subtle last:border-b-0')}>
-          <div className={cn(labelColClass, 'p-4 flex items-center bg-bg-accent/10')}>
-            <div className="text-sm font-display font-bold text-fg">{row.label}</div>
+          <div className={cn(labelColClass, 'p-4 flex items-center bg-bg-accent')}>
+            <div className="text-base font-display font-bold text-black tracking-wider">{row.label}</div>
           </div>
           {LEVEL_ORDER.map((level) => (
             <div key={level} className="p-4 border-s border-border-subtle">
-              <div className="mb-1 text-xs font-display font-bold text-fg-muted sm:hidden">{row.label}</div>
-              <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">
+              <div className="mb-1.5 text-base font-display font-bold text-black tracking-wider sm:hidden">{row.label}</div>
+              <p className="text-base leading-relaxed text-black text-pretty">
                 {LEVELS[level][row.key]}
               </p>
             </div>
