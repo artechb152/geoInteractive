@@ -17,10 +17,11 @@ const TERMS = [
 
 export function RecapScene() {
   return (
-    <section id="scene-recap" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-recap" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="01.4"
         eyebrow="סיכום השיעור"
+        underline
         title={
           <>
             8 מושגים, <span className="gradient-text">דקה אחת</span>
@@ -30,6 +31,7 @@ export function RecapScene() {
       />
 
       <RecapBanner
+        className="mb-12"
         eyebrow="כל הכבוד · סיימת את השיעור הראשון"
         title={
           <>
@@ -46,18 +48,17 @@ export function RecapScene() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.05, duration: 0.4 }}
-            className="surface p-5 relative overflow-hidden"
+            className="surface p-5"
           >
-            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
-            <div className="relative flex items-start gap-3">
-              <span className="font-mono text-xs text-accent mt-1 shrink-0">
-                {String(i + 1).padStart(2, '0')}
+            <div className="flex items-start gap-3">
+              <span className="size-11 rounded-xl flex items-center justify-center shrink-0 border bg-bg-accent text-fg-muted border-border">
+                <span className="font-display text-base font-bold">{String(i + 1).padStart(2, '0')}</span>
               </span>
               <div className="flex-1 min-w-0">
-                <div className="font-display font-bold mb-1 leading-tight">
+                <div className="font-display font-bold leading-tight text-black text-lg md:text-xl mb-1.5">
                   {t.term}
                 </div>
-                <div className="text-sm text-fg-muted leading-relaxed">
+                <div className="text-base leading-relaxed text-black">
                   {t.def}
                 </div>
               </div>
