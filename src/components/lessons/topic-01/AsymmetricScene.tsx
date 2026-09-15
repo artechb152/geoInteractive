@@ -340,10 +340,11 @@ export function AsymmetricScene() {
   };
 
   return (
-    <section id="scene-asymmetric" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-asymmetric" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="01.3"
         eyebrow="לחימה אסימטרית"
+        underline
         title={
           <>
            צבא סדיר, טרור וגרילה —<br />
@@ -358,7 +359,7 @@ export function AsymmetricScene() {
           design/docs/assumptions.md, "Topic-01 asymmetric-actor tabs"). */}
       <ActorTypologySelector />
 
-      <div className="mt-10">
+      <div className="mt-12">
         <TypologyTable />
       </div>
 
@@ -384,14 +385,15 @@ export function AsymmetricScene() {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="surface-elevated p-5 sm:p-6 mt-16"
+        className="surface-elevated p-5 sm:p-6 mt-12"
       >
-        <div className="grid sm:grid-cols-[1fr_auto] gap-5 items-center">
+        <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center">
           <div>
-            <div className="text-xl sm:text-2xl font-display font-extrabold text-fg mb-1.5 tracking-wide">
+            <h3 className="font-display font-bold text-xl md:text-2xl leading-tight text-balance text-black mb-3">
               המסקנה: זורקים את ספר החוקים הישן לפח
-            </div>
-            <p className="text-fg leading-relaxed text-pretty">
+            </h3>
+            <span aria-hidden className="inline-block h-[3px] w-7 rounded-full bg-accent-hover mb-3" />
+            <p className="text-base md:text-lg text-black leading-relaxed text-pretty">
               צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
             </p>
           </div>
@@ -401,7 +403,7 @@ export function AsymmetricScene() {
             alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
             aspect="1/1"
             fit="contain"
-            className="rounded-[3px] w-[150px] sm:w-[180px] shrink-0 bg-bg-elevated"
+            className="rounded-lg w-[150px] sm:w-[180px] shrink-0 bg-bg-elevated"
             prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
           />
         </div>
@@ -479,7 +481,7 @@ function ActorTypologySelector() {
   const active = ACTORS[activeId];
 
   return (
-    <div className="mb-10">
+    <div>
       {/* Banner tabs — 3 equal columns at every width; each shows its
           actor's pre-made *-BANNER.png cover-fit, with a scrim fading from
           solid (visual right / inline-start, where the label sits) to
@@ -487,7 +489,7 @@ function ActorTypologySelector() {
           page is a fixed-RTL layout (no LTR variant), so the physical
           `to-l` gradient direction is intentional here, matching existing
           precedent elsewhere in this codebase (e.g. Footer.tsx). */}
-      <div role="tablist" aria-label="בחר סוג שחקן" className="grid grid-cols-3 gap-2.5 sm:gap-3 mb-3">
+      <div role="tablist" aria-label="בחר סוג שחקן" className="grid grid-cols-3 gap-3 mb-3">
         {ACTORS_LIST.map((a, i) => {
           const isActive = a.id === activeId;
           return (
@@ -502,8 +504,8 @@ function ActorTypologySelector() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
-              transition={{ delay: i * 0.05, duration: 0.4 }}
-              className="group relative h-20 sm:h-24 overflow-hidden rounded-[4px] border border-border transition-all duration-300 ease-snap hover:-translate-y-1 hover:border-brand-dark/50 hover:shadow-elevated"
+              transition={{ delay: i * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="group relative h-20 sm:h-24 overflow-hidden rounded-2xl border border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03] transition-all duration-300 ease-snap"
             >
               <IsometricAsset
                 assetId={`TOPIC01-ASYM-ACTOR-${a.id.toUpperCase()}-BANNER`}
@@ -530,7 +532,7 @@ function ActorTypologySelector() {
                   // toward the visual left (main-end under RTL), over the
                   // transparent/photo side instead.
                   'relative z-10 flex h-full items-center justify-start px-3 sm:px-4 font-display text-sm sm:text-base font-bold leading-tight text-pretty transition-colors',
-                  isActive ? 'text-accent' : 'text-fg group-hover:text-ember-deep',
+                  isActive ? 'text-accent' : 'text-fg group-hover:text-brand-dark',
                 )}
               >
                 {a.label}
@@ -553,21 +555,21 @@ function ActorTypologySelector() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-          className="surface-elevated grid overflow-hidden rounded-[4px] md:grid-cols-[1.15fr_1fr]"
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="surface-elevated grid overflow-hidden md:grid-cols-[1.15fr_1fr]"
         >
           {/* Text column — first DOM child → right in RTL. */}
-          <div className="flex flex-col p-6 sm:p-7 md:p-8">
-            <h3 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight text-fg">
+          <div className="flex flex-col p-6 md:p-8">
+            <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
               {active.label}
             </h3>
-            <p className="mt-3 text-sm sm:text-base leading-relaxed text-fg text-pretty">{active.oneLiner}</p>
+            <p className="mt-3 text-base leading-relaxed text-black text-pretty">{active.oneLiner}</p>
             <div className="mt-4 border-t border-border-subtle" />
             {/* grid-cols-1 below sm: the reference mockup's own placeholder
                 text is much shorter than ACTOR_FIELD_ROWS' real values (2-4x
                 longer), so a fixed 2-up grid gets too narrow/tall on mobile —
                 stack single-column there, 2-up from sm+ where there's room. */}
-            <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {ACTOR_FIELD_ROWS.map((field, i) => (
                 // Text is the FIRST child (→ right in RTL) and the icon
                 // circle is SECOND (→ left) — matches the reference's own
@@ -589,14 +591,14 @@ function ActorTypologySelector() {
                   )}
                 >
                   <div className="min-w-0">
-                    <div className="font-display font-semibold text-xs sm:text-sm tracking-wide text-fg mb-0.5">
+                    <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider">
                       {field.label}
                     </div>
-                    <p className="text-xs sm:text-sm leading-relaxed text-fg-muted text-pretty">
+                    <p className="text-base leading-relaxed text-black text-pretty">
                       {active[field.key]}
                     </p>
                   </div>
-                  <div className="shrink-0 rounded-full bg-bg-accent p-2">
+                  <div className="size-11 rounded-xl flex items-center justify-center shrink-0 border bg-bg-accent border-border">
                     <IsometricAsset
                       assetId={`TOPIC01-ASYM-ICON-${field.key.toUpperCase()}`}
                       src={`/assets/lessons/topic01/scene-asymmetric/icons/TOPIC01-ASYM-ICON-${field.key.toUpperCase()}.png`}
