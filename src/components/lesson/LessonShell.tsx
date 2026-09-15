@@ -87,7 +87,7 @@ export function LessonShell({
             role="tablist"
             aria-label="חלקי השיעור"
           >
-            {TABS.map(({ key, label, Icon }) => {
+            {TABS.map(({ key, label }) => {
               const active = tab === key;
               return (
                 <button
@@ -99,19 +99,12 @@ export function LessonShell({
                   id={`lesson-tab-${key}`}
                   onClick={() => setTab(key)}
                   className={cn(
-                    'relative inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 text-sm font-medium transition-colors',
+                    'relative inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 text-sm font-display font-semibold transition-colors',
                     active
-                      ? 'text-brand-dark'
-                      : 'text-fg-muted hover:text-fg',
+                      ? 'text-accent'
+                      : 'text-fg-muted hover:text-brand-dark',
                   )}
                 >
-                  <Icon
-                    className={cn(
-                      'size-4 transition-colors',
-                      active ? 'text-brand-dark' : 'text-fg-dim',
-                    )}
-                    aria-hidden
-                  />
                   <span>{label}</span>
                   {active && (
                     <motion.span
@@ -121,7 +114,7 @@ export function LessonShell({
                         stiffness: 350,
                         damping: 30,
                       }}
-                      className="absolute inset-x-2 -bottom-px h-0.5 bg-brand-dark rounded-full"
+                      className="absolute inset-x-2 -bottom-px h-1 bg-accent rounded-full"
                       aria-hidden
                     />
                   )}
@@ -142,6 +135,7 @@ export function LessonShell({
                 id={`lesson-panel-${tab}`}
                 role="tabpanel"
                 aria-labelledby={`lesson-tab-${tab}`}
+                className={tab === 'learn' ? undefined : 'max-w-lesson mx-auto px-4 sm:px-6 lg:px-8'}
                 initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? undefined : { opacity: 0, y: -8 }}
@@ -158,21 +152,21 @@ export function LessonShell({
               sub-topic of `learn`, or on `practice` / `check` tabs ──── */}
       {showLessonNav && (
       <footer className="border-t border-border-subtle bg-bg-elevated/40 mt-8">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {prev ? (
             <Link
               href={`/lessons/${prev.id}/`}
-              className="group rounded-xl border border-border bg-bg-elevated p-3.5 hover:border-brand/40 hover:shadow-elevated transition-all duration-200 ease-snap flex items-center gap-3 text-right"
+              className="group surface p-4 hover:border-brand/30 hover:bg-brand/[0.03] hover:shadow-elevated transition-all duration-200 ease-snap flex items-center gap-3 text-start"
             >
               <ArrowRight
                 className="size-5 shrink-0 text-fg-dim group-hover:text-brand-dark group-hover:translate-x-0.5 transition-all"
                 aria-hidden
               />
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-display font-semibold tracking-wider text-fg-dim uppercase">
+                <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
                   השיעור הקודם
                 </div>
-                <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate group-hover:text-brand-dark transition-colors">
+                <div className="font-display font-bold leading-tight text-black text-lg md:text-xl truncate">
                   {prev.shortTitle}
                 </div>
               </div>
@@ -184,17 +178,17 @@ export function LessonShell({
           {next ? (
             <Link
               href={`/lessons/${next.id}/`}
-              className="group rounded-xl border border-accent/40 bg-accent/10 p-3.5 hover:bg-accent hover:border-accent shadow-glow transition-all duration-200 ease-snap flex items-center gap-3 sm:text-left flex-row-reverse sm:flex-row"
+              className="group surface p-4 border-accent bg-accent/10 hover:shadow-elevated transition-all duration-200 ease-snap flex items-center gap-3 sm:text-end flex-row-reverse sm:flex-row"
             >
               <ArrowLeft
-                className="size-5 shrink-0 text-accent-hover group-hover:text-fg group-hover:-translate-x-0.5 transition-all"
+                className="size-5 shrink-0 text-accent group-hover:-translate-x-0.5 transition-all"
                 aria-hidden
               />
-              <div className="min-w-0 flex-1 text-right sm:text-left">
-                <div className="text-[11px] font-display font-semibold tracking-wider text-accent-hover group-hover:text-fg/80 transition-colors uppercase">
+              <div className="min-w-0 flex-1 text-start sm:text-end">
+                <div className="text-sm font-display font-semibold tracking-wider text-accent">
                   השיעור הבא
                 </div>
-                <div className="text-sm md:text-[15px] font-display font-semibold text-fg truncate">
+                <div className="font-display font-bold leading-tight text-black text-lg md:text-xl truncate">
                   {next.shortTitle}
                 </div>
               </div>
@@ -202,17 +196,17 @@ export function LessonShell({
           ) : (
             <Link
               href="/"
-              className="group rounded-xl border border-brand/40 bg-brand/10 p-3.5 hover:bg-brand hover:border-brand-dark transition-all duration-200 ease-snap flex items-center gap-3"
+              className="group surface p-4 border-accent bg-accent/10 hover:shadow-elevated transition-all duration-200 ease-snap flex items-center gap-3 text-start"
             >
               <Check
-                className="size-5 shrink-0 text-brand-dark group-hover:text-bg-elevated transition-colors"
+                className="size-5 shrink-0 text-accent"
                 aria-hidden
               />
-              <div className="min-w-0 flex-1 text-right">
-                <div className="text-[11px] font-display font-semibold tracking-wider text-brand-dark group-hover:text-bg-elevated/80 transition-colors uppercase">
+              <div className="min-w-0 flex-1 text-start">
+                <div className="text-sm font-display font-semibold tracking-wider text-accent">
                   סיום הקורס
                 </div>
-                <div className="text-sm md:text-[15px] font-display font-semibold text-fg group-hover:text-bg-elevated truncate transition-colors">
+                <div className="font-display font-bold leading-tight text-black text-lg md:text-xl truncate">
                   חזרה לסילבוס
                 </div>
               </div>
