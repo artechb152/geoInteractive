@@ -80,9 +80,8 @@ const DRAG_ZONE_ORDER: Level[] = ['tactical', 'operational', 'strategic'];
 
 // TOPIC01-LEVELS-{STRATEGIC,OPERATIONAL,TACTICAL}-BANNER.png — one
 // photograph per level, same 2172×724 (3:1) format as this lesson's own
-// AsymmetricScene.tsx ACTOR-*-BANNER.png assets, driving the level-selector
-// banner tabs below (LevelTypologySelector) in place of the old single
-// diorama + overlay-button interaction.
+// AsymmetricScene.tsx ACTOR-*-BANNER.png assets, used as each column's
+// header image in the levels table (LevelsTable) below.
 const LEVEL_BANNER_BASE = '/assets/lessons/topic01/scene-levels';
 
 const LEVEL_BANNER_PROMPT: Record<Level, string> = {
@@ -94,18 +93,6 @@ const LEVEL_BANNER_PROMPT: Record<Level, string> = {
     'Photorealistic documentary-style photo of soldiers in full combat gear hiking single-file along a rocky hillside trail at golden hour, shot from behind, sweeping valley and coastline in the background, natural daylight, shallow depth of field, no text overlays, no visible faces in close-up.',
 };
 
-// Transcribed verbatim from the reference `lesson1part3image1new` — all 3
-// tab subtitles are legible in it regardless of which tab is active. A
-// deliberately separate field from LEVELS[level].dragSubtitle (used only by
-// the unrelated drag exercise further down this file): the reference's own
-// wording differs from dragSubtitle's, so this component reads the
-// reference's own words rather than repurposing that other field.
-const LEVEL_TAB_SUBTITLE: Record<Level, string> = {
-  tactical: 'כוח • משימה • שטח',
-  operational: 'זירה • תיאום • מערכה',
-  strategic: 'מדינות • מדיניות • משאבים',
-};
-
 // Only the strategic tagline is legible in the reference (it's the one tab
 // shown open) — "המבט הרחב: מטרות המלחמה והמשאבים להשגתן." is transcribed
 // verbatim from it. operational/tactical are NOT visible anywhere in the
@@ -113,21 +100,11 @@ const LEVEL_TAB_SUBTITLE: Record<Level, string> = {
 // pattern, paraphrasing this scene's own existing who/zoom/example copy for
 // each level — unlike every other string in this component, these two are
 // new copy, not transcribed from a source. Flagged in
-// design/assumptions.md for the user to review/edit.
+// design/docs/assumptions.md for the user to review/edit.
 const LEVEL_TAGLINE: Record<Level, string> = {
   strategic: 'המבט הרחב: מטרות המלחמה והמשאבים להשגתן.',
   operational: 'התיאום האזורי: סנכרון כוחות, ציוד ותנועה בין החזית לעורף.',
   tactical: 'הפעולה בשטח: ההחלטה המיידית שמכריעה את הרגע.',
-};
-
-// Transcribed verbatim from the reference.
-const LEVEL_SELECTOR_HINT = 'לחצו על באנר אחר כדי לעבור לרמה הבאה';
-
-const FIELD_ICON: Record<MatrixRowKey, IconName> = {
-  who: 'people',
-  zoom: 'globe',
-  time: 'clock',
-  example: 'target',
 };
 
 // TOPIC01-LEVELS-DRAG-BG.png's orange ("operational") landmass isn't
@@ -137,8 +114,15 @@ const FIELD_ICON: Record<MatrixRowKey, IconName> = {
 // height). Expressed as a fraction of the column's own width (since the
 // overlay div below spans the column edge-to-edge), that's a ~9%
 // translateX nudge; the other two zones' shapes are already centered in
-// their columns, so this map is empty for them.
+// their columns, so this map is empty for them. The strategic zone is the
+// odd one out here: it's the edge column (bounded by the page edge, not by
+// a second shape outline), and its green landmass reads visually wider on
+// its left side (compass rose + tree line) than its right — the icon/label
+// column, centered on the grid column itself, ends up sitting left of the
+// landmass's own visual center. Nudged right to match, same technique as
+// operational above.
 const ZONE_CONTENT_OFFSET: Partial<Record<Level, string>> = {
+  strategic: '8%',
   operational: '9%',
 };
 
@@ -147,9 +131,35 @@ const ZONE_CONTENT_OFFSET: Partial<Record<Level, string>> = {
 // (the old per-zone accent-intel/accent/terrain-sand palette made the
 // tactical zone's label and drop-box unreadable, since terrain-sand nearly
 // matches the tactical terrain artwork behind it).
-const ZONE_LABEL_TEXT = 'text-fg';
-const ZONE_DASH_BORDER = 'border-accent';
-const ZONE_DASH_BG_ACTIVE = 'bg-accent/15';
+//
+// Plain text-fg alone still loses to the busier artwork behind it — the
+// strategic zone's tree line + rock texture in particular swallows dark
+// ink with no separation. A light halo (paper.card, already an approved
+// token) behind the glyphs keeps one flat ink color across all 3 zones
+// (per the note above) while staying legible over any of the three
+// terrain textures, not just the calmer ones tactical/operational sit on.
+const ZONE_LABEL_TEXT = 'text-fg [text-shadow:0_1px_2px_rgba(248,242,231,0.85),0_0_7px_rgba(248,242,231,0.75)]';
+const ZONE_SUBTITLE_TEXT = 'text-fg-muted [text-shadow:0_1px_2px_rgba(248,242,231,0.9),0_0_6px_rgba(248,242,231,0.8)]';
+
+// The "גררו לכאן" / "שחרר כאן" / "הקש לשבץ כאן" drop-target hint (inside
+// the dashed box below the label/subtitle above) used to render in flat
+// text-fg-muted with NO halo, and — in its idle state — the whole box
+// including that text was additionally dropped to opacity-70. A
+// text-shadow halo alone (first attempt) still wasn't enough here: this
+// artwork is a photoreal terrain photo, not a flat illustration, and its
+// fine-grained texture (grass blades, rock stipple, mixed light/dark
+// patches) breaks up thin small-text glyph edges enough that the halo
+// doesn't reliably separate them — confirmed still barely legible after
+// that pass. The box now gets an actual near-opaque light backing plate
+// (paper.card) instead of floating directly over the photo, so the hint
+// text sits on a flat, predictable surface with guaranteed contrast no
+// matter what terrain patch is behind it; the halo stays as a cheap
+// belt-and-suspenders in case the backing is ever made more transparent.
+const ZONE_HINT_TEXT = 'text-fg [text-shadow:0_1px_1px_rgba(248,242,231,0.6)]';
+const ZONE_DASH_BORDER = 'border-accent/60';
+const ZONE_DASH_BORDER_ACTIVE = 'border-accent';
+const ZONE_DASH_BG_IDLE = 'bg-paper-card/90';
+const ZONE_DASH_BG_ACTIVE = 'bg-accent/20';
 
 type MatrixRowKey = 'who' | 'zoom' | 'time' | 'example';
 const MATRIX_ROWS: { key: MatrixRowKey; label: string }[] = [
@@ -205,12 +215,11 @@ export function LevelsScene() {
 
   return (
     <section id="scene-levels" className="px-4 sm:px-6 lg:px-8">
-      {/* Header keeps the narrower standard reading width; the level
-          selector below is deliberately NOT nested in this max-w-6xl
-          wrapper (see LevelTypologySelector's own comment) — it runs to the
-          section's own wider edges instead, matching the reference's card
-          proportions. Same "allowed to run wider than the header" precedent
-          the drag exercise further down already uses. */}
+      {/* Header keeps the narrower standard reading width; the levels
+          table below is deliberately NOT nested in this max-w-6xl wrapper
+          (see LevelsTable's own comment) — it runs to the section's own
+          wider edges instead. Same "allowed to run wider than the header"
+          precedent the drag exercise further down already uses. */}
       <div className="max-w-6xl mx-auto">
         <SceneHeader
           step="01.1"
@@ -224,11 +233,10 @@ export function LevelsScene() {
         />
       </div>
 
-      {/* === Level Selector — banner-tab interaction ported from this
-          lesson's own AsymmetricScene.tsx ActorTypologySelector, redesigned
-          to match reference lesson1part3image1new. Replaces the old
-          single-diorama + overlay-button selector. === */}
-      <LevelTypologySelector />
+      {/* === Levels table — one column per level (title + wide banner
+          image), one row per dimension below. Replaces the earlier
+          click-to-reveal tab/banner selector. === */}
+      <LevelsTable />
 
       {/* === Practice: Drag scenarios into bins === */}
       <div className="mt-12">
@@ -261,14 +269,21 @@ export function LevelsScene() {
         </div>
 
         {/* Pool sidebar (right, RTL-first) + the three-zone diorama (left).
-            The diorama's own aspect-ratio forces it wider than its grid
-            column at this width, overflowing off the left edge of the
-            viewport — shifted right as one unit (both cards move together,
-            nothing resized) to reduce how much of the clipped zone is lost.
-            Capped at 84px: past that, the pool card would slide behind the
-            fixed course-outline sidebar (`<aside>` in the lesson layout) and
-            its drag targets would become unreachable. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-stretch mb-6 lg:translate-x-[84px]">
+            Previously `items-stretch`: the diorama had no height of its
+            own, so it was force-stretched to match the pool card's row
+            height — and since `aspect-[1672/941]` then had to derive this
+            box's WIDTH back out of that borrowed height, the diorama's
+            rendered width silently tracked the pool's height too. The pool
+            shrinks by one chip every time a scenario is dragged out of it,
+            so the diorama kept visibly shrinking along with it on every
+            single drag (reported: the image gets smaller, repeatedly) —
+            and even before any drag, that borrowed height happened to make
+            the diorama wider than this column, overflowing off the left
+            edge (hence the old `translate-x-[84px]` compensating shift,
+            removed below along with it). `items-start` lets each card size
+            itself independently: the diorama from its own aspect-ratio
+            within its actual column width, full stop. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 items-start mb-6">
           <ScenarioPool
             pool={pool}
             selectedScenario={selectedScenario}
@@ -351,19 +366,18 @@ export function LevelsScene() {
   );
 }
 
-// Banner-tab selector + single crossfaded detail panel, rebuilt to match
-// reference `lesson1part3image1new` pixel-for-pixel (see
-// design/assumptions.md): 3 split photo/label tab cards (orange 2px border
-// ring on the active card, no bottom bar / no label-color change — a
-// deliberate departure from this file's own earlier "accent-only active
-// state via bottom bar" note, since the reference itself uses a full-card
-// border instead), then one crossfaded panel below — full-width banner
-// photo, headline + one-line tagline, a 3-column who/zoom/time field row
-// (icon at each field's visual left, matching the icon-left/text-right
-// convention already established in this lesson's AsymmetricScene.tsx), and
-// a full-width "example" row below a divider. All pedagogical copy (level
-// labels, english, and all 4 who/zoom/time/example values) is read
-// unchanged from the existing LEVELS/MATRIX_ROWS data.
+// Real table (not 3 separate cards): one shared bordered wrapper, one
+// header column per level (title + the wide 3:1 banner photo + tagline),
+// then one shared-label row per MATRIX_ROWS dimension (who/zoom/time/
+// example) with one value cell per level — same row-label + N-value-column
+// structure as this lesson's own AsymmetricScene.tsx TypologyTable, which
+// is also what this scene's own SceneHeader intro already describes
+// ("בכל עמודה רמה אחרת, ובכל שורה ממד אחר"). Replaces the earlier
+// click-to-reveal tab/banner selector — direct user request for a static
+// table showing all 3 levels at once instead of 3 separate cards. All
+// pedagogical copy (level labels, tagline, and all 4 who/zoom/time/example
+// values) is read unchanged from the existing LEVELS/LEVEL_TAGLINE/
+// MATRIX_ROWS data.
 //
 // Rendered by LevelsScene() as a sibling of (not nested inside) its
 // max-w-6xl header wrapper — but max-w-6xl (1152px) was never actually the
@@ -372,137 +386,66 @@ export function LevelsScene() {
 // tighter than max-w-6xl. So just moving out of max-w-6xl was a no-op —
 // fixed here with a `-mx-4 sm:-mx-6 lg:-mx-8` breakout that cancels the
 // section's own padding for this element only, recovering the full ~1169px
-// section box (measured live at 1440px). Reference lesson1part3image1new,
-// read at its native ~1:1 scale to 1440px, puts its tab cards at ~380×175px
-// (aspect ≈2.17); the old max-w-6xl-constrained ~360×180 (≈2.0) read
-// visibly more square / "too tall" — direct user feedback after the first
-// pass.
-function LevelTypologySelector() {
-  const [activeLevel, setActiveLevel] = useState<Level>('strategic');
-  const active = LEVELS[activeLevel];
-  const fieldTrio = MATRIX_ROWS.slice(0, 3);
-  const exampleField = MATRIX_ROWS[3];
+// section box (measured live at 1440px).
+function LevelsTable() {
+  const labelColClass = 'hidden sm:block sm:w-[110px] lg:w-[130px] shrink-0';
+  const gridColsClass = 'grid grid-cols-3 sm:grid-cols-[110px_repeat(3,1fr)] lg:grid-cols-[130px_repeat(3,1fr)]';
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8 mb-4">
-      <div role="tablist" aria-label="בחר רמת מלחמה" className="grid grid-cols-3 gap-3 mb-3">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8 mb-4 surface-elevated overflow-hidden rounded-xl">
+      {/* Header row: level title + wide banner photo + tagline, one column per level. */}
+      <div className={cn(gridColsClass, 'border-b border-border-strong')}>
+        <div className={cn(labelColClass, 'p-4 bg-bg-accent/40')} aria-hidden />
         {LEVEL_ORDER.map((level) => {
           const meta = LEVELS[level];
-          const isActive = level === activeLevel;
           return (
-            <button
-              key={level}
-              type="button"
-              role="tab"
-              id={`level-tab-${level}`}
-              aria-selected={isActive}
-              aria-controls="level-detail-panel"
-              onClick={() => setActiveLevel(level)}
-              className={cn(
-                'group relative h-[155px] sm:h-[175px] overflow-hidden rounded-xl border-2 transition-colors duration-300',
-                isActive ? 'border-accent shadow-elevated' : 'border-border-subtle hover:border-border-strong',
-              )}
-            >
-              <IsometricAsset
-                assetId={`TOPIC01-LEVELS-${level.toUpperCase()}-BANNER`}
-                src={`${LEVEL_BANNER_BASE}/TOPIC01-LEVELS-${level.toUpperCase()}-BANNER.png`}
-                alt=""
-                // `aspect` is nominal only — canceled below by the
-                // `[aspect-ratio:auto]` override className (the real
-                // source is 2172×724 / 3:1, same technique this lesson's
-                // AsymmetricScene.tsx uses for its own *-BANNER.png tabs).
-                aspect="1/1"
-                fit="cover"
-                compactPlaceholder
-                prompt={LEVEL_BANNER_PROMPT[level]}
-                className="absolute inset-0 size-full [aspect-ratio:auto]"
-              />
-              <div
-                aria-hidden
-                className="absolute inset-0 bg-gradient-to-l from-bg-elevated from-45% via-bg-elevated/95 to-transparent"
-              />
-              <div className="relative z-10 flex h-full flex-col items-start justify-center gap-2 px-5">
-                <span className="font-display text-xl sm:text-2xl font-extrabold leading-tight text-fg">
+            <div key={level} className="flex flex-col border-s border-border-strong bg-bg-accent/20">
+              <div className="px-4 pt-4 pb-2.5">
+                <h3 className="font-display text-lg sm:text-xl font-extrabold leading-tight text-fg">
                   {meta.label}
-                </span>
-                <span className="text-sm text-fg-muted">{LEVEL_TAB_SUBTITLE[level]}</span>
+                </h3>
               </div>
-            </button>
+              {/* Wide banner photo at its real 2172×724 (3:1) ratio — the
+                  same technique as this lesson's other *-BANNER.png calls:
+                  `aspect` on IsometricAsset is nominal only, canceled by
+                  `[aspect-ratio:auto]`, so the outer `aspect-[3/1]`
+                  wrapper drives the real shape. */}
+              <div className="relative mx-4 mb-3 overflow-hidden rounded-[3px] aspect-[3/1]">
+                <IsometricAsset
+                  assetId={`TOPIC01-LEVELS-${level.toUpperCase()}-BANNER`}
+                  src={`${LEVEL_BANNER_BASE}/TOPIC01-LEVELS-${level.toUpperCase()}-BANNER.png`}
+                  alt=""
+                  aspect="1/1"
+                  fit="cover"
+                  compactPlaceholder
+                  prompt={LEVEL_BANNER_PROMPT[level]}
+                  className="absolute inset-0 size-full [aspect-ratio:auto]"
+                />
+              </div>
+              <p className="px-4 pb-4 text-xs sm:text-sm text-fg-muted leading-relaxed text-pretty">
+                {LEVEL_TAGLINE[level]}
+              </p>
+            </div>
           );
         })}
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeLevel}
-          id="level-detail-panel"
-          role="tabpanel"
-          tabIndex={0}
-          aria-labelledby={`level-tab-${activeLevel}`}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-          className="surface-elevated overflow-hidden rounded-xl"
-        >
-          {/* Full-width banner photo — reuses the same tab asset (no
-              separate portrait exists for levels; see
-              design/assumptions.md). Empty alt: the headline right below
-              already names the level. */}
-          <div className="relative h-[220px] sm:h-[260px]">
-            <IsometricAsset
-              assetId={`TOPIC01-LEVELS-${activeLevel.toUpperCase()}-BANNER`}
-              src={`${LEVEL_BANNER_BASE}/TOPIC01-LEVELS-${activeLevel.toUpperCase()}-BANNER.png`}
-              alt=""
-              aspect="16/9"
-              fit="cover"
-              prompt={LEVEL_BANNER_PROMPT[activeLevel]}
-              className="absolute inset-0 size-full [aspect-ratio:auto]"
-            />
+      {/* One shared-label row per MATRIX_ROWS dimension. */}
+      {MATRIX_ROWS.map((row) => (
+        <div key={row.key} className={cn(gridColsClass, 'border-b border-border-subtle last:border-b-0')}>
+          <div className={cn(labelColClass, 'p-4 flex items-center bg-bg-accent/10')}>
+            <div className="text-sm font-display font-bold text-fg">{row.label}</div>
           </div>
-
-          <div className="p-6 sm:p-8">
-            <h3 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight text-fg">
-              הרמה ה{active.label}
-            </h3>
-            <p className="mt-2 text-base text-fg-muted text-pretty">{LEVEL_TAGLINE[activeLevel]}</p>
-
-            <div className="mt-6 grid grid-cols-3">
-              {fieldTrio.map((row, i) => (
-                <div
-                  key={row.key}
-                  className={cn(
-                    'flex items-start gap-3 px-4',
-                    i === 0 && 'ps-0',
-                    i === fieldTrio.length - 1 && 'pe-0',
-                    i > 0 && 'border-s border-border-subtle',
-                  )}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-display font-bold text-base text-fg">{row.label}</div>
-                    <p className="mt-1 text-sm text-fg-muted leading-relaxed text-pretty">{active[row.key]}</p>
-                  </div>
-                  <div className="shrink-0 rounded-full bg-bg-accent p-3">
-                    <Icon name={FIELD_ICON[row.key]} size={22} strokeWidth={2} className="text-fg" />
-                  </div>
-                </div>
-              ))}
+          {LEVEL_ORDER.map((level) => (
+            <div key={level} className="p-4 border-s border-border-subtle">
+              <div className="mb-1 text-xs font-display font-bold text-fg-muted sm:hidden">{row.label}</div>
+              <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">
+                {LEVELS[level][row.key]}
+              </p>
             </div>
-
-            <div className="mt-6 flex items-start gap-3 border-t border-border-subtle pt-6">
-              <div className="min-w-0 flex-1">
-                <div className="font-display font-bold text-base text-fg mb-1">{exampleField.label}</div>
-                <p className="text-sm sm:text-base text-fg-muted leading-relaxed text-pretty">{active.example}</p>
-              </div>
-              <div className="shrink-0 rounded-full bg-bg-accent p-3">
-                <Icon name={FIELD_ICON.example} size={22} strokeWidth={2} className="text-fg" />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      <p className="mt-4 text-center text-sm text-fg-dim">{LEVEL_SELECTOR_HINT}</p>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
@@ -649,7 +592,7 @@ function LevelZone({
         <div className={cn('mt-2.5 font-display font-bold text-base sm:text-xl leading-tight', ZONE_LABEL_TEXT)}>
           {meta.label}
         </div>
-        <div className="mt-1 text-[11px] sm:text-[13px] text-fg-muted leading-snug">
+        <div className={cn('mt-1 text-[11px] sm:text-[13px] leading-snug', ZONE_SUBTITLE_TEXT)}>
           {meta.dragSubtitle}
         </div>
 
@@ -659,26 +602,16 @@ function LevelZone({
           className={cn(
             'mt-3 w-full max-w-[220px] rounded-lg border-2 border-dashed px-3 py-3 transition-colors duration-200',
             isEmpty ? 'flex flex-col items-center justify-center gap-1.5 min-h-[96px]' : 'space-y-1.5',
-            ZONE_DASH_BORDER,
-            isOver ? ZONE_DASH_BG_ACTIVE : isWaitingForTap ? '' : 'opacity-70',
+            isOver || isWaitingForTap ? ZONE_DASH_BORDER_ACTIVE : ZONE_DASH_BORDER,
+            isOver ? ZONE_DASH_BG_ACTIVE : ZONE_DASH_BG_IDLE,
           )}
         >
           {isEmpty ? (
             <>
-              <span
-                className={cn(
-                  'text-sm font-display font-semibold tracking-wide',
-                  isOver || isWaitingForTap ? 'text-accent' : 'text-fg-muted',
-                )}
-              >
+              <span className={cn('text-sm font-display font-semibold tracking-wide', ZONE_HINT_TEXT)}>
                 {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גררו לכאן'}
               </span>
-              <Icon
-                name="chevrons-down"
-                size={16}
-                strokeWidth={2}
-                className={isOver ? 'text-accent' : 'text-fg-dim'}
-              />
+              <Icon name="chevrons-down" size={16} strokeWidth={2} className="text-fg-muted" />
             </>
           ) : (
             scenariosInBin.map(({ s, i }) => {
