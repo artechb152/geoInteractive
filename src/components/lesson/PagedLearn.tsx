@@ -207,7 +207,7 @@ function PrevButton({ disabled, label, onClick }: { disabled: boolean; label: st
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'btn-secondary text-sm md:text-[15px]',
+        'btn-secondary',
         disabled ? 'opacity-45 cursor-not-allowed' : 'cursor-pointer',
       )}
       aria-label="תת הנושא הקודם"
@@ -222,7 +222,7 @@ function NextButton({ label, onClick }: { label: string; onClick: () => void }) 
     <button
       type="button"
       onClick={onClick}
-      className="btn-primary text-sm md:text-[15px] cursor-pointer"
+      className="btn-primary cursor-pointer"
       aria-label="תת הנושא הבא"
     >
       <span className="truncate max-w-[20rem]">הבא · {label}</span>
@@ -244,7 +244,7 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
     return (
       <Link
         href={`/lessons/${next.id}/`}
-        className="btn-primary text-sm md:text-[15px] cursor-pointer"
+        className="btn-primary cursor-pointer"
         aria-label="לשיעור הבא"
       >
         <span className="truncate max-w-[22rem]">השיעור הבא · {next.shortTitle}</span>
@@ -254,7 +254,7 @@ function NextLessonLink({ next }: { next?: { id: string; shortTitle: string } })
   return (
     <Link
       href="/"
-      className="btn-primary text-sm md:text-[15px] cursor-pointer"
+      className="btn-primary cursor-pointer"
       aria-label="סיום הקורס"
     >
       <span>סיום הקורס · חזרה לסילבוס</span>

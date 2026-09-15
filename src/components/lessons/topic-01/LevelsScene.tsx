@@ -320,7 +320,7 @@ export function LevelsScene() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-3 justify-center items-center">
+        <div className="flex flex-wrap gap-3 justify-end items-center">
           <button
             onClick={() => setSubmitted(true)}
             disabled={!allAssigned}
@@ -450,7 +450,7 @@ function ScenarioPool({
       }}
       animate={{ scale: isOver ? 1.005 : 1 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={cn('surface-elevated p-4 flex flex-col min-w-0 transition-colors duration-300 ease-snap', isOver && 'border-brand/45')}
+      className={cn('surface-elevated p-4 flex flex-col min-w-0 transition-colors duration-300 ease-snap', isOver && 'border-accent')}
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="text-sm font-display font-semibold text-fg tracking-wider">
@@ -566,7 +566,7 @@ function LevelZone({
           animate={{ scale: isOver ? 1.02 : 1 }}
           transition={{ type: 'spring', stiffness: 320, damping: 26 }}
           className={cn(
-            'mt-3 w-full max-w-[220px] rounded-xl border-2 border-dashed px-3 py-3 transition-colors duration-200 ease-snap',
+            'mt-3 w-full max-w-[200px] rounded-xl border-2 border-dashed px-3 py-3 transition-colors duration-200 ease-snap',
             isEmpty ? 'flex flex-col items-center justify-center gap-1.5 min-h-[96px]' : 'space-y-1.5',
             isOver || isWaitingForTap ? ZONE_DASH_BORDER_ACTIVE : ZONE_DASH_BORDER,
             isOver ? ZONE_DASH_BG_ACTIVE : ZONE_DASH_BG_IDLE,

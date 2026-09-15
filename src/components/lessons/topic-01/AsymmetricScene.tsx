@@ -1085,7 +1085,7 @@ function TimeAsymmetry() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="text-base leading-relaxed text-black text-pretty text-center mt-8"
+            className="text-base leading-relaxed text-black text-pretty text-center mt-10"
           >
             {TIME_STEPS[step].caption}
           </motion.p>
@@ -1479,7 +1479,7 @@ function TacticMatchExercise() {
             </span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={reset}
@@ -1540,7 +1540,7 @@ function TacticPhotoCard({
         if (current) onPlace(current.id, tactic.id);
       }}
       className={cn(
-        // No max-w cap: the section itself is already bounded by max-w-6xl,
+        // No max-w cap: the section itself is already bounded by max-w-lesson,
         // so letting basis alone drive width keeps this reliably 3-per-row
         // at sm+ (wrapping the last 2, centered) instead of a stray 4th
         // card sneaking onto row 1 once a fixed cap makes cards narrow
@@ -1685,7 +1685,7 @@ function DragExercise({
             </span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={onReset}
@@ -1772,7 +1772,7 @@ function OrgChip({
         compact ? 'px-2.5 py-1.5' : 'px-3.5 py-2',
         submitted && isCorrect && 'border-status-ok/50 bg-status-ok/10',
         submitted && isWrong && 'border-status-danger/50 bg-status-danger/10',
-        !submitted && isSelected && state === 'pool' && 'border-accent bg-accent/10',
+        !submitted && isSelected && state === 'pool' && 'border-accent bg-accent/10 ring-2 ring-accent/40',
         !submitted && !isSelected && 'border-border hover:border-brand/30 hover:bg-brand/[0.03]',
         draggable && 'cursor-grab active:cursor-grabbing',
       )}

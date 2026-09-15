@@ -123,7 +123,7 @@ export function Quiz({ questions }: { questions: Question[] }) {
                       disabled={locked}
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: o.id }))}
                       className={cn(
-                        'w-full text-right px-4 py-3 rounded-xl border transition-all duration-300 ease-snap text-base leading-relaxed text-black flex items-center gap-3',
+                        'w-full text-start px-4 py-3 rounded-xl border transition-all duration-300 ease-snap text-base leading-relaxed text-black flex items-center gap-3',
                         // pre-submit + active retry (options stay pickable)
                         !locked && isPicked && !inRetry && 'border-accent bg-accent/10',
                         !locked && isPicked && inRetry && 'border-status-danger/50 bg-status-danger/10',

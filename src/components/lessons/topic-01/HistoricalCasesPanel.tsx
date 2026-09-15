@@ -263,7 +263,7 @@ export function HistoricalCasesPanel() {
             >
               {/* Text column — first child → right in RTL. */}
               <div className="flex flex-col p-6 md:p-8">
-                <h4 className="font-display text-2xl font-bold leading-snug text-fg md:text-3xl">{active.headline}</h4>
+                <h4 className="font-display text-2xl font-bold leading-snug text-fg text-balance md:text-3xl">{active.headline}</h4>
                 <div className="mt-1.5 text-sm font-display font-semibold tracking-wider text-fg-muted">{active.place}</div>
                 <div className="mt-3 border-t border-border" />
                 <p className="mt-3 text-base leading-relaxed text-fg">{active.lesson}</p>

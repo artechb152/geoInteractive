@@ -79,7 +79,7 @@ title={
 
  <div className="surface-elevated relative overflow-hidden grid sm:grid-cols-[7fr_3fr]">
  <div className="p-6 sm:p-8">
- <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">מה זה MDO?</h3>
+ <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">מה זה MDO?</h3>
  <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
  <p className="mt-2 text-base leading-relaxed text-fg-muted">
  ראשי תיבות של <span className="font-mono text-brand-dark">Multi-Domain Operations</span> (מבצעים רב-ממדיים).

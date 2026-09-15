@@ -134,9 +134,11 @@ const HISTORY_LIMIT = 50;
  * responsive layout.
  */
 /**
- * Permanent scene scale — the user approved the composition as it looked
- * at 86% edit-mode zoom, so the whole scene renders at 0.86 by default
- * (CSS zoom: shrinks layout too, so heights/scroll stay correct).
+ * Permanent scene scale. Was 0.86 (the composition had been approved at
+ * 86% edit-mode zoom), set to 1 on 2026-09-15 so this scene renders at the
+ * same token sizes as every other lesson scene — see design/docs/assumptions.md
+ * "Topic-01 whole-lesson design-language unification". Proportional: raising
+ * it back to 0.86 restores the old look exactly (CSS zoom shrinks layout too).
  * The edit-mode view zoom multiplies on top of this.
  */
 const SCENE_SCALE = 1;
@@ -465,7 +467,7 @@ export function OnboardingEditProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={ctx}>
       {/* Always-present wrapper so toggling edit mode doesn't remount the
           scene (the WebGL canvas). CSS zoom applies the PERMANENT scene
-          scale (0.86 — shrinks layout too, so heights stay correct);
+          scale (SCENE_SCALE — shrinks layout too, so heights stay correct);
           transform:scale on top is the edit-mode VIEW zoom — pure view,
           no reflow (Figma-style). Drag/resize helpers divide pointer
           deltas by currentZoom (the product of both). */}

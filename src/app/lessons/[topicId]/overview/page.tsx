@@ -82,7 +82,7 @@ export default async function LessonOverviewPage({
                 {lesson.title}
               </h1>
               <span aria-hidden className="mt-4 block h-1 w-10 rounded-full bg-accent" />
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-fg-muted text-pretty">
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-black sm:text-xl text-pretty">
                 {lesson.subtitle}
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -117,7 +117,7 @@ export default async function LessonOverviewPage({
             <p className="text-sm font-display font-semibold tracking-wider text-fg-muted">מה יוצאים איתו</p>
             <h2
               id="objectives-heading"
-              className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl"
+              className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight text-black sm:text-3xl"
             >
               מטרות השיעור
             </h2>
@@ -137,7 +137,7 @@ export default async function LessonOverviewPage({
             <p className="text-sm font-display font-semibold tracking-wider text-fg-muted">מפת דרך</p>
             <h2
               id="structure-heading"
-              className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl"
+              className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight text-black sm:text-3xl"
             >
               מבנה השיעור
             </h2>
@@ -201,7 +201,7 @@ export default async function LessonOverviewPage({
           <p className="text-sm font-display font-semibold tracking-wider text-fg-muted">המשך המסלול</p>
           <h2
             id="related-heading"
-            className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl"
+            className="mt-1 font-display text-2xl font-bold leading-tight tracking-tight text-black sm:text-3xl"
           >
             שיעורים קשורים
           </h2>
@@ -209,9 +209,9 @@ export default async function LessonOverviewPage({
             {prev && (
               <Link
                 href={`/lessons/${prev.id}/overview/`}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-bg-elevated p-4 transition-all duration-300 ease-snap hover:border-brand/30 hover:bg-brand/[0.03]"
+                className="group surface p-4 hover:border-brand/30 hover:bg-brand/[0.03] hover:shadow-elevated transition-all duration-200 ease-snap flex items-center gap-3 text-start"
               >
-                <ArrowRight className="size-5 shrink-0 text-fg-dim transition-colors group-hover:text-brand-dark" aria-hidden />
+                <ArrowRight className="size-5 shrink-0 text-fg-dim group-hover:text-brand-dark group-hover:translate-x-0.5 transition-all" aria-hidden />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
                     השיעור הקודם
@@ -225,9 +225,9 @@ export default async function LessonOverviewPage({
             {next && (
               <Link
                 href={`/lessons/${next.id}/overview/`}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-bg-elevated p-4 transition-all duration-300 ease-snap hover:border-brand/30 hover:bg-brand/[0.03]"
+                className="group surface p-4 border-accent bg-accent/10 hover:shadow-elevated transition-all duration-200 ease-snap flex items-center gap-3 sm:text-end sm:flex-row-reverse"
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 text-start sm:text-end">
                   <div className="text-sm font-display font-semibold tracking-wider text-accent">
                     השיעור הבא
                   </div>
@@ -235,7 +235,7 @@ export default async function LessonOverviewPage({
                     {next.shortTitle}
                   </div>
                 </div>
-                <ArrowLeft className="size-5 shrink-0 text-fg-muted transition-colors group-hover:text-brand-dark" aria-hidden />
+                <ArrowLeft className="size-5 shrink-0 text-accent group-hover:-translate-x-0.5 transition-all" aria-hidden />
               </Link>
             )}
           </div>

@@ -106,7 +106,7 @@ export function OnboardingScene() {
                   onClick={() => handleStepClick(s.id)}
                   aria-expanded={expanded}
                   aria-controls={`step-panel-${s.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
+                  className="w-full p-4 text-start flex items-center gap-3 relative"
                 >
                   <span
                     className={cn(
