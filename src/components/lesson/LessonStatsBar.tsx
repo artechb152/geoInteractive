@@ -11,27 +11,22 @@ import { StatusChip } from '@/components/ui/StatusChip';
 import { cn } from '@/lib/utils';
 
 function StatCell({
-  icon,
   label,
   value,
   divider = true,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: React.ReactNode;
   divider?: boolean;
 }) {
   return (
-    <div className="relative flex items-center gap-3 px-4 py-4 sm:px-5">
+    <div className="relative px-4 py-4 sm:px-5">
       {divider && (
         <span aria-hidden className="absolute inset-y-4 start-0 hidden w-px bg-border lg:block" />
       )}
-      <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand-dark">
-        {icon}
-      </span>
       <div className="min-w-0 leading-tight">
-        <div className="text-[11px] text-fg-dim">{label}</div>
-        <div className="mt-0.5 truncate font-display text-sm font-extrabold text-fg">{value}</div>
+        <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">{label}</div>
+        <div className="mt-0.5 truncate font-display text-base font-bold text-black">{value}</div>
       </div>
     </div>
   );
@@ -55,25 +50,20 @@ export function LessonStatsBar({
   return (
     <SurfaceCard flat className={cn('overflow-hidden', className)}>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCell icon={<Clock className="size-4" />} label="משך השיעור" value={`${lesson.duration} דק'`} divider={false} />
+        <StatCell label="משך השיעור" value={`${lesson.duration} דק'`} divider={false} />
         <StatCell
-          icon={<Gauge className="size-4" />}
           label="רמת קושי"
           value={difficultyLabels[lesson.difficulty]}
         />
         <StatCell
-          icon={<Crosshair className="size-4" />}
           label="סוג תרגול"
           value={interactionLabels[lesson.interactions[0]]}
         />
-        <StatCell icon={<Layers className="size-4" />} label="נקודות ציון" value={`${sceneTotal} סצנות`} />
-        <div className="relative col-span-2 flex items-center gap-3 px-4 py-4 sm:col-span-1 sm:px-5">
+        <StatCell label="נקודות ציון" value={`${sceneTotal} סצנות`} />
+        <div className="relative col-span-2 px-4 py-4 sm:col-span-1 sm:px-5">
           <span aria-hidden className="absolute inset-y-4 start-0 hidden w-px bg-border lg:block" />
-          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand-dark">
-            <Activity className="size-4" />
-          </span>
           <div className="min-w-0 leading-tight">
-            <div className="text-[11px] text-fg-dim">סטטוס</div>
+            <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">סטטוס</div>
             <div className="mt-1">
               {!hasProgress ? (
                 <StatusChip tone="dim">מוכן ללמידה</StatusChip>
