@@ -65,10 +65,11 @@ return next;
  });
  }
 return (
- <section id="scene-mdo" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <section id="scene-mdo" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
 step="01.2"
 eyebrow="לחימה בכל הממדים יחד · MDO"
+underline
 title={
           <>
           המערכה המודרנית: שדה הקרב כבר מזמן לא מוגבל ל<span className="gradient-text">קרקע</span>
@@ -76,11 +77,11 @@ title={
         }intro='פעם צבאות נלחמו בשדה קרב שטוח, פנים מול פנים. היום מלחמה מזכירה משחק רשת מורכב שמתנהל ב-5 זירות במקביל. לחצו על כל ממד בתמונת השטח כדי"לכבות" אותו, ותראו איך כל הצבא שלכם מאבד כוח.'
  />
 
- <div className="surface-elevated relative overflow-hidden mb-6 grid sm:grid-cols-[7fr_3fr]">
+ <div className="surface-elevated relative overflow-hidden grid sm:grid-cols-[7fr_3fr]">
  <div className="p-6 sm:p-8">
  <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">מה זה MDO?</h3>
- <span aria-hidden className="mt-2 mb-4 block h-1 w-10 rounded-full bg-accent" />
- <p className="text-sm leading-relaxed text-fg-muted sm:text-base">
+ <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+ <p className="mt-2 text-base leading-relaxed text-fg-muted">
  ראשי תיבות של <span className="font-mono text-brand-dark">Multi-Domain Operations</span> (מבצעים רב-ממדיים).
  במקום שחיל האוויר יילחם לבד והשריון לבד – הכל קורה ביחד. כל 5 הממדים עובדים מסונכרנים באותה שנייה בדיוק.
  זה"המולטי-טאסקינג" שבלעדיו שום צבא לא יכול לנצח היום.
@@ -98,7 +99,7 @@ title={
  </div>
  </div>
 
- <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
+ <div className="mt-12 grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
  <div className="space-y-4">
  <SuperiorityIndicator on={allOn} off={allOff} count={active.size} pct={pct} />
 
@@ -110,17 +111,15 @@ animate={{ opacity: 1, y: 0 }}
 exit={{ opacity: 0, y: -10 }}
 className="surface p-5 space-y-3"
  >
- <div className="flex items-center gap-2 text-sm font-display font-semibold text-status-warn tracking-wider">
- <Icon name="spark" size={12} />
+ <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
  מה כובה — ומה זה אומר
  </div>
- <ul className="space-y-2.5 text-sm">
+ <ul className="space-y-2.5 text-base leading-relaxed text-black">
  {missing.map((d) => (
- <li key={d.id} className="flex gap-2.5">
- <Icon name={d.icon} size={16} className="text-fg-dim shrink-0 mt-0.5" />
+ <li key={d.id}>
  <div>
- <strong className="text-fg">{d.label}:</strong>{' '}
- <span className="text-fg-muted">{d.weakness}</span>
+ <strong className="text-black">{d.label}:</strong>{' '}
+ <span>{d.weakness}</span>
  </div>
  </li>
  ))}
@@ -132,7 +131,7 @@ className="surface p-5 space-y-3"
  <motion.div
 initial={{ opacity: 0 }}
 animate={{ opacity: 1 }}
-className="surface p-5 text-sm text-fg-muted"
+className="surface p-5 text-base leading-relaxed text-black"
  >
  כיבית את כל החמישה — הצבא שותק לחלוטין. אי אפשר לזוז, אי אפשר לראות, אי אפשר לדבר. הפעל לפחות ממד אחד כדי שהכוח יתחיל לפעול שוב.
  </motion.div>
@@ -142,15 +141,14 @@ className="surface p-5 text-sm text-fg-muted"
  <motion.div
 initial={{ opacity: 0 }}
 animate={{ opacity: 1 }}
-className="surface-elevated p-5 flex gap-3 items-start"
+className="surface p-5 space-y-3"
  >
- <Icon name="shield" size={20} className="text-accent shrink-0 mt-0.5" />
- <div className="text-sm">
+ <div>
  <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">המצב האידיאלי ·"בועה" סביב האויב</div>
- <p className="text-fg-muted leading-relaxed">
- כשכל החמישה דולקים יחד, הצבא שלנו יוצר סביב האויב מעין <strong className="text-fg">בועה הרמטית</strong> —
+ <p className="text-base leading-relaxed text-black">
+ כשכל החמישה דולקים יחד, הצבא שלנו יוצר סביב האויב מעין <strong className="text-black">בועה הרמטית</strong> —
  כלומר אזור שממנו הוא לא יכול לנוע, לא יכול לראות מה קורה, ולא יכול לתקשר עם הכוחות שלו.
- הוא בעצם <strong className="text-fg">משותק</strong> — וכל פעולה שינסה — נחשפת ונחסמת לפני שהתחילה.
+ הוא בעצם <strong className="text-black">משותק</strong> — וכל פעולה שינסה — נחשפת ונחסמת לפני שהתחילה.
  </p>
  </div>
  </motion.div>
@@ -158,7 +156,7 @@ className="surface-elevated p-5 flex gap-3 items-start"
  </AnimatePresence>
  </div>
 
- <div className="space-y-3">
+ <div className="space-y-4">
  <div className="flex flex-wrap items-center justify-between gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  לחץ על כל ממד כדי לכבות / להפעיל
@@ -169,15 +167,14 @@ type="button"
 onClick={() => setMotionPaused((p) => !p)}
 aria-pressed={motionPaused}
 aria-label={motionPaused ? 'תנועה מושהית, לחץ להפעלה' : 'תנועה פעילה, לחץ להשהיה'}
-className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
+className="text-sm font-display font-semibold text-fg-muted hover:text-brand-dark transition-colors flex items-center gap-1"
  >
  {motionPaused ? 'הפעל תנועה' : 'השהה תנועה'}
  </button>
  <button
 onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
-className="text-xs font-mono text-fg-dim hover:text-accent transition-colors flex items-center gap-1"
+className="text-sm font-display font-semibold text-fg-muted hover:text-brand-dark transition-colors flex items-center gap-1"
  >
- <Icon name="check" size={10} strokeWidth={2.5} />
  הפעל הכל
  </button>
  </div>
@@ -194,7 +191,7 @@ className="text-xs font-mono text-fg-dim hover:text-accent transition-colors fle
 
  <RealWorldExamples />
 
- <ChokepointBand eyebrow="המסקנה: החוליה החלשה" className="mt-6">
+ <ChokepointBand eyebrow="המסקנה: החוליה החלשה" className="mt-12">
 אי אפשר לנצח מלחמה היום רק עם הטנקים הכי טובים או חיל האוויר הכי חזק. מספיק שממד אחד נופל – וכל הצבא קורס איתו. צבא חכם מתכנן מכה שמשלבת את כל הממדים יחד, ובמקביל דואג"לנתק" לאויב את החיבורים שלו כדי לשתק אותו.
  </ChokepointBand>
  </section>
@@ -614,19 +611,19 @@ className="rounded-2xl [aspect-ratio:auto] h-full w-full"
 }
 function SuperiorityIndicator({ on, off, count, pct }: { on: boolean; off: boolean; count: number; pct: number }) {
 return (
- <div className="surface-elevated p-6 text-center relative overflow-hidden">
- <div className="relative">
+ <div className="surface-elevated p-5 sm:p-6 text-center">
+ <div>
  <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">כמה ממדים פעילים</div>
  <div className="font-display font-bold text-5xl tabular-nums mb-1">{count}/5</div>
  <div
 className={cn(
- 'text-sm font-medium flex items-center justify-center gap-1.5',
+ 'text-sm font-display font-semibold tracking-wider flex items-center justify-center gap-1.5',
 on && 'text-accent',
-off && 'text-status-danger',
- !on && !off && 'text-status-warn'
+off && 'text-fg-muted',
+ !on && !off && 'text-fg-muted'
  )}
  >
- {on && <><Icon name="check" size={14} strokeWidth={2.5} /> כוח מלא — שליטה מוחלטת</>}
+ {on && <>כוח מלא — שליטה מוחלטת</>}
  {off && <>הצבא משותק לחלוטין</>}
  {!on && !off && <>שליטה חלקית — {count} מתוך 5 ממדים פעילים</>}
  </div>
