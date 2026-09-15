@@ -148,7 +148,7 @@ export default async function LessonOverviewPage({
                 {scenes.map((s, i) => {
                   return (
                     <li key={s.id} className="relative flex items-center gap-3.5 pb-5 last:pb-0">
-                      <span aria-hidden className="relative z-10 size-8 shrink-0 rounded-full border border-border bg-bg-card" />
+                      <span aria-hidden className="relative z-10 grid size-8 shrink-0 place-items-center"><span className={cn('size-2.5 rounded-full', i === 0 ? 'bg-accent' : 'bg-border-strong')} /></span>
                       <div className="min-w-0">
                         <div className="flex items-baseline gap-2">
                           <span className="font-mono text-sm text-fg-muted" dir="ltr">
