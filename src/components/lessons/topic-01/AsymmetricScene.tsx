@@ -1480,13 +1480,6 @@ function TacticMatchExercise() {
           )}
         </div>
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={reset}
-            className="btn-secondary"
-          >
-            איפוס
-          </button>
           {!submitted && (
             <button
               type="button"
@@ -1497,6 +1490,13 @@ function TacticMatchExercise() {
               בדוק תשובות
             </button>
           )}
+          <button
+            type="button"
+            onClick={reset}
+            className="btn-secondary"
+          >
+            איפוס
+          </button>
         </div>
       </div>
     </div>
@@ -1686,13 +1686,6 @@ function DragExercise({
           )}
         </div>
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onReset}
-            className="btn-secondary"
-          >
-            איפוס
-          </button>
           {!submitted && (
             <button
               type="button"
@@ -1703,6 +1696,13 @@ function DragExercise({
               בדוק תשובות
             </button>
           )}
+          <button
+            type="button"
+            onClick={onReset}
+            className="btn-secondary"
+          >
+            איפוס
+          </button>
         </div>
       </div>
     </div>
