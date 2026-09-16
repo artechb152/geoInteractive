@@ -3,7 +3,6 @@
  * משבצות אייקון עגולות וקווי הפרדה עדינים מאוד (כמו רצועת ה-features
  * בתחתית ה-Hero במסמך העיצוב).
  */
-import { Clock, Gauge, Crosshair, Layers, Activity } from 'lucide-react';
 import type { Lesson } from '@/lib/lessons';
 import { interactionLabels, difficultyLabels } from '@/lib/lesson-scenes';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';

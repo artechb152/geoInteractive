@@ -3,24 +3,15 @@ import { notFound } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   ChevronLeft,
-  Crosshair,
-  Flag,
-  ListChecks,
-  Play,
-  Target,
 } from 'lucide-react';
 import { lessons, getLesson, nextLesson, prevLesson } from '@/lib/lessons';
 import { lessonScenes, lessonAssets, interactionLabels } from '@/lib/lesson-scenes';
 import { LessonStatsBar } from '@/components/lesson/LessonStatsBar';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
-import { PageShell } from '@/components/ui/PageShell';
 import { SurfaceCard } from '@/components/ui/SurfaceCard';
-import { IconBadge } from '@/components/ui/IconBadge';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { Button } from '@/components/ui/Button';
-import { TopoField } from '@/components/ui/TopoField';
 import { cn } from '@/lib/utils';
 
 /**

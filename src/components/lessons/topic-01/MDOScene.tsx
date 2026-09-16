@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
-import { TopoField } from '@/components/ui/TopoField';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 type Domain = {
