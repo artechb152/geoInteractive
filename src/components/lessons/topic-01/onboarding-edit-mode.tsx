@@ -134,14 +134,10 @@ const HISTORY_LIMIT = 50;
  * responsive layout.
  */
 /**
- * Permanent scene scale. Was 0.86 (the composition had been approved at
- * 86% edit-mode zoom), set to 1 on 2026-09-15 so this scene renders at the
- * same token sizes as every other lesson scene — see design/docs/assumptions.md
- * "Topic-01 whole-lesson design-language unification". Proportional: raising
- * it back to 0.86 restores the old look exactly (CSS zoom shrinks layout too).
- * The edit-mode view zoom multiplies on top of this.
+ * Permanent scene scale approved at edit-mode zoom.
+ * The edit-mode view zoom multiplies on top of this (CSS zoom shrinks layout).
  */
-const SCENE_SCALE = 1;
+const SCENE_SCALE = 0.86;
 
 // Baked from the user's edit-mode export (2026-07-06, second pass):
 // smaller history cards (400×284) and slightly raised composition.

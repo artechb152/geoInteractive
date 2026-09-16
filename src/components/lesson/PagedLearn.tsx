@@ -290,7 +290,7 @@ function ScenePagerDesktop({
       <div className="p-4 pt-4 flex-1 flex flex-col">
         {lesson && (
           <div className="px-2 mb-6 pb-2.5 border-b border-border-subtle">
-            <div className="text-sm font-display font-semibold tracking-wider text-fg-muted mb-2">
+            <div className="font-display font-bold text-accent text-xl mb-2">
               שיעור {lesson.number}
             </div>
             <div className="font-display font-bold text-lg text-fg leading-tight text-balance">
@@ -315,23 +315,23 @@ function ScenePagerDesktop({
                 onClick={() => onGoto(i)}
                 aria-current={isActive ? 'step' : undefined}
                 className={cn(
-                  'group flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ease-snap cursor-pointer text-start',
+                  'group flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer text-right',
                   isActive
-                    ? 'border-accent bg-accent/10 text-black'
-                    : 'border-transparent text-fg-muted hover:border-brand/30 hover:bg-brand/[0.03]',
+                    ? 'bg-accent/15 text-fg'
+                    : 'hover:bg-bg-accent text-fg-muted',
                 )}
               >
                 <span
                   className={cn(
                     'size-2 rounded-full shrink-0 transition-colors',
-                    reached ? 'bg-accent' : 'bg-fg-dim',
+                    reached ? 'bg-accent' : 'bg-fg',
                   )}
                   aria-hidden
                 />
                 <span
                   className={cn(
-                    'text-base leading-snug transition-colors text-balance',
-                    isActive && 'font-bold',
+                    'text-base leading-snug transition-colors truncate',
+                    isActive && 'font-semibold',
                   )}
                 >
                   {s.label}

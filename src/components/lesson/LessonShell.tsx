@@ -87,7 +87,7 @@ export function LessonShell({
             role="tablist"
             aria-label="חלקי השיעור"
           >
-            {TABS.map(({ key, label }) => {
+            {TABS.map(({ key, label, Icon }) => {
               const active = tab === key;
               return (
                 <button
@@ -101,10 +101,17 @@ export function LessonShell({
                   className={cn(
                     'relative inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 text-sm font-display font-semibold transition-colors',
                     active
-                      ? 'text-accent'
-                      : 'text-fg-muted hover:text-brand-dark',
+                      ? 'text-brand-dark'
+                      : 'text-fg-muted hover:text-fg',
                   )}
                 >
+                  <Icon
+                    className={cn(
+                      'size-4 transition-colors',
+                      active ? 'text-brand-dark' : 'text-fg-dim',
+                    )}
+                    aria-hidden
+                  />
                   <span>{label}</span>
                   {active && (
                     <motion.span
@@ -114,7 +121,7 @@ export function LessonShell({
                         stiffness: 350,
                         damping: 30,
                       }}
-                      className="absolute inset-x-2 -bottom-px h-1 bg-accent rounded-full"
+                      className="absolute inset-x-2 -bottom-px h-0.5 bg-brand-dark rounded-full"
                       aria-hidden
                     />
                   )}

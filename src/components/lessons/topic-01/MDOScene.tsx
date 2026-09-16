@@ -551,9 +551,14 @@ fit="cover"
 className="rounded-lg overflow-hidden"
  />
  <p className="mt-3 text-base leading-relaxed text-black text-pretty">{c.desc}</p>
- <div className="mt-4 flex flex-wrap justify-center gap-3">
+ <div className="mt-4 flex flex-wrap items-start justify-center gap-3">
  {DOMAINS.filter((d) => c.domainIds.includes(d.id)).map((d) => (
- <span key={d.id} className="chip border-border bg-bg-accent text-fg-muted">{d.label}</span>
+ <div key={d.id} className="flex flex-col items-center gap-1.5">
+ <div className="flex size-9 items-center justify-center rounded-full border border-border">
+ <Icon name={d.icon} size={16} className="text-fg" />
+ </div>
+ <span className="text-[11px] text-fg-muted">{d.label}</span>
+ </div>
  ))}
  </div>
  </motion.article>
