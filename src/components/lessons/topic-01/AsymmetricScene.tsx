@@ -1,9 +1,10 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
+import { TimePressureExperience } from './TimePressureExperience';
 import { cn } from '@/lib/utils';
 
 /* ─────────────────────────── 3-ACTOR TYPOLOGY ──────────────────────────
@@ -365,7 +366,7 @@ export function AsymmetricScene() {
 
       <PillarSimulator />
 
-      <TimeAsymmetry />
+      <TimePressureExperience />
 
       <TacticMatchExercise />
 
@@ -427,9 +428,8 @@ export function AsymmetricScene() {
    banner/portrait assets are real-world photographs and the field-grid
    assets are flat UI icons, NOT the isometric-papercut illustration
    language this file's OTHER IsometricAsset calls use (hero/closing/
-   pillars/clock/tactics above). Mirrors how FRONTLINE/INTERNAL_FRONTS
-   further below write prompts in their own flat-icon register via
-   ICON_PROMPT_STYLE, rather than reusing the papercut brief verbatim. */
+   pillars/tactics above) — these write their prompts in their own
+   flat-icon register rather than reusing the papercut brief verbatim. */
 const ACTOR_PHOTO_PROMPT_STYLE =
   'photorealistic documentary-style photography, natural daylight, muted earth-tone color grading, shallow depth of field, no text overlays, no logos, no visible faces in close-up, no state insignia or flags, wide-angle field/terrain setting';
 
@@ -575,8 +575,7 @@ function ActorTypologySelector() {
                 // circle is SECOND (→ left) — matches the reference's own
                 // per-cell composition (icon toward the visual left, label
                 // + value toward the visual right), confirmed by cropping
-                // the reference image at pixel level; not the same order
-                // as this file's unrelated FrontRow icon-first rows below.
+                // the reference image at pixel level.
                 // Divider rules (sm+ only, once the grid is actually 2
                 // columns): border-s on column-2 cells reproduces the
                 // reference's vertical rule, border-t on row-2 cells
@@ -974,385 +973,6 @@ function PillarDecisionCard({
         )}
       </div>
     </motion.div>
-  );
-}
-
-/* ───────────────────────── TIME ASYMMETRY ─────────────────────────── */
-/* Interactive "sand clock": a scrubbable timeline turns the static 5-vs-1
-   front table into a causal simulation — each internal front of the
-   regular army breaks at its own point in time, while the non-state
-   actor's single front never changes. */
-
-/** Reusable style suffix for the Magnific icon-generation prompts below —
- * intentionally NOT the papercut-isometric illustration language used
- * elsewhere in this file; these render as plain flat UI icons. */
-const ICON_PROMPT_STYLE =
-  'flat modern vector icon, simple bold black outline with solid black fill on transparent background, monochrome black and white, minimal geometric shapes, centered, no text, no shadow, no gradient, no color, no 3D or isometric or papercut styling, clean UI icon like Lucide or Phosphor icon sets, 128x128px';
-
-const FRONTLINE: { title: string; desc: string; iconAssetId: string; iconPrompt: string } = {
-  title: 'האויב בשטח',
-  desc: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.',
-  iconAssetId: 'TOPIC01-ASYM-ICON-FRONTLINE',
-  iconPrompt: `A crosshair / target reticle icon, ${ICON_PROMPT_STYLE}`,
-};
-
-const TIME_STEPS: { id: string; label: string; caption: string }[] = [
-  {
-    id: 'day1',
-    label: 'יום 1',
-    caption: 'הלחימה רק התחילה. מבחוץ זה עוד נראה כמו "מלחמה פשוטה, צבא מול צבא" — רק חזית אחת פעילה משני הצדדים.',
-  },
-  {
-    id: 'week2',
-    label: 'שבוע 2',
-    caption: 'משרד האוצר מתחיל ללחוץ — המלחמה כבר עולה מיליארדי דולרים בשבוע, והמילואים נשחקים.',
-  },
-  {
-    id: 'month3',
-    label: 'חודש 3',
-    caption: 'דעת הקהל נשחקת — תמונות מהזירה ולוויות חיילים משפיעות על התמיכה הציבורית מיום ליום.',
-  },
-  {
-    id: 'year1',
-    label: 'שנה 1',
-    caption: 'הפוליטיקה הפנימית מתעוררת — ועדות חקירה, אופוזיציה, ולחץ קואליציוני מבית.',
-  },
-  {
-    id: 'year2',
-    label: 'שנה 2',
-    caption: 'הבמה הבינלאומית דורשת הפסקת אש — לחץ מהאו"ם, מבעלות ברית, ואיום בסנקציות.',
-  },
-];
-
-const INTERNAL_FRONTS: { title: string; desc: string; breaksAt: number; iconAssetId: string; iconPrompt: string }[] = [
-  {
-    title: 'משרד האוצר',
-    desc: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.',
-    breaksAt: 1,
-    iconAssetId: 'TOPIC01-ASYM-ICON-TREASURY',
-    iconPrompt: `A stack of coins with a small downward arrow icon (shrinking budget / treasury), ${ICON_PROMPT_STYLE}`,
-  },
-  {
-    title: 'דעת הקהל',
-    desc: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.',
-    breaksAt: 2,
-    iconAssetId: 'TOPIC01-ASYM-ICON-PUBLIC-OPINION',
-    iconPrompt: `A megaphone icon (public opinion / protest), ${ICON_PROMPT_STYLE}`,
-  },
-  {
-    title: 'הפוליטיקה הפנימית',
-    desc: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.',
-    breaksAt: 3,
-    iconAssetId: 'TOPIC01-ASYM-ICON-POLITICS',
-    iconPrompt: `A government building / parliament icon with columns and a triangular roof, ${ICON_PROMPT_STYLE}`,
-  },
-  {
-    title: 'הבמה הבינלאומית',
-    desc: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".',
-    breaksAt: 4,
-    iconAssetId: 'TOPIC01-ASYM-ICON-INTERNATIONAL',
-    iconPrompt: `A globe icon with latitude/longitude grid lines (international stage / diplomacy), ${ICON_PROMPT_STYLE}`,
-  },
-];
-
-function TimeAsymmetry() {
-  const [step, setStep] = useState(0);
-  const lastStep = TIME_STEPS.length - 1;
-
-  const regularCount = 1 + INTERNAL_FRONTS.filter((f) => f.breaksAt <= step).length;
-  const nonStateCount = 1;
-
-  return (
-    <div className="mt-12">
-      <div className="mb-5">
-        <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
-          למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?
-        </h3>
-        <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
-        <p className="mt-2 text-base leading-relaxed text-fg-muted">
-          גררו את ציר הזמן קדימה וראו איך המעצמה נכנסת בהדרגה ל-5 חזיתות בו-זמנית — בזמן שהגרילה והטרור נשארים בחזית אחת בלבד לכל אורך הדרך.
-        </p>
-      </div>
-
-      {/* Timeline scrubber */}
-      <div className="surface-elevated p-5 sm:p-6 mb-4">
-        <TimelineScrubber step={step} lastStep={lastStep} onChange={setStep} steps={TIME_STEPS} />
-
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={step}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.25 }}
-            className="text-base leading-relaxed text-black text-pretty text-center mt-10"
-          >
-            {TIME_STEPS[step].caption}
-          </motion.p>
-        </AnimatePresence>
-      </div>
-
-      <div className="surface-elevated overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto] border-b border-border-strong">
-          <div className="p-3 sm:p-4 bg-bg-accent">
-            <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
-              מי באמת יכול להכריח אותך לסיים את המלחמה?
-            </div>
-          </div>
-          <div className="px-3 sm:px-4 py-3 bg-bg-accent border-s border-border-subtle text-center min-w-[88px]">
-            <div className="text-sm font-display font-semibold tracking-wider text-fg">סדיר</div>
-          </div>
-          <div className="px-3 sm:px-4 py-3 bg-bg-accent border-s border-border-subtle text-center min-w-[88px]">
-            <div className="text-sm font-display font-semibold tracking-wider text-fg">לא-סדיר</div>
-          </div>
-        </div>
-
-        <FrontRow
-          index={0}
-          title={FRONTLINE.title}
-          desc={FRONTLINE.desc}
-          iconAssetId={FRONTLINE.iconAssetId}
-          iconPrompt={FRONTLINE.iconPrompt}
-          regularActive
-          nonStateActive
-        />
-
-        {INTERNAL_FRONTS.map((f, i) => (
-          <FrontRow
-            key={f.title}
-            index={i + 1}
-            title={f.title}
-            desc={f.desc}
-            iconAssetId={f.iconAssetId}
-            iconPrompt={f.iconPrompt}
-            regularActive={f.breaksAt <= step}
-            nonStateActive={false}
-          />
-        ))}
-
-        <div className="grid grid-cols-[1fr_auto_auto] bg-bg-accent border-t border-border-strong">
-          <div className="p-3 sm:p-4">
-            <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">סך החזיתות</span>
-          </div>
-          <div className="px-3 sm:px-4 py-3 border-s border-border-subtle text-center min-w-[88px]">
-            <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">{regularCount}</div>
-          </div>
-          <div className="px-3 sm:px-4 py-3 border-s border-border-subtle text-center min-w-[88px]">
-            <div className="font-display font-bold text-2xl tabular-nums text-fg leading-none">{nonStateCount}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="surface-elevated p-5 sm:p-6 mt-4">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">התובנה</div>
-
-        <p className="text-base leading-relaxed text-black text-pretty">
-          זו לא רק שאלה של מספרים — זה הבדל בכללי המשחק. הצבא הסדיר חייב <strong className="text-black font-bold">לנצח בכל אחת</strong> מ-5 החזיתות, כי הפסד באחת מהן מספיק כדי להפיל את כל המלחמה. השחקן הלא-סדיר צריך <strong className="text-black font-bold">רק לא לאבד</strong> את החזית היחידה שלו — וזה כבר מספיק לו לניצחון, בכל שלב בציר הזמן.
-          <br /><br />
-          המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.
-          <strong className="text-black font-bold block mt-2">
-            ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20 — לא כי הפסידה בקרבות, אלא כי קרסה ב-4 החזיתות האחרות.
-          </strong>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* Draggable RTL timeline: track runs inline-start (right, step 0) →
-   inline-end (left, last step). Handle is pointer-draggable along the
-   track and snaps to the nearest step; ticks remain clickable too. */
-function TimelineScrubber({
-  step,
-  lastStep,
-  onChange,
-  steps,
-}: {
-  step: number;
-  lastStep: number;
-  onChange: (i: number) => void;
-  steps: { id: string; label: string }[];
-}) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-  // Continuous 0..1 position while the pointer is down, so the handle
-  // glides with the cursor instead of hopping tick-to-tick; null once
-  // released, at which point `pct` falls back to the snapped step and
-  // the spring transition eases it into place.
-  const [dragFraction, setDragFraction] = useState<number | null>(null);
-
-  const fractionFromClientX = (clientX: number) => {
-    const el = trackRef.current;
-    if (!el) return step / lastStep;
-    const rect = el.getBoundingClientRect();
-    const pxFraction = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    // RTL: inline-start (fraction 0) sits at the visual right edge.
-    return 1 - pxFraction;
-  };
-
-  const handlePointerMove = (clientX: number) => {
-    const fraction = fractionFromClientX(clientX);
-    setDragFraction(fraction);
-    const nextStep = Math.round(fraction * lastStep);
-    if (nextStep !== step) onChange(nextStep);
-  };
-
-  const startDrag = (e: React.PointerEvent) => {
-    e.preventDefault();
-    setDragging(true);
-    handlePointerMove(e.clientX);
-
-    const onMove = (ev: PointerEvent) => handlePointerMove(ev.clientX);
-    const onUp = () => {
-      setDragging(false);
-      setDragFraction(null);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
-  };
-
-  const pct = (dragging && dragFraction !== null ? dragFraction : step / lastStep) * 100;
-
-  return (
-    <div
-      ref={trackRef}
-      onPointerDown={startDrag}
-      className="relative h-9 select-none touch-none cursor-pointer"
-    >
-      <div aria-hidden className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-border" />
-      <motion.div
-        aria-hidden
-        className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-accent"
-        initial={false}
-        style={{ insetInlineStart: 0 }}
-        animate={{ width: `${pct}%` }}
-        transition={dragging ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
-      />
-
-      {steps.map((s, i) => (
-        <button
-          key={s.id}
-          type="button"
-          onClick={() => onChange(i)}
-          aria-current={i === step}
-          aria-label={s.label}
-          style={{ insetInlineStart: `${(i / lastStep) * 100}%`, translate: '50% -50%' }}
-          className="absolute top-1/2 z-10 flex items-center justify-center"
-        >
-          <span
-            className={cn(
-              'block size-2.5 rounded-full transition-colors duration-200 ease-snap',
-              i <= step ? 'bg-accent' : 'bg-border-strong hover:bg-fg-muted',
-            )}
-          />
-        </button>
-      ))}
-
-      <motion.div
-        role="slider"
-        tabIndex={0}
-        aria-valuemin={0}
-        aria-valuemax={lastStep}
-        aria-valuenow={step}
-        aria-valuetext={steps[step].label}
-        onPointerDown={startDrag}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight') onChange(Math.max(0, step - 1));
-          if (e.key === 'ArrowLeft') onChange(Math.min(lastStep, step + 1));
-        }}
-        initial={false}
-        animate={{ insetInlineStart: `${pct}%` }}
-        transition={dragging ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
-        style={{ translate: '50% -50%' }}
-        className="absolute top-1/2 z-20 size-6 -mt-px rounded-full border-2 border-accent bg-bg-elevated shadow-elevated cursor-grab active:cursor-grabbing"
-      />
-
-      <div className="absolute inset-x-0 top-full mt-2 flex items-center justify-between">
-        {steps.map((s, i) => (
-          <span
-            key={s.id}
-            className={cn(
-              'text-sm font-display font-semibold tracking-wider whitespace-nowrap',
-              i === step ? 'text-accent' : 'text-fg-muted',
-            )}
-          >
-            {s.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FrontRow({
-  index,
-  title,
-  desc,
-  iconAssetId,
-  iconPrompt,
-  regularActive,
-  nonStateActive,
-}: {
-  index: number;
-  title: string;
-  desc: string;
-  iconAssetId: string;
-  iconPrompt: string;
-  regularActive: boolean;
-  nonStateActive: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ delay: index * 0.06 }}
-      className="grid grid-cols-[1fr_auto_auto] border-b border-border-subtle last:border-b-0"
-    >
-      <div className="p-3 sm:p-4 min-w-0 flex items-start gap-2.5">
-        <IsometricAsset
-          assetId={iconAssetId}
-          src={`/assets/lessons/topic01/scene-asymmetric/icons/${iconAssetId}.png`}
-          alt=""
-          aspect="1/1"
-          fit="contain"
-          compactPlaceholder
-          prompt={iconPrompt}
-          className="size-9 shrink-0 mt-0.5 rounded-lg bg-transparent"
-        />
-        <div className="min-w-0">
-          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider leading-tight">{title}</div>
-          <div className="text-sm text-fg-muted leading-snug mt-0.5">{desc}</div>
-        </div>
-      </div>
-      <div className="px-3 sm:px-4 py-3 border-s border-border-subtle flex items-center justify-center min-w-[88px]">
-        <FrontMark active={regularActive} />
-      </div>
-      <div className="px-3 sm:px-4 py-3 border-s border-border-subtle flex items-center justify-center min-w-[88px]">
-        <FrontMark active={nonStateActive} />
-      </div>
-    </motion.div>
-  );
-}
-
-function FrontMark({ active }: { active: boolean }) {
-  return (
-    <motion.span
-      key={active ? 'on' : 'off'}
-      initial={{ scale: active ? 0.6 : 1, opacity: active ? 0.4 : 1 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-      className={cn(
-        'inline-flex items-center justify-center size-7 rounded-full border text-base font-display font-bold leading-none',
-        active ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border',
-      )}
-    >
-      {active ? '✓' : '—'}
-    </motion.span>
   );
 }
 

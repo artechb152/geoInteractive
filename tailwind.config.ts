@@ -104,10 +104,9 @@ const config: Config = {
         '4xl': '2rem',
       },
       maxWidth: {
-        // Lesson scene content width — matches the previous max-w-6xl cap
-        // these scenes used before `max-w-lesson` (topic-01/02, now also
-        // topic-05) started being written without the token existing.
-        lesson: '72rem',
+        // Lesson scene content width — shared by every scene root across
+        // topic-01/02/05 (and HookScene's own full-bleed exception).
+        lesson: '88rem',
       },
       boxShadow: {
         glow: '0 0 40px -10px rgba(235, 158, 72, 0.45)',
