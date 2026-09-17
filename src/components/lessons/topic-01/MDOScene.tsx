@@ -10,8 +10,6 @@ id: string;
 label: string;
 english: string;
 icon: IconName;
- // One-line row subtitle in the control panel.
-short: string;
 weakness: string;
 strength: string;
  // This domain's object layer: position + size in the shared field-photo
@@ -51,7 +49,6 @@ const ASSET_BASE = '/assets/lessons/topic01/scene-mdo';
 const DOMAINS: Domain[] = [
  {
 id: 'land', label: 'יבשה', english: 'Land', icon: 'mountain',
-short: 'כוחות על הקרקע',
 strength: 'מגפיים על הקרקע: הדרך היחידה להכריע באמת. רק חיילים יכולים להיכנס פיזית, לטהר מבנים, להסתכל לאויב בעיניים ולהחזיק בשטח.',
 weakness: 'בלי כוח קרקעי הכל וירטואלי: אפשר להפציץ ולצלם מלמעלה כמה שרוצים, אבל בלי חיילים על הקרקע אי אפשר באמת לכבוש כלום.',
  // On the dirt road, roughly mid-frame.
@@ -59,7 +56,6 @@ image: { src: `${ASSET_BASE}/mdo-object-ground-vehicle.png`, x: 750, y: 550, wid
  },
  {
 id: 'air', label: 'אוויר', english: 'Air', icon: 'plane',
-short: 'שליטה מהאוויר',
 strength: 'האגרוף מהשמיים: מטוסי קרב ורחפנים שמחסלים מטרות בשניות, מחפים על החיילים מלמעלה ותוקפים עמוק בשטח האויב.',
 weakness: 'בלי הגנה אווירית השמיים פתוחים: החיילים למטה חשופים לחלוטין להפצצות, ואין מי שיעזור להם להשמיד איומים מרחוק.',
  // High in the open sky, upper-right.
@@ -67,7 +63,6 @@ image: { src: `${ASSET_BASE}/mdo-object-aircraft.png`, x: 950, y: 90, width: 230
  },
  {
 id: 'sea', label: 'ים', english: 'Sea', icon: 'ship',
-short: 'נוכחות במרחב הימי',
 strength: 'העורק הפתוח: ספינות קרב וצוללות שמגנות על החופים, מאפשרות לתקוף בהפתעה, ודואגות שאספקת נשק ודלק תמשיך לזרום.',
 weakness: 'בלי שליטה בים המדינה במצור: אוניות מסע ואספקה לא מגיעות (קריטי במלחמה ארוכה), והחופים פרוצים לגמרי לפלישה.',
  // In the bay, lower-left.
@@ -75,7 +70,6 @@ image: { src: `${ASSET_BASE}/mdo-object-ship.png`, x: 60, y: 470, width: 230, as
  },
  {
 id: 'space', label: 'חלל', english: 'Space', icon: 'satellite',
-short: 'קישור לוויני וניווט',
 strength: 'העיניים של הצבא: לוויינים שנותנים ניווט GPS מדויק לכל פגז, משדרים תמונות חיות של האויב ושומרים על קשר בין כולם.',
 weakness: 'בלי לוויינים הצבא עיוור וחירש: ה-GPS קורס (הטילים מפספסים והחיילים הולכים לאיבוד), ומערכות התקשורת נופלות.',
  // Upper-left sky, clear of the aircraft and the mountain skyline.
@@ -84,7 +78,6 @@ caption: 'חלל · המחשה',
  },
  {
 id: 'cyber', label: 'סייבר', english: 'Cyber', icon: 'bolt',
-short: 'רשתות ומידע',
 strength: 'הנשק השקוף: היכולת לשתק את האויב בלי לירות כדור אחד! לפרוץ לו למכשירי הקשר, לעוור לו את המכ"ם או לכבות לו את החשמל.',
 weakness: 'בלי חומת סייבר נהיה חשופים לגמרי: האקרים יוכלו לזייף מטרות לחיילים, לנתק קשר ולהפיל לנו תשתיות (חשמל, מים, בנקים).',
  // Standing on the hillside, right edge, base planted on the ground.
@@ -94,49 +87,20 @@ anchorRel: [0.5, 0.35],
  },
 ];
 
-type Feedback = {
- /** Headline status for whatever is true right now. */
-title: string;
- /** General status line — only exists where there's something to say
-     beyond the per-domain breakdown (all-connected, and all-five-down). */
-body?: string;
-icon: IconName;
- /** One entry per currently-inactive domain, in DOMAINS order. Always the
-     complete list — never truncated to fit a box. */
-sections: { id: string; label: string; icon: IconName; weakness: string }[];
-};
-
-/** Status for the panel's feedback box, derived straight from the list of
-    inactive domains rather than from hand-written per-count copy: every
-    missing domain contributes its own section (its icon, its label, its own
-    approved `weakness` text), so 1 off shows 1 section and 4 off shows 4.
-    All five off additionally keeps the general "everything is dark" line
-    above the full five-domain breakdown. */
-function getFeedback(domains: Domain[], active: Set<string>): Feedback {
-const missing = domains.filter((d) => !active.has(d.id));
-if (missing.length === 0) {
-return {
-title: 'עליונות מלאה',
-body: 'כל חמשת הממדים פעילים יחד — יתרון מוחלט על פני האויב.',
-icon: 'shield',
-sections: [],
- };
- }
- // Verbatim reuse of each domain's approved copy — never paraphrased or
- // shortened, however many sections end up on screen.
-const sections = missing.map((d) => ({ id: d.id, label: d.label, icon: d.icon, weakness: d.weakness }));
-if (missing.length === domains.length) {
-return {
-title: 'כל הממדים כבויים',
-body: 'הצבא מנותק לחלוטין: אי אפשר לזוז, לראות או לתקשר.',
-icon: 'mask',
-sections,
- };
- }
-if (missing.length === 1) {
-return { title: `${missing[0].label} נותק`, icon: missing[0].icon, sections };
- }
-return { title: `${missing.length} ממדים נותקו`, icon: 'spark', sections };
+/** Explanation shown below both columns: the "all connected" blurb while
+    every domain is on, or — once anything is off — the full text for
+    whichever inactive domain is currently selected in the tab row.
+    `inactive` is always every currently-off domain, in DOMAINS order, so the
+    tab row lists all of them regardless of which one is selected. */
+function resolveExplanation(
+domains: Domain[],
+active: Set<string>,
+selectedTab: string | null,
+): { inactive: Domain[]; selected: Domain | null } {
+const inactive = domains.filter((d) => !active.has(d.id));
+if (inactive.length === 0) return { inactive, selected: null };
+const selected = inactive.find((d) => d.id === selectedTab) ?? inactive[0];
+return { inactive, selected };
 }
 
 /* The panel's ONE active/inactive visual language, used by each row's state
@@ -154,12 +118,14 @@ function flipTransition(motionOk: boolean) {
 return motionOk ? 'transition-[background-color,border-color,box-shadow,color] duration-200 ease-snap' : 'transition-none';
 }
 
-/** One control-panel row: icon + name + one-line subtitle + an explicit
-    state readout. The whole row is the real `role="switch"` control (a far
-    bigger hit target than any thumb), and state is legible three ways —
-    the "פעיל"/"מנותק" word, a filled-vs-hollow dot of identical size, and
-    `aria-checked` for AT. The old iOS-style switch is folded into this
-    indicator: colour alone never carries the state. */
+/** One control-panel row: icon + name + an explicit state readout — the
+    full weakness/strength copy lives in the explanation area below, not
+    here, so the row never repeats it. The whole row is the real
+    `role="switch"` control (a far bigger hit target than any thumb), and
+    state is legible three ways — the "פעיל"/"מנותק" word, a filled-vs-hollow
+    dot of identical size, and `aria-checked` for AT. The old iOS-style
+    switch is folded into this indicator: colour alone never carries the
+    state. */
 function DomainRow({ d, isOn, motionOk, onToggle }: { d: Domain; isOn: boolean; motionOk: boolean; onToggle: () => void }) {
  // "יבשה" is grammatically feminine — every other domain label is
  // masculine, so this is the only one needing the feminine form.
@@ -180,10 +146,7 @@ flipTransition(motionOk),
  >
  <span className="flex min-w-0 items-center gap-2.5">
  <Icon name={d.icon} size={20} className={cn('shrink-0', isOn ? 'text-fg' : 'text-fg-dim')} aria-hidden />
- <span className="min-w-0">
  <span className="block truncate font-display text-sm font-bold text-fg">{d.label}</span>
- <span className="block truncate text-xs text-fg-muted">{d.short}</span>
- </span>
  </span>
  {/* Fixed width + inline-start alignment so the five dots line up on
      one axis even though "מנותק" is wider than "פעיל". */}
@@ -210,15 +173,56 @@ isOn ? STATE_ON : STATE_OFF,
 
 export function MDOScene() {
 const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
+ // Which inactive domain's full explanation is showing below the columns.
+ // `null` means "show the all-active blurb" — only meaningful while
+ // `active` really does cover every domain; the moment anything is off,
+ // `resolveExplanation` below falls back to the first inactive domain even
+ // if this is stale, so it never needs defensive clearing on every toggle.
+const [selectedTab, setSelectedTab] = useState<string | null>(null);
 const motionOk = !useReducedMotion();
-const feedback = getFeedback(DOMAINS, active);
 function toggle(id: string) {
 setActive((prev) => {
+const wasOn = prev.has(id);
 const next = new Set(prev);
-if (next.has(id)) next.delete(id);
+if (wasOn) next.delete(id);
 else next.add(id);
+
+if (wasOn) {
+ // Turning a domain off jumps straight to its own explanation, so
+ // "what changed" is immediately visible without hunting for a tab.
+setSelectedTab(id);
+ } else {
+ // Reactivating drops its tab. If it was the one showing, land on
+ // another still-off domain, or back on the all-active blurb.
+setSelectedTab((cur) => (cur === id ? (DOMAINS.find((d) => !next.has(d.id))?.id ?? null) : cur));
+ }
 return next;
  });
+ }
+function activateAll() {
+setActive(new Set(DOMAINS.map((d) => d.id)));
+setSelectedTab(null);
+ }
+const { inactive, selected } = resolveExplanation(DOMAINS, active, selectedTab);
+
+ // Roving-tabindex focus targets for the explanation tabs, keyed by domain
+ // id, so arrow-key navigation can move focus without re-rendering refs.
+const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+function onTabKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, id: string) {
+const ids = inactive.map((d) => d.id);
+const i = ids.indexOf(id);
+let next: number | null = null;
+ // WAI-ARIA tabs pattern for RTL: Left Arrow advances (reading direction),
+ // Right Arrow goes back.
+if (e.key === 'ArrowLeft') next = (i + 1) % ids.length;
+else if (e.key === 'ArrowRight') next = (i - 1 + ids.length) % ids.length;
+else if (e.key === 'Home') next = 0;
+else if (e.key === 'End') next = ids.length - 1;
+if (next === null) return;
+e.preventDefault();
+const nextId = ids[next];
+setSelectedTab(nextId);
+tabRefs.current[nextId]?.focus();
  }
 
  // Grid/flex `stretch` alone cannot cap the panel to the image's height:
@@ -230,7 +234,10 @@ return next;
  // sorts it out, so its rendered height is measured and applied to the
  // panel directly. Desktop-only (matches the lg: 2-column breakpoint
  // below) — under that, the columns stack and the panel's natural height
- // is exactly what's wanted.
+ // is exactly what's wanted. The panel's own content (header, rows,
+ // button) stays fixed-size regardless — this only aligns the envelope;
+ // any leftover height is left as plain empty space, never stretched into
+ // the rows.
 const imageColRef = useRef<HTMLDivElement>(null);
 const [panelHeight, setPanelHeight] = useState<number | null>(null);
 const [isDesktop, setIsDesktop] = useState(false);
@@ -248,29 +255,6 @@ const ro = new ResizeObserver(([entry]) => setPanelHeight(entry.contentRect.heig
 ro.observe(el);
 return () => ro.disconnect();
  }, []);
-
- // The feedback area is the ONLY part of the panel allowed to grow — the
- // header, the five rows and the activate-all button stay put, so the
- // panel's overall height never changes with how many domains are off (it
- // tracks the image column instead). `canScrollMore` drives a subtle
- // bottom shadow, recomputed whenever the content changes size (a toggle)
- // or the box itself resizes, and cleared once scrolled to the bottom.
-const feedbackRef = useRef<HTMLDivElement>(null);
-const [canScrollMore, setCanScrollMore] = useState(false);
-const checkScrollable = () => {
-const el = feedbackRef.current;
-if (!el) return;
-setCanScrollMore(el.scrollHeight - el.scrollTop - el.clientHeight > 2);
- };
-useEffect(() => {
-checkScrollable();
-const el = feedbackRef.current;
-if (!el || typeof ResizeObserver === 'undefined') return;
-const ro = new ResizeObserver(checkScrollable);
-ro.observe(el);
-return () => ro.disconnect();
- // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [feedback]);
 return (
  <section id="scene-mdo" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
@@ -306,26 +290,28 @@ title={
  </div>
  </div>
 
- {/* One unified card — the photo and the control panel read as a single
-     interactive unit instead of separate, scattered cards. DOM order is
-     [panel, image]: in RTL, the first grid child lands in the visual-right
-     column, so the narrower (3fr) panel-share column must come first for
-     the panel to sit on the right and the wider (7fr) image-share column
-     second, for the image to sit on the visual left.
-     The card's height is locked to the image, not to whichever column's
-     content is taller: `panelHeight` (measured off the image column via
-     ResizeObserver, above) is applied to the panel directly, and `min-h-0`
-     lets it actually respect that fixed height instead of growing past it.
-     Only the feedback area inside then scrolls. */}
+ {/* One unified card — control panel, scene and explanation read as a
+     single interactive surface, separated only by hairline borders, not
+     nested cards. DOM order is [panel, image]: in RTL, the first grid
+     child lands in the visual-right column, so the narrower (3fr)
+     panel-share column must come first for the panel to sit on the right
+     and the wider (7fr) image-share column second, for the image to sit
+     on the visual left.
+     The panel's envelope is locked to the image's height (`panelHeight`,
+     measured off the image column via ResizeObserver below) purely so the
+     two columns' borders line up — its own content (header, rows, button)
+     never stretches to fill that height; any slack is just empty space.
+     The explanation strip is a separate full-width row below both
+     columns, so it can grow with the selected paragraph's length without
+     touching that ratio at all. */}
  <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
  <div className="grid gap-4 lg:grid-cols-[3fr_7fr]">
  <div
-className="flex min-h-0 flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4"
+className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4"
 style={isDesktop && panelHeight ? { height: panelHeight } : undefined}
  >
- {/* Header strip: the label and the tabular counter. Fixed — never
-     shrinks, never scrolls. */}
- <div className="flex shrink-0 items-center justify-between gap-2">
+ {/* Header strip: the label and the tabular counter. */}
+ <div className="flex items-center justify-between gap-2">
  <div className="text-base font-display font-bold text-fg">הממדים הפעילים</div>
  <div className="font-display font-bold text-lg tabular-nums text-fg">{active.size}/5</div>
  </div>
@@ -333,66 +319,16 @@ style={isDesktop && panelHeight ? { height: panelHeight } : undefined}
  {/* One continuous surface with hairline dividers — five rows of a
      single panel, not five separate little cards. `overflow-hidden`
      keeps each row's hover fill and inset focus ring inside the
-     rounded corners. Fixed — never shrinks, never scrolls. */}
- <div className="mt-3 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
+     rounded corners. Icon + name + the switch's own state readout
+     only — the domain's actual explanation lives in the strip below
+     the columns, not repeated here. */}
+ <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
  {DOMAINS.map((d) => (
  <DomainRow key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} onToggle={() => toggle(d.id)} />
  ))}
  </div>
 
- {/* The ONLY flexible, scrollable part of the panel: `min-h-0` lets
-     this shrink below its content's natural height instead of
-     pushing the panel (and the whole card) taller, and `flex-1`
-     lets it fill whatever room is actually left above the button.
-     Every missing domain's full explanation still renders — nothing
-     is truncated — it just scrolls internally once there's more
-     than fits. `tabIndex` + a focus ring make the scroll region
-     itself keyboard-reachable (arrow keys scroll a focused, overflow
-     element natively); the inset shadow is a soft "more below" cue
-     that appears only while there's unscrolled content, and clears
-     on its own once you reach the bottom. `aria-live="polite"` (no
-     `aria-atomic`, so a toggle announces what actually changed
-     instead of re-reading all five sections) mirrors
-     TimePressureExperience's status region. */}
- <div
-ref={feedbackRef}
-onScroll={checkScrollable}
-tabIndex={0}
-aria-label="פירוט הממדים המנותקים"
-aria-live="polite"
-className={cn(
- 'mt-3 min-h-0 flex-1 overflow-y-auto rounded-xl border border-accent/25 bg-accent/10 p-3',
- 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
- canScrollMore && 'shadow-[inset_0_-14px_10px_-10px_rgba(120,90,40,0.22)]',
- )}
- >
- <div className="flex items-start gap-2">
- <Icon name={feedback.icon} size={18} className="mt-0.5 shrink-0 text-accent" />
- <div className="min-w-0">
- <div className="text-sm font-display font-bold text-accent">{feedback.title}</div>
- {feedback.body && <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{feedback.body}</p>}
- </div>
- </div>
- {feedback.sections.length > 0 && (
- <ul className="mt-2.5 flex flex-col gap-2.5 border-t border-accent/20 pt-2.5">
- {feedback.sections.map((s) => (
- <li key={s.id} className="flex items-start gap-2">
- <Icon name={s.icon} size={15} className="mt-0.5 shrink-0 text-accent" aria-hidden />
- <div className="min-w-0">
- <div className="font-display text-xs font-bold text-fg">{s.label}</div>
- <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{s.weakness}</p>
- </div>
- </li>
- ))}
- </ul>
- )}
- </div>
-
- <button
-type="button"
-onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
-className="mt-3 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover"
- >
+ <button type="button" onClick={activateAll} className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover">
  <Icon name="refresh" size={16} />
  הפעלת כל הממדים
  </button>
@@ -401,6 +337,69 @@ className="mt-3 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-ac
  <div ref={imageColRef} className="flex flex-col">
  <MDOFieldDiagram domains={DOMAINS} active={active} />
  </div>
+ </div>
+
+ {/* Explanation strip — full width, below both columns. All active:
+     one short line about the combined effect. Otherwise: a compact tab
+     per inactive domain (always all of them, in DOMAINS order) and,
+     below it, the selected domain's own approved copy in full — never
+     truncated, never scrolled. Selecting a tab only swaps which
+     explanation shows; it never touches `active`. */}
+ <div className="mt-4 border-t border-border/50 pt-4">
+ {selected ? (
+ <>
+ <div role="tablist" aria-label="ממדים מנותקים" className="flex flex-wrap gap-2">
+ {inactive.map((d) => {
+const isSel = d.id === selected.id;
+return (
+ <button
+key={d.id}
+ref={(el) => {
+tabRefs.current[d.id] = el;
+ }}
+type="button"
+role="tab"
+id={`mdo-tab-${d.id}`}
+aria-selected={isSel}
+aria-controls="mdo-explanation-panel"
+tabIndex={isSel ? 0 : -1}
+onClick={() => setSelectedTab(d.id)}
+onKeyDown={(e) => onTabKeyDown(e, d.id)}
+className={cn(
+ 'chip gap-1.5 px-3 py-1.5 text-xs',
+flipTransition(motionOk),
+isSel ? STATE_ON : 'border-border bg-transparent text-fg-muted hover:text-fg',
+ )}
+ >
+ <Icon name={d.icon} size={14} aria-hidden />
+ {d.label}
+ </button>
+ );
+ })}
+ </div>
+ <div
+key={selected.id}
+role="tabpanel"
+id="mdo-explanation-panel"
+aria-labelledby={`mdo-tab-${selected.id}`}
+className="mt-3 flex items-start gap-2.5"
+ >
+ <Icon name={selected.icon} size={18} className="mt-0.5 shrink-0 text-accent" />
+ <div className="min-w-0">
+ <div className="text-sm font-display font-bold text-accent">{selected.label} נותק</div>
+ <p className="mt-0.5 text-sm leading-relaxed text-fg-muted">{selected.weakness}</p>
+ </div>
+ </div>
+ </>
+ ) : (
+ <div className="flex items-start gap-2.5">
+ <Icon name="shield" size={18} className="mt-0.5 shrink-0 text-accent" />
+ <div className="min-w-0">
+ <div className="text-sm font-display font-bold text-accent">עליונות מלאה</div>
+ <p className="mt-0.5 text-sm leading-relaxed text-fg-muted">כל חמשת הממדים פעילים יחד — יתרון מוחלט על פני האויב.</p>
+ </div>
+ </div>
+ )}
  </div>
  </div>
 
