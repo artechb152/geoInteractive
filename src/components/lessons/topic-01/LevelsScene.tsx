@@ -89,20 +89,6 @@ const LEVEL_BANNER_PROMPT: Record<Level, string> = {
     'Photorealistic documentary-style photo of soldiers in full combat gear hiking single-file along a rocky hillside trail at golden hour, shot from behind, sweeping valley and coastline in the background, natural daylight, shallow depth of field, no text overlays, no visible faces in close-up.',
 };
 
-// Only the strategic tagline is legible in the reference (it's the one tab
-// shown open) — "המבט הרחב: מטרות המלחמה והמשאבים להשגתן." is transcribed
-// verbatim from it. operational/tactical are NOT visible anywhere in the
-// reference and were authored here to match its one-line "ה_ ה_: _."
-// pattern, paraphrasing this scene's own existing who/zoom/example copy for
-// each level — unlike every other string in this component, these two are
-// new copy, not transcribed from a source. Flagged in
-// design/docs/assumptions.md for the user to review/edit.
-const LEVEL_TAGLINE: Record<Level, string> = {
-  strategic: 'המבט הרחב: מטרות המלחמה והמשאבים להשגתן.',
-  operational: 'התיאום האזורי: סנכרון כוחות, ציוד ותנועה בין החזית לעורף.',
-  tactical: 'הפעולה בשטח: ההחלטה המיידית שמכריעה את הרגע.',
-};
-
 // TOPIC01-LEVELS-DRAG-BG.png's orange ("operational") landmass isn't
 // centered in its own grid column — its visual center sits ~3 percentage
 // points of the full image width to the right of the column's midpoint
@@ -345,24 +331,23 @@ export function LevelsScene() {
 }
 
 // Real table (not 3 separate cards): one shared bordered wrapper, one
-// header column per level (title + the wide 3:1 banner photo + tagline),
-// then one shared-label row per MATRIX_ROWS dimension (who/zoom/time/
-// example) with one value cell per level — same row-label + N-value-column
-// structure as this lesson's own AsymmetricScene.tsx TypologyTable, which
-// is also what this scene's own SceneHeader intro already describes
-// ("בכל עמודה רמה אחרת, ובכל שורה ממד אחר"). Replaces the earlier
-// click-to-reveal tab/banner selector — direct user request for a static
-// table showing all 3 levels at once instead of 3 separate cards. All
-// pedagogical copy (level labels, tagline, and all 4 who/zoom/time/example
-// values) is read unchanged from the existing LEVELS/LEVEL_TAGLINE/
-// MATRIX_ROWS data.
+// header column per level (title + the wide 3:1 banner photo), then one
+// shared-label row per MATRIX_ROWS dimension (who/zoom/time/example) with
+// one value cell per level — same row-label + N-value-column structure as
+// this lesson's own AsymmetricScene.tsx TypologyTable, which is also what
+// this scene's own SceneHeader intro already describes ("בכל עמודה רמה
+// אחרת, ובכל שורה ממד אחר"). Replaces the earlier click-to-reveal
+// tab/banner selector — direct user request for a static table showing
+// all 3 levels at once instead of 3 separate cards. All pedagogical copy
+// (level labels and all 4 who/zoom/time/example values) is read unchanged
+// from the existing LEVELS/MATRIX_ROWS data.
 function LevelsTable() {
   const labelColClass = 'hidden sm:block sm:w-[110px] lg:w-[130px] shrink-0';
   const gridColsClass = 'grid grid-cols-3 sm:grid-cols-[110px_repeat(3,1fr)] lg:grid-cols-[130px_repeat(3,1fr)]';
 
   return (
     <div className="surface-elevated overflow-hidden">
-      {/* Header row: level title + wide banner photo + tagline, one column per level. */}
+      {/* Header row: level title + wide banner photo, one column per level. */}
       <div className={cn(gridColsClass, 'border-b border-border-strong')}>
         <div className={cn(labelColClass, 'p-4 bg-bg-accent')} aria-hidden />
         {LEVEL_ORDER.map((level) => {
@@ -378,8 +363,9 @@ function LevelsTable() {
                   same technique as this lesson's other *-BANNER.png calls:
                   `aspect` on IsometricAsset is nominal only, canceled by
                   `[aspect-ratio:auto]`, so the outer `aspect-[3/1]`
-                  wrapper drives the real shape. */}
-              <div className="relative mx-4 mb-3 overflow-hidden rounded-lg aspect-[3/1]">
+                  wrapper drives the real shape. Square corners, no
+                  `rounded-lg`. */}
+              <div className="relative mx-4 mb-3 overflow-hidden aspect-[3/1]">
                 <IsometricAsset
                   assetId={`TOPIC01-LEVELS-${level.toUpperCase()}-BANNER`}
                   src={`${LEVEL_BANNER_BASE}/TOPIC01-LEVELS-${level.toUpperCase()}-BANNER.png`}
@@ -391,9 +377,6 @@ function LevelsTable() {
                   className="absolute inset-0 size-full [aspect-ratio:auto]"
                 />
               </div>
-              <p className="px-4 pb-4 text-sm text-fg-muted leading-snug text-pretty">
-                {LEVEL_TAGLINE[level]}
-              </p>
             </div>
           );
         })}
