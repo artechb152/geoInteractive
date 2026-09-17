@@ -566,21 +566,29 @@ const [cx, cy] = d.anchor;
 const box = domainBox(d);
 const groundCx = box.x + box.width / 2;
 const groundCy = box.y + box.height;
+ // `cyber`'s own box is only 58px wide (vs. `land`'s 255px), so the
+ // `land` ratios below — tuned for the much wider vehicle — blur down
+ // to nearly nothing under the antenna's tripod feet at normal viewing
+ // size. `cyber` gets its own, still-narrow-but-legible ratio: rx stays
+ // well inside the antenna's own box (and close to its actual visible
+ // leg stance, checked against a zoomed render — the earlier 0.55 read
+ // as visibly wider than the box itself), with ry/opacity raised so it
+ // doesn't get crushed by the shared blur. `land` keeps its original
+ // Task 2 values. Neither domain's `cy` (the attach point) is touched.
+const contactShadow =
+d.id === 'cyber'
+ ? { rx: box.width * 0.42, ry: box.width * 0.16, opacity: 0.32 }
+ : { rx: box.width * 0.34, ry: box.width * 0.075, opacity: 0.22 };
 return (
  <g key={'domain-' + d.id} data-domain={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
  {GROUND_CONTACT_IDS.has(d.id) && (
  <ellipse
 cx={groundCx}
 cy={groundCy}
- // `cyber`'s own box is only 58px wide (vs. `land`'s 255px), so the
- // shared 0.34/0.075/0.22 ratio — tuned for the much wider vehicle —
- // blurs down to nearly nothing under the antenna's tripod feet at
- // normal viewing size. Bumped up just for `cyber`; `land` keeps the
- // original Task 2 values unchanged. `cy` (the attach point) is untouched.
-rx={d.id === 'cyber' ? box.width * 0.55 : box.width * 0.34}
-ry={d.id === 'cyber' ? box.width * 0.16 : box.width * 0.075}
+rx={contactShadow.rx}
+ry={contactShadow.ry}
 fill="#000000"
-opacity={d.id === 'cyber' ? 0.32 : 0.22}
+opacity={contactShadow.opacity}
 filter="url(#mdoContactShadow)"
  />
  )}
