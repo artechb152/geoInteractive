@@ -10,8 +10,11 @@ id: string;
 label: string;
 english: string;
 icon: IconName;
-weakness: string;
-strength: string;
+ // One ~12–18 word sentence shown inline under this domain's row while
+ // it's off — the damaged capability and its cost to the rest of the
+ // force fused into a single line. No separate title: the row's own
+ // name + switch state already say "this one's disconnected".
+impact: string;
  // This domain's object layer: position + size in the shared field-photo
  // coordinate system (mdo-scene-background.png, 1448×1086px, measured
  // from the left/top edge — never mirrored for RTL). Height is derived
@@ -49,59 +52,38 @@ const ASSET_BASE = '/assets/lessons/topic01/scene-mdo';
 const DOMAINS: Domain[] = [
  {
 id: 'land', label: 'יבשה', english: 'Land', icon: 'mountain',
-strength: 'מגפיים על הקרקע: הדרך היחידה להכריע באמת. רק חיילים יכולים להיכנס פיזית, לטהר מבנים, להסתכל לאויב בעיניים ולהחזיק בשטח.',
-weakness: 'בלי כוח קרקעי הכל וירטואלי: אפשר להפציץ ולצלם מלמעלה כמה שרוצים, אבל בלי חיילים על הקרקע אי אפשר באמת לכבוש כלום.',
- // On the dirt road, roughly mid-frame.
-image: { src: `${ASSET_BASE}/mdo-object-ground-vehicle.png`, x: 750, y: 550, width: 195, aspect: 1486 / 692 },
+impact: 'אין החזקת שטח בפועל: אפשר להפציץ ולצלם מלמעלה, אבל בלי חיילים בשטח אי אפשר להכריע או לכבוש.',
+ // Foreground of the clearing — closest object to the viewer; wheels get a ground-contact shadow (Task 2).
+image: { src: `${ASSET_BASE}/mdo-object-ground-vehicle.png`, x: 730, y: 730, width: 255, aspect: 1486 / 692 },
  },
  {
 id: 'air', label: 'אוויר', english: 'Air', icon: 'plane',
-strength: 'האגרוף מהשמיים: מטוסי קרב ורחפנים שמחסלים מטרות בשניות, מחפים על החיילים מלמעלה ותוקפים עמוק בשטח האויב.',
-weakness: 'בלי הגנה אווירית השמיים פתוחים: החיילים למטה חשופים לחלוטין להפצצות, ואין מי שיעזור להם להשמיד איומים מרחוק.',
- // High in the open sky, upper-right.
-image: { src: `${ASSET_BASE}/mdo-object-aircraft.png`, x: 950, y: 90, width: 230, aspect: 1674 / 477 },
+impact: 'השמיים פתוחים לגמרי: החיילים בשטח חשופים להפצצות, בלי מי שיזהה או יעצור איומים בזמן.',
+ // Mid-upper sky, right of center — clear of the satellite and the horizon.
+image: { src: `${ASSET_BASE}/mdo-object-aircraft.png`, x: 860, y: 210, width: 245, aspect: 1674 / 477 },
  },
  {
 id: 'sea', label: 'ים', english: 'Sea', icon: 'ship',
-strength: 'העורק הפתוח: ספינות קרב וצוללות שמגנות על החופים, מאפשרות לתקוף בהפתעה, ודואגות שאספקת נשק ודלק תמשיך לזרום.',
-weakness: 'בלי שליטה בים המדינה במצור: אוניות מסע ואספקה לא מגיעות (קריטי במלחמה ארוכה), והחופים פרוצים לגמרי לפלישה.',
- // In the bay, lower-left.
-image: { src: `${ASSET_BASE}/mdo-object-ship.png`, x: 60, y: 470, width: 230, aspect: 1658 / 762 },
+impact: 'אספקה לחוף נחסמת: אוניות מסע ואספקה מתקשות להגיע, והחופים נשארים פרוצים לכל ניסיון פלישה.',
+ // Afloat in the open sea, lower-left — hull sits in the water band below the horizon; gets a water-contact ripple (Task 2).
+image: { src: `${ASSET_BASE}/mdo-object-ship.png`, x: 60, y: 435, width: 190, aspect: 1658 / 762 },
  },
  {
 id: 'space', label: 'חלל', english: 'Space', icon: 'satellite',
-strength: 'העיניים של הצבא: לוויינים שנותנים ניווט GPS מדויק לכל פגז, משדרים תמונות חיות של האויב ושומרים על קשר בין כולם.',
-weakness: 'בלי לוויינים הצבא עיוור וחירש: ה-GPS קורס (הטילים מפספסים והחיילים הולכים לאיבוד), ומערכות התקשורת נופלות.',
- // Upper-left sky, clear of the aircraft and the mountain skyline.
-image: { src: `${ASSET_BASE}/mdo-object-satellite.png`, x: 420, y: 40, width: 150, aspect: 1454 / 792 },
+impact: 'ניווט וקישור נפגעים: ה-GPS מאבד דיוק, מטרות מוחטאות וקשר בין הכוחות מתנתק כשהכי צריך אותו.',
+ // Upper-left sky, clear of the aircraft — a symbolic stand-in for the space domain, not a literal depiction.
+image: { src: `${ASSET_BASE}/mdo-object-satellite.png`, x: 315, y: 90, width: 115, aspect: 1454 / 792 },
 caption: 'חלל · המחשה',
  },
  {
 id: 'cyber', label: 'סייבר', english: 'Cyber', icon: 'bolt',
-strength: 'הנשק השקוף: היכולת לשתק את האויב בלי לירות כדור אחד! לפרוץ לו למכשירי הקשר, לעוור לו את המכ"ם או לכבות לו את החשמל.',
-weakness: 'בלי חומת סייבר נהיה חשופים לגמרי: האקרים יוכלו לזייף מטרות לחיילים, לנתק קשר ולהפיל לנו תשתיות (חשמל, מים, בנקים).',
- // Standing on the hillside, right edge, base planted on the ground.
-image: { src: `${ASSET_BASE}/mdo-object-mast.png`, x: 1250, y: 260, width: 90, aspect: 433 / 1494 },
+impact: 'ההגנה הדיגיטלית קורסת: האקרים יכולים לזייף מטרות, לשבש תקשורת ולהפיל תשתיות קריטיות בעורף.',
+ // Standing on the grass hillside, base planted on the ground; feet get a contact shadow (Task 2).
+image: { src: `${ASSET_BASE}/mdo-object-mast.png`, x: 1170, y: 490, width: 58, aspect: 433 / 1494 },
  // Lands on the antenna/dish cluster near the top, not mid-shaft.
 anchorRel: [0.5, 0.35],
  },
 ];
-
-/** Explanation shown below both columns: the "all connected" blurb while
-    every domain is on, or — once anything is off — the full text for
-    whichever inactive domain is currently selected in the tab row.
-    `inactive` is always every currently-off domain, in DOMAINS order, so the
-    tab row lists all of them regardless of which one is selected. */
-function resolveExplanation(
-domains: Domain[],
-active: Set<string>,
-selectedTab: string | null,
-): { inactive: Domain[]; selected: Domain | null } {
-const inactive = domains.filter((d) => !active.has(d.id));
-if (inactive.length === 0) return { inactive, selected: null };
-const selected = inactive.find((d) => d.id === selectedTab) ?? inactive[0];
-return { inactive, selected };
-}
 
 /* The panel's ONE active/inactive visual language, used by each row's state
    indicator: active = filled accent with a small local glow; inactive =
@@ -118,28 +100,34 @@ function flipTransition(motionOk: boolean) {
 return motionOk ? 'transition-[background-color,border-color,box-shadow,color] duration-200 ease-snap' : 'transition-none';
 }
 
-/** One control-panel row: icon + name + an explicit state readout — the
-    full weakness/strength copy lives in the explanation area below, not
-    here, so the row never repeats it. The whole row is the real
-    `role="switch"` control (a far bigger hit target than any thumb), and
-    state is legible three ways — the "פעיל"/"מנותק" word, a filled-vs-hollow
-    dot of identical size, and `aria-checked` for AT. The old iOS-style
-    switch is folded into this indicator: colour alone never carries the
-    state. */
+/** One control-panel row: icon + name + an explicit state readout, and —
+    only while this domain is off — its own impact sentence inline right
+    below, so the control and its feedback live in the same place instead
+    of a control list plus a separate answer area elsewhere. The switch
+    itself is still the real `role="switch"` control (a far bigger hit
+    target than any thumb), and state is legible three ways — the
+    "פעיל"/"מנותק" word, a filled-vs-hollow dot of identical size, and
+    `aria-checked` for AT; `aria-describedby` ties the switch to its own
+    impact text once it's showing, so a screen reader announces why this
+    one matters right after its state. The old iOS-style switch is folded
+    into the state chip: colour alone never carries the state. */
 function DomainRow({ d, isOn, motionOk, onToggle }: { d: Domain; isOn: boolean; motionOk: boolean; onToggle: () => void }) {
  // "יבשה" is grammatically feminine — every other domain label is
  // masculine, so this is the only one needing the feminine form.
 const isFem = d.id === 'land';
 const stateWord = isOn ? (isFem ? 'פעילה' : 'פעיל') : isFem ? 'לא פעילה' : 'לא פעיל';
+const impactId = `mdo-impact-${d.id}`;
 return (
+ <div className="border-b border-border/40 last:border-b-0">
  <button
 type="button"
 role="switch"
 aria-checked={isOn}
 aria-label={`${d.label}: ${stateWord}, לחץ ל${isOn ? 'כיבוי' : 'הפעלה'}`}
+aria-describedby={isOn ? undefined : impactId}
 onClick={onToggle}
 className={cn(
- 'flex w-full items-center justify-between gap-2 border-b border-border/40 px-3 py-2.5 text-start last:border-b-0',
+ 'flex w-full items-center justify-between gap-2 px-3 py-2 text-start',
  'hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent',
 flipTransition(motionOk),
  )}
@@ -168,61 +156,28 @@ isOn ? STATE_ON : STATE_OFF,
  {isOn ? 'פעיל' : 'מנותק'}
  </span>
  </button>
+ {!isOn && (
+ <p id={impactId} className="-mt-1 px-3 pb-2 text-sm leading-tight text-fg-muted">
+ {d.impact}
+ </p>
+ )}
+ </div>
  );
 }
 
 export function MDOScene() {
 const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
- // Which inactive domain's full explanation is showing below the columns.
- // `null` means "show the all-active blurb" — only meaningful while
- // `active` really does cover every domain; the moment anything is off,
- // `resolveExplanation` below falls back to the first inactive domain even
- // if this is stale, so it never needs defensive clearing on every toggle.
-const [selectedTab, setSelectedTab] = useState<string | null>(null);
 const motionOk = !useReducedMotion();
 function toggle(id: string) {
 setActive((prev) => {
-const wasOn = prev.has(id);
 const next = new Set(prev);
-if (wasOn) next.delete(id);
+if (next.has(id)) next.delete(id);
 else next.add(id);
-
-if (wasOn) {
- // Turning a domain off jumps straight to its own explanation, so
- // "what changed" is immediately visible without hunting for a tab.
-setSelectedTab(id);
- } else {
- // Reactivating drops its tab. If it was the one showing, land on
- // another still-off domain, or back on the all-active blurb.
-setSelectedTab((cur) => (cur === id ? (DOMAINS.find((d) => !next.has(d.id))?.id ?? null) : cur));
- }
 return next;
  });
  }
 function activateAll() {
 setActive(new Set(DOMAINS.map((d) => d.id)));
-setSelectedTab(null);
- }
-const { inactive, selected } = resolveExplanation(DOMAINS, active, selectedTab);
-
- // Roving-tabindex focus targets for the explanation tabs, keyed by domain
- // id, so arrow-key navigation can move focus without re-rendering refs.
-const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-function onTabKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, id: string) {
-const ids = inactive.map((d) => d.id);
-const i = ids.indexOf(id);
-let next: number | null = null;
- // WAI-ARIA tabs pattern for RTL: Left Arrow advances (reading direction),
- // Right Arrow goes back.
-if (e.key === 'ArrowLeft') next = (i + 1) % ids.length;
-else if (e.key === 'ArrowRight') next = (i - 1 + ids.length) % ids.length;
-else if (e.key === 'Home') next = 0;
-else if (e.key === 'End') next = ids.length - 1;
-if (next === null) return;
-e.preventDefault();
-const nextId = ids[next];
-setSelectedTab(nextId);
-tabRefs.current[nextId]?.focus();
  }
 
  // Grid/flex `stretch` alone cannot cap the panel to the image's height:
@@ -290,116 +245,60 @@ title={
  </div>
  </div>
 
- {/* One unified card — control panel, scene and explanation read as a
-     single interactive surface, separated only by hairline borders, not
-     nested cards. DOM order is [panel, image]: in RTL, the first grid
-     child lands in the visual-right column, so the narrower (3fr)
-     panel-share column must come first for the panel to sit on the right
-     and the wider (7fr) image-share column second, for the image to sit
-     on the visual left.
+ {/* One unified card — control panel and scene read as a single
+     interactive surface, separated only by hairline borders, not nested
+     cards. DOM order is [panel, image]: in RTL, the first grid child
+     lands in the visual-right column, so the narrower (3fr) panel-share
+     column must come first for the panel to sit on the right and the
+     wider (7fr) image-share column second, for the image to sit on the
+     visual left.
      The panel's envelope is locked to the image's height (`panelHeight`,
-     measured off the image column via ResizeObserver below) purely so the
-     two columns' borders line up — its own content (header, rows, button)
-     never stretches to fill that height; any slack is just empty space.
-     The explanation strip is a separate full-width row below both
-     columns, so it can grow with the selected paragraph's length without
-     touching that ratio at all. */}
+     measured off the image column via ResizeObserver below): the rows
+     list is sized by its own content — including every currently-off
+     domain's inline impact sentence — and never stretched to fill that
+     height, while the counter+reset row is pushed to the very bottom via
+     `mt-auto`. So the only "slack" is blank space above that bottom row,
+     never a scrollbar. Worst case (all five off, all five sentences
+     showing) is sized to still fit under the image's own height. */}
  <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
  <div className="grid gap-4 lg:grid-cols-[3fr_7fr]">
  <div
-className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4"
+className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-3"
 style={isDesktop && panelHeight ? { height: panelHeight } : undefined}
  >
- {/* Header strip: the label and the tabular counter. */}
- <div className="flex items-center justify-between gap-2">
- <div className="text-base font-display font-bold text-fg">הממדים הפעילים</div>
- <div className="font-display font-bold text-lg tabular-nums text-fg">{active.size}/5</div>
- </div>
-
- {/* One continuous surface with hairline dividers — five rows of a
-     single panel, not five separate little cards. `overflow-hidden`
-     keeps each row's hover fill and inset focus ring inside the
-     rounded corners. Icon + name + the switch's own state readout
-     only — the domain's actual explanation lives in the strip below
-     the columns, not repeated here. */}
- <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
+ {/* One continuous surface with hairline dividers — five rows, not
+     five separate little cards. `overflow-hidden` keeps each row's
+     hover fill and inset focus ring inside the rounded corners. No
+     header above this and no separate feedback area below it: each
+     row carries its own control AND (while off) its own impact
+     sentence inline, so every currently-off domain's explanation
+     shows at once, in the fixed row order, right under its own
+     switch — never a stretched row when everything's on, since nothing
+     here flex-grows. */}
+ <div className="overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
  {DOMAINS.map((d) => (
  <DomainRow key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} onToggle={() => toggle(d.id)} />
  ))}
  </div>
 
- <button type="button" onClick={activateAll} className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover">
+ {/* Bottom row, pinned to the panel's own bottom via `mt-auto` (never
+     a scrollbar, never stretched rows above it) — a small "x/5" count
+     instead of a full header, beside the reset button rather than
+     above it. */}
+ <div className="mt-auto flex items-center gap-3 pt-2">
+ <span className="shrink-0 text-xs font-medium tabular-nums text-fg-muted">
+ {active.size}/{DOMAINS.length} פעילים
+ </span>
+ <button type="button" onClick={activateAll} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover">
  <Icon name="refresh" size={16} />
  הפעלת כל הממדים
  </button>
+ </div>
  </div>
 
  <div ref={imageColRef} className="flex flex-col">
  <MDOFieldDiagram domains={DOMAINS} active={active} />
  </div>
- </div>
-
- {/* Explanation strip — full width, below both columns. All active:
-     one short line about the combined effect. Otherwise: a compact tab
-     per inactive domain (always all of them, in DOMAINS order) and,
-     below it, the selected domain's own approved copy in full — never
-     truncated, never scrolled. Selecting a tab only swaps which
-     explanation shows; it never touches `active`. */}
- <div className="mt-4 border-t border-border/50 pt-4">
- {selected ? (
- <>
- <div role="tablist" aria-label="ממדים מנותקים" className="flex flex-wrap gap-2">
- {inactive.map((d) => {
-const isSel = d.id === selected.id;
-return (
- <button
-key={d.id}
-ref={(el) => {
-tabRefs.current[d.id] = el;
- }}
-type="button"
-role="tab"
-id={`mdo-tab-${d.id}`}
-aria-selected={isSel}
-aria-controls="mdo-explanation-panel"
-tabIndex={isSel ? 0 : -1}
-onClick={() => setSelectedTab(d.id)}
-onKeyDown={(e) => onTabKeyDown(e, d.id)}
-className={cn(
- 'chip gap-1.5 px-3 py-1.5 text-xs',
-flipTransition(motionOk),
-isSel ? STATE_ON : 'border-border bg-transparent text-fg-muted hover:text-fg',
- )}
- >
- <Icon name={d.icon} size={14} aria-hidden />
- {d.label}
- </button>
- );
- })}
- </div>
- <div
-key={selected.id}
-role="tabpanel"
-id="mdo-explanation-panel"
-aria-labelledby={`mdo-tab-${selected.id}`}
-className="mt-3 flex items-start gap-2.5"
- >
- <Icon name={selected.icon} size={18} className="mt-0.5 shrink-0 text-accent" />
- <div className="min-w-0">
- <div className="text-sm font-display font-bold text-accent">{selected.label} נותק</div>
- <p className="mt-0.5 text-sm leading-relaxed text-fg-muted">{selected.weakness}</p>
- </div>
- </div>
- </>
- ) : (
- <div className="flex items-start gap-2.5">
- <Icon name="shield" size={18} className="mt-0.5 shrink-0 text-accent" />
- <div className="min-w-0">
- <div className="text-sm font-display font-bold text-accent">עליונות מלאה</div>
- <p className="mt-0.5 text-sm leading-relaxed text-fg-muted">כל חמשת הממדים פעילים יחד — יתרון מוחלט על פני האויב.</p>
- </div>
- </div>
- )}
  </div>
  </div>
 
@@ -416,6 +315,16 @@ className="mt-3 flex items-start gap-2.5"
    container width. */
 const FIELD_W = 1448;
 const FIELD_H = 1086;
+
+/** Keeps a Bézier control point inside the visible field-photo frame (with a
+    small margin) so a connection arc never bows out past the image's own
+    edges. A quadratic Bézier stays within the convex hull of its three
+    points, so clamping the control point alongside the two anchor points
+    (always in-frame, since every domain's box is) keeps the whole curve
+    in-frame too. */
+function clampToField([x, y]: [number, number], margin = 10): [number, number] {
+return [Math.min(FIELD_W - margin, Math.max(margin, x)), Math.min(FIELD_H - margin, Math.max(margin, y))];
+}
 
 /* Connections drawn between domains — a curated subset (not a complete
    graph), chosen for teaching value rather than geometric completeness. */
@@ -449,7 +358,7 @@ return best;
  // roughly the diagram's rendered scale, plus the glow's spread — an arc
  // passing closer than this to an anchor it doesn't connect to would visibly
  // cut through that anchor's ring.
-const MIN_ANCHOR_CLEARANCE = 100;
+const MIN_ANCHOR_CLEARANCE = 80;
 
 function rotateVec(v: [number, number], deg: number): [number, number] {
 const r = (deg * Math.PI) / 180;
@@ -487,18 +396,18 @@ const dlen = Math.hypot(dx, dy) || 1;
 dx /= dlen;
 dy /= dlen;
 const edgeLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
-const baseBow = Math.min(150, Math.max(45, edgeLen * 0.2));
+const baseBow = Math.min(80, Math.max(35, edgeLen * 0.2));
 
 let best: [number, number] | null = null;
 let bestScore = -Infinity;
-let fallback: [number, number] = [mx + dx * baseBow, my + dy * baseBow];
+let fallback: [number, number] = clampToField([mx + dx * baseBow, my + dy * baseBow]);
 let fallbackClearance = -Infinity;
 
 for (const angle of CONTROL_ANGLES) {
 const [rx, ry] = rotateVec([dx, dy], angle);
 for (const mag of CONTROL_MAGNITUDES) {
 const bow = baseBow * mag;
-const control: [number, number] = [mx + rx * bow, my + ry * bow];
+const control: [number, number] = clampToField([mx + rx * bow, my + ry * bow]);
 const clearance = avoid.length ? Math.min(...avoid.map((p) => minDistToCurve(a, control, b, p))) : Infinity;
 if (clearance > fallbackClearance) {
 fallbackClearance = clearance;
@@ -616,7 +525,7 @@ aria-hidden="true"
  </filter>
  {/* Wider blur for the marker halo that lifts each node off the photo. */}
  <filter id="mdoNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
- <feGaussianBlur stdDeviation="11" />
+ <feGaussianBlur stdDeviation="8" />
  </filter>
  </defs>
 
@@ -639,9 +548,9 @@ const box = domainBox(d);
 return (
  <g key={'domain-' + d.id} data-domain={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
  <image href={d.image.src} x={box.x} y={box.y} width={box.width} height={box.height} preserveAspectRatio="xMidYMid meet" />
- <circle cx={cx} cy={cy} r="36" fill="#D97E2B" opacity="0.34" filter="url(#mdoNodeGlow)" />
- <circle cx={cx} cy={cy} r="22" fill="none" stroke="#FDFBF3" strokeWidth="5.5" opacity="0.5" />
- <circle cx={cx} cy={cy} r="22" fill="none" stroke="#D97E2B" strokeWidth="3" opacity="0.95" />
+ <circle cx={cx} cy={cy} r="29" fill="#D97E2B" opacity="0.22" filter="url(#mdoNodeGlow)" />
+ <circle cx={cx} cy={cy} r="18" fill="none" stroke="#FDFBF3" strokeWidth="4.5" opacity="0.4" />
+ <circle cx={cx} cy={cy} r="18" fill="none" stroke="#D97E2B" strokeWidth="2.5" opacity="0.85" />
  {[
  [0, -1],
  [0, 1],
@@ -650,21 +559,21 @@ return (
  ].map(([ux, uy]) => (
  <line
 key={`${ux},${uy}`}
-x1={cx + ux * 28}
-y1={cy + uy * 28}
-x2={cx + ux * 35}
-y2={cy + uy * 35}
+x1={cx + ux * 22}
+y1={cy + uy * 22}
+x2={cx + ux * 28}
+y2={cy + uy * 28}
 stroke="#D97E2B"
-strokeWidth="2.5"
+strokeWidth="2"
 strokeLinecap="round"
-opacity="0.85"
+opacity="0.7"
  />
  ))}
- <circle cx={cx} cy={cy} r="8.5" fill="#D97E2B" />
- <circle cx={cx} cy={cy} r="3.5" fill="#FDFBF3" opacity="0.95" />
+ <circle cx={cx} cy={cy} r="7" fill="#D97E2B" />
+ <circle cx={cx} cy={cy} r="3" fill="#FDFBF3" opacity="0.95" />
  {motionEnabled && isOn && (
- <circle cx={cx} cy={cy} r="22" fill="none" stroke="#D97E2B" strokeWidth="3">
- <animate attributeName="r" values="22;50" dur="3.4s" repeatCount="indefinite" />
+ <circle cx={cx} cy={cy} r="18" fill="none" stroke="#D97E2B" strokeWidth="2.5">
+ <animate attributeName="r" values="18;40" dur="3.4s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.75;0" dur="3.4s" repeatCount="indefinite" />
  </circle>
  )}
