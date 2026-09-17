@@ -338,6 +338,12 @@ const EDGES: [string, string][] = [
 ['cyber', 'sea'],
 ];
 
+/** Domains whose object stands on solid ground and gets a local
+    contact shadow under its wheels/feet in the render below. Not `sea`
+    (open water gets a water-contact ripple instead, not a shadow) and not
+    `air`/`space` (nothing under them to ground them to). */
+const GROUND_CONTACT_IDS = new Set(['land', 'cyber']);
+
 function quadPoint(a: [number, number], c: [number, number], b: [number, number], t: number): [number, number] {
 const u = 1 - t;
 return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
@@ -527,6 +533,19 @@ aria-hidden="true"
  <filter id="mdoNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
  <feGaussianBlur stdDeviation="8" />
  </filter>
+ {/* Soft, tight blur for the local ground-contact shadow under
+     the vehicle's wheels / the antenna's feet — deliberately
+     small and low-opacity so it reads as contact, not a cast
+     shadow. */}
+ <filter id="mdoContactShadow" x="-60%" y="-60%" width="220%" height="220%">
+ <feGaussianBlur stdDeviation="3" />
+ </filter>
+ {/* Even softer, wider-but-thin blur for the ship's
+     water-contact ripple — a band across the hull's
+     waterline, not a halo around the whole image. */}
+ <filter id="mdoWaterRipple" x="-40%" y="-150%" width="180%" height="400%">
+ <feGaussianBlur stdDeviation="2.5" />
+ </filter>
  </defs>
 
  {/* One independent group per domain: its object image, then its
@@ -545,9 +564,33 @@ aria-hidden="true"
 const isOn = active.has(d.id);
 const [cx, cy] = d.anchor;
 const box = domainBox(d);
+const groundCx = box.x + box.width / 2;
+const groundCy = box.y + box.height;
 return (
  <g key={'domain-' + d.id} data-domain={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
+ {GROUND_CONTACT_IDS.has(d.id) && (
+ <ellipse
+cx={groundCx}
+cy={groundCy}
+rx={box.width * 0.34}
+ry={box.width * 0.075}
+fill="#000000"
+opacity="0.22"
+filter="url(#mdoContactShadow)"
+ />
+ )}
  <image href={d.image.src} x={box.x} y={box.y} width={box.width} height={box.height} preserveAspectRatio="xMidYMid meet" />
+ {d.id === 'sea' && (
+ <ellipse
+cx={groundCx}
+cy={box.y + box.height * 0.93}
+rx={box.width * 0.42}
+ry={box.width * 0.03}
+fill="#F4F8FC"
+opacity="0.3"
+filter="url(#mdoWaterRipple)"
+ />
+ )}
  <circle cx={cx} cy={cy} r="29" fill="#D97E2B" opacity="0.22" filter="url(#mdoNodeGlow)" />
  <circle cx={cx} cy={cy} r="18" fill="none" stroke="#FDFBF3" strokeWidth="4.5" opacity="0.4" />
  <circle cx={cx} cy={cy} r="18" fill="none" stroke="#D97E2B" strokeWidth="2.5" opacity="0.85" />

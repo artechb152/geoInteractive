@@ -740,8 +740,12 @@ function TransferSection({
 
 /* הרצועה (2172×724 במקור) עוטפת ביחס שטוח בהרבה מהמקורי (2172/300 ≈ 7.24
    לעומת 3.0 של הנכס) כדי ש-fit="cover" יחתוך אך ורק למעלה/למטה, לעולם לא
-   בצדדים — position="center" (ברירת המחדל) מספיק. */
-const STRIP_ASPECT_CLASS = 'aspect-[2172/300]';
+   בצדדים — position="center" (ברירת המחדל) מספיק.
+   min-h מונע חיתוך טקסט: ה-aspect-ratio קובע גובה לפי הרוחב בלבד (הילדים
+   מוחלטים ולכן אינם תורמים לגובה), וברוחב כרטיס האירוע (32%) שני פסקאות
+   הטקסט (כותרת + body + note) לא נכנסות בגובה שנגזר מהיחס — קצה ה-note
+   נחתך על ידי overflow-hidden. min-h מבטיח שהגובה לעולם לא יקטן מזה. */
+const STRIP_ASPECT_CLASS = 'aspect-[2172/300] min-h-[230px]';
 
 /* שחקן לא־סדיר / תובנה חולקות בדיוק את אותה מסגרת ומשתנות רק באסֵט, בצד
    שבו יושב הכפר בתמונת המקור (villageSide — פיזי במכוון, כמו ACTOR_BANNER
@@ -773,14 +777,16 @@ function LandscapeStrip({
           className="absolute inset-0 size-full [aspect-ratio:auto]"
         />
         {/* הכפר יושב בצד villageSide בתמונת המקור — לכן ה-scrim אטום בצד
-            הטקסט (הצד הנגדי) ושקוף בצד הכפר. */}
+            הטקסט (הצד הנגדי) ושקוף בצד הכפר. via זהה ל-from (לא /85) כדי
+            שהאזור שמתחת לטקסט יהיה רקע אחיד לגמרי, לא דהייה חלקית שמחשיפה
+            את גוני התמונה מתחתיו; הדהייה עצמה מתחילה רק אחרי קצה טור הטקסט. */}
         <div
           aria-hidden
           className={cn(
             'absolute inset-0',
             villageOnRight
-              ? 'bg-gradient-to-r from-bg-elevated via-bg-elevated/85 to-transparent'
-              : 'bg-gradient-to-l from-bg-elevated via-bg-elevated/85 to-transparent',
+              ? 'bg-gradient-to-r from-bg-elevated via-bg-elevated to-transparent'
+              : 'bg-gradient-to-l from-bg-elevated via-bg-elevated to-transparent',
           )}
         />
         <div
@@ -789,7 +795,7 @@ function LandscapeStrip({
             villageOnRight ? 'justify-end' : 'justify-start',
           )}
         >
-          <div className="max-w-md px-6 py-5 sm:px-8">
+          <div className="max-w-[493px] px-6 py-5 sm:px-8">
             <h4 className="font-display text-lg font-bold leading-tight text-black sm:text-xl">
               {title}
             </h4>

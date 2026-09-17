@@ -1038,6 +1038,19 @@ function TacticMatchExercise() {
         </div>
       </div>
 
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
+        {TRAITS.map((t) => (
+          <TacticPhotoCard
+            key={t.id}
+            tactic={t}
+            occupant={TRAITS.find((v) => placement[v.id] === t.id) ?? null}
+            current={current}
+            submitted={submitted}
+            onPlace={place}
+          />
+        ))}
+      </div>
+
       <div className="surface-elevated p-5 sm:p-6 mb-4 relative overflow-hidden">
         {/* Accent flash — an independent overlay keyed on the same id, so it
             re-triggers every time the report switches regardless of the
@@ -1075,19 +1088,6 @@ function TacticMatchExercise() {
             </div>
           )}
         </AnimatePresence>
-      </div>
-
-      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
-        {TRAITS.map((t) => (
-          <TacticPhotoCard
-            key={t.id}
-            tactic={t}
-            occupant={TRAITS.find((v) => placement[v.id] === t.id) ?? null}
-            current={current}
-            submitted={submitted}
-            onPlace={place}
-          />
-        ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1259,9 +1259,14 @@ function DragExercise({
         </p>
       </div>
 
-      <div className="surface-elevated p-5 sm:p-6 mb-4">
-        <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
-          ארגונים לסיווג ({pool.length})
+      <div className="surface-elevated p-4 mb-4">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="text-sm font-display font-semibold text-fg tracking-wider">
+            {`ארגונים לסיווג · ${pool.length}`}
+          </div>
+          <div className="text-sm text-fg-muted">
+            גררו ארגון לאחת מ־3 הקטגוריות למטה (או בחרו ולחצו)
+          </div>
         </div>
         {pool.length === 0 ? (
           <div className="text-center text-sm text-fg-muted py-4">
@@ -1273,7 +1278,6 @@ function DragExercise({
               <OrgChip
                 key={o.id}
                 org={o}
-                state="pool"
                 isSelected={selectedOrg === o.id}
                 onSelect={() => onSelect(selectedOrg === o.id ? null : o.id)}
               />
@@ -1329,14 +1333,15 @@ function DragExercise({
   );
 }
 
-/* Pill-shaped chip, per reference `lesson1part5image6.png`: rounded-full,
-   a drag-grip glyph at inline-start (pool state only — matches the
-   reference, which shows no grip once a chip has already been sorted into
-   a bin), org label + subtitle stacked inside. Visual restyle only — no
-   copy changed, both `label` and `subtitle` still render verbatim. */
+/* Rectangular `surface` card — same shape/border/radius/state language as
+   this lesson's own ScenarioChip (topic-01/LevelsScene.tsx's "אירועים
+   למיון" pool), rather than a standalone pill: border/bg tint alone signals
+   correct/wrong (no separate ✓/✗ badge), a trailing check icon marks a
+   correct submitted match, and cursor-grab alone (no grip glyph) signals
+   draggability — see design/docs/assumptions.md, "Topic-01 org-chip /
+   scenario-chip unification". */
 function OrgChip({
   org,
-  state,
   isSelected,
   isCorrect,
   isWrong,
@@ -1345,7 +1350,6 @@ function OrgChip({
   compact,
 }: {
   org: Org;
-  state: 'pool' | 'bin';
   isSelected?: boolean;
   isCorrect?: boolean;
   isWrong?: boolean;
@@ -1363,10 +1367,10 @@ function OrgChip({
         e.dataTransfer.setData('text/org', org.id);
         e.dataTransfer.effectAllowed = 'move';
 
-        // Custom drag image: the browser's automatic snapshot of this pill
+        // Custom drag image: the browser's automatic snapshot of this card
         // includes the focus/outline box around it, so the drag ghost reads
-        // as a rectangle with the pill drawn inside it. Render a clean,
-        // outline-free clone instead so only the pill shape is visible.
+        // as a rectangle around the rectangle. Render a clean, outline-free
+        // clone instead so only the card itself is visible.
         const source = e.currentTarget;
         const rect = source.getBoundingClientRect();
         const clone = source.cloneNode(true) as HTMLElement;
@@ -1388,48 +1392,43 @@ function OrgChip({
       }}
       onClick={onSelect}
       className={cn(
-        'group inline-flex items-center gap-2 text-start transition-all duration-300 ease-snap border rounded-full bg-bg-elevated',
-        compact ? 'px-2.5 py-1.5' : 'px-3.5 py-2',
-        submitted && isCorrect && 'border-status-ok/50 bg-status-ok/10',
-        submitted && isWrong && 'border-status-danger/50 bg-status-danger/10',
-        !submitted && isSelected && state === 'pool' && 'border-accent bg-accent/10 ring-2 ring-accent/40',
-        !submitted && !isSelected && 'border-border hover:border-brand/30 hover:bg-brand/[0.03]',
+        'surface text-start transition-all duration-300 ease-snap',
+        compact ? 'p-2.5' : 'p-3',
+        isSelected && 'border-accent bg-accent/10 ring-2 ring-accent/40',
+        submitted && isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/10',
+        submitted && isWrong && !isSelected && 'border-status-danger/50 bg-status-danger/10',
+        !isSelected && !isCorrect && !isWrong && 'hover:border-brand/30 hover:bg-brand/[0.03]',
         draggable && 'cursor-grab active:cursor-grabbing',
       )}
     >
-      {submitted ? (
-        <span
-          className={cn(
-            'shrink-0 inline-flex items-center justify-center size-4 rounded-full text-xs font-bold leading-none',
-            isCorrect ? 'bg-status-ok/10 text-status-ok' : 'bg-status-danger/10 text-status-danger',
-          )}
-        >
-          {isCorrect ? '✓' : '✗'}
+      <div className="flex items-start gap-2">
+        <span className="min-w-0 flex-1">
+          <span className={cn('block font-display font-semibold leading-tight', compact ? 'text-xs' : 'text-sm', 'text-fg')}>
+            {org.label}
+          </span>
+          <span className="block text-xs font-display font-semibold tracking-wider text-fg-muted mt-0.5 leading-tight">
+            {org.subtitle}
+          </span>
         </span>
-      ) : (
-        state === 'pool' && <Icon name="grip" size={14} className="shrink-0 text-fg-dim" />
-      )}
-      <span className="min-w-0">
-        <span className={cn('block font-display font-semibold leading-tight', compact ? 'text-xs' : 'text-sm', 'text-fg')}>
-          {org.label}
-        </span>
-        <span className="block text-xs font-display font-semibold tracking-wider text-fg-muted mt-0.5 leading-tight">
-          {org.subtitle}
-        </span>
-      </span>
+        {submitted && isCorrect && (
+          <Icon name="check" size={compact ? 12 : 14} strokeWidth={2.5} className="shrink-0 mt-0.5 text-status-ok" />
+        )}
+      </div>
     </button>
   );
 }
 
-/* Photo-topped bin, per reference `lesson1part5image6.png`: the actor's
-   `*-BIN.png` establishing shot fills the top of the card with the actor
-   label overlaid (scrim + short accent rule, matching this file's existing
-   scrim-caption pattern in `ActorTypologySelector`'s photo column), then a
-   dashed drop-zone below with a circular "+" and "גרור לכאן" — same existing
-   copy as before, just restyled. Card radius reuses `rounded-2xl`, the same
-   token this file's own `PillarDecisionCard` already uses for its
-   photo-topped cards (see design/docs/assumptions.md), rather than the
-   reference's own (unrelated app's) corner scale. */
+/* Photo-topped bin: the actor's `*-BIN.png` establishing shot fills the top
+   of the card with the actor label overlaid (scrim + short accent rule,
+   matching this file's existing scrim-caption pattern in
+   `ActorTypologySelector`'s photo column), then a dashed drop-zone below.
+   The drop-zone's idle/active border+background tokens and its
+   "גרור לכאן" / "שחרר כאן" / "הקש לשבץ כאן" + chevrons-down hint mirror
+   LevelZone's dashed drop-target in topic-01/LevelsScene.tsx's own drag
+   exercise verbatim, so both exercises speak the same drag-and-drop
+   language — see design/docs/assumptions.md, "Topic-01 org-chip /
+   scenario-chip unification". Card radius reuses `rounded-2xl` via the
+   `surface` token, same as this file's own `PillarDecisionCard`. */
 function CategoryBin({
   actor,
   orgsHere,
@@ -1446,6 +1445,8 @@ function CategoryBin({
   onMoveOrg: (id: string, bucket: ActorType) => void;
 }) {
   const [isOver, setIsOver] = useState(false);
+  const isEmpty = orgsHere.length === 0;
+  const isWaitingForTap = selectedOrg != null && isEmpty;
 
   return (
     <motion.div
@@ -1493,23 +1494,16 @@ function CategoryBin({
         <div
           className={cn(
             'min-h-[104px] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 p-3 transition-all duration-200 ease-snap',
-            isOver ? 'border-accent bg-accent/20' : selectedOrg ? 'border-accent bg-accent/10' : 'border-accent/60 bg-paper-card/90',
+            isOver || isWaitingForTap ? 'border-accent' : 'border-accent/60',
+            isOver ? 'bg-accent/20' : 'bg-paper-card/90',
           )}
         >
-          {orgsHere.length === 0 ? (
+          {isEmpty ? (
             <>
-              <span
-                aria-hidden
-                className={cn(
-                  'inline-flex items-center justify-center size-9 rounded-full transition-all duration-200 ease-snap',
-                  isOver ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
-                )}
-              >
-                <Icon name="plus" size={18} />
+              <span className="text-sm font-display font-semibold text-fg tracking-wider">
+                {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גרור לכאן'}
               </span>
-              <span className="text-sm font-display font-semibold text-fg">
-                {isOver ? 'שחרר כאן' : 'גרור לכאן'}
-              </span>
+              <Icon name="chevrons-down" size={16} strokeWidth={2} className="text-fg-muted" />
             </>
           ) : (
             <AnimatePresence initial={false}>
@@ -1526,7 +1520,6 @@ function CategoryBin({
                     >
                       <OrgChip
                         org={o}
-                        state="bin"
                         isCorrect={isCorrect}
                         isWrong={isWrong}
                         submitted={submitted}

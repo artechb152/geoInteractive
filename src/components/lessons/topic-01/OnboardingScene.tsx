@@ -190,6 +190,10 @@ export function OnboardingScene() {
             accordion state. */}
         <div className="surface-elevated bg-bg relative overflow-hidden min-h-[320px] h-full [&_video]:!w-full [&_video]:!h-full">
           <TerrainStage feature={step} />
+          <CornerMark corner="tl" />
+          <CornerMark corner="tr" />
+          <CornerMark corner="bl" />
+          <CornerMark corner="br" />
         </div>
         </EditableFrame>
       </div>
@@ -215,6 +219,53 @@ function TerrainStage({ feature }: { feature: Feature }) {
     <div className="relative w-full h-full">
       <SceneOnboardingFramePlayer targetState={feature} />
     </div>
+  );
+}
+
+const CORNER_MARK_PATH: Record<'tl' | 'tr' | 'bl' | 'br', string> = {
+  tl: 'M16,0 H0 V16',
+  tr: 'M0,0 H16 V16',
+  bl: 'M0,0 V16 H16',
+  br: 'M16,0 V16 H0',
+};
+
+const CORNER_MARK_POSITION: Record<'tl' | 'tr' | 'bl' | 'br', string> = {
+  tl: 'top-4 left-4',
+  tr: 'top-4 right-4',
+  bl: 'bottom-4 left-4',
+  br: 'bottom-4 right-4',
+};
+
+// Viewfinder-style corner brackets on the terrain video — "this is running
+// footage" framing. Positioned on the frame's physical corners (not
+// RTL start-/end-) since they belong to the video's own visual frame, the
+// same rule that keeps the terrain illustration itself from mirroring.
+function CornerMark({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
+  return (
+    <svg
+      aria-hidden
+      className={cn(
+        // Dark outline (4 chained zero-blur drop-shadows in one `filter`
+        // property — stacking separate drop-shadow-[…] utilities doesn't
+        // work, they all write the same --tw-drop-shadow var) so the
+        // light stroke reads on both bright sky and light terrain.
+        // overflow-visible: the bl/br strokes sit exactly on the viewBox
+        // edge (y=16) — inside a fractional-height (aspect-video) ancestor
+        // that pushes this bottom-positioned box to a sub-pixel offset, the
+        // SVG's default overflow:hidden clips that edge stroke away
+        // entirely, leaving only the vertical arm. Not an issue for the
+        // top marks since their stroke sits on the y=0 edge instead.
+        'pointer-events-none absolute z-10 overflow-visible text-paper-bright',
+        '[filter:drop-shadow(1px_0_0_rgba(0,0,0,0.75))_drop-shadow(-1px_0_0_rgba(0,0,0,0.75))_drop-shadow(0_1px_0_rgba(0,0,0,0.75))_drop-shadow(0_-1px_0_rgba(0,0,0,0.75))]',
+        CORNER_MARK_POSITION[corner],
+      )}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+    >
+      <path d={CORNER_MARK_PATH[corner]} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
   );
 }
 

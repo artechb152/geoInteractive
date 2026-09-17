@@ -1,7 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { Icon, type IconName } from '@/components/Icon';
@@ -23,6 +28,10 @@ type LevelMeta = {
 };
 
 const DRAG_ASSET_BASE = '/assets/lessons/topic01/scene-levels/drag-exercise';
+
+// Mouse-drag-to-pan threshold (px) for the horizontal scenario strip below —
+// same pattern and value as the home page's CoursePlanPanel carousel row.
+const POOL_DRAG_CLICK_THRESHOLD = 4;
 
 const LEVELS: Record<Level, LevelMeta> = {
   strategic: {
@@ -114,14 +123,22 @@ const ZONE_CONTENT_OFFSET: Partial<Record<Level, string>> = {
 // tactical zone's label and drop-box unreadable, since terrain-sand nearly
 // matches the tactical terrain artwork behind it).
 //
-// Plain text-fg alone still loses to the busier artwork behind it — the
-// strategic zone's tree line + rock texture in particular swallows dark
-// ink with no separation. A light halo (paper.card, already an approved
-// token) behind the glyphs keeps one flat ink color across all 3 zones
-// (per the note above) while staying legible over any of the three
-// terrain textures, not just the calmer ones tactical/operational sit on.
-const ZONE_LABEL_TEXT = 'text-fg [text-shadow:0_1px_2px_rgba(248,242,231,0.85),0_0_7px_rgba(248,242,231,0.75)]';
-const ZONE_SUBTITLE_TEXT = 'text-fg-muted [text-shadow:0_1px_2px_rgba(248,242,231,0.9),0_0_6px_rgba(248,242,231,0.8)]';
+// A light text-shadow halo alone (2nd attempt) only separates dark ink
+// from a DARKER patch behind it — it did nothing where the terrain
+// artwork itself is light (the tan tactical ground, the pale strategic
+// sky/rock), so it read as no contrast there. A solid backing plate (3rd
+// attempt) fixed contrast but boxed the text off the map, which reads
+// wrong on this photoreal diorama — direct user request to drop the
+// plate and rely on text color alone instead.
+//
+// paper.bright (#FDFBF3, already an approved token — used elsewhere as
+// the dark progress-card's on-photo text color) is brighter than every
+// terrain patch in this artwork, so it reads as contrast everywhere the
+// backing plate did. A dark drop-shadow (opposite polarity from the
+// failed light halo above) gives the glyph edges definition against the
+// artwork's own lighter patches too, without needing an opaque box.
+const ZONE_LABEL_TEXT = 'text-paper-bright [text-shadow:0_1px_3px_rgba(20,18,10,0.65),0_1px_10px_rgba(20,18,10,0.5)]';
+const ZONE_SUBTITLE_TEXT = 'text-paper-bright/90 [text-shadow:0_1px_2px_rgba(20,18,10,0.6),0_1px_8px_rgba(20,18,10,0.45)]';
 
 // The "גררו לכאן" / "שחרר כאן" / "הקש לשבץ כאן" drop-target hint (inside
 // the dashed box below the label/subtitle above) used to render in flat
@@ -166,10 +183,17 @@ export function LevelsScene() {
   const [assignments, setAssignments] = useState<Record<number, Level>>({});
   const [submitted, setSubmitted] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<number | null>(null);
+  // A pool chip currently being hand-dragged toward a zone — see
+  // ScenarioPool's comment for why this can't just be native HTML5 drag.
+  // Lifted up here (rather than local to ScenarioPool) because the ghost
+  // needs to render above the whole section and each LevelZone needs to
+  // know when it's the current hover target.
+  const [poolDrag, setPoolDrag] = useState<{ idx: number; x: number; y: number; overLevel: Level | null } | null>(
+    null,
+  );
 
   const assignedCount = Object.keys(assignments).length;
   const allAssigned = assignedCount === SCENARIOS.length;
-  const correctCount = SCENARIOS.filter((s, i) => assignments[i] === s.correct).length;
 
   const pool = SCENARIOS.map((s, i) => ({ s, i })).filter((x) => !assignments[x.i]);
   const inBin = (level: Level) =>
@@ -183,6 +207,17 @@ export function LevelsScene() {
       return next;
     });
     setSelectedScenario(null);
+  };
+
+  const handlePoolItemDragMove = (idx: number, x: number, y: number) => {
+    const target = document.elementFromPoint(x, y)?.closest('[data-drop-zone]');
+    const overLevel = (target?.getAttribute('data-drop-zone') as Level | null) ?? null;
+    setPoolDrag({ idx, x, y, overLevel });
+  };
+
+  const handlePoolItemDragEnd = () => {
+    if (poolDrag?.overLevel) moveScenario(poolDrag.idx, poolDrag.overLevel);
+    setPoolDrag(null);
   };
 
   const reset = () => {
@@ -216,51 +251,33 @@ export function LevelsScene() {
 
       {/* === Practice: Drag scenarios into bins === */}
       <div className="mt-12">
-        <div className="flex items-end justify-between mb-5 gap-4 flex-wrap">
-          <div>
-            <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">תרגול גרירה<span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" /></h3>
-            <p className="mt-2 text-base leading-relaxed text-fg-muted">
-              גרור (או הקש בנייד) כל משפט לקטגוריה המתאימה. אחרי שכל ה־{SCENARIOS.length} ימוינו — לחץ "בדוק תשובות".
-            </p>
-          </div>
-          {submitted && (
-            <div
-              className={cn(
-                'chip',
-                correctCount === SCENARIOS.length
-                  ? 'border-status-ok/50 bg-status-ok/10 text-status-ok'
-                  : 'border-status-danger/50 bg-status-danger/10 text-status-danger'
-              )}
-            >
-              <span className="font-mono">
-                {correctCount}/{SCENARIOS.length} נכון
-              </span>
-            </div>
-          )}
+        <div className="mb-5">
+          <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">תרגול גרירה<span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" /></h3>
+          <p className="mt-2 text-base leading-relaxed text-fg-muted">
+            גררו (או בחרו ולחצו) כל משפט לקטגוריה המתאימה. אחרי שכל ה־{SCENARIOS.length} ימוינו — לחצו "בדוק תשובות".
+          </p>
         </div>
 
-        {/* Pool sidebar (right, RTL-first) + the three-zone diorama (left).
-            Previously `items-stretch`: the diorama had no height of its
-            own, so it was force-stretched to match the pool card's row
-            height — and since `aspect-[1672/941]` then had to derive this
-            box's WIDTH back out of that borrowed height, the diorama's
-            rendered width silently tracked the pool's height too. The pool
-            shrinks by one chip every time a scenario is dragged out of it,
-            so the diorama kept visibly shrinking along with it on every
-            single drag (reported: the image gets smaller, repeatedly) —
-            and even before any drag, that borrowed height happened to make
-            the diorama wider than this column, overflowing off the left
-            edge (hence the old `translate-x-[84px]` compensating shift,
-            removed below along with it). `items-start` lets each card size
-            itself independently: the diorama from its own aspect-ratio
-            within its actual column width, full stop. */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start mb-6">
+        {/* Scenario pool (horizontal strip, full width) stacked above the
+            three-zone diorama (also full width) — both now size themselves
+            independently at the container's full width instead of sharing
+            a row split with a fixed-width sidebar, which used to cap the
+            diorama at (container width − 320px). Pool used to be a
+            vertical sidebar whose row-height (driven by how many chips
+            were still unsorted) got shared with the diorama via
+            `items-stretch`/`items-start`; as a horizontal strip the pool's
+            own height no longer depends on the diorama at all, so both
+            sections simply stack at their natural heights. */}
+        <div className="flex flex-col gap-6 mb-6">
           <ScenarioPool
             pool={pool}
             selectedScenario={selectedScenario}
             submitted={submitted}
             onSelect={handleScenarioSelect}
             onMoveScenario={moveScenario}
+            draggingIndex={poolDrag?.idx ?? null}
+            onItemDragMove={handlePoolItemDragMove}
+            onItemDragEnd={handlePoolItemDragEnd}
           />
 
           {/* Zones diorama — TOPIC01-LEVELS-DRAG-BG.png supplies the
@@ -299,11 +316,26 @@ export function LevelsScene() {
                   submitted={submitted}
                   onSelect={handleScenarioSelect}
                   onMoveScenario={moveScenario}
+                  forceOver={poolDrag?.overLevel === level}
                 />
               ))}
             </div>
           </div>
         </div>
+
+        {/* Ghost preview for a pool chip being hand-dragged toward a zone
+            (see ScenarioPool) — fixed-position, follows the pointer,
+            `pointer-events-none` so it never blocks the drop-zone
+            hit-testing done via `elementFromPoint` underneath it. */}
+        {poolDrag && (
+          <div
+            aria-hidden
+            className="pointer-events-none fixed z-50 w-56 -translate-x-1/2 -translate-y-1/2 rounded-xl surface p-2.5 shadow-lg opacity-90"
+            style={{ left: poolDrag.x, top: poolDrag.y }}
+          >
+            <p className="text-xs leading-snug">{SCENARIOS[poolDrag.idx].text}</p>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-3 justify-end items-center">
@@ -364,8 +396,11 @@ function LevelsTable() {
                   `aspect` on IsometricAsset is nominal only, canceled by
                   `[aspect-ratio:auto]`, so the outer `aspect-[3/1]`
                   wrapper drives the real shape. Square corners, no
-                  `rounded-lg`. */}
-              <div className="relative mx-4 mb-3 overflow-hidden aspect-[3/1]">
+                  `rounded-lg`. Full-bleed within the column (no inline
+                  margins) and flush with the header row's bottom border
+                  (no bottom margin) — a full banner across the column,
+                  not an inset photo. */}
+              <div className="relative overflow-hidden aspect-[3/1]">
                 <IsometricAsset
                   assetId={`TOPIC01-LEVELS-${level.toUpperCase()}-BANNER`}
                   src={`${LEVEL_BANNER_BASE}/TOPIC01-LEVELS-${level.toUpperCase()}-BANNER.png`}
@@ -408,14 +443,129 @@ function ScenarioPool({
   submitted,
   onSelect,
   onMoveScenario,
+  draggingIndex,
+  onItemDragMove,
+  onItemDragEnd,
 }: {
   pool: { s: (typeof SCENARIOS)[number]; i: number }[];
   selectedScenario: number | null;
   submitted: boolean;
   onSelect: (idx: number) => void;
   onMoveScenario: (idx: number, level: Level | null) => void;
+  draggingIndex: number | null;
+  onItemDragMove: (idx: number, x: number, y: number) => void;
+  onItemDragEnd: () => void;
 }) {
   const [isOver, setIsOver] = useState(false);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  // `phase` starts 'pending' on every pointerdown and resolves to either
+  // 'pan' (scroll the strip) or 'item' (pick up the chip under the
+  // pointer, if any) as soon as movement crosses the threshold below —
+  // see the big comment on `handleRowPointerMove` for why this can't be
+  // native HTML5 drag-and-drop.
+  const rowDragRef = useRef<{
+    x: number;
+    y: number;
+    scrollLeft: number;
+    pointerId: number;
+    phase: 'pending' | 'pan' | 'item';
+    chipIndex: number | null;
+  } | null>(null);
+  const rowDraggedRef = useRef(false);
+
+  // Mouse-drag-to-pan the horizontal strip (same interaction as the home
+  // page carousel), while ALSO keeping every chip individually draggable
+  // into a zone — the two gestures compete for the exact same surface,
+  // since chips fill the row edge-to-edge. Native HTML5 `draggable` can't
+  // support both: its `dragstart` fires after under a pixel of movement,
+  // before there's enough signal to tell "pan the row" from "pick up the
+  // chip" apart (confirmed empirically — dx/dy at that point are both
+  // sub-pixel noise). So pool chips are NOT natively draggable at all
+  // (see ScenarioChip's `draggable={false}` below); instead every
+  // pointerdown here starts in a 'pending' phase, and once real movement
+  // happens we classify it ourselves: horizontal-dominant (or starting on
+  // empty space, no chip under the pointer) → pan; vertical-dominant AND
+  // starting on a chip → pick that chip up (a floating ghost + drop-zone
+  // hit-testing is driven from the parent via onItemDragMove/onItemDragEnd).
+  // This is safe here because a real "drop on a zone" drag is always
+  // vertical-dominant — the 3 zones sit below this row, never beside it.
+  const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const el = rowRef.current;
+    if (!el) return;
+    rowDraggedRef.current = false;
+    const chipEl = (e.target as HTMLElement).closest('[data-scenario-index]');
+    const chipIndex = chipEl ? Number(chipEl.getAttribute('data-scenario-index')) : null;
+    rowDragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: el.scrollLeft,
+      pointerId: e.pointerId,
+      phase: 'pending',
+      chipIndex,
+    };
+  };
+
+  const handleRowPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const el = rowRef.current;
+    const drag = rowDragRef.current;
+    if (!el || !drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+
+    if (drag.phase === 'pending') {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) <= POOL_DRAG_CLICK_THRESHOLD) return;
+      // A drag toward a distant column (e.g. the far-left chip heading for
+      // the far-right zone) moves mostly sideways for its first few pixels
+      // even though it's unambiguously a drop-drag, not a pan — comparing
+      // that first movement's dx to its dy used to misread it as 'pan'
+      // before the pointer had traveled far enough to prove otherwise
+      // (confirmed: most scenarios failed to drop when dragged in a
+      // straight line to their own zone). Rather than pick a bigger
+      // threshold and still race it, treat this initial guess as
+      // provisional — the check below every subsequent move upgrades it
+      // to 'item' the moment the pointer actually leaves the row.
+      drag.phase = drag.chipIndex != null && Math.abs(dy) > Math.abs(dx) ? 'item' : 'pan';
+      rowDraggedRef.current = true;
+      el.setPointerCapture(drag.pointerId);
+    } else if (drag.phase === 'pan' && drag.chipIndex != null && e.clientY > el.getBoundingClientRect().bottom) {
+      // Zones sit below the row, never beside it, so once the pointer is
+      // past the row's own bottom edge this can only be a pick-up,
+      // however much horizontal drift happened on the way — upgrade the
+      // provisional 'pan' guess above instead of leaving it locked in.
+      drag.phase = 'item';
+    }
+
+    if (drag.phase === 'pan') {
+      // `-dx` (same sign as the home page carousel): this row's valid
+      // scrollLeft range is [-(scrollWidth-clientWidth), 0] in RTL, and
+      // item 0 sits at the right (start of reading order). Dragging the
+      // mouse RIGHT (dx > 0) should reveal later items, same as dragging
+      // LEFT does in an LTR carousel — the opposite sign made this strip
+      // pan like an LTR list (drag left = forward), backwards for RTL.
+      el.scrollLeft = drag.scrollLeft - dx;
+    } else if (drag.phase === 'item' && drag.chipIndex != null) {
+      onItemDragMove(drag.chipIndex, e.clientX, e.clientY);
+    }
+  };
+
+  const endRowDrag = () => {
+    const drag = rowDragRef.current;
+    if (drag?.phase === 'item') onItemDragEnd();
+    if (drag && drag.phase !== 'pending') rowRef.current?.releasePointerCapture(drag.pointerId);
+    rowDragRef.current = null;
+  };
+
+  /** בולם קליק/בחירה בטעות בסיום גרירה עם העכבר */
+  const handleRowClickCapture = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (rowDraggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      rowDraggedRef.current = false;
+    }
+  };
+
+  if (pool.length === 0) return null;
 
   return (
     <motion.div
@@ -437,37 +587,37 @@ function ScenarioPool({
     >
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="text-sm font-display font-semibold text-fg tracking-wider">
-          {pool.length > 0
-            ? `אירועים למיון · ${pool.length}`
-            : '✓ כל המשפטים סווגו'}
+          {`אירועים למיון · ${pool.length}`}
         </div>
-        {pool.length > 0 && (
-          <div className="text-sm text-fg-muted">
-            גרור משפט לאחת מ־3 הקטגוריות למטה
-          </div>
-        )}
+        <div className="text-sm text-fg-muted">
+          גררו משפט לאחת מ־3 הקטגוריות למטה (או בחרו ולחצו)
+        </div>
       </div>
 
-      {pool.length === 0 ? (
-        <div className="text-center py-3 text-sm text-fg-muted">
-          לחץ "בדוק תשובות" כדי לראות תוצאות, או גרור משפט בחזרה לכאן כדי לסווג מחדש.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {pool.map(({ s, i }) => (
-            <ScenarioChip
-              key={i}
-              index={i}
-              scenario={s}
-              isSelected={selectedScenario === i}
-              isCorrect={false}
-              isWrong={false}
-              submitted={submitted}
-              onSelect={() => onSelect(i)}
-            />
-          ))}
-        </div>
-      )}
+      <div
+        ref={rowRef}
+        onPointerDown={handleRowPointerDown}
+        onPointerMove={handleRowPointerMove}
+        onPointerUp={endRowDrag}
+        onPointerCancel={endRowDrag}
+        onClickCapture={handleRowClickCapture}
+        className="flex gap-3 overflow-x-auto pb-1 cursor-grab select-none active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {pool.map(({ s, i }) => (
+          <ScenarioChip
+            key={i}
+            index={i}
+            scenario={s}
+            isSelected={selectedScenario === i}
+            isCorrect={false}
+            isWrong={false}
+            submitted={submitted}
+            onSelect={() => onSelect(i)}
+            className={cn('w-64 shrink-0', draggingIndex === i && 'opacity-40')}
+            draggable={false}
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }
@@ -482,6 +632,7 @@ function LevelZone({
   submitted,
   onSelect,
   onMoveScenario,
+  forceOver = false,
 }: {
   level: Level;
   scenariosInBin: { s: (typeof SCENARIOS)[number]; i: number }[];
@@ -489,14 +640,22 @@ function LevelZone({
   submitted: boolean;
   onSelect: (idx: number) => void;
   onMoveScenario: (idx: number, level: Level | null) => void;
+  /** True while a pool chip is being hand-dragged over this zone — see
+   * ScenarioPool/LevelsScene's custom pointer-based drag. Native
+   * `dragover` (below) only fires for the still-native zone-to-zone drag,
+   * so this is how the pool's custom drag reports the same "hovering"
+   * state into this zone's existing over/active styling. */
+  forceOver?: boolean;
 }) {
   const [isOver, setIsOver] = useState(false);
   const meta = LEVELS[level];
   const isEmpty = scenariosInBin.length === 0;
+  const showOver = isOver || forceOver;
   const isWaitingForTap = selectedScenario != null && isEmpty;
 
   return (
     <div
+      data-drop-zone={level}
       onDragOver={(e) => {
         e.preventDefault();
         setIsOver(true);
@@ -516,7 +675,7 @@ function LevelZone({
       }}
       className={cn(
         'relative h-full min-w-0 text-center',
-        (isOver || isWaitingForTap) && 'cursor-pointer',
+        (showOver || isWaitingForTap) && 'cursor-pointer',
       )}
     >
       {/* `pt-[12%]` (a padding %) resolves against the column's WIDTH per
@@ -538,27 +697,34 @@ function LevelZone({
           draggable={false}
           className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0"
         />
-        <div className={cn('mt-2.5 font-display font-bold leading-tight text-lg md:text-xl', ZONE_LABEL_TEXT)}>
+        <div className={cn('mt-2.5 font-display font-black leading-tight text-xl md:text-2xl', ZONE_LABEL_TEXT)}>
           {meta.label}
         </div>
-        <div className={cn('mt-1 text-sm leading-snug', ZONE_SUBTITLE_TEXT)}>
+        <div className={cn('mt-1 text-sm md:text-base font-semibold leading-snug', ZONE_SUBTITLE_TEXT)}>
           {meta.dragSubtitle}
         </div>
 
         <motion.div
-          animate={{ scale: isOver ? 1.02 : 1 }}
+          animate={{ scale: showOver ? 1.02 : 1 }}
           transition={{ type: 'spring', stiffness: 320, damping: 26 }}
           className={cn(
             'mt-3 w-full max-w-[200px] rounded-xl border-2 border-dashed px-3 py-3 transition-colors duration-200 ease-snap',
-            isEmpty ? 'flex flex-col items-center justify-center gap-1.5 min-h-[96px]' : 'space-y-1.5',
-            isOver || isWaitingForTap ? ZONE_DASH_BORDER_ACTIVE : ZONE_DASH_BORDER,
-            isOver ? ZONE_DASH_BG_ACTIVE : ZONE_DASH_BG_IDLE,
+            // Capped so a zone holding many chips (up to all 6, if every
+            // scenario gets dropped in the same bin) scrolls internally
+            // instead of pushing past the diorama's own bottom edge — the
+            // diorama container clips overflow, so uncapped growth here
+            // used to just cut chips off rather than visibly contain them.
+            isEmpty
+              ? 'flex flex-col items-center justify-center gap-1.5 min-h-[96px]'
+              : 'space-y-1.5 max-h-[220px] overflow-y-auto',
+            showOver || isWaitingForTap ? ZONE_DASH_BORDER_ACTIVE : ZONE_DASH_BORDER,
+            showOver ? ZONE_DASH_BG_ACTIVE : ZONE_DASH_BG_IDLE,
           )}
         >
           {isEmpty ? (
             <>
               <span className={cn('text-sm font-display font-semibold tracking-wider', ZONE_HINT_TEXT)}>
-                {isOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גררו לכאן'}
+                {showOver ? 'שחרר כאן' : isWaitingForTap ? 'הקש לשבץ כאן' : 'גררו לכאן'}
               </span>
               <Icon name="chevrons-down" size={16} strokeWidth={2} className="text-fg-muted" />
             </>
@@ -596,6 +762,8 @@ function ScenarioChip({
   submitted,
   onSelect,
   compact = false,
+  className,
+  draggable = true,
 }: {
   index: number;
   scenario: (typeof SCENARIOS)[number];
@@ -605,10 +773,13 @@ function ScenarioChip({
   submitted: boolean;
   onSelect: () => void;
   compact?: boolean;
+  className?: string;
+  draggable?: boolean;
 }) {
   return (
     <div
-      draggable
+      data-scenario-index={index}
+      draggable={draggable}
       onDragStart={(e) => {
         e.dataTransfer.setData('text/scenario', String(index));
         e.dataTransfer.effectAllowed = 'move';
@@ -623,7 +794,8 @@ function ScenarioChip({
         isSelected && 'border-accent bg-accent/10 ring-2 ring-accent/40',
         isCorrect && !isSelected && 'border-status-ok/50 bg-status-ok/10',
         isWrong && !isSelected && 'border-status-danger/50 bg-status-danger/10',
-        !isSelected && !isCorrect && !isWrong && 'hover:border-brand/30 hover:bg-brand/[0.03]'
+        !isSelected && !isCorrect && !isWrong && 'hover:border-brand/30 hover:bg-brand/[0.03]',
+        className
       )}
       role="button"
       tabIndex={0}
@@ -650,17 +822,6 @@ function ScenarioChip({
           className={cn('shrink-0 object-contain', compact ? 'size-11' : 'size-14')}
         />
       </div>
-      {submitted && isWrong && (
-        <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mt-1.5 text-sm text-status-danger leading-snug"
-          >
-            הקטגוריה הנכונה: <strong>{LEVELS[scenario.correct].label}</strong>
-          </motion.div>
-        </AnimatePresence>
-      )}
     </div>
   );
 }
