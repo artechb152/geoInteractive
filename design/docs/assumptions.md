@@ -303,3 +303,46 @@ The owner reviewed the shipped Tasks 1–3 result and asked for two specific imp
 - **Flagged to the owner, not silently included or silently dropped: the old component's closing line "ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20 — לא כי הפסידה בקרבות, אלא כי קרסה ב-4 החזיתות האחרות."** This wasn't restored. It both (a) re-introduces a specific numeric front-count ("4 החזיתות") the original build explicitly banned, and (b) is a mono-causal historical claim that overstates a genuinely multi-causal, still-debated historical question (Tet Offensive's psychological/battlefield role in Vietnam; the Taliban's actual battlefield gains 2001–2021 are hard to square with "not because of battlefield losses"). If the owner wants a real-world anchor here, the defensible version would be hedged and multi-causal (e.g., "attributed *in part* to eroding domestic political/economic support over time, *alongside* other battlefield and strategic factors — not a single clean cause") and would still need to drop the specific front-count. Left out of the shipped copy pending an explicit decision; this bullet is that decision point, not a fix.
 - **`PressureMap` visual rework — the map read as "a photo with labels," diagnosed as a legibility/composition problem, not a missing-feature problem.** Before this pass, connector lines were already drawn in code for every node at every state (`inactive`/`previous`/`current`), but the `inactive`/`previous` neutral lines (`stroke-border-strong` at 0.35 opacity, `stroke-fg-muted` at 0.85) were perceptually invisible against the photographic terrain in real screenshots at 1440px — confirmed by direct before/after comparison, not just reading the numbers. Fixed by inverting the line treatment to a white core over a dark casing (dashed for `inactive`, solid for `previous`, thick + glow for `current`), each with a small endpoint dot — traceable end-to-end over sky, rooftops, and vegetation alike. The repeated `נחשף קודם` text chip (previously shown on every `previous` node — up to 3 simultaneously by round 3) was replaced with a check-glyph inside the label pill plus `sr-only` text carrying the same words, so the state is still announced to assistive tech and still not color-only, without the repeated visual text clutter. The map card's own chrome was reduced (image now bleeds to the card's rounded edges; the title/subtitle moved to a semi-opaque overlay ribbon on the image itself instead of a separate header row; the node-definition disclosure collapsed to a slim idle footer that only grows once a node is opened). The center hub got a distinct larger two-line pill plus a physical double-ring marker at its anchor point, so it visually reads as the point everything converges on. All colors/shadows still resolve to existing tokens only (`bg/fg/border/accent/brand/status`, `.chip`, `shadow-glow`) — no new hex, no `paper/olive/ember/pine/tanline`. The pre-existing "animate once per round+submitted combination, never on revisit" memory mechanism and the physical `left`/`top` coordinate system for the 6 node anchors were both left untouched, as required.
 - **Two remaining, reviewed-and-accepted deviations from the mockup, not fixed in this pass:** (1) the mockup's own `current`-state connectors are drawn as smooth curved sweeps into the hub, not straight lines; the shipped result keeps straight lines for every state (matching the mockup's own `inactive`-state lines, which *are* straight) — a visible but minor fidelity gap, left as a candidate for a future pass rather than adding new per-node curve-control-point logic in this one. (2) the `military`/`הזירה הצבאית` node sits almost directly above the hub, so its `current`-state straight connector passes visually behind that node's own pill and chip (the line reappears cleanly on both sides, so it doesn't read as broken, but it's a real cosmetic seam unique to that one node's geometry) — left as-is rather than nudging that one node's label position, since moving any label off its documented physical anchor was out of scope for a visual-only pass.
+
+## 2026-09-17 — Topic-01 MDO scene (`#scene-mdo`): control-panel redesign + feedback/marker logic fix
+
+`src/components/lessons/topic-01/MDOScene.tsx` — owner asked for a compact "monitoring panel" instead of
+5 separately-bordered domain cards, per-domain (not generic) feedback for every count of disconnected
+domains, and an investigation (not an assumed fix) of why disabling 3 domains made the field diagram read
+as "completely dead."
+
+- **Panel restructure.** `DomainRow`s no longer each carry their own `rounded-xl border ... bg-bg-elevated`
+  — they're rows inside one continuous `rounded-2xl border border-border/60 bg-bg-elevated` surface,
+  separated by `border-b border-border/40` (`last:border-b-0`). Every row now shows explicit `"פעיל"`/
+  `"מנותק"` text in both states (previously only `"מנותק"` rendered, and only when off) plus a filled-vs-
+  hollow dot shape, so state is never color-only. Added a 5-segment header strip (one small icon segment
+  per domain, filled+lit when active / hollow when inactive) reading off the exact same `active` Set as the
+  rows below — not a second, independently-tracked piece of state.
+- **Root cause of "3 off looks dead," verified empirically (Playwright, all 32 on/off bitmask
+  combinations scripted, not eyeballed) before touching any code.** The per-domain marker gate
+  (`active.has(d.id)`) and per-edge gate (`active.has(idA) && active.has(idB)`) were already fully
+  independent — no aggregate/numeric threshold existed anywhere. The actual cause: `EDGES` is a
+  deliberately curated 7-of-10 subset (existing, intentional design — "chosen for teaching value rather
+  than geometric completeness"), so several 2-domains-remaining combinations (e.g. only `air`+`sea`
+  survive) have zero curated edge between them; combined with the marker ellipse being visually tiny
+  (`rx=13`/`ry=9` in a 1448×1086 viewBox, a ~6.6px on-screen radius), a lone active domain with no
+  surviving edge was easy to miss entirely. Fixed by making the marker itself far more prominent (halo +
+  ring + tick marks + lit core, ~4× the old render size) — not by adding edges "to fill the screen" (still
+  exactly 7, unchanged) and not by touching the `anchor` coordinate system.
+- **`getFeedback` now renders one section per currently-inactive domain** (icon + label + that domain's
+  own existing `weakness` string, reused verbatim — no paraphrasing) for every count from 1 through 5,
+  instead of a single generic sentence for 2–4 missing. The all-5-off case shows both the general "כל
+  הממדים כבויים" heading and all 5 domains' sections. No `line-clamp`/truncation anywhere; the panel grows
+  to fit however many sections are showing.
+- **Layout bug found and fixed during review, not anticipated in the original brief:** the 2-column grid
+  (`grid-cols-[3fr_7fr] items-stretch`) force-stretched the shorter column's box to match the taller one's
+  height without growing its actual content — in a tall multi-section feedback state (e.g. all 5 off), this
+  left ~300–450px of empty beige canvas below the (aspect-locked) photo. Changed `items-stretch` →
+  `items-start`; both columns now simply align to the top and end at their own natural height. Verified via
+  live `getBoundingClientRect` measurement before/after (gap 418.7px → 0px) and confirmed the "השהה תנועה"
+  button (already normal-flow, not `flex-1`-pinned, from this same redesign) still sits correctly under the
+  photo.
+- **Known minor, left as-is:** the 1-missing-domain feedback shows the domain's label twice in quick
+  succession (once in the `"{label} נותק"` heading, once again as that single section's own sub-heading) —
+  a small copy redundancy, not incorrect or confusing, judged not worth inventing a different heading shape
+  for exactly the 1-domain case.

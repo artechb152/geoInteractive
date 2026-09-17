@@ -56,55 +56,95 @@ anchor: [1330, 367],
  },
 ];
 
-/** Short status for the panel's feedback box — one line, no repeated
-    headings, sized to whatever's actually true right now rather than a
-    fixed template. */
-function getFeedback(domains: Domain[], active: Set<string>): { title: string; body: string; icon: IconName } {
+type Feedback = {
+ /** Headline status for whatever is true right now. */
+title: string;
+ /** General status line — only exists where there's something to say
+     beyond the per-domain breakdown (all-connected, and all-five-down). */
+body?: string;
+icon: IconName;
+ /** One entry per currently-inactive domain, in DOMAINS order. Always the
+     complete list — never truncated to fit a box. */
+sections: { id: string; label: string; icon: IconName; weakness: string }[];
+};
+
+/** Status for the panel's feedback box, derived straight from the list of
+    inactive domains rather than from hand-written per-count copy: every
+    missing domain contributes its own section (its icon, its label, its own
+    approved `weakness` text), so 1 off shows 1 section and 4 off shows 4.
+    All five off additionally keeps the general "everything is dark" line
+    above the full five-domain breakdown. */
+function getFeedback(domains: Domain[], active: Set<string>): Feedback {
 const missing = domains.filter((d) => !active.has(d.id));
 if (missing.length === 0) {
-return { title: 'עליונות מלאה', body: 'כל חמשת הממדים פעילים יחד — יתרון מוחלט על פני האויב.', icon: 'shield' };
+return {
+title: 'עליונות מלאה',
+body: 'כל חמשת הממדים פעילים יחד — יתרון מוחלט על פני האויב.',
+icon: 'shield',
+sections: [],
+ };
  }
+ // Verbatim reuse of each domain's approved copy — never paraphrased or
+ // shortened, however many sections end up on screen.
+const sections = missing.map((d) => ({ id: d.id, label: d.label, icon: d.icon, weakness: d.weakness }));
 if (missing.length === domains.length) {
-return { title: 'כל הממדים כבויים', body: 'הצבא מנותק לחלוטין: אי אפשר לזוז, לראות או לתקשר.', icon: 'mask' };
+return {
+title: 'כל הממדים כבויים',
+body: 'הצבא מנותק לחלוטין: אי אפשר לזוז, לראות או לתקשר.',
+icon: 'mask',
+sections,
+ };
  }
 if (missing.length === 1) {
-const d = missing[0];
-return { title: `${d.label} נותק`, body: d.weakness, icon: d.icon };
+return { title: `${missing[0].label} נותק`, icon: missing[0].icon, sections };
  }
-return {
-title: `${missing.length} ממדים נותקו`,
-body: 'השילוב בין הממדים נשבר — היכולת המבצעית נחלשת משמעותית.',
-icon: 'spark',
- };
+return { title: `${missing.length} ממדים נותקו`, icon: 'spark', sections };
 }
 
-/** iOS-style toggle track + thumb — purely decorative, `aria-hidden` inside
-    DomainRow's real `role="switch"` button. Uses logical `start-*` (not a
-    transform) so the thumb slides toward the correct physical side under
-    RTL without any direction-specific math. */
-function DomainSwitch({ checked }: { checked: boolean }) {
+/* The panel's ONE active/inactive visual language, shared verbatim by the
+   header strip's status segments and by each row's state indicator, so both
+   readings of the same state look identical: active = filled accent with a
+   small local glow; inactive = hollow, outlined, dimmed. The glow is a
+   short-radius shadow built from the existing `accent` colour (#D97E2B) —
+   the `shadow-glow` token's 40px spread is far too wide at this size. */
+const STATE_ON = 'border-accent bg-accent text-white shadow-[0_0_8px_-1px_rgba(217,126,43,0.85)]';
+const STATE_OFF = 'border-border bg-transparent text-fg-dim';
+
+/** Transition used by every state flip in the panel: one-shot, driven purely
+    by the class change, never an idle loop — and skipped entirely under
+    `prefers-reduced-motion`, which lands the final state instantly. */
+function flipTransition(motionOk: boolean) {
+return motionOk ? 'transition-[background-color,border-color,box-shadow,color] duration-200 ease-snap' : 'transition-none';
+}
+
+/** Header-strip status segment: the same domain state as the row below, at a
+    glance. Decorative for AT only in the sense that the rows carry the real
+    semantics — the state itself is announced there, so announcing it twice
+    would just be noise. */
+function StatusSegment({ d, isOn, motionOk }: { d: Domain; isOn: boolean; motionOk: boolean }) {
 return (
  <span
 aria-hidden
+data-segment={d.id}
+data-state={isOn ? 'on' : 'off'}
 className={cn(
- 'relative inline-flex h-6 w-11 shrink-0 rounded-full border transition-colors duration-200',
-checked ? 'border-accent bg-accent' : 'border-border bg-bg-accent'
+ 'flex h-8 flex-1 items-center justify-center rounded-md border',
+flipTransition(motionOk),
+isOn ? STATE_ON : STATE_OFF,
  )}
  >
- <span
-className={cn(
- 'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-[inset-inline-start] duration-200',
-checked ? 'start-[22px]' : 'start-0.5'
- )}
- />
+ <Icon name={d.icon} size={15} />
  </span>
  );
 }
 
-/** One control-panel row: icon + name + one-line subtitle + switch. The
-    whole row is the real `role="switch"` control (bigger, easier hit
-    target than the thumb alone) — DomainSwitch inside it is decorative. */
-function DomainRow({ d, isOn, onToggle }: { d: Domain; isOn: boolean; onToggle: () => void }) {
+/** One control-panel row: icon + name + one-line subtitle + an explicit
+    state readout. The whole row is the real `role="switch"` control (a far
+    bigger hit target than any thumb), and state is legible three ways —
+    the "פעיל"/"מנותק" word, a filled-vs-hollow dot of identical size, and
+    `aria-checked` for AT. The old iOS-style switch is folded into this
+    indicator: colour alone never carries the state. */
+function DomainRow({ d, isOn, motionOk, onToggle }: { d: Domain; isOn: boolean; motionOk: boolean; onToggle: () => void }) {
  // "יבשה" is grammatically feminine — every other domain label is
  // masculine, so this is the only one needing the feminine form.
 const isFem = d.id === 'land';
@@ -116,7 +156,11 @@ role="switch"
 aria-checked={isOn}
 aria-label={`${d.label}: ${stateWord}, לחץ ל${isOn ? 'כיבוי' : 'הפעלה'}`}
 onClick={onToggle}
-className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-bg-elevated px-3 py-2 text-start transition-colors hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+className={cn(
+ 'flex w-full items-center justify-between gap-2 border-b border-border/40 px-3 py-2.5 text-start last:border-b-0',
+ 'hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent',
+flipTransition(motionOk),
+ )}
  >
  <span className="flex min-w-0 items-center gap-2.5">
  <Icon name={d.icon} size={20} className={cn('shrink-0', isOn ? 'text-fg' : 'text-fg-dim')} aria-hidden />
@@ -125,9 +169,24 @@ className="flex w-full items-center justify-between gap-2 rounded-xl border bord
  <span className="block truncate text-xs text-fg-muted">{d.short}</span>
  </span>
  </span>
- <span className="flex shrink-0 items-center gap-2">
- {!isOn && <span className="chip border-accent/40 px-1.5 py-0.5 text-[10px] text-accent">מנותק</span>}
- <DomainSwitch checked={isOn} />
+ {/* Fixed width + inline-start alignment so the five dots line up on
+     one axis even though "מנותק" is wider than "פעיל". */}
+ <span
+aria-hidden
+className={cn(
+ 'chip w-[72px] shrink-0 justify-start gap-1.5 px-2 py-0.5 text-[11px]',
+flipTransition(motionOk),
+isOn ? 'border-accent/45 bg-accent/10 text-accent' : 'border-border text-fg-dim',
+ )}
+ >
+ <span
+className={cn(
+ 'size-2 shrink-0 rounded-full border',
+flipTransition(motionOk),
+isOn ? STATE_ON : STATE_OFF,
+ )}
+ />
+ {isOn ? 'פעיל' : 'מנותק'}
  </span>
  </button>
  );
@@ -136,6 +195,7 @@ className="flex w-full items-center justify-between gap-2 rounded-xl border bord
 export function MDOScene() {
 const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
 const [motionPaused, setMotionPaused] = useState(false);
+const motionOk = !useReducedMotion();
 const feedback = getFeedback(DOMAINS, active);
 function toggle(id: string) {
 setActive((prev) => {
@@ -187,31 +247,58 @@ title={
      the panel to sit on the right and the wider (7fr) image-share column
      second, for the image to sit on the visual left. */}
  <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
- <div className="grid gap-4 lg:grid-cols-[3fr_7fr] items-stretch">
+ <div className="grid gap-4 lg:grid-cols-[3fr_7fr] items-start">
  <div className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4">
+ {/* Header strip: the label, the tabular counter, and a compact
+     five-segment readout of the very same state the rows below
+     spell out in full. */}
  <div className="flex items-center justify-between gap-2">
  <div className="text-base font-display font-bold text-fg">הממדים הפעילים</div>
  <div className="font-display font-bold text-lg tabular-nums text-fg">{active.size}/5</div>
  </div>
-
- <div className="mt-3 flex flex-col gap-2">
+ <div className="mt-2.5 flex items-center gap-1.5">
  {DOMAINS.map((d) => (
- <DomainRow key={d.id} d={d} isOn={active.has(d.id)} onToggle={() => toggle(d.id)} />
+ <StatusSegment key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} />
  ))}
  </div>
 
- {/* flex-1 lets this box absorb any leftover height so the button
-     below still lands flush with the bottom of the panel — height
-     here varies with feedback text length, unlike the fixed-height
-     image column next to it. */}
- <div className="mt-3 flex flex-1 flex-col justify-center rounded-xl border border-accent/25 bg-accent/10 p-3">
+ {/* One continuous surface with hairline dividers — five rows of a
+     single panel, not five separate little cards. `overflow-hidden`
+     keeps each row's hover fill and inset focus ring inside the
+     rounded corners. */}
+ <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
+ {DOMAINS.map((d) => (
+ <DomainRow key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} onToggle={() => toggle(d.id)} />
+ ))}
+ </div>
+
+ {/* Sizes to its own content, and grows with it: with every domain
+     off this holds five full weakness sections, and the card simply
+     gets taller rather than clipping, clamping or scrolling.
+     `aria-live="polite"` (no `aria-atomic`, so a toggle announces
+     what actually changed instead of re-reading all five sections)
+     mirrors TimePressureExperience's status region. */}
+ <div className="mt-3 rounded-xl border border-accent/25 bg-accent/10 p-3" aria-live="polite">
  <div className="flex items-start gap-2">
  <Icon name={feedback.icon} size={18} className="mt-0.5 shrink-0 text-accent" />
  <div className="min-w-0">
  <div className="text-sm font-display font-bold text-accent">{feedback.title}</div>
- <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{feedback.body}</p>
+ {feedback.body && <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{feedback.body}</p>}
  </div>
  </div>
+ {feedback.sections.length > 0 && (
+ <ul className="mt-2.5 flex flex-col gap-2.5 border-t border-accent/20 pt-2.5">
+ {feedback.sections.map((s) => (
+ <li key={s.id} className="flex items-start gap-2">
+ <Icon name={s.icon} size={15} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+ <div className="min-w-0">
+ <div className="font-display text-xs font-bold text-fg">{s.label}</div>
+ <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{s.weakness}</p>
+ </div>
+ </li>
+ ))}
+ </ul>
+ )}
  </div>
 
  <button
@@ -226,10 +313,11 @@ className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4
 
  <div className="flex flex-col">
  <MDOFieldDiagram domains={DOMAINS} active={active} paused={motionPaused} />
- {/* flex-1 + items-end: keeps this row pinned to the bottom of the
-     image column instead of floating in whatever gap is left when
-     the panel column (variable-height feedback text) is taller. */}
- <div className="mt-2 flex flex-1 items-end justify-end">
+ {/* Normal flow, directly under the photo it controls. It used to be
+     pinned to the column's bottom with flex-1, which now that the
+     panel column grows with the feedback sections would strand it
+     hundreds of px below the image. */}
+ <div className="mt-2 flex justify-end">
  <button
 type="button"
 onClick={() => setMotionPaused((p) => !p)}
@@ -416,6 +504,10 @@ return () => observer.disconnect();
  // Single switch for every looping SMIL animation below: off for reduced
  // motion (static arcs), while paused (user toggle) and while off-screen.
 const motionEnabled = inView && !paused && !reduceMotion;
+ // The on/off crossfade is a one-shot transition, not a loop, so it survives
+ // the pause toggle and going off-screen — but reduced motion still lands it
+ // instantly. Shared by the edges and the markers.
+const fade = reduceMotion ? 'none' : 'opacity 300ms ease';
 
 return (
  // Physical `left`/`top` (not inset-inline-start/logical) is deliberate
@@ -448,12 +540,18 @@ aria-hidden="true"
  <filter id="mdoLineGlow" x="-60%" y="-60%" width="220%" height="220%">
  <feGaussianBlur stdDeviation="6" />
  </filter>
+ {/* Wider blur for the marker halo that lifts each node off the photo. */}
+ <filter id="mdoNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
+ <feGaussianBlur stdDeviation="11" />
+ </filter>
  </defs>
 
  {edges.map(({ idA, idB, d }) => {
+ // Per-pair only: an edge is drawn iff BOTH of its own endpoints are
+ // on. Never an aggregate/threshold rule over the active count.
 const bothActive = active.has(idA) && active.has(idB);
 return (
- <g key={idA + idB} style={{ opacity: bothActive ? 1 : 0, transition: 'opacity 300ms ease' }}>
+ <g key={idA + idB} data-edge={`${idA}-${idB}`} style={{ opacity: bothActive ? 1 : 0, transition: fade }}>
  <path d={d} fill="none" stroke="#D97E2B" strokeWidth={9} opacity={0.28} filter="url(#mdoLineGlow)" />
  <path d={d} fill="none" stroke="#D97E2B" strokeWidth={2.25} opacity={0.92} strokeLinecap="round" />
  {motionEnabled && bothActive && (
@@ -473,21 +571,48 @@ return (
  );
  })}
 
- {/* Small "location ping" ring at each active anchor — much smaller
-     than the old clickable target now that the switches in the side
-     panel are the real control; this is a purely decorative pulse so
-     the photo stays the focal point instead of the markers. */}
+ {/* Target-lock marker at each active anchor. Gated on that domain's
+     own `active` entry and nothing else — a domain with no surviving
+     connections (several pairs have no curated edge at all, by
+     design) still has to read unmistakably as "on", so the marker
+     carries enough weight on its own: a soft halo to separate it
+     from the photo, a cream-backed ring that stays legible over both
+     bright sky and dark foliage, a lit core, and four ticks. The
+     earlier 13×9 hairline ellipse rendered at roughly a 6.6px radius
+     at this container width and simply vanished into the terrain. */}
  {domains.map((d) => {
 const isOn = active.has(d.id);
+const [cx, cy] = d.anchor;
 return (
- <g key={'ring-' + d.id} style={{ opacity: isOn ? 1 : 0, transition: 'opacity 300ms ease' }}>
- <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="13" ry="9" fill="none" stroke="#D97E2B" strokeWidth="1.5" opacity="0.6" />
+ <g key={'ring-' + d.id} data-ring={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
+ <circle cx={cx} cy={cy} r="36" fill="#D97E2B" opacity="0.34" filter="url(#mdoNodeGlow)" />
+ <circle cx={cx} cy={cy} r="22" fill="none" stroke="#FDFBF3" strokeWidth="5.5" opacity="0.5" />
+ <circle cx={cx} cy={cy} r="22" fill="none" stroke="#D97E2B" strokeWidth="3" opacity="0.95" />
+ {[
+ [0, -1],
+ [0, 1],
+ [-1, 0],
+ [1, 0],
+ ].map(([ux, uy]) => (
+ <line
+key={`${ux},${uy}`}
+x1={cx + ux * 28}
+y1={cy + uy * 28}
+x2={cx + ux * 35}
+y2={cy + uy * 35}
+stroke="#D97E2B"
+strokeWidth="2.5"
+strokeLinecap="round"
+opacity="0.85"
+ />
+ ))}
+ <circle cx={cx} cy={cy} r="8.5" fill="#D97E2B" />
+ <circle cx={cx} cy={cy} r="3.5" fill="#FDFBF3" opacity="0.95" />
  {motionEnabled && isOn && (
- <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="13" ry="9" fill="none" stroke="#D97E2B" strokeWidth="1.5">
- <animate attributeName="rx" values="13;24" dur="3.4s" repeatCount="indefinite" />
- <animate attributeName="ry" values="9;17" dur="3.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.6;0" dur="3.4s" repeatCount="indefinite" />
- </ellipse>
+ <circle cx={cx} cy={cy} r="22" fill="none" stroke="#D97E2B" strokeWidth="3">
+ <animate attributeName="r" values="22;50" dur="3.4s" repeatCount="indefinite" />
+ <animate attributeName="opacity" values="0.75;0" dur="3.4s" repeatCount="indefinite" />
+ </circle>
  )}
  </g>
  );
