@@ -804,19 +804,34 @@ function LandscapeStrip({
 
 /* ─────────────────────────────── מפת הלחצים ─────────────────────────────── */
 
-/* קווי הקשר וצבעיהם. אין hex חדש — הכל טוקנים קיימים: ניטרלי חלש
-   (border-strong), ניטרלי ברור (fg-muted), ומוקד נוכחי (accent).
-   כל קו מצויר על גבי casing בהיר רחב יותר (שיטת מיפוי סטנדרטית לקו מעל
-   תצלום): בלעדיו הקו הניטרלי הכהה נבלע לגמרי בצילום העירוני ו"קו ניטרלי
-   ברור" של מצב previous לא נראה בפועל. ה-casing אינו נושא משמעות בפני עצמו. */
+/* קווי הקשר וצבעיהם. אין hex חדש — הכל טוקנים קיימים: לבן (bg-elevated)
+   לקווים הניטרליים, כתום (accent) למוקד הנוכחי, ודיו-זית (fg) ל-casing.
+   היפוך מהגרסה הקודמת: שם הקו היה כהה על casing בהיר — ועל הצילום העירוני
+   הבהיר הוא נבלע לגמרי (מצב inactive לא נראה בפועל כלל). כאן הקו עצמו לבן
+   ומתחתיו casing כהה — אותה שיטה שבה קווי מפה נמשכים מעל אורתופוטו, והיא
+   קריאה גם מעל שמיים בהירים וגם מעל צמחייה כהה.
+   ההבחנה בין המצבים אינה נשענת על צבע בלבד: inactive מקווקו ודק, previous
+   רציף ועבה יותר, current רציף, עבה, כתום ועם הילה. ה-casing אינו נושא
+   משמעות בפני עצמו. */
 const LINE_CLASS: Record<NodeVisualState, string> = {
-  inactive: 'stroke-border-strong',
-  previous: 'stroke-fg-muted',
+  inactive: 'stroke-bg-elevated',
+  previous: 'stroke-bg-elevated',
   current: 'stroke-accent',
 };
-const LINE_WIDTH: Record<NodeVisualState, number> = { inactive: 4, previous: 6, current: 9 };
-const LINE_OPACITY: Record<NodeVisualState, number> = { inactive: 0.35, previous: 0.85, current: 1 };
-const LINE_CASING_EXTRA = 7;
+const LINE_WIDTH: Record<NodeVisualState, number> = { inactive: 5, previous: 7, current: 11 };
+const LINE_OPACITY: Record<NodeVisualState, number> = { inactive: 0.92, previous: 1, current: 1 };
+const LINE_CASING_EXTRA = 8;
+/* מקווקו רק ב-inactive — "עוד לא חלק מהסיפור". יחידות viewBox (1536 רוחב). */
+const LINE_DASH = '26 18';
+/* נקודות קצה על עוגן הזירה — מה שהופך את הקווים לרשת ולא לשריטות על צילום. */
+const DOT_RADIUS: Record<NodeVisualState, number> = { inactive: 11, previous: 13, current: 17 };
+const DOT_CLASS: Record<NodeVisualState, string> = {
+  inactive: 'fill-bg-elevated stroke-fg',
+  previous: 'fill-bg-elevated stroke-fg',
+  current: 'fill-accent stroke-bg-elevated',
+};
+/* עקומת ה-snap של הפרויקט (transitionTimingFunction.snap) כערכי bezier. */
+const SNAP_EASE = [0.22, 1, 0.36, 1] as const;
 
 function PressureMap({
   nodeStates,
@@ -861,13 +876,10 @@ function PressureMap({
   const cy = cyFraction * vbH;
 
   return (
-    <div className="surface-elevated p-5 sm:p-6">
-      {/* הכותרת יושבת על משטח הכרטיס הבהיר מעל התמונה, לא מעל המפה עצמה. */}
-      <div className="mb-4">
-        <h4 className="font-display text-lg font-bold leading-tight text-black">{MAP_TEXT.title}</h4>
-        <p className="mt-1 text-base leading-relaxed text-fg-muted">{MAP_TEXT.subtitle}</p>
-      </div>
-
+    /* בלי padding חיצוני: התמונה היא הכרטיס. overflow-hidden גוזר אותה
+       לרדיוס של surface-elevated, והכותרת יורדת לרצועת-על מעל הצילום — כך
+       שאין שורת כותרת שדוחפת את המפה למטה ומקטינה אותה. */
+    <div className="surface-elevated overflow-hidden">
       {/* עוטף ביחס האמיתי של הנכס (1536×1024). ה-aspect שמועבר ל-IsometricAsset
           נומינלי בלבד ומבוטל ב-[aspect-ratio:auto], כך שהעוטף הוא שקובע את
           צורת התיבה — אותה מוסכמה כמו יתר קריאות ה-*-BANNER בקובץ הסצנה.
@@ -882,7 +894,14 @@ function PressureMap({
           alt={ASSETS.map.alt}
           aspect="4/3"
           fit="contain"
-          className="absolute inset-0 size-full rounded-xl bg-bg-accent [aspect-ratio:auto]"
+          className="absolute inset-0 size-full bg-bg-accent [aspect-ratio:auto]"
+        />
+
+        {/* עומק: ויניטה פנימית רכה בקצוות. currentColor נלקח מ-text-fg/… כדי
+            שלא ייכנס לכאן hex חדש — הצל עצמו הוא דיו-הזית של הפרויקט. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 text-fg/40 shadow-[inset_0_0_38px_-8px_currentColor,inset_0_0_120px_-46px_currentColor]"
         />
 
         {/* שכבת הקווים בלבד — התוויות, התגיות והכפתורים הם HTML מעל. */}
@@ -896,7 +915,19 @@ function PressureMap({
             const nodeState = nodeStates[id];
             const [fx, fy] = MAP_NODE_ANCHORS[id].anchor;
             const animatesIn = shouldAnimateReveal(id);
-            const ends = { x1: cx, y1: cy, x2: fx * vbW, y2: fy * vbH };
+            const nx = fx * vbW;
+            const ny = fy * vbH;
+            /* x1/y1 בזירה ו-x2/y2 במוקד: אותו קטע בדיוק, אבל pathLength
+               נמשך מהזירה פנימה אל המוקד — כיוון הלחץ. */
+            const ends = { x1: nx, y1: ny, x2: cx, y2: cy };
+            // ציור חד-פעמי של הקו בחשיפה. ללא לולאה וללא תנועה מתמשכת.
+            const draw = animatesIn
+              ? {
+                  initial: { pathLength: 0 },
+                  animate: { pathLength: 1 },
+                  transition: { duration: 0.5, ease: SNAP_EASE },
+                }
+              : { initial: false as const };
             return (
               <motion.g
                 key={`${revealKey}-${id}`}
@@ -904,23 +935,62 @@ function PressureMap({
                 animate={{ opacity: LINE_OPACITY[nodeState] }}
                 transition={{ duration: reduce ? 0 : 0.42, ease: 'easeOut' }}
               >
-                <line
+                {/* הילה — רק במוקד הנוכחי, ומרחיבה את נוכחותו על הצילום. */}
+                {nodeState === 'current' && (
+                  <motion.line
+                    {...ends}
+                    {...draw}
+                    strokeWidth={LINE_WIDTH.current + 22}
+                    strokeLinecap="round"
+                    strokeOpacity={0.3}
+                    className="stroke-accent"
+                  />
+                )}
+                <motion.line
                   {...ends}
+                  {...draw}
                   strokeWidth={LINE_WIDTH[nodeState] + LINE_CASING_EXTRA}
                   strokeLinecap="round"
-                  strokeOpacity={0.6}
-                  className="stroke-bg-elevated"
+                  strokeOpacity={0.5}
+                  className="stroke-fg"
                 />
-                <line
+                <motion.line
                   {...ends}
+                  {...draw}
                   strokeWidth={LINE_WIDTH[nodeState]}
                   strokeLinecap="round"
+                  strokeDasharray={nodeState === 'inactive' ? LINE_DASH : undefined}
                   className={LINE_CLASS[nodeState]}
+                />
+                <motion.circle
+                  cx={nx}
+                  cy={ny}
+                  r={DOT_RADIUS[nodeState]}
+                  strokeWidth={4}
+                  initial={animatesIn ? { r: 0 } : false}
+                  animate={animatesIn ? { r: DOT_RADIUS.current } : {}}
+                  transition={{ duration: 0.45, ease: SNAP_EASE }}
+                  className={DOT_CLASS[nodeState]}
                 />
               </motion.g>
             );
           })}
+
+          {/* הילה רכה סביב נקודת ההתכנסות — הסמן עצמו הוא אלמנט HTML למטה
+              (חייב לשבת מעל תווית המוקד, ולכן לא יכול להיות כאן ב-SVG). */}
+          <circle cx={cx} cy={cy} r={34} className="fill-fg" fillOpacity={0.22} />
         </svg>
+
+        {/* רצועת הכותרת — סרגל חצי-אטום בראש התמונה (במקום שורת כותרת מעליה).
+            pointer-events-none כדי לא לחסום תוויות שמתקרבות לקצה העליון. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-bg-elevated/90 via-bg-elevated/55 to-transparent px-4 pb-8 pt-3 sm:px-5">
+          <h4 className="font-display text-lg font-bold leading-tight text-black">
+            {MAP_TEXT.title}
+          </h4>
+          <p className="mt-0.5 text-sm font-medium leading-snug text-fg-muted">
+            {MAP_TEXT.subtitle}
+          </p>
+        </div>
 
         <p className="sr-only">{UI_MAP_LINES_DESCRIPTION}</p>
 
@@ -929,8 +999,10 @@ function PressureMap({
             ב-RTL. מתועד ב-design/docs/assumptions.md. */}
         {ALL_MAP_NODE_IDS.map((id) => {
           const [lx, ly] = MAP_NODE_ANCHORS[id].label;
-          const nodeState = id === 'center' ? null : nodeStates[id as PressureNodeId];
+          const isHub = id === 'center';
+          const nodeState = isHub ? null : nodeStates[id as PressureNodeId];
           const isCurrent = nodeState === 'current';
+          const isPrevious = nodeState === 'previous';
           const chipAnimatesIn = isCurrent && shouldAnimateReveal(id as PressureNodeId);
           const isOpen = openNodeId === id;
           return (
@@ -939,62 +1011,109 @@ function PressureMap({
               className="absolute z-10 flex flex-col items-center gap-1"
               style={{ left: `${lx * 100}%`, top: `${ly * 100}%`, translate: '-50% -50%' }}
             >
-              <button
+              <motion.button
+                key={`${revealKey}-label-${id}`}
                 type="button"
                 aria-expanded={isOpen}
                 aria-controls={definitionId}
                 onClick={() => onToggleNode(id)}
+                initial={chipAnimatesIn ? { scale: 0.82 } : false}
+                animate={{ scale: 1 }}
+                transition={{ duration: reduce ? 0 : 0.45, ease: SNAP_EASE }}
                 className={cn(
-                  'whitespace-nowrap rounded-lg border-2 px-3 py-1.5 font-display text-sm font-bold shadow-elevated transition-colors duration-200 ease-snap',
-                  isCurrent
-                    ? 'border-accent bg-bg-elevated text-accent'
-                    : 'border-border bg-bg-elevated text-black hover:border-border-strong',
-                  isOpen && 'border-brand-dark',
+                  'inline-flex items-center gap-1.5 rounded-lg border-2 font-display font-bold shadow-[0_4px_14px_theme(colors.fg.DEFAULT/35%)] transition-colors duration-200 ease-snap',
+                  /* המוקד המרכזי גדול יותר, שובר שורה לשתי שורות ועטוף
+                     במסגרת דיו כהה — זהות ויזואלית נפרדת מחמש הזירות. */
+                  isHub
+                    ? 'max-w-[9.5rem] rounded-xl bg-bg-elevated px-4 py-2 text-center text-base leading-tight text-black'
+                    : 'whitespace-nowrap px-3 py-1.5 text-sm',
+                  !isHub &&
+                    (isCurrent
+                      ? 'bg-bg-elevated text-accent ring-4 ring-accent/25'
+                      : 'bg-bg-elevated text-black'),
+                  // צבע המסגרת נקבע פעם אחת (בלי הסתמכות על סדר ה-CSS):
+                  // פתוח ← מרווה, מוקד נוכחי ← כתום, מוקד מרכזי ← דיו, אחרת tan.
+                  isOpen
+                    ? 'border-brand-dark'
+                    : isHub
+                      ? 'border-fg'
+                      : isCurrent
+                        ? 'border-accent'
+                        : 'border-border hover:border-border-strong',
                 )}
               >
+                {/* מצב "נחשף קודם" — סימן וי קטן בתוך התווית עצמה במקום תגית
+                    טקסט חוזרת מתחת לכל זירה שנחשפה. הצורה (icon) נושאת את
+                    המשמעות, לא הצבע, והמילים עצמן נשארות בטקסט הנגיש. */}
+                {isPrevious && (
+                  <>
+                    <Icon
+                      name="check"
+                      size={13}
+                      strokeWidth={3}
+                      className="shrink-0 text-brand-dark"
+                    />
+                    <span className="sr-only">{`${UI_NODE_PREVIOUS} — `}</span>
+                  </>
+                )}
+                {isCurrent && <span className="sr-only">{`${UI_NODE_CURRENT} — `}</span>}
                 {NODE_LABELS[id]}
-              </button>
-              {nodeState === 'previous' || isCurrent ? (
+              </motion.button>
+              {/* רק המוקד הנוכחי מקבל תגית נפרדת — היא הפוקוס היחיד במסך. */}
+              {isCurrent ? (
                 <motion.span
                   key={`${revealKey}-chip-${id}`}
-                  initial={chipAnimatesIn ? { opacity: 0 } : false}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: reduce ? 0 : 0.42, ease: 'easeOut' }}
-                  // רקע אטום בשני המצבים — הטקסט אף פעם לא יושב ישירות על
-                  // הצילום. המצב נקרא מהמילה עצמה, לא מהצבע בלבד.
-                  className={cn(
-                    'chip whitespace-nowrap shadow-elevated',
-                    isCurrent
-                      ? 'border-accent bg-accent text-white'
-                      : 'border-border bg-bg-elevated text-fg-muted',
-                  )}
+                  aria-hidden
+                  initial={chipAnimatesIn ? { opacity: 0, scale: 0.82 } : false}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: reduce ? 0 : 0.45, ease: SNAP_EASE }}
+                  className="chip whitespace-nowrap border-accent bg-accent text-white shadow-glow"
                 >
-                  {isCurrent ? UI_NODE_CURRENT : UI_NODE_PREVIOUS}
+                  <Icon name="target" size={12} strokeWidth={2.5} className="shrink-0" />
+                  {UI_NODE_CURRENT}
                 </motion.span>
               ) : null}
             </div>
           );
         })}
+
+        {/* סמן המוקד — נקודת ההתכנסות עצמה, על התמונה. יושב על עוגן ה-center
+            מאותו מניפסט (קואורדינטה פיזית, כמו התוויות), ב-z גבוה מהתוויות
+            כדי שייראה גם כשתווית המוקד עולה עליו. טבעת כפולה — צורה שאין לאף
+            זירה אחרת, ולכן לא נשענת על צבע בלבד. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute z-20 size-6 rounded-full border-[3px] border-fg bg-bg-elevated shadow-[0_2px_8px_theme(colors.fg.DEFAULT/50%)]"
+          style={{
+            left: `${cxFraction * 100}%`,
+            top: `${cyFraction * 100}%`,
+            translate: '-50% -50%',
+          }}
+        >
+          <span className="absolute inset-[3px] rounded-full bg-fg" />
+        </div>
       </div>
 
       {/* אזור ההגדרות המשותף — הגדרה כללית של הזירה בלבד. ההסבר הסיבתי של
-          הסבב לעולם לא מופיע כאן, אלא רק בכרטיס האירוע אחרי בדיקה. */}
+          הסבב לעולם לא מופיע כאן, אלא רק בכרטיס האירוע אחרי בדיקה.
+          כשאין זירה פתוחה זו שורה אחת דקה בתחתית הכרטיס (ולא תיבה ריקה
+          בגובה 5.5rem); ה-id, ה-aria-live וסדר ה-DOM לא השתנו. */}
       <div
         id={definitionId}
         aria-live="polite"
-        className="mt-4 min-h-[5.5rem] rounded-xl border border-border bg-bg-accent p-4"
+        className="border-t border-border/60 bg-bg-accent px-4 py-2.5 sm:px-5"
       >
         {openNodeId ? (
           <>
             <h5 className="font-display text-base font-bold leading-tight text-black">
               {NODE_LABELS[openNodeId]}
             </h5>
-            <p className="mt-1.5 text-base leading-relaxed text-fg-muted text-pretty">
+            <p className="mt-1 text-base leading-relaxed text-fg-muted text-pretty">
               {NODE_DEFINITIONS[openNodeId]}
             </p>
           </>
         ) : (
-          <p className="text-base leading-relaxed text-fg-muted">{UI_DEFINITION_PROMPT}</p>
+          <p className="text-sm leading-snug text-fg-dim">{UI_DEFINITION_PROMPT}</p>
         )}
       </div>
     </div>
