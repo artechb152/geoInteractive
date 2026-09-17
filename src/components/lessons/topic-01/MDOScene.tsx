@@ -14,45 +14,83 @@ icon: IconName;
 short: string;
 weakness: string;
 strength: string;
- // Anchor point on the field photo (mdo-field-domains.png, 1448×1086px),
- // measured from the left/top edge — never mirrored for RTL.
-anchor: [number, number];
+ // This domain's object layer: position + size in the shared field-photo
+ // coordinate system (mdo-scene-background.png, 1448×1086px, measured
+ // from the left/top edge — never mirrored for RTL). Height is derived
+ // from the source PNG's own trimmed aspect ratio so it's never stretched.
+ // The connection/marker anchor is derived from this same box (see
+ // domainAnchor) instead of being specified separately, so the image
+ // layer, the SVG marker, and the connection lines can never drift apart.
+image: { src: string; width: number; aspect: number; x: number; y: number };
+ // Fraction of the box (0..1, default [0.5, 0.5]) the anchor lands on.
+ // Only the mast overrides Y to land on its antenna cluster instead of
+ // the middle of its own tall, mostly-empty shaft.
+anchorRel?: [number, number];
+ // Decorative on-photo caption — only the satellite needs one: it's a
+ // symbolic stand-in for the space domain, not a literal depiction, so it
+ // says so directly on the image instead of only in the panel.
+caption?: string;
 };
+
+/** Box (top-left + size) for a domain's object layer, in field-photo px. */
+function domainBox(d: Domain): { x: number; y: number; width: number; height: number } {
+return { x: d.image.x, y: d.image.y, width: d.image.width, height: d.image.width / d.image.aspect };
+}
+
+/** Connection/marker anchor for a domain, derived from its own image box
+    (never stored independently) so repositioning the object always moves
+    its anchor with it. */
+function domainAnchor(d: Domain): [number, number] {
+const box = domainBox(d);
+const [rx, ry] = d.anchorRel ?? [0.5, 0.5];
+return [box.x + rx * box.width, box.y + ry * box.height];
+}
+
+const ASSET_BASE = '/assets/lessons/topic01/scene-mdo';
+
 const DOMAINS: Domain[] = [
  {
 id: 'land', label: 'יבשה', english: 'Land', icon: 'mountain',
 short: 'כוחות על הקרקע',
 strength: 'מגפיים על הקרקע: הדרך היחידה להכריע באמת. רק חיילים יכולים להיכנס פיזית, לטהר מבנים, להסתכל לאויב בעיניים ולהחזיק בשטח.',
 weakness: 'בלי כוח קרקעי הכל וירטואלי: אפשר להפציץ ולצלם מלמעלה כמה שרוצים, אבל בלי חיילים על הקרקע אי אפשר באמת לכבוש כלום.',
-anchor: [850, 565],
+ // On the dirt road, roughly mid-frame.
+image: { src: `${ASSET_BASE}/mdo-object-ground-vehicle.png`, x: 750, y: 550, width: 195, aspect: 1486 / 692 },
  },
  {
 id: 'air', label: 'אוויר', english: 'Air', icon: 'plane',
 short: 'שליטה מהאוויר',
 strength: 'האגרוף מהשמיים: מטוסי קרב ורחפנים שמחסלים מטרות בשניות, מחפים על החיילים מלמעלה ותוקפים עמוק בשטח האויב.',
 weakness: 'בלי הגנה אווירית השמיים פתוחים: החיילים למטה חשופים לחלוטין להפצצות, ואין מי שיעזור להם להשמיד איומים מרחוק.',
-anchor: [1075, 139],
+ // High in the open sky, upper-right.
+image: { src: `${ASSET_BASE}/mdo-object-aircraft.png`, x: 950, y: 90, width: 230, aspect: 1674 / 477 },
  },
  {
 id: 'sea', label: 'ים', english: 'Sea', icon: 'ship',
 short: 'נוכחות במרחב הימי',
 strength: 'העורק הפתוח: ספינות קרב וצוללות שמגנות על החופים, מאפשרות לתקוף בהפתעה, ודואגות שאספקת נשק ודלק תמשיך לזרום.',
 weakness: 'בלי שליטה בים המדינה במצור: אוניות מסע ואספקה לא מגיעות (קריטי במלחמה ארוכה), והחופים פרוצים לגמרי לפלישה.',
-anchor: [165, 502],
+ // In the bay, lower-left.
+image: { src: `${ASSET_BASE}/mdo-object-ship.png`, x: 60, y: 470, width: 230, aspect: 1658 / 762 },
  },
  {
 id: 'space', label: 'חלל', english: 'Space', icon: 'satellite',
 short: 'קישור לוויני וניווט',
 strength: 'העיניים של הצבא: לוויינים שנותנים ניווט GPS מדויק לכל פגז, משדרים תמונות חיות של האויב ושומרים על קשר בין כולם.',
 weakness: 'בלי לוויינים הצבא עיוור וחירש: ה-GPS קורס (הטילים מפספסים והחיילים הולכים לאיבוד), ומערכות התקשורת נופלות.',
-anchor: [500, 82],
+ // Upper-left sky, clear of the aircraft and the mountain skyline.
+image: { src: `${ASSET_BASE}/mdo-object-satellite.png`, x: 420, y: 40, width: 150, aspect: 1454 / 792 },
+caption: 'חלל · המחשה',
  },
  {
 id: 'cyber', label: 'סייבר', english: 'Cyber', icon: 'bolt',
 short: 'רשתות ומידע',
 strength: 'הנשק השקוף: היכולת לשתק את האויב בלי לירות כדור אחד! לפרוץ לו למכשירי הקשר, לעוור לו את המכ"ם או לכבות לו את החשמל.',
 weakness: 'בלי חומת סייבר נהיה חשופים לגמרי: האקרים יוכלו לזייף מטרות לחיילים, לנתק קשר ולהפיל לנו תשתיות (חשמל, מים, בנקים).',
-anchor: [1330, 367],
+ // Standing on the hillside, right edge, base planted on the ground.
+image: { src: `${ASSET_BASE}/mdo-object-mast.png`, x: 1250, y: 260, width: 90, aspect: 433 / 1494 },
+ // Lands on the antenna/dish cluster near the top, not mid-shaft.
+anchorRel: [0.5, 0.35],
  },
 ];
 
@@ -182,6 +220,57 @@ else next.add(id);
 return next;
  });
  }
+
+ // Grid/flex `stretch` alone cannot cap the panel to the image's height:
+ // an "auto" row track is sized by the TALLEST column's own natural content
+ // height, so when the panel's content (unclamped) is taller than the
+ // image, the row simply grows to fit the panel instead of the image
+ // capping it — the reverse of what's wanted here. The image's aspect
+ // ratio has to actively drive the panel's height, not just hope stretch
+ // sorts it out, so its rendered height is measured and applied to the
+ // panel directly. Desktop-only (matches the lg: 2-column breakpoint
+ // below) — under that, the columns stack and the panel's natural height
+ // is exactly what's wanted.
+const imageColRef = useRef<HTMLDivElement>(null);
+const [panelHeight, setPanelHeight] = useState<number | null>(null);
+const [isDesktop, setIsDesktop] = useState(false);
+useEffect(() => {
+const mq = window.matchMedia('(min-width: 1024px)');
+setIsDesktop(mq.matches);
+const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+mq.addEventListener('change', onChange);
+return () => mq.removeEventListener('change', onChange);
+ }, []);
+useEffect(() => {
+const el = imageColRef.current;
+if (!el || typeof ResizeObserver === 'undefined') return;
+const ro = new ResizeObserver(([entry]) => setPanelHeight(entry.contentRect.height));
+ro.observe(el);
+return () => ro.disconnect();
+ }, []);
+
+ // The feedback area is the ONLY part of the panel allowed to grow — the
+ // header, the five rows and the activate-all button stay put, so the
+ // panel's overall height never changes with how many domains are off (it
+ // tracks the image column instead). `canScrollMore` drives a subtle
+ // bottom shadow, recomputed whenever the content changes size (a toggle)
+ // or the box itself resizes, and cleared once scrolled to the bottom.
+const feedbackRef = useRef<HTMLDivElement>(null);
+const [canScrollMore, setCanScrollMore] = useState(false);
+const checkScrollable = () => {
+const el = feedbackRef.current;
+if (!el) return;
+setCanScrollMore(el.scrollHeight - el.scrollTop - el.clientHeight > 2);
+ };
+useEffect(() => {
+checkScrollable();
+const el = feedbackRef.current;
+if (!el || typeof ResizeObserver === 'undefined') return;
+const ro = new ResizeObserver(checkScrollable);
+ro.observe(el);
+return () => ro.disconnect();
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [feedback]);
 return (
  <section id="scene-mdo" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
@@ -222,12 +311,21 @@ title={
      [panel, image]: in RTL, the first grid child lands in the visual-right
      column, so the narrower (3fr) panel-share column must come first for
      the panel to sit on the right and the wider (7fr) image-share column
-     second, for the image to sit on the visual left. */}
+     second, for the image to sit on the visual left.
+     The card's height is locked to the image, not to whichever column's
+     content is taller: `panelHeight` (measured off the image column via
+     ResizeObserver, above) is applied to the panel directly, and `min-h-0`
+     lets it actually respect that fixed height instead of growing past it.
+     Only the feedback area inside then scrolls. */}
  <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
- <div className="grid gap-4 lg:grid-cols-[3fr_7fr] items-start">
- <div className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4">
- {/* Header strip: the label and the tabular counter. */}
- <div className="flex items-center justify-between gap-2">
+ <div className="grid gap-4 lg:grid-cols-[3fr_7fr]">
+ <div
+className="flex min-h-0 flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4"
+style={isDesktop && panelHeight ? { height: panelHeight } : undefined}
+ >
+ {/* Header strip: the label and the tabular counter. Fixed — never
+     shrinks, never scrolls. */}
+ <div className="flex shrink-0 items-center justify-between gap-2">
  <div className="text-base font-display font-bold text-fg">הממדים הפעילים</div>
  <div className="font-display font-bold text-lg tabular-nums text-fg">{active.size}/5</div>
  </div>
@@ -235,20 +333,39 @@ title={
  {/* One continuous surface with hairline dividers — five rows of a
      single panel, not five separate little cards. `overflow-hidden`
      keeps each row's hover fill and inset focus ring inside the
-     rounded corners. */}
- <div className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
+     rounded corners. Fixed — never shrinks, never scrolls. */}
+ <div className="mt-3 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
  {DOMAINS.map((d) => (
  <DomainRow key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} onToggle={() => toggle(d.id)} />
  ))}
  </div>
 
- {/* Sizes to its own content, and grows with it: with every domain
-     off this holds five full weakness sections, and the card simply
-     gets taller rather than clipping, clamping or scrolling.
-     `aria-live="polite"` (no `aria-atomic`, so a toggle announces
-     what actually changed instead of re-reading all five sections)
-     mirrors TimePressureExperience's status region. */}
- <div className="mt-3 rounded-xl border border-accent/25 bg-accent/10 p-3" aria-live="polite">
+ {/* The ONLY flexible, scrollable part of the panel: `min-h-0` lets
+     this shrink below its content's natural height instead of
+     pushing the panel (and the whole card) taller, and `flex-1`
+     lets it fill whatever room is actually left above the button.
+     Every missing domain's full explanation still renders — nothing
+     is truncated — it just scrolls internally once there's more
+     than fits. `tabIndex` + a focus ring make the scroll region
+     itself keyboard-reachable (arrow keys scroll a focused, overflow
+     element natively); the inset shadow is a soft "more below" cue
+     that appears only while there's unscrolled content, and clears
+     on its own once you reach the bottom. `aria-live="polite"` (no
+     `aria-atomic`, so a toggle announces what actually changed
+     instead of re-reading all five sections) mirrors
+     TimePressureExperience's status region. */}
+ <div
+ref={feedbackRef}
+onScroll={checkScrollable}
+tabIndex={0}
+aria-label="פירוט הממדים המנותקים"
+aria-live="polite"
+className={cn(
+ 'mt-3 min-h-0 flex-1 overflow-y-auto rounded-xl border border-accent/25 bg-accent/10 p-3',
+ 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+ canScrollMore && 'shadow-[inset_0_-14px_10px_-10px_rgba(120,90,40,0.22)]',
+ )}
+ >
  <div className="flex items-start gap-2">
  <Icon name={feedback.icon} size={18} className="mt-0.5 shrink-0 text-accent" />
  <div className="min-w-0">
@@ -274,14 +391,14 @@ title={
  <button
 type="button"
 onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
-className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover"
+className="mt-3 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover"
  >
  <Icon name="refresh" size={16} />
  הפעלת כל הממדים
  </button>
  </div>
 
- <div className="flex flex-col">
+ <div ref={imageColRef} className="flex flex-col">
  <MDOFieldDiagram domains={DOMAINS} active={active} />
  </div>
  </div>
@@ -418,24 +535,29 @@ active,
 domains: Domain[];
 active: Set<string>;
 }) {
-const byId = useMemo(() => Object.fromEntries(domains.map((d) => [d.id, d])), [domains]);
+ // `anchor` is derived once here (from each domain's own image box) and
+ // carried alongside it for the rest of this component — every consumer
+ // below (edges, markers) reads it from here rather than recomputing it,
+ // so the image layer and its connection point can never disagree.
+const positioned = useMemo(() => domains.map((d) => ({ ...d, anchor: domainAnchor(d) })), [domains]);
+const byId = useMemo(() => Object.fromEntries(positioned.map((d) => [d.id, d])), [positioned]);
 const centroid = useMemo<[number, number]>(() => {
-const n = domains.length;
-const sx = domains.reduce((s, d) => s + d.anchor[0], 0);
-const sy = domains.reduce((s, d) => s + d.anchor[1], 0);
+const n = positioned.length;
+const sx = positioned.reduce((s, d) => s + d.anchor[0], 0);
+const sy = positioned.reduce((s, d) => s + d.anchor[1], 0);
 return [sx / n, sy / n];
- }, [domains]);
+ }, [positioned]);
 
 const edges = useMemo(
 () =>
 EDGES.map(([idA, idB]) => {
 const a = byId[idA];
 const b = byId[idB];
-const avoid = domains.filter((d) => d.id !== idA && d.id !== idB).map((d) => d.anchor);
+const avoid = positioned.filter((d) => d.id !== idA && d.id !== idB).map((d) => d.anchor);
 const control = edgeControl(a.anchor, b.anchor, centroid, avoid);
 return { idA, idB, d: edgePath(a.anchor, b.anchor, control) };
  }),
-[byId, centroid, domains],
+[byId, centroid, positioned],
  );
 
 const reduceMotion = useReducedMotion();
@@ -470,9 +592,9 @@ return (
  // exactly what the brief prohibits for this image.
  <div ref={wrapRef} className="relative">
  <IsometricAsset
-assetId="TOPIC01-MDO-FIELD-DOMAINS"
-src="/assets/lessons/topic01/scene-mdo/mdo-field-domains.png"
-alt="תצלום שטח מדומה שמשלב את חמשת הממדים: כלי רכב צבאי על דרך עפר (יבשה), אוניית מלחמה בים (ים), מטוס קרב בשמיים (אוויר), לוויין המחשה למרחב החלל, ותורן תקשורת המסמן את מרחב הסייבר"
+assetId="TOPIC01-MDO-SCENE-BACKGROUND"
+src={`${ASSET_BASE}/mdo-scene-background.png`}
+alt="נוף חוף וגבעות מדומה — הרקע לאינטראקציית חמשת הממדים; כלי הלחימה של כל ממד מוצגים כשכבות נפרדות מעליו"
 aspect="4/3"
 fit="contain"
 eager
@@ -499,45 +621,25 @@ aria-hidden="true"
  </filter>
  </defs>
 
- {edges.map(({ idA, idB, d }) => {
- // Per-pair only: an edge is drawn iff BOTH of its own endpoints are
- // on. Never an aggregate/threshold rule over the active count.
-const bothActive = active.has(idA) && active.has(idB);
-return (
- <g key={idA + idB} data-edge={`${idA}-${idB}`} style={{ opacity: bothActive ? 1 : 0, transition: fade }}>
- <path d={d} fill="none" stroke="#D97E2B" strokeWidth={9} opacity={0.28} filter="url(#mdoLineGlow)" />
- <path d={d} fill="none" stroke="#D97E2B" strokeWidth={2.25} opacity={0.92} strokeLinecap="round" />
- {motionEnabled && bothActive && (
- <>
- <circle r="4.5" fill="#D97E2B">
- <animateMotion dur="4.2s" repeatCount="indefinite" path={d} />
- </circle>
- <circle r="4.5" fill="#D97E2B" opacity="0.75">
- <animateMotion dur="4.2s" begin="-2.1s" repeatCount="indefinite" path={d} />
- </circle>
- <circle r="3.5" fill="#FDFBF3" opacity="0.9">
- <animateMotion dur="4.2s" begin="-3.4s" repeatCount="indefinite" path={d} />
- </circle>
- </>
- )}
- </g>
- );
- })}
-
- {/* Target-lock marker at each active anchor. Gated on that domain's
-     own `active` entry and nothing else — a domain with no surviving
-     connections (several pairs have no curated edge at all, by
-     design) still has to read unmistakably as "on", so the marker
-     carries enough weight on its own: a soft halo to separate it
-     from the photo, a cream-backed ring that stays legible over both
-     bright sky and dark foliage, a lit core, and four ticks. The
-     earlier 13×9 hairline ellipse rendered at roughly a 6.6px radius
-     at this container width and simply vanished into the terrain. */}
- {domains.map((d) => {
+ {/* One independent group per domain: its object image, then its
+     target-lock marker on top of it, both gated on that domain's own
+     `active` entry and nothing else — a domain with no surviving
+     connections (several pairs have no curated edge at all, by design)
+     still has to read unmistakably as "on". Turning it off fades the
+     WHOLE group (the actual object layer included, not a mask over it)
+     over the same 300ms as the connections below. The marker itself: a
+     soft halo to separate it from the photo, a cream-backed ring that
+     stays legible over both bright sky and dark foliage, a lit core, and
+     four ticks — the earlier 13×9 hairline ellipse rendered at roughly a
+     6.6px radius at this container width and simply vanished into the
+     terrain. */}
+ {positioned.map((d) => {
 const isOn = active.has(d.id);
 const [cx, cy] = d.anchor;
+const box = domainBox(d);
 return (
- <g key={'ring-' + d.id} data-ring={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
+ <g key={'domain-' + d.id} data-domain={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
+ <image href={d.image.src} x={box.x} y={box.y} width={box.width} height={box.height} preserveAspectRatio="xMidYMid meet" />
  <circle cx={cx} cy={cy} r="36" fill="#D97E2B" opacity="0.34" filter="url(#mdoNodeGlow)" />
  <circle cx={cx} cy={cy} r="22" fill="none" stroke="#FDFBF3" strokeWidth="5.5" opacity="0.5" />
  <circle cx={cx} cy={cy} r="22" fill="none" stroke="#D97E2B" strokeWidth="3" opacity="0.95" />
@@ -566,6 +668,46 @@ opacity="0.85"
  <animate attributeName="r" values="22;50" dur="3.4s" repeatCount="indefinite" />
  <animate attributeName="opacity" values="0.75;0" dur="3.4s" repeatCount="indefinite" />
  </circle>
+ )}
+ {/* Decorative caption — the satellite is a symbolic stand-in for
+     the space domain, not a literal depiction, so it says so
+     directly on the photo (the button in the panel says the same
+     thing in its aria-label). */}
+ {d.caption && (
+ <>
+ <rect x={cx - 58} y={box.y - 30} width="116" height="21" rx="10.5" fill="#FDFBF3" opacity="0.92" />
+ <text x={cx} y={box.y - 15} textAnchor="middle" fontSize="12" fontWeight="700" fill="#4A5240">
+ {d.caption}
+ </text>
+ </>
+ )}
+ </g>
+ );
+ })}
+
+ {/* Connections — drawn above the object layer so the glowing arcs and
+     travelling light points read as an overlay network, the same way
+     they did when every object was baked into one photo. */}
+ {edges.map(({ idA, idB, d }) => {
+ // Per-pair only: an edge is drawn iff BOTH of its own endpoints are
+ // on. Never an aggregate/threshold rule over the active count.
+const bothActive = active.has(idA) && active.has(idB);
+return (
+ <g key={idA + idB} data-edge={`${idA}-${idB}`} style={{ opacity: bothActive ? 1 : 0, transition: fade }}>
+ <path d={d} fill="none" stroke="#D97E2B" strokeWidth={9} opacity={0.28} filter="url(#mdoLineGlow)" />
+ <path d={d} fill="none" stroke="#D97E2B" strokeWidth={2.25} opacity={0.92} strokeLinecap="round" />
+ {motionEnabled && bothActive && (
+ <>
+ <circle r="4.5" fill="#D97E2B">
+ <animateMotion dur="4.2s" repeatCount="indefinite" path={d} />
+ </circle>
+ <circle r="4.5" fill="#D97E2B" opacity="0.75">
+ <animateMotion dur="4.2s" begin="-2.1s" repeatCount="indefinite" path={d} />
+ </circle>
+ <circle r="3.5" fill="#FDFBF3" opacity="0.9">
+ <animateMotion dur="4.2s" begin="-3.4s" repeatCount="indefinite" path={d} />
+ </circle>
+ </>
  )}
  </g>
  );
