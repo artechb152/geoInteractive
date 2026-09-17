@@ -572,10 +572,15 @@ return (
  <ellipse
 cx={groundCx}
 cy={groundCy}
-rx={box.width * 0.34}
-ry={box.width * 0.075}
+ // `cyber`'s own box is only 58px wide (vs. `land`'s 255px), so the
+ // shared 0.34/0.075/0.22 ratio — tuned for the much wider vehicle —
+ // blurs down to nearly nothing under the antenna's tripod feet at
+ // normal viewing size. Bumped up just for `cyber`; `land` keeps the
+ // original Task 2 values unchanged. `cy` (the attach point) is untouched.
+rx={d.id === 'cyber' ? box.width * 0.55 : box.width * 0.34}
+ry={d.id === 'cyber' ? box.width * 0.16 : box.width * 0.075}
 fill="#000000"
-opacity="0.22"
+opacity={d.id === 'cyber' ? 0.32 : 0.22}
 filter="url(#mdoContactShadow)"
  />
  )}
