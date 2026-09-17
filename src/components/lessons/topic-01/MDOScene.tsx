@@ -101,12 +101,11 @@ return { title: `${missing[0].label} נותק`, icon: missing[0].icon, sections 
 return { title: `${missing.length} ממדים נותקו`, icon: 'spark', sections };
 }
 
-/* The panel's ONE active/inactive visual language, shared verbatim by the
-   header strip's status segments and by each row's state indicator, so both
-   readings of the same state look identical: active = filled accent with a
-   small local glow; inactive = hollow, outlined, dimmed. The glow is a
-   short-radius shadow built from the existing `accent` colour (#D97E2B) —
-   the `shadow-glow` token's 40px spread is far too wide at this size. */
+/* The panel's ONE active/inactive visual language, used by each row's state
+   indicator: active = filled accent with a small local glow; inactive =
+   hollow, outlined, dimmed. The glow is a short-radius shadow built from the
+   existing `accent` colour (#D97E2B) — the `shadow-glow` token's 40px spread
+   is far too wide at this size. */
 const STATE_ON = 'border-accent bg-accent text-white shadow-[0_0_8px_-1px_rgba(217,126,43,0.85)]';
 const STATE_OFF = 'border-border bg-transparent text-fg-dim';
 
@@ -115,27 +114,6 @@ const STATE_OFF = 'border-border bg-transparent text-fg-dim';
     `prefers-reduced-motion`, which lands the final state instantly. */
 function flipTransition(motionOk: boolean) {
 return motionOk ? 'transition-[background-color,border-color,box-shadow,color] duration-200 ease-snap' : 'transition-none';
-}
-
-/** Header-strip status segment: the same domain state as the row below, at a
-    glance. Decorative for AT only in the sense that the rows carry the real
-    semantics — the state itself is announced there, so announcing it twice
-    would just be noise. */
-function StatusSegment({ d, isOn, motionOk }: { d: Domain; isOn: boolean; motionOk: boolean }) {
-return (
- <span
-aria-hidden
-data-segment={d.id}
-data-state={isOn ? 'on' : 'off'}
-className={cn(
- 'flex h-8 flex-1 items-center justify-center rounded-md border',
-flipTransition(motionOk),
-isOn ? STATE_ON : STATE_OFF,
- )}
- >
- <Icon name={d.icon} size={15} />
- </span>
- );
 }
 
 /** One control-panel row: icon + name + one-line subtitle + an explicit
@@ -194,7 +172,6 @@ isOn ? STATE_ON : STATE_OFF,
 
 export function MDOScene() {
 const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
-const [motionPaused, setMotionPaused] = useState(false);
 const motionOk = !useReducedMotion();
 const feedback = getFeedback(DOMAINS, active);
 function toggle(id: string) {
@@ -249,17 +226,10 @@ title={
  <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
  <div className="grid gap-4 lg:grid-cols-[3fr_7fr] items-start">
  <div className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4">
- {/* Header strip: the label, the tabular counter, and a compact
-     five-segment readout of the very same state the rows below
-     spell out in full. */}
+ {/* Header strip: the label and the tabular counter. */}
  <div className="flex items-center justify-between gap-2">
  <div className="text-base font-display font-bold text-fg">הממדים הפעילים</div>
  <div className="font-display font-bold text-lg tabular-nums text-fg">{active.size}/5</div>
- </div>
- <div className="mt-2.5 flex items-center gap-1.5">
- {DOMAINS.map((d) => (
- <StatusSegment key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} />
- ))}
  </div>
 
  {/* One continuous surface with hairline dividers — five rows of a
@@ -312,22 +282,7 @@ className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4
  </div>
 
  <div className="flex flex-col">
- <MDOFieldDiagram domains={DOMAINS} active={active} paused={motionPaused} />
- {/* Normal flow, directly under the photo it controls. It used to be
-     pinned to the column's bottom with flex-1, which now that the
-     panel column grows with the feedback sections would strand it
-     hundreds of px below the image. */}
- <div className="mt-2 flex justify-end">
- <button
-type="button"
-onClick={() => setMotionPaused((p) => !p)}
-aria-pressed={motionPaused}
-aria-label={motionPaused ? 'תנועה מושהית, לחץ להפעלה' : 'תנועה פעילה, לחץ להשהיה'}
-className="text-xs font-display font-semibold text-fg-muted transition-colors hover:text-accent"
- >
- {motionPaused ? 'הפעל תנועה' : 'השהה תנועה'}
- </button>
- </div>
+ <MDOFieldDiagram domains={DOMAINS} active={active} />
  </div>
  </div>
  </div>
@@ -459,11 +414,9 @@ return `M${a[0]} ${a[1]} Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
 function MDOFieldDiagram({
 domains,
 active,
-paused,
 }: {
 domains: Domain[];
 active: Set<string>;
-paused: boolean;
 }) {
 const byId = useMemo(() => Object.fromEntries(domains.map((d) => [d.id, d])), [domains]);
 const centroid = useMemo<[number, number]>(() => {
@@ -502,11 +455,11 @@ return () => observer.disconnect();
  }, []);
 
  // Single switch for every looping SMIL animation below: off for reduced
- // motion (static arcs), while paused (user toggle) and while off-screen.
-const motionEnabled = inView && !paused && !reduceMotion;
+ // motion (static arcs) and while off-screen.
+const motionEnabled = inView && !reduceMotion;
  // The on/off crossfade is a one-shot transition, not a loop, so it survives
- // the pause toggle and going off-screen — but reduced motion still lands it
- // instantly. Shared by the edges and the markers.
+ // going off-screen — but reduced motion still lands it instantly. Shared by
+ // the edges and the markers.
 const fade = reduceMotion ? 'none' : 'opacity 300ms ease';
 
 return (
