@@ -9,7 +9,7 @@ export type IconName =
   | 'arrow-right' | 'arrow-left' | 'check' | 'spark'
   | 'fuel' | 'clock' | 'box'
   | 'scale' | 'people' | 'megaphone' | 'hourglass' | 'mask' | 'chevrons-down'
-  | 'grip' | 'plus';
+  | 'grip' | 'plus' | 'refresh';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   globe: (
@@ -156,6 +156,14 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  refresh: (
+    <>
+      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+      <path d="M3 21v-5h5" />
+    </>
+  ),
 };
 
 export function Icon({

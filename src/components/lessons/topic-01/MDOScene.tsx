@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
@@ -10,6 +10,8 @@ id: string;
 label: string;
 english: string;
 icon: IconName;
+ // One-line row subtitle in the control panel.
+short: string;
 weakness: string;
 strength: string;
  // Anchor point on the field photo (mdo-field-domains.png, 1448×1086px),
@@ -19,42 +21,122 @@ anchor: [number, number];
 const DOMAINS: Domain[] = [
  {
 id: 'land', label: 'יבשה', english: 'Land', icon: 'mountain',
+short: 'כוחות על הקרקע',
 strength: 'מגפיים על הקרקע: הדרך היחידה להכריע באמת. רק חיילים יכולים להיכנס פיזית, לטהר מבנים, להסתכל לאויב בעיניים ולהחזיק בשטח.',
 weakness: 'בלי כוח קרקעי הכל וירטואלי: אפשר להפציץ ולצלם מלמעלה כמה שרוצים, אבל בלי חיילים על הקרקע אי אפשר באמת לכבוש כלום.',
 anchor: [850, 565],
  },
  {
 id: 'air', label: 'אוויר', english: 'Air', icon: 'plane',
+short: 'שליטה מהאוויר',
 strength: 'האגרוף מהשמיים: מטוסי קרב ורחפנים שמחסלים מטרות בשניות, מחפים על החיילים מלמעלה ותוקפים עמוק בשטח האויב.',
 weakness: 'בלי הגנה אווירית השמיים פתוחים: החיילים למטה חשופים לחלוטין להפצצות, ואין מי שיעזור להם להשמיד איומים מרחוק.',
 anchor: [1075, 139],
  },
  {
 id: 'sea', label: 'ים', english: 'Sea', icon: 'ship',
+short: 'נוכחות במרחב הימי',
 strength: 'העורק הפתוח: ספינות קרב וצוללות שמגנות על החופים, מאפשרות לתקוף בהפתעה, ודואגות שאספקת נשק ודלק תמשיך לזרום.',
 weakness: 'בלי שליטה בים המדינה במצור: אוניות מסע ואספקה לא מגיעות (קריטי במלחמה ארוכה), והחופים פרוצים לגמרי לפלישה.',
 anchor: [165, 502],
  },
  {
 id: 'space', label: 'חלל', english: 'Space', icon: 'satellite',
+short: 'קישור לוויני וניווט',
 strength: 'העיניים של הצבא: לוויינים שנותנים ניווט GPS מדויק לכל פגז, משדרים תמונות חיות של האויב ושומרים על קשר בין כולם.',
 weakness: 'בלי לוויינים הצבא עיוור וחירש: ה-GPS קורס (הטילים מפספסים והחיילים הולכים לאיבוד), ומערכות התקשורת נופלות.',
 anchor: [500, 82],
  },
  {
 id: 'cyber', label: 'סייבר', english: 'Cyber', icon: 'bolt',
+short: 'רשתות ומידע',
 strength: 'הנשק השקוף: היכולת לשתק את האויב בלי לירות כדור אחד! לפרוץ לו למכשירי הקשר, לעוור לו את המכ"ם או לכבות לו את החשמל.',
 weakness: 'בלי חומת סייבר נהיה חשופים לגמרי: האקרים יוכלו לזייף מטרות לחיילים, לנתק קשר ולהפיל לנו תשתיות (חשמל, מים, בנקים).',
 anchor: [1330, 367],
  },
 ];
+
+/** Short status for the panel's feedback box — one line, no repeated
+    headings, sized to whatever's actually true right now rather than a
+    fixed template. */
+function getFeedback(domains: Domain[], active: Set<string>): { title: string; body: string; icon: IconName } {
+const missing = domains.filter((d) => !active.has(d.id));
+if (missing.length === 0) {
+return { title: 'עליונות מלאה', body: 'כל חמשת הממדים פעילים יחד — יתרון מוחלט על פני האויב.', icon: 'shield' };
+ }
+if (missing.length === domains.length) {
+return { title: 'כל הממדים כבויים', body: 'הצבא מנותק לחלוטין: אי אפשר לזוז, לראות או לתקשר.', icon: 'mask' };
+ }
+if (missing.length === 1) {
+const d = missing[0];
+return { title: `${d.label} נותק`, body: d.weakness, icon: d.icon };
+ }
+return {
+title: `${missing.length} ממדים נותקו`,
+body: 'השילוב בין הממדים נשבר — היכולת המבצעית נחלשת משמעותית.',
+icon: 'spark',
+ };
+}
+
+/** iOS-style toggle track + thumb — purely decorative, `aria-hidden` inside
+    DomainRow's real `role="switch"` button. Uses logical `start-*` (not a
+    transform) so the thumb slides toward the correct physical side under
+    RTL without any direction-specific math. */
+function DomainSwitch({ checked }: { checked: boolean }) {
+return (
+ <span
+aria-hidden
+className={cn(
+ 'relative inline-flex h-6 w-11 shrink-0 rounded-full border transition-colors duration-200',
+checked ? 'border-accent bg-accent' : 'border-border bg-bg-accent'
+ )}
+ >
+ <span
+className={cn(
+ 'absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-[inset-inline-start] duration-200',
+checked ? 'start-[22px]' : 'start-0.5'
+ )}
+ />
+ </span>
+ );
+}
+
+/** One control-panel row: icon + name + one-line subtitle + switch. The
+    whole row is the real `role="switch"` control (bigger, easier hit
+    target than the thumb alone) — DomainSwitch inside it is decorative. */
+function DomainRow({ d, isOn, onToggle }: { d: Domain; isOn: boolean; onToggle: () => void }) {
+ // "יבשה" is grammatically feminine — every other domain label is
+ // masculine, so this is the only one needing the feminine form.
+const isFem = d.id === 'land';
+const stateWord = isOn ? (isFem ? 'פעילה' : 'פעיל') : isFem ? 'לא פעילה' : 'לא פעיל';
+return (
+ <button
+type="button"
+role="switch"
+aria-checked={isOn}
+aria-label={`${d.label}: ${stateWord}, לחץ ל${isOn ? 'כיבוי' : 'הפעלה'}`}
+onClick={onToggle}
+className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-bg-elevated px-3 py-2 text-start transition-colors hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+ >
+ <span className="flex min-w-0 items-center gap-2.5">
+ <Icon name={d.icon} size={20} className={cn('shrink-0', isOn ? 'text-fg' : 'text-fg-dim')} aria-hidden />
+ <span className="min-w-0">
+ <span className="block truncate font-display text-sm font-bold text-fg">{d.label}</span>
+ <span className="block truncate text-xs text-fg-muted">{d.short}</span>
+ </span>
+ </span>
+ <span className="flex shrink-0 items-center gap-2">
+ {!isOn && <span className="chip border-accent/40 px-1.5 py-0.5 text-[10px] text-accent">מנותק</span>}
+ <DomainSwitch checked={isOn} />
+ </span>
+ </button>
+ );
+}
+
 export function MDOScene() {
 const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
 const [motionPaused, setMotionPaused] = useState(false);
-const allOn = active.size === DOMAINS.length;
-const allOff = active.size === 0;
-const missing = DOMAINS.filter((d) => !active.has(d.id));
-const pct = (active.size / DOMAINS.length) * 100;
+const feedback = getFeedback(DOMAINS, active);
 function toggle(id: string) {
 setActive((prev) => {
 const next = new Set(prev);
@@ -98,92 +180,66 @@ title={
  </div>
  </div>
 
- <div className="mt-12 grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
- <div className="space-y-4">
- <SuperiorityIndicator on={allOn} off={allOff} count={active.size} pct={pct} />
+ {/* One unified card — the photo and the control panel read as a single
+     interactive unit instead of separate, scattered cards. DOM order is
+     [panel, image]: in RTL, the first grid child lands in the visual-right
+     column, so the narrower (3fr) panel-share column must come first for
+     the panel to sit on the right and the wider (7fr) image-share column
+     second, for the image to sit on the visual left. */}
+ <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
+ <div className="grid gap-4 lg:grid-cols-[3fr_7fr] items-stretch">
+ <div className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-4">
+ <div className="flex items-center justify-between gap-2">
+ <div className="text-base font-display font-bold text-fg">הממדים הפעילים</div>
+ <div className="font-display font-bold text-lg tabular-nums text-fg">{active.size}/5</div>
+ </div>
 
- <AnimatePresence mode="popLayout">
- {!allOn && !allOff && (
- <motion.div
-initial={{ opacity: 0, y: 10 }}
-animate={{ opacity: 1, y: 0 }}
-exit={{ opacity: 0, y: -10 }}
-className="surface p-5 space-y-3"
- >
- <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
- מה כובה — ומה זה אומר
- </div>
- <ul className="space-y-2.5 text-base leading-relaxed text-black">
- {missing.map((d) => (
- <li key={d.id}>
- <div>
- <strong className="text-black">{d.label}:</strong>{' '}
- <span>{d.weakness}</span>
- </div>
- </li>
+ <div className="mt-3 flex flex-col gap-2">
+ {DOMAINS.map((d) => (
+ <DomainRow key={d.id} d={d} isOn={active.has(d.id)} onToggle={() => toggle(d.id)} />
  ))}
- </ul>
- </motion.div>
- )}
+ </div>
 
- {allOff && (
- <motion.div
-initial={{ opacity: 0 }}
-animate={{ opacity: 1 }}
-className="surface p-5 text-base leading-relaxed text-black"
+ {/* flex-1 lets this box absorb any leftover height so the button
+     below still lands flush with the bottom of the panel — height
+     here varies with feedback text length, unlike the fixed-height
+     image column next to it. */}
+ <div className="mt-3 flex flex-1 flex-col justify-center rounded-xl border border-accent/25 bg-accent/10 p-3">
+ <div className="flex items-start gap-2">
+ <Icon name={feedback.icon} size={18} className="mt-0.5 shrink-0 text-accent" />
+ <div className="min-w-0">
+ <div className="text-sm font-display font-bold text-accent">{feedback.title}</div>
+ <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{feedback.body}</p>
+ </div>
+ </div>
+ </div>
+
+ <button
+type="button"
+onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
+className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover"
  >
- כיבית את כל החמישה — הצבא שותק לחלוטין. אי אפשר לזוז, אי אפשר לראות, אי אפשר לדבר. הפעל לפחות ממד אחד כדי שהכוח יתחיל לפעול שוב.
- </motion.div>
- )}
-
- {allOn && (
- <motion.div
-initial={{ opacity: 0 }}
-animate={{ opacity: 1 }}
-className="surface p-5 space-y-3"
- >
- <div>
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">המצב האידיאלי ·"בועה" סביב האויב</div>
- <p className="text-base leading-relaxed text-black">
- כשכל החמישה דולקים יחד, הצבא שלנו יוצר סביב האויב מעין <strong className="text-black">בועה הרמטית</strong> —
- כלומר אזור שממנו הוא לא יכול לנוע, לא יכול לראות מה קורה, ולא יכול לתקשר עם הכוחות שלו.
- הוא בעצם <strong className="text-black">משותק</strong> — וכל פעולה שינסה — נחשפת ונחסמת לפני שהתחילה.
- </p>
- </div>
- </motion.div>
- )}
- </AnimatePresence>
+ <Icon name="refresh" size={16} />
+ הפעלת כל הממדים
+ </button>
  </div>
 
- <div className="space-y-4">
- <div className="flex flex-wrap items-center justify-between gap-2">
- <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
- לחץ על כל ממד כדי לכבות / להפעיל
- </div>
- <div className="flex items-center gap-3">
+ <div className="flex flex-col">
+ <MDOFieldDiagram domains={DOMAINS} active={active} paused={motionPaused} />
+ {/* flex-1 + items-end: keeps this row pinned to the bottom of the
+     image column instead of floating in whatever gap is left when
+     the panel column (variable-height feedback text) is taller. */}
+ <div className="mt-2 flex flex-1 items-end justify-end">
  <button
 type="button"
 onClick={() => setMotionPaused((p) => !p)}
 aria-pressed={motionPaused}
 aria-label={motionPaused ? 'תנועה מושהית, לחץ להפעלה' : 'תנועה פעילה, לחץ להשהיה'}
-className="text-sm font-display font-semibold text-fg-muted hover:text-brand-dark transition-colors flex items-center gap-1"
+className="text-xs font-display font-semibold text-fg-muted transition-colors hover:text-accent"
  >
  {motionPaused ? 'הפעל תנועה' : 'השהה תנועה'}
  </button>
- <button
-onClick={() => setActive(new Set(DOMAINS.map((d) => d.id)))}
-className="text-sm font-display font-semibold text-fg-muted hover:text-brand-dark transition-colors flex items-center gap-1"
- >
- הפעל הכל
- </button>
  </div>
- </div>
- {/* No overflow-hidden here — the photo rounds its own corners below, but
-     the overlay (rings/pulses/chips) must stay free to bleed slightly
-     past the photo's edge for anchors close to it, e.g. "חלל" near the
-     top, without getting clipped mid-animation. */}
- <div className="surface-elevated">
- <MDOFieldDiagram domains={DOMAINS} active={active} onToggle={toggle} paused={motionPaused} />
  </div>
  </div>
  </div>
@@ -315,12 +371,10 @@ return `M${a[0]} ${a[1]} Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
 function MDOFieldDiagram({
 domains,
 active,
-onToggle,
 paused,
 }: {
 domains: Domain[];
 active: Set<string>;
-onToggle: (id: string) => void;
 paused: boolean;
 }) {
 const byId = useMemo(() => Object.fromEntries(domains.map((d) => [d.id, d])), [domains]);
@@ -419,73 +473,26 @@ return (
  );
  })}
 
+ {/* Small "location ping" ring at each active anchor — much smaller
+     than the old clickable target now that the switches in the side
+     panel are the real control; this is a purely decorative pulse so
+     the photo stays the focal point instead of the markers. */}
  {domains.map((d) => {
 const isOn = active.has(d.id);
 return (
  <g key={'ring-' + d.id} style={{ opacity: isOn ? 1 : 0, transition: 'opacity 300ms ease' }}>
- <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="46" ry="30" fill="none" stroke="#D97E2B" strokeWidth="1.5" opacity="0.5" />
+ <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="13" ry="9" fill="none" stroke="#D97E2B" strokeWidth="1.5" opacity="0.6" />
  {motionEnabled && isOn && (
- <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="46" ry="30" fill="none" stroke="#D97E2B" strokeWidth="1.5">
- <animate attributeName="rx" values="46;78" dur="3.4s" repeatCount="indefinite" />
- <animate attributeName="ry" values="30;52" dur="3.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.55;0" dur="3.4s" repeatCount="indefinite" />
+ <ellipse cx={d.anchor[0]} cy={d.anchor[1]} rx="13" ry="9" fill="none" stroke="#D97E2B" strokeWidth="1.5">
+ <animate attributeName="rx" values="13;24" dur="3.4s" repeatCount="indefinite" />
+ <animate attributeName="ry" values="9;17" dur="3.4s" repeatCount="indefinite" />
+ <animate attributeName="opacity" values="0.6;0" dur="3.4s" repeatCount="indefinite" />
  </ellipse>
  )}
  </g>
  );
  })}
  </svg>
-
- {/* Real, keyboard-operable controls — a transparent-fill ring (the hit
-     target) plus a caption chip below it. The ring never opaquely fills,
-     so the vehicle/satellite/mast baked into the photo stays visible in
-     every state — only the ring's border style and the chip communicate
-     on/off, both of which the button's own aria-label states directly. */}
- {domains.map((d) => {
-const isOn = active.has(d.id);
-const extra = d.id === 'space' ? ' · המחשה' : d.id === 'cyber' ? ' · רשת חוצת ממדים' : '';
- // "יבשה" is grammatically feminine — every other domain label is
- // masculine, so this is the only one needing the feminine form.
-const isFem = d.id === 'land';
-const activeWord = isFem ? 'פעילה' : 'פעיל';
-const inactiveWord = isFem ? 'לא פעילה' : 'לא פעיל';
-const leftPct = (d.anchor[0] / FIELD_W) * 100;
-const topPct = (d.anchor[1] / FIELD_H) * 100;
-return (
- <div key={d.id}>
- <button
-type="button"
-onClick={() => onToggle(d.id)}
-aria-pressed={isOn}
-aria-label={`${d.label}${extra}: ${isOn ? `${activeWord}, לחץ לכיבוי` : `${inactiveWord}, לחץ להפעלה`}`}
-className={cn(
- 'absolute size-14 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-transparent transition-all duration-200 ease-snap sm:size-16',
-isOn
- ? 'border-accent shadow-[0_0_0_4px_theme(colors.accent.DEFAULT/15%)]'
- // A light halo (not just the tan border) keeps the dashed ring
- // readable over any patch of the photo — a dirt road or sand-toned
- // slope would otherwise wash the plain tan border out.
- : 'border-dashed border-border opacity-80 shadow-[0_0_0_1.5px_theme(colors.paper.bright/90%)] hover:opacity-100'
- )}
-style={{ left: `${leftPct}%`, top: `${topPct}%` }}
- />
- {/* Decorative — the button's aria-label already carries this text.
-     Wraps instead of a fixed nowrap width, and the left position is
-     clamped by the same half-width — otherwise the longest caption
-     (cyber's "· רשת חוצת ממדים") overflows the card's clipped edge,
-     since its anchor sits close to the right side of the photo. */}
- <span
-aria-hidden
-className="chip absolute flex w-max max-w-[124px] -translate-x-1/2 items-center whitespace-normal text-center leading-snug border-border/60 bg-bg-elevated text-fg-muted"
-style={{ left: `clamp(64px, ${leftPct}%, calc(100% - 64px))`, top: `calc(${topPct}% + 32px)` }}
- >
- <span className={cn('inline-block size-1.5 shrink-0 rounded-full', isOn ? 'bg-accent' : 'border border-fg-dim')} />
- {d.label}
-{extra}
- </span>
- </div>
- );
- })}
  </div>
  );
 }
@@ -593,36 +600,6 @@ alt="שרשרת שבורה — סמל לחוליה חלשה המנתקת את ה
 aspect="4/3"
 fit="cover"
 className="rounded-xl border border-border [aspect-ratio:auto] h-full w-full"
- />
- </div>
- </div>
- </div>
- );
-}
-function SuperiorityIndicator({ on, off, count, pct }: { on: boolean; off: boolean; count: number; pct: number }) {
-return (
- <div className="surface-elevated p-5 sm:p-6 text-center">
- <div>
- <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">כמה ממדים פעילים</div>
- <div className="font-display font-bold text-5xl tabular-nums mb-1">{count}/5</div>
- <div
-className={cn(
- 'text-sm font-display font-semibold tracking-wider flex items-center justify-center gap-1.5',
-on && 'text-accent',
-off && 'text-fg-muted',
- !on && !off && 'text-fg-muted'
- )}
- >
- {on && <>כוח מלא — שליטה מוחלטת</>}
- {off && <>הצבא משותק לחלוטין</>}
- {!on && !off && <>שליטה חלקית — {count} מתוך 5 ממדים פעילים</>}
- </div>
-
- <div className="mt-4 h-1.5 rounded-full bg-bg-accent overflow-hidden">
- <motion.div
-className="h-full rounded-full bg-accent"
-animate={{ width: `${pct}%` }}
-transition={{ duration: 0.4 }}
  />
  </div>
  </div>
