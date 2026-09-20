@@ -3,6 +3,7 @@
 import {
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -40,13 +41,16 @@ const POOL_DRAG_CLICK_THRESHOLD = 4;
 
 // Only this many events are offered for sorting at once; each accepted
 // placement reveals the next one in SCENARIOS order. Chosen over showing
-// all 6 because this lesson's shell reserves an inline-start nav rail
-// (ps-[var(--lesson-content-inset)] on the shell wrapper, LessonShell.tsx),
-// so the pool row's inner width at a 1440px viewport is only ~1018px, not
-// the full 1440 — 6 chips at the old fixed 256px plus gaps overflowed that
-// row and forced the learner to pan the strip to find an event. 4 chips
-// fit it with no scrolling at ~246px each, essentially the same width as
-// the old fixed w-64 (256px), not wider — nothing gets less readable.
+// all 6 because this lesson's page root reserves an inline-start gutter
+// (xl:ps-[calc(13vw+20px)] on PagedLearn.tsx's root element) for the
+// lesson nav, so the pool row's inner width at a 1440px viewport isn't the
+// full 1440px. Measured at 1440px through that inset: the scene section is
+// 1169px, the pool card (surface-elevated p-4) is 1105px, and the chip row
+// itself is 1071px. 6 chips at the old fixed 256px plus gaps overflowed
+// that 1071px row and forced the learner to pan the strip to find an
+// event. 4 chips at gap-3 come out to ~259px each — marginally WIDER than
+// the old fixed w-64 (256px) — and fit the row with no scrolling, so
+// nothing gets less readable.
 const POOL_VISIBLE_SLOTS = 4;
 
 const LEVELS: Record<Level, LevelMeta> = {
@@ -523,6 +527,13 @@ function ScenarioPool({
     const el = rowRef.current;
     const drag = rowDragRef.current;
     if (!el || !drag) return;
+    // A pointerdown whose pointerup landed outside this row (the pointer left
+    // before crossing the threshold below, so no capture was taken) leaves a
+    // stale 'pending' record behind. Without this, the next button-less move
+    // back over the row would read as a large delta and start a pick-up the
+    // user never began — and since the pool is no longer a drop target, that
+    // phantom assignment can only be undone by resetting the whole exercise.
+    if (e.buttons === 0) { rowDragRef.current = null; return; }
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
 
@@ -557,13 +568,20 @@ function ScenarioPool({
   if (pool.length === 0) return null;
 
   return (
-    <motion.div className="surface-elevated p-4 flex flex-col min-w-0 transition-colors duration-300 ease-snap">
-      {/* The pool is deliberately NOT a drop target: with a fixed number of
-          visible slots, returning a sorted chip here would push the row past its
-          cap, and an already-placed event is meant to be moved between zones
-          (which the zones' own native drop handlers already support), not un-sorted. */}
+    <div className="surface-elevated p-4 flex flex-col min-w-0">
+      {/* The pool is deliberately NOT a drop target. It's not about the cap —
+          the pool size is min(SCENARIOS.length - assignedCount, POOL_VISIBLE_SLOTS),
+          so un-assigning (which only ever lowers assignedCount) can never push it
+          above POOL_VISIBLE_SLOTS. The real problem is retraction: un-assigning
+          lowers assignedCount, which lowers revealedCount, which retracts an
+          index the pool has ALREADY revealed — so a chip currently on screen
+          would vanish out from under the learner. Example: with one event sorted,
+          revealedCount is 5; un-assigning it drops revealedCount back to 4 and the
+          fifth chip disappears. An already-placed event is meant to be moved
+          between zones instead (which the zones' own native drop handlers already
+          support), not un-sorted back into the queue. */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="text-sm font-display font-semibold text-fg tracking-wider">
+        <div aria-live="polite" className="text-sm font-display font-semibold text-fg tracking-wider">
           {`אירועים למיון · ${remaining}`}
         </div>
         <div className="text-sm text-fg-muted">
@@ -591,21 +609,26 @@ function ScenarioPool({
             submitted={submitted}
             onSelect={() => onSelect(i)}
             className={cn(
-              // Capped at 25% of the row so a shrinking pool (as chips get
-              // sorted out) doesn't stretch the last remaining chip(s) to
-              // the row's full width — at 4 chips the cap isn't reached
-              // (~246px computed vs a ~254px cap, see POOL_VISIBLE_SLOTS
-              // above), so the full-pool layout is unchanged; below 4,
-              // chips keep this size and the row simply ends earlier —
-              // in RTL that leaves the empty space at the inline-end.
-              'flex-1 min-w-0 max-w-[25%]',
+              // Capped at 100/POOL_VISIBLE_SLOTS % of the row (not a hardcoded
+              // 25%) so a shrinking pool (as chips get sorted out) doesn't
+              // stretch the last remaining chip(s) to the row's full width —
+              // derived from the constant so dropping POOL_VISIBLE_SLOTS to 3
+              // widens the cap along with the slot count instead of leaving
+              // chips stuck at the 4-slot width. At 4 chips the flex width
+              // (~259px, measured at 1440px) is already below the cap
+              // (~268px), so the cap isn't reached and the full-pool layout is
+              // unchanged; below 4, the row simply ends earlier and the
+              // remaining chips step UP from the flex width to the cap width
+              // — in RTL that leaves the empty space at the inline-end.
+              'flex-1 min-w-0',
               draggingIndex === i && 'opacity-40',
             )}
+            style={{ maxWidth: `${100 / POOL_VISIBLE_SLOTS}%` }}
             draggable={false}
           />
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -652,7 +675,11 @@ function LevelZone({
         e.preventDefault();
         const raw = e.dataTransfer.getData('text/scenario');
         const idx = Number(raw);
-        if (!Number.isNaN(idx)) onMoveScenario(idx, level);
+        // Number('') is 0, not NaN — a foreign drag (no text/scenario payload,
+        // e.g. text dragged in from elsewhere on the page) would otherwise
+        // silently assign scenario 0. Require a non-empty payload and an
+        // actual integer index instead of just checking for NaN.
+        if (raw !== '' && Number.isInteger(idx)) onMoveScenario(idx, level);
         setIsOver(false);
       }}
       onClick={() => {
@@ -750,6 +777,7 @@ function ScenarioChip({
   onSelect,
   compact = false,
   className,
+  style,
   draggable = true,
 }: {
   index: number;
@@ -761,6 +789,7 @@ function ScenarioChip({
   onSelect: () => void;
   compact?: boolean;
   className?: string;
+  style?: CSSProperties;
   draggable?: boolean;
 }) {
   return (
@@ -775,6 +804,7 @@ function ScenarioChip({
         e.stopPropagation();
         onSelect();
       }}
+      style={style}
       className={cn(
         'surface cursor-grab active:cursor-grabbing transition-all duration-300 ease-snap',
         compact ? 'p-2.5' : 'p-3',
