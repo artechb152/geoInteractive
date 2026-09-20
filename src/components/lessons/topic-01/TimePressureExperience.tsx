@@ -274,13 +274,20 @@ function Timeline({
     onSelect(nearest);
   };
 
-  const dragConstraints = useMemo(
-    () =>
-      centers.length === 5
-        ? { left: centers[0] - TIMELINE_THUMB_SIZE / 2, right: centers[4] - TIMELINE_THUMB_SIZE / 2 }
-        : { left: 0, right: 0 },
-    [centers],
-  );
+  const dragConstraints = useMemo(() => {
+    if (centers.length !== 5) return { left: 0, right: 0 };
+    // `centers[]` are physical x-offsets from getBoundingClientRect() — under
+    // this page's RTL, station 0 (day 1, first in DOM) sits at the physical
+    // right (the larger offset) and station 4 sits at the physical left (the
+    // smaller offset), so centers[0] > centers[4]. framer-motion's
+    // dragConstraints.left/.right are physical min/max bounds, not
+    // RTL-aware, so they must be sorted here rather than assumed in index
+    // order — otherwise `left > right` clamps the drag to one extreme
+    // instead of tracking the pointer across all 5 stations.
+    const minCenter = Math.min(centers[0], centers[4]);
+    const maxCenter = Math.max(centers[0], centers[4]);
+    return { left: minCenter - TIMELINE_THUMB_SIZE / 2, right: maxCenter - TIMELINE_THUMB_SIZE / 2 };
+  }, [centers]);
 
   return (
     <div ref={trackRef} className="relative mt-5">
