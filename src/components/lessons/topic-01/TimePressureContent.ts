@@ -1,245 +1,145 @@
 /**
- * TimePressureContent — נתוני הפעילות "כשהזמן משנה את מאזן הכוחות"
- * (#scene-asymmetric, topic-01).
+ * TimePressureContent — נתוני הפעילות "למה הזמן הוא הנשק הסודי של השחקן
+ * הלא-סדיר?" (#scene-asymmetric, topic-01, ציר זמן + השוואת חמש חזיתות).
  *
- * הבסיס: כל מחרוזת עברית כאן הועתקה במקור מילה במילה מ־
- * design/handoff/asymmetric-time-v3/interaction-content.json,
- * והקואורדינטות מ־design/handoff/asymmetric-time-v3/asset-manifest.json.
- *
- * עדכון לאחר משוב הבעלים (ראו design/docs/assumptions.md, הערך התואם
- * לתאריך העדכון): כמה שדות הועשרו בחזרה בפרטים ומושגים קונקרטיים
- * מהגרסה הקודמת של הרכיב (TimeAsymmetry, לפני ההחלפה) שהושמטו בניסוח
- * החדש — הוצאות/מילואים, לוויות חיילים ומחיר אנושי, ועדות חקירה/
- * אופוזיציה/לחץ קואליציוני, או"ם/סנקציות, ותמצית "כללי המשחק" של
- * השחקן הלא־סדיר — בלי לשחזר את ה"5 חזיתות מול 1" המנוסח-מספרים או כל
- * טענת ניצחון מובטח, ובלי אזכור היסטורי קונקרטי (ראו ההערה המסומנת
- * למשתמש בנפרד). שדות שלא מסומנים כאן נשארו מילה במילה מה-JSON.
- *
- * מודול תוכן בלבד: אין כאן JSX, state או לוגיקת תצוגה.
+ * כל מחרוזת עברית תחת ROUNDS/STATIONS ותחת INSIGHT_PARAGRAPHS הועתקה
+ * מילה במילה מהפרומפט שסופק למימוש מחדש של הפעילות (ציר זמן, יום 1 →
+ * שנה 2, חמש חזיתות). מודול תוכן בלבד: אין כאן JSX, state או לוגיקת
+ * תצוגה — ראו TimePressureExperience.tsx לרכיב עצמו.
  */
 
-export type PressureNodeId = 'military' | 'economy' | 'public' | 'politics' | 'international';
-export type MapNodeId = 'center' | PressureNodeId;
+export type StationId = 'field' | 'treasury' | 'public' | 'politics' | 'international';
 
-/** חמש הזירות שמצב המפה נגזר עבורן. `center` אינו כלול — הוא מוקד ניטרלי קבוע. */
-export const ALL_NODE_IDS: PressureNodeId[] = ['military', 'economy', 'public', 'politics', 'international'];
-
-/** כל שש התוויות במפה, כולל המוקד המרכזי. */
-export const ALL_MAP_NODE_IDS: MapNodeId[] = ['center', ...ALL_NODE_IDS];
-
-export type RoundOption = { id: string; text: string };
-
-export type RoundContent = {
-  id: 'opening' | 'accumulation' | 'picture';
-  stepLabel: string;
-  title: string;
-  event: string;
-  question: string;
-  options: RoundOption[];
-  correctOptionId: string;
-  feedbackByOption: Record<string, string>;
-  causalExplanation: string;
-  newPressureIds: PressureNodeId[];
-  previousPressureIds: PressureNodeId[];
+export type Station = {
+  id: StationId;
+  index: 0 | 1 | 2 | 3 | 4;
+  /** תווית תחנה קצרה על ציר הזמן, למשל "יום 1". */
+  timeLabel: string;
+  /** הטקסט הנרטיבי של התחנה, מוצג כברירת מחדל במשטח המרכזי. */
+  stationText: string;
+  /** שם החזית כפי שהוא מופיע בטבלה ובכותרת פאנל הפירוט. */
+  frontLabel: string;
+  /** הפירוט המקורי של החזית, מוצג כשלוחצים על שם חזית פעילה. */
+  frontDetail: string;
+  image: { assetId: string; src: string; alt: string; prompt: string };
 };
 
-/** שלושת הסבבים, בסדר המערך שב־JSON (opening, accumulation, picture). */
-export const ROUNDS: RoundContent[] = [
+const ASSET_BASE = '/assets/lessons/topic01/scene-asymmetric/time-pressure-timeline';
+
+/** פרספקטיבת מצלמה טבעית בגובה העיניים, ריאליסטי, אור יום טבעי — דרישת
+ * הסגנון של בעל הפרויקט לחמש התמונות האלה (לא איזומטריה/דיוראמה). */
+const PHOTO_STYLE =
+  'photorealistic photograph, natural eye-level camera perspective, natural daylight, muted stone/sand/olive tones, quiet single-focus composition, no isometric or miniature or tilt-shift styling, no studio background, no burned-in text';
+
+export const STATIONS: Station[] = [
   {
-    id: 'opening',
-    stepLabel: 'פתיחת המערכה',
-    title: 'כוח רב, מטרות שונות.',
-    event: 'בתרחיש הזה לצבא הסדיר יתרון צבאי. השחקן הלא־סדיר מבקש לשמר את יכולתו ולהמשיך להתקיים.',
-    question: 'מה אפשר להסיק מהיתרון הצבאי לבדו?',
-    options: [
-      { id: 'guaranteed', text: 'שהצבא הסדיר ישיג את מטרותיו גם אם המערכה תימשך.' },
-      { id: 'conditional', text: 'שהוא מחזיק ביתרון, אך השגת המטרות תלויה גם בתנאים נוספים.' },
-    ],
-    correctOptionId: 'conditional',
-    feedbackByOption: {
-      guaranteed: 'יתרון צבאי הוא נתון חשוב, אך אינו מבטיח השגת מטרות. נבדוק מה עוד עשוי להשתנות כשהמערכה מתמשכת.',
-      conditional: 'יתרון צבאי אינו כל התמונה. מטרות שונות ומשאבים שונים משפיעים על היכולת של כל צד להתמיד.',
+    id: 'field',
+    index: 0,
+    timeLabel: 'יום 1',
+    stationText:
+      'הלחימה רק התחילה. מבחוץ זה עוד נראה כמו "מלחמה פשוטה, צבא מול צבא" — רק חזית אחת פעילה משני הצדדים.',
+    frontLabel: 'האויב בשטח',
+    frontDetail: 'לוחמי גרילה או מחבלים — היריב הצבאי המוצהר.',
+    image: {
+      assetId: 'TOPIC01-ASYM-TIME-TIMELINE-FIELD',
+      src: `${ASSET_BASE}/01-field-photo.png`,
+      alt: 'עמדת שטח ורכב',
+      prompt: `A military field position with a parked armored vehicle at eye level, ${PHOTO_STYLE}`,
     },
-    causalExplanation: 'נקודת הפתיחה היא הזירה הצבאית. כעת נבדוק כיצד ההתמשכות יכולה להוסיף לחצים.',
-    newPressureIds: ['military'],
-    previousPressureIds: [],
   },
   {
-    id: 'accumulation',
-    stepLabel: 'הלחץ מצטבר',
-    title: 'המערכה נמשכת. המחיר מצטבר.',
-    event: 'ההוצאות מזנקות למיליארדי דולרים בשבוע, והמילואים נשארים מגויסים ונשחקים.',
-    question: 'מה עשוי להשתנות גם בלי הפסד בקרב?',
-    options: [
-      { id: 'unchanged', text: 'כל עוד היתרון הצבאי נשמר, חופש הפעולה נשאר ללא שינוי.' },
-      { id: 'pressure', text: 'הלחץ הכלכלי והציבורי עשוי לגדול ולצמצם את חופש הפעולה.' },
-    ],
-    correctOptionId: 'pressure',
-    feedbackByOption: {
-      unchanged: 'הבחירה מתייחסת ליתרון בשטח, אבל האירוע מתאר גם מחיר מתמשך. המחיר עשוי להשפיע על משאבים ועל תמיכה, גם בלי הפסד בקרב.',
-      pressure: 'גם כשהכוח הצבאי נשמר, מחיר ההתמשכות עשוי לצמצם את חופש הפעולה.',
+    id: 'treasury',
+    index: 1,
+    timeLabel: 'שבוע 2',
+    stationText:
+      'משרד האוצר מתחיל ללחוץ — המלחמה כבר עולה מיליארדי דולרים בשבוע, והמילואים נשחקים.',
+    frontLabel: 'משרד האוצר',
+    frontDetail: 'תקציב המדינה נשרף — מיליארדי דולרים בשבוע, מילואים, פגיעה בעורף.',
+    image: {
+      assetId: 'TOPIC01-ASYM-TIME-TIMELINE-TREASURY',
+      src: `${ASSET_BASE}/02-treasury-photo.png`,
+      alt: 'משרד תקציב',
+      prompt: `A government treasury office interior with budget documents on a desk, ${PHOTO_STYLE}`,
     },
-    causalExplanation: 'הוצאות ומילואים לאורך זמן → לחץ כלכלי וציבורי → השפעה אפשרית על היכולת להתמיד.',
-    newPressureIds: ['economy', 'public'],
-    previousPressureIds: ['military'],
   },
   {
-    id: 'picture',
-    stepLabel: 'תמונת המצב',
-    title: 'גם מחוץ לשטח מתקבלות החלטות.',
-    event: 'בתרחיש הזה מתרחב הוויכוח הפוליטי על המשך המערכה, ובעלות ברית מבקשות לקדם הסדרה.',
-    question: 'מה נוסף לתמונת המצב?',
-    options: [
-      { id: 'outside', text: 'לחצים פוליטיים ובינלאומיים עשויים להשפיע על המשך המערכה.' },
-      { id: 'onlybattle', text: 'כל עוד לא חל שינוי בזירה הצבאית, אין לכך השפעה על המשך המערכה.' },
-    ],
-    correctOptionId: 'outside',
-    feedbackByOption: {
-      outside: 'ההחלטה אם וכיצד להמשיך אינה מתקבלת רק על סמך המצב הצבאי. גם יחסים חיצוניים ודיון פוליטי עשויים להשפיע.',
-      onlybattle: 'האירוע מתאר שינוי בתנאים שבהם מתקבלות ההחלטות. התנאים האלה עשויים להשפיע על המשך המערכה גם בלי שינוי צבאי.',
+    id: 'public',
+    index: 2,
+    timeLabel: 'חודש 3',
+    stationText:
+      'דעת הקהל נשחקת — תמונות מהזירה ולוויות חיילים משפיעות על התמיכה הציבורית מיום ליום.',
+    frontLabel: 'דעת הקהל',
+    frontDetail: 'תמונות מהזירה, לוויות חיילים, תמיכה ציבורית שנשחקת מיום ליום.',
+    image: {
+      assetId: 'TOPIC01-ASYM-TIME-TIMELINE-PUBLIC',
+      src: `${ASSET_BASE}/03-public-photo.png`,
+      alt: 'אזרחים צופים בדיווח',
+      prompt: `Civilians watching a news broadcast on a television, ${PHOTO_STYLE}`,
     },
-    causalExplanation: 'ויכוח פנימי ועמדות של בעלות ברית → לחץ פוליטי ובינלאומי → השפעה אפשרית על ההחלטה כיצד להמשיך.',
-    newPressureIds: ['politics', 'international'],
-    previousPressureIds: ['military', 'economy', 'public'],
+  },
+  {
+    id: 'politics',
+    index: 3,
+    timeLabel: 'שנה 1',
+    stationText: 'הפוליטיקה הפנימית מתעוררת — ועדות חקירה, אופוזיציה, ולחץ קואליציוני מבית.',
+    frontLabel: 'הפוליטיקה הפנימית',
+    frontDetail: 'הכנסת, הקונגרס, אופוזיציה, ועדות חקירה, שעון הבחירות.',
+    image: {
+      assetId: 'TOPIC01-ASYM-TIME-TIMELINE-POLITICS',
+      src: `${ASSET_BASE}/04-politics-photo.png`,
+      alt: 'חדר ועדה',
+      prompt: `A parliamentary committee hearing room with officials seated at a long table, ${PHOTO_STYLE}`,
+    },
+  },
+  {
+    id: 'international',
+    index: 4,
+    timeLabel: 'שנה 2',
+    stationText: 'הבמה הבינלאומית דורשת הפסקת אש — לחץ מהאו"ם, מבעלות ברית, ואיום בסנקציות.',
+    frontLabel: 'הבמה הבינלאומית',
+    frontDetail: 'או"ם, בעלות ברית, האג, סנקציות — כולם דורשים "הפסקת אש מיד".',
+    image: {
+      assetId: 'TOPIC01-ASYM-TIME-TIMELINE-INTERNATIONAL',
+      src: `${ASSET_BASE}/05-international-photo.png`,
+      alt: 'שולחן דיון בינלאומי',
+      prompt: `An international diplomatic roundtable discussion with delegates and flags, ${PHOTO_STYLE}`,
+    },
   },
 ];
 
-export type TransferChoice = { id: string; text: string };
+export const TITLE: string = 'למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?';
+export const INSTRUCTION: string = 'התקדמו בציר הזמן וגלו איזו חזית נוספת בכל שלב.';
+export const SOURCE_QUESTION: string = 'מי באמת יכול להכריח אותך לסיים את המלחמה?';
+export const TIMELINE_NOTE: string =
+  'ציר הזמן הוא המחשה רעיונית, לא לוח זמנים קבוע לכל מלחמה.';
 
-export const TRANSFER: {
-  title: string;
-  event: string;
-  instruction: string;
-  claimQuestion: string;
-  claims: TransferChoice[];
-  correctClaimId: string;
-  evidenceQuestion: string;
-  evidence: TransferChoice[];
-  correctEvidenceId: string;
-  success: string;
-  wrongClaim: string;
-  wrongEvidence: string;
-  wrongBoth: string;
-} = {
-  title: 'עכשיו הסבירו את הקשר',
-  event: 'במערכה אחרת נשמר היתרון הצבאי, אבל המחיר הכלכלי עולה והתמיכה בהמשך הלחימה נחלשת.',
-  instruction: 'בחרו טענה ואת הראיה שתומכת בה.',
-  claimQuestion: 'איזו טענה מתאימה לתרחיש?',
-  claims: [
-    { id: 'guarantee', text: 'היתרון הצבאי מבטיח שהיכולת להתמיד תישמר.' },
-    { id: 'constrained', text: 'היכולת להתמיד עשויה להצטמצם למרות היתרון הצבאי.' },
-    { id: 'inevitable', text: 'עצם התמשכות המערכה מבטיחה ניצחון לשחקן הלא־סדיר.' },
-  ],
-  correctClaimId: 'constrained',
-  evidenceQuestion: 'איזו ראיה תומכת בטענה?',
-  evidence: [
-    { id: 'advantage', text: 'היתרון הצבאי נשמר.' },
-    { id: 'costsupport', text: 'המחיר עולה והתמיכה בהמשך נחלשת.' },
-    { id: 'duration', text: 'המערכה מתמשכת.' },
-  ],
-  correctEvidenceId: 'costsupport',
-  success: 'נכון. עליית המחיר וירידת התמיכה מסבירות מדוע היכולת להתמיד עשויה להצטמצם. יתרון צבאי לבדו אינו מסביר את כל התמונה.',
-  wrongClaim: 'בדקו אם הטענה מתייחסת גם למחיר ולתמיכה, ולא רק ליתרון הצבאי או לעצם חלוף הזמן.',
-  wrongEvidence: 'בחרו את השינוי שמסביר את הלחץ על היכולת להתמיד. עצם חלוף הזמן אינו הסבר מספיק.',
-  wrongBoth: 'חפשו טענה מותנית על היכולת להתמיד, וראיה מתוך התרחיש שמסבירה מה השתנה.',
-};
-
-export const NODE_LABELS: Record<MapNodeId, string> = {
-  center: 'היכולת להמשיך במערכה',
-  military: 'הזירה הצבאית',
-  economy: 'כלכלה',
-  public: 'דעת הקהל',
-  politics: 'פוליטיקה',
-  international: 'זירה בינלאומית',
-};
-
-export const NODE_DEFINITIONS: Record<MapNodeId, string> = {
-  center: 'היכולת להתמיד תלויה במטרות, במשאבים ובתנאי המערכה.',
-  military: 'היכולת להפעיל כוח ולקדם את מטרות המערכה בזירה הצבאית.',
-  economy: 'משאבים, הוצאות והמחיר של התמשכות המערכה.',
-  public: 'תמונות מהזירה, לוויות חיילים והמחיר האנושי משפיעים על התמיכה הציבורית ועל האופן שבו היא מעריכה את התוצאות.',
-  politics: 'החלטות הדרג המדיני, ועדות חקירה, אופוזיציה ולחץ קואליציוני — הוויכוח הפנימי על מטרות המערכה והמשכה.',
-  international: 'יחסים עם האו"ם, בעלות ברית וגורמים חיצוניים נוספים — ואיך עמדותיהם, כולל איום בסנקציות, משפיעים על חופש הפעולה.',
-};
-
-export const MAP_TEXT = {
-  title: 'מפת הלחצים',
-  subtitle: 'מה השתנה בעקבות האירוע?',
-};
-
-export const SCENARIO_LABEL: string = 'תרחיש להמחשה';
-
-export const BUTTONS = {
-  check: 'בדיקת התחזית',
-  next: 'חשפו את האירוע הבא',
-  previous: 'חזרה לאירוע הקודם',
-  transfer: 'לבדיקת ההבנה',
-  checkTransfer: 'בדיקת ההסבר',
-  retryTransfer: 'נסו לתקן',
-  reset: 'התחלה מחדש',
-};
-
-export const FEEDBACK_HEADINGS = {
-  correct: 'נכון — זה הקשר',
-  incorrect: 'נבחן את הקשר',
-  complete: 'השלמתם את הפעילות',
-};
-
-export const IRREGULAR = {
-  title: 'השחקן הלא־סדיר',
-  body: 'לעיתים קרובות, כדי להכריע, על הצד החזק לנצח כמעט בכל זירה שבה הוא נבחן; ליריב הלא־סדיר עשויה להספיק שרידות ושימור יכולת כדי לשרת את יעדיו.',
-  note: 'גם הוא מושפע ממשאבים, מתמיכה ומלחצים. הזמן אינו מבטיח לו ניצחון.',
-};
-
-export const TAKEAWAY = {
-  title: 'התובנה',
-  text: 'יתרון צבאי אינו מבטיח יכולת להתמיד לאורך זמן.',
-  note: 'ההשפעה תלויה במטרות, במשאבים ובתנאי המערכה.',
-};
-
-export const TITLE: string = 'כשהזמן משנה את מאזן הכוחות';
-export const INTRO: string = 'נתחו אירוע, חזו את ההשפעה וגלו איך הלחץ מצטבר.';
-
-/* ─────────────────────────── נכסים (asset-manifest.json) ───────────────────────────
-   שלושת ה-PNG כבר יושבים ב-public/ ומנוהלים בגיט. `alt` הועתק מהמניפסט:
-   למפה יש alt תיאורי, ולשתי רצועות הנוף alt ריק (דקורטיביות). */
-export const ASSETS = {
-  map: {
-    assetId: 'TOPIC01-ASYM-TIME-PRESSURE-MAP',
-    src: '/assets/lessons/topic01/scene-asymmetric/time-pressure/pressure-map-daylight.png',
-    alt: 'המחשה של מרחב עירוני הררי ובו שישה מוקדים למפת לחצים; קווי ההשפעה וההסברים מוצגים בנפרד.',
-    width: 1536,
-    height: 1024,
-  },
-  irregular: {
-    assetId: 'TOPIC01-ASYM-TIME-PRESSURE-IRREGULAR',
-    src: '/assets/lessons/topic01/scene-asymmetric/time-pressure/irregular-landscape.png',
-    alt: '',
-    width: 2172,
-    height: 724,
-  },
-  takeaway: {
-    assetId: 'TOPIC01-ASYM-TIME-PRESSURE-TAKEAWAY',
-    src: '/assets/lessons/topic01/scene-asymmetric/time-pressure/takeaway-landscape.png',
-    alt: '',
-    width: 2172,
-    height: 724,
-  },
+export const TABLE_HEADER = {
+  front: 'חזית',
+  regular: 'צבא סדיר',
+  irregular: 'שחקן לא־סדיר',
 } as const;
 
-/** viewBox של שכבת ה-SVG = גודל הפיקסלים המקורי של המפה. אין לשנות קנה מידה. */
-export const MAP_IMAGE_VIEWBOX = { width: 1536, height: 1024 } as const;
+export const NOT_IN_MODEL_LABEL: string = 'לא במודל';
+export const NOT_YET_ADDED_LABEL: string = 'טרם נוספה';
+export const JUST_ADDED_LABEL: string = 'נוספה';
 
-/**
- * עוגני התוויות מ-mapCoordinates.nodes: שברים מנורמלים, x משמאל לימין ו-y מלמעלה
- * למטה — קואורדינטות פיזיות של התמונה, ללא קשר ל-RTL. `anchor` משמש לקצות הקווים
- * ב-SVG, `label` למיקום כרטיס התווית ב-HTML.
- */
-export const MAP_NODE_ANCHORS: Record<MapNodeId, { anchor: [number, number]; label: [number, number] }> = {
-  center: { anchor: [0.5, 0.53], label: [0.5, 0.585] },
-  military: { anchor: [0.48, 0.22], label: [0.48, 0.3] },
-  international: { anchor: [0.19, 0.38], label: [0.19, 0.475] },
-  economy: { anchor: [0.82, 0.385], label: [0.82, 0.515] },
-  politics: { anchor: [0.27, 0.73], label: [0.27, 0.835] },
-  public: { anchor: [0.745, 0.715], label: [0.745, 0.82] },
+export const UI = {
+  prev: 'התחנה הקודמת',
+  next: 'התחנה הבאה',
+  toggleInsight: 'מה המשמעות?',
+  insightHeading: 'ההסבר במודל המוצג',
+  backToAdded: 'חזרה לחזית שנוספה',
+  viewingPrevious: (frontLabel: string) => `עיון בחזית: ${frontLabel}`,
+  regularSummary: (count: number) => `${count} חזיתות פעילות — צבא סדיר`,
+  irregularSummary: '1 חזית פעילה — שחקן לא־סדיר',
+  summaryTag: 'במודל המוצג',
+  liveUpdate: (station: Station, count: number) =>
+    `${station.timeLabel}: נוספה חזית ${station.frontLabel}. ${count} מתוך 5 חזיתות פעילות לצבא הסדיר.`,
 };
+
+/** ההסבר המקורי המלא — שלוש הפסקאות מהמקור, ללא שינוי ניסוח. */
+export const INSIGHT_PARAGRAPHS: string[] = [
+  'זו לא רק שאלה של מספרים — זה הבדל בכללי המשחק. הצבא הסדיר חייב לנצח בכל אחת מ-5 החזיתות, כי הפסד באחת מהן מספיק כדי להפיל את כל המלחמה. השחקן הלא-סדיר צריך רק לא לאבד את החזית היחידה שלו — וזה כבר מספיק לו לניצחון, בכל שלב בציר הזמן.',
+  'המעצמה רואה את עצמה במלחמה אחת — נגד האויב שבשטח. בפועל, היא לוחמת ב-5 חזיתות בו-זמנית, וכל אחת מ-4 הפנימיות יכולה לבדה לסיים את המלחמה. אין לו אוצר שיתרוקן, אין לו ועדת חקירה שתפיל אותו, אין לו או"ם שילחץ. הוא צריך רק לשרוד עוד יום.',
+  'ארה"ב יצאה מווייטנאם אחרי 10 שנים, ומאפגניסטן אחרי 20 — לא כי הפסידה בקרבות, אלא כי קרסה ב-4 החזיתות האחרות.',
+];
