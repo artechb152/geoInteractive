@@ -2,7 +2,7 @@
  * TimePressureContent — נתוני הפעילות "למה הזמן הוא הנשק הסודי של השחקן
  * הלא-סדיר?" (#scene-asymmetric, topic-01, ציר זמן + השוואת חמש חזיתות).
  *
- * כל מחרוזת עברית תחת ROUNDS/STATIONS ותחת INSIGHT_PARAGRAPHS הועתקה
+ * כל מחרוזת עברית תחת STATIONS ותחת INSIGHT_PARAGRAPHS הועתקה
  * מילה במילה מהפרומפט שסופק למימוש מחדש של הפעילות (ציר זמן, יום 1 →
  * שנה 2, חמש חזיתות). מודול תוכן בלבד: אין כאן JSX, state או לוגיקת
  * תצוגה — ראו TimePressureExperience.tsx לרכיב עצמו.
@@ -130,7 +130,8 @@ export const UI = {
   insightHeading: 'ההסבר במודל המוצג',
   backToAdded: 'חזרה לחזית שנוספה',
   viewingPrevious: (frontLabel: string) => `עיון בחזית: ${frontLabel}`,
-  regularSummary: (count: number) => `${count} חזיתות פעילות — צבא סדיר`,
+  regularSummary: (count: number) =>
+    count === 1 ? '1 חזית פעילה — צבא סדיר' : `${count} חזיתות פעילות — צבא סדיר`,
   irregularSummary: '1 חזית פעילה — שחקן לא־סדיר',
   summaryTag: 'במודל המוצג',
   liveUpdate: (station: Station, count: number) =>

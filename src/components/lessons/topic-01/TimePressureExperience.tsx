@@ -271,6 +271,16 @@ function Timeline({
         nearest = i as 0 | 1 | 2 | 3 | 4;
       }
     });
+    // Snap the thumb to its resolved station directly — when `nearest`
+    // equals the already-current station, onSelect() below causes no state
+    // change, so the `current`-driven alignment effect above never re-runs
+    // and the thumb would otherwise strand wherever the pointer released it
+    // (up to half an inter-station gap off, or further under dragElastic).
+    animate(
+      thumbX,
+      centers[nearest] - TIMELINE_THUMB_SIZE / 2,
+      reduce ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+    );
     onSelect(nearest);
   };
 
@@ -279,13 +289,13 @@ function Timeline({
     // `centers[]` are physical x-offsets from getBoundingClientRect() — under
     // this page's RTL, station 0 (day 1, first in DOM) sits at the physical
     // right (the larger offset) and station 4 sits at the physical left (the
-    // smaller offset), so centers[0] > centers[4]. framer-motion's
-    // dragConstraints.left/.right are physical min/max bounds, not
-    // RTL-aware, so they must be sorted here rather than assumed in index
-    // order — otherwise `left > right` clamps the drag to one extreme
+    // smaller offset). framer-motion's dragConstraints.left/.right are
+    // physical min/max bounds, not RTL-aware, so they're derived from the
+    // actual min/max of all 5 measured centers rather than assumed from
+    // index order — otherwise `left > right` clamps the drag to one extreme
     // instead of tracking the pointer across all 5 stations.
-    const minCenter = Math.min(centers[0], centers[4]);
-    const maxCenter = Math.max(centers[0], centers[4]);
+    const minCenter = Math.min(...centers);
+    const maxCenter = Math.max(...centers);
     return { left: minCenter - TIMELINE_THUMB_SIZE / 2, right: maxCenter - TIMELINE_THUMB_SIZE / 2 };
   }, [centers]);
 
@@ -407,7 +417,7 @@ function ComparisonTable({
                 <button
                   type="button"
                   onClick={() => onViewFront(station.id)}
-                  aria-pressed={viewedFrontId === station.id}
+                  aria-current={viewedFrontId === station.id ? 'true' : undefined}
                   className={cn(
                     'rounded-sm text-start font-display text-base font-bold underline-offset-4 hover:underline',
                     viewedFrontId === station.id ? 'text-accent' : 'text-black',
