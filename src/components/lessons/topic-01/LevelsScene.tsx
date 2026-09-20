@@ -33,6 +33,14 @@ const DRAG_ASSET_BASE = '/assets/lessons/topic01/scene-levels/drag-exercise';
 // same pattern and value as the home page's CoursePlanPanel carousel row.
 const POOL_DRAG_CLICK_THRESHOLD = 4;
 
+// Only this many events are offered for sorting at once; each accepted
+// placement reveals the next one in SCENARIOS order. Chosen over showing all
+// 6 because 6 x 256px overflowed the pool row at 1440px and forced the learner
+// to pan the strip to find an event. At 1440px the pool row's inner width is
+// ~1344px, so 4 equal chips are ~327px each - wider than the old fixed w-64,
+// so nothing gets less readable.
+const POOL_VISIBLE_SLOTS = 4;
+
 const LEVELS: Record<Level, LevelMeta> = {
   strategic: {
     label: 'אסטרטגית',
@@ -195,17 +203,24 @@ export function LevelsScene() {
   const assignedCount = Object.keys(assignments).length;
   const allAssigned = assignedCount === SCENARIOS.length;
 
-  const pool = SCENARIOS.map((s, i) => ({ s, i })).filter((x) => !assignments[x.i]);
+  // Events are revealed from a queue: the first POOL_VISIBLE_SLOTS are offered
+  // up front, and every accepted placement reveals exactly one more, so the pool
+  // holds at most POOL_VISIBLE_SLOTS chips and never needs to scroll. Derived
+  // from `assignments` rather than held as its own state so reset() - which
+  // already clears `assignments` - rewinds the queue for free, and so no code
+  // path can desync the queue from what is actually sorted.
+  const revealedCount = Math.min(SCENARIOS.length, POOL_VISIBLE_SLOTS + assignedCount);
+  const pool = SCENARIOS.slice(0, revealedCount)
+    .map((s, i) => ({ s, i }))
+    .filter((x) => !assignments[x.i]);
   const inBin = (level: Level) =>
     SCENARIOS.map((s, i) => ({ s, i })).filter((x) => assignments[x.i] === level);
 
-  const moveScenario = (idx: number, level: Level | null) => {
-    setAssignments((prev) => {
-      if (level) return { ...prev, [idx]: level };
-      const next = { ...prev };
-      delete next[idx];
-      return next;
-    });
+  const moveScenario = (idx: number, level: Level) => {
+    // No correctness check here on purpose: a placement is accepted as-is and the
+    // chip stays in the zone the learner chose. Right/wrong is revealed only by
+    // `submitted` below, after the check-answers button.
+    setAssignments((prev) => ({ ...prev, [idx]: level }));
     setSelectedScenario(null);
   };
 
@@ -271,10 +286,10 @@ export function LevelsScene() {
         <div className="flex flex-col gap-6 mb-6">
           <ScenarioPool
             pool={pool}
+            remaining={SCENARIOS.length - assignedCount}
             selectedScenario={selectedScenario}
             submitted={submitted}
             onSelect={handleScenarioSelect}
-            onMoveScenario={moveScenario}
             draggingIndex={poolDrag?.idx ?? null}
             onItemDragMove={handlePoolItemDragMove}
             onItemDragEnd={handlePoolItemDragEnd}
@@ -439,67 +454,57 @@ function LevelsTable() {
 
 function ScenarioPool({
   pool,
+  remaining,
   selectedScenario,
   submitted,
   onSelect,
-  onMoveScenario,
   draggingIndex,
   onItemDragMove,
   onItemDragEnd,
 }: {
   pool: { s: (typeof SCENARIOS)[number]; i: number }[];
+  remaining: number;
   selectedScenario: number | null;
   submitted: boolean;
   onSelect: (idx: number) => void;
-  onMoveScenario: (idx: number, level: Level | null) => void;
   draggingIndex: number | null;
   onItemDragMove: (idx: number, x: number, y: number) => void;
   onItemDragEnd: () => void;
 }) {
-  const [isOver, setIsOver] = useState(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
-  // `phase` starts 'pending' on every pointerdown and resolves to either
-  // 'pan' (scroll the strip) or 'item' (pick up the chip under the
-  // pointer, if any) as soon as movement crosses the threshold below —
-  // see the big comment on `handleRowPointerMove` for why this can't be
-  // native HTML5 drag-and-drop.
+  // `phase` starts 'pending' on every pointerdown and resolves to 'item' —
+  // pick up the chip under the pointer — once movement crosses the
+  // threshold below. See the comment above handleRowPointerDown for why
+  // this is a custom pointer drag rather than native HTML5 drag-and-drop.
   const rowDragRef = useRef<{
     x: number;
     y: number;
-    scrollLeft: number;
     pointerId: number;
-    phase: 'pending' | 'pan' | 'item';
-    chipIndex: number | null;
+    phase: 'pending' | 'item';
+    chipIndex: number;
   } | null>(null);
   const rowDraggedRef = useRef(false);
 
-  // Mouse-drag-to-pan the horizontal strip (same interaction as the home
-  // page carousel), while ALSO keeping every chip individually draggable
-  // into a zone — the two gestures compete for the exact same surface,
-  // since chips fill the row edge-to-edge. Native HTML5 `draggable` can't
-  // support both: its `dragstart` fires after under a pixel of movement,
-  // before there's enough signal to tell "pan the row" from "pick up the
-  // chip" apart (confirmed empirically — dx/dy at that point are both
-  // sub-pixel noise). So pool chips are NOT natively draggable at all
-  // (see ScenarioChip's `draggable={false}` below); instead every
-  // pointerdown here starts in a 'pending' phase, and once real movement
-  // happens we classify it ourselves: horizontal-dominant (or starting on
-  // empty space, no chip under the pointer) → pan; vertical-dominant AND
-  // starting on a chip → pick that chip up (a floating ghost + drop-zone
-  // hit-testing is driven from the parent via onItemDragMove/onItemDragEnd).
-  // This is safe here because a real "drop on a zone" drag is always
-  // vertical-dominant — the 3 zones sit below this row, never beside it.
+  // The pool row no longer scrolls (see POOL_VISIBLE_SLOTS above), so every
+  // pointer drag starting on a chip here is unambiguously a pick-up — there's
+  // no competing pan gesture left to classify it against. Pool chips still
+  // aren't natively draggable (see ScenarioChip's `draggable={false}`
+  // below): a floating ghost plus `elementFromPoint` zone hit-testing
+  // (driven from the parent via onItemDragMove/onItemDragEnd) is what makes
+  // the drop targets — overlaid on the diorama artwork, not plain DOM drop
+  // zones — hit reliably.
   const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType !== 'mouse') return;
-    const el = rowRef.current;
-    if (!el) return;
     rowDraggedRef.current = false;
     const chipEl = (e.target as HTMLElement).closest('[data-scenario-index]');
     const chipIndex = chipEl ? Number(chipEl.getAttribute('data-scenario-index')) : null;
+    if (chipIndex == null) {
+      rowDragRef.current = null;
+      return;
+    }
     rowDragRef.current = {
       x: e.clientX,
       y: e.clientY,
-      scrollLeft: el.scrollLeft,
       pointerId: e.pointerId,
       phase: 'pending',
       chipIndex,
@@ -515,36 +520,12 @@ function ScenarioPool({
 
     if (drag.phase === 'pending') {
       if (Math.max(Math.abs(dx), Math.abs(dy)) <= POOL_DRAG_CLICK_THRESHOLD) return;
-      // A drag toward a distant column (e.g. the far-left chip heading for
-      // the far-right zone) moves mostly sideways for its first few pixels
-      // even though it's unambiguously a drop-drag, not a pan — comparing
-      // that first movement's dx to its dy used to misread it as 'pan'
-      // before the pointer had traveled far enough to prove otherwise
-      // (confirmed: most scenarios failed to drop when dragged in a
-      // straight line to their own zone). Rather than pick a bigger
-      // threshold and still race it, treat this initial guess as
-      // provisional — the check below every subsequent move upgrades it
-      // to 'item' the moment the pointer actually leaves the row.
-      drag.phase = drag.chipIndex != null && Math.abs(dy) > Math.abs(dx) ? 'item' : 'pan';
+      drag.phase = 'item';
       rowDraggedRef.current = true;
       el.setPointerCapture(drag.pointerId);
-    } else if (drag.phase === 'pan' && drag.chipIndex != null && e.clientY > el.getBoundingClientRect().bottom) {
-      // Zones sit below the row, never beside it, so once the pointer is
-      // past the row's own bottom edge this can only be a pick-up,
-      // however much horizontal drift happened on the way — upgrade the
-      // provisional 'pan' guess above instead of leaving it locked in.
-      drag.phase = 'item';
     }
 
-    if (drag.phase === 'pan') {
-      // `-dx` (same sign as the home page carousel): this row's valid
-      // scrollLeft range is [-(scrollWidth-clientWidth), 0] in RTL, and
-      // item 0 sits at the right (start of reading order). Dragging the
-      // mouse RIGHT (dx > 0) should reveal later items, same as dragging
-      // LEFT does in an LTR carousel — the opposite sign made this strip
-      // pan like an LTR list (drag left = forward), backwards for RTL.
-      el.scrollLeft = drag.scrollLeft - dx;
-    } else if (drag.phase === 'item' && drag.chipIndex != null) {
+    if (drag.phase === 'item') {
       onItemDragMove(drag.chipIndex, e.clientX, e.clientY);
     }
   };
@@ -568,26 +549,14 @@ function ScenarioPool({
   if (pool.length === 0) return null;
 
   return (
-    <motion.div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsOver(true);
-      }}
-      onDragLeave={() => setIsOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        const raw = e.dataTransfer.getData('text/scenario');
-        const idx = Number(raw);
-        if (!Number.isNaN(idx)) onMoveScenario(idx, null);
-        setIsOver(false);
-      }}
-      animate={{ scale: isOver ? 1.005 : 1 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={cn('surface-elevated p-4 flex flex-col min-w-0 transition-colors duration-300 ease-snap', isOver && 'border-accent')}
-    >
+    <motion.div className="surface-elevated p-4 flex flex-col min-w-0 transition-colors duration-300 ease-snap">
+      {/* The pool is deliberately NOT a drop target: with a fixed number of
+          visible slots, returning a sorted chip here would push the row past its
+          cap, and an already-placed event is meant to be moved between zones
+          (which the zones' own native drop handlers already support), not un-sorted. */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="text-sm font-display font-semibold text-fg tracking-wider">
-          {`אירועים למיון · ${pool.length}`}
+          {`אירועים למיון · ${remaining}`}
         </div>
         <div className="text-sm text-fg-muted">
           גררו משפט לאחת מ־3 הקטגוריות למטה (או בחרו ולחצו)
@@ -601,7 +570,7 @@ function ScenarioPool({
         onPointerUp={endRowDrag}
         onPointerCancel={endRowDrag}
         onClickCapture={handleRowClickCapture}
-        className="flex gap-3 overflow-x-auto pb-1 cursor-grab select-none active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-3 items-stretch pb-1 cursor-grab select-none active:cursor-grabbing"
       >
         {pool.map(({ s, i }) => (
           <ScenarioChip
@@ -613,7 +582,7 @@ function ScenarioPool({
             isWrong={false}
             submitted={submitted}
             onSelect={() => onSelect(i)}
-            className={cn('w-64 shrink-0', draggingIndex === i && 'opacity-40')}
+            className={cn('flex-1 min-w-0', draggingIndex === i && 'opacity-40')}
             draggable={false}
           />
         ))}
@@ -639,7 +608,7 @@ function LevelZone({
   selectedScenario: number | null;
   submitted: boolean;
   onSelect: (idx: number) => void;
-  onMoveScenario: (idx: number, level: Level | null) => void;
+  onMoveScenario: (idx: number, level: Level) => void;
   /** True while a pool chip is being hand-dragged over this zone — see
    * ScenarioPool/LevelsScene's custom pointer-based drag. Native
    * `dragover` (below) only fires for the still-native zone-to-zone drag,
