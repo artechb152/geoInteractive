@@ -29,16 +29,24 @@ type LevelMeta = {
 
 const DRAG_ASSET_BASE = '/assets/lessons/topic01/scene-levels/drag-exercise';
 
-// Mouse-drag-to-pan threshold (px) for the horizontal scenario strip below —
-// same pattern and value as the home page's CoursePlanPanel carousel row.
+// Movement threshold (px) that separates a plain click/tap on a pool chip
+// from picking it up to drag — same value as the home page's
+// CoursePlanPanel carousel row uses for its own drag-vs-click threshold.
+// The pool row itself no longer pans (POOL_VISIBLE_SLOTS below retired
+// that gesture entirely); this constant now only gates ScenarioPool's
+// pointer-drag classifier, telling it when a pointerdown has moved enough
+// to count as "pick up the chip" rather than a click/tap select.
 const POOL_DRAG_CLICK_THRESHOLD = 4;
 
 // Only this many events are offered for sorting at once; each accepted
-// placement reveals the next one in SCENARIOS order. Chosen over showing all
-// 6 because 6 x 256px overflowed the pool row at 1440px and forced the learner
-// to pan the strip to find an event. At 1440px the pool row's inner width is
-// ~1344px, so 4 equal chips are ~327px each - wider than the old fixed w-64,
-// so nothing gets less readable.
+// placement reveals the next one in SCENARIOS order. Chosen over showing
+// all 6 because this lesson's shell reserves an inline-start nav rail
+// (ps-[var(--lesson-content-inset)] on the shell wrapper, LessonShell.tsx),
+// so the pool row's inner width at a 1440px viewport is only ~1018px, not
+// the full 1440 — 6 chips at the old fixed 256px plus gaps overflowed that
+// row and forced the learner to pan the strip to find an event. 4 chips
+// fit it with no scrolling at ~246px each, essentially the same width as
+// the old fixed w-64 (256px), not wider — nothing gets less readable.
 const POOL_VISIBLE_SLOTS = 4;
 
 const LEVELS: Record<Level, LevelMeta> = {
@@ -582,7 +590,17 @@ function ScenarioPool({
             isWrong={false}
             submitted={submitted}
             onSelect={() => onSelect(i)}
-            className={cn('flex-1 min-w-0', draggingIndex === i && 'opacity-40')}
+            className={cn(
+              // Capped at 25% of the row so a shrinking pool (as chips get
+              // sorted out) doesn't stretch the last remaining chip(s) to
+              // the row's full width — at 4 chips the cap isn't reached
+              // (~246px computed vs a ~254px cap, see POOL_VISIBLE_SLOTS
+              // above), so the full-pool layout is unchanged; below 4,
+              // chips keep this size and the row simply ends earlier —
+              // in RTL that leaves the empty space at the inline-end.
+              'flex-1 min-w-0 max-w-[25%]',
+              draggingIndex === i && 'opacity-40',
+            )}
             draggable={false}
           />
         ))}
