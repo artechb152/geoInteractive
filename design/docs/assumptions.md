@@ -370,3 +370,48 @@ as "completely dead."
 - **Verified live at 1440×1122** on topic-01/02/03: hook scene, then each lesson's first inner content scene via "לחץ כדי להתחיל", scrolled to ~50% and 100% of page height. Cream/tan tone reads consistently, text stayed legible over the background in every card/panel, no visible seam at any scroll position reached (page content height on all three topics stays well under the ~3840px-at-1440-width point where the tile would repeat).
 - **Follow-up same day — source was too low-res and read visibly soft once `SiteBackground.tsx` stretched it, direct user feedback ("התמונה ממש מוגדלת ורואים שהאיכות לא משהו"):** `lesson-background-home-palette-v2.png` is 768×2048, but the fixed `bg-[length:100%_auto]` layer renders at the ~1440px viewport width (more on a 2×/3× retina screen), so the browser was upscaling the raw source ~1.9×+ at paint time — soft even though the source pixels themselves are clean at native size. Fixed by pre-upscaling the source 4× (to 3072×8192, `sharp.kernel.lanczos3`) in the same one-off script, *before* the top-half/flip mirror rebuild — matching the previously-shipped asset's own native resolution, so the browser now downscales (crisp) instead of upscales (soft) at every realistic viewport/DPR combination. Re-verified center-seam and wrap-seam row diffs both `{avg:0, max:0}` after the rebuild at the new resolution.
 - **Deliberately skipped extra unsharp-mask sharpening after the upscale:** tried it (`sharpen({sigma:1.0,...})`) and it roughly doubled the PNG's compressed size (7.6MB → 9.8MB truecolor at 3072×8192) for no clearly visible gain — lanczos3 alone already preserves the thin contour-line edges well since the source content is smooth/low-frequency to begin with, not fine texture needing recovery. Shipped the unsharpened truecolor PNG (8.0MB) rather than trade meaningfully more page weight for an imperceptible difference. Also evaluated an 8-bit palette-quantized PNG (5.1MB, no visible banding on the smooth gradient in a zoomed crop) but kept full truecolor instead, since this project's color-fidelity rule (`design/docs/design-spec.md`'s pixel-sampled hex values) argues against any lossy re-quantization of a shipped visual asset without a specific need.
+## 2026-09-20 — Lesson secondary nav moved from the top strip into the existing right-hand side nav
+
+- **240px desktop side-nav width is a NEW measurement, introduced by this change and not derived from any
+  mockup.** The user proposed it as a starting point and asked for it to be recorded as a design assumption
+  and checked against the real screen. Verified at 1440px: the nav sits at x=1200..1440, and every
+  sub-topic label in the course — the longest being `ממד אנכי ותת-קרקע` (topic-10), `טיפולוגיית גבולות`
+  (topic-11) and `שכבות וסוגי נתונים` (topic-12) — renders on a single line with no clipping and no
+  horizontal page scroll. Lesson titles likewise fit on one line at this width (they wrapped to two at the
+  old 13vw≈187px). Labels are allowed to wrap rather than truncate, so a longer future label degrades to a
+  second line instead of being cut. **Kept at 240px.**
+- **Width and content offset now come from one source**, `--lesson-nav-w` / `--lesson-content-inset` in
+  `globals.css`, replacing the two hand-synced `13vw` literals that previously lived in `PagedLearn.tsx`
+  (`xl:ps-[calc(13vw+20px)]`) and `LessonShell.tsx` (`xl:ms-[13vw]`, whose comment still claimed `7vw`).
+  Both variables are `0` below `xl` (1280px), which is what keeps the pre-existing sub-desktop layout —
+  top mode strip + horizontal sub-topic pill strip — untouched without any extra media queries in the
+  components.
+- **Selection colour: sage green for the active MODE, a quiet paper tint for the active SUB-TOPIC.** The
+  brief asked for a primary emphasis on the mode and a deliberately secondary one on the sub-topic so the
+  two lists never read as peers, and for orange to stay reserved for primary actions. The active mode
+  therefore uses `bg-brand/10` + bold `text-brand-dark` + a 3px `bg-brand-dark` inline-start marker (green
+  was already this shell's active-tab colour), while the active sub-topic's surface changed from
+  `bg-accent/15` (an orange wash, which read at the same level as a mode) to `bg-bg-accent` + `font-semibold`.
+  Sizes carry the same hierarchy: mode rows `text-base`, sub-topic rows `text-sm` (was `text-base`).
+  **No new colour tokens were added.** Orange stays on the lesson number, the sub-topic progress dots and
+  the progress bar — i.e. only on identity/progress, per `globals.css`'s own rule.
+- **The separator below the three mode rows is shown together with the sub-topic section, not always.**
+  Requirement 5 reads "below them a separator … in תרגול/בדיקת ידע hide this area"; a trailing rule with
+  nothing under it reads as an unfinished panel, so the rule and the section it introduces appear and
+  disappear together. The three mode rows stay at identical y-coordinates in all three modes either way
+  (verified: y = 186 / 234 / 282 on every mode and on both lessons checked).
+- **`min-h-[calc(100dvh-var(--header-h)-5rem)]` on the hook scenes was deliberately left alone.** The
+  `5rem` used to compensate for the removed top strip plus the content wrapper's padding; on desktop only
+  ~3rem of that is still needed. Left as-is because the hook section is centred content over a
+  `fixed inset-0` backdrop, so a slightly short section is invisible (it only removes a pre-existing ~4px
+  vertical overflow), and correcting it properly would mean touching the nine older `HookScene.tsx` files
+  that carry the same literal — out of scope for this pass.
+- **Known pre-existing, not introduced here:** topic-08 and topic-12 hook backdrops log a framer-motion
+  `offsetDistance` hydration warning from `BackdropSupplyLines` / `BackdropGrid`. Untouched by this change
+  and reproducible on those scenes independently of the nav.
+
+## 2026-09-20 — Topic-01 "כשהזמן משנה את מאזן הכוחות" rebuilt as a 5-station timeline (restores original title "למה הזמן הוא הנשק הסודי של השחקן הלא-סדיר?")
+
+- **Replaced the 3-round predict/check + pressure-map interaction** (`TimePressureExperience.tsx`, previously implementing `design/handoff/asymmetric-time-v3/`) with a 5-station timeline (day 1 → week 2 → month 3 → year 1 → year 2), each station adding one "front" to a fixed 5-row comparison table (regular army vs. irregular player), per direct user brief. The old `PressureMap`, `LandscapeStrip` (irregular/takeaway bands), and their assets under `public/assets/lessons/topic01/scene-asymmetric/time-pressure/` are no longer referenced by this component — left on disk unused, per this project's existing precedent for superseded assets (see other entries in this file, e.g. "Pyramid + paragraph deleted, not relocated" / "`TOPIC01-ASYM-PILLAR.png` … stays on disk unused").
+- **Panel-content state machine** (not fully spelled out in the brief as code, this is the implementer's documented reading of it): two state variables, `currentIndex` (time position, resets nothing else on change except `viewedFrontId`) and `viewedFrontId` (which front's detail is being "peeked" at, resets to `null` on every time-navigation). Default view (`viewedFrontId === null`) shows the current station's narrative `stationText`; clicking any reached front's name (current or previous) sets `viewedFrontId` and switches the panel to that front's `frontDetail`; only a *previous* front's detail additionally shows the "עיון בחזית: …" banner and "חזרה לחזית שנוספה" button, per the brief's explicit distinction.
+- **Table cell status uses the existing `StatusChip` component** (`tone="accent"` for "נוספה", `tone="neutral"` for a previously-added front, `tone="dim"` for both "טרם נוספה" and "לא במודל" — distinguished by label text, not by a new tone), per `.agents/skills/checking-design-fidelity/SKILL.md` Table 3's "never build a pill by hand" rule.
