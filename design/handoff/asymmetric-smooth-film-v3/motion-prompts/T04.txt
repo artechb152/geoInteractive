@@ -1,0 +1,13 @@
+Create a six-second cinematic transition between the supplied START and END images, landscape 16:9, silent.
+
+START is the approved committee-room image. END is the approved international press-briefing image. Preserve both supplied compositions and the people already present. This is an EDITED TRANSITION BETWEEN TWO DISTINCT LOCATIONS.
+
+Use a SOFT FOREGROUND WIPE WITH A HIDDEN CUT. Begin on the complete START composition. Make a very gentle lateral camera move. A heavily defocused, matte charcoal foreground surface passes across the lens from left to right, like the camera briefly moving behind a nearby dark partition. It is a simple opaque foreground shape with softly blurred edges, not a new person or recognizable object.
+
+Let this foreground surface fully cover the view for a brief moment. Make ONE clean editorial cut while the view is completely covered. As the same dark surface continues moving in the same direction and clears the lens, reveal the END location already fully formed. Settle smoothly into the exact supplied END composition.
+
+Suggested timing: 0.0–0.6 seconds, establish START; 0.6–2.4 seconds, the foreground surface crosses and covers the view; 2.4–2.6 seconds, complete coverage and the hidden cut; 2.6–4.8 seconds, the surface continues across and reveals END; 4.8–6.0 seconds, hold END.
+
+Keep the people and furniture intact within their respective shots. Human movement is limited to subtle breathing. In END, representatives face the journalists or the speaking colleague. The small background monitor remains an ordinary static fixture.
+
+Do not zoom into or out of a screen. Do not transform the room, stretch the image, blend faces, turn tables into lecterns, or imply that both rooms are physically connected. No flash, glowing portal, spiral, strobe or added text. Use a steady, restrained pace and end with a clean, motionless frame.

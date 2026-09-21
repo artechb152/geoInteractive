@@ -20,11 +20,24 @@
     /* נשמר עבור .oct/.oct-sm — עדיין בשימוש במסכים מחוץ להיקף ה-pass הזה
        (בית/סילבוס/overview/prototypes). לא בשימוש ב-shell/topic-03 החדשים. */
     --notch: 0.55rem;
+    /* ── מקור יחיד לרוחב תפריט הצד של השיעור ולהיסט עמודת
+          התוכן. מתחת ל-xl (1280px) שניהם 0 — שם הניווט עדיין
+          יושב בפס העליון + רצועת הצ'יפס, ולא בתפריט הצד. כל
+          מי שצריך לפנות מקום לתפריט משתמש במשתנים האלה בלבד. ── */
+    --lesson-nav-w: 0px;
+    --lesson-content-inset: 0px;
   }
 
   @media (min-width: 1024px) {
     :root {
       --header-h: 5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    :root {
+      --lesson-nav-w: 240px;
+      --lesson-content-inset: calc(var(--lesson-nav-w) + 20px);
     }
   }
 

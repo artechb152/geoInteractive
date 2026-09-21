@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { lessons, getLesson, nextLesson, prevLesson } from '@/lib/lessons';
 import { loadTopicContent } from '@/lib/content';
+import { lessonScenes } from '@/lib/lesson-scenes';
 import { quizzes } from '@/lib/quizzes';
 import { LessonShell } from '@/components/lesson/LessonShell';
 import { LessonContent } from '@/components/lesson/LessonContent';
@@ -59,6 +60,7 @@ export default async function LessonPage({
   return (
     <LessonShell
       lesson={lesson}
+      scenes={lessonScenes[topicId] ?? []}
       prev={prev && { id: prev.id, shortTitle: prev.shortTitle }}
       next={next && { id: next.id, shortTitle: next.shortTitle }}
       learn={learn}

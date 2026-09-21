@@ -33,15 +33,19 @@ function HookBackdrop({ bgSrc }: { bgSrc: string }) {
   useEffect(() => {
     setMounted(true);
 
-    // The sticky sub-nav header (`לימוד`/`תרגול`/`בדיקת ידע`, see
-    // `data-lesson-tabs-header` in LessonShell.tsx) normally paints an
-    // opaque `bg-bg` so it reads as part of the cream content area — on
-    // a hook scene that cuts the backdrop off at the header's own edge
-    // instead of letting it run all the way to the top, and the tab
-    // labels/icons already read fine directly on the image. Drop the fill
-    // via inline style (wins over the Tailwind utility class on
-    // specificity) only while a hook scene is mounted, and restore it on
-    // cleanup so no other scene is ever affected.
+    // Below xl the three lesson modes still sit in a sticky strip above the
+    // content (`data-lesson-tabs-header` in LessonShell.tsx), which paints an
+    // opaque fill so it reads as part of the cream content area — on a hook
+    // scene that cuts the backdrop off at the strip's own edge instead of
+    // letting it run all the way to the top, and the labels/icons already read
+    // fine directly on the image. Drop the fill via inline style (wins over
+    // the Tailwind utility class on specificity) only while a hook scene is
+    // mounted, and restore it on cleanup so no other scene is ever affected.
+    //
+    // At xl+ that strip is `display:none` — the modes moved into the
+    // full-height side nav, which is opaque by design and must stay that way
+    // — so this is simply a no-op there. Kept (rather than deleted) because
+    // the strip is still the real navigation below the desktop breakpoint.
     const header = document.querySelector<HTMLElement>('[data-lesson-tabs-header]');
     if (header) header.style.backgroundColor = 'transparent';
     return () => {
