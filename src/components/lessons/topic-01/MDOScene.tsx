@@ -655,7 +655,7 @@ function MDOGroundScene({
               aria-expanded={selectedEdgeId === edge.id}
               aria-controls={selectedEdgeId === edge.id ? 'mdo-edge-card' : undefined}
               aria-label={`קשר בין ${a.label} ל${b.label}: ${edge.label}. הצגת הסבר`}
-              style={{ pointerEvents: bothActive ? 'stroke' : 'none', cursor: bothActive ? 'pointer' : undefined }}
+              style={{ pointerEvents: bothActive ? 'stroke' : 'none', cursor: bothActive ? 'pointer' : undefined, outline: 'none' }}
               onClick={() => bothActive && onSelectEdge(edge.id)}
               onKeyDown={(e) => {
                 if (!bothActive) return;
