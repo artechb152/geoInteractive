@@ -116,6 +116,26 @@ const DOMAIN_VISUALS: DomainVisual[] = [
 
 const SPACE_SRC = `${ASSET_BASE}/mdo-space-medallion.png`;
 
+/** The visible-pixel bounding box of each domain's object, as a 0–1
+    fraction of that domain's OWN `box` above (same uniform scale, so these
+    fractions apply directly to box.x/y/width/height) — used to tighten the
+    multi-select hit-rect to the actual object instead of its padded PNG
+    canvas. `land` is derived from the alpha-channel scan documented on its
+    own DOMAIN_VISUALS entry (canvas 1300×800, visible bbox x:82–938 ×
+    y:91–666). `air`/`sea`/`cyber` don't have a full 2D bbox measurement in
+    their own comments (air only states an overall width %, sea and cyber
+    say nothing about visible-pixel extents) — for those a conservative flat
+    15% inset on all four sides is used instead of guessing. `space` is the
+    circular photographic inset itself (no padding to trim), so its box is
+    used as-is. */
+const VISIBLE_BBOX_FRACTION: Record<MdoDomainId, { xStart: number; xEnd: number; yStart: number; yEnd: number }> = {
+  land: { xStart: 82 / 1300, xEnd: 938 / 1300, yStart: 91 / 800, yEnd: 666 / 800 },
+  air: { xStart: 0.15, xEnd: 0.85, yStart: 0.15, yEnd: 0.85 },
+  sea: { xStart: 0.15, xEnd: 0.85, yStart: 0.15, yEnd: 0.85 },
+  cyber: { xStart: 0.15, xEnd: 0.85, yStart: 0.15, yEnd: 0.85 },
+  space: { xStart: 0, xEnd: 1, yStart: 0, yEnd: 1 },
+};
+
 function byId(id: MdoDomainId) {
   return DOMAIN_VISUALS.find((d) => d.id === id)!;
 }
@@ -227,7 +247,9 @@ function composeSelectionExplainer(selected: Set<MdoDomainId>): { heading: strin
   // example: חלל+ים vs חלל+ים+סייבר), without repeating full aToB/bToA
   // prose for every pair (would overflow the 190px column at 4-5 picks).
   const contributions = ids.map((id) => `${MDO_DOMAINS[id].label} — ${MDO_DOMAINS[id].contribution}`).join('; ');
-  const pairLabels = MDO_EDGES.filter((e) => selected.has(e.a) && selected.has(e.b)).map((e) => e.label);
+  const pairLabels = MDO_EDGES.filter((e) => selected.has(e.a) && selected.has(e.b)).map(
+    (e) => `${MDO_DOMAINS[e.a].label}–${MDO_DOMAINS[e.b].label}: ${e.label}`,
+  );
   return {
     heading: ids.map((id) => MDO_DOMAINS[id].label).join(' + '),
     lines: [`מה כל ממד תורם: ${contributions}.`, ...(pairLabels.length ? [`קשרים ביניהם: ${pairLabels.join(', ')}.`] : [])],
@@ -643,6 +665,49 @@ function MDOGroundScene({
         <img src={SPACE_SRC} alt="" aria-hidden="true" draggable={false} className="size-full object-cover" />
       </motion.div>
 
+      {/* Multi-select hit targets — one per domain, transparent HTML
+          buttons (not SVG, for free keyboard semantics matching the rest
+          of this file's controls), rendered only while that domain is
+          active (spec: click target only exists on an active object).
+          Rendered BEFORE the <svg> below, so in paint order the svg sits on
+          top of these buttons — the svg's own root is pointer-events-none
+          except its explicitly-enabled descendants (the edge hit-paths,
+          `pointerEvents: 'stroke'`), so those hit-paths can still intercept
+          a click exactly where a connection line crosses a button, while
+          everywhere else on a button (i.e. everywhere the svg itself has no
+          pointer-events) clicks reach the button normally. Each rect is
+          inset from its domain's raw `box` to the object's own
+          visible-pixel bounding box (see each DOMAIN_VISUALS entry's own
+          comment for the source measurement/fallback), so the hit target
+          doesn't cover the padded, mostly-transparent PNG canvas. */}
+      {DOMAIN_VISUALS.map((d) => {
+        if (!active.has(d.id)) return null;
+        const isSelected = selectedObjects.has(d.id);
+        const inset = VISIBLE_BBOX_FRACTION[d.id];
+        const hitX = d.box.x + d.box.width * inset.xStart;
+        const hitY = d.box.y + d.box.height * inset.yStart;
+        const hitW = d.box.width * (inset.xEnd - inset.xStart);
+        const hitH = d.box.height * (inset.yEnd - inset.yStart);
+        return (
+          <button
+            key={'select-' + d.id}
+            type="button"
+            aria-pressed={isSelected}
+            aria-label={`${isSelected ? 'ביטול בחירת' : 'בחירת'} ${d.label} להשוואה בין ממדים`}
+            onClick={() => onToggleObject(d.id)}
+            className="absolute rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            style={{
+              left: pct(hitX, FIELD_W),
+              top: pct(hitY, FIELD_H),
+              width: pct(hitW, FIELD_W),
+              height: pct(hitH, FIELD_H),
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          />
+        );
+      })}
+
       {/* This SVG is NOT aria-hidden as a whole — it hosts the real,
           focusable edge hit-paths at the bottom. Every purely decorative
           element inside (contrail, the visible line pair, marker rings) is
@@ -774,18 +839,6 @@ function MDOGroundScene({
           );
         })}
 
-        {/* Multi-select hit targets — one per domain, transparent HTML
-            buttons (not SVG, for free keyboard semantics matching the rest
-            of this file's controls), rendered only while that domain is
-            active (spec: click target only exists on an active object).
-            Sit right after the markers in DOM order but are NOT inside
-            this <svg> (see the sibling block just below it, after this
-            svg's closing tag) — kept out of the SVG so pointer-events on
-            an HTML <button> behave normally; they still receive clicks
-            despite the decorative SVG painting on top of them, because
-            this svg's own root is pointer-events-none except its
-            explicitly-enabled descendants (the edge hit-paths). */}
-
         {/* Real, accessible controls — ONE per connection (no duplicate Tab
             stop): a wide transparent hit-path running the line's FULL
             length via pointer-events:stroke, not just its midpoint, so any
@@ -823,29 +876,6 @@ function MDOGroundScene({
           );
         })}
       </svg>
-
-      {DOMAIN_VISUALS.map((d) => {
-        if (!active.has(d.id)) return null;
-        const isSelected = selectedObjects.has(d.id);
-        return (
-          <button
-            key={'select-' + d.id}
-            type="button"
-            aria-pressed={isSelected}
-            aria-label={`${isSelected ? 'ביטול בחירת' : 'בחירת'} ${d.label} להשוואה בין ממדים`}
-            onClick={() => onToggleObject(d.id)}
-            className="absolute rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-            style={{
-              left: pct(d.box.x, FIELD_W),
-              top: pct(d.box.y, FIELD_H),
-              width: pct(d.box.width, FIELD_W),
-              height: pct(d.box.height, FIELD_H),
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-          />
-        );
-      })}
 
       {selectedEdge && (
         <MDOEdgeCard
@@ -1123,16 +1153,16 @@ function MDOSelectionExplainer({ selected }: { selected: Set<MdoDomainId> }) {
   );
 }
 
-/** The summary: badge + at most 2–3 composed sentences. No connection-name
-    listing and no chip list here any more — the lines themselves, clickable
-    along their whole length, are the only interface to a pair's
-    explanation. Position (top of the shared card) never changes with
-    scene state. */
 // The most lines composeSummary() ever returns (its 1/2/3-active branches);
 // MDOSummary below always renders exactly this many <p> slots so the
 // summary's own height never depends on `active` — see that component.
 const SUMMARY_LINE_SLOTS = 3;
 
+/** The summary: badge + at most 2–3 composed sentences. No connection-name
+    listing and no chip list here any more — the lines themselves, clickable
+    along their whole length, are the only interface to a pair's
+    explanation. Position (top of the shared card) never changes with
+    scene state. */
 function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
   const { badge, lines } = useMemo(() => composeSummary(active), [active]);
   // Padded to a constant slot count so this block's height stays fixed
@@ -1141,7 +1171,7 @@ function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
   // pushed down when the composed text gets shorter or longer. Unused
   // slots render a non-breaking space so their line-height is identical
   // to a real line, just invisible (and hidden from assistive tech).
-  const paddedLines = [...lines, ...Array(SUMMARY_LINE_SLOTS - lines.length).fill(null)];
+  const paddedLines = [...lines, ...Array(Math.max(0, SUMMARY_LINE_SLOTS - lines.length)).fill(null)];
 
   return (
     <div>
@@ -1156,7 +1186,7 @@ function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
       <div className="mt-2 space-y-1.5 text-sm leading-relaxed text-fg-muted">
         {paddedLines.map((line, i) => (
           <p key={i} aria-hidden={line ? undefined : true} className={line ? undefined : 'invisible'}>
-            {line ?? ' '}
+            {line ?? ' '}
           </p>
         ))}
       </div>
