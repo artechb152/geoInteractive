@@ -931,8 +931,20 @@ function MDOControlColumn({
     along their whole length, are the only interface to a pair's
     explanation. Position (top of the shared card) never changes with
     scene state. */
+// The most lines composeSummary() ever returns (its 1/2/3-active branches);
+// MDOSummary below always renders exactly this many <p> slots so the
+// summary's own height never depends on `active` — see that component.
+const SUMMARY_LINE_SLOTS = 3;
+
 function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
   const { badge, lines } = useMemo(() => composeSummary(active), [active]);
+  // Padded to a constant slot count so this block's height stays fixed
+  // across every active-count state, per the design brief: no truncation,
+  // no font shrink, and the [control column | image] row below never gets
+  // pushed down when the composed text gets shorter or longer. Unused
+  // slots render a non-breaking space so their line-height is identical
+  // to a real line, just invisible (and hidden from assistive tech).
+  const paddedLines = [...lines, ...Array(SUMMARY_LINE_SLOTS - lines.length).fill(null)];
 
   return (
     <div>
@@ -945,7 +957,11 @@ function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
         </span>
       </div>
       <div className="mt-2 space-y-1.5 text-sm leading-relaxed text-fg-muted">
-        {lines.map((line, i) => <p key={i}>{line}</p>)}
+        {paddedLines.map((line, i) => (
+          <p key={i} aria-hidden={line ? undefined : true} className={line ? undefined : 'invisible'}>
+            {line ?? ' '}
+          </p>
+        ))}
       </div>
     </div>
   );
