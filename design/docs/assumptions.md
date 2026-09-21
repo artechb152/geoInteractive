@@ -445,3 +445,19 @@ as "completely dead."
 - **`public/assets/lessons/topic01/scene-mdo/mdo-scene-background-loop.mp4` does not exist yet.** `MDOSceneBackdrop` in `MDOScene.tsx` already supports it fully (static-photo fallback via `onError`, motion-stop button, `prefers-reduced-motion` respected, pauses off-screen via the existing `IntersectionObserver`) — nothing in this codebase claims a video plays when none has been produced.
 - **To produce it:** feed `public/assets/lessons/topic01/scene-mdo/mdo-scene-background-ground.png` (the existing, already-clean background photo — no domain-tool objects baked in, those are separate composited layers) into Google Flow (or an equivalent single-reference-frame video tool) as the init/reference frame, using the prompt already written at `public/assets/lessons/topic01/scene-mdo/mdo-scene-background-loop.prompt.txt` (locked camera; waves/hillside-vegetation/cloud motion only; no vehicle/ship/jet/satellite/mast in frame; seamless loop; ~1536×1024 / 3:2; H.264 mp4).
 - **Save the exported file to exactly:** `public/assets/lessons/topic01/scene-mdo/mdo-scene-background-loop.mp4`. No other filename or location — `SCENE_VIDEO_SRC` in `MDOScene.tsx` is a literal, non-configurable path.
+
+## 2026-09-21 — Topic-01 MDO interaction upgrade — manual QA checklist (no Playwright used, per explicit instruction — verify visually)
+
+At `http://localhost:3000/lessons/topic-01#scene-mdo`, 1440px width:
+
+- Toggle domains through every active-count from 0 to 5 — the summary block's height and the row beneath it never move.
+- Click each of the 5 objects on the image while active — 4% grow + thin white shape outline; click again to deselect. Select all 5, then deselect all.
+- Select 1 object → its own contribution shows in the right column. Select 2 → the matching pair's mutual-contribution text (try a few pairs). Select 3+, including חלל+ים then חלל+ים+סייבר specifically → combined contributions + relevant connection labels, visibly different between the two.
+- While 2+ are selected, their connecting line(s) read thicker/brighter than the rest.
+- Turn off a domain that is currently selected via its toggle — it drops out of the selection and its highlight disappears.
+- Click Reset — all domains re-activate, selection clears to the empty-state prompt, any open line-explanation card closes.
+- Click several different connection lines — the existing bottom-left explanation card still opens correctly, at its existing position, and does **not** change the multi-select. No black/dark rectangle appears around a clicked line; the line itself thickens instead.
+- Tab through the whole scene with the keyboard — toggle switches, the 5 new select buttons, every connection line, and Reset should all be reachable and operable with a visible focus ring, with no default black rectangle on the lines.
+- Confirm the small light dot is gliding along active connection lines, and stops under OS-level "reduce motion" (or when the scene is scrolled off-screen).
+
+Live-background-video status (separate from the above — see the entry directly above this one): not yet produced; source frame and Google-Flow prompt are ready; exact missing path is `public/assets/lessons/topic01/scene-mdo/mdo-scene-background-loop.mp4`.
