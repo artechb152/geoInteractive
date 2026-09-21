@@ -1,48 +1,112 @@
 'use client';
 
-/* ──────────────── ציר זמן — חמש חזיתות (5-station timeline) ────────────────
-   מחליף את הגרסה הקודמת של TimePressureExperience (3 סבבים של "חזו ואז
-   בדקו" + מפת לחצים). הפעילות החדשה: משתמשים מתקדמים על ציר זמן בן חמש
-   תחנות (יום 1 → שנה 2), וכל תחנה מוסיפה חזית אחת לטבלת השוואה קבועה בת
-   חמש שורות בין צבא סדיר לשחקן לא-סדיר. כל הטקסטים מגיעים מ-
-   TimePressureContent.ts. ראו design/docs/assumptions.md ("Topic-01 …
-   rebuilt as a 5-station timeline") למודל המצב המלא.
+/* ──────────────── ציר זמן — אקורדיון + סרט + שעון חול ────────────────
+   Task 3 of docs/superpowers/plans/2026-09-21-topic-01-time-pressure-film-v3.md.
+   מחליף את הגרסה הקודמת (Timeline strip + פאנל יחיד עם crossfade) במבנה
+   השאול חזותית והתנהגותית מ-OnboardingScene.tsx: אקורדיון מימין (N סעיפים,
+   נגזרים מ-STATIONS), מדיה משמאל (וידאו + שעון חול). כל התוכן המקורי
+   מ-TimePressureContent.ts (כותרת, 5 תחנות, טבלה, שאלת מקור, הערת ציר זמן,
+   3 פסקאות תובנה) נשמר. ראו:
+   design/handoff/asymmetric-smooth-film-v3/CLAUDE-IMPLEMENTATION-FINAL.md
+   design/handoff/asymmetric-smooth-film-v3/INTERACTION-ADDENDUM.md (§4/§5 — מכונת המצבים והחול)
 
-   דפוס "פאנל פרטים אחד עם crossfade" הושאל מ-ActorTypologySelector
-   שבאותו קובץ סצנה (AsymmetricScene.tsx) — כולל מוסכמת סדר ה-DOM ל-RTL:
-   ילד ה-DOM הראשון נוחת בימין החזותי (יום 1 → שנה 2 משמאל לימין ב-STATIONS,
-   ולכן גם בציר הזמן וגם בטבלה). */
+   מכונת המצבים (§4.2): selectedIndex / currentIndex / viewedFrontId /
+   visitedIndices / answers / phase — חמישה חלקי מצב נפרדים, לא מוזגים.
+   expandedIndex הוא מצב שישי, נפרד גם הוא: איזה פאנל אקורדיון פתוח ויזואלית
+   — סגירתו לבדה אינה משנה תחנה/סרט/חול (דרישה מפורשת בבריף). */
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'framer-motion';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Icon } from '@/components/Icon';
-import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { cn } from '@/lib/utils';
+import { SandTimer } from './SandTimer';
 import {
   INSIGHT_PARAGRAPHS,
   INSTRUCTION,
   JUST_ADDED_LABEL,
   NOT_IN_MODEL_LABEL,
   NOT_YET_ADDED_LABEL,
+  QUESTION_HEADING,
+  QUESTION_INSTRUCTION,
   SOURCE_QUESTION,
   STATIONS,
   TABLE_HEADER,
   TIMELINE_NOTE,
   TITLE,
+  TRANSITION_QUESTIONS,
   UI,
   type Station,
   type StationId,
+  type TransitionQuestion,
+  type TransitionQuestionOption,
 } from './TimePressureContent';
+
+const STATION_COUNT = STATIONS.length;
+
+/* קובצי המעבר — נתיבים מפורשים, לא נגזרים משמות STATIONS[].id: קובצי
+   המדיה שאורגנו ותועדו ב-MEDIA-MAP.md משתמשים במילה "budget" בשם הקובץ
+   (T01-field-to-budget.mp4) בעוד ה-id של התחנה הוא 'treasury' — שני שמות
+   שונים לאותה תחנה, ממקורות שונים (תדריך ההפקה מול מודל התוכן). שינוי אחד
+   מהם רק כדי ליישר קו היה נוגע בקבצים/במסמך שכבר תועדו ואושרו במשימה קודמת.
+   המערך הזה מפורש בכוונה, לא string-interpolation מ-STATIONS[].id. אורכו
+   הוא N−1 כנתון (כמו TRANSITION_QUESTIONS עצמו), אבל כל שימוש בו מוגן
+   בגבולות שנגזרים מ-STATION_COUNT (ראו videoSrcFor). */
+const TRANSITION_VIDEO_SRC: readonly string[] = [
+  '/assets/lessons/topic01/scene-asymmetric/time-pressure-film-v3/transitions/T01-field-to-budget.mp4',
+  '/assets/lessons/topic01/scene-asymmetric/time-pressure-film-v3/transitions/T02-budget-to-public.mp4',
+  '/assets/lessons/topic01/scene-asymmetric/time-pressure-film-v3/transitions/T03-public-to-politics.mp4',
+  '/assets/lessons/topic01/scene-asymmetric/time-pressure-film-v3/transitions/T04-politics-to-international.mp4',
+];
+
+function videoSrcFor(fromIndex: number): string | null {
+  if (fromIndex < 0 || fromIndex >= STATION_COUNT - 1) return null;
+  return TRANSITION_VIDEO_SRC[fromIndex] ?? null;
+}
+
+function questionFor(toIndex: number): TransitionQuestion | null {
+  const toId = STATIONS[toIndex]?.id;
+  if (!toId) return null;
+  return TRANSITION_QUESTIONS.find((q) => q.toStationId === toId) ?? null;
+}
+
+/** נפח חול תחתון/עליון במנוחה לתחנה i מתוך N — §5, הנוסחה היחידה,
+ * נגזרת תמיד מ-STATION_COUNT בפועל (לא 4/5 קבועים). */
+function sandLevelsFor(index: number): { bottom: number; top: number } {
+  if (STATION_COUNT <= 1) return { bottom: 10, top: 90 };
+  const bottom = 10 + (80 * index) / (STATION_COUNT - 1);
+  return { bottom, top: 100 - bottom };
+}
+
+type Phase = 'idle' | 'question' | 'feedback' | 'loading' | 'playing';
+type AnswerState = { selectedOptionId: TransitionQuestionOption['id'] | null; submitted: boolean };
 
 export function TimePressureExperience() {
   const uid = useId();
-  const reduce = !!useReducedMotion();
-  const [currentIndex, setCurrentIndex] = useState<0 | 1 | 2 | 3 | 4>(0);
+  const reducedMotion = !!useReducedMotion();
+
+  // ── מכונת המצבים (§4.2) ──────────────────────────────────────────
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [visitedIndices, setVisitedIndices] = useState<Set<number>>(() => new Set([0]));
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [answers, setAnswers] = useState<Record<string, AnswerState>>({});
+  // מצב שישי, נפרד: איזה פאנל אקורדיון פתוח ויזואלית — לא זהה ל-currentIndex.
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+  // עיון בחזית קודמת דרך הטבלה — קיים מהמימוש הקודם, אורתוגונלי לכל השאר.
   const [viewedFrontId, setViewedFrontId] = useState<StationId | null>(null);
-  const [insightOpen, setInsightOpen] = useState(false);
+
+  const [transitionProgress, setTransitionProgress] = useState(0);
+  const [ambientMotionEnabled, setAmbientMotionEnabled] = useState(true);
+  const [skipAheadNotice, setSkipAheadNotice] = useState(false);
   const [announcement, setAnnouncement] = useState('');
-  const panelHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const preloadVideoRef = useRef<HTMLVideoElement | null>(null);
+  const requestTokenRef = useRef(0);
+  const headerRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const questionHeadingRef = useRef<HTMLHeadingElement>(null);
+  const wasPlayingRef = useRef(false);
 
   const current = STATIONS[currentIndex];
   const viewedIndex = viewedFrontId ? STATIONS.findIndex((s) => s.id === viewedFrontId) : -1;
@@ -50,35 +114,266 @@ export function TimePressureExperience() {
   const panelStation: Station = viewedIndex >= 0 ? STATIONS[viewedIndex] : current;
   const panelText = viewedFrontId === null ? current.stationText : panelStation.frontDetail;
 
-  const goTo = (index: 0 | 1 | 2 | 3 | 4) => {
-    setCurrentIndex(index);
-    setViewedFrontId(null);
-    setAnnouncement(UI.liveUpdate(STATIONS[index], index + 1));
-  };
-
   const viewFront = (id: StationId) => setViewedFrontId(id);
   const backToAdded = () => setViewedFrontId(null);
 
-  // Preload the next station's image so the crossfade never waits on network.
+  // ── עזרי מדיה/חול ───────────────────────────────────────────────
+
+  const clearVideo = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.pause();
+    v.removeAttribute('src');
+    v.load();
+  };
+
+  /** מסיימים כל מעבר פעיל מיידית ליעדו (§5/§7: דילוג/כשל/reduced-motion/
+   * דריסה על-ידי בקשה חדשה — כולם "מגיעים" לתחנה בלי המתנה נוספת). */
+  const settleTransition = (toIndex: number) => {
+    requestTokenRef.current += 1;
+    clearVideo();
+    setPhase('idle');
+    setSelectedIndex(null);
+    setTransitionProgress(0);
+    setCurrentIndex(toIndex);
+    setVisitedIndices((prev) => {
+      const next = new Set(prev);
+      next.add(toIndex);
+      return next;
+    });
+    setViewedFrontId(null);
+    setAnnouncement(UI.liveUpdate(STATIONS[toIndex], toIndex + 1));
+  };
+
+  /** בקשת תחנה — נקודת הכניסה היחידה לכל ניווט (לחיצת אקורדיון).
+   *
+   * אם מעבר פעיל באמצע נגינה/טעינה, מסיימים אותו קודם כדילוג (§5/§7) —
+   * ומחשבים את "מבוקר הביקורים האפקטיבי" הזה מקומית (effectiveVisited/
+   * effectiveCurrent) במקום לקרוא את visitedIndices/currentIndex מה-closure:
+   * setState אסינכרוני, כך שמייד אחרי הקריאה ל-settleTransition הערכים
+   * הישנים עדיין "יושבים" במשתנים המקומיים של הקריאה הנוכחית לפונקציה. בלי
+   * החישוב המקומי הזה, "גבול ההתקדמות הבא" היה מחושב מהתחנה הישנה (לפני
+   * הדילוג) ולא מהתחנה שאליה בדיוק סיימנו לדלג. */
+  const requestStation = (target: number) => {
+    if (target < 0 || target >= STATION_COUNT) return;
+
+    let effectiveVisited = visitedIndices;
+
+    if (phase === 'playing' || phase === 'loading') {
+      const settledTo = selectedIndex ?? currentIndex;
+      settleTransition(settledTo);
+      effectiveVisited = new Set(visitedIndices).add(settledTo);
+    } else if (phase === 'question' || phase === 'feedback') {
+      // חזרה לאחור בזמן שאלה מבטלת את יעד המעבר; תשובה שכבר הוגשה נשמרת
+      // ב-answers (לא נוגעים בה כאן) — §4 "חזרה לאחור בזמן שאלה מבטלת...".
+      requestTokenRef.current += 1;
+      setSelectedIndex(null);
+      setPhase('idle');
+    }
+
+    if (effectiveVisited.has(target)) {
+      // קפיצה חופשית: תמיד מותרת, בלי שאלה ובלי נגינה חוזרת.
+      requestTokenRef.current += 1;
+      clearVideo();
+      setCurrentIndex(target);
+      setViewedFrontId(null);
+      return;
+    }
+
+    // תחנה שטרם נצפתה: לעולם פותחים רק את גבול ההתקדמות המיידי הבא, לא את
+    // התחנה שבפועל נלחצה — "מתקדמים תחנה אחת בכל פעם" (§4.1).
+    const nextBoundary = Math.max(...Array.from(effectiveVisited)) + 1;
+    setSkipAheadNotice(target !== nextBoundary);
+
+    requestTokenRef.current += 1;
+    setSelectedIndex(nextBoundary);
+    setExpandedIndex(nextBoundary);
+    // אם השאלה הזו כבר נענתה בעבר (חזרה לאחור ואז קדימה שוב) — ממשיכים
+    // ממש ממשוב, לא מאפסים לשאלה ריקה (§4.1 "התשובה והמשוב נשמרים").
+    const boundaryQuestion = questionFor(nextBoundary);
+    const alreadySubmitted = boundaryQuestion ? !!answers[boundaryQuestion.id]?.submitted : false;
+    setPhase(alreadySubmitted ? 'feedback' : 'question');
+  };
+
+  const handleHeaderClick = (i: number) => {
+    if (i === expandedIndex) {
+      // סגירת האקורדיון הפעיל בלבד — אינה משנה תחנה/סרט/חול.
+      setExpandedIndex(null);
+      return;
+    }
+    setExpandedIndex(i);
+    requestStation(i);
+  };
+
+  const handleSelectOption = (question: TransitionQuestion, optionId: TransitionQuestionOption['id']) => {
+    setAnswers((prev) => ({ ...prev, [question.id]: { selectedOptionId: optionId, submitted: false } }));
+  };
+
+  const handleCheckAnswer = (question: TransitionQuestion) => {
+    const answer = answers[question.id];
+    if (!answer?.selectedOptionId) return;
+    const option = question.options.find((o) => o.id === answer.selectedOptionId);
+    setAnswers((prev) => ({ ...prev, [question.id]: { ...prev[question.id], submitted: true } }));
+    setPhase('feedback');
+    if (option) {
+      setAnnouncement(`${option.correct ? 'תשובה נכונה. ' : 'תשובה שגויה. '}${option.feedback}`);
+    }
+  };
+
+  const handleRetry = (question: TransitionQuestion) => {
+    setAnswers((prev) => ({ ...prev, [question.id]: { ...prev[question.id], submitted: false } }));
+    setPhase('question');
+  };
+
+  const handleContinue = (question: TransitionQuestion) => {
+    if (selectedIndex === null) return;
+    const fromIndex = currentIndex;
+    const toIndex = selectedIndex;
+    const src = videoSrcFor(fromIndex);
+
+    if (reducedMotion || !src) {
+      settleTransition(toIndex);
+      return;
+    }
+
+    requestTokenRef.current += 1;
+    const token = requestTokenRef.current;
+    setTransitionProgress(0);
+    setPhase('loading');
+
+    const v = videoRef.current;
+    if (!v) {
+      settleTransition(toIndex);
+      return;
+    }
+    v.src = src;
+    v.load();
+    v.oncanplay = () => {
+      if (requestTokenRef.current !== token) return;
+      setPhase('playing');
+      v.play().catch(() => {
+        if (requestTokenRef.current === token) settleTransition(toIndex);
+      });
+    };
+    v.onerror = () => {
+      if (requestTokenRef.current === token) settleTransition(toIndex);
+    };
+  };
+
+  const handleSkipAnimation = () => {
+    if (selectedIndex === null) return;
+    settleTransition(selectedIndex);
+  };
+
+  const handleReset = () => {
+    requestTokenRef.current += 1;
+    clearVideo();
+    setCurrentIndex(0);
+    setSelectedIndex(null);
+    setVisitedIndices(new Set([0]));
+    setPhase('idle');
+    setAnswers({});
+    setExpandedIndex(0);
+    setViewedFrontId(null);
+    setTransitionProgress(0);
+    setSkipAheadNotice(false);
+  };
+
+  // ── אירועי הווידאו — timeupdate הוא מקור האמת היחיד להתקדמות; אין
+  //    טיימר עצמאי. buffering/waiting פשוט לא מפיקים timeupdate, כך
+  //    שההתקדמות קופאת מעצמה בלי טיפול מיוחד. ────────────────────────
   useEffect(() => {
-    const next = STATIONS[currentIndex + 1];
-    if (!next) return;
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = next.image.src;
-    document.head.appendChild(link);
+    const v = videoRef.current;
+    if (!v) return;
+    const onTimeUpdate = () => {
+      if (phase !== 'playing' || !v.duration) return;
+      setTransitionProgress(Math.min(1, v.currentTime / v.duration));
+    };
+    const onEnded = () => {
+      if (selectedIndex !== null) settleTransition(selectedIndex);
+    };
+    v.addEventListener('timeupdate', onTimeUpdate);
+    v.addEventListener('ended', onEnded);
     return () => {
-      document.head.removeChild(link);
+      v.removeEventListener('timeupdate', onTimeUpdate);
+      v.removeEventListener('ended', onEnded);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, selectedIndex]);
+
+  // עצירה בעת מעבר ללשונית אחרת; חזרה אינה "משלימה" זמן שנעדר.
+  useEffect(() => {
+    const onVisibility = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (document.hidden) {
+        wasPlayingRef.current = phase === 'playing' && !v.paused;
+        v.pause();
+      } else if (wasPlayingRef.current && phase === 'playing') {
+        v.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [phase]);
+
+  // טעינה מראש מוגבלת: תמונת התחנה הבאה + סרטון המעבר הבא, תחנה אחת קדימה.
+  // הווידאו מוטען מראש דרך <video preload> חבוי, לא <link rel="preload"
+  // as="video"> — דפדפני Chromium אינם תומכים בפועל בערך "video" עבור
+  // preload (אזהרת קונסולה "unsupported `as` value" אף שהוא תקני להלכה).
+  useEffect(() => {
+    const links: HTMLLinkElement[] = [];
+    const nextStation = STATIONS[currentIndex + 1];
+    if (nextStation) {
+      const imgLink = document.createElement('link');
+      imgLink.rel = 'preload';
+      imgLink.as = 'image';
+      imgLink.href = nextStation.image.src;
+      document.head.appendChild(imgLink);
+      links.push(imgLink);
+    }
+    const nextVideoSrc = videoSrcFor(currentIndex);
+    const preloadVideo = preloadVideoRef.current;
+    if (preloadVideo && nextVideoSrc) {
+      preloadVideo.src = nextVideoSrc;
+      preloadVideo.load();
+    }
+    return () => {
+      links.forEach((l) => document.head.removeChild(l));
+      if (preloadVideo) {
+        preloadVideo.removeAttribute('src');
+        preloadVideo.load();
+      }
     };
   }, [currentIndex]);
 
+  // מיקוד לכותרת השאלה בפתיחתה, וליעד תיוג המעבר החדש בסיומו — לא בלולאות
+  // רינדור סתמיות, רק בעקבות בקשה מפורשת.
+  useEffect(() => {
+    if (phase === 'question') {
+      questionHeadingRef.current?.focus();
+    }
+  }, [phase, selectedIndex]);
+  useEffect(() => {
+    if (phase === 'idle') {
+      headerRefs.current[currentIndex]?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
+
+  const activeQuestion = selectedIndex !== null ? questionFor(selectedIndex) : null;
+  const activeAnswer = activeQuestion ? answers[activeQuestion.id] : undefined;
+
+  const restLevels = sandLevelsFor(currentIndex);
+  const targetLevels = selectedIndex !== null ? sandLevelsFor(selectedIndex) : null;
+  const isTransitioning = phase === 'loading' || phase === 'playing';
+
   const panelKey = `${current.id}-${viewedFrontId ?? 'default'}`;
-  const fadeTransition = reduce ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' as const };
+  const fadeTransition = reducedMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' as const };
 
   return (
     <div className="mt-12">
-      {/* כותרת + הנחיה — מבנה סעיף 1 */}
+      {/* כותרת + הנחיה */}
       <div className="mb-5">
         <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
           {TITLE}
@@ -87,94 +382,221 @@ export function TimePressureExperience() {
         <p className="mt-2 text-base leading-relaxed text-fg-muted">{INSTRUCTION}</p>
       </div>
 
-      {/* עדכון נגיש קצר — לא מקריא מחדש את הטבלה */}
       <div aria-live="polite" className="sr-only">
         {announcement}
       </div>
 
-      {/* ציר זמן — סעיף 2: חמש תחנות, יום 1 מימין (ראשון ב-DOM) לשנה 2 משמאל */}
-      <Timeline current={currentIndex} onSelect={goTo} uid={uid} reduce={reduce} />
+      {/* אקורדיון (ימין) + מדיה (שמאל) — אותו מבנה חזותי כמו OnboardingScene */}
+      <div className="grid md:grid-cols-[2fr_3fr] gap-6 items-stretch">
+        {/* פאנל השלבים — ילד ראשון → ימין ב-RTL */}
+        <div className="space-y-1">
+          {STATIONS.map((station, i) => {
+            const visited = visitedIndices.has(i);
+            const isCurrent = i === currentIndex && phase === 'idle';
+            const isPendingTarget = i === selectedIndex;
+            const expanded = expandedIndex === i;
+            const showTargetBadge = isPendingTarget && isTransitioning;
 
-      {/* משטח מרכזי אחד — סעיף 3: טקסט מימין, תמונה משמאל */}
-      <div className="surface-elevated mt-5 grid gap-0 overflow-hidden md:grid-cols-[1.2fr_1fr]">
-        <div className="flex flex-col justify-center p-6 md:p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={panelKey}
-              initial={reduce ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={reduce ? undefined : { opacity: 0 }}
-              transition={fadeTransition}
-            >
-              {viewingPrevious && (
-                <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <StatusChip tone="neutral">{UI.viewingPrevious(panelStation.frontLabel)}</StatusChip>
-                  <button type="button" onClick={backToAdded} className="btn-ghost text-sm">
-                    {UI.backToAdded}
+            return (
+              <div
+                key={station.id}
+                className={cn(
+                  'surface overflow-hidden transition-all duration-300 ease-snap',
+                  isCurrent || isPendingTarget
+                    ? 'border-brand/45 bg-bg-elevated'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                  visited && !isCurrent && !isPendingTarget && 'opacity-80',
+                )}
+              >
+                <button
+                  ref={(el) => {
+                    headerRefs.current[i] = el;
+                  }}
+                  type="button"
+                  onClick={() => handleHeaderClick(i)}
+                  aria-expanded={expanded}
+                  aria-controls={`time-pressure-panel-${uid}-${station.id}`}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className="w-full p-4 text-start flex items-center gap-3 relative"
+                >
+                  <span
+                    className={cn(
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      visited || isCurrent
+                        ? 'bg-brand-dark text-bg-elevated border-brand-dark'
+                        : 'bg-bg-accent text-fg-muted border-border',
+                    )}
+                  >
+                    {visited && !isCurrent && !isPendingTarget ? (
+                      <Icon name="check" size={18} strokeWidth={2.5} />
+                    ) : (
+                      <span className="font-display text-base font-bold">{i + 1}</span>
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-display font-bold text-fg-dim tracking-wide">{station.timeLabel}</div>
+                    <div className="font-display font-bold leading-tight transition-colors text-black text-lg md:text-xl">
+                      {station.frontLabel}
+                    </div>
+                  </div>
+                  {showTargetBadge && (
+                    <span className="shrink-0 text-xs font-display font-bold text-accent">מעבר אל…</span>
+                  )}
+                  <motion.span
+                    animate={{ rotate: expanded ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
+                  >
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {expanded && (
+                    <motion.div
+                      key={`panel-${station.id}`}
+                      id={`time-pressure-panel-${uid}-${station.id}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-1 border-t border-brand/20">
+                        {isPendingTarget && activeQuestion && (phase === 'question' || phase === 'feedback') ? (
+                          <QuestionPanel
+                            question={activeQuestion}
+                            answer={activeAnswer}
+                            phase={phase}
+                            skipAheadNotice={skipAheadNotice}
+                            headingRef={questionHeadingRef}
+                            onSelect={(optionId) => handleSelectOption(activeQuestion, optionId)}
+                            onCheck={() => handleCheckAnswer(activeQuestion)}
+                            onRetry={() => handleRetry(activeQuestion)}
+                            onContinue={() => handleContinue(activeQuestion)}
+                          />
+                        ) : (
+                          <p className="mt-2 text-base leading-relaxed text-black">{station.stationText}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+
+          <button type="button" onClick={handleReset} className="btn-ghost text-sm mt-2">
+            {UI.resetActivity}
+          </button>
+        </div>
+
+        {/* מדיה — ילד שני → שמאל ב-RTL */}
+        <div className="surface-elevated bg-bg-accent p-3 sm:p-4 flex flex-col gap-3">
+          <div className="flex gap-3 items-stretch flex-1">
+            {/* וידאו — ילד ראשון בשורה הפנימית → ימין השורה (לא קשור לצד
+                העמודה החיצונית; שעון החול הוא זה שצריך לשבת בקצה השמאלי
+                החזותי של הווידאו, כפי שהשורה השנייה מבטיחה). */}
+            <div className="relative flex-1 min-h-[220px] rounded-xl overflow-hidden bg-bg" style={{ aspectRatio: '16 / 9' }}>
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                preload="metadata"
+                poster={current.image.src}
+                className="absolute inset-0 size-full object-contain bg-bg"
+              />
+              {/* וידאו חבוי, לא-ניתן-לצפייה: מקדים בטעינה את סרטון המעבר
+                  הבא (תחנה אחת קדימה בלבד) כדי שלא יהיה המתנה כשמגיעים
+                  אליו בפועל. אין לו תפקיד ויזואלי. */}
+              <video ref={preloadVideoRef} muted preload="auto" aria-hidden className="hidden" />
+              {phase === 'loading' && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+                  <div className="flex items-center gap-2 rounded-full bg-bg-elevated/90 px-3 py-1.5 shadow-sm">
+                    <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
+                    <span className="text-xs font-display font-bold text-fg-dim">טוען...</span>
+                  </div>
+                </div>
+              )}
+              {isTransitioning && (
+                <div className="absolute inset-x-0 bottom-3 flex justify-center">
+                  <button type="button" onClick={handleSkipAnimation} className="btn-ghost text-xs bg-bg-elevated/90">
+                    {UI.skipAnimation}
                   </button>
                 </div>
               )}
-              <h4
-                ref={panelHeadingRef}
-                tabIndex={-1}
-                className="font-display text-xl font-bold leading-tight text-black outline-none"
-              >
-                {panelStation.frontLabel}
-              </h4>
-              <p className="mt-3 text-base leading-relaxed text-black text-pretty">{panelText}</p>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            </div>
 
-        <div className="relative min-h-[220px]" style={{ aspectRatio: '3 / 2' }}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={panelKey}
-              initial={reduce ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={reduce ? undefined : { opacity: 0 }}
-              transition={fadeTransition}
-              className="absolute inset-0"
-            >
-              <IsometricAsset
-                assetId={panelStation.image.assetId}
-                src={panelStation.image.src}
-                alt={panelStation.image.alt}
-                aspect="4/3"
-                fit="contain"
-                prompt={panelStation.image.prompt}
-                className="absolute inset-0 size-full bg-bg-accent [aspect-ratio:auto]"
+            {/* שעון חול — קצה שמאלי חזותי (inline-end), עמודה קומפקטית */}
+            <div className="shrink-0 w-16 flex flex-col items-center justify-center gap-2">
+              <SandTimer
+                bottomPercent={restLevels.bottom}
+                targetBottomPercent={targetLevels?.bottom}
+                transitionProgress={transitionProgress}
+                phase={isTransitioning ? 'transitioning' : 'idle'}
+                ambientMotionEnabled={ambientMotionEnabled && !reducedMotion}
+                reducedMotion={reducedMotion}
               />
-            </motion.div>
-          </AnimatePresence>
+              <span className="text-[11px] font-display font-bold text-fg-muted text-center leading-tight">
+                {UI.sandtimerLabel}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-xs leading-relaxed text-fg-dim text-pretty flex-1 min-w-0">{UI.sandtimerCaption}</p>
+            {!reducedMotion && (
+              <button
+                type="button"
+                onClick={() => setAmbientMotionEnabled((v) => !v)}
+                className="btn-ghost text-xs shrink-0"
+              >
+                {ambientMotionEnabled ? UI.stopMotion : UI.resumeMotion}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* הקודם/הבא */}
-      <div className="mt-4 flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => currentIndex > 0 && goTo((currentIndex - 1) as 0 | 1 | 2 | 3 | 4)}
-          disabled={currentIndex === 0}
-          className={cn('btn-secondary', currentIndex === 0 && 'cursor-not-allowed opacity-45')}
-        >
-          {UI.prev}
-        </button>
-        <button
-          type="button"
-          onClick={() => currentIndex < 4 && goTo((currentIndex + 1) as 0 | 1 | 2 | 3 | 4)}
-          disabled={currentIndex === 4}
-          className={cn('btn-primary', currentIndex === 4 && 'cursor-not-allowed opacity-45')}
-        >
-          {UI.next}
-          <Icon name="arrow-left" size={18} strokeWidth={2} />
-        </button>
-      </div>
-
-      {/* טבלת השוואה — סעיף 4 */}
+      {/* טבלת השוואה */}
       <ComparisonTable currentIndex={currentIndex} viewedFrontId={viewedFrontId} onViewFront={viewFront} />
 
-      {/* שורת סיכום — סעיף 5 */}
+      {viewingPrevious && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <StatusChip tone="neutral">{UI.viewingPrevious(panelStation.frontLabel)}</StatusChip>
+          <button type="button" onClick={backToAdded} className="btn-ghost text-sm">
+            {UI.backToAdded}
+          </button>
+        </div>
+      )}
+      {viewingPrevious && (
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={panelKey}
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reducedMotion ? undefined : { opacity: 0 }}
+            transition={fadeTransition}
+            className="mt-2 text-sm leading-relaxed text-fg-muted text-pretty"
+          >
+            {panelText}
+          </motion.p>
+        </AnimatePresence>
+      )}
+
+      {/* שורת סיכום */}
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <StatusChip tone="accent">{UI.regularSummary(currentIndex + 1)}</StatusChip>
         <StatusChip tone="neutral">{UI.irregularSummary}</StatusChip>
@@ -183,185 +605,135 @@ export function TimePressureExperience() {
 
       <p className="mt-3 text-sm leading-relaxed text-fg-muted text-pretty">{TIMELINE_NOTE}</p>
 
-      {/* "מה המשמעות?" — סעיף 6, לא מותנה */}
-      <InsightDisclosure open={insightOpen} onToggle={() => setInsightOpen((o) => !o)} uid={uid} />
+      <InsightDisclosureWrapper />
     </div>
   );
 }
 
-/* ───────────────────────────────── Timeline ─────────────────────────────────
-   חמשת כפתורי התחנה עצמם הם החלופה המלאה לגרירה (קריטריון a11y, לפי תדריך
-   המשימה) — האגודל הנגרר הוא שיפור פרוגרסיבי בלבד, לעכבר/מגע, ולכן aria-hidden
-   ומחוץ לסדר ה-Tab. מיקומו נמדד עם getBoundingClientRect() האמיתי של כל
-   כפתור (לא חשבון שברים) כדי לא "להיאבק" ידנית בפריסת RTL — ולכן העוגן שלו
-   חייב לחיות באותה מערכת קואורדינטות פיזית (viewport) שממנה המדידות הגיעו;
-   ראו ההערה על ה-style המוחלט למטה.
+/* ─────────────────────────────── QuestionPanel ───────────────────────────────
+   שאלת הגבול — בתוך פאנל האקורדיון של התחנה שמנסים להגיע אליה. הסרט
+   ותמונת התחנה הנוכחית (לא היעד) נשארים מוצגים לאורך כל השאלה (§4 שלב 2). */
 
-   האגודל יושב במסלול צר משלו *מתחת* לשורת הכפתורים (לא עליה/דרכה) —
-   באופן מכוון, לא רק קוסמטי: כשהאגודל חופף גיאומטרית לתיבת-לחיצה של כפתור
-   (וזה קורה תמיד לתחנה הנוכחית, כי הוא תמיד נח שם), z-index גבוה יותר עליו
-   מספיק כדי ש-Playwright/דפדפן יראו אותו כ"מיירט" את הקליק ולחסום את
-   הכפתור מתחתיו — נבדק ישירות ותועד. הפרדה אנכית מלאה מבטלת את הבעיה
-   מבנית, בלי תלות ב-z-index. */
-
-const TIMELINE_THUMB_SIZE = 16; // px, תואם size-4
-
-function Timeline({
-  current,
+function QuestionPanel({
+  question,
+  answer,
+  phase,
+  skipAheadNotice,
+  headingRef,
   onSelect,
-  uid,
-  reduce,
+  onCheck,
+  onRetry,
+  onContinue,
 }: {
-  current: 0 | 1 | 2 | 3 | 4;
-  onSelect: (index: 0 | 1 | 2 | 3 | 4) => void;
-  uid: string;
-  reduce: boolean;
+  question: TransitionQuestion;
+  answer: AnswerState | undefined;
+  phase: Phase;
+  skipAheadNotice: boolean;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+  onSelect: (optionId: TransitionQuestionOption['id']) => void;
+  onCheck: () => void;
+  onRetry: () => void;
+  onContinue: () => void;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const thumbX = useMotionValue(0);
-  const [centers, setCenters] = useState<number[]>([]);
-  const didMountRef = useRef(false);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const track = trackRef.current;
-      if (!track) return;
-      const trackRect = track.getBoundingClientRect();
-      setCenters(
-        buttonRefs.current.map((btn) => {
-          if (!btn) return 0;
-          const r = btn.getBoundingClientRect();
-          return r.left + r.width / 2 - trackRect.left;
-        }),
-      );
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
-
-  // מיישר את האגודל למיקום המדוד של `current` בכל שינוי — קפיצה מיידית
-  // בעליית הרכיב (כדי לא להחליק מ-0), אנימציה בכל שינוי תחנה אחר-כך.
-  useEffect(() => {
-    if (centers.length !== 5) return;
-    const target = centers[current] - TIMELINE_THUMB_SIZE / 2;
-    if (!didMountRef.current) {
-      thumbX.set(target);
-      didMountRef.current = true;
-      return;
-    }
-    const controls = animate(
-      thumbX,
-      target,
-      reduce ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-    );
-    return () => controls.stop();
-  }, [current, centers, reduce, thumbX]);
-
-  const handleDragEnd = () => {
-    if (centers.length !== 5) return;
-    const releasedCenter = thumbX.get() + TIMELINE_THUMB_SIZE / 2;
-    let nearest: 0 | 1 | 2 | 3 | 4 = 0;
-    let nearestDistance = Infinity;
-    centers.forEach((center, i) => {
-      const distance = Math.abs(center - releasedCenter);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = i as 0 | 1 | 2 | 3 | 4;
-      }
-    });
-    // Snap the thumb to its resolved station directly — when `nearest`
-    // equals the already-current station, onSelect() below causes no state
-    // change, so the `current`-driven alignment effect above never re-runs
-    // and the thumb would otherwise strand wherever the pointer released it
-    // (up to half an inter-station gap off, or further under dragElastic).
-    animate(
-      thumbX,
-      centers[nearest] - TIMELINE_THUMB_SIZE / 2,
-      reduce ? { duration: 0 } : { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-    );
-    onSelect(nearest);
-  };
-
-  const dragConstraints = useMemo(() => {
-    if (centers.length !== 5) return { left: 0, right: 0 };
-    // `centers[]` are physical x-offsets from getBoundingClientRect() — under
-    // this page's RTL, station 0 (day 1, first in DOM) sits at the physical
-    // right (the larger offset) and station 4 sits at the physical left (the
-    // smaller offset). framer-motion's dragConstraints.left/.right are
-    // physical min/max bounds, not RTL-aware, so they're derived from the
-    // actual min/max of all 5 measured centers rather than assumed from
-    // index order — otherwise `left > right` clamps the drag to one extreme
-    // instead of tracking the pointer across all 5 stations.
-    const minCenter = Math.min(...centers);
-    const maxCenter = Math.max(...centers);
-    return { left: minCenter - TIMELINE_THUMB_SIZE / 2, right: maxCenter - TIMELINE_THUMB_SIZE / 2 };
-  }, [centers]);
+  const groupUid = useId();
+  const submitted = phase === 'feedback' && !!answer?.submitted;
+  const selectedOption = question.options.find((o) => o.id === answer?.selectedOptionId);
 
   return (
-    <div ref={trackRef} className="relative mt-5">
-      <div className="flex items-stretch justify-between gap-2">
-        {STATIONS.map((station, i) => {
-          const index = i as 0 | 1 | 2 | 3 | 4;
-          const isCurrent = index === current;
-          return (
-            <button
-              key={station.id}
-              id={`${uid}-timeline-${station.id}`}
-              ref={(el) => {
-                buttonRefs.current[i] = el;
-              }}
-              type="button"
-              aria-current={isCurrent ? 'step' : undefined}
-              onClick={() => onSelect(index)}
-              className={cn(
-                'flex-1 rounded-xl border px-2 py-2.5 text-center transition-colors duration-200 ease-snap',
-                isCurrent ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:bg-bg-accent',
-              )}
-            >
-              <span
+    <div className="mt-2 space-y-3">
+      <h4
+        ref={headingRef}
+        tabIndex={-1}
+        className="font-display text-lg font-bold leading-tight text-black outline-none"
+      >
+        {QUESTION_HEADING}
+      </h4>
+      <p className="text-sm leading-relaxed text-fg-muted">{QUESTION_INSTRUCTION}</p>
+      {skipAheadNotice && (
+        <p className="text-sm leading-relaxed text-accent">{UI.sequentialProgressNotice}</p>
+      )}
+
+      <fieldset>
+        <legend className="text-base leading-relaxed text-black mb-3">{question.prompt}</legend>
+        <div className="flex flex-col gap-2">
+          {question.options.map((option) => {
+            const isSelected = answer?.selectedOptionId === option.id;
+            const showResult = submitted && isSelected;
+            const isCorrectReveal = submitted && option.correct;
+            return (
+              <label
+                key={option.id}
                 className={cn(
-                  'font-display text-sm font-bold leading-none',
-                  isCurrent ? 'text-accent' : 'text-black',
+                  'flex items-start gap-2.5 text-start p-3 rounded-xl border text-sm transition-all duration-300 ease-snap cursor-pointer',
+                  isCorrectReveal
+                    ? 'border-status-ok/50 bg-status-ok/10'
+                    : showResult
+                      ? 'border-status-danger/50 bg-status-danger/10'
+                      : isSelected
+                        ? 'border-brand/45 bg-brand/[0.05]'
+                        : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                 )}
               >
-                {station.timeLabel}
-              </span>
+                <input
+                  type="radio"
+                  name={`${groupUid}-${question.id}`}
+                  value={option.id}
+                  checked={isSelected}
+                  disabled={submitted}
+                  onChange={() => onSelect(option.id)}
+                  className="mt-1 shrink-0"
+                />
+                <span className="flex-1 text-black">{option.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      {!submitted && (
+        <button
+          type="button"
+          onClick={onCheck}
+          disabled={!answer?.selectedOptionId}
+          className={cn('btn-primary', !answer?.selectedOptionId && 'opacity-45 cursor-not-allowed')}
+        >
+          בדקו את התשובה
+        </button>
+      )}
+
+      {submitted && selectedOption && (
+        <div className="space-y-3">
+          <p
+            className={cn(
+              'text-sm leading-relaxed rounded-xl border p-3',
+              selectedOption.correct
+                ? 'text-status-ok border-status-ok/50 bg-status-ok/10'
+                : 'text-status-danger border-status-danger/50 bg-status-danger/10',
+            )}
+          >
+            {selectedOption.feedback}
+          </p>
+          <p className="text-sm leading-relaxed text-fg-muted">{question.explanation}</p>
+          <div className="flex flex-wrap gap-3">
+            {!selectedOption.correct && (
+              <button type="button" onClick={onRetry} className="btn-secondary text-sm">
+                נסו שוב
+              </button>
+            )}
+            <button type="button" onClick={onContinue} className="btn-primary">
+              {question.continueLabel}
+              <Icon name="arrow-left" size={18} strokeWidth={2} />
             </button>
-          );
-        })}
-      </div>
-      {/* מסלול האגודל: שורה נפרדת מתחת לכפתורים (לא חופפת אותם אנכית בכלל)
-          — ראו ההערה מעל הפונקציה. `left: 0` + היסט `x` הנמדד פיזית
-          (getBoundingClientRect) הם עוגן פיזי מכוון, לא start-0 לוגי, כי אז
-          המערכת הייתה מתחילה בקצה הנגדי תחת RTL והחשבון היה נשבר. אותו
-          עיקרון פיזי-במכוון כמו קואורדינטות תוויות הצמתים ב-PressureMap
-          הישן (לא תוכן, מדידת פיקסלים אמיתית). */}
-      <div className="relative mt-2 h-4">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-2 top-1/2 h-px -translate-y-1/2 bg-border-strong/60"
-        />
-        <motion.div
-          aria-hidden
-          drag="x"
-          dragConstraints={dragConstraints}
-          dragElastic={0.15}
-          dragMomentum={false}
-          onDragEnd={handleDragEnd}
-          style={{ left: 0, x: thumbX }}
-          className="absolute top-0 size-4 touch-none rounded-full border-2 border-accent bg-bg-elevated shadow-elevated cursor-grab active:cursor-grabbing"
-        />
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ───────────────────────────── ComparisonTable ─────────────────────────────
-   מוסכמת הרשת (grid grid-cols-3, שורת-תווית ברקע bg-bg-accent, מפרידי
-   border-s) מועתקת מ-TypologyTable/TypologyTableHeader באותו קובץ סצנה —
-   הטבלה הקודמת היחידה בטופיק הזה. */
+   ללא שינוי מהמימוש הקודם — עדיין נגזר מ-currentIndex בלבד (לא selectedIndex),
+   בהתאם ל-§4.2: "הסרט, ספירת החזיתות והחול עדיין משויכים ל-currentIndex". */
 
 function RegularStatusCell({ i, currentIndex }: { i: number; currentIndex: number }) {
   if (i > currentIndex) return <StatusChip tone="dim">{NOT_YET_ADDED_LABEL}</StatusChip>;
@@ -378,7 +750,7 @@ function ComparisonTable({
   viewedFrontId,
   onViewFront,
 }: {
-  currentIndex: 0 | 1 | 2 | 3 | 4;
+  currentIndex: number;
   viewedFrontId: StationId | null;
   onViewFront: (id: StationId) => void;
 }) {
@@ -447,24 +819,18 @@ function ComparisonTable({
 }
 
 /* ───────────────────────────── InsightDisclosure ─────────────────────────────
-   גילוי פשוט, זמין תמיד — לא מותנה בשום אינטראקציה קודמת. */
+   ללא שינוי — גילוי פשוט, זמין תמיד, לא מותנה בהתקדמות בפעילות. */
 
-function InsightDisclosure({
-  open,
-  onToggle,
-  uid,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  uid: string;
-}) {
+function InsightDisclosureWrapper() {
+  const [open, setOpen] = useState(false);
+  const uid = useId();
   return (
     <>
       <button
         type="button"
         aria-expanded={open}
         aria-controls={`${uid}-insight`}
-        onClick={onToggle}
+        onClick={() => setOpen((o) => !o)}
         className="btn-secondary mt-5"
       >
         {UI.toggleInsight}
