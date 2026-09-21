@@ -1,0 +1,15 @@
+NOT YET PRODUCED. MDOScene.tsx's <video src="mdo-scene-background-loop.mp4"> fails silently (onError) to the static mdo-scene-background-ground.png until a file exists at this exact path — do not add a placeholder/stock clip just to make the layer "work"; only drop in a real render of the prompt below.
+
+Target: public/assets/lessons/topic01/scene-mdo/mdo-scene-background-loop.mp4
+Intended tool: Google Flow (or any tool that can loop-extend a single reference photo with a locked camera).
+Reference frame: mdo-scene-background-ground.png (use as the first-frame / init image so the loop matches this exact photo pixel-for-pixel in composition).
+
+Prompt:
+
+Animate this exact photograph as a seamless 6-8 second looping video. Camera is completely LOCKED — no pan, no tilt, no dolly, no zoom, no perspective shift, no change in framing or crop. Lighting stays fixed — no change in sun position, shadow direction, or color temperature across the loop.
+
+Only these elements move, and only subtly: gentle sea waves rolling and glinting on the water at the left, soft ambient sway in the hillside scrub/vegetation on the right, and slow-drifting clouds in the sky. Motion should read as quiet ambient environment, not weather — no wind gusts bending branches hard, no whitecaps or spray, no visible cloud shape distortion, no birds, no new objects entering frame.
+
+The loop point must be invisible: the last frame should blend seamlessly back into the first (matching wave phase/cloud position or crossfading over ~0.5s) so it plays indefinitely without a visible jump or flash.
+
+Output: environment only — sea, sky, hillside, dirt road. Do NOT add the vehicle, ship, jet, satellite or comms mast; those are independent UI layers composited on top of this video at runtime and must stay absent from it, exactly as they're absent from mdo-scene-background-ground.png. No text, no UI, no watermark, no audio track (the layer is muted in the browser regardless, but a silent/no-audio export is cleaner). 1536×1024 or matching aspect ratio (3:2), H.264 mp4, web-optimized file size (target well under 5MB for a static export/SCORM-friendly page).
