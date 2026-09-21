@@ -5,788 +5,1060 @@ import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
-type Domain = {
-id: string;
-label: string;
-english: string;
-icon: IconName;
- // One ~12–18 word sentence shown inline under this domain's row while
- // it's off — the damaged capability and its cost to the rest of the
- // force fused into a single line. No separate title: the row's own
- // name + switch state already say "this one's disconnected".
-impact: string;
- // This domain's object layer: position + size in the shared field-photo
- // coordinate system (mdo-scene-background.png, 1448×1086px, measured
- // from the left/top edge — never mirrored for RTL). Height is derived
- // from the source PNG's own trimmed aspect ratio so it's never stretched.
- // The connection/marker anchor is derived from this same box (see
- // domainAnchor) instead of being specified separately, so the image
- // layer, the SVG marker, and the connection lines can never drift apart.
-image: { src: string; width: number; aspect: number; x: number; y: number };
- // Fraction of the box (0..1, default [0.5, 0.5]) the anchor lands on.
- // Only the mast overrides Y to land on its antenna cluster instead of
- // the middle of its own tall, mostly-empty shaft.
-anchorRel?: [number, number];
- // Decorative on-photo caption — only the satellite needs one: it's a
- // symbolic stand-in for the space domain, not a literal depiction, so it
- // says so directly on the image instead of only in the panel.
-caption?: string;
+import {
+  MDO_DOMAIN_ORDER,
+  MDO_DOMAINS,
+  MDO_EDGES,
+  MDO_FOUR_ACTIVE_BY_MISSING,
+  MDO_COUNT_INTROS,
+  type MdoDomainId,
+  type MdoEdge,
+} from './mdo-interaction-content';
+
+/** A region in the shared ground-level scene's own pixel coordinate system
+    (mdo-scene-background-ground.png, FIELD_W×FIELD_H, measured from the
+    left/top edge — never mirrored for RTL). Each domain's object layer is an
+    independent image positioned by this box; toggling a domain off animates
+    the object, its own baked-in contact shadow/dust/wake, and its connector
+    to fully transparent — never a dim/grey/mask treatment. */
+type Box = { x: number; y: number; width: number; height: number };
+
+type DomainVisual = {
+  id: MdoDomainId;
+  label: string;
+  icon: IconName;
+  /** Own transparent-background object layer — not part of the shared
+      background image, so it can be animated independently. Absent for
+      `standalone` (space), which uses its own circular inset instead. */
+  src?: string;
+  box: Box;
+  /** Where a connection curve attaches / the marker ring is drawn, in field
+      px — hand-picked at the object's own visual hub (turret, bridge, dish
+      cluster…), not just the padded box center. */
+  anchor: [number, number];
+  /** Field-px clearance a connection curve must keep from this domain when
+      the curve doesn't touch it. */
+  avoidR: number;
+  /** Space renders as its own circular photographic inset (never part of
+      the shared terrain's perspective/lighting), per the design brief. */
+  standalone?: boolean;
 };
 
-/** Box (top-left + size) for a domain's object layer, in field-photo px. */
-function domainBox(d: Domain): { x: number; y: number; width: number; height: number } {
-return { x: d.image.x, y: d.image.y, width: d.image.width, height: d.image.width / d.image.aspect };
-}
-
-/** Connection/marker anchor for a domain, derived from its own image box
-    (never stored independently) so repositioning the object always moves
-    its anchor with it. */
-function domainAnchor(d: Domain): [number, number] {
-const box = domainBox(d);
-const [rx, ry] = d.anchorRel ?? [0.5, 0.5];
-return [box.x + rx * box.width, box.y + ry * box.height];
-}
-
 const ASSET_BASE = '/assets/lessons/topic01/scene-mdo';
+const SCENE_SRC = `${ASSET_BASE}/mdo-scene-background-ground.png`;
+// Optional looping environment video — same framing as SCENE_SRC, waves/
+// vegetation/clouds only, locked camera. Not produced yet (see the sibling
+// .prompt.txt for the Google-Flow brief); the layer below fails silently
+// (onError) to the static photo until this file exists on disk, per "don't
+// fabricate a video that wasn't actually produced."
+const SCENE_VIDEO_SRC = `${ASSET_BASE}/mdo-scene-background-loop.mp4`;
 
-const DOMAINS: Domain[] = [
- {
-id: 'land', label: 'יבשה', english: 'Land', icon: 'mountain',
-impact: 'אין החזקת שטח בפועל: אפשר להפציץ ולצלם מלמעלה, אבל בלי חיילים בשטח אי אפשר להכריע או לכבוש.',
- // Foreground of the clearing — closest object to the viewer; wheels get a ground-contact shadow (Task 2).
-image: { src: `${ASSET_BASE}/mdo-object-ground-vehicle.png`, x: 730, y: 730, width: 255, aspect: 1486 / 692 },
- },
- {
-id: 'air', label: 'אוויר', english: 'Air', icon: 'plane',
-impact: 'השמיים פתוחים לגמרי: החיילים בשטח חשופים להפצצות, בלי מי שיזהה או יעצור איומים בזמן.',
- // Mid-upper sky, right of center — clear of the satellite and the horizon.
-image: { src: `${ASSET_BASE}/mdo-object-aircraft.png`, x: 860, y: 210, width: 245, aspect: 1674 / 477 },
- },
- {
-id: 'sea', label: 'ים', english: 'Sea', icon: 'ship',
-impact: 'אספקה לחוף נחסמת: אוניות מסע ואספקה מתקשות להגיע, והחופים נשארים פרוצים לכל ניסיון פלישה.',
- // Afloat in the open sea, lower-left — hull sits in the water band below the horizon; gets a water-contact ripple (Task 2).
-image: { src: `${ASSET_BASE}/mdo-object-ship.png`, x: 60, y: 435, width: 190, aspect: 1658 / 762 },
- },
- {
-id: 'space', label: 'חלל', english: 'Space', icon: 'satellite',
-impact: 'ניווט וקישור נפגעים: ה-GPS מאבד דיוק, מטרות מוחטאות וקשר בין הכוחות מתנתק כשהכי צריך אותו.',
- // Upper-left sky, clear of the aircraft — a symbolic stand-in for the space domain, not a literal depiction.
-image: { src: `${ASSET_BASE}/mdo-object-satellite.png`, x: 315, y: 90, width: 115, aspect: 1454 / 792 },
-caption: 'חלל · המחשה',
- },
- {
-id: 'cyber', label: 'סייבר', english: 'Cyber', icon: 'bolt',
-impact: 'ההגנה הדיגיטלית קורסת: האקרים יכולים לזייף מטרות, לשבש תקשורת ולהפיל תשתיות קריטיות בעורף.',
- // Standing on the grass hillside, base planted on the ground; feet get a contact shadow (Task 2).
-image: { src: `${ASSET_BASE}/mdo-object-mast.png`, x: 1170, y: 490, width: 58, aspect: 433 / 1494 },
- // Lands on the antenna/dish cluster near the top, not mid-shaft.
-anchorRel: [0.5, 0.35],
- },
+/** Field-scene dimensions (mdo-scene-background-ground.png) — every layer,
+    the SVG overlay and the connection curves share this coordinate system,
+    so they all stay pinned to the same background at any container width. */
+const FIELD_W = 1536;
+const FIELD_H = 1024;
+
+const DOMAIN_VISUALS: DomainVisual[] = [
+  {
+    id: 'land', label: MDO_DOMAINS.land.label, icon: 'tank',
+    src: `${ASSET_BASE}/mdo-land-object.png`,
+    // Downscaled to a believable midground vehicle (~22% of frame width,
+    // was ~56%): mdo-land-object.png is a 1300×800 canvas with generous
+    // transparent padding around the actual vehicle — its own visible-pixel
+    // bounding box is x:82–938 × y:91–666 (measured via alpha-channel scan,
+    // not eyeballed). Box/anchor/avoidR below are ALL the same 0.3944
+    // uniform scale of that same 1300×800 canvas, re-anchored so the visible
+    // vehicle's ground-contact point lands in roughly the same spot on the
+    // road the old, larger vehicle used — never resized without moving the
+    // anchor with it.
+    box: { x: 669, y: 581, width: 513, height: 316 },
+    anchor: [884, 631], avoidR: 140,
+  },
+  {
+    id: 'air', label: MDO_DOMAINS.air.label, icon: 'plane',
+    src: `${ASSET_BASE}/mdo-air-object.png`,
+    // The jet, upper-center-right of the sky. Visible-pixel width already
+    // measures ~19% of frame width at this scale — inside the 15–19% target
+    // band, so left unchanged.
+    box: { x: 412, y: 45, width: 825, height: 315 },
+    anchor: [973, 127], avoidR: 220,
+  },
+  {
+    id: 'sea', label: MDO_DOMAINS.sea.label, icon: 'ship',
+    src: `${ASSET_BASE}/mdo-sea-object.png`,
+    // The ship afloat, left third of the frame — anchor sits on the
+    // bridge/mast, not the bow, so connections read off its main structure.
+    box: { x: 150, y: 300, width: 488, height: 255 },
+    anchor: [500, 366], avoidR: 190,
+  },
+  {
+    id: 'space', label: MDO_DOMAINS.space.label, icon: 'satellite',
+    // A deliberately separate circular inset — its own image, material and
+    // lighting — never part of the shared scene's ground-level perspective.
+    // Already ~14% of frame width, inside the 12–14% target band.
+    box: { x: 36, y: 24, width: 210, height: 210 },
+    anchor: [141, 129], avoidR: 120,
+    standalone: true,
+  },
+  {
+    id: 'cyber', label: MDO_DOMAINS.cyber.label, icon: 'bolt',
+    src: `${ASSET_BASE}/mdo-cyber-object.png`,
+    // The communications mast + dishes + fenced hut, right-hand hillside —
+    // anchor lands on the dish cluster near the top, not mid-mast or the
+    // fence at its base. box.y nudged from 0 to 20 (mast tip's own visible
+    // pixels start only 12px from the old box top) so the tip clears the
+    // frame's own top edge with real margin instead of nearly touching it.
+    box: { x: 1012, y: 20, width: 412, height: 675 },
+    anchor: [1206, 115], avoidR: 150,
+  },
 ];
 
-/* The panel's ONE active/inactive visual language, used by each row's state
-   indicator: active = filled accent with a small local glow; inactive =
-   hollow, outlined, dimmed. The glow is a short-radius shadow built from the
-   existing `accent` colour (#D97E2B) — the `shadow-glow` token's 40px spread
-   is far too wide at this size. */
-const STATE_ON = 'border-accent bg-accent text-white shadow-[0_0_8px_-1px_rgba(217,126,43,0.85)]';
-const STATE_OFF = 'border-border bg-transparent text-fg-dim';
+const SPACE_SRC = `${ASSET_BASE}/mdo-space-medallion.png`;
 
-/** Transition used by every state flip in the panel: one-shot, driven purely
-    by the class change, never an idle loop — and skipped entirely under
-    `prefers-reduced-motion`, which lands the final state instantly. */
-function flipTransition(motionOk: boolean) {
-return motionOk ? 'transition-[background-color,border-color,box-shadow,color] duration-200 ease-snap' : 'transition-none';
+function byId(id: MdoDomainId) {
+  return DOMAIN_VISUALS.find((d) => d.id === id)!;
 }
 
-/** One control-panel row: icon + name + an explicit state readout, and —
-    only while this domain is off — its own impact sentence inline right
-    below, so the control and its feedback live in the same place instead
-    of a control list plus a separate answer area elsewhere. The switch
-    itself is still the real `role="switch"` control (a far bigger hit
-    target than any thumb), and state is legible three ways — the
-    "פעיל"/"מנותק" word, a filled-vs-hollow dot of identical size, and
-    `aria-checked` for AT; `aria-describedby` ties the switch to its own
-    impact text once it's showing, so a screen reader announces why this
-    one matters right after its state. The old iOS-style switch is folded
-    into the state chip: colour alone never carries the state. */
-function DomainRow({ d, isOn, motionOk, onToggle }: { d: Domain; isOn: boolean; motionOk: boolean; onToggle: () => void }) {
- // "יבשה" is grammatically feminine — every other domain label is
- // masculine, so this is the only one needing the feminine form.
-const isFem = d.id === 'land';
-const stateWord = isOn ? (isFem ? 'פעילה' : 'פעיל') : isFem ? 'לא פעילה' : 'לא פעיל';
-const impactId = `mdo-impact-${d.id}`;
-return (
- <div className="border-b border-border/40 last:border-b-0">
- <button
-type="button"
-role="switch"
-aria-checked={isOn}
-aria-label={`${d.label}: ${stateWord}, לחץ ל${isOn ? 'כיבוי' : 'הפעלה'}`}
-aria-describedby={isOn ? undefined : impactId}
-onClick={onToggle}
-className={cn(
- 'flex w-full items-center justify-between gap-2 px-3 py-2 text-start',
- 'hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent',
-flipTransition(motionOk),
- )}
- >
- <span className="flex min-w-0 items-center gap-2.5">
- <Icon name={d.icon} size={20} className={cn('shrink-0', isOn ? 'text-fg' : 'text-fg-dim')} aria-hidden />
- <span className="block truncate font-display text-sm font-bold text-fg">{d.label}</span>
- </span>
- {/* Fixed width + inline-start alignment so the five dots line up on
-     one axis even though "מנותק" is wider than "פעיל". */}
- <span
-aria-hidden
-className={cn(
- 'chip w-[72px] shrink-0 justify-start gap-1.5 px-2 py-0.5 text-[11px]',
-flipTransition(motionOk),
-isOn ? 'border-accent/45 bg-accent/10 text-accent' : 'border-border text-fg-dim',
- )}
- >
- <span
-className={cn(
- 'size-2 shrink-0 rounded-full border',
-flipTransition(motionOk),
-isOn ? STATE_ON : STATE_OFF,
- )}
- />
- {isOn ? 'פעיל' : 'מנותק'}
- </span>
- </button>
- {!isOn && (
- <p id={impactId} className="-mt-1 px-3 pb-2 text-sm leading-tight text-fg-muted">
- {d.impact}
- </p>
- )}
- </div>
- );
+function pct(value: number, total: number) {
+  return `${(value / total) * 100}%`;
+}
+
+/* The panel's ONE active/inactive visual language, reused by the control
+   column's toggle switches; active = filled accent, inactive = hollow. */
+function flipTransition(motionOk: boolean) {
+  return motionOk ? 'transition-[background-color,border-color,box-shadow,color,margin] duration-200 ease-snap' : 'transition-none';
+}
+
+/** Compose the summary from activeIds identity, never just active.size —
+    per the design brief, every count reuses the SAME defined text building
+    blocks (contribution / missing / countIntros / fourActiveByMissing),
+    never states a percentage or a total-collapse claim, and — per the
+    2026-09-21 layout brief — never repeats the connection-pair NAMES the
+    lines themselves already show (that's the one line this revision drops;
+    every other composed sentence is untouched). */
+function composeSummary(active: Set<MdoDomainId>): { badge: string; lines: string[] } {
+  const n = active.size;
+  const badge = `${n}/5 ממדים פעילים`;
+
+  if (n === 5) return { badge, lines: [MDO_COUNT_INTROS['5']] };
+  if (n === 0) return { badge, lines: [MDO_COUNT_INTROS['0']] };
+  if (n === 4) {
+    const missingId = MDO_DOMAIN_ORDER.find((id) => !active.has(id))!;
+    return { badge, lines: [MDO_COUNT_INTROS['4'], MDO_FOUR_ACTIVE_BY_MISSING[missingId]] };
+  }
+
+  const activeIds = MDO_DOMAIN_ORDER.filter((id) => active.has(id));
+  const inactiveIds = MDO_DOMAIN_ORDER.filter((id) => !active.has(id));
+
+  const stillPossible = n === 1
+    ? `מה הממד הפעיל תורם: ${MDO_DOMAINS[activeIds[0]].label} — ${MDO_DOMAINS[activeIds[0]].contribution}.`
+    : `מה עדיין אפשר לשלב: ${activeIds.map((id) => `${MDO_DOMAINS[id].label} — ${MDO_DOMAINS[id].contribution}`).join('; ')}.`;
+  const missing = `מה עדיין לא זמין: ${inactiveIds.map((id) => MDO_DOMAINS[id].missing).join('. ')}.`;
+
+  return { badge, lines: [MDO_COUNT_INTROS[String(n) as '1' | '2' | '3'], stillPossible, missing] };
 }
 
 export function MDOScene() {
-const [active, setActive] = useState<Set<string>>(new Set(DOMAINS.map((d) => d.id)));
-const motionOk = !useReducedMotion();
-function toggle(id: string) {
-setActive((prev) => {
-const next = new Set(prev);
-if (next.has(id)) next.delete(id);
-else next.add(id);
-return next;
- });
- }
-function activateAll() {
-setActive(new Set(DOMAINS.map((d) => d.id)));
- }
+  const [active, setActive] = useState<Set<MdoDomainId>>(new Set(MDO_DOMAIN_ORDER));
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const motionOk = !useReducedMotion();
+  // Any programmatic close of the card (Reset, or a domain going off under
+  // it) shouldn't yank focus onto the — now merely inactive, not unmounted —
+  // edge hit-path it used to belong to; only an explicit user close (✕ /
+  // Escape) should return focus to the opener. Both auto-close paths flip
+  // this before clearing selectedEdgeId; the restore effect consumes and
+  // resets it.
+  const suppressEdgeFocusRestoreRef = useRef(false);
 
- // Grid/flex `stretch` alone cannot cap the panel to the image's height:
- // an "auto" row track is sized by the TALLEST column's own natural content
- // height, so when the panel's content (unclamped) is taller than the
- // image, the row simply grows to fit the panel instead of the image
- // capping it — the reverse of what's wanted here. The image's aspect
- // ratio has to actively drive the panel's height, not just hope stretch
- // sorts it out, so its rendered height is measured and applied to the
- // panel directly. Desktop-only (matches the lg: 2-column breakpoint
- // below) — under that, the columns stack and the panel's natural height
- // is exactly what's wanted. The panel's own content (header, rows,
- // button) stays fixed-size regardless — this only aligns the envelope;
- // any leftover height is left as plain empty space, never stretched into
- // the rows.
-const imageColRef = useRef<HTMLDivElement>(null);
-const [panelHeight, setPanelHeight] = useState<number | null>(null);
-const [isDesktop, setIsDesktop] = useState(false);
-useEffect(() => {
-const mq = window.matchMedia('(min-width: 1024px)');
-setIsDesktop(mq.matches);
-const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-mq.addEventListener('change', onChange);
-return () => mq.removeEventListener('change', onChange);
- }, []);
-useEffect(() => {
-const el = imageColRef.current;
-if (!el || typeof ResizeObserver === 'undefined') return;
-const ro = new ResizeObserver(([entry]) => setPanelHeight(entry.contentRect.height));
-ro.observe(el);
-return () => ro.disconnect();
- }, []);
-return (
- <section id="scene-mdo" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
- <SceneHeader
-step="01.2"
-eyebrow="לחימה בכל הממדים יחד · MDO"
-underline
-title={
+  function toggleDomain(id: MdoDomainId) {
+    setActive((prev) => {
+      const next = new Set(prev);
+      const wasOn = next.has(id);
+      if (wasOn) next.delete(id);
+      else next.add(id);
+      setAnnouncement(`${MDO_DOMAINS[id].label}: ${wasOn ? 'כבוי' : 'פעיל'}`);
+      return next;
+    });
+  }
+  function selectEdge(id: string) {
+    setSelectedEdgeId((prev) => (prev === id ? null : id));
+  }
+  function closeCard() {
+    setSelectedEdgeId(null);
+  }
+  function resetAll() {
+    suppressEdgeFocusRestoreRef.current = true;
+    setActive(new Set(MDO_DOMAIN_ORDER));
+    setSelectedEdgeId(null);
+    setAnnouncement('כל הממדים חוברו מחדש');
+  }
+
+  // A selected line's own explanation closes automatically the moment
+  // either of its two domains is switched off — never left open pointing at
+  // a connection that can no longer be drawn.
+  useEffect(() => {
+    if (!selectedEdgeId) return;
+    const edge = MDO_EDGES.find((e) => e.id === selectedEdgeId);
+    if (edge && (!active.has(edge.a) || !active.has(edge.b))) {
+      suppressEdgeFocusRestoreRef.current = true;
+      setSelectedEdgeId(null);
+    }
+  }, [active, selectedEdgeId]);
+
+  return (
+    <section id="scene-mdo" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
+      <span className="sr-only" role="status" aria-live="polite">{announcement}</span>
+      <SceneHeader
+        step="01.2"
+        eyebrow="לחימה בכל הממדים יחד · MDO"
+        underline
+        title={
           <>
           המערכה המודרנית: שדה הקרב כבר מזמן לא מוגבל ל<span className="gradient-text">קרקע</span>
           </>
-        }intro='פעם צבאות נלחמו בשדה קרב שטוח, פנים מול פנים. היום מלחמה מזכירה משחק רשת מורכב שמתנהל ב-5 זירות במקביל. לחצו על כל ממד בתמונת השטח כדי"לכבות" אותו, ותראו איך כל הצבא שלכם מאבד כוח.'
- />
+        }
+        intro="פעם צבאות נלחמו בשדה קרב שטוח, פנים מול פנים. היום מלחמה מזכירה משחק רשת מורכב שמתנהל ב-5 ממדים במקביל. הפעילו וכבו כל ממד בפקדים שמימין לתמונה, ובדקו אילו קשרים בין הממדים עדיין זמינים ואילו יכולות חסרות כשממד יוצא מהתמונה."
+      />
 
- <div className="surface-elevated relative overflow-hidden grid sm:grid-cols-[7fr_3fr]">
- <div className="p-6 sm:p-8">
- <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">מה זה MDO?</h3>
- <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
- <p className="mt-2 text-base leading-relaxed text-fg-muted">
- ראשי תיבות של <span className="font-mono text-brand-dark">Multi-Domain Operations</span> (מבצעים רב-ממדיים).
- במקום שחיל האוויר יילחם לבד והשריון לבד – הכל קורה ביחד. כל 5 הממדים עובדים מסונכרנים באותה שנייה בדיוק.
- זה"המולטי-טאסקינג" שבלעדיו שום צבא לא יכול לנצח היום.
- </p>
- </div>
- <div className="flex items-center justify-center bg-bg-accent p-6 sm:p-8">
- <IsometricAsset
- assetId="TOPIC01-MDO-PENTAGON-DIAGRAM"
- src="/reference-assets/mdo-explainer-card/pentagon-diagram.png"
- alt="דיאגרמת פנטגון: חמישה תחומי לחימה — יבשה, אוויר, ים, חלל וסייבר — מחוברים סביב MDO במרכז"
- aspect="1/1"
- fit="contain"
- className="w-full max-w-[150px] bg-bg-accent sm:max-w-[180px]"
- />
- </div>
- </div>
+      <div className="surface-elevated relative overflow-hidden grid sm:grid-cols-[7fr_3fr]">
+        <div className="p-6 sm:p-8">
+          <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">מה זה MDO?</h3>
+          <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+          <p className="mt-2 text-base leading-relaxed text-fg-muted">
+            ראשי תיבות של <span className="font-mono text-brand-dark">Multi-Domain Operations</span> (מבצעים רב-ממדיים).
+            במקום שחיל האוויר יילחם לבד והשריון לבד – הכל קורה ביחד. כל 5 הממדים עובדים מסונכרנים באותה שנייה בדיוק.
+            זה&quot;המולטי-טאסקינג&quot; שבלעדיו שום צבא לא יכול לנצח היום.
+          </p>
+        </div>
+        <div className="flex items-center justify-center bg-bg-accent p-6 sm:p-8">
+          <IsometricAsset
+            assetId="TOPIC01-MDO-PENTAGON-DIAGRAM"
+            src="/reference-assets/mdo-explainer-card/pentagon-diagram.png"
+            alt="דיאגרמת פנטגון: חמישה תחומי לחימה — יבשה, אוויר, ים, חלל וסייבר — מחוברים סביב MDO במרכז"
+            aspect="1/1"
+            fit="contain"
+            className="w-full max-w-[150px] bg-bg-accent sm:max-w-[180px]"
+          />
+        </div>
+      </div>
 
- {/* One unified card — control panel and scene read as a single
-     interactive surface, separated only by hairline borders, not nested
-     cards. DOM order is [panel, image]: in RTL, the first grid child
-     lands in the visual-right column, so the narrower (3fr) panel-share
-     column must come first for the panel to sit on the right and the
-     wider (7fr) image-share column second, for the image to sit on the
-     visual left.
-     The panel's envelope is locked to the image's height (`panelHeight`,
-     measured off the image column via ResizeObserver below): the rows
-     list is sized by its own content — including every currently-off
-     domain's inline impact sentence — and never stretched to fill that
-     height, while the counter+reset row is pushed to the very bottom via
-     `mt-auto`. So the only "slack" is blank space above that bottom row,
-     never a scrollbar. Worst case (all five off, all five sentences
-     showing) is sized to still fit under the image's own height. */}
- <div className="mt-12 rounded-[28px] border border-border/60 bg-bg-accent p-4 shadow-elevated">
- <div className="grid gap-4 lg:grid-cols-[3fr_7fr]">
- <div
-className="flex flex-col rounded-2xl border border-border/60 bg-bg-elevated p-3"
-style={isDesktop && panelHeight ? { height: panelHeight } : undefined}
- >
- {/* One continuous surface with hairline dividers — five rows, not
-     five separate little cards. `overflow-hidden` keeps each row's
-     hover fill and inset focus ring inside the rounded corners. No
-     header above this and no separate feedback area below it: each
-     row carries its own control AND (while off) its own impact
-     sentence inline, so every currently-off domain's explanation
-     shows at once, in the fixed row order, right under its own
-     switch — never a stretched row when everything's on, since nothing
-     here flex-grows. */}
- <div className="overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated">
- {DOMAINS.map((d) => (
- <DomainRow key={d.id} d={d} isOn={active.has(d.id)} motionOk={motionOk} onToggle={() => toggle(d.id)} />
- ))}
- </div>
+      {/* One connected surface: summary on top, image + control column
+          below sharing the same background/border/radius/shadow — the
+          control column must never read as its own floating card. */}
+      <div className="surface-elevated overflow-hidden mt-12">
+        <div className="border-b border-border-strong p-4 sm:p-5">
+          <MDOSummary active={active} />
+        </div>
+        {/* grid (not flex) so the 190px control column and the image column
+            share one row and stretch to the SAME height by construction —
+            the image's own 3:2 aspect-ratio sets the row's height (it's the
+            taller of the two), and the column fills it via h-full below,
+            never a ResizeObserver measuring one to force the other. */}
+        <div className="grid grid-cols-[190px_1fr] items-stretch gap-4 p-4">
+          <MDOControlColumn active={active} motionOk={motionOk} onToggle={toggleDomain} onReset={resetAll} />
+          <MDOGroundScene
+            active={active}
+            selectedEdgeId={selectedEdgeId}
+            motionOk={motionOk}
+            onSelectEdge={selectEdge}
+            onCloseCard={closeCard}
+            suppressFocusRestoreRef={suppressEdgeFocusRestoreRef}
+          />
+        </div>
+      </div>
 
- {/* Bottom row, pinned to the panel's own bottom via `mt-auto` (never
-     a scrollbar, never stretched rows above it) — a small "x/5" count
-     instead of a full header, beside the reset button rather than
-     above it. */}
- <div className="mt-auto flex items-center gap-3 pt-2">
- <span className="shrink-0 text-xs font-medium tabular-nums text-fg-muted">
- {active.size}/{DOMAINS.length} פעילים
- </span>
- <button type="button" onClick={activateAll} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-display font-bold text-white transition-colors hover:bg-accent-hover">
- <Icon name="refresh" size={16} />
- הפעלת כל הממדים
- </button>
- </div>
- </div>
+      <RealWorldExamples />
 
- <div ref={imageColRef} className="flex flex-col">
- <MDOFieldDiagram domains={DOMAINS} active={active} />
- </div>
- </div>
- </div>
-
- <RealWorldExamples />
-
- <ChokepointBand eyebrow="המסקנה: החוליה החלשה" className="mt-12">
-אי אפשר לנצח מלחמה היום רק עם הטנקים הכי טובים או חיל האוויר הכי חזק. מספיק שממד אחד נופל – וכל הצבא קורס איתו. צבא חכם מתכנן מכה שמשלבת את כל הממדים יחד, ובמקביל דואג"לנתק" לאויב את החיבורים שלו כדי לשתק אותו.
- </ChokepointBand>
- </section>
- );
-}
-/* Field-photo dimensions (mdo-field-domains.png) — the SVG overlay shares
-   this viewBox so lines/markers stay pinned to the same objects at any
-   container width. */
-const FIELD_W = 1448;
-const FIELD_H = 1086;
-
-/** Keeps a Bézier control point inside the visible field-photo frame (with a
-    small margin) so a connection arc never bows out past the image's own
-    edges. A quadratic Bézier stays within the convex hull of its three
-    points, so clamping the control point alongside the two anchor points
-    (always in-frame, since every domain's box is) keeps the whole curve
-    in-frame too. */
-function clampToField([x, y]: [number, number], margin = 10): [number, number] {
-return [Math.min(FIELD_W - margin, Math.max(margin, x)), Math.min(FIELD_H - margin, Math.max(margin, y))];
+      <ChokepointBand eyebrow="המסקנה: החוליה החלשה" className="mt-12">
+        אי אפשר לנצח מלחמה היום רק עם הטנקים הכי טובים או חיל האוויר הכי חזק. כשממד אחד חסר, שאר הממדים עדיין יכולים לתרום מיכולותיהם — אבל היכולת המשולבת נחלשת. צבא חכם מתכנן מכה שמשלבת את כל הממדים יחד, ובמקביל דואג &apos;לנתק&apos; לאויב את החיבורים שלו כדי לשבש את הפעולה המשולבת שלו.
+      </ChokepointBand>
+    </section>
+  );
 }
 
-/* Connections drawn between domains — a curated subset (not a complete
-   graph), chosen for teaching value rather than geometric completeness. */
-const EDGES: [string, string][] = [
-['land', 'air'],
-['land', 'sea'],
-['space', 'air'],
-['space', 'land'],
-['cyber', 'space'],
-['cyber', 'land'],
-['cyber', 'sea'],
-];
-
-/** Domains whose object stands on solid ground and gets a local
-    contact shadow under its wheels/feet in the render below. Not `sea`
-    (open water gets a water-contact ripple instead, not a shadow) and not
-    `air`/`space` (nothing under them to ground them to). */
-const GROUND_CONTACT_IDS = new Set(['land', 'cyber']);
+/** Keeps a Bézier control point inside the visible frame (with a small
+    margin) so a connection arc never bows out past the scene's own edges. */
+function clampToField([x, y]: [number, number], margin = 14): [number, number] {
+  return [Math.min(FIELD_W - margin, Math.max(margin, x)), Math.min(FIELD_H - margin, Math.max(margin, y))];
+}
 
 function quadPoint(a: [number, number], c: [number, number], b: [number, number], t: number): [number, number] {
-const u = 1 - t;
-return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
+  const u = 1 - t;
+  return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
 }
 
-/** Sampled closest distance from a quadratic Bézier curve to a point — cheap
-    approximation (24 steps), fine for the anchor-clearance check below. */
+/** Samples strictly BETWEEN the curve's two fixed endpoints (never i=0/24,
+    which are `a`/`b` themselves) — an endpoint's own proximity to an
+    obstacle isn't something the control point can fix, so including it
+    would make every candidate control point look equally non-clearing
+    whenever an obstacle sits close to a domain's own anchor (e.g. the
+    floating card's fixed corner sitting near the `space` anchor), starving
+    the `best` branch below for every edge touching that domain. */
 function minDistToCurve(a: [number, number], c: [number, number], b: [number, number], p: [number, number]) {
-let best = Infinity;
-for (let i = 0; i <= 24; i++) {
-const [x, y] = quadPoint(a, c, b, i / 24);
-best = Math.min(best, Math.hypot(x - p[0], y - p[1]));
- }
-return best;
+  let best = Infinity;
+  for (let i = 1; i < 24; i++) {
+    const [x, y] = quadPoint(a, c, b, i / 24);
+    best = Math.min(best, Math.hypot(x - p[0], y - p[1]));
+  }
+  return best;
 }
 
- // Ring radius (~32px at sm:size-16) converted back to field-photo units at
- // roughly the diagram's rendered scale, plus the glow's spread — an arc
- // passing closer than this to an anchor it doesn't connect to would visibly
- // cut through that anchor's ring.
-const MIN_ANCHOR_CLEARANCE = 80;
+const EXTRA_CLEARANCE_MARGIN = 24;
 
 function rotateVec(v: [number, number], deg: number): [number, number] {
-const r = (deg * Math.PI) / 180;
-const cos = Math.cos(r);
-const sin = Math.sin(r);
-return [v[0] * cos - v[1] * sin, v[0] * sin + v[1] * cos];
+  const r = (deg * Math.PI) / 180;
+  const cos = Math.cos(r);
+  const sin = Math.sin(r);
+  return [v[0] * cos - v[1] * sin, v[0] * sin + v[1] * cos];
 }
 
-// Small fan of angle/magnitude candidates tried around the base outward
-// bow, closest-to-base first, so the search prefers the smallest deviation
-// that still clears every anchor the edge doesn't touch.
 const CONTROL_ANGLES = [0, 25, -25, 45, -45, 65, -65, 85, -85];
 const CONTROL_MAGNITUDES = [1, 1.3, 1.7, 2.1];
 
-/** Quadratic-Bézier control point, bowed outward from the layout's centroid
-    so the 7 arcs fan out through open sky/sea instead of overlapping. Pure
-    outward-magnitude escalation can't resolve every case — when an edge's
-    midpoint and a third anchor sit on the same side of the centroid, the
-    curve stays roughly collinear with that anchor no matter how far out it
-    bows. So candidates also rotate the bow direction, and pick the smallest
-    rotation (then smallest magnitude) that clears every other anchor by
-    MIN_ANCHOR_CLEARANCE; if nothing clears fully, fall back to whichever
-    candidate had the largest worst-case clearance. */
+/** Quadratic-Bézier control point, bowed outward from the visible edges'
+    own centroid so curves fan out through open sky/sea instead of
+    overlapping, while clearing every domain the edge doesn't touch (plus
+    the floating card's own corner) by at least its own avoidR. */
 function edgeControl(
-a: [number, number],
-b: [number, number],
-centroid: [number, number],
-avoid: [number, number][],
+  a: [number, number],
+  b: [number, number],
+  centroid: [number, number],
+  avoid: { point: [number, number]; radius: number }[],
 ): [number, number] {
-const mx = (a[0] + b[0]) / 2;
-const my = (a[1] + b[1]) / 2;
-let dx = mx - centroid[0];
-let dy = my - centroid[1];
-const dlen = Math.hypot(dx, dy) || 1;
-dx /= dlen;
-dy /= dlen;
-const edgeLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
-const baseBow = Math.min(80, Math.max(35, edgeLen * 0.2));
+  const mx = (a[0] + b[0]) / 2;
+  const my = (a[1] + b[1]) / 2;
+  let dx = mx - centroid[0];
+  let dy = my - centroid[1];
+  const dlen = Math.hypot(dx, dy) || 1;
+  dx /= dlen;
+  dy /= dlen;
+  const edgeLen = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const baseBow = Math.min(110, Math.max(48, edgeLen * 0.2));
 
-let best: [number, number] | null = null;
-let bestScore = -Infinity;
-let fallback: [number, number] = clampToField([mx + dx * baseBow, my + dy * baseBow]);
-let fallbackClearance = -Infinity;
+  let best: [number, number] | null = null;
+  let bestScore = -Infinity;
+  let fallback: [number, number] = clampToField([mx + dx * baseBow, my + dy * baseBow]);
+  let fallbackMargin = -Infinity;
 
-for (const angle of CONTROL_ANGLES) {
-const [rx, ry] = rotateVec([dx, dy], angle);
-for (const mag of CONTROL_MAGNITUDES) {
-const bow = baseBow * mag;
-const control: [number, number] = clampToField([mx + rx * bow, my + ry * bow]);
-const clearance = avoid.length ? Math.min(...avoid.map((p) => minDistToCurve(a, control, b, p))) : Infinity;
-if (clearance > fallbackClearance) {
-fallbackClearance = clearance;
-fallback = control;
- }
-if (clearance >= MIN_ANCHOR_CLEARANCE) {
-const score = -Math.abs(angle) * 10 - mag;
-if (score > bestScore) {
-bestScore = score;
-best = control;
- }
- }
- }
- }
-return best ?? fallback;
+  for (const angle of CONTROL_ANGLES) {
+    const [rx, ry] = rotateVec([dx, dy], angle);
+    for (const mag of CONTROL_MAGNITUDES) {
+      const bow = baseBow * mag;
+      const control: [number, number] = clampToField([mx + rx * bow, my + ry * bow]);
+      const margin = avoid.length
+        ? Math.min(...avoid.map((p) => minDistToCurve(a, control, b, p.point) - (p.radius + EXTRA_CLEARANCE_MARGIN)))
+        : Infinity;
+      if (margin > fallbackMargin) {
+        fallbackMargin = margin;
+        fallback = control;
+      }
+      if (margin >= 0) {
+        const score = -Math.abs(angle) * 10 - mag;
+        if (score > bestScore) {
+          bestScore = score;
+          best = control;
+        }
+      }
+    }
+  }
+  return best ?? fallback;
 }
 
 function edgePath(a: [number, number], b: [number, number], c: [number, number]) {
-return `M${a[0]} ${a[1]} Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
+  return `M${a[0]} ${a[1]} Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
 }
+
+// A generous field-space stand-in for the floating card's own footprint
+// (bottom-4 end-4, width min(320px, 44%)) — included as a permanent curve
+// obstacle so an edge never routes behind the (opaque) card.
+const CARD_OBSTACLE = { point: [257, 818] as [number, number], radius: 300 };
+
+// Visible line weight targets are real CSS px, not viewBox units — at this
+// container's typical rendered width the 1536-wide viewBox is scaled down
+// by roughly 0.7×, so a *viewBox* strokeWidth of e.g. 2.75 would only ever
+// paint ~1.9 CSS px. `vectorEffect="non-scaling-stroke"` makes strokeWidth
+// mean real screen pixels regardless of that transform, so these numbers
+// ARE the rendered line weight.
+const LINE_WIDTH_CORE = 2.75;
+const LINE_WIDTH_CORE_EMPHASIS = 3.75;
+const LINE_WIDTH_HALO = 8;
+const LINE_HIT_WIDTH = 20; // 16–24 CSS px transparent hit ribbon, per brief
 
 /**
- * MDOFieldDiagram — realistic field photo with an orange, glowing SVG layer
- * of Bézier connections drawn on top. Replaces the abstract pentagon
- * diagram: the photo itself never moves/scales — only the connection
- * lines, travelling light points and anchor pulses animate, and only
- * between domains that are both switched on.
+ * MDOGroundScene — the ground-level scene: a clean background photo (with
+ * an optional looping environment video layer) and one independent object
+ * layer per domain (each carrying its own baked-in contact shadow/dust/
+ * wake), an orange SVG layer of the domain-pair connections — the lines
+ * themselves ARE the connection interface, clickable along their whole
+ * length — and one shared floating explanation card. Every domain/edge
+ * layer stays mounted and is driven by an animated opacity/pathLength
+ * target instead of conditional unmounting, so rapid toggling during an
+ * in-flight transition reverses smoothly instead of leaving duplicates or
+ * snapping.
  */
-function MDOFieldDiagram({
-domains,
-active,
+function MDOGroundScene({
+  active,
+  selectedEdgeId,
+  motionOk,
+  onSelectEdge,
+  onCloseCard,
+  suppressFocusRestoreRef,
 }: {
-domains: Domain[];
-active: Set<string>;
+  active: Set<MdoDomainId>;
+  selectedEdgeId: string | null;
+  motionOk: boolean;
+  onSelectEdge: (id: string) => void;
+  onCloseCard: () => void;
+  suppressFocusRestoreRef: React.MutableRefObject<boolean>;
 }) {
- // `anchor` is derived once here (from each domain's own image box) and
- // carried alongside it for the rest of this component — every consumer
- // below (edges, markers) reads it from here rather than recomputing it,
- // so the image layer and its connection point can never disagree.
-const positioned = useMemo(() => domains.map((d) => ({ ...d, anchor: domainAnchor(d) })), [domains]);
-const byId = useMemo(() => Object.fromEntries(positioned.map((d) => [d.id, d])), [positioned]);
-const centroid = useMemo<[number, number]>(() => {
-const n = positioned.length;
-const sx = positioned.reduce((s, d) => s + d.anchor[0], 0);
-const sy = positioned.reduce((s, d) => s + d.anchor[1], 0);
-return [sx / n, sy / n];
- }, [positioned]);
+  const centroid = useMemo<[number, number]>(() => {
+    const n = DOMAIN_VISUALS.length;
+    const sx = DOMAIN_VISUALS.reduce((s, d) => s + d.anchor[0], 0);
+    const sy = DOMAIN_VISUALS.reduce((s, d) => s + d.anchor[1], 0);
+    return [sx / n, sy / n];
+  }, []);
 
-const edges = useMemo(
-() =>
-EDGES.map(([idA, idB]) => {
-const a = byId[idA];
-const b = byId[idB];
-const avoid = positioned.filter((d) => d.id !== idA && d.id !== idB).map((d) => d.anchor);
-const control = edgeControl(a.anchor, b.anchor, centroid, avoid);
-return { idA, idB, d: edgePath(a.anchor, b.anchor, control) };
- }),
-[byId, centroid, positioned],
- );
+  // Recomputed whenever `active` changes: a curve only needs to clear the
+  // domains that are actually visible right now, not every domain that
+  // exists — one fewer obstacle to bow around once something is switched off.
+  const edges = useMemo(
+    () =>
+      MDO_EDGES.map((edge) => {
+        const a = byId(edge.a);
+        const b = byId(edge.b);
+        const avoid = [
+          ...DOMAIN_VISUALS.filter((d) => d.id !== edge.a && d.id !== edge.b && active.has(d.id)).map((d) => ({ point: d.anchor, radius: d.avoidR })),
+          CARD_OBSTACLE,
+        ];
+        const control = edgeControl(a.anchor, b.anchor, centroid, avoid);
+        return { edge, a, b, d: edgePath(a.anchor, b.anchor, control), mid: quadPoint(a.anchor, control, b.anchor, 0.5) };
+      }),
+    [active, centroid],
+  );
 
-const reduceMotion = useReducedMotion();
-const [inView, setInView] = useState(true);
-const wrapRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+  const [inView, setInView] = useState(true);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
-useEffect(() => {
-const el = wrapRef.current;
-if (!el || typeof IntersectionObserver === 'undefined') return;
- // Stop the travelling-light/pulse loops when the diagram scrolls off
- // screen — same pattern as ContourCake3D's off-screen render pause.
-const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
-rootMargin: '200px',
- });
-observer.observe(el);
-return () => observer.disconnect();
- }, []);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { rootMargin: '200px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
- // Single switch for every looping SMIL animation below: off for reduced
- // motion (static arcs) and while off-screen.
-const motionEnabled = inView && !reduceMotion;
- // The on/off crossfade is a one-shot transition, not a loop, so it survives
- // going off-screen — but reduced motion still lands it instantly. Shared by
- // the edges and the markers.
-const fade = reduceMotion ? 'none' : 'opacity 300ms ease';
+  const motionEnabled = inView && !reduceMotion;
 
-return (
- // Physical `left`/`top` (not inset-inline-start/logical) is deliberate
- // throughout this component: every position here is a photo-pixel
- // coordinate that must land on the same object regardless of page
- // direction. Logical properties would mirror them under RTL, which is
- // exactly what the brief prohibits for this image.
- <div ref={wrapRef} className="relative">
- <IsometricAsset
-assetId="TOPIC01-MDO-SCENE-BACKGROUND"
-src={`${ASSET_BASE}/mdo-scene-background.png`}
-alt="נוף חוף וגבעות מדומה — הרקע לאינטראקציית חמשת הממדים; כלי הלחימה של כל ממד מוצגים כשכבות נפרדות מעליו"
-aspect="4/3"
-fit="contain"
-eager
-className="w-full rounded-2xl"
- />
+  const selectedEdge = selectedEdgeId ? edges.find((e) => e.edge.id === selectedEdgeId) ?? null : null;
+  const [focusedEdgeId, setFocusedEdgeId] = useState<string | null>(null);
 
- {/* Decorative connections layer — purely reinforces what the buttons
-     and status text below already state, so it's hidden from AT. */}
- <svg
-viewBox={`0 0 ${FIELD_W} ${FIELD_H}`}
-preserveAspectRatio="xMidYMid meet"
-className="pointer-events-none absolute inset-0 size-full"
-aria-hidden="true"
- >
- <defs>
- {/* Generous filter region so the soft glow never clips at a path's
-     bounding-box edge. */}
- <filter id="mdoLineGlow" x="-60%" y="-60%" width="220%" height="220%">
- <feGaussianBlur stdDeviation="6" />
- </filter>
- {/* Wider blur for the marker halo that lifts each node off the photo. */}
- <filter id="mdoNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
- <feGaussianBlur stdDeviation="8" />
- </filter>
- {/* Soft, tight blur for the local ground-contact shadow under
-     the vehicle's wheels / the antenna's feet — deliberately
-     small and low-opacity so it reads as contact, not a cast
-     shadow. */}
- <filter id="mdoContactShadow" x="-60%" y="-60%" width="220%" height="220%">
- <feGaussianBlur stdDeviation="3" />
- </filter>
- {/* Even softer, wider-but-thin blur for the ship's
-     water-contact ripple — a band across the hull's
-     waterline, not a halo around the whole image. */}
- <filter id="mdoWaterRipple" x="-40%" y="-150%" width="180%" height="400%">
- <feGaussianBlur stdDeviation="2.5" />
- </filter>
- </defs>
+  const closeBtnRestoreRef = useRef<HTMLButtonElement | null>(null);
+  const edgePathRefs = useRef<Record<string, SVGPathElement | null>>({});
+  const prevSelectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedEdgeId === null && prevSelectedRef.current) {
+      if (suppressFocusRestoreRef.current) {
+        suppressFocusRestoreRef.current = false;
+      } else {
+        edgePathRefs.current[prevSelectedRef.current]?.focus();
+      }
+    }
+    prevSelectedRef.current = selectedEdgeId;
+  }, [selectedEdgeId, suppressFocusRestoreRef]);
 
- {/* One independent group per domain: its object image, then its
-     target-lock marker on top of it, both gated on that domain's own
-     `active` entry and nothing else — a domain with no surviving
-     connections (several pairs have no curated edge at all, by design)
-     still has to read unmistakably as "on". Turning it off fades the
-     WHOLE group (the actual object layer included, not a mask over it)
-     over the same 300ms as the connections below. The marker itself: a
-     soft halo to separate it from the photo, a cream-backed ring that
-     stays legible over both bright sky and dark foliage, a lit core, and
-     four ticks — the earlier 13×9 hairline ellipse rendered at roughly a
-     6.6px radius at this container width and simply vanished into the
-     terrain. */}
- {positioned.map((d) => {
-const isOn = active.has(d.id);
-const [cx, cy] = d.anchor;
-const box = domainBox(d);
-const groundCx = box.x + box.width / 2;
-const groundCy = box.y + box.height;
- // `cyber`'s own box is only 58px wide (vs. `land`'s 255px), so the
- // `land` ratios below — tuned for the much wider vehicle — blur down
- // to nearly nothing under the antenna's tripod feet at normal viewing
- // size. `cyber` gets its own, still-narrow-but-legible ratio: rx stays
- // well inside the antenna's own box (and close to its actual visible
- // leg stance, checked against a zoomed render — the earlier 0.55 read
- // as visibly wider than the box itself), with ry/opacity raised so it
- // doesn't get crushed by the shared blur. `land` keeps its original
- // Task 2 values. Neither domain's `cy` (the attach point) is touched.
-const contactShadow =
-d.id === 'cyber'
- ? { rx: box.width * 0.42, ry: box.width * 0.16, opacity: 0.32 }
- : { rx: box.width * 0.34, ry: box.width * 0.075, opacity: 0.22 };
-return (
- <g key={'domain-' + d.id} data-domain={d.id} style={{ opacity: isOn ? 1 : 0, transition: fade }}>
- {GROUND_CONTACT_IDS.has(d.id) && (
- <ellipse
-cx={groundCx}
-cy={groundCy}
-rx={contactShadow.rx}
-ry={contactShadow.ry}
-fill="#000000"
-opacity={contactShadow.opacity}
-filter="url(#mdoContactShadow)"
- />
- )}
- <image href={d.image.src} x={box.x} y={box.y} width={box.width} height={box.height} preserveAspectRatio="xMidYMid meet" />
- {d.id === 'sea' && (
- <ellipse
-cx={groundCx}
-cy={box.y + box.height * 0.93}
-rx={box.width * 0.42}
-ry={box.width * 0.03}
-fill="#F4F8FC"
-opacity="0.3"
-filter="url(#mdoWaterRipple)"
- />
- )}
- <circle cx={cx} cy={cy} r="29" fill="#D97E2B" opacity="0.22" filter="url(#mdoNodeGlow)" />
- <circle cx={cx} cy={cy} r="18" fill="none" stroke="#FDFBF3" strokeWidth="4.5" opacity="0.4" />
- <circle cx={cx} cy={cy} r="18" fill="none" stroke="#D97E2B" strokeWidth="2.5" opacity="0.85" />
- {[
- [0, -1],
- [0, 1],
- [-1, 0],
- [1, 0],
- ].map(([ux, uy]) => (
- <line
-key={`${ux},${uy}`}
-x1={cx + ux * 22}
-y1={cy + uy * 22}
-x2={cx + ux * 28}
-y2={cy + uy * 28}
-stroke="#D97E2B"
-strokeWidth="2"
-strokeLinecap="round"
-opacity="0.7"
- />
- ))}
- <circle cx={cx} cy={cy} r="7" fill="#D97E2B" />
- <circle cx={cx} cy={cy} r="3" fill="#FDFBF3" opacity="0.95" />
- {motionEnabled && isOn && (
- <circle cx={cx} cy={cy} r="18" fill="none" stroke="#D97E2B" strokeWidth="2.5">
- <animate attributeName="r" values="18;40" dur="3.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.75;0" dur="3.4s" repeatCount="indefinite" />
- </circle>
- )}
- {/* Decorative caption — the satellite is a symbolic stand-in for
-     the space domain, not a literal depiction, so it says so
-     directly on the photo (the button in the panel says the same
-     thing in its aria-label). */}
- {d.caption && (
- <>
- <rect x={cx - 58} y={box.y - 30} width="116" height="21" rx="10.5" fill="#FDFBF3" opacity="0.92" />
- <text x={cx} y={box.y - 15} textAnchor="middle" fontSize="12" fontWeight="700" fill="#4A5240">
- {d.caption}
- </text>
- </>
- )}
- </g>
- );
- })}
+  const air = byId('air');
+  const airOn = active.has('air');
 
- {/* Connections — drawn above the object layer so the glowing arcs and
-     travelling light points read as an overlay network, the same way
-     they did when every object was baked into one photo. */}
- {edges.map(({ idA, idB, d }) => {
- // Per-pair only: an edge is drawn iff BOTH of its own endpoints are
- // on. Never an aggregate/threshold rule over the active count.
-const bothActive = active.has(idA) && active.has(idB);
-return (
- <g key={idA + idB} data-edge={`${idA}-${idB}`} style={{ opacity: bothActive ? 1 : 0, transition: fade }}>
- <path d={d} fill="none" stroke="#D97E2B" strokeWidth={9} opacity={0.28} filter="url(#mdoLineGlow)" />
- <path d={d} fill="none" stroke="#D97E2B" strokeWidth={2.25} opacity={0.92} strokeLinecap="round" />
- {motionEnabled && bothActive && (
- <>
- <circle r="4.5" fill="#D97E2B">
- <animateMotion dur="4.2s" repeatCount="indefinite" path={d} />
- </circle>
- <circle r="4.5" fill="#D97E2B" opacity="0.75">
- <animateMotion dur="4.2s" begin="-2.1s" repeatCount="indefinite" path={d} />
- </circle>
- <circle r="3.5" fill="#FDFBF3" opacity="0.9">
- <animateMotion dur="4.2s" begin="-3.4s" repeatCount="indefinite" path={d} />
- </circle>
- </>
- )}
- </g>
- );
- })}
- </svg>
- </div>
- );
+  return (
+    // Physical `left`/`top` (not inset-inline-start/logical) is deliberate
+    // for every domain box, anchor and connection here — each is a
+    // scene-pixel coordinate that must land on the same object regardless
+    // of page direction. Logical properties would mirror them under RTL,
+    // which the project rule explicitly forbids for this photo.
+    <div ref={wrapRef} className="relative h-full w-full overflow-hidden rounded-2xl" style={{ aspectRatio: '3 / 2' }}>
+      <MDOSceneBackdrop inView={inView} reduceMotion={!!reduceMotion} />
+
+      {/* Independent object layers — each domain's own transparent PNG,
+          with its own baked-in contact shadow/dust/wake. Always mounted;
+          only the animated opacity target changes, so a rapid off→on
+          re-toggle reverses the in-flight fade instead of restarting it. */}
+      {DOMAIN_VISUALS.filter((d) => !d.standalone).map((d) => (
+        <motion.img
+          key={d.id}
+          src={d.src}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="pointer-events-none absolute"
+          style={{
+            left: pct(d.box.x, FIELD_W),
+            top: pct(d.box.y, FIELD_H),
+            width: pct(d.box.width, FIELD_W),
+            height: pct(d.box.height, FIELD_H),
+          }}
+          initial={false}
+          animate={{ opacity: active.has(d.id) ? 1 : 0 }}
+          transition={{ duration: motionOk ? 0.3 : 0 }}
+        />
+      ))}
+
+      {/* Space — a genuinely separate circular inset (own image, material,
+          lighting), never part of the shared scene's perspective. */}
+      <motion.div
+        className="pointer-events-none absolute overflow-hidden rounded-full shadow-elevated"
+        style={{
+          left: pct(byId('space').box.x, FIELD_W),
+          top: pct(byId('space').box.y, FIELD_H),
+          width: pct(byId('space').box.width, FIELD_W),
+          height: pct(byId('space').box.height, FIELD_H),
+          border: '4px solid #FDFBF3',
+        }}
+        initial={false}
+        animate={{ opacity: active.has('space') ? 1 : 0 }}
+        transition={{ duration: motionOk ? 0.3 : 0 }}
+      >
+        <img src={SPACE_SRC} alt="" aria-hidden="true" draggable={false} className="size-full object-cover" />
+      </motion.div>
+
+      {/* This SVG is NOT aria-hidden as a whole — it hosts the real,
+          focusable edge hit-paths at the bottom. Every purely decorative
+          element inside (contrail, the visible line pair, marker rings) is
+          individually aria-hidden instead: aria-hidden on the root would
+          have hidden its interactive descendants too, tabIndex and all. */}
+      <svg
+        viewBox={`0 0 ${FIELD_W} ${FIELD_H}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="pointer-events-none absolute inset-0 size-full"
+      >
+        <defs>
+          <filter id="mdoLineGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
+          <filter id="mdoNodeGlow" x="-120%" y="-120%" width="340%" height="340%">
+            <feGaussianBlur stdDeviation="8" />
+          </filter>
+          <filter id="mdoContrailBlur" x="-40%" y="-150%" width="180%" height="400%">
+            <feGaussianBlur stdDeviation="5" />
+          </filter>
+        </defs>
+
+        {/* The raster contrail didn't survive background removal (too soft
+            for the matting step) — redrawn here as a short SVG streak, tied
+            to air's own opacity so it disappears with it. */}
+        <motion.line
+          aria-hidden="true"
+          x1={air.anchor[0] - 6} y1={air.anchor[1] + 4}
+          x2={air.anchor[0] - air.box.width * 0.38} y2={air.anchor[1] + air.box.height * 0.34}
+          stroke="#FDFBF3" strokeWidth={7} strokeLinecap="round"
+          filter="url(#mdoContrailBlur)"
+          initial={false}
+          animate={{ opacity: airOn ? 0.55 : 0 }}
+          transition={{ duration: motionOk ? 0.3 : 0 }}
+        />
+
+        {/* Connections — an edge shows iff BOTH its own endpoints are
+            active (never an aggregate/threshold rule); the line itself is
+            the only visible affordance (no midpoint label, no separate
+            list). Selected/focused edges get a visibly thicker core, never
+            a color change. Always mounted so pathLength can animate a real
+            retract/redraw, not just fade. */}
+        {edges.map(({ edge, d, mid }) => {
+          const bothActive = active.has(edge.a) && active.has(edge.b);
+          const isSelected = edge.id === selectedEdgeId;
+          const isFocused = edge.id === focusedEdgeId;
+          const touchesSelected = selectedEdgeId != null && !!selectedEdge && (
+            edge.id === selectedEdgeId
+            || edge.a === selectedEdge.edge.a || edge.a === selectedEdge.edge.b
+            || edge.b === selectedEdge.edge.a || edge.b === selectedEdge.edge.b
+          );
+          const dimmedBySelection = selectedEdgeId != null && !touchesSelected;
+          const emphasize = isSelected || isFocused;
+          const targetOpacity = bothActive ? (dimmedBySelection ? 0.32 : 1) : 0;
+          return (
+            <g key={edge.id} aria-hidden="true">
+              <motion.path
+                d={d} fill="none" stroke="#D97E2B" strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+                initial={false}
+                animate={{
+                  pathLength: bothActive ? 1 : 0,
+                  opacity: targetOpacity * 0.3,
+                  strokeWidth: emphasize ? LINE_WIDTH_HALO + 2 : LINE_WIDTH_HALO,
+                }}
+                transition={bothActive
+                  ? { pathLength: { duration: motionOk ? 0.22 : 0, delay: motionOk ? 0.09 : 0 }, opacity: { duration: motionOk ? 0.3 : 0, delay: motionOk ? 0.09 : 0 } }
+                  : { pathLength: { duration: motionOk ? 0.2 : 0 }, opacity: { duration: motionOk ? 0.18 : 0 } }}
+                filter="url(#mdoLineGlow)"
+              />
+              <motion.path
+                d={d} fill="none" stroke="#D97E2B" strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+                initial={false}
+                animate={{
+                  pathLength: bothActive ? 1 : 0,
+                  opacity: targetOpacity,
+                  strokeWidth: emphasize ? LINE_WIDTH_CORE_EMPHASIS : LINE_WIDTH_CORE,
+                }}
+                transition={bothActive
+                  ? { pathLength: { duration: motionOk ? 0.22 : 0, delay: motionOk ? 0.09 : 0 }, opacity: { duration: motionOk ? 0.3 : 0, delay: motionOk ? 0.09 : 0 } }
+                  : { pathLength: { duration: motionOk ? 0.2 : 0 }, opacity: { duration: motionOk ? 0.18 : 0 } }}
+              />
+              {motionEnabled && bothActive && !dimmedBySelection && (
+                <circle r="3.5" fill="#D97E2B" opacity="0.85">
+                  <animateMotion dur="4.2s" repeatCount="indefinite" path={d} />
+                </circle>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Marker rings — one per domain, at its own connector point;
+            purely decorative (the real controls live in the column beside
+            the image), so they carry no independent state of their own. */}
+        {DOMAIN_VISUALS.map((d) => (
+          <motion.g
+            key={'marker-' + d.id}
+            aria-hidden="true"
+            initial={false}
+            animate={{ opacity: active.has(d.id) ? 1 : 0 }}
+            transition={{ duration: motionOk ? 0.3 : 0 }}
+          >
+            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="24" fill="#D97E2B" opacity="0.16" filter="url(#mdoNodeGlow)" />
+            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="14" fill="none" stroke="#FDFBF3" strokeWidth="3.5" vectorEffect="non-scaling-stroke" opacity="0.4" />
+            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="14" fill="none" stroke="#D97E2B" strokeWidth="2.5" vectorEffect="non-scaling-stroke" opacity="0.9" />
+            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="5" fill="#D97E2B" />
+          </motion.g>
+        ))}
+
+        {/* Real, accessible controls — ONE per connection (no duplicate Tab
+            stop): a wide transparent hit-path running the line's FULL
+            length via pointer-events:stroke, not just its midpoint, so any
+            third of the curve is clickable. Keyboard-operable directly (SVG
+            path, tabIndex + Enter/Space), with a visible focus emphasis on
+            the line itself above rather than a box-shadow ring (SVG paths
+            can't carry one). */}
+        {edges.map(({ edge, a, b, d }) => {
+          const bothActive = active.has(edge.a) && active.has(edge.b);
+          return (
+            <path
+              key={'hit-' + edge.id}
+              ref={(el) => { edgePathRefs.current[edge.id] = el; }}
+              d={d}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={LINE_HIT_WIDTH}
+              tabIndex={bothActive ? 0 : -1}
+              role="button"
+              aria-expanded={selectedEdgeId === edge.id}
+              aria-controls={selectedEdgeId === edge.id ? 'mdo-edge-card' : undefined}
+              aria-label={`קשר בין ${a.label} ל${b.label}: ${edge.label}. הצגת הסבר`}
+              style={{ pointerEvents: bothActive ? 'stroke' : 'none', cursor: bothActive ? 'pointer' : undefined }}
+              onClick={() => bothActive && onSelectEdge(edge.id)}
+              onKeyDown={(e) => {
+                if (!bothActive) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectEdge(edge.id);
+                }
+              }}
+              onFocus={() => setFocusedEdgeId(edge.id)}
+              onBlur={() => setFocusedEdgeId((f) => (f === edge.id ? null : f))}
+            />
+          );
+        })}
+      </svg>
+
+      {selectedEdge && (
+        <MDOEdgeCard
+          edge={selectedEdge.edge}
+          aLabel={selectedEdge.a.label}
+          bLabel={selectedEdge.b.label}
+          motionOk={motionOk}
+          onClose={onCloseCard}
+          onRequestFocusBack={() => edgePathRefs.current[selectedEdge.edge.id]?.focus()}
+          closeBtnRef={closeBtnRestoreRef}
+        />
+      )}
+    </div>
+  );
 }
+
+/** The static photo, with an optional looping environment video composited
+    on top (waves/vegetation/clouds only — a locked camera, no zoom or
+    lighting change, per the brief). The video has no audio and pauses
+    off-screen (reusing the same IntersectionObserver `inView` the
+    connection animations already gate on) or under reduced motion, where
+    only the static photo ever renders. If SCENE_VIDEO_SRC doesn't exist on
+    disk yet, onError silently falls back to the photo alone — this never
+    claims a video plays when none was actually produced. */
+function MDOSceneBackdrop({ inView, reduceMotion }: { inView: boolean; reduceMotion: boolean }) {
+  const [videoUnavailable, setVideoUnavailable] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const showVideo = !reduceMotion && !videoUnavailable && videoReady;
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (inView && !paused && !reduceMotion) el.play().catch(() => {});
+    else el.pause();
+  }, [inView, paused, reduceMotion]);
+
+  return (
+    <>
+      <IsometricAsset
+        assetId="TOPIC01-MDO-GROUND-SCENE"
+        src={SCENE_SRC}
+        alt="נוף חוף ים-תיכוני בגובה הקרקע: ים משמאל, דרך עפר וגבעות מכוסות שיח מימין, שמיים פתוחים למעלה — חמשת ממדי הלחימה מוצבים בו כשכבות עצמאיות"
+        aspect="4/3"
+        fit="cover"
+        eager
+        className={cn('absolute inset-0 size-full [aspect-ratio:auto] transition-opacity duration-300', showVideo && 'opacity-0')}
+      />
+      {!reduceMotion && (
+        // eslint-disable-next-line jsx-a11y/media-has-caption -- decorative environment loop, no dialogue/audio track
+        <video
+          ref={videoRef}
+          className={cn('pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-300', showVideo ? 'opacity-100' : 'opacity-0')}
+          src={SCENE_VIDEO_SRC}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+          onCanPlay={() => setVideoReady(true)}
+          onError={() => setVideoUnavailable(true)}
+        />
+      )}
+      {showVideo && (
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          aria-pressed={paused}
+          aria-label={paused ? 'הפעלת תנועת הרקע' : 'השהיית תנועת הרקע'}
+          className="absolute bottom-3 start-3 z-10 flex size-8 items-center justify-center rounded-full border border-border/70 bg-bg-elevated/90 text-fg shadow-elevated backdrop-blur-sm transition-colors hover:bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        >
+          {paused ? (
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+          )}
+        </button>
+      )}
+    </>
+  );
+}
+
+/** The one shared explanation card for a domain PAIR. Selecting, switching
+    or closing it never touches `active` — only its own close button (or a
+    domain going off underneath it) can close it. */
+function MDOEdgeCard({
+  edge,
+  aLabel,
+  bLabel,
+  motionOk,
+  onClose,
+  onRequestFocusBack,
+  closeBtnRef,
+}: {
+  edge: MdoEdge;
+  aLabel: string;
+  bLabel: string;
+  motionOk: boolean;
+  onClose: () => void;
+  onRequestFocusBack: () => void;
+  closeBtnRef: React.MutableRefObject<HTMLButtonElement | null>;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    containerRef.current?.focus({ preventScroll: true });
+  }, [edge.id]);
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onClose();
+      return;
+    }
+    if (e.key === 'Tab' && e.shiftKey && (e.target === containerRef.current || e.target === closeBtnRef.current)) {
+      e.preventDefault();
+      onRequestFocusBack();
+    }
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      id="mdo-edge-card"
+      role="region"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      aria-label={`הסבר על הקשר בין ${aLabel} ל${bLabel}`}
+      // Physical bottom-left corner (approved position) — a patch of the
+      // composition kept clear of every domain's own footprint (the
+      // downsized vehicle sits center-right of the road, the ship stays in
+      // the left THIRD but higher up, near the horizon) so opening it never
+      // covers an active tool.
+      style={{ insetInlineEnd: '1rem', insetBlockEnd: '1rem', width: 'min(320px, 44%)' }}
+      className={cn(
+        'absolute z-10 rounded-2xl border border-border bg-bg-elevated/95 p-4 shadow-elevated backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        flipTransition(motionOk),
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="font-display text-base font-bold leading-tight text-black">{edge.label}</div>
+          <div className="text-xs font-medium text-fg-muted">כך הם יכולים לתרום זה לזה</div>
+        </div>
+        <button
+          ref={closeBtnRef}
+          type="button"
+          onClick={onClose}
+          aria-label="סגירת ההסבר"
+          className="shrink-0 rounded-full p-1 text-fg-dim transition-colors hover:bg-bg-accent hover:text-fg focus-visible:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Icon name="x" size={16} />
+        </button>
+      </div>
+      <div className="mt-3 space-y-2 text-sm leading-relaxed">
+        <p>
+          <span className="font-display font-bold text-fg">תרומת {aLabel} ל{bLabel}: </span>
+          <span className="text-fg-muted">{edge.aToB}</span>
+        </p>
+        <p>
+          <span className="font-display font-bold text-fg">תרומת {bLabel} ל{aLabel}: </span>
+          <span className="text-fg-muted">{edge.bToA}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** A domain's own toggle row inside the fixed right-hand column — the ONLY
+    control that changes `active`, and the only one that keeps working once
+    the domain's object layer has faded out. */
+function DomainToggleRow({
+  domain,
+  isOn,
+  motionOk,
+  onToggle,
+}: {
+  domain: DomainVisual;
+  isOn: boolean;
+  motionOk: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 py-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <Icon name={domain.icon} size={18} className={cn('shrink-0', isOn ? 'text-fg' : 'text-fg-dim', flipTransition(motionOk))} />
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate font-display text-sm font-bold text-fg">{domain.label}</span>
+          {/* Always in the DOM (just invisible when on) so every row keeps
+              the SAME fixed height regardless of state — toggling never
+              reflows a sibling row or the reset button beneath it. */}
+          <span className={cn('block text-[11px] font-medium text-fg-muted', isOn && 'invisible')}>כבוי</span>
+        </span>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isOn}
+        aria-label={`${domain.label}: ${isOn ? 'פעיל' : 'כבוי'}. לחיצה ${isOn ? 'תכבה' : 'תפעיל'} את הממד`}
+        onClick={onToggle}
+        className={cn(
+          'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border p-0.5',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+          flipTransition(motionOk),
+          isOn ? 'border-accent bg-accent' : 'border-border bg-bg-elevated',
+        )}
+      >
+        <span
+          className={cn(
+            'block size-[1.125rem] rounded-full bg-white shadow',
+            flipTransition(motionOk),
+            isOn ? 'ms-auto' : 'me-auto',
+          )}
+        />
+      </button>
+    </div>
+  );
+}
+
+/** Fixed right-hand control column: one row per domain (stays usable even
+    once the domain's object has faded out — it's the only way to bring it
+    back), then Reset pinned to the column's own bottom edge. `h-full` +
+    flex-col is what lets it fill the exact height the grid row stretches it
+    to (driven by the image's own 3:2 box) without inflating each row. */
+function MDOControlColumn({
+  active,
+  motionOk,
+  onToggle,
+  onReset,
+}: {
+  active: Set<MdoDomainId>;
+  motionOk: boolean;
+  onToggle: (id: MdoDomainId) => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col rounded-2xl bg-bg-accent/60 p-3">
+      <div>
+        {DOMAIN_VISUALS.map((domain, i) => (
+          <div key={domain.id} className={cn(i < DOMAIN_VISUALS.length - 1 && 'border-b border-border-subtle')}>
+            <DomainToggleRow domain={domain} isOn={active.has(domain.id)} motionOk={motionOk} onToggle={() => onToggle(domain.id)} />
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-border bg-bg-elevated px-3 py-2 text-sm font-display font-bold text-fg transition-colors hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      >
+        <Icon name="refresh" size={15} />
+        איפוס
+      </button>
+    </div>
+  );
+}
+
+/** The summary: badge + at most 2–3 composed sentences. No connection-name
+    listing and no chip list here any more — the lines themselves, clickable
+    along their whole length, are the only interface to a pair's
+    explanation. Position (top of the shared card) never changes with
+    scene state. */
+function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
+  const { badge, lines } = useMemo(() => composeSummary(active), [active]);
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="font-display text-sm font-bold text-fg">{badge}</span>
+        <span aria-hidden="true" className="flex gap-1.5">
+          {MDO_DOMAIN_ORDER.map((id) => (
+            <span key={id} className={cn('size-2 rounded-full', active.has(id) ? 'bg-accent' : 'bg-border')} />
+          ))}
+        </span>
+      </div>
+      <div className="mt-2 space-y-1.5 text-sm leading-relaxed text-fg-muted">
+        {lines.map((line, i) => <p key={i}>{line}</p>)}
+      </div>
+    </div>
+  );
+}
+
 function RealWorldExamples() {
-const cases = [
- {
-title: 'אוקראינה נגד רוסיה',
-year: '2022 ואילך',
-desc:"אוקראינה בולמת צבא ענק בעזרת שילוב זירות: חיילים בשוחות (יבשה) מפעילים רחפנים קטלניים (אוויר) כדי לתקוף ספינות (ים), כשהם מנווטים דרך אינטרנט לווייני של 'סטארלינק' (חלל), בזמן שרוסיה מנסה להפיל להם את הרשת ללא הפסקה (סייבר).",
-domainIds: ['land', 'air', 'sea', 'space', 'cyber'],
-photoAssetId: 'TOPIC01-MDO-CASE-UKRAINE',
-photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-UKRAINE.png',
-photoAlt: 'חייל בשטח מפעיל רחפן תקיפה, בשמיים מעליו לוויין תקשורת',
- },
- {
-title:"החות'ים משתקים את הים האדום",
-year: '2023–2024',
-desc: 'איך ארגון טרור מתימן משתק את הסחר העולמי? הם תוקפים אוניות סחר (ים) בעזרת כטב"מים וטילים (אוויר), ומקבלים מיקומים מדויקים על האוניות ממערכות ולוויינים של איראן (חלל וסייבר). הוכחה שגם ארגון קטן יכול לשלב ממדים.',
-domainIds: ['air', 'sea', 'space', 'cyber'],
-photoAssetId: 'TOPIC01-MDO-CASE-HOUTHIS',
-photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-HOUTHIS.png',
-photoAlt: 'אוניית סחר בים האדום, כטב"ם תוקף מהאוויר ותצפית חופית עוקבת',
- },
- {
-title: 'תקיפת איראן (אוקטובר 2024)',
-year: '2024',
-desc:"מטוסי קרב (אוויר) הפציצו מטרות במרחק אלפי קילומטרים. כדי שזה יצליח, לוויינים (חלל) שידרו להם מיקום מדויק בזמן אמת, ולוחמי סייבר 'עיוורו' את מערכות ההגנה של איראן עוד לפני שהמטוסים התקרבו. שילוב מושלם ששמר על כוחותינו.",
-domainIds: ['air', 'space'],
-photoAssetId: 'TOPIC01-MDO-CASE-IRAN',
-photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-IRAN.png',
-photoAlt: 'מטוס קרב בטיסה מעל שטח איראן, לוויין משדר מיקום ממעל',
- },
- ];
-return (
- <div className="mt-12">
- <div>
- <div className="mb-5">
- <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">איך זה נראה בעולם האמיתי</h3>
- <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
- <p className="mt-2 text-base leading-relaxed text-fg-muted">3 דוגמאות עכשוויות שבהן ראינו MDO בפועל</p>
- </div>
- <div className="grid gap-4 md:grid-cols-3">
- {cases.map((c, i) => (
- <motion.article
-key={c.title}
-initial={{ opacity: 0, y: 18 }}
-whileInView={{ opacity: 1, y: 0 }}
-viewport={{ once: true, amount: 0.3 }}
-transition={{ delay: i * 0.08 }}
-className="surface p-5 text-center"
- >
- <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
- {c.year}
- </div>
- <h4 className="font-display font-bold leading-tight text-black text-lg md:text-xl text-balance mt-0.5 mb-3">{c.title}</h4>
- <IsometricAsset
-assetId={c.photoAssetId}
-src={c.photoSrc}
-alt={c.photoAlt}
-aspect="4/3"
-fit="cover"
-className="rounded-lg overflow-hidden"
- />
- <p className="mt-3 text-base leading-relaxed text-black text-pretty">{c.desc}</p>
- <div className="mt-4 flex flex-wrap items-start justify-center gap-3">
- {DOMAINS.filter((d) => c.domainIds.includes(d.id)).map((d) => (
- <div key={d.id} className="flex flex-col items-center gap-1.5">
- <div className="flex size-9 items-center justify-center rounded-full border border-border">
- <Icon name={d.icon} size={16} className="text-fg" />
- </div>
- <span className="text-[11px] text-fg-muted">{d.label}</span>
- </div>
- ))}
- </div>
- </motion.article>
- ))}
- </div>
- </div>
- </div>
- );
+  const reduceMotion = useReducedMotion();
+  const cases = [
+    {
+      title: 'אוקראינה נגד רוסיה',
+      year: '2022 ואילך',
+      desc: "אוקראינה בולמת צבא ענק בעזרת שילוב זירות: חיילים בשוחות (יבשה) מפעילים רחפנים קטלניים (אוויר) כדי לתקוף ספינות (ים), כשהם מנווטים דרך אינטרנט לווייני של 'סטארלינק' (חלל), בזמן שרוסיה מנסה להפיל להם את הרשת ללא הפסקה (סייבר).",
+      domainIds: ['land', 'air', 'sea', 'space', 'cyber'] as MdoDomainId[],
+      photoAssetId: 'TOPIC01-MDO-CASE-UKRAINE',
+      photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-UKRAINE.png',
+      photoAlt: 'חייל בשטח מפעיל רחפן תקיפה, בשמיים מעליו לוויין תקשורת',
+    },
+    {
+      title: "החות'ים משתקים את הים האדום",
+      year: '2023–2024',
+      desc: 'איך ארגון טרור מתימן משתק את הסחר העולמי? הם תוקפים אוניות סחר (ים) בעזרת כטב"מים וטילים (אוויר), ומקבלים מיקומים מדויקים על האוניות ממערכות ולוויינים של איראן (חלל וסייבר). הוכחה שגם ארגון קטן יכול לשלב ממדים.',
+      domainIds: ['air', 'sea', 'space', 'cyber'] as MdoDomainId[],
+      photoAssetId: 'TOPIC01-MDO-CASE-HOUTHIS',
+      photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-HOUTHIS.png',
+      photoAlt: 'אוניית סחר בים האדום, כטב"ם תוקף מהאוויר ותצפית חופית עוקבת',
+    },
+    {
+      title: 'תקיפת איראן (אוקטובר 2024)',
+      year: '2024',
+      desc: "מטוסי קרב (אוויר) הפציצו מטרות במרחק אלפי קילומטרים. כדי שזה יצליח, לוויינים (חלל) שידרו להם מיקום מדויק בזמן אמת, ולוחמי סייבר 'עיוורו' את מערכות ההגנה של איראן עוד לפני שהמטוסים התקרבו. שילוב מושלם ששמר על כוחותינו.",
+      domainIds: ['air', 'space'] as MdoDomainId[],
+      photoAssetId: 'TOPIC01-MDO-CASE-IRAN',
+      photoSrc: '/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CASE-IRAN.png',
+      photoAlt: 'מטוס קרב בטיסה מעל שטח איראן, לוויין משדר מיקום ממעל',
+    },
+  ];
+  return (
+    <div className="mt-12">
+      <div>
+        <div className="mb-5">
+          <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">איך זה נראה בעולם האמיתי</h3>
+          <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
+          <p className="mt-2 text-base leading-relaxed text-fg-muted">3 דוגמאות עכשוויות שבהן ראינו MDO בפועל</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {cases.map((c, i) => (
+            <motion.article
+              key={c.title}
+              initial={reduceMotion ? undefined : { opacity: 0, y: 18 }}
+              whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={reduceMotion ? { duration: 0 } : { delay: i * 0.08 }}
+              className="surface p-5 text-center"
+            >
+              <div className="text-sm font-display font-semibold tracking-wider text-fg-muted">
+                {c.year}
+              </div>
+              <h4 className="font-display font-bold leading-tight text-black text-lg md:text-xl text-balance mt-0.5 mb-3">{c.title}</h4>
+              <IsometricAsset
+                assetId={c.photoAssetId}
+                src={c.photoSrc}
+                alt={c.photoAlt}
+                aspect="4/3"
+                fit="cover"
+                className="rounded-lg overflow-hidden"
+              />
+              <p className="mt-3 text-base leading-relaxed text-black text-pretty">{c.desc}</p>
+              <div className="mt-4 flex flex-wrap items-start justify-center gap-3">
+                {DOMAIN_VISUALS.filter((d) => c.domainIds.includes(d.id)).map((d) => (
+                  <div key={d.id} className="flex flex-col items-center gap-1.5">
+                    <div className="flex size-9 items-center justify-center rounded-full border border-border">
+                      <Icon name={d.icon} size={16} className="text-fg" />
+                    </div>
+                    <span className="text-[11px] text-fg-muted">{d.label}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 function ChokepointBand({
-eyebrow,
-className,
-children,
+  eyebrow,
+  className,
+  children,
 }: {
-eyebrow: React.ReactNode;
-className?: string;
-children: React.ReactNode;
+  eyebrow: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
 }) {
-return (
- <div className={cn('relative isolate overflow-hidden rounded-[28px] bg-pine-grad p-5 shadow-pine-card sm:p-7 md:p-8', className)}>
- <div className="grid gap-6 sm:grid-cols-[1fr_1.4fr]">
- <div className="flex flex-col justify-center">
- <div className="mb-1 text-sm font-display font-bold tracking-wide text-ember">
- {eyebrow}
- </div>
- <p className="text-base leading-relaxed text-paper-bright/90">{children}</p>
- </div>
- <div className="relative min-h-[200px]">
- <IsometricAsset
-assetId="TOPIC01-MDO-CHAIN-BROKEN"
-src="/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CHAIN-BROKEN.png"
-alt="שרשרת שבורה — סמל לחוליה חלשה המנתקת את החיבור בין הממדים"
-aspect="4/3"
-fit="cover"
-className="rounded-xl border border-border [aspect-ratio:auto] h-full w-full"
- />
- </div>
- </div>
- </div>
- );
+  return (
+    <div className={cn('relative isolate overflow-hidden rounded-[28px] bg-pine-grad p-5 shadow-pine-card sm:p-7 md:p-8', className)}>
+      <div className="grid gap-6 sm:grid-cols-[1fr_1.4fr]">
+        <div className="flex flex-col justify-center">
+          <div className="mb-1 text-sm font-display font-bold tracking-wide text-ember">
+            {eyebrow}
+          </div>
+          <p className="text-base leading-relaxed text-paper-bright/90">{children}</p>
+        </div>
+        <div className="relative min-h-[200px]">
+          <IsometricAsset
+            assetId="TOPIC01-MDO-CHAIN-BROKEN"
+            src="/assets/lessons/topic01/scene-mdo/TOPIC01-MDO-CHAIN-BROKEN.png"
+            alt="שרשרת שבורה — סמל לחוליה חלשה המנתקת את החיבור בין הממדים"
+            aspect="4/3"
+            fit="cover"
+            className="rounded-xl border border-border [aspect-ratio:auto] h-full w-full"
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
