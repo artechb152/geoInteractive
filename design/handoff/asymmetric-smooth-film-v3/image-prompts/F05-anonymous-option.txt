@@ -1,0 +1,11 @@
+Create a new photorealistic still for a fictional educational film, landscape 16:9. A staged international press briefing in a bright contemporary conference atrium with pale stone, tall glass windows and soft daylight.
+
+Use newly invented anonymous adult participants, not portraits, likenesses or impersonations of actual people. The supplied F04 image is only the picture to place inside a small background monitor; do not use the people in it as casting or facial references for the new participants.
+
+Place six participants in two small groups beside slim lecterns with microphones, leaving an open central sightline. View the speakers from behind and at a rear three-quarter angle. Their heads stay turned away from the camera, with no visible facial detail or profile. They face journalists located farther to the outer sides of the room. The journalists are distant and partly obscured by their professional cameras; their facial features are not resolved. Body orientation, microphones, briefing folders and press equipment establish an independent briefing. Nobody is watching the background monitor.
+
+Use standing figures, lecterns, television cameras, an open bright atrium and a restrained unlabelled world-map relief on a side wall. Keep the people separate, with stable natural poses and limited hand gestures. This should look different from the small seated committee meeting in F04.
+
+Keep one small monitor on the distant rear wall, directly facing the camera at the exact center of the image. Its active display occupies about 22 percent of the full image width and height, approximately five percent of the total image area, with edges x=39–61% and y=39–61%. Insert the complete supplied F04 image without changing its framing. Keep the monitor unobstructed, with a thin matte bezel and restrained brightness. It remains a minor background fixture.
+
+Preserve the centered monitor geometry for a later straight zoom-out. Match the reference's photographic realism, while giving this location a bright daylight atmosphere. No readable text, names, recognizable institutional branding, national flags, signing ceremony or celebration. Output one clean still.

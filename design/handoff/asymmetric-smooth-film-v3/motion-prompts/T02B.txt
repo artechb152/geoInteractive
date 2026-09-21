@@ -1,0 +1,2 @@
+SUPERSEDED. Do not use this former two-part transition.
+The current design uses ONE direct zoom-out from complete F02 to the rear-view crowd in F03. Use T02.txt with F02 as START and F03 as END. Do not use F01 as a bridge.
