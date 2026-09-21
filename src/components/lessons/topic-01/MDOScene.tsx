@@ -188,6 +188,52 @@ function composeSummary(active: Set<MdoDomainId>): { badge: string; lines: strin
   return { badge, lines: [MDO_COUNT_INTROS[String(n) as '1' | '2' | '3'], stillPossible, missing] };
 }
 
+/** The right column's own selection-explainer content — composed ONLY from
+    existing MDO_DOMAINS/MDO_EDGES fields (contribution / label / aToB /
+    bToA), reusing the exact connective phrasing composeSummary() and
+    MDOEdgeCard already use elsewhere in this file, never a new sentence
+    describing a capability the data doesn't state. Independent of
+    composeSummary(): this reads the object multi-select, not the on/off
+    toggles. */
+function composeSelectionExplainer(selected: Set<MdoDomainId>): { heading: string; lines: string[] } {
+  const ids = MDO_DOMAIN_ORDER.filter((id) => selected.has(id));
+
+  if (ids.length === 0) {
+    return {
+      heading: 'השוואת ממדים',
+      lines: ['לחצו על אובייקט פעיל בתמונה כדי לבחור אותו ולהשוות בין ממדים.'],
+    };
+  }
+
+  if (ids.length === 1) {
+    const d = MDO_DOMAINS[ids[0]];
+    return { heading: d.label, lines: [`מה הממד תורם: ${d.contribution}.`] };
+  }
+
+  if (ids.length === 2) {
+    const edge = MDO_EDGES.find((e) => (e.a === ids[0] && e.b === ids[1]) || (e.a === ids[1] && e.b === ids[0]));
+    if (!edge) return { heading: `${MDO_DOMAINS[ids[0]].label} + ${MDO_DOMAINS[ids[1]].label}`, lines: [] };
+    const aLabel = MDO_DOMAINS[edge.a].label;
+    const bLabel = MDO_DOMAINS[edge.b].label;
+    return {
+      heading: edge.label,
+      lines: [`תרומת ${aLabel} ל${bLabel}: ${edge.aToB}`, `תרומת ${bLabel} ל${aLabel}: ${edge.bToA}`],
+    };
+  }
+
+  // 3+ selected: compose each selected domain's own contribution plus the
+  // labels of every edge whose BOTH ends are in the selection — the set of
+  // relevant connections grows as more objects are added (spec's own
+  // example: חלל+ים vs חלל+ים+סייבר), without repeating full aToB/bToA
+  // prose for every pair (would overflow the 190px column at 4-5 picks).
+  const contributions = ids.map((id) => `${MDO_DOMAINS[id].label} — ${MDO_DOMAINS[id].contribution}`).join('; ');
+  const pairLabels = MDO_EDGES.filter((e) => selected.has(e.a) && selected.has(e.b)).map((e) => e.label);
+  return {
+    heading: ids.map((id) => MDO_DOMAINS[id].label).join(' + '),
+    lines: [`מה כל ממד תורם: ${contributions}.`, ...(pairLabels.length ? [`קשרים ביניהם: ${pairLabels.join(', ')}.`] : [])],
+  };
+}
+
 export function MDOScene() {
   const [active, setActive] = useState<Set<MdoDomainId>>(new Set(MDO_DOMAIN_ORDER));
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -309,7 +355,7 @@ export function MDOScene() {
             taller of the two), and the column fills it via h-full below,
             never a ResizeObserver measuring one to force the other. */}
         <div className="grid grid-cols-[190px_1fr] items-stretch gap-4 p-4">
-          <MDOControlColumn active={active} motionOk={motionOk} onToggle={toggleDomain} onReset={resetAll} />
+          <MDOControlColumn active={active} selectedObjects={selectedObjects} motionOk={motionOk} onToggle={toggleDomain} onReset={resetAll} />
           <MDOGroundScene
             active={active}
             selectedEdgeId={selectedEdgeId}
@@ -665,7 +711,8 @@ function MDOGroundScene({
             || edge.b === selectedEdge.edge.a || edge.b === selectedEdge.edge.b
           );
           const dimmedBySelection = selectedEdgeId != null && !touchesSelected;
-          const emphasize = isSelected || isFocused;
+          const inObjectSelection = selectedObjects.has(edge.a) && selectedObjects.has(edge.b);
+          const emphasize = isSelected || isFocused || inObjectSelection;
           const targetOpacity = bothActive ? (dimmedBySelection ? 0.32 : 1) : 0;
           return (
             <g key={edge.id} aria-hidden="true">
@@ -1025,32 +1072,53 @@ function DomainToggleRow({
     to (driven by the image's own 3:2 box) without inflating each row. */
 function MDOControlColumn({
   active,
+  selectedObjects,
   motionOk,
   onToggle,
   onReset,
 }: {
   active: Set<MdoDomainId>;
+  selectedObjects: Set<MdoDomainId>;
   motionOk: boolean;
   onToggle: (id: MdoDomainId) => void;
   onReset: () => void;
 }) {
   return (
     <div className="flex h-full flex-col rounded-2xl bg-bg-accent/60 p-3">
-      <div>
+      <div className="shrink-0">
         {DOMAIN_VISUALS.map((domain, i) => (
           <div key={domain.id} className={cn(i < DOMAIN_VISUALS.length - 1 && 'border-b border-border-subtle')}>
             <DomainToggleRow domain={domain} isOn={active.has(domain.id)} motionOk={motionOk} onToggle={() => onToggle(domain.id)} />
           </div>
         ))}
       </div>
+      <MDOSelectionExplainer selected={selectedObjects} />
       <button
         type="button"
         onClick={onReset}
-        className="mt-auto flex items-center justify-center gap-1.5 rounded-xl border border-border bg-bg-elevated px-3 py-2 text-sm font-display font-bold text-fg transition-colors hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        className="mt-3 shrink-0 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-bg-elevated px-3 py-2 text-sm font-display font-bold text-fg transition-colors hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
         <Icon name="refresh" size={15} />
         איפוס
       </button>
+    </div>
+  );
+}
+
+/** The right column's own middle region — its own bounded, internally
+    scrollable slot between the toggle rows and Reset, so the column's and
+    image's shared total height never changes regardless of how long the
+    composed explanation gets (spec: "הטור והתמונה נשארים באותו גובה").
+    Still the same bg-bg-accent/60 surface as the rest of the column — no
+    border/shadow/radius of its own, so it never reads as a detached card. */
+function MDOSelectionExplainer({ selected }: { selected: Set<MdoDomainId> }) {
+  const { heading, lines } = useMemo(() => composeSelectionExplainer(selected), [selected]);
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto border-t border-border-subtle pt-3">
+      <div className="font-display text-xs font-bold leading-tight text-fg">{heading}</div>
+      <div className="mt-1.5 space-y-1.5 text-[11px] leading-relaxed text-fg-muted">
+        {lines.map((line, i) => <p key={i}>{line}</p>)}
+      </div>
     </div>
   );
 }
