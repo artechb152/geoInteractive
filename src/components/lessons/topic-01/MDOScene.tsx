@@ -124,6 +124,35 @@ function pct(value: number, total: number) {
   return `${(value / total) * 100}%`;
 }
 
+/** The scale a selected domain's own object image renders at (spec: "כ-4%
+    הגדלה עדינה") — also drives how far its connector anchor moves in
+    effectiveAnchor() below, so the two stay geometrically consistent. */
+const SELECTED_SCALE = 1.04;
+
+/** The point a domain's own image visually scales FROM when selected — the
+    exact same point its `transformOrigin` CSS uses, so the object's own
+    ground/water-contact line never shifts (spec: "שמור את נקודת המגע
+    בקרקע"). Grounded/airborne domains pivot from their box's own
+    bottom-center (their lowest visible pixel = the contact line); `space`
+    is a genuinely separate circular inset with no ground contact, so it
+    pivots from its own center instead. */
+function domainPivot(d: DomainVisual): [number, number] {
+  return d.standalone
+    ? [d.box.x + d.box.width / 2, d.box.y + d.box.height / 2]
+    : [d.box.x + d.box.width / 2, d.box.y + d.box.height];
+}
+
+/** A domain's own connector anchor, recomputed for the SAME 4% scale its
+    image renders at around the SAME pivot as domainPivot() — so a
+    connection curve keeps landing on the scaled object's visual hub
+    instead of the pre-scale point (spec: "התאם את עוגני הקווים"). Returns
+    the unmodified anchor when not selected. */
+function effectiveAnchor(d: DomainVisual, isSelected: boolean): [number, number] {
+  if (!isSelected) return d.anchor;
+  const [px, py] = domainPivot(d);
+  return [px + (d.anchor[0] - px) * SELECTED_SCALE, py + (d.anchor[1] - py) * SELECTED_SCALE];
+}
+
 /* The panel's ONE active/inactive visual language, reused by the control
    column's toggle switches; active = filled accent, inactive = hollow. */
 function flipTransition(motionOk: boolean) {
@@ -162,6 +191,10 @@ function composeSummary(active: Set<MdoDomainId>): { badge: string; lines: strin
 export function MDOScene() {
   const [active, setActive] = useState<Set<MdoDomainId>>(new Set(MDO_DOMAIN_ORDER));
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  // Multi-select on the field-photo objects themselves — fully independent
+  // of `active` (on/off) and `selectedEdgeId` (line-click explanation
+  // card); 0–5 members, driven by clicking an active object in the image.
+  const [selectedObjects, setSelectedObjects] = useState<Set<MdoDomainId>>(new Set());
   const [announcement, setAnnouncement] = useState('');
   const motionOk = !useReducedMotion();
   // Any programmatic close of the card (Reset, or a domain going off under
@@ -188,10 +221,19 @@ export function MDOScene() {
   function closeCard() {
     setSelectedEdgeId(null);
   }
+  function toggleObjectSelection(id: MdoDomainId) {
+    setSelectedObjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
   function resetAll() {
     suppressEdgeFocusRestoreRef.current = true;
     setActive(new Set(MDO_DOMAIN_ORDER));
     setSelectedEdgeId(null);
+    setSelectedObjects(new Set());
     setAnnouncement('כל הממדים חוברו מחדש');
   }
 
@@ -206,6 +248,16 @@ export function MDOScene() {
       setSelectedEdgeId(null);
     }
   }, [active, selectedEdgeId]);
+
+  // Turning a domain off also drops it out of the multi-select (spec:
+  // "כיבוי ממד מסיר אותו גם מהבחירה") — never the reverse; selecting an
+  // object never changes `active`.
+  useEffect(() => {
+    setSelectedObjects((prev) => {
+      const next = new Set([...prev].filter((id) => active.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [active]);
 
   return (
     <section id="scene-mdo" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
@@ -261,8 +313,10 @@ export function MDOScene() {
           <MDOGroundScene
             active={active}
             selectedEdgeId={selectedEdgeId}
+            selectedObjects={selectedObjects}
             motionOk={motionOk}
             onSelectEdge={selectEdge}
+            onToggleObject={toggleObjectSelection}
             onCloseCard={closeCard}
             suppressFocusRestoreRef={suppressEdgeFocusRestoreRef}
           />
@@ -401,15 +455,19 @@ const LINE_HIT_WIDTH = 20; // 16–24 CSS px transparent hit ribbon, per brief
 function MDOGroundScene({
   active,
   selectedEdgeId,
+  selectedObjects,
   motionOk,
   onSelectEdge,
+  onToggleObject,
   onCloseCard,
   suppressFocusRestoreRef,
 }: {
   active: Set<MdoDomainId>;
   selectedEdgeId: string | null;
+  selectedObjects: Set<MdoDomainId>;
   motionOk: boolean;
   onSelectEdge: (id: string) => void;
+  onToggleObject: (id: MdoDomainId) => void;
   onCloseCard: () => void;
   suppressFocusRestoreRef: React.MutableRefObject<boolean>;
 }) {
@@ -428,14 +486,16 @@ function MDOGroundScene({
       MDO_EDGES.map((edge) => {
         const a = byId(edge.a);
         const b = byId(edge.b);
+        const aAnchor = effectiveAnchor(a, selectedObjects.has(a.id));
+        const bAnchor = effectiveAnchor(b, selectedObjects.has(b.id));
         const avoid = [
           ...DOMAIN_VISUALS.filter((d) => d.id !== edge.a && d.id !== edge.b && active.has(d.id)).map((d) => ({ point: d.anchor, radius: d.avoidR })),
           CARD_OBSTACLE,
         ];
-        const control = edgeControl(a.anchor, b.anchor, centroid, avoid);
-        return { edge, a, b, d: edgePath(a.anchor, b.anchor, control), mid: quadPoint(a.anchor, control, b.anchor, 0.5) };
+        const control = edgeControl(aAnchor, bAnchor, centroid, avoid);
+        return { edge, a, b, d: edgePath(aAnchor, bAnchor, control), mid: quadPoint(aAnchor, control, bAnchor, 0.5) };
       }),
-    [active, centroid],
+    [active, centroid, selectedObjects],
   );
 
   const reduceMotion = useReducedMotion();
@@ -485,25 +545,33 @@ function MDOGroundScene({
           with its own baked-in contact shadow/dust/wake. Always mounted;
           only the animated opacity target changes, so a rapid off→on
           re-toggle reverses the in-flight fade instead of restarting it. */}
-      {DOMAIN_VISUALS.filter((d) => !d.standalone).map((d) => (
-        <motion.img
-          key={d.id}
-          src={d.src}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          className="pointer-events-none absolute"
-          style={{
-            left: pct(d.box.x, FIELD_W),
-            top: pct(d.box.y, FIELD_H),
-            width: pct(d.box.width, FIELD_W),
-            height: pct(d.box.height, FIELD_H),
-          }}
-          initial={false}
-          animate={{ opacity: active.has(d.id) ? 1 : 0 }}
-          transition={{ duration: motionOk ? 0.3 : 0 }}
-        />
-      ))}
+      {DOMAIN_VISUALS.filter((d) => !d.standalone).map((d) => {
+        const isSelected = selectedObjects.has(d.id);
+        return (
+          <motion.img
+            key={d.id}
+            src={d.src}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="pointer-events-none absolute"
+            style={{
+              left: pct(d.box.x, FIELD_W),
+              top: pct(d.box.y, FIELD_H),
+              width: pct(d.box.width, FIELD_W),
+              height: pct(d.box.height, FIELD_H),
+              // Bottom-center pivot = this object's own ground/water
+              // contact line (see domainPivot()) — scaling up never
+              // moves that point.
+              transformOrigin: '50% 100%',
+              filter: isSelected ? 'url(#mdoSelectionOutline)' : undefined,
+            }}
+            initial={false}
+            animate={{ opacity: active.has(d.id) ? 1 : 0, scale: isSelected ? SELECTED_SCALE : 1 }}
+            transition={{ duration: motionOk ? 0.3 : 0 }}
+          />
+        );
+      })}
 
       {/* Space — a genuinely separate circular inset (own image, material,
           lighting), never part of the shared scene's perspective. */}
@@ -515,9 +583,15 @@ function MDOGroundScene({
           width: pct(byId('space').box.width, FIELD_W),
           height: pct(byId('space').box.height, FIELD_H),
           border: '4px solid #FDFBF3',
+          // `space` is a masked circle, not a raster silhouette (see
+          // domainPivot()'s comment) — feMorphology has no alpha edge to
+          // trace here, so its "selected" outline is a second white ring
+          // outside the existing border instead of the filter used above.
+          boxShadow: selectedObjects.has('space') ? '0 0 0 3px #FDFBF3' : undefined,
+          transformOrigin: '50% 50%',
         }}
         initial={false}
-        animate={{ opacity: active.has('space') ? 1 : 0 }}
+        animate={{ opacity: active.has('space') ? 1 : 0, scale: selectedObjects.has('space') ? SELECTED_SCALE : 1 }}
         transition={{ duration: motionOk ? 0.3 : 0 }}
       >
         <img src={SPACE_SRC} alt="" aria-hidden="true" draggable={false} className="size-full object-cover" />
@@ -542,6 +616,22 @@ function MDOGroundScene({
           </filter>
           <filter id="mdoContrailBlur" x="-40%" y="-150%" width="180%" height="400%">
             <feGaussianBlur stdDeviation="5" />
+          </filter>
+          {/* Thin white outline traced around a selected object's own
+              alpha silhouette (dilate the PNG's real transparent-pixel
+              edge, flood it white, keep only the dilated ring, then draw
+              the original image back on top) — spec: "קו מתאר לבן דק סביב
+              צורת האובייקט, לא סביב מלבן התמונה". Applied via CSS
+              `filter: url(#mdoSelectionOutline)` on the object's own
+              <img>, not inside this <svg>'s own render tree. */}
+          <filter id="mdoSelectionOutline" x="-30%" y="-30%" width="160%" height="160%">
+            <feMorphology in="SourceAlpha" operator="dilate" radius="2.2" result="dilated" />
+            <feFlood floodColor="#FDFBF3" result="outlineColor" />
+            <feComposite in="outlineColor" in2="dilated" operator="in" result="outline" />
+            <feMerge>
+              <feMergeNode in="outline" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
         </defs>
 
@@ -618,20 +708,36 @@ function MDOGroundScene({
         {/* Marker rings — one per domain, at its own connector point;
             purely decorative (the real controls live in the column beside
             the image), so they carry no independent state of their own. */}
-        {DOMAIN_VISUALS.map((d) => (
-          <motion.g
-            key={'marker-' + d.id}
-            aria-hidden="true"
-            initial={false}
-            animate={{ opacity: active.has(d.id) ? 1 : 0 }}
-            transition={{ duration: motionOk ? 0.3 : 0 }}
-          >
-            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="24" fill="#D97E2B" opacity="0.16" filter="url(#mdoNodeGlow)" />
-            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="14" fill="none" stroke="#FDFBF3" strokeWidth="3.5" vectorEffect="non-scaling-stroke" opacity="0.4" />
-            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="14" fill="none" stroke="#D97E2B" strokeWidth="2.5" vectorEffect="non-scaling-stroke" opacity="0.9" />
-            <circle cx={d.anchor[0]} cy={d.anchor[1]} r="5" fill="#D97E2B" />
-          </motion.g>
-        ))}
+        {DOMAIN_VISUALS.map((d) => {
+          const isSelected = selectedObjects.has(d.id);
+          const [mcx, mcy] = effectiveAnchor(d, isSelected);
+          return (
+            <motion.g
+              key={'marker-' + d.id}
+              aria-hidden="true"
+              initial={false}
+              animate={{ opacity: active.has(d.id) ? 1 : 0 }}
+              transition={{ duration: motionOk ? 0.3 : 0 }}
+            >
+              <circle cx={mcx} cy={mcy} r="24" fill="#D97E2B" opacity="0.16" filter="url(#mdoNodeGlow)" />
+              <circle cx={mcx} cy={mcy} r="14" fill="none" stroke="#FDFBF3" strokeWidth="3.5" vectorEffect="non-scaling-stroke" opacity="0.4" />
+              <circle cx={mcx} cy={mcy} r="14" fill="none" stroke="#D97E2B" strokeWidth="2.5" vectorEffect="non-scaling-stroke" opacity="0.9" />
+              <circle cx={mcx} cy={mcy} r="5" fill="#D97E2B" />
+            </motion.g>
+          );
+        })}
+
+        {/* Multi-select hit targets — one per domain, transparent HTML
+            buttons (not SVG, for free keyboard semantics matching the rest
+            of this file's controls), rendered only while that domain is
+            active (spec: click target only exists on an active object).
+            Sit right after the markers in DOM order but are NOT inside
+            this <svg> (see the sibling block just below it, after this
+            svg's closing tag) — kept out of the SVG so pointer-events on
+            an HTML <button> behave normally; they still receive clicks
+            despite the decorative SVG painting on top of them, because
+            this svg's own root is pointer-events-none except its
+            explicitly-enabled descendants (the edge hit-paths). */}
 
         {/* Real, accessible controls — ONE per connection (no duplicate Tab
             stop): a wide transparent hit-path running the line's FULL
@@ -670,6 +776,29 @@ function MDOGroundScene({
           );
         })}
       </svg>
+
+      {DOMAIN_VISUALS.map((d) => {
+        if (!active.has(d.id)) return null;
+        const isSelected = selectedObjects.has(d.id);
+        return (
+          <button
+            key={'select-' + d.id}
+            type="button"
+            aria-pressed={isSelected}
+            aria-label={`${isSelected ? 'ביטול בחירת' : 'בחירת'} ${d.label} להשוואה בין ממדים`}
+            onClick={() => onToggleObject(d.id)}
+            className="absolute rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            style={{
+              left: pct(d.box.x, FIELD_W),
+              top: pct(d.box.y, FIELD_H),
+              width: pct(d.box.width, FIELD_W),
+              height: pct(d.box.height, FIELD_H),
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          />
+        );
+      })}
 
       {selectedEdge && (
         <MDOEdgeCard
