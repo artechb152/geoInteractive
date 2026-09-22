@@ -12,7 +12,6 @@ import {
   MDO_FOUR_ACTIVE_BY_MISSING,
   MDO_COUNT_INTROS,
   type MdoDomainId,
-  type MdoEdge,
 } from './mdo-interaction-content';
 
 /** A region in the shared ground-level scene's own pixel coordinate system
@@ -203,9 +202,9 @@ function composeSummary(active: Set<MdoDomainId>): { lines: string[] } {
 
 /** The selection popup's own content — composed ONLY from existing
     MDO_DOMAINS/MDO_EDGES fields (contribution / label / aToB / bToA),
-    reusing the exact connective phrasing composeSummary() and MDOEdgeCard
-    already use elsewhere in this file, never a new sentence describing a
-    capability the data doesn't state. Independent of composeSummary(): this
+    reusing the exact connective phrasing composeSummary() already uses
+    elsewhere in this file, never a new sentence describing a capability
+    the data doesn't state. Independent of composeSummary(): this
     reads the object multi-select (capped at 2 — see toggleObjectSelection),
     not the on/off toggles. Only called once ≥1 object is selected — the
     popup itself isn't rendered otherwise. */
@@ -229,20 +228,13 @@ function composeSelectionExplainer(selected: Set<MdoDomainId>): { heading: strin
 
 export function MDOScene() {
   const [active, setActive] = useState<Set<MdoDomainId>>(new Set(MDO_DOMAIN_ORDER));
-  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   // Multi-select on the field-photo objects themselves — fully independent
-  // of `active` (on/off) and `selectedEdgeId` (line-click explanation
-  // card); 0–5 members, driven by clicking an active object in the image.
+  // of `active` (on/off); 0–5 members, driven by clicking an active object
+  // in the image. (The connection lines themselves are decorative only —
+  // not a separate click-to-select affordance, per the user's own request.)
   const [selectedObjects, setSelectedObjects] = useState<Set<MdoDomainId>>(new Set());
   const [announcement, setAnnouncement] = useState('');
   const motionOk = !useReducedMotion();
-  // Any programmatic close of the card (Reset, or a domain going off under
-  // it) shouldn't yank focus onto the — now merely inactive, not unmounted —
-  // edge hit-path it used to belong to; only an explicit user close (✕ /
-  // Escape) should return focus to the opener. Both auto-close paths flip
-  // this before clearing selectedEdgeId; the restore effect consumes and
-  // resets it.
-  const suppressEdgeFocusRestoreRef = useRef(false);
 
   function toggleDomain(id: MdoDomainId) {
     setActive((prev) => {
@@ -253,12 +245,6 @@ export function MDOScene() {
       setAnnouncement(`${MDO_DOMAINS[id].label}: ${wasOn ? 'כבוי' : 'פעיל'}`);
       return next;
     });
-  }
-  function selectEdge(id: string) {
-    setSelectedEdgeId((prev) => (prev === id ? null : id));
-  }
-  function closeCard() {
-    setSelectedEdgeId(null);
   }
   // Capped at 2 selected objects at a time (spec: "לא ניתן לבחור יותר
   // מ-2 אובייקטים") — a third click on a not-yet-selected object swaps out
@@ -281,18 +267,6 @@ export function MDOScene() {
       return next;
     });
   }
-
-  // A selected line's own explanation closes automatically the moment
-  // either of its two domains is switched off — never left open pointing at
-  // a connection that can no longer be drawn.
-  useEffect(() => {
-    if (!selectedEdgeId) return;
-    const edge = MDO_EDGES.find((e) => e.id === selectedEdgeId);
-    if (edge && (!active.has(edge.a) || !active.has(edge.b))) {
-      suppressEdgeFocusRestoreRef.current = true;
-      setSelectedEdgeId(null);
-    }
-  }, [active, selectedEdgeId]);
 
   // Turning a domain off also drops it out of the multi-select (spec:
   // "כיבוי ממד מסיר אותו גם מהבחירה") — never the reverse; selecting an
@@ -354,14 +328,10 @@ export function MDOScene() {
           <MDOControlColumn active={active} motionOk={motionOk} onToggle={toggleDomain} />
           <MDOGroundScene
             active={active}
-            selectedEdgeId={selectedEdgeId}
             selectedObjects={selectedObjects}
             motionOk={motionOk}
-            onSelectEdge={selectEdge}
             onToggleObject={toggleObjectSelection}
-            onCloseCard={closeCard}
             onClearSelection={() => setSelectedObjects(new Set())}
-            suppressFocusRestoreRef={suppressEdgeFocusRestoreRef}
           />
         </div>
       </div>
@@ -481,7 +451,6 @@ const CARD_OBSTACLE = { point: [257, 818] as [number, number], radius: 300 };
 const LINE_WIDTH_CORE = 2.75;
 const LINE_WIDTH_CORE_EMPHASIS = 3.75;
 const LINE_WIDTH_HALO = 8;
-const LINE_HIT_WIDTH = 20; // 16–24 CSS px transparent hit ribbon, per brief
 
 /** Per-domain idle motion — a small, continuous "alive" loop applied to a
     domain's own object image whenever it's active, on-screen, motion is
@@ -532,37 +501,28 @@ const HOVER_SCALE = 1.025;
 const HOVER_GLOW = 'drop-shadow(0 0 10px rgba(217,126,43,0.55))';
 
 /**
- * MDOGroundScene — the ground-level scene: a clean background photo (with
- * an optional looping environment video layer) and one independent object
- * layer per domain (each carrying its own baked-in contact shadow/dust/
- * wake), an orange SVG layer of the domain-pair connections — the lines
- * themselves ARE the connection interface, clickable along their whole
- * length — and one shared floating explanation card. Every domain/edge
- * layer stays mounted and is driven by an animated opacity/pathLength
- * target instead of conditional unmounting, so rapid toggling during an
- * in-flight transition reverses smoothly instead of leaving duplicates or
- * snapping.
+ * MDOGroundScene — the ground-level scene: a clean background photo, one
+ * independent object layer per domain (each carrying its own baked-in
+ * contact shadow/dust/wake), and a decorative orange SVG layer of the
+ * domain-pair connections (purely visual — not clickable; comparing two
+ * domains happens by clicking the objects themselves, see
+ * MDOSelectionPopup). Every domain/edge layer stays mounted and is driven
+ * by an animated opacity/pathLength target instead of conditional
+ * unmounting, so rapid toggling during an in-flight transition reverses
+ * smoothly instead of leaving duplicates or snapping.
  */
 function MDOGroundScene({
   active,
-  selectedEdgeId,
   selectedObjects,
   motionOk,
-  onSelectEdge,
   onToggleObject,
-  onCloseCard,
   onClearSelection,
-  suppressFocusRestoreRef,
 }: {
   active: Set<MdoDomainId>;
-  selectedEdgeId: string | null;
   selectedObjects: Set<MdoDomainId>;
   motionOk: boolean;
-  onSelectEdge: (id: string) => void;
   onToggleObject: (id: MdoDomainId) => void;
-  onCloseCard: () => void;
   onClearSelection: () => void;
-  suppressFocusRestoreRef: React.MutableRefObject<boolean>;
 }) {
   const centroid = useMemo<[number, number]>(() => {
     const n = DOMAIN_VISUALS.length;
@@ -586,7 +546,7 @@ function MDOGroundScene({
           CARD_OBSTACLE,
         ];
         const control = edgeControl(aAnchor, bAnchor, centroid, avoid);
-        return { edge, a, b, d: edgePath(aAnchor, bAnchor, control), mid: quadPoint(aAnchor, control, bAnchor, 0.5) };
+        return { edge, d: edgePath(aAnchor, bAnchor, control) };
       }),
     [active, centroid, selectedObjects],
   );
@@ -605,9 +565,6 @@ function MDOGroundScene({
 
   const motionEnabled = inView && !reduceMotion;
 
-  const selectedEdge = selectedEdgeId ? edges.find((e) => e.edge.id === selectedEdgeId) ?? null : null;
-  const [focusedEdgeId, setFocusedEdgeId] = useState<string | null>(null);
-
   // Hover/keyboard-focus emphasis on an active object — independent of
   // click-to-select (`selectedObjects`) and purely additive visual feedback
   // (see HOVER_SCALE/HOVER_GLOW). Cleared if the hovered domain is switched
@@ -617,20 +574,6 @@ function MDOGroundScene({
   useEffect(() => {
     if (hoveredId && !active.has(hoveredId)) setHoveredId(null);
   }, [active, hoveredId]);
-
-  const closeBtnRestoreRef = useRef<HTMLButtonElement | null>(null);
-  const edgePathRefs = useRef<Record<string, SVGPathElement | null>>({});
-  const prevSelectedRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (selectedEdgeId === null && prevSelectedRef.current) {
-      if (suppressFocusRestoreRef.current) {
-        suppressFocusRestoreRef.current = false;
-      } else {
-        edgePathRefs.current[prevSelectedRef.current]?.focus();
-      }
-    }
-    prevSelectedRef.current = selectedEdgeId;
-  }, [selectedEdgeId, suppressFocusRestoreRef]);
 
   const air = byId('air');
   const airOn = active.has('air');
@@ -753,12 +696,11 @@ function MDOGroundScene({
         );
       })}
 
-      {/* This SVG is NOT aria-hidden as a whole — it hosts the real,
-          focusable edge hit-paths at the bottom. Every purely decorative
-          element inside (contrail, the visible line pair, marker rings) is
-          individually aria-hidden instead: aria-hidden on the root would
-          have hidden its interactive descendants too, tabIndex and all. */}
+      {/* Purely decorative — no interactive/focusable descendants (the
+          connection lines are visual only, not clickable), so the whole
+          layer is aria-hidden. */}
       <svg
+        aria-hidden="true"
         viewBox={`0 0 ${FIELD_W} ${FIELD_H}`}
         preserveAspectRatio="xMidYMid meet"
         className="pointer-events-none absolute inset-0 size-full"
@@ -806,24 +748,15 @@ function MDOGroundScene({
         />
 
         {/* Connections — an edge shows iff BOTH its own endpoints are
-            active (never an aggregate/threshold rule); the line itself is
-            the only visible affordance (no midpoint label, no separate
-            list). Selected/focused edges get a visibly thicker core, never
-            a color change. Always mounted so pathLength can animate a real
-            retract/redraw, not just fade. */}
-        {edges.map(({ edge, d, mid }) => {
+            active (never an aggregate/threshold rule). Purely decorative
+            (not clickable, per the user's own request) — the only way to
+            emphasize one is via the object multi-select (clicking the two
+            domains themselves), never the line. Always mounted so
+            pathLength can animate a real retract/redraw, not just fade. */}
+        {edges.map(({ edge, d }) => {
           const bothActive = active.has(edge.a) && active.has(edge.b);
-          const isSelected = edge.id === selectedEdgeId;
-          const isFocused = edge.id === focusedEdgeId;
-          const touchesSelected = selectedEdgeId != null && !!selectedEdge && (
-            edge.id === selectedEdgeId
-            || edge.a === selectedEdge.edge.a || edge.a === selectedEdge.edge.b
-            || edge.b === selectedEdge.edge.a || edge.b === selectedEdge.edge.b
-          );
-          const dimmedBySelection = selectedEdgeId != null && !touchesSelected;
-          const inObjectSelection = selectedObjects.has(edge.a) && selectedObjects.has(edge.b);
-          const emphasize = isSelected || isFocused || inObjectSelection;
-          const targetOpacity = bothActive ? (dimmedBySelection ? 0.32 : 1) : 0;
+          const emphasize = selectedObjects.has(edge.a) && selectedObjects.has(edge.b);
+          const targetOpacity = bothActive ? 1 : 0;
           return (
             <g key={edge.id} aria-hidden="true">
               <motion.path
@@ -853,7 +786,7 @@ function MDOGroundScene({
                   ? { pathLength: { duration: motionOk ? 0.22 : 0, delay: motionOk ? 0.09 : 0 }, opacity: { duration: motionOk ? 0.3 : 0, delay: motionOk ? 0.09 : 0 } }
                   : { pathLength: { duration: motionOk ? 0.2 : 0 }, opacity: { duration: motionOk ? 0.18 : 0 } }}
               />
-              {motionEnabled && bothActive && !dimmedBySelection && (
+              {motionEnabled && bothActive && (
                 <circle r="3.5" fill="#D97E2B" opacity="0.85">
                   <animateMotion dur="4.2s" repeatCount="indefinite" path={d} />
                 </circle>
@@ -910,61 +843,14 @@ function MDOGroundScene({
           </g>
         )}
 
-        {/* Real, accessible controls — ONE per connection (no duplicate Tab
-            stop): a wide transparent hit-path running the line's FULL
-            length via pointer-events:stroke, not just its midpoint, so any
-            third of the curve is clickable. Keyboard-operable directly (SVG
-            path, tabIndex + Enter/Space), with a visible focus emphasis on
-            the line itself above rather than a box-shadow ring (SVG paths
-            can't carry one). */}
-        {edges.map(({ edge, a, b, d }) => {
-          const bothActive = active.has(edge.a) && active.has(edge.b);
-          return (
-            <path
-              key={'hit-' + edge.id}
-              ref={(el) => { edgePathRefs.current[edge.id] = el; }}
-              d={d}
-              fill="none"
-              stroke="transparent"
-              strokeWidth={LINE_HIT_WIDTH}
-              tabIndex={bothActive ? 0 : -1}
-              role="button"
-              aria-expanded={selectedEdgeId === edge.id}
-              aria-controls={selectedEdgeId === edge.id ? 'mdo-edge-card' : undefined}
-              aria-label={`קשר בין ${a.label} ל${b.label}: ${edge.label}. הצגת הסבר`}
-              style={{ pointerEvents: bothActive ? 'stroke' : 'none', cursor: bothActive ? 'pointer' : undefined, outline: 'none' }}
-              onClick={() => bothActive && onSelectEdge(edge.id)}
-              onKeyDown={(e) => {
-                if (!bothActive) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelectEdge(edge.id);
-                }
-              }}
-              onFocus={() => setFocusedEdgeId(edge.id)}
-              onBlur={() => setFocusedEdgeId((f) => (f === edge.id ? null : f))}
-            />
-          );
-        })}
       </svg>
 
-      {/* One shared bottom-left popup slot: an edge click takes priority
-          (it's the more specific, momentary action); otherwise, as long as
-          1–2 objects are selected in the image, the same slot shows their
-          comparison text — never both at once. */}
-      {selectedEdge ? (
-        <MDOEdgeCard
-          edge={selectedEdge.edge}
-          aLabel={selectedEdge.a.label}
-          bLabel={selectedEdge.b.label}
-          motionOk={motionOk}
-          onClose={onCloseCard}
-          onRequestFocusBack={() => edgePathRefs.current[selectedEdge.edge.id]?.focus()}
-          closeBtnRef={closeBtnRestoreRef}
-        />
-      ) : selectedObjects.size > 0 ? (
+      {/* Bottom-left popup slot: shows the 1–2 selected objects' comparison
+          text (click-to-select on the objects themselves — the connection
+          lines are decorative only, not a separate click target). */}
+      {selectedObjects.size > 0 && (
         <MDOSelectionPopup selected={selectedObjects} motionOk={motionOk} onClose={onClearSelection} />
-      ) : null}
+      )}
     </div>
   );
 }
@@ -1050,94 +936,9 @@ function MDOSceneBackdrop() {
   );
 }
 
-/** The one shared explanation card for a domain PAIR. Selecting, switching
-    or closing it never touches `active` — only its own close button (or a
-    domain going off underneath it) can close it. */
-function MDOEdgeCard({
-  edge,
-  aLabel,
-  bLabel,
-  motionOk,
-  onClose,
-  onRequestFocusBack,
-  closeBtnRef,
-}: {
-  edge: MdoEdge;
-  aLabel: string;
-  bLabel: string;
-  motionOk: boolean;
-  onClose: () => void;
-  onRequestFocusBack: () => void;
-  closeBtnRef: React.MutableRefObject<HTMLButtonElement | null>;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    containerRef.current?.focus({ preventScroll: true });
-  }, [edge.id]);
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      onClose();
-      return;
-    }
-    if (e.key === 'Tab' && e.shiftKey && (e.target === containerRef.current || e.target === closeBtnRef.current)) {
-      e.preventDefault();
-      onRequestFocusBack();
-    }
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      id="mdo-edge-card"
-      role="region"
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
-      aria-label={`הסבר על הקשר בין ${aLabel} ל${bLabel}`}
-      // Physical bottom-left corner (approved position) — a patch of the
-      // composition kept clear of every domain's own footprint (the
-      // downsized vehicle sits center-right of the road, the ship stays in
-      // the left THIRD but higher up, near the horizon) so opening it never
-      // covers an active tool.
-      style={{ insetInlineEnd: '1rem', insetBlockEnd: '1rem', width: 'min(320px, 44%)' }}
-      className={cn(
-        'absolute z-10 rounded-2xl border border-border bg-bg-elevated/95 p-4 shadow-elevated backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-        flipTransition(motionOk),
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="font-display text-base font-bold leading-tight text-black">{edge.label}</div>
-          <div className="text-xs font-medium text-fg-muted">כך הם יכולים לתרום זה לזה</div>
-        </div>
-        <button
-          ref={closeBtnRef}
-          type="button"
-          onClick={onClose}
-          aria-label="סגירת ההסבר"
-          className="shrink-0 rounded-full p-1 text-fg-dim transition-colors hover:bg-bg-accent hover:text-fg focus-visible:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <Icon name="x" size={16} />
-        </button>
-      </div>
-      <div className="mt-3 space-y-2 text-sm leading-relaxed">
-        <p>
-          <span className="font-display font-bold text-fg">תרומת {aLabel} ל{bLabel}: </span>
-          <span className="text-fg-muted">{edge.aToB}</span>
-        </p>
-        <p>
-          <span className="font-display font-bold text-fg">תרומת {bLabel} ל{aLabel}: </span>
-          <span className="text-fg-muted">{edge.bToA}</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/** The same bottom-left popup slot as MDOEdgeCard, showing the 1–2 selected
-    objects' own comparison text instead of an edge's. Never rendered at the
-    same time as MDOEdgeCard — the caller picks one or the other. */
+/** The bottom-left popup slot, showing the 1–2 selected objects' own
+    comparison text. Selecting is via clicking the objects themselves
+    (`onToggleObject`) — the connection lines are decorative only. */
 function MDOSelectionPopup({
   selected,
   motionOk,
