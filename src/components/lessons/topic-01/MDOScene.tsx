@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
@@ -116,6 +116,130 @@ const DOMAIN_VISUALS: DomainVisual[] = [
 
 const SPACE_SRC = `${ASSET_BASE}/mdo-space-medallion.png`;
 
+// AI-generated per-object video loops (sea/land only — see below for why
+// air isn't one of them; cyber's mast stays a still image with a
+// signal-pulse ring per the motion-kit brief, space is an illustrative
+// medallion, not real footage). These clips have NO alpha channel (plain
+// H.264/mp4) — the generator was prompted for a plain near-black
+// background instead, keyed to transparent at runtime by
+// DomainObjectLayer's canvas loop below. Falls back to the static PNG via
+// onError/videoReady gating, same pattern as MDOSceneBackdrop's video.
+//
+// `air` was generated and keyed the same way but dropped after review: the
+// model rendered the jet banking/climbing instead of the level side-on
+// pose the prompt asked for (reads as unrealistic next to the flat,
+// hand-cut PNGs everywhere else), and because OBJECT_VIDEO_FRAME below can
+// only crop a FIXED rectangle, the plane's own in-clip motion carried it
+// outside that crop before the loop finished, clipping it mid-loop. Both
+// are the video content's own fault, not something the crop or playback
+// rate could fix, so the jet stays a static PNG with only the gentle
+// DOMAIN_IDLE_MOTION bob below — same as before this video experiment.
+const OBJECT_VIDEO_SRC: Partial<Record<MdoDomainId, string>> = {
+  sea: `${ASSET_BASE}/mdo-sea-object-loop.mp4`,
+  land: `${ASSET_BASE}/mdo-land-object-loop.mp4`,
+};
+
+// Each clip's own visible-subject box, as a 0–1 fraction of the clip's
+// FULL frame — the generator renders the subject small and off-center
+// inside a much larger plain background (unlike the tightly-cropped
+// static PNGs), so the raw frame can't be dropped into the domain's
+// existing `box` as-is. Eyeballed from one extracted preview frame per
+// clip (there's no alpha channel to scan the way the land PNG's bbox
+// was measured — see its own DOMAIN_VISUALS comment) and used to crop the
+// video onto the SAME box/anchor calibration the PNG already uses, rather
+// than re-deriving new position math just for video.
+//
+// Deliberately generous margins, NOT a tight bounding box: this rectangle
+// is measured from a single still frame, but the subject itself moves
+// within the clip (suspension bounce shifts the whole vehicle, wheels
+// extend further at points in their rotation than they appeared at the
+// sampled instant) — a tight crop clips those extremes mid-loop (this bit
+// `land`'s front wheels in review). Better to show a bit more empty
+// margin around the subject than to slice a moving part off at the crop
+// boundary.
+const OBJECT_VIDEO_FRAME: Partial<Record<MdoDomainId, { xStart: number; xEnd: number; yStart: number; yEnd: number }>> = {
+  sea: { xStart: 0.06, xEnd: 0.94, yStart: 0.16, yEnd: 0.92 },
+  land: { xStart: 0.01, xEnd: 0.99, yStart: 0, yEnd: 1 },
+};
+
+// The generated clips' own baked motion read as too lively/fast at native
+// speed — even at first-pass half speed it still read as exaggerated per
+// direct user feedback, so this is slowed further rather than
+// re-generating; applied as the <video>'s own playbackRate in
+// DomainObjectLayer.
+const OBJECT_VIDEO_PLAYBACK_RATE = 0.35;
+
+// Soft luma-key thresholds (0–255, on max(r,g,b) per pixel): at/under LOW
+// is fully transparent, at/over HIGH is fully opaque, ramped in between so
+// the keyed edge doesn't look like a hard cutout. The clips were generated
+// against a near-black plain background specifically so a simple luma key
+// (no green/blue-screen tooling available here) can pull it back out.
+const VIDEO_KEY_LOW = 16;
+const VIDEO_KEY_HIGH = 52;
+
+// The draw+key step below is a real per-pixel JS loop plus a
+// getImageData/putImageData round trip (canvas readback) — CPU work, not
+// GPU-composited. Up to three of these can run at once (land/air/sea all
+// active by default), so it's throttled to this cadence instead of every
+// rAF tick (~60fps): the source video itself has no motion fast enough to
+// need more than this to read as smooth, and it cuts the CPU cost by
+// more than half. `requestAnimationFrame` is still scheduled every tick
+// (cheap) so the throttle self-corrects to actual elapsed time rather than
+// drifting, but the expensive body only runs once the interval has passed.
+const VIDEO_KEY_FRAME_INTERVAL_MS = 1000 / 24;
+
+/** Runs a draw+key loop (throttled to VIDEO_KEY_FRAME_INTERVAL_MS, see
+    above) while `enabled`: crops the video's own `frame` region onto the
+    canvas, then keys near-black pixels to transparent in place (see
+    VIDEO_KEY_LOW/HIGH above). Stops the rAF loop (and leaves the canvas as
+    last drawn) whenever disabled — caller is responsible for hiding the
+    canvas (opacity) in that case. */
+function useLumaKeyVideoCanvas(
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  frame: { xStart: number; xEnd: number; yStart: number; yEnd: number } | undefined,
+  enabled: boolean,
+) {
+  useEffect(() => {
+    if (!enabled || !frame) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    let rafId = 0;
+    let lastDrawTime = 0;
+    const draw = (time: number) => {
+      rafId = requestAnimationFrame(draw);
+      if (time - lastDrawTime < VIDEO_KEY_FRAME_INTERVAL_MS) return;
+      lastDrawTime = time;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (vw && vh) {
+        const sx = frame.xStart * vw;
+        const sy = frame.yStart * vh;
+        const sw = (frame.xEnd - frame.xStart) * vw;
+        const sh = (frame.yEnd - frame.yStart) * vh;
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        const shot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const px = shot.data;
+        for (let i = 0; i < px.length; i += 4) {
+          const bright = Math.max(px[i], px[i + 1], px[i + 2]);
+          px[i + 3] =
+            bright <= VIDEO_KEY_LOW
+              ? 0
+              : bright >= VIDEO_KEY_HIGH
+                ? 255
+                : Math.round(((bright - VIDEO_KEY_LOW) / (VIDEO_KEY_HIGH - VIDEO_KEY_LOW)) * 255);
+        }
+        ctx.putImageData(shot, 0, 0);
+      }
+    };
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
+  }, [videoRef, canvasRef, frame, enabled]);
+}
+
 /** The visible-pixel bounding box of each domain's object, as a 0–1
     fraction of that domain's OWN `box` above (same uniform scale, so these
     fractions apply directly to box.x/y/width/height) — used to tighten the
@@ -186,15 +310,14 @@ function flipTransition(motionOk: boolean) {
     2026-09-21 layout brief — never repeats the connection-pair NAMES the
     lines themselves already show (that's the one line this revision drops;
     every other composed sentence is untouched). */
-function composeSummary(active: Set<MdoDomainId>): { badge: string; lines: string[] } {
+function composeSummary(active: Set<MdoDomainId>): { lines: string[] } {
   const n = active.size;
-  const badge = `${n}/5 ממדים פעילים`;
 
-  if (n === 5) return { badge, lines: [MDO_COUNT_INTROS['5']] };
-  if (n === 0) return { badge, lines: [MDO_COUNT_INTROS['0']] };
+  if (n === 5) return { lines: [MDO_COUNT_INTROS['5']] };
+  if (n === 0) return { lines: [MDO_COUNT_INTROS['0']] };
   if (n === 4) {
     const missingId = MDO_DOMAIN_ORDER.find((id) => !active.has(id))!;
-    return { badge, lines: [MDO_COUNT_INTROS['4'], MDO_FOUR_ACTIVE_BY_MISSING[missingId]] };
+    return { lines: [MDO_COUNT_INTROS['4'], MDO_FOUR_ACTIVE_BY_MISSING[missingId]] };
   }
 
   const activeIds = MDO_DOMAIN_ORDER.filter((id) => active.has(id));
@@ -205,54 +328,32 @@ function composeSummary(active: Set<MdoDomainId>): { badge: string; lines: strin
     : `מה עדיין אפשר לשלב: ${activeIds.map((id) => `${MDO_DOMAINS[id].label} — ${MDO_DOMAINS[id].contribution}`).join('; ')}.`;
   const missing = `מה עדיין לא זמין: ${inactiveIds.map((id) => MDO_DOMAINS[id].missing).join('. ')}.`;
 
-  return { badge, lines: [MDO_COUNT_INTROS[String(n) as '1' | '2' | '3'], stillPossible, missing] };
+  return { lines: [MDO_COUNT_INTROS[String(n) as '1' | '2' | '3'], stillPossible, missing] };
 }
 
-/** The right column's own selection-explainer content — composed ONLY from
-    existing MDO_DOMAINS/MDO_EDGES fields (contribution / label / aToB /
-    bToA), reusing the exact connective phrasing composeSummary() and
-    MDOEdgeCard already use elsewhere in this file, never a new sentence
-    describing a capability the data doesn't state. Independent of
-    composeSummary(): this reads the object multi-select, not the on/off
-    toggles. */
+/** The selection popup's own content — composed ONLY from existing
+    MDO_DOMAINS/MDO_EDGES fields (contribution / label / aToB / bToA),
+    reusing the exact connective phrasing composeSummary() and MDOEdgeCard
+    already use elsewhere in this file, never a new sentence describing a
+    capability the data doesn't state. Independent of composeSummary(): this
+    reads the object multi-select (capped at 2 — see toggleObjectSelection),
+    not the on/off toggles. Only called once ≥1 object is selected — the
+    popup itself isn't rendered otherwise. */
 function composeSelectionExplainer(selected: Set<MdoDomainId>): { heading: string; lines: string[] } {
   const ids = MDO_DOMAIN_ORDER.filter((id) => selected.has(id));
-
-  if (ids.length === 0) {
-    return {
-      heading: 'השוואת ממדים',
-      lines: ['לחצו על אובייקט פעיל בתמונה כדי לבחור אותו ולהשוות בין ממדים.'],
-    };
-  }
 
   if (ids.length === 1) {
     const d = MDO_DOMAINS[ids[0]];
     return { heading: d.label, lines: [`מה הממד תורם: ${d.contribution}.`] };
   }
 
-  if (ids.length === 2) {
-    const edge = MDO_EDGES.find((e) => (e.a === ids[0] && e.b === ids[1]) || (e.a === ids[1] && e.b === ids[0]));
-    if (!edge) return { heading: `${MDO_DOMAINS[ids[0]].label} + ${MDO_DOMAINS[ids[1]].label}`, lines: [] };
-    const aLabel = MDO_DOMAINS[edge.a].label;
-    const bLabel = MDO_DOMAINS[edge.b].label;
-    return {
-      heading: edge.label,
-      lines: [`תרומת ${aLabel} ל${bLabel}: ${edge.aToB}`, `תרומת ${bLabel} ל${aLabel}: ${edge.bToA}`],
-    };
-  }
-
-  // 3+ selected: compose each selected domain's own contribution plus the
-  // labels of every edge whose BOTH ends are in the selection — the set of
-  // relevant connections grows as more objects are added (spec's own
-  // example: חלל+ים vs חלל+ים+סייבר), without repeating full aToB/bToA
-  // prose for every pair (would overflow the 190px column at 4-5 picks).
-  const contributions = ids.map((id) => `${MDO_DOMAINS[id].label} — ${MDO_DOMAINS[id].contribution}`).join('; ');
-  const pairLabels = MDO_EDGES.filter((e) => selected.has(e.a) && selected.has(e.b)).map(
-    (e) => `${MDO_DOMAINS[e.a].label}–${MDO_DOMAINS[e.b].label}: ${e.label}`,
-  );
+  const edge = MDO_EDGES.find((e) => (e.a === ids[0] && e.b === ids[1]) || (e.a === ids[1] && e.b === ids[0]));
+  if (!edge) return { heading: `${MDO_DOMAINS[ids[0]].label} + ${MDO_DOMAINS[ids[1]].label}`, lines: [] };
+  const aLabel = MDO_DOMAINS[edge.a].label;
+  const bLabel = MDO_DOMAINS[edge.b].label;
   return {
-    heading: ids.map((id) => MDO_DOMAINS[id].label).join(' + '),
-    lines: [`מה כל ממד תורם: ${contributions}.`, ...(pairLabels.length ? [`קשרים ביניהם: ${pairLabels.join(', ')}.`] : [])],
+    heading: edge.label,
+    lines: [`תרומת ${aLabel} ל${bLabel}: ${edge.aToB}`, `תרומת ${bLabel} ל${aLabel}: ${edge.bToA}`],
   };
 }
 
@@ -289,20 +390,26 @@ export function MDOScene() {
   function closeCard() {
     setSelectedEdgeId(null);
   }
+  // Capped at 2 selected objects at a time (spec: "לא ניתן לבחור יותר
+  // מ-2 אובייקטים") — a third click on a not-yet-selected object swaps out
+  // the OLDEST of the two current picks (FIFO) rather than no-op'ing, so
+  // there's always a live pair to compare; deselecting always works. `Set`
+  // iteration order is insertion order, and we only ever add/delete
+  // through this one function, so the first entry is reliably the oldest.
   function toggleObjectSelection(id: MdoDomainId) {
     setSelectedObjects((prev) => {
+      if (prev.has(id)) {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      }
+      if (prev.size < 2) return new Set(prev).add(id);
+      const [oldest] = prev;
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.delete(oldest);
+      next.add(id);
       return next;
     });
-  }
-  function resetAll() {
-    suppressEdgeFocusRestoreRef.current = true;
-    setActive(new Set(MDO_DOMAIN_ORDER));
-    setSelectedEdgeId(null);
-    setSelectedObjects(new Set());
-    setAnnouncement('כל הממדים חוברו מחדש');
   }
 
   // A selected line's own explanation closes automatically the moment
@@ -368,16 +475,13 @@ export function MDOScene() {
           below sharing the same background/border/radius/shadow — the
           control column must never read as its own floating card. */}
       <div className="surface-elevated overflow-hidden mt-12">
-        <div className="border-b border-border-strong p-4 sm:p-5">
-          <MDOSummary active={active} />
-        </div>
         {/* grid (not flex) so the 190px control column and the image column
             share one row and stretch to the SAME height by construction —
             the image's own 3:2 aspect-ratio sets the row's height (it's the
             taller of the two), and the column fills it via h-full below,
             never a ResizeObserver measuring one to force the other. */}
         <div className="grid grid-cols-[190px_1fr] items-stretch gap-4 p-4">
-          <MDOControlColumn active={active} selectedObjects={selectedObjects} motionOk={motionOk} onToggle={toggleDomain} onReset={resetAll} />
+          <MDOControlColumn active={active} motionOk={motionOk} onToggle={toggleDomain} />
           <MDOGroundScene
             active={active}
             selectedEdgeId={selectedEdgeId}
@@ -386,6 +490,7 @@ export function MDOScene() {
             onSelectEdge={selectEdge}
             onToggleObject={toggleObjectSelection}
             onCloseCard={closeCard}
+            onClearSelection={() => setSelectedObjects(new Set())}
             suppressFocusRestoreRef={suppressEdgeFocusRestoreRef}
           />
         </div>
@@ -508,6 +613,55 @@ const LINE_WIDTH_CORE_EMPHASIS = 3.75;
 const LINE_WIDTH_HALO = 8;
 const LINE_HIT_WIDTH = 20; // 16–24 CSS px transparent hit ribbon, per brief
 
+/** Per-domain idle motion — a small, continuous "alive" loop applied to a
+    domain's own object image whenever it's active, on-screen, motion is
+    allowed AND the object isn't multi-select-selected (see `idleOn` at each
+    call site). `y`/`rotate` are the loop's own OTHER end (framer's
+    `repeatType: 'mirror'` bounces between the element's rest value — 0 —
+    and this one), never the selection/hover `scale` channel, so idle
+    motion, the ~4% selected-scale and the hover bump can all animate on the
+    same element without fighting over one value. `space` and `cyber` are
+    deliberately absent: `space`'s idle treatment is a slow zoom on its own
+    INNER photo (see the `space` render block) so it doesn't collide with
+    the outer circle's selection scale; `cyber`'s is a decorative
+    signal-pulse ring next to the mast, not a transform on the mast image
+    itself (the mast staying physically still is the point — see the pulse
+    rings inside the svg below).
+
+    Idle motion is suspended (not just left running underneath) while
+    selected: selection applies `mdoSelectionOutline`, an SVG reference
+    filter built from `feMorphology` (alpha-channel dilate) — unlike native
+    CSS filter functions (`drop-shadow()`, `blur()`), reference filters
+    aren't treated as a cacheable compositor texture Chromium can just
+    translate/rotate, so pairing one with a continuously-animating transform
+    forces a full filter re-rasterization on every single animation frame
+    for as long as the object stays selected. Measured via a CDP raster
+    trace: selecting an idle-animated domain (land) cost ~50% more
+    `RasterTask` time over the same window than selecting a static one
+    (cyber) with the identical filter — and with two idle-animated domains
+    selected at once (the multi-select's own max), that compounds further.
+    Freezing the loop's `y`/`rotate` back to rest the moment an object is
+    selected removes the continuously-changing transform, so the filter
+    only needs to rasterize once instead of every frame. */
+// Deliberately subtle across the board — an earlier, livelier pass (bigger
+// y/rotate, shorter duration) read as exaggerated/distracting per direct
+// user feedback, on both this CSS loop and the object videos' own
+// playback speed (see OBJECT_VIDEO_PLAYBACK_RATE). A slow, barely-there
+// drift is the target: something you'd only consciously notice if you
+// stared at one object for a few seconds, not motion that draws the eye.
+const DOMAIN_IDLE_MOTION: Partial<Record<MdoDomainId, { y: number; rotate: number; duration: number }>> = {
+  air: { y: -1.5, rotate: 0.35, duration: 6.5 },
+  sea: { y: -1, rotate: 0.3, duration: 7 },
+  land: { y: -1, rotate: 0.3, duration: 4.5 },
+};
+
+// Extra scale multiplier + glow while a pointer/keyboard focus hovers an
+// active object — layered ON TOP of (never instead of) the idle loop and
+// the selected-state scale, per the user's own instruction to add hover as
+// an addition to the existing animation rather than a replacement.
+const HOVER_SCALE = 1.025;
+const HOVER_GLOW = 'drop-shadow(0 0 10px rgba(217,126,43,0.55))';
+
 /**
  * MDOGroundScene — the ground-level scene: a clean background photo (with
  * an optional looping environment video layer) and one independent object
@@ -528,6 +682,7 @@ function MDOGroundScene({
   onSelectEdge,
   onToggleObject,
   onCloseCard,
+  onClearSelection,
   suppressFocusRestoreRef,
 }: {
   active: Set<MdoDomainId>;
@@ -537,6 +692,7 @@ function MDOGroundScene({
   onSelectEdge: (id: string) => void;
   onToggleObject: (id: MdoDomainId) => void;
   onCloseCard: () => void;
+  onClearSelection: () => void;
   suppressFocusRestoreRef: React.MutableRefObject<boolean>;
 }) {
   const centroid = useMemo<[number, number]>(() => {
@@ -583,6 +739,16 @@ function MDOGroundScene({
   const selectedEdge = selectedEdgeId ? edges.find((e) => e.edge.id === selectedEdgeId) ?? null : null;
   const [focusedEdgeId, setFocusedEdgeId] = useState<string | null>(null);
 
+  // Hover/keyboard-focus emphasis on an active object — independent of
+  // click-to-select (`selectedObjects`) and purely additive visual feedback
+  // (see HOVER_SCALE/HOVER_GLOW). Cleared if the hovered domain is switched
+  // off underneath the pointer (its hit button unmounts, so no mouseleave
+  // would otherwise fire).
+  const [hoveredId, setHoveredId] = useState<MdoDomainId | null>(null);
+  useEffect(() => {
+    if (hoveredId && !active.has(hoveredId)) setHoveredId(null);
+  }, [active, hoveredId]);
+
   const closeBtnRestoreRef = useRef<HTMLButtonElement | null>(null);
   const edgePathRefs = useRef<Record<string, SVGPathElement | null>>({});
   const prevSelectedRef = useRef<string | null>(null);
@@ -609,37 +775,22 @@ function MDOGroundScene({
     <div ref={wrapRef} className="relative h-full w-full overflow-hidden rounded-2xl" style={{ aspectRatio: '3 / 2' }}>
       <MDOSceneBackdrop inView={inView} reduceMotion={!!reduceMotion} />
 
-      {/* Independent object layers — each domain's own transparent PNG,
-          with its own baked-in contact shadow/dust/wake. Always mounted;
-          only the animated opacity target changes, so a rapid off→on
-          re-toggle reverses the in-flight fade instead of restarting it. */}
-      {DOMAIN_VISUALS.filter((d) => !d.standalone).map((d) => {
-        const isSelected = selectedObjects.has(d.id);
-        return (
-          <motion.img
-            key={d.id}
-            src={d.src}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="pointer-events-none absolute"
-            style={{
-              left: pct(d.box.x, FIELD_W),
-              top: pct(d.box.y, FIELD_H),
-              width: pct(d.box.width, FIELD_W),
-              height: pct(d.box.height, FIELD_H),
-              // Bottom-center pivot = this object's own ground/water
-              // contact line (see domainPivot()) — scaling up never
-              // moves that point.
-              transformOrigin: '50% 100%',
-              filter: isSelected ? 'url(#mdoSelectionOutline)' : undefined,
-            }}
-            initial={false}
-            animate={{ opacity: active.has(d.id) ? 1 : 0, scale: isSelected ? SELECTED_SCALE : 1 }}
-            transition={{ duration: motionOk ? 0.3 : 0 }}
-          />
-        );
-      })}
+      {/* Independent object layers — each domain's own transparent PNG (a
+          few also have a real video loop, see DomainObjectLayer), with its
+          own baked-in contact shadow/dust/wake. Always mounted; only the
+          animated opacity target changes, so a rapid off→on re-toggle
+          reverses the in-flight fade instead of restarting it. */}
+      {DOMAIN_VISUALS.filter((d) => !d.standalone).map((d) => (
+        <DomainObjectLayer
+          key={d.id}
+          d={d}
+          isSelected={selectedObjects.has(d.id)}
+          isHovered={hoveredId === d.id}
+          isActive={active.has(d.id)}
+          motionOk={motionOk}
+          motionEnabled={motionEnabled}
+        />
+      ))}
 
       {/* Space — a genuinely separate circular inset (own image, material,
           lighting), never part of the shared scene's perspective. */}
@@ -653,16 +804,37 @@ function MDOGroundScene({
           border: '4px solid #FDFBF3',
           // `space` is a masked circle, not a raster silhouette (see
           // domainPivot()'s comment) — feMorphology has no alpha edge to
-          // trace here, so its "selected" outline is a second white ring
-          // outside the existing border instead of the filter used above.
-          boxShadow: selectedObjects.has('space') ? '0 0 0 3px #FDFBF3' : undefined,
+          // trace here, so its "selected"/hover emphasis is an outer ring
+          // instead of the filter used on the other domains above.
+          boxShadow: selectedObjects.has('space')
+            ? '0 0 0 3px #FDFBF3'
+            : hoveredId === 'space'
+              ? '0 0 0 3px rgba(217,126,43,0.5)'
+              : undefined,
           transformOrigin: '50% 50%',
         }}
         initial={false}
-        animate={{ opacity: active.has('space') ? 1 : 0, scale: selectedObjects.has('space') ? SELECTED_SCALE : 1 }}
-        transition={{ duration: motionOk ? 0.3 : 0 }}
+        animate={{
+          opacity: active.has('space') ? 1 : 0,
+          scale: (selectedObjects.has('space') ? SELECTED_SCALE : 1) * (hoveredId === 'space' ? HOVER_SCALE : 1),
+        }}
+        transition={{ opacity: { duration: motionOk ? 0.3 : 0 }, scale: { duration: motionOk ? 0.2 : 0 } }}
       >
-        <img src={SPACE_SRC} alt="" aria-hidden="true" draggable={false} className="size-full object-cover" />
+        {/* Idle motion here is a slow "live feed" breathing zoom on the
+            photo ITSELF, not the outer circle — the outer div's own scale
+            channel is already spoken for by selection/hover, so a second,
+            continuous scale loop on the inner image avoids fighting over
+            the same value (same reasoning as DOMAIN_IDLE_MOTION above). */}
+        <motion.img
+          src={SPACE_SRC}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="size-full object-cover"
+          initial={false}
+          animate={{ scale: motionEnabled && active.has('space') ? [1, 1.06, 1] : 1 }}
+          transition={{ duration: 6, repeat: motionEnabled && active.has('space') ? Infinity : 0, ease: 'easeInOut' }}
+        />
       </motion.div>
 
       {/* Multi-select hit targets — one per domain, transparent HTML
@@ -695,6 +867,10 @@ function MDOGroundScene({
             aria-pressed={isSelected}
             aria-label={`${isSelected ? 'ביטול בחירת' : 'בחירת'} ${d.label} להשוואה בין ממדים`}
             onClick={() => onToggleObject(d.id)}
+            onMouseEnter={() => setHoveredId(d.id)}
+            onMouseLeave={() => setHoveredId((h) => (h === d.id ? null : h))}
+            onFocus={() => setHoveredId(d.id)}
+            onBlur={() => setHoveredId((h) => (h === d.id ? null : h))}
             className="absolute rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             style={{
               left: pct(hitX, FIELD_W),
@@ -839,6 +1015,32 @@ function MDOGroundScene({
           );
         })}
 
+        {/* Cyber's own idle motion: a signal-pulse ring expanding/fading
+            from the mast's dish-cluster anchor, staggered into two waves so
+            one is always mid-pulse — the mast IMAGE itself stays physically
+            still (per DOMAIN_IDLE_MOTION's own note above); this is the
+            domain's "alive" cue instead. */}
+        {active.has('cyber') && motionEnabled && (
+          <g aria-hidden="true">
+            {[0, 1].map((i) => (
+              <motion.circle
+                key={'cyber-pulse-' + i}
+                cx={byId('cyber').anchor[0]}
+                cy={byId('cyber').anchor[1]}
+                r={9}
+                fill="none"
+                stroke="#D97E2B"
+                strokeWidth={2}
+                vectorEffect="non-scaling-stroke"
+                style={{ transformOrigin: `${byId('cyber').anchor[0]}px ${byId('cyber').anchor[1]}px` }}
+                initial={{ opacity: 0.55, scale: 0.6 }}
+                animate={{ opacity: 0, scale: 2.4 }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut', delay: i * 1.2 }}
+              />
+            ))}
+          </g>
+        )}
+
         {/* Real, accessible controls — ONE per connection (no duplicate Tab
             stop): a wide transparent hit-path running the line's FULL
             length via pointer-events:stroke, not just its midpoint, so any
@@ -877,7 +1079,11 @@ function MDOGroundScene({
         })}
       </svg>
 
-      {selectedEdge && (
+      {/* One shared bottom-left popup slot: an edge click takes priority
+          (it's the more specific, momentary action); otherwise, as long as
+          1–2 objects are selected in the image, the same slot shows their
+          comparison text — never both at once. */}
+      {selectedEdge ? (
         <MDOEdgeCard
           edge={selectedEdge.edge}
           aLabel={selectedEdge.a.label}
@@ -887,32 +1093,203 @@ function MDOGroundScene({
           onRequestFocusBack={() => edgePathRefs.current[selectedEdge.edge.id]?.focus()}
           closeBtnRef={closeBtnRestoreRef}
         />
-      )}
+      ) : selectedObjects.size > 0 ? (
+        <MDOSelectionPopup selected={selectedObjects} motionOk={motionOk} onClose={onClearSelection} />
+      ) : null}
     </div>
+  );
+}
+
+/** One domain's own object layer: the static transparent PNG, with a real
+    AI-generated video loop composited on top for the three domains that
+    have one (see OBJECT_VIDEO_SRC) — crossfaded in exactly like
+    MDOSceneBackdrop's environment video, never claiming motion that isn't
+    actually playing. The CSS idle bounce/rock (DOMAIN_IDLE_MOTION) only
+    runs while the video ISN'T showing (not loaded yet, failed, off-screen,
+    or reduced motion) — once the clip's own baked motion is visible, the
+    two never stack. Selection (~4%) and hover (~2.5%) scale, and the idle
+    y/rotate loop, all apply to the SAME wrapping element regardless of
+    which of the two (image or video) is currently visible inside it, so
+    the outline filter / hover glow / ground-contact pivot behave
+    identically to before this had a video option at all. */
+function DomainObjectLayer({
+  d,
+  isSelected,
+  isHovered,
+  isActive,
+  motionOk,
+  motionEnabled,
+}: {
+  d: DomainVisual;
+  isSelected: boolean;
+  isHovered: boolean;
+  isActive: boolean;
+  motionOk: boolean;
+  motionEnabled: boolean;
+}) {
+  const videoSrc = OBJECT_VIDEO_SRC[d.id];
+  const frame = OBJECT_VIDEO_FRAME[d.id];
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoUnavailable, setVideoUnavailable] = useState(false);
+  const showVideo = !!videoSrc && !!frame && motionEnabled && isActive && videoReady && !videoUnavailable;
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !videoSrc) return;
+    el.playbackRate = OBJECT_VIDEO_PLAYBACK_RATE;
+    if (motionEnabled && isActive) el.play().catch(() => {});
+    else el.pause();
+  }, [motionEnabled, isActive, videoSrc]);
+
+  useLumaKeyVideoCanvas(videoRef, canvasRef, frame, showVideo);
+
+  const idle = DOMAIN_IDLE_MOTION[d.id];
+  const idleOn = !!idle && motionEnabled && isActive && !isSelected && !showVideo;
+  const idleTransition = idleOn
+    ? { duration: idle!.duration, repeat: Infinity, repeatType: 'mirror' as const, ease: 'easeInOut' as const }
+    : { duration: motionOk ? 0.3 : 0 };
+
+  // Fixed backing resolution for the keying canvas — capped well below the
+  // field-px box size (a few hundred px is plenty for a foreground vehicle
+  // this size on screen) since getImageData/putImageData run every frame.
+  const canvasW = Math.max(1, Math.min(360, Math.round(d.box.width)));
+  const canvasH = Math.max(1, Math.round(canvasW * (d.box.height / d.box.width)));
+
+  return (
+    <motion.div
+      className="pointer-events-none absolute"
+      style={{
+        left: pct(d.box.x, FIELD_W),
+        top: pct(d.box.y, FIELD_H),
+        width: pct(d.box.width, FIELD_W),
+        height: pct(d.box.height, FIELD_H),
+        // Bottom-center pivot = this object's own ground/water contact
+        // line (see domainPivot()) — scaling up never moves that point.
+        transformOrigin: '50% 100%',
+        filter: isSelected ? 'url(#mdoSelectionOutline)' : isHovered ? HOVER_GLOW : undefined,
+      }}
+      initial={false}
+      animate={{
+        opacity: isActive ? 1 : 0,
+        // Selection (~4%) and hover (~2.5%) both scale the SAME element,
+        // so they compose multiplicatively instead of one silently
+        // overriding the other; the idle loop below never touches
+        // `scale`, only `y`/`rotate`, so it can't collide with either.
+        scale: (isSelected ? SELECTED_SCALE : 1) * (isHovered ? HOVER_SCALE : 1),
+        y: idleOn ? idle!.y : 0,
+        rotate: idleOn ? idle!.rotate : 0,
+      }}
+      transition={{
+        opacity: { duration: motionOk ? 0.3 : 0 },
+        scale: { duration: motionOk ? 0.2 : 0 },
+        y: idleTransition,
+        rotate: idleTransition,
+      }}
+    >
+      <img
+        src={d.src}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className={cn('size-full transition-opacity duration-300', showVideo && 'opacity-0')}
+      />
+      {videoSrc && frame && (
+        <>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption -- decorative object loop, no dialogue/audio track */}
+          <video
+            ref={videoRef}
+            src={videoSrc}
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            className="absolute inset-0 size-full opacity-0"
+            onLoadedMetadata={(e) => { e.currentTarget.playbackRate = OBJECT_VIDEO_PLAYBACK_RATE; }}
+            onCanPlayThrough={() => setVideoReady(true)}
+            onError={() => setVideoUnavailable(true)}
+          />
+          <canvas
+            ref={canvasRef}
+            width={canvasW}
+            height={canvasH}
+            aria-hidden="true"
+            className={cn('absolute inset-0 size-full transition-opacity duration-300', showVideo ? 'opacity-100' : 'opacity-0')}
+          />
+        </>
+      )}
+    </motion.div>
   );
 }
 
 /** The static photo, with an optional looping environment video composited
     on top (waves/vegetation/clouds only — a locked camera, no zoom or
-    lighting change, per the brief). The video has no audio and pauses
-    off-screen (reusing the same IntersectionObserver `inView` the
-    connection animations already gate on) or under reduced motion, where
-    only the static photo ever renders. If SCENE_VIDEO_SRC doesn't exist on
-    disk yet, onError silently falls back to the photo alone — this never
-    claims a video plays when none was actually produced. */
+    lighting change, per the brief). Pauses off-screen (reusing the same
+    IntersectionObserver `inView` the connection animations already gate
+    on) or under reduced motion, where only the static photo ever renders.
+    If SCENE_VIDEO_SRC doesn't exist on disk yet, onError silently falls
+    back to the photo alone — this never claims a video plays when none was
+    actually produced. No user-facing pause control (removed per request —
+    this is decorative environment motion, not content).
+
+    Loop strategy: the produced clip's own last frame doesn't match its
+    first (the surf is mid-wave at a different phase), so the native `loop`
+    attribute would visibly jump every cycle. Instead this plays forward
+    natively, then on `ended` scrubs `currentTime` back down to 0 by hand
+    (real elapsed time via rAF — `<video>` has no reliable cross-browser
+    reverse playback), then resumes forward. A forward→backward "boomerang"
+    always ends exactly where it started, so it reads as seamless
+    regardless of the source clip's own loop point. */
 function MDOSceneBackdrop({ inView, reduceMotion }: { inView: boolean; reduceMotion: boolean }) {
   const [videoUnavailable, setVideoUnavailable] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-  const [paused, setPaused] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const showVideo = !reduceMotion && !videoUnavailable && videoReady;
+
+  const directionRef = useRef<1 | -1>(1);
+  const rafIdRef = useRef<number | null>(null);
+  const lastTsRef = useRef<number | null>(null);
+
+  const stepReverse = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const now = performance.now();
+    const dt = (now - (lastTsRef.current ?? now)) / 1000;
+    lastTsRef.current = now;
+    const next = el.currentTime - dt;
+    if (next <= 0.02) {
+      el.currentTime = 0;
+      directionRef.current = 1;
+      lastTsRef.current = null;
+      el.play().catch(() => {});
+      return;
+    }
+    el.currentTime = next;
+    rafIdRef.current = requestAnimationFrame(stepReverse);
+  }, []);
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-    if (inView && !paused && !reduceMotion) el.play().catch(() => {});
-    else el.pause();
-  }, [inView, paused, reduceMotion]);
+    if (!inView || reduceMotion) {
+      el.pause();
+      if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+      return;
+    }
+    if (directionRef.current === 1) {
+      el.play().catch(() => {});
+    } else {
+      lastTsRef.current = null;
+      rafIdRef.current = requestAnimationFrame(stepReverse);
+    }
+    return () => {
+      if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    };
+  }, [inView, reduceMotion, stepReverse]);
 
   return (
     <>
@@ -930,30 +1307,34 @@ function MDOSceneBackdrop({ inView, reduceMotion }: { inView: boolean; reduceMot
         <video
           ref={videoRef}
           className={cn('pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-300', showVideo ? 'opacity-100' : 'opacity-0')}
+          style={{
+            // The produced clip renders at 16:9; this scene's coordinate
+            // system (FIELD_W×FIELD_H) and every domain object's hand-
+            // measured position are calibrated to the reference photo's
+            // native 3:2 framing. The clip's left edge (the sun flare)
+            // lines up closely with the photo's own left edge, while the
+            // extra width picked up when reflowing to 16:9 shows up as
+            // regenerated terrain past the photo's own right edge — so the
+            // crop is anchored physical-left (never a logical/RTL-mirrored
+            // position — this photo is never mirrored, per the project's
+            // own rule) instead of the default center crop, to keep the
+            // video's ground/hillside registered with the object layers
+            // rather than with the newly-invented terrain on the right.
+            objectPosition: 'left center',
+          }}
           src={SCENE_VIDEO_SRC}
           muted
-          loop
           playsInline
-          preload="metadata"
+          preload="auto"
           aria-hidden="true"
-          onCanPlay={() => setVideoReady(true)}
+          onEnded={() => {
+            directionRef.current = -1;
+            lastTsRef.current = null;
+            rafIdRef.current = requestAnimationFrame(stepReverse);
+          }}
+          onCanPlayThrough={() => setVideoReady(true)}
           onError={() => setVideoUnavailable(true)}
         />
-      )}
-      {showVideo && (
-        <button
-          type="button"
-          onClick={() => setPaused((p) => !p)}
-          aria-pressed={paused}
-          aria-label={paused ? 'הפעלת תנועת הרקע' : 'השהיית תנועת הרקע'}
-          className="absolute bottom-3 start-3 z-10 flex size-8 items-center justify-center rounded-full border border-border/70 bg-bg-elevated/90 text-fg shadow-elevated backdrop-blur-sm transition-colors hover:bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-        >
-          {paused ? (
-            <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width={14} height={14} fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
-          )}
-        </button>
       )}
     </>
   );
@@ -1044,6 +1425,95 @@ function MDOEdgeCard({
   );
 }
 
+/** The same bottom-left popup slot as MDOEdgeCard, showing the 1–2 selected
+    objects' own comparison text instead of an edge's. Never rendered at the
+    same time as MDOEdgeCard — the caller picks one or the other. */
+function MDOSelectionPopup({
+  selected,
+  motionOk,
+  onClose,
+}: {
+  selected: Set<MdoDomainId>;
+  motionOk: boolean;
+  onClose: () => void;
+}) {
+  const { heading, lines } = useMemo(() => composeSelectionExplainer(selected), [selected]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const idsKey = MDO_DOMAIN_ORDER.filter((id) => selected.has(id)).join('-');
+  useEffect(() => {
+    containerRef.current?.focus({ preventScroll: true });
+  }, [idsKey]);
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onClose();
+    }
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      id="mdo-selection-card"
+      role="region"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      aria-label="השוואת ממדים נבחרים"
+      style={{ insetInlineEnd: '1rem', insetBlockEnd: '1rem', width: 'min(320px, 44%)' }}
+      className={cn(
+        'absolute z-10 rounded-2xl border border-border bg-bg-elevated/95 p-4 shadow-elevated backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        flipTransition(motionOk),
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        {/* Keyed on the selected-domain identity (idsKey), not just a
+            static block — so switching which object(s) are selected while
+            the popup is already open visibly refreshes this heading
+            instead of silently swapping text a user might not notice
+            changed (spec: "תתעדכן כל פעם שמשתנה הבחירה"). */}
+        <div className="min-w-0 overflow-hidden">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={idsKey}
+              initial={motionOk ? { opacity: 0, y: 6 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              exit={motionOk ? { opacity: 0, y: -6 } : undefined}
+              transition={{ duration: motionOk ? 0.16 : 0 }}
+            >
+              <div className="font-display text-base font-bold leading-tight text-black">{heading}</div>
+              <div className="text-xs font-medium text-fg-muted">השוואת ממדים</div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="ביטול הבחירה"
+          className="shrink-0 rounded-full p-1 text-fg-dim transition-colors hover:bg-bg-accent hover:text-fg focus-visible:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Icon name="x" size={16} />
+        </button>
+      </div>
+      <div className="mt-3 overflow-hidden text-sm leading-relaxed">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={idsKey}
+            className="space-y-2"
+            initial={motionOk ? { opacity: 0, y: 6 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            exit={motionOk ? { opacity: 0, y: -6 } : undefined}
+            transition={{ duration: motionOk ? 0.16 : 0 }}
+          >
+            {lines.map((line, i) => (
+              <p key={i} className="text-fg-muted">{line}</p>
+            ))}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 /** A domain's own toggle row inside the fixed right-hand column — the ONLY
     control that changes `active`, and the only one that keeps working once
     the domain's object layer has faded out. */
@@ -1062,13 +1532,7 @@ function DomainToggleRow({
     <div className="flex items-center justify-between gap-2 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <Icon name={domain.icon} size={18} className={cn('shrink-0', isOn ? 'text-fg' : 'text-fg-dim', flipTransition(motionOk))} />
-        <span className="min-w-0 leading-tight">
-          <span className="block truncate font-display text-sm font-bold text-fg">{domain.label}</span>
-          {/* Always in the DOM (just invisible when on) so every row keeps
-              the SAME fixed height regardless of state — toggling never
-              reflows a sibling row or the reset button beneath it. */}
-          <span className={cn('block text-[11px] font-medium text-fg-muted', isOn && 'invisible')}>כבוי</span>
-        </span>
+        <span className="block min-w-0 truncate font-display text-sm font-bold text-fg">{domain.label}</span>
       </div>
       <button
         type="button"
@@ -1102,16 +1566,12 @@ function DomainToggleRow({
     to (driven by the image's own 3:2 box) without inflating each row. */
 function MDOControlColumn({
   active,
-  selectedObjects,
   motionOk,
   onToggle,
-  onReset,
 }: {
   active: Set<MdoDomainId>;
-  selectedObjects: Set<MdoDomainId>;
   motionOk: boolean;
   onToggle: (id: MdoDomainId) => void;
-  onReset: () => void;
 }) {
   return (
     <div className="flex h-full flex-col rounded-2xl bg-bg-accent/60 p-3">
@@ -1122,73 +1582,25 @@ function MDOControlColumn({
           </div>
         ))}
       </div>
-      <MDOSelectionExplainer selected={selectedObjects} />
-      <button
-        type="button"
-        onClick={onReset}
-        className="mt-3 shrink-0 flex items-center justify-center gap-1.5 rounded-xl border border-border bg-bg-elevated px-3 py-2 text-sm font-display font-bold text-fg transition-colors hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-      >
-        <Icon name="refresh" size={15} />
-        איפוס
-      </button>
+      <MDOSummary active={active} />
     </div>
   );
 }
 
-/** The right column's own middle region — its own bounded, internally
-    scrollable slot between the toggle rows and Reset, so the column's and
-    image's shared total height never changes regardless of how long the
-    composed explanation gets (spec: "הטור והתמונה נשארים באותו גובה").
-    Still the same bg-bg-accent/60 surface as the rest of the column — no
-    border/shadow/radius of its own, so it never reads as a detached card. */
-function MDOSelectionExplainer({ selected }: { selected: Set<MdoDomainId> }) {
-  const { heading, lines } = useMemo(() => composeSelectionExplainer(selected), [selected]);
+/** The composed summary sentences — sitting below the toggle rows in the
+    control column's own bounded, internally scrollable slot so the
+    column's and image's shared total height never changes regardless of
+    how long the composed text gets (spec: "הטור והתמונה נשארים באותו
+    גובה"). Still the same bg-bg-accent/60 surface as the rest of the
+    column — no border/shadow/radius of its own, so it never reads as a
+    detached card. */
+function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
+  const { lines } = useMemo(() => composeSummary(active), [active]);
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto border-t border-border-subtle pt-3">
-      <div className="font-display text-xs font-bold leading-tight text-fg">{heading}</div>
-      <div className="mt-1.5 space-y-1.5 text-[11px] leading-relaxed text-fg-muted">
+      <div className="space-y-1.5 text-[11px] leading-relaxed text-fg-muted">
         {lines.map((line, i) => <p key={i}>{line}</p>)}
-      </div>
-    </div>
-  );
-}
-
-// The most lines composeSummary() ever returns (its 1/2/3-active branches);
-// MDOSummary below always renders exactly this many <p> slots so the
-// summary's own height never depends on `active` — see that component.
-const SUMMARY_LINE_SLOTS = 3;
-
-/** The summary: badge + at most 2–3 composed sentences. No connection-name
-    listing and no chip list here any more — the lines themselves, clickable
-    along their whole length, are the only interface to a pair's
-    explanation. Position (top of the shared card) never changes with
-    scene state. */
-function MDOSummary({ active }: { active: Set<MdoDomainId> }) {
-  const { badge, lines } = useMemo(() => composeSummary(active), [active]);
-  // Padded to a constant slot count so this block's height stays fixed
-  // across every active-count state, per the design brief: no truncation,
-  // no font shrink, and the [control column | image] row below never gets
-  // pushed down when the composed text gets shorter or longer. Unused
-  // slots render a non-breaking space so their line-height is identical
-  // to a real line, just invisible (and hidden from assistive tech).
-  const paddedLines = [...lines, ...Array(Math.max(0, SUMMARY_LINE_SLOTS - lines.length)).fill(null)];
-
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="font-display text-sm font-bold text-fg">{badge}</span>
-        <span aria-hidden="true" className="flex gap-1.5">
-          {MDO_DOMAIN_ORDER.map((id) => (
-            <span key={id} className={cn('size-2 rounded-full', active.has(id) ? 'bg-accent' : 'bg-border')} />
-          ))}
-        </span>
-      </div>
-      <div className="mt-2 space-y-1.5 text-sm leading-relaxed text-fg-muted">
-        {paddedLines.map((line, i) => (
-          <p key={i} aria-hidden={line ? undefined : true} className={line ? undefined : 'invisible'}>
-            {line ?? ' '}
-          </p>
-        ))}
       </div>
     </div>
   );
