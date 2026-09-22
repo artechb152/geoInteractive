@@ -388,26 +388,13 @@ export function AsymmetricScene() {
         viewport={{ once: true }}
         className="surface-elevated p-5 sm:p-6 mt-12"
       >
-        <div className="grid sm:grid-cols-[1fr_auto] gap-6 items-center">
-          <div>
-            <h3 className="font-display font-bold text-xl md:text-2xl leading-tight text-balance text-black mb-3">
-              המסקנה: זורקים את ספר החוקים הישן לפח
-            </h3>
-            <span aria-hidden className="inline-block h-[3px] w-7 rounded-full bg-accent-hover mb-3" />
-            <p className="text-base md:text-lg text-black leading-relaxed text-pretty">
-              צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
-            </p>
-          </div>
-          <IsometricAsset
-            assetId="TOPIC01-ASYM-CLOSING"
-            src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-CLOSING.png"
-            alt="איור איזומטרי: חיילים וטנק ליד פח אשפה שספר חוקים ישן נזרק לתוכו, מול עיר עם מנהרות, כטב&quot;מ ועמדת ניטור"
-            aspect="1/1"
-            fit="contain"
-            className="rounded-lg w-[150px] sm:w-[180px] shrink-0 bg-bg-elevated"
-            prompt="An isometric papercut illustration of a simple layered-paper balance scale on a cream background (#FFFBF7), resting on a warm peach base (#FFDCB5). One arm holds a large sage-green paper block (#749C75) tipping down, the other arm holds one small paper dot rendered in orange (#EB9E48) staying level and steady. Flat paper-cut shading, minimal composition, generous empty cream space, no text, no people, no weapons."
-          />
-        </div>
+        <h3 className="font-display font-bold text-xl md:text-2xl leading-tight text-balance text-black mb-3">
+          המסקנה: זורקים את ספר החוקים הישן לפח
+        </h3>
+        <span aria-hidden className="inline-block h-[3px] w-7 rounded-full bg-accent-hover mb-3" />
+        <p className="text-base md:text-lg text-black leading-relaxed text-pretty">
+          צבא מסורתי התאמן במשך שנים להילחם "ראש בראש": חזית מול חזית, מדים מול מדים. אבל כשאתה נלחם בארגון גרילה שנעלם מתחת לאדמה — או ברשת טרור שתוקפת אזרחים בכל מקום בעולם — כל החוקים הישנים קורסים. כדי לנצח כאוס כזה, אי אפשר רק לשלוח עוד טנקים. הצבא הסדיר חייב לשנות דיסקט, להמציא טכנולוגיות חדשות, ולאסוף מודיעין מסוג אחר לגמרי. את הכלים האלה בדיוק נלמד בשיעורים הבאים.
+        </p>
       </motion.div>
     </section>
   );
@@ -1017,25 +1004,13 @@ function TacticMatchExercise() {
   return (
     <div className="mt-12">
       <div className="mb-5">
-        <div className="flex items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
-              חמש טקטיקות של השחקן הלא-סדיר
-            </h3>
-            <span aria-hidden className="mt-2 block h-1 w-10 rounded-full bg-accent" />
-            <p className="mt-2 text-base leading-relaxed text-fg-muted">
-              לפני שתראו את שם הטקטיקה — קראו כל "דיווח שטח" קצר וגררו (או הקישו עליו ואז על שם הטקטיקה) אותו למקום המתאים. אחרי ששיבצתם את כל החמישה, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל אחת.
-            </p>
-          </div>
-          <IsometricAsset
-            assetId="TOPIC01-ASYM-TACTICS"
-            src="/assets/lessons/topic01/scene-asymmetric/TOPIC01-ASYM-TACTICS.png"
-            alt="איור איזומטרי: משטח שטח בדמדומים עם עצים קטנים ורחפן קטן מרחף מעל"
-            aspect="16/9"
-            className="rounded-xl h-20 sm:h-28 w-auto shrink-0"
-            prompt="Isometric papercut illustration of a small layered terrain tile at dusk on a cream background (#FFFBF7): a warm peach ground platform (#FFDCB5), a few sage-green paper trees (#749C75), a winding paper dirt path, and one small abstract drone-like paper shape with a single orange (#EB9E48) accent light hovering above. No visible weapons, no people, flat paper-cut shading, small and simple composition, no text."
-          />
-        </div>
+        <h3 className="font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
+          חמש טקטיקות של השחקן הלא-סדיר
+        </h3>
+        <span aria-hidden className="-ms-1 mt-2 block h-1 w-10 rounded-full bg-accent" />
+        <p className="mt-2 text-base leading-relaxed text-fg-muted">
+          קראו כל "דיווח שטח" שמופיע למטה, ולחצו על כרטיס הטקטיקה שלדעתכם מתאים לו (לחיצה נוספת על כרטיס משובץ תשחרר אותו בחזרה). אחרי ששיבצתם את כל חמשת הדיווחים, לחצו "בדוק תשובות" לקבל את ההסבר המלא לכל טקטיקה.
+        </p>
       </div>
 
       <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
@@ -1084,7 +1059,7 @@ function TacticMatchExercise() {
             </motion.p>
           ) : (
             <div className="relative text-center text-sm text-fg-muted py-4">
-              שיבצתם את כל הדיווחים. {submitted ? 'בדקו את התוצאה למטה.' : 'לחצו "בדוק תשובות".'}
+              שיבצתם את כל הדיווחים. {!submitted && 'לחצו "בדוק תשובות".'}
             </div>
           )}
         </AnimatePresence>
@@ -1093,10 +1068,8 @@ function TacticMatchExercise() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-fg-muted">
           {!submitted && allPlaced && 'הכל מוכן — לחצו לבדיקה'}
-          {submitted && (
-            <span className={cn('font-display font-bold', correctCount === TRAITS.length ? 'text-status-ok' : 'text-fg')}>
-              ציון: {correctCount}/{TRAITS.length} {correctCount === TRAITS.length && '· מצוין!'}
-            </span>
+          {submitted && correctCount === TRAITS.length && (
+            <span className="font-display font-bold text-status-ok">מצוין!</span>
           )}
         </div>
         <div className="flex gap-3">
@@ -1168,9 +1141,9 @@ function TacticPhotoCard({
         'basis-[47%] sm:basis-[31%] text-start rounded-2xl border bg-bg-elevated overflow-hidden flex flex-col transition-all duration-300 ease-snap',
         submitted
           ? isCorrect
-            ? 'border-status-ok/50 bg-status-ok/10'
+            ? 'border-brand/50 bg-brand/10'
             : isWrong
-              ? 'border-status-danger/50 bg-status-danger/10'
+              ? 'border-accent/40 bg-accent/5'
               : 'border-border'
           : occupant
             ? 'border-accent bg-accent/10'
@@ -1188,16 +1161,6 @@ function TacticPhotoCard({
           compactPlaceholder
           className="absolute inset-0 size-full [aspect-ratio:auto]"
         />
-        {submitted && occupant && (
-          <span
-            className={cn(
-              'absolute top-2 start-2 inline-flex items-center justify-center size-5 rounded-full text-xs font-bold leading-none',
-              isCorrect ? 'bg-status-ok text-bg-elevated' : 'bg-status-danger text-bg-elevated',
-            )}
-          >
-            {isCorrect ? '✓' : '✗'}
-          </span>
-        )}
       </div>
 
       <div className="p-4 flex-1 flex flex-col gap-1.5">
@@ -1208,11 +1171,16 @@ function TacticPhotoCard({
         {occupant && (
           <div className="pt-1.5 mt-0.5 border-t border-border-subtle space-y-1">
             {submitted && isCorrect && (
-              <div className="text-sm font-display font-semibold tracking-wider text-status-ok text-center">
+              <div className="text-sm font-display font-semibold tracking-wider text-brand-dark text-center">
                 התאמה נכונה
               </div>
             )}
-            <p className="text-sm text-fg-muted leading-snug text-center">
+            {submitted && isWrong && (
+              <div className="text-sm font-display font-semibold tracking-wider text-accent-deep text-center">
+                לא מדויק
+              </div>
+            )}
+            <p className="text-base leading-relaxed text-black text-center">
               {submitted ? occupant.desc : occupant.reportSummary}
             </p>
           </div>

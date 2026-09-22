@@ -123,7 +123,6 @@ export const UI = {
   summaryTag: 'במודל המוצג',
   liveUpdate: (station: Station, count: number) =>
     `${station.timeLabel}: נוספה חזית ${station.frontLabel}. ${count} מתוך 5 חזיתות פעילות לצבא הסדיר.`,
-  skipAnimation: 'דלגו על ההנפשה',
   resetActivity: 'התחילו את הפעילות מחדש',
 };
 
