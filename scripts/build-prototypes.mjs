@@ -58,7 +58,9 @@ for (const { name, outDir } of prototypes) {
   console.log(`[build] ${name}`);
   if (!existsSync(join(source, 'node_modules', '.package-lock.json'))) {
     console.log(`[install] ${name} (first build only)`);
-    await runNpm(source, 'ci');
+    // Vercel sets NODE_ENV=production, which would skip the devDependencies
+    // (vite, typescript) that the prototype builds need.
+    await runNpm(source, 'ci', '--include=dev');
   }
   await runNpm(source, 'run', 'build');
 
@@ -135,13 +137,15 @@ function sourceFingerprint(dir) {
   function visit(folder, prefix) {
     for (const entry of readdirSync(folder, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       if (entry.isDirectory() && ignoredDirs.has(entry.name)) continue;
-      if (entry.name.endsWith('.tsbuildinfo')) continue;
+      if (entry.name.endsWith('.tsbuildinfo') || entry.name === 'next-env.d.ts') continue;
       const full = join(folder, entry.name);
-      const rel = join(prefix, entry.name);
+      // Hash POSIX paths and LF line endings so Windows checkouts (autocrlf)
+      // and the Linux build machine agree on the fingerprint.
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
       if (entry.isDirectory()) visit(full, rel);
       else if (entry.isFile()) {
         hash.update(rel);
-        hash.update(readFileSync(full));
+        hash.update(readFileSync(full).toString('latin1').replaceAll('\r\n', '\n'), 'latin1');
       }
     }
   }
