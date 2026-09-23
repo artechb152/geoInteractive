@@ -33,6 +33,16 @@ export type TerrainVisual = {
   sky: string;
   ambient: string;
   sun: string;
+  /** drei <Sky> tuning — sets the mood per terrain (clear/hazy/overcast). */
+  atmosphere: {
+    sunPosition: [number, number, number];
+    turbidity: number;
+    rayleigh: number;
+    mieCoefficient: number;
+    mieDirectionalG: number;
+  };
+  /** Wheel kickup particles — off for hard rock (nothing to kick up). */
+  kickup: { enabled: boolean; color: string; kind: 'dust' | 'splash' };
 };
 
 export type TerrainHeightProfile = {
@@ -83,6 +93,8 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
       sky: '#cbd9df',
       ambient: '#8a8f78',
       sun: '#fff3d6',
+      atmosphere: { sunPosition: [60, 35, -20], turbidity: 4, rayleigh: 1.2, mieCoefficient: 0.004, mieDirectionalG: 0.8 },
+      kickup: { enabled: false, color: '#9a8f78', kind: 'dust' },
     },
     height: { macroAmplitude: 1.4, macroFrequency: 0.09, detailAmplitude: 0.16, style: 'ledges' },
   },
@@ -109,6 +121,8 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
       sky: '#dce6d8',
       ambient: '#a79a72',
       sun: '#fff6df',
+      atmosphere: { sunPosition: [45, 28, 35], turbidity: 6, rayleigh: 1.6, mieCoefficient: 0.006, mieDirectionalG: 0.82 },
+      kickup: { enabled: true, color: '#c9b48a', kind: 'dust' },
     },
     height: { macroAmplitude: 0.9, macroFrequency: 0.06, detailAmplitude: 0.07, style: 'terraces' },
   },
@@ -135,6 +149,8 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
       sky: '#bcdcec',
       ambient: '#c2ab7c',
       sun: '#fff8e0',
+      atmosphere: { sunPosition: [70, 22, 10], turbidity: 9, rayleigh: 2.2, mieCoefficient: 0.012, mieDirectionalG: 0.86 },
+      kickup: { enabled: true, color: '#e3cd96', kind: 'dust' },
     },
     height: { macroAmplitude: 1.1, macroFrequency: 0.045, detailAmplitude: 0.05, style: 'dunes' },
   },
@@ -161,6 +177,8 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
       sky: '#a9b3a2',
       ambient: '#6c705a',
       sun: '#e9e6cf',
+      atmosphere: { sunPosition: [-30, 12, 25], turbidity: 18, rayleigh: 3.2, mieCoefficient: 0.018, mieDirectionalG: 0.9 },
+      kickup: { enabled: true, color: '#3a3226', kind: 'splash' },
     },
     height: { macroAmplitude: 0.35, macroFrequency: 0.05, detailAmplitude: 0.06, style: 'ruts' },
   },

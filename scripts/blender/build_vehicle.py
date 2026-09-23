@@ -41,7 +41,15 @@ def clear_scene():
                 block_collection.remove(block)
 
 
-def new_material(name, base_color, roughness=0.6, metallic=0.0, alpha=1.0):
+def _set_first(bsdf, names, value):
+    for n in names:
+        if n in bsdf.inputs:
+            bsdf.inputs[n].default_value = value
+            return True
+    return False
+
+
+def new_material(name, base_color, roughness=0.6, metallic=0.0, alpha=1.0, coat=0.0, coat_roughness=0.2):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get('Principled BSDF')
@@ -51,6 +59,13 @@ def new_material(name, base_color, roughness=0.6, metallic=0.0, alpha=1.0):
     if alpha < 1.0:
         bsdf.inputs['Alpha'].default_value = alpha
         mat.blend_method = 'BLEND'
+    if coat > 0:
+        # Input names moved from 'Clearcoat'/'Clearcoat Roughness' (pre-4.0) to
+        # 'Coat Weight'/'Coat Roughness' (4.0+) — try both so this keeps
+        # working across Blender versions. glTF export maps this to
+        # KHR_materials_clearcoat automatically (no extra export flag).
+        _set_first(bsdf, ['Coat Weight', 'Clearcoat'], coat)
+        _set_first(bsdf, ['Coat Roughness', 'Clearcoat Roughness'], coat_roughness)
     return mat
 
 
@@ -129,8 +144,13 @@ MAT_LIGHT = None
 
 def build_materials():
     global MAT_PAINT_UPPER, MAT_PAINT_LOWER, MAT_TRIM, MAT_TIRE, MAT_RIM, MAT_GLASS, MAT_LIGHT
-    MAT_PAINT_UPPER = new_material('PaintUpper', (0.176, 0.208, 0.129), roughness=0.55, metallic=0.04)
-    MAT_PAINT_LOWER = new_material('PaintLower', (0.122, 0.145, 0.098), roughness=0.65, metallic=0.02)
+    # NOTE: these are LINEAR base colors (glTF/Blender convention), not sRGB —
+    # a value that "looks about right" typed in 0..1 as if it were sRGB
+    # renders 2-3x too bright once real PBR/IBL lighting hits it. Values below
+    # are converted from a target on-screen olive-drab (~#4B5320 / ~#33391A)
+    # via linear = ((srgb+0.055)/1.055)^2.4.
+    MAT_PAINT_UPPER = new_material('PaintUpper', (0.070, 0.086, 0.020), roughness=0.42, metallic=0.06, coat=0.6, coat_roughness=0.18)
+    MAT_PAINT_LOWER = new_material('PaintLower', (0.035, 0.043, 0.010), roughness=0.55, metallic=0.03, coat=0.4, coat_roughness=0.25)
     MAT_TRIM = new_material('Trim', (0.05, 0.05, 0.055), roughness=0.5, metallic=0.3)
     MAT_TIRE = new_material('Tire', (0.02, 0.02, 0.02), roughness=0.95, metallic=0.0)
     MAT_RIM = new_material('Rim', (0.12, 0.12, 0.13), roughness=0.35, metallic=0.75)

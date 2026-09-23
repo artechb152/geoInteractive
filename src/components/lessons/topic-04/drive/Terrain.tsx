@@ -46,15 +46,24 @@ export function Terrain({ soil, heightAt }: { soil: SoilConfig; heightAt: Height
           normalMap={normal}
           roughnessMap={roughness}
           roughness={1}
+          vertexColors
         />
       </mesh>
 
-      {/* Boundary markers — clear "this is the edge of the playable area" cue. */}
+      {/* Boundary markers — plain survey stakes with a small hazard-tape
+          flag, rather than bright traffic cones, so the edge-of-area cue
+          doesn't read as a toy prop. */}
       {markers.map((m, i) => (
-        <mesh key={i} position={[m.x, m.y + 0.35, m.z]} castShadow>
-          <coneGeometry args={[0.12, 0.7, 6]} />
-          <meshStandardMaterial color={i % 2 === 0 ? '#D97E2B' : '#F8F2E7'} roughness={0.7} />
-        </mesh>
+        <group key={i} position={[m.x, m.y, m.z]}>
+          <mesh position={[0, 0.32, 0]} castShadow>
+            <cylinderGeometry args={[0.022, 0.028, 0.64, 6]} />
+            <meshStandardMaterial color="#4a4032" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 0.56, 0]} rotation={[0, (i * Math.PI) / 7, 0]} castShadow>
+            <boxGeometry args={[0.16, 0.07, 0.01]} />
+            <meshStandardMaterial color={i % 2 === 0 ? '#c94f36' : '#e8e2d2'} roughness={0.65} />
+          </mesh>
+        </group>
       ))}
     </group>
   );

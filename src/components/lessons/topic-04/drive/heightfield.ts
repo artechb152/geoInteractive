@@ -146,5 +146,29 @@ export function buildTerrainGeometry(heightAt: HeightSampler): THREE.BufferGeome
   }
   pos.needsUpdate = true;
   geometry.computeVertexNormals();
+
+  // Per-vertex tint: multiplies the tiled diffuse texture in the material
+  // (vertexColors=true) so the ground doesn't read as an obviously-repeating
+  // photo. Two independent effects, both computed from data the texture UVs
+  // don't know about: (1) slope darkening — steep faces read as exposed,
+  // shadowed rock while flat ground reads dusty/lit, and (2) a large-scale
+  // (low-frequency, unrelated to the texture's own tiling frequency) tonal
+  // drift so no two tiles of the same texture look identical.
+  const normal = geometry.attributes.normal;
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const ny = normal.getY(i);
+    const slopeDark = THREE.MathUtils.lerp(0.62, 1.04, THREE.MathUtils.clamp(ny, 0, 1));
+    const macro = fbm(x * 0.035, z * 0.035, 7777, 3);
+    const drift = THREE.MathUtils.lerp(0.85, 1.15, macro);
+    const v = slopeDark * drift;
+    colors[i * 3] = v;
+    colors[i * 3 + 1] = v;
+    colors[i * 3 + 2] = v;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
   return geometry;
 }

@@ -6,7 +6,8 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { SoilConfig } from './terrainConfigs';
 import type { HeightSampler } from './heightfield';
-import { VehicleController, type DriveInput, type DriveStatus } from './vehicleController';
+import { VehicleController, type DriveInput, type DriveStatus, type VehiclePose } from './vehicleController';
+import { DustField } from './DustField';
 
 const MODEL_URL = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic04/trafficability-drive/models/vehicle.glb`;
 
@@ -76,6 +77,7 @@ export function VehicleRig({
   const input = useArrowKeys(active);
   const lastStatus = useRef<DriveStatus>('ok');
   const camPos = useRef<THREE.Vector3 | null>(null);
+  const poseRef = useRef<VehiclePose | null>(null);
 
   const controllerRef = useRef<VehicleController | null>(null);
   if (!controllerRef.current) controllerRef.current = new VehicleController(soil, heightAt);
@@ -85,6 +87,16 @@ export function VehicleRig({
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        for (const mat of mats) {
+          if (mat instanceof THREE.MeshStandardMaterial) {
+            // Paint is matte and dark by design (Blender base color) — a full
+            // 1.0 envMapIntensity under a bright sky washes it out toward
+            // pale sage. Metal/rim/glass keep a fuller reflection for pop.
+            const name = mat.name.toLowerCase();
+            mat.envMapIntensity = name.includes('paint') ? 0.55 : 0.85;
+          }
+        }
       }
     });
   }, [scene]);
@@ -119,6 +131,7 @@ export function VehicleRig({
     if (!controller || !rigRef.current) return;
 
     const pose = controller.update(delta, input.current);
+    poseRef.current = pose;
 
     rigRef.current.position.copy(pose.position);
     rigRef.current.rotation.order = 'YXZ';
@@ -162,8 +175,11 @@ export function VehicleRig({
   });
 
   return (
-    <group ref={rigRef}>
-      <primitive object={scene} />
-    </group>
+    <>
+      <group ref={rigRef}>
+        <primitive object={scene} />
+      </group>
+      <DustField soil={soil} heightAt={heightAt} poseRef={poseRef} />
+    </>
   );
 }

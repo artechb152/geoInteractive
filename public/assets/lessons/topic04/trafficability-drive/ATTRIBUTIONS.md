@@ -31,6 +31,13 @@ only). Regenerate with:
 "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe" --background --python scripts/blender/build_vehicle.py
 ```
 
+## Rendering pipeline
+
+`@react-three/postprocessing` + `postprocessing` (MIT-licensed, from the pmndrs
+org) provide the SSAO/Bloom/Vignette/SMAA pipeline. The sky/reflections come
+from drei's `<Sky>` (a physical sky shader, not an image asset) baked into a
+cubemap at runtime — no HDRI file, no network fetch.
+
 ## Everything else
 
 Terrain relief (heightfield), the vehicle controller, lighting and all UI are

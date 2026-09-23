@@ -46,7 +46,7 @@ Flag for review before this is integrated into the actual lesson 4 scene.
 
 7. **Terrain tile size**: ~44m × 44m playable area per terrain (small,
    per the brief — "no need for a big world"), with a soft inward push plus
-   visible cone markers at the boundary rather than a hard wall.
+   visible boundary-stake markers rather than a hard wall.
 
 8. **Boundary/recovery model**: "stuck" (sunk past threshold) and "flipped"
    (excessive pitch/roll) both freeze the vehicle and surface the recover
@@ -63,3 +63,41 @@ Flag for review before this is integrated into the actual lesson 4 scene.
     is copied character-for-character from `SOILS` in `TrafficabilityScene.tsx`.
     No factual issues were found in that text while building this lab, so
     nothing was flagged or altered.
+
+11. **Graphics upgrade (2026-09-23)** — requested explicitly ("AAA-level,
+    as realistic as possible"), flagged to the user up front that literal
+    AAA/console fidelity isn't achievable in browser WebGL on office-laptop
+    integrated graphics; this pushes toward the ceiling of what real-time
+    WebGL can do on modest hardware instead:
+    - Added `@react-three/postprocessing` + `postprocessing` (the only new
+      runtime deps in this feature) for SSAO, a tightly-thresholded Bloom,
+      Vignette, and SMAA.
+    - Sky/reflections: drei's `<Sky>` baked into a small cubemap via
+      `<Environment background frames={1}>` — self-contained (no HDRI
+      network fetch, unlike drei's presets), used as both the visible
+      background and `scene.environment` for real PBR reflections.
+    - Terrain realism: per-vertex color multiply (slope darkening + a
+      large-scale noise tint unrelated to the texture's own tiling
+      frequency) breaks the "obviously a repeating photo" look cheaply,
+      without a shader rewrite.
+    - Boundary markers restyled from bright cones to plain survey
+      stakes with a small hazard-tape flag.
+    - Wheel kickup: a pooled `THREE.Sprite` particle system (dust on
+      soft/sand, dark splashes on mud, none on hard rock) — cheap at this
+      particle count, no shader/instancing complexity needed.
+    - Vehicle paint: added `KHR_materials_clearcoat` in Blender (Blender's
+      glTF exporter maps "Coat Weight"/"Coat Roughness" to it automatically)
+      for a glossy-paint look, exported correctly per a JSON-chunk check of
+      the GLB.
+    - **Pitfall worth remembering**: glTF/Blender material colors are
+      *linear*, not sRGB. A value that looks like a plausible dark olive
+      typed by eye (e.g. `(0.176, 0.208, 0.129)`) renders 2-3x too bright
+      once real PBR/IBL lighting is involved, because linear→sRGB display
+      conversion lifts shadows. Fixed by converting a target on-screen
+      color through `linear = ((srgb+0.055)/1.055)^2.4` instead of guessing.
+      Under the old flat ambient+hemisphere-only lighting this had gone
+      unnoticed because that setup was itself not physically correct.
+    - Verified visually via Playwright screenshots at each step (see
+      conversation), not just build success — screenshots aren't checked
+      into the repo (they were a local debugging aid), so a fresh visual
+      review is still worthwhile before calling this final.
