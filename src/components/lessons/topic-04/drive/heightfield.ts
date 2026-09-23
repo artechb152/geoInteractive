@@ -1,123 +1,21 @@
 import * as THREE from 'three';
 import type { SoilConfig } from './terrainConfigs';
-import { CALM_BLEND_RADIUS, CALM_START_RADIUS, TILE_HALF_SIZE } from './terrainConfigs';
+import { TILE_HALF_SIZE } from './terrainConfigs';
+import { createLandformHeight } from './landforms';
 
 /**
- * Self-contained deterministic value-noise (no external noise dependency —
- * keeps this lab's JS payload small). Good enough for stylized terrain
- * relief; not meant to be a general-purpose noise library.
- */
-function hash(ix: number, iz: number, seed: number): number {
-  let h = ix * 374761393 + iz * 668265263 + seed * 2147483647;
-  h = (h ^ (h >>> 13)) * 1274126177;
-  h = h ^ (h >>> 16);
-  return ((h >>> 0) % 100000) / 100000;
-}
-
-function smoothstep(t: number): number {
-  return t * t * (3 - 2 * t);
-}
-
-function valueNoise2D(x: number, z: number, seed: number): number {
-  const x0 = Math.floor(x);
-  const z0 = Math.floor(z);
-  const x1 = x0 + 1;
-  const z1 = z0 + 1;
-  const tx = smoothstep(x - x0);
-  const tz = smoothstep(z - z0);
-  const v00 = hash(x0, z0, seed);
-  const v10 = hash(x1, z0, seed);
-  const v01 = hash(x0, z1, seed);
-  const v11 = hash(x1, z1, seed);
-  const a = v00 + (v10 - v00) * tx;
-  const b = v01 + (v11 - v01) * tx;
-  return a + (b - a) * tz; // 0..1
-}
-
-function fbm(x: number, z: number, seed: number, octaves: number, lacunarity = 2, gain = 0.5): number {
-  let amplitude = 1;
-  let frequency = 1;
-  let sum = 0;
-  let norm = 0;
-  for (let i = 0; i < octaves; i++) {
-    sum += valueNoise2D(x * frequency, z * frequency, seed + i * 101) * amplitude;
-    norm += amplitude;
-    amplitude *= gain;
-    frequency *= lacunarity;
-  }
-  return sum / norm; // 0..1
-}
-
-/** Fixed shallow depressions ("puddles") for the mud terrain — deterministic positions. */
-const PUDDLES: Array<[number, number, number]> = [
-  [5, -6, 3.2],
-  [-8, 4, 2.6],
-  [3, 10, 2.2],
-  [-4, -12, 2.8],
-  [11, 3, 2.0],
-];
-
-function terrainFeatureHeight(soil: SoilConfig, x: number, z: number): number {
-  const { style, macroAmplitude, macroFrequency, detailAmplitude } = soil.height;
-  const seed = style === 'ledges' ? 11 : style === 'terraces' ? 22 : style === 'dunes' ? 33 : 44;
-
-  const macro = fbm(x * macroFrequency, z * macroFrequency, seed, 4) * 2 - 1; // -1..1
-  const detail = (fbm(x * 0.9, z * 0.9, seed + 500, 2) * 2 - 1) * detailAmplitude;
-
-  if (style === 'ledges') {
-    // Hard rock: quantize the macro shape into stepped ledges + sharp sparse boulders.
-    const raw = macro * macroAmplitude;
-    const stepSize = 0.45;
-    const stepped = Math.round(raw / stepSize) * stepSize;
-    const boulder = Math.max(0, fbm(x * 0.35, z * 0.35, 900, 2) - 0.72) * 3.2;
-    return stepped * 0.7 + raw * 0.3 + detail + boulder;
-  }
-
-  if (style === 'terraces') {
-    const raw = macro * macroAmplitude;
-    const bandSize = 0.32;
-    const terrace = Math.round(raw / bandSize) * bandSize;
-    return terrace * 0.55 + raw * 0.45 + detail;
-  }
-
-  if (style === 'dunes') {
-    const ridge = Math.sin(x * 0.11 + Math.sin(z * 0.05) * 1.4) * macroAmplitude * 0.6;
-    const ripple = Math.sin(x * 0.9 + z * 0.35) * 0.04;
-    return macro * macroAmplitude * 0.6 + ridge + detail + ripple;
-  }
-
-  // ruts (mud/loess): mostly flat, shallow puddle depressions + two tire-rut grooves.
-  let h = macro * macroAmplitude * 0.4 + detail * 0.6;
-  for (const [px, pz, pr] of PUDDLES) {
-    const d = Math.hypot(x - px, z - pz);
-    if (d < pr) h -= (1 - smoothstep(d / pr)) * 0.22;
-  }
-  const rutOffset = 1.3;
-  for (const rx of [-rutOffset, rutOffset]) {
-    const d = Math.abs(x - rx - Math.sin(z * 0.08) * 1.5);
-    if (d < 0.5) h -= (1 - smoothstep(d / 0.5)) * 0.14;
-  }
-  return h;
-}
-
-/**
- * World-space height sampler for a soil type. Shared by both the render
- * geometry and the vehicle controller's per-wheel contact sampling, so what
- * you see is exactly what you drive on.
+ * World-space height sampler for a soil type. Shared by the render geometry,
+ * the vehicle controller's per-wheel contact sampling, the chase camera and
+ * the contact shadow, so what you see is exactly what you drive on.
  *
- * A calm, near-flat disc around the spawn point blends into the terrain's
- * full character further out, per the brief's "feel the terrain first, then
- * its unique features" requirement.
+ * The shape itself is authored in landforms.ts (large landforms → medium
+ * soil structure → small detail, with the shared route network cut in).
+ * Near the spawn point only the medium/small detail is calmed. The large
+ * forms stay, so the first view already has real hills in it (the brief's
+ * "feel the terrain first, then its unique features").
  */
 export function createHeightSampler(soil: SoilConfig) {
-  return function heightAt(x: number, z: number): number {
-    const dist = Math.hypot(x, z);
-    const full = terrainFeatureHeight(soil, x, z);
-    if (dist <= CALM_START_RADIUS) return full * 0.08;
-    if (dist >= CALM_BLEND_RADIUS) return full;
-    const t = smoothstep((dist - CALM_START_RADIUS) / (CALM_BLEND_RADIUS - CALM_START_RADIUS));
-    return full * (0.08 + t * 0.92);
-  };
+  return createLandformHeight(soil.height);
 }
 
 export type HeightSampler = ReturnType<typeof createHeightSampler>;
@@ -132,43 +30,71 @@ export function sampleNormal(heightAt: HeightSampler, x: number, z: number, eps 
   return normal;
 }
 
-const SEGMENTS = 96;
+/** Playable-tile grid resolution per side: ~0.25 m spacing, fine enough for
+ * ledge risers, boulders and wheel ruts to render as they're felt. */
+const SEGMENTS = 176;
+
+/** Visual-only ground beyond the playable tile (m, half-size) — carries the
+ * terrain out into the fog so the chase camera never sees a hard world edge.
+ * The vehicle's soft boundary push still keeps it inside TILE_HALF_SIZE. */
+export const APRON_HALF_SIZE = 72;
+const APRON_FIRST_STEP = 0.6;
+const APRON_GROWTH = 1.18;
+
+/**
+ * Grid-line coordinates along one axis: the playable tile keeps its original
+ * uniform density, then spacing grows geometrically out to the apron edge
+ * (distant ground is fogged, so it doesn't need the detail). A tensor grid of
+ * these lines has no T-junctions, so there are no cracks at the tile edge.
+ */
+function axisLines(): number[] {
+  const inner: number[] = [];
+  for (let i = 0; i <= SEGMENTS; i++) inner.push(-TILE_HALF_SIZE + (i / SEGMENTS) * TILE_HALF_SIZE * 2);
+  const outer: number[] = [];
+  let step = APRON_FIRST_STEP;
+  let at = TILE_HALF_SIZE;
+  while (at < APRON_HALF_SIZE) {
+    at = Math.min(APRON_HALF_SIZE, at + step);
+    outer.push(at);
+    step *= APRON_GROWTH;
+  }
+  return [...outer.map((v) => -v).reverse(), ...inner, ...outer];
+}
 
 export function buildTerrainGeometry(heightAt: HeightSampler): THREE.BufferGeometry {
   const size = TILE_HALF_SIZE * 2;
-  const geometry = new THREE.PlaneGeometry(size, size, SEGMENTS, SEGMENTS);
-  geometry.rotateX(-Math.PI / 2);
-  const pos = geometry.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const z = pos.getZ(i);
-    pos.setY(i, heightAt(x, z));
+  const lines = axisLines();
+  const n = lines.length;
+  const positions = new Float32Array(n * n * 3);
+  const uvs = new Float32Array(n * n * 2);
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      const x = lines[i];
+      const z = lines[j];
+      const k = j * n + i;
+      positions[k * 3] = x;
+      positions[k * 3 + 1] = heightAt(x, z);
+      positions[k * 3 + 2] = z;
+      // Same UV mapping the original tile-sized PlaneGeometry had, extended
+      // past 0..1 — RepeatWrapping keeps texel density identical everywhere.
+      uvs[k * 2] = x / size + 0.5;
+      uvs[k * 2 + 1] = 0.5 - z / size;
+    }
   }
-  pos.needsUpdate = true;
+  const indices: number[] = [];
+  for (let j = 0; j < n - 1; j++) {
+    for (let i = 0; i < n - 1; i++) {
+      const a = j * n + i;
+      const b = a + 1;
+      const c = a + n;
+      const d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
   geometry.computeVertexNormals();
-
-  // Per-vertex tint: multiplies the tiled diffuse texture in the material
-  // (vertexColors=true) so the ground doesn't read as an obviously-repeating
-  // photo. Two independent effects, both computed from data the texture UVs
-  // don't know about: (1) slope darkening — steep faces read as exposed,
-  // shadowed rock while flat ground reads dusty/lit, and (2) a large-scale
-  // (low-frequency, unrelated to the texture's own tiling frequency) tonal
-  // drift so no two tiles of the same texture look identical.
-  const normal = geometry.attributes.normal;
-  const colors = new Float32Array(pos.count * 3);
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const z = pos.getZ(i);
-    const ny = normal.getY(i);
-    const slopeDark = THREE.MathUtils.lerp(0.62, 1.04, THREE.MathUtils.clamp(ny, 0, 1));
-    const macro = fbm(x * 0.035, z * 0.035, 7777, 3);
-    const drift = THREE.MathUtils.lerp(0.85, 1.15, macro);
-    const v = slopeDark * drift;
-    colors[i * 3] = v;
-    colors[i * 3 + 1] = v;
-    colors[i * 3 + 2] = v;
-  }
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
   return geometry;
 }

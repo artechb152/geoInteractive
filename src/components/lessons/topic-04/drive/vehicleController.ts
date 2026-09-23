@@ -18,7 +18,7 @@ export const WHEELBASE = 2.4;
 export const TRACK = 1.55;
 export const WHEEL_RADIUS = 0.38;
 
-const MAX_SPEED = 6.5; // m/s forward
+export const MAX_SPEED = 6.5; // m/s forward
 const MAX_REVERSE = 3.2;
 const ACCEL = 5.5;
 const BRAKE_DECEL = 9;
@@ -34,13 +34,28 @@ export type WheelPose = { spin: number; steer: number; suspension: number };
 
 export type VehiclePose = {
   position: THREE.Vector3;
+  /** Drive heading: the vehicle moves along (sin h, −cos h), so π faces +Z. Not three's yaw — see `vehicleToWorld`. */
   heading: number;
+  /** Positive = nose up. */
   pitch: number;
+  /** Positive = right side up. */
   roll: number;
   wheels: { FL: WheelPose; FR: WheelPose; RL: WheelPose; RR: WheelPose };
   status: DriveStatus;
   speedKph: number;
 };
+
+/**
+ * Vehicle-local (x = right, z = back; the model's nose is −Z) → world XZ for a
+ * drive heading. This is the rendered rig's yaw (three rotation.y = −heading,
+ * see Vehicle.tsx), so wheel contacts, dust emitters and the visible body all
+ * agree with the direction of travel on every heading, not only along ±Z.
+ */
+export function vehicleToWorld(localX: number, localZ: number, heading: number, origin: THREE.Vector3, out: THREE.Vector2) {
+  const cos = Math.cos(heading);
+  const sin = Math.sin(heading);
+  return out.set(origin.x + localX * cos - localZ * sin, origin.z + localX * sin + localZ * cos);
+}
 
 const HUB_LOCAL: Record<'FL' | 'FR' | 'RL' | 'RR', THREE.Vector2> = {
   // (x = left/right, y-of-Vector2 used as local z = forward/back; forward is -z)
@@ -55,7 +70,7 @@ export class VehicleController {
   private heightAt: HeightSampler;
 
   private position = new THREE.Vector3(0, 0, 0);
-  private heading = Math.PI; // facing -Z (into the terrain, away from the camera-behind spawn)
+  private heading = Math.PI; // drives toward +Z (see VehiclePose.heading), chase camera behind it
   private speed = 0;
   private lateralVelocity = 0;
   private steerVisual = 0;
@@ -102,12 +117,7 @@ export class VehicleController {
 
   private hubWorld(tag: keyof typeof HUB_LOCAL) {
     const local = HUB_LOCAL[tag];
-    const cos = Math.cos(this.heading);
-    const sin = Math.sin(this.heading);
-    // Rotate local (x, z) by heading around Y, then translate.
-    const wx = this.position.x + local.x * cos + local.y * sin;
-    const wz = this.position.z - local.x * sin + local.y * cos;
-    return new THREE.Vector2(wx, wz);
+    return vehicleToWorld(local.x, local.y, this.heading, this.position, new THREE.Vector2());
   }
 
   update(delta: number, input: DriveInput): VehiclePose {
@@ -163,7 +173,9 @@ export class VehicleController {
 
     // --- integrate position ---
     const fwd = this.forwardVector();
-    const right = new THREE.Vector2(fwd.y, -fwd.x);
+    // The vehicle's right in world XZ (a right turn increases heading), so a
+    // right turn slides the vehicle out to the left — grip lost, not gained.
+    const right = new THREE.Vector2(-fwd.y, fwd.x);
     this.position.x += (fwd.x * this.speed + right.x * this.lateralVelocity) * dt;
     this.position.z += (fwd.y * this.speed + right.y * this.lateralVelocity) * dt;
 
@@ -207,7 +219,7 @@ export class VehicleController {
     const avgRight = (heights.FR + heights.RR) / 2;
     const centerHeight = (heights.FL + heights.FR + heights.RL + heights.RR) / 4;
 
-    const targetPitch = Math.atan2(avgRear - avgFront, WHEELBASE) * physics.bumpiness;
+    const targetPitch = Math.atan2(avgFront - avgRear, WHEELBASE) * physics.bumpiness;
     const targetRoll = Math.atan2(avgRight - avgLeft, TRACK) * physics.bumpiness;
     const dampSpeed = 10 + physics.bumpiness * 3;
     this.smoothedPitch = THREE.MathUtils.damp(this.smoothedPitch, targetPitch, dampSpeed, dt);

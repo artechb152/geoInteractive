@@ -4,10 +4,14 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
+import { useReducedMotion } from 'framer-motion';
 import type { SoilConfig } from './terrainConfigs';
 import type { HeightSampler } from './heightfield';
 import { VehicleController, type DriveInput, type DriveStatus, type VehiclePose } from './vehicleController';
+import { ChaseCamera } from './chaseCamera';
 import { DustField } from './DustField';
+import { ContactShadow } from './ContactShadow';
+import { tuneVehicleMaterials } from './vehicleMaterials';
 
 const MODEL_URL = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic04/trafficability-drive/models/vehicle.glb`;
 
@@ -51,11 +55,6 @@ function useArrowKeys(active: boolean) {
   return input;
 }
 
-const CAM_DISTANCE = 6.4;
-const CAM_HEIGHT = 2.6;
-const LOOK_AHEAD = 3.2;
-const LOOK_HEIGHT = 1.1;
-
 type WheelTag = 'FL' | 'FR' | 'RL' | 'RR';
 
 export function VehicleRig({
@@ -76,38 +75,27 @@ export function VehicleRig({
   const rigRef = useRef<THREE.Group>(null);
   const input = useArrowKeys(active);
   const lastStatus = useRef<DriveStatus>('ok');
-  const camPos = useRef<THREE.Vector3 | null>(null);
   const poseRef = useRef<VehiclePose | null>(null);
+  const reducedMotion = useReducedMotion() ?? false;
 
   const controllerRef = useRef<VehicleController | null>(null);
   if (!controllerRef.current) controllerRef.current = new VehicleController(soil, heightAt);
+  const chaseCamRef = useRef<ChaseCamera | null>(null);
+  if (!chaseCamRef.current) chaseCamRef.current = new ChaseCamera(heightAt);
 
-  useEffect(() => {
-    scene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        for (const mat of mats) {
-          if (mat instanceof THREE.MeshStandardMaterial) {
-            // Paint is matte and dark by design (Blender base color) — a full
-            // 1.0 envMapIntensity under a bright sky washes it out toward
-            // pale sage. Metal/rim/glass keep a fuller reflection for pop.
-            const name = mat.name.toLowerCase();
-            mat.envMapIntensity = name.includes('paint') ? 0.55 : 0.85;
-          }
-        }
-      }
-    });
-  }, [scene]);
+  useEffect(() => tuneVehicleMaterials(scene), [scene]);
 
   useEffect(() => {
     controllerRef.current?.setSoil(soil, heightAt);
+    chaseCamRef.current?.setHeightSampler(heightAt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [soil.id, heightAt]);
 
   useEffect(() => {
-    if (recoverToken > 0) controllerRef.current?.teleportToSpawn();
+    if (recoverToken > 0) {
+      controllerRef.current?.teleportToSpawn();
+      chaseCamRef.current?.snap();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recoverToken]);
 
@@ -133,15 +121,18 @@ export function VehicleRig({
     const pose = controller.update(delta, input.current);
     poseRef.current = pose;
 
+    // Controller pose → three's frame (model nose is −Z, right is +X): yaw is
+    // −heading (vehicleToWorld), +pitch lifts the nose, +roll lifts the right
+    // side. Forward rolling and right steer are negative X / Y rotations.
     rigRef.current.position.copy(pose.position);
     rigRef.current.rotation.order = 'YXZ';
-    rigRef.current.rotation.set(pose.pitch, pose.heading, pose.roll);
+    rigRef.current.rotation.set(pose.pitch, -pose.heading, pose.roll);
 
     (Object.keys(wheels) as WheelTag[]).forEach((tag) => {
       const entry = wheels[tag];
       if (!entry) return;
       const w = pose.wheels[tag];
-      entry.obj.rotation.set(w.spin, w.steer, 0);
+      entry.obj.rotation.set(-w.spin, -w.steer, 0);
       entry.obj.position.y = entry.baseY + w.suspension;
     });
 
@@ -150,28 +141,9 @@ export function VehicleRig({
       onStatus(pose.status, pose.speedKph);
     }
 
-    // Chase camera: smoothed follow behind + above, looking slightly ahead.
-    const fwd = new THREE.Vector2(Math.sin(pose.heading), -Math.cos(pose.heading));
-    const desired = new THREE.Vector3(
-      pose.position.x - fwd.x * CAM_DISTANCE,
-      pose.position.y + CAM_HEIGHT,
-      pose.position.z - fwd.y * CAM_DISTANCE,
-    );
-    if (!camPos.current) {
-      camPos.current = desired.clone();
-      camera.position.copy(desired);
-    } else {
-      camPos.current.x = THREE.MathUtils.damp(camPos.current.x, desired.x, 4, delta);
-      camPos.current.y = THREE.MathUtils.damp(camPos.current.y, desired.y, 4, delta);
-      camPos.current.z = THREE.MathUtils.damp(camPos.current.z, desired.z, 4, delta);
-      camera.position.copy(camPos.current);
-    }
-    const lookTarget = new THREE.Vector3(
-      pose.position.x + fwd.x * LOOK_AHEAD,
-      pose.position.y + LOOK_HEIGHT,
-      pose.position.z + fwd.y * LOOK_AHEAD,
-    );
-    camera.lookAt(lookTarget);
+    // Camera runs in this same frame callback, after the pose update, so it
+    // never frames a one-frame-stale vehicle.
+    chaseCamRef.current?.update(camera as THREE.PerspectiveCamera, pose, delta, reducedMotion);
   });
 
   return (
@@ -179,6 +151,7 @@ export function VehicleRig({
       <group ref={rigRef}>
         <primitive object={scene} />
       </group>
+      <ContactShadow heightAt={heightAt} />
       <DustField soil={soil} heightAt={heightAt} poseRef={poseRef} />
     </>
   );

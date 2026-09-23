@@ -4,13 +4,13 @@ military off-road vehicle. Run with:
 
   blender --background --python scripts/blender/build_vehicle.py
 
-No addon, no running Blender GUI, no external assets — pure bpy geometry
-+ flat PBR materials (no textures), so the model carries no licensing
-requirements at all (self-authored).
+No addon, no running Blender GUI, no external assets — pure bpy/bmesh
+geometry + flat PBR materials (no textures), so the model carries no
+licensing requirements at all (self-authored).
 
 Produces:
   public/assets/lessons/topic04/trafficability-drive/models/vehicle.glb
-  design/docs/trafficability-drive-vehicle-preview-*.png (QA renders)
+  design/docs/trafficability-drive-previews/vehicle-preview-*.png (QA renders)
 
 Node contract consumed by the React vehicle controller:
   - Root empty "Vehicle" at the origin (ground contact plane, y=0).
@@ -23,12 +23,22 @@ Node contract consumed by the React vehicle controller:
   - Known dimensions (must match TrafficabilityDrive vehicle constants):
       wheelbase 2.4m, track width 1.55m, wheel radius 0.38m,
       wheel width 0.28m, chassis ride height (axle center to ground) 0.38m.
+
+Material names are part of the contract too — Vehicle.tsx tunes per-material
+reflection strength by name (see vehicleMaterials.ts).
+
+Style: deliberately low-poly/stylized, but "finished" — every hard edge gets
+a small bevel with hardened normals so it catches a highlight, and each
+physical material family (painted body, painted chassis, painted metal, bare
+metal, rubber, glass, lens, canvas) is its own material so they separate
+under light instead of reading as one plastic mass.
 """
 
 import bpy
 import bmesh
 import math
 import os
+from mathutils import Matrix, Vector
 
 # ---------------------------------------------------------------- helpers
 
@@ -41,6 +51,19 @@ def clear_scene():
                 block_collection.remove(block)
 
 
+def srgb(hex_color):
+    """'#RRGGBB' (what you'd pick on screen) -> linear RGB tuple for Principled BSDF.
+
+    Base colors must be LINEAR — typing an sRGB-looking value straight into
+    0..1 renders 2-3x too bright/pale once real PBR/IBL lighting hits it."""
+    h = hex_color.lstrip('#')
+    out = []
+    for i in (0, 2, 4):
+        c = int(h[i:i + 2], 16) / 255.0
+        out.append(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4)
+    return tuple(out)
+
+
 def _set_first(bsdf, names, value):
     for n in names:
         if n in bsdf.inputs:
@@ -49,16 +72,25 @@ def _set_first(bsdf, names, value):
     return False
 
 
-def new_material(name, base_color, roughness=0.6, metallic=0.0, alpha=1.0, coat=0.0, coat_roughness=0.2):
+def new_material(name, hex_color, roughness=0.6, metallic=0.0, alpha=1.0, coat=0.0, coat_roughness=0.2,
+                 specular=None, emission=None, emission_strength=0.0):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
+    # Every part is a closed solid, so single-sided (exports doubleSided:
+    # false) — halves fragment work and avoids back-face shadow artifacts.
+    # Only see-through glass keeps both sides.
+    mat.use_backface_culling = alpha >= 1.0
     bsdf = mat.node_tree.nodes.get('Principled BSDF')
-    bsdf.inputs['Base Color'].default_value = (*base_color, 1.0)
+    bsdf.inputs['Base Color'].default_value = (*srgb(hex_color), 1.0)
     bsdf.inputs['Roughness'].default_value = roughness
     bsdf.inputs['Metallic'].default_value = metallic
     if alpha < 1.0:
         bsdf.inputs['Alpha'].default_value = alpha
-        mat.blend_method = 'BLEND'
+        for attr, value in (('surface_render_method', 'BLENDED'), ('blend_method', 'BLEND')):
+            try:
+                setattr(mat, attr, value)
+            except (AttributeError, TypeError):
+                pass
     if coat > 0:
         # Input names moved from 'Clearcoat'/'Clearcoat Roughness' (pre-4.0) to
         # 'Coat Weight'/'Coat Roughness' (4.0+) — try both so this keeps
@@ -66,35 +98,139 @@ def new_material(name, base_color, roughness=0.6, metallic=0.0, alpha=1.0, coat=
         # KHR_materials_clearcoat automatically (no extra export flag).
         _set_first(bsdf, ['Coat Weight', 'Clearcoat'], coat)
         _set_first(bsdf, ['Coat Roughness', 'Clearcoat Roughness'], coat_roughness)
+    if specular is not None:
+        # Rubber/canvas reflect noticeably less than the 0.5 default (exports
+        # as KHR_materials_specular) — the main cue that separates "rubber"
+        # from "black plastic".
+        _set_first(bsdf, ['Specular IOR Level', 'Specular'], specular)
+    if emission is not None:
+        _set_first(bsdf, ['Emission Color', 'Emission'], (*srgb(emission), 1.0))
+        _set_first(bsdf, ['Emission Strength'], emission_strength)
     return mat
 
 
-def add_box(name, size, location, rotation=(0, 0, 0)):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=location, rotation=rotation)
-    obj = bpy.context.active_object
-    obj.name = name
-    # primitive_cube_add(size=1) spans exactly 1 unit per axis, so scale == desired dimension.
-    obj.scale = (size[0], size[1], size[2])
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+def _link_bmesh(name, bm):
+    mesh = bpy.data.meshes.new(name)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(mesh)
+    bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
     return obj
 
 
-def add_cylinder(name, radius, depth, location, rotation=(0, 0, 0), segments=16):
-    bpy.ops.mesh.primitive_cylinder_add(
-        radius=radius, depth=depth, location=location, rotation=rotation, vertices=segments
-    )
-    obj = bpy.context.active_object
-    obj.name = name
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+def _xform(location=(0, 0, 0), rotation=(0, 0, 0)):
+    """Object-space placement matrix. rotation is an XYZ Euler in radians."""
+    from mathutils import Euler
+    return Matrix.Translation(Vector(location)) @ Euler(rotation, 'XYZ').to_matrix().to_4x4()
+
+
+def add_box(name, size, location, rotation=(0, 0, 0), matrix=None):
+    bm = bmesh.new()
+    bmesh.ops.create_cube(bm, size=1.0)
+    bmesh.ops.scale(bm, vec=Vector(size), verts=bm.verts)
+    bmesh.ops.transform(bm, matrix=matrix if matrix is not None else _xform(location, rotation), verts=bm.verts)
+    return _link_bmesh(name, bm)
+
+
+def add_cylinder(name, radius, depth, location, rotation=(0, 0, 0), segments=16, radius_top=None):
+    """Cylinder along its local Z axis (same convention as primitive_cylinder_add)."""
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, cap_tris=False, segments=segments,
+                          radius1=radius, radius2=radius if radius_top is None else radius_top, depth=depth)
+    bmesh.ops.transform(bm, matrix=_xform(location, rotation), verts=bm.verts)
+    return _link_bmesh(name, bm)
+
+
+def add_tube(name, r_out, r_in, depth, location, rotation=(0, 0, 0), segments=32):
+    """Hollow ring along local Z — a tire carcass, bezel, etc. (a solid cylinder
+    would cap over the rim and hide it)."""
+    bm = bmesh.new()
+    rings = []
+    for zz in (-depth / 2, depth / 2):
+        outer, inner = [], []
+        for i in range(segments):
+            a = (i / segments) * math.tau
+            outer.append(bm.verts.new((r_out * math.cos(a), r_out * math.sin(a), zz)))
+            inner.append(bm.verts.new((r_in * math.cos(a), r_in * math.sin(a), zz)))
+        rings.append((outer, inner))
+    (o0, i0), (o1, i1) = rings
+    for i in range(segments):
+        j = (i + 1) % segments
+        bm.faces.new((o0[i], o0[j], o1[j], o1[i]))   # tread surface
+        bm.faces.new((i0[j], i0[i], i1[i], i1[j]))   # inner bore
+        bm.faces.new((o0[j], o0[i], i0[i], i0[j]))   # sidewall A
+        bm.faces.new((o1[i], o1[j], i1[j], i1[i]))   # sidewall B
+    bmesh.ops.transform(bm, matrix=_xform(location, rotation), verts=bm.verts)
+    return _link_bmesh(name, bm)
+
+
+def add_arch(name, r_in, r_out, x0, x1, center_y, center_z, a0=math.radians(8), a1=math.radians(172), segments=14):
+    """Wheel-arch fender: a rectangular section swept along an arc around the
+    world-X axle line at (center_y, center_z). Angles run from the front
+    (-Z) over the top to the rear (+Z)."""
+    bm = bmesh.new()
+    sections = []
+    for s in range(segments + 1):
+        a = a0 + (a1 - a0) * s / segments
+        dy, dz = math.sin(a), -math.cos(a)
+        sections.append([
+            bm.verts.new((x0, center_y + dy * r_in, center_z + dz * r_in)),
+            bm.verts.new((x1, center_y + dy * r_in, center_z + dz * r_in)),
+            bm.verts.new((x1, center_y + dy * r_out, center_z + dz * r_out)),
+            bm.verts.new((x0, center_y + dy * r_out, center_z + dz * r_out)),
+        ])
+    for s in range(segments):
+        a, b = sections[s], sections[s + 1]
+        for k in range(4):
+            m = (k + 1) % 4
+            bm.faces.new((a[k], a[m], b[m], b[k]))
+    bm.faces.new(sections[0])
+    bm.faces.new(list(reversed(sections[-1])))
+    return _link_bmesh(name, bm)
+
+
+def add_torus(name, major, minor, location, rotation=(0, 0, 0), major_segments=24, minor_segments=8):
+    bm = bmesh.new()
+    grid = []
+    for i in range(major_segments):
+        u = (i / major_segments) * math.tau
+        row = []
+        for j in range(minor_segments):
+            v = (j / minor_segments) * math.tau
+            r = major + minor * math.cos(v)
+            row.append(bm.verts.new((r * math.cos(u), r * math.sin(u), minor * math.sin(v))))
+        grid.append(row)
+    for i in range(major_segments):
+        for j in range(minor_segments):
+            i2, j2 = (i + 1) % major_segments, (j + 1) % minor_segments
+            bm.faces.new((grid[i][j], grid[i2][j], grid[i2][j2], grid[i][j2]))
+    bmesh.ops.transform(bm, matrix=_xform(location, rotation), verts=bm.verts)
+    return _link_bmesh(name, bm)
+
+
+def finish(obj, mat, bevel_width=0.0, segments=3, smooth_angle=35):
+    """Assign the material and give the part its surface treatment:
+
+    - curved surfaces (cylinder sides, arches) shade smooth, anything sharper
+      than `smooth_angle` stays a crisp edge;
+    - `bevel_width` > 0 rounds the hard edges with hardened normals, so flat
+      panels stay perfectly flat while their edges roll off and catch a thin
+      highlight — the single biggest "finished model vs. prototype" cue."""
+    obj.data.materials.clear()
+    obj.data.materials.append(mat)
+    obj.data.shade_smooth()
+    obj.data.set_sharp_from_angle(angle=math.radians(smooth_angle))
+    if bevel_width > 0:
+        mod = obj.modifiers.new('Bevel', 'BEVEL')
+        mod.width = bevel_width
+        mod.segments = segments
+        mod.limit_method = 'ANGLE'
+        mod.angle_limit = math.radians(smooth_angle)
+        mod.harden_normals = True
+        mod.miter_outer = 'MITER_ARC'
+        apply_all_modifiers(obj)
     return obj
-
-
-def bevel(obj, width=0.02, segments=2):
-    mod = obj.modifiers.new('Bevel', 'BEVEL')
-    mod.width = width
-    mod.segments = segments
-    mod.limit_method = 'ANGLE'
-    mod.angle_limit = math.radians(45)
 
 
 def join(objs, name):
@@ -124,240 +260,227 @@ TRACK = 1.55
 WHEEL_R = 0.38
 WHEEL_W = 0.28
 RIDE_HEIGHT = WHEEL_R  # axle height above ground
-CHASSIS_LEN = 3.9
 CHASSIS_W = 1.62
 
 AXLE_FRONT_Z = -WHEELBASE / 2
 AXLE_REAR_Z = WHEELBASE / 2
 
+# Rotations that remap a local-Z primitive axis onto a world axis
+# (parts are authored Y-up / -Z-forward; see build_vehicle()).
+AXIS_X = (0, math.radians(90), 0)
+AXIS_Y = (math.radians(-90), 0, 0)
+AXIS_Z = (0, 0, 0)
+
 
 # ---------------------------------------------------------------- materials
 
-MAT_PAINT_UPPER = None
-MAT_PAINT_LOWER = None
-MAT_TRIM = None
-MAT_TIRE = None
-MAT_RIM = None
-MAT_GLASS = None
-MAT_LIGHT = None
+M = {}
 
 
 def build_materials():
-    global MAT_PAINT_UPPER, MAT_PAINT_LOWER, MAT_TRIM, MAT_TIRE, MAT_RIM, MAT_GLASS, MAT_LIGHT
-    # NOTE: these are LINEAR base colors (glTF/Blender convention), not sRGB —
-    # a value that "looks about right" typed in 0..1 as if it were sRGB
-    # renders 2-3x too bright once real PBR/IBL lighting hits it. Values below
-    # are converted from a target on-screen olive-drab (~#4B5320 / ~#33391A)
-    # via linear = ((srgb+0.055)/1.055)^2.4.
-    MAT_PAINT_UPPER = new_material('PaintUpper', (0.070, 0.086, 0.020), roughness=0.42, metallic=0.06, coat=0.6, coat_roughness=0.18)
-    MAT_PAINT_LOWER = new_material('PaintLower', (0.035, 0.043, 0.010), roughness=0.55, metallic=0.03, coat=0.4, coat_roughness=0.25)
-    MAT_TRIM = new_material('Trim', (0.05, 0.05, 0.055), roughness=0.5, metallic=0.3)
-    MAT_TIRE = new_material('Tire', (0.02, 0.02, 0.02), roughness=0.95, metallic=0.0)
-    MAT_RIM = new_material('Rim', (0.12, 0.12, 0.13), roughness=0.35, metallic=0.75)
-    MAT_GLASS = new_material('Glass', (0.05, 0.09, 0.11), roughness=0.15, metallic=0.1)
-    MAT_LIGHT = new_material('LightLens', (0.95, 0.92, 0.78), roughness=0.3, metallic=0.0)
-
-
-def assign(obj, mat):
-    obj.data.materials.clear()
-    obj.data.materials.append(mat)
+    # Muted olive palette — sits with the site's sage/olive/cream identity
+    # rather than a saturated "toy army green". Satin, not glossy: a light
+    # clearcoat only, so paint reads as painted steel without looking wet.
+    M['PaintBody'] = new_material('PaintBody', '#565D3A', roughness=0.52, coat=0.22, coat_roughness=0.38)
+    M['PaintChassis'] = new_material('PaintChassis', '#3B4128', roughness=0.66, coat=0.08, coat_roughness=0.5)
+    # Painted steel hardware (bumpers, cage, pillars): darker, partially
+    # metallic so it picks up sky reflections differently from body paint.
+    M['PaintedMetal'] = new_material('PaintedMetal', '#34372F', roughness=0.4, metallic=0.55)
+    # Bare / worn steel: lug nuts, hinges, latches, mounts.
+    M['BareMetal'] = new_material('BareMetal', '#9A978D', roughness=0.3, metallic=1.0)
+    M['Rim'] = new_material('Rim', '#4C5236', roughness=0.46, metallic=0.25, coat=0.15, coat_roughness=0.4)
+    # Rubber is warm charcoal, never pure black, with low specular — pure
+    # black + default specular is what made the old tires read as plastic.
+    M['Tire'] = new_material('Tire', '#2E2C29', roughness=0.84, specular=0.28)
+    M['TireTread'] = new_material('TireTread', '#27251F', roughness=0.95, specular=0.2)
+    M['Glass'] = new_material('Glass', '#1F2C2F', roughness=0.04, alpha=0.38, specular=0.6)
+    M['Mirror'] = new_material('Mirror', '#B9BCB8', roughness=0.06, metallic=1.0)
+    M['LightLens'] = new_material('LightLens', '#EDE6D1', roughness=0.1, emission='#FFE9B8', emission_strength=0.25)
+    M['TailLight'] = new_material('TailLight', '#8A3524', roughness=0.18, emission='#8A3524', emission_strength=0.12)
+    M['Canvas'] = new_material('Canvas', '#4D4836', roughness=0.93, specular=0.25)
 
 
 # ---------------------------------------------------------------- body
 
 def build_chassis():
     parts = []
+    y = RIDE_HEIGHT
 
-    # Main lower chassis / frame rail block
-    frame = add_box('Frame', (CHASSIS_W * 0.82, 0.32, CHASSIS_LEN * 0.72), (0, RIDE_HEIGHT + 0.08, 0.05))
-    bevel(frame, 0.015, 1)
-    assign(frame, MAT_PAINT_LOWER)
-    parts.append(frame)
+    # --- chassis / underbody (dark, fills the see-through gap under the body)
+    parts.append(finish(add_box('Frame', (1.0, 0.24, 3.0), (0, 0.46, 0.05)), M['PaintChassis'], 0.02, 2))
+    for z in (AXLE_FRONT_Z, AXLE_REAR_Z):
+        parts.append(finish(add_cylinder(f'Axle{z}', 0.065, TRACK - 0.34, (0, y, z), AXIS_X, 12), M['PaintChassis'], 0.01, 1))
+        parts.append(finish(add_cylinder(f'Diff{z}', 0.14, 0.2, (0.12, y, z), AXIS_Z, 14), M['PaintChassis'], 0.03, 2))
+    parts.append(finish(add_box('BedBase', (1.2, 0.4, 1.15), (0, 0.78, 1.35)), M['PaintChassis'], 0.02, 2))
 
-    # Cabin tub (floor + lower sides)
-    tub = add_box('Tub', (CHASSIS_W, 0.42, 1.9), (0, RIDE_HEIGHT + 0.42, 0.15))
-    bevel(tub, 0.03, 2)
-    assign(tub, MAT_PAINT_UPPER)
-    parts.append(tub)
-
-    # Hood (tapered forward using a scaled + rotated box, angled down toward the front)
-    hood = add_box('Hood', (CHASSIS_W * 0.86, 0.34, 1.35), (0, RIDE_HEIGHT + 0.66, AXLE_FRONT_Z + 0.25),
-                    rotation=(math.radians(-4), 0, 0))
-    bevel(hood, 0.03, 2)
-    assign(hood, MAT_PAINT_UPPER)
-    parts.append(hood)
-
-    # Grille block (dark, recessed slightly under the hood front)
-    grille = add_box('Grille', (CHASSIS_W * 0.6, 0.4, 0.08), (0, RIDE_HEIGHT + 0.55, AXLE_FRONT_Z - 0.42))
-    assign(grille, MAT_TRIM)
-    parts.append(grille)
-
-    # Front bumper (rounded bar) — cylinder's own axis (local Z) rotated 90° about Y
-    # to point along world X (vehicle width).
-    bumper_f = add_cylinder('BumperFront', 0.09, CHASSIS_W * 0.98, (0, RIDE_HEIGHT + 0.28, AXLE_FRONT_Z - 0.55),
-                             rotation=(0, math.radians(90), 0), segments=10)
-    assign(bumper_f, MAT_TRIM)
-    parts.append(bumper_f)
-
-    # Rear bumper
-    bumper_r = add_cylinder('BumperRear', 0.09, CHASSIS_W * 0.98, (0, RIDE_HEIGHT + 0.28, AXLE_REAR_Z + 0.55),
-                             rotation=(0, math.radians(90), 0), segments=10)
-    assign(bumper_r, MAT_TRIM)
-    parts.append(bumper_r)
-
-    # Cargo bed (open box, low walls) at the rear
-    bed_floor = add_box('BedFloor', (CHASSIS_W * 0.92, 0.06, 1.15), (0, RIDE_HEIGHT + 0.62, AXLE_REAR_Z + 0.15))
-    assign(bed_floor, MAT_PAINT_LOWER)
-    parts.append(bed_floor)
-    for side, sx in (('L', -1), ('R', 1)):
-        wall = add_box(f'BedWall{side}', (0.06, 0.4, 1.15),
-                        (sx * (CHASSIS_W * 0.92) / 2, RIDE_HEIGHT + 0.82, AXLE_REAR_Z + 0.15))
-        assign(wall, MAT_PAINT_LOWER)
-        parts.append(wall)
-    tailgate = add_box('Tailgate', (CHASSIS_W * 0.92, 0.4, 0.06), (0, RIDE_HEIGHT + 0.82, AXLE_REAR_Z + 0.72))
-    assign(tailgate, MAT_PAINT_LOWER)
-    parts.append(tailgate)
-
-    # Windshield frame (two angled pillars + top bar) + glass pane
+    # --- cabin tub (sits between the wheels so the arches read as open wells)
+    parts.append(finish(add_box('Tub', (1.56, 0.44, 1.55), (0, 0.8, 0.0)), M['PaintBody'], 0.045, 3))
+    # rock sliders along the tub sills
     for sx in (-1, 1):
-        pillar = add_box(f'Pillar{sx}', (0.05, 0.62, 0.05),
-                          (sx * (CHASSIS_W * 0.86) / 2, RIDE_HEIGHT + 1.0, -0.15),
-                          rotation=(math.radians(12), 0, 0))
-        assign(pillar, MAT_TRIM)
-        parts.append(pillar)
-    top_bar = add_box('WindshieldTop', (CHASSIS_W * 0.8, 0.05, 0.05), (0, RIDE_HEIGHT + 1.28, -0.32),
-                       rotation=(math.radians(12), 0, 0))
-    assign(top_bar, MAT_TRIM)
-    parts.append(top_bar)
-    glass = add_box('Windshield', (CHASSIS_W * 0.74, 0.55, 0.02), (0, RIDE_HEIGHT + 1.0, -0.18),
-                     rotation=(math.radians(12), 0, 0))
-    assign(glass, MAT_GLASS)
-    parts.append(glass)
+        parts.append(finish(add_box(f'Slider{sx}', (0.09, 0.08, 1.3), (sx * 0.81, 0.6, 0.0)), M['PaintedMetal'], 0.02, 2))
 
-    # Roll cage — four vertical posts + a top perimeter made from beveled boxes (kept simple/robust
-    # instead of curve-based tubes, which are harder to guarantee manifold on export).
-    cage_positions = [
-        (-CHASSIS_W * 0.42, -0.05),
-        (CHASSIS_W * 0.42, -0.05),
-        (-CHASSIS_W * 0.42, AXLE_REAR_Z - 0.05),
-        (CHASSIS_W * 0.42, AXLE_REAR_Z - 0.05),
-    ]
-    post_top_y = RIDE_HEIGHT + 1.62
-    post_base_y = RIDE_HEIGHT + 0.9
-    for i, (px, pz) in enumerate(cage_positions):
-        # Posts stand vertically (world height axis); remap cylinder's default
-        # Z-axis to Y via -90 deg about X, same as the antenna base rotation.
-        post = add_cylinder(f'CagePost{i}', 0.035, post_top_y - post_base_y,
-                             (px, (post_top_y + post_base_y) / 2, pz),
-                             rotation=(math.radians(-90), 0, 0), segments=8)
-        assign(post, MAT_TRIM)
-        parts.append(post)
-    # top perimeter bars — axis along world X (width), same 90°-about-Y remap as the bumpers.
-    top_front = add_cylinder('CageTopFront', 0.032, CHASSIS_W * 0.84 + 0.07, (0, post_top_y, -0.05),
-                              rotation=(0, math.radians(90), 0), segments=8)
-    assign(top_front, MAT_TRIM)
-    parts.append(top_front)
-    top_rear = add_cylinder('CageTopRear', 0.032, CHASSIS_W * 0.84 + 0.07, (0, post_top_y, AXLE_REAR_Z - 0.05),
-                             rotation=(0, math.radians(90), 0), segments=8)
-    assign(top_rear, MAT_TRIM)
-    parts.append(top_rear)
-    # side bars run along world Z (depth) — that's already a cylinder's default axis, no rotation needed.
+    # --- hood + nose
+    hood_rot = (math.radians(-4), 0, 0)
+    parts.append(finish(add_box('Hood', (1.39, 0.34, 1.35), (0, y + 0.66, AXLE_FRONT_Z + 0.25), hood_rot), M['PaintBody'], 0.045, 3))
     for sx in (-1, 1):
-        side_bar = add_cylinder(f'CageSide{sx}', 0.032, AXLE_REAR_Z - 0.1, (sx * CHASSIS_W * 0.42, post_top_y, (AXLE_REAR_Z - 0.05) / 2 - 0.025),
-                                 rotation=(0, 0, 0), segments=8)
-        assign(side_bar, MAT_TRIM)
-        parts.append(side_bar)
-
-    # Headlights (small cylinders inset in the grille) — default cylinder axis is
-    # already world Z (depth), so the flat lens face naturally points forward/back.
+        parts.append(finish(add_box(f'HoodLatch{sx}', (0.03, 0.09, 0.05), (sx * 0.705, y + 0.64, -1.35)), M['BareMetal'], 0.008, 1))
+    parts.append(finish(add_box('GrillePanel', (1.34, 0.4, 0.06), (0, 0.92, -1.6)), M['PaintedMetal'], 0.015, 2))
+    for i in range(7):
+        sx = -0.33 + i * (0.66 / 6)
+        parts.append(finish(add_box(f'Slat{i}', (0.045, 0.32, 0.05), (sx, 0.92, -1.64)), M['PaintBody'], 0.012, 2))
     for sx in (-1, 1):
-        light = add_cylinder(f'Headlight{sx}', 0.09, 0.05,
-                              (sx * CHASSIS_W * 0.34, RIDE_HEIGHT + 0.58, AXLE_FRONT_Z - 0.46),
-                              rotation=(0, 0, 0), segments=12)
-        assign(light, MAT_LIGHT)
-        parts.append(light)
+        # bezel ring + lens; lens sits proud so it gets its own rim highlight
+        parts.append(finish(add_tube(f'Bezel{sx}', 0.115, 0.08, 0.06, (sx * 0.52, 0.94, -1.645), AXIS_Z, 20), M['PaintedMetal'], 0.012, 2))
+        parts.append(finish(add_cylinder(f'Lens{sx}', 0.085, 0.05, (sx * 0.52, 0.94, -1.64), AXIS_Z, 20), M['LightLens'], 0.015, 2))
 
-    # Side mirrors
+    # --- bumpers (box-section steel, the military norm)
+    for tag, z in (('Front', -1.78), ('Rear', 1.97)):
+        parts.append(finish(add_box(f'Bumper{tag}', (1.62, 0.16, 0.14), (0, 0.62, z)), M['PaintedMetal'], 0.025, 3))
     for sx in (-1, 1):
-        stalk = add_box(f'MirrorStalk{sx}', (0.03, 0.03, 0.18), (sx * CHASSIS_W * 0.52, RIDE_HEIGHT + 1.05, -0.1))
-        assign(stalk, MAT_TRIM)
-        parts.append(stalk)
-        head = add_box(f'MirrorHead{sx}', (0.05, 0.12, 0.16), (sx * (CHASSIS_W * 0.52 + 0.06), RIDE_HEIGHT + 1.05, -0.1))
-        assign(head, MAT_TRIM)
-        parts.append(head)
+        parts.append(finish(add_box(f'BumperBracket{sx}', (0.1, 0.1, 0.3), (sx * 0.4, 0.56, -1.6)), M['PaintChassis'], 0.01, 1))
+        # tow shackles on the front bumper
+        parts.append(finish(add_torus(f'Shackle{sx}', 0.045, 0.014, (sx * 0.52, 0.57, -1.86), AXIS_X, 14, 6), M['BareMetal']))
 
-    # Fender flares over each wheel opening
+    # --- wheel-arch fenders (replace the old box flares)
     for sx, sz, tag in (
         (-1, AXLE_FRONT_Z, 'FL'), (1, AXLE_FRONT_Z, 'FR'),
         (-1, AXLE_REAR_Z, 'RL'), (1, AXLE_REAR_Z, 'RR'),
     ):
-        flare = add_box(f'Flare{tag}', (0.14, 0.22, 0.66), (sx * (TRACK / 2 + 0.02), RIDE_HEIGHT + 0.34, sz))
-        bevel(flare, 0.04, 2)
-        assign(flare, MAT_PAINT_LOWER)
-        parts.append(flare)
+        x_in, x_out = 0.56, 0.95
+        x0, x1 = (sx * x_in, sx * x_out) if sx > 0 else (sx * x_out, sx * x_in)
+        arch = add_arch(f'Arch{tag}', WHEEL_R + 0.1, WHEEL_R + 0.18, x0, x1, y, sz)
+        parts.append(finish(arch, M['PaintChassis'], 0.025, 2, smooth_angle=30))
 
-    # Spare wheel mount on the tailgate (simple disc, doesn't need to spin — join into Body)
-    spare = add_cylinder('SpareWheel', WHEEL_R * 0.92, WHEEL_W * 0.9, (0, RIDE_HEIGHT + 0.95, AXLE_REAR_Z + 0.78),
-                          rotation=(0, math.radians(90), 0), segments=20)
-    assign(spare, MAT_TIRE)
-    parts.append(spare)
-    spare_rim = add_cylinder('SpareRim', WHEEL_R * 0.5, WHEEL_W * 0.95, (0, RIDE_HEIGHT + 0.95, AXLE_REAR_Z + 0.78),
-                              rotation=(0, math.radians(90), 0), segments=16)
-    assign(spare_rim, MAT_RIM)
-    parts.append(spare_rim)
+    # --- cargo bed
+    parts.append(finish(add_box('BedFloor', (1.49, 0.06, 1.15), (0, 1.0, AXLE_REAR_Z + 0.15)), M['PaintChassis'], 0.01, 1))
+    for sx in (-1, 1):
+        parts.append(finish(add_box(f'BedWall{sx}', (0.06, 0.4, 1.15), (sx * 0.745, 1.2, AXLE_REAR_Z + 0.15)), M['PaintBody'], 0.018, 2))
+    parts.append(finish(add_box('BedFront', (1.49, 0.4, 0.06), (0, 1.2, AXLE_REAR_Z - 0.4)), M['PaintBody'], 0.018, 2))
+    parts.append(finish(add_box('Tailgate', (1.49, 0.4, 0.06), (0, 1.2, AXLE_REAR_Z + 0.72)), M['PaintBody'], 0.018, 2))
+    for sx in (-1, 1):
+        parts.append(finish(add_box(f'TailgateLatch{sx}', (0.07, 0.05, 0.03), (sx * 0.66, 1.34, AXLE_REAR_Z + 0.765)), M['BareMetal'], 0.008, 1))
+        parts.append(finish(add_cylinder(f'TailgateHinge{sx}', 0.022, 0.16, (sx * 0.5, 1.02, AXLE_REAR_Z + 0.755), AXIS_X, 10), M['BareMetal'], 0.006, 1))
+        parts.append(finish(add_box(f'TailLightHousing{sx}', (0.16, 0.11, 0.025), (sx * 0.6, 1.16, AXLE_REAR_Z + 0.76)), M['PaintedMetal'], 0.008, 1))
+        parts.append(finish(add_box(f'TailLight{sx}', (0.12, 0.075, 0.02), (sx * 0.6, 1.16, AXLE_REAR_Z + 0.775)), M['TailLight'], 0.006, 1))
+        # mud flaps behind the rear wheels
+        parts.append(finish(add_box(f'MudFlap{sx}', (0.3, 0.34, 0.02), (sx * TRACK / 2, 0.36, AXLE_REAR_Z + 0.5)), M['Tire'], 0.006, 1))
 
-    # Antenna (thin, whippy) — base rotation of -90° about X stands the cylinder's
-    # default Z-axis up along world Y, plus a small whip lean. Rooted near the
-    # bed wall top so it doesn't float disconnected above the roll cage.
-    antenna_len = 0.7
-    antenna = add_cylinder('Antenna', 0.012, antenna_len,
-                            (CHASSIS_W * 0.44, RIDE_HEIGHT + 0.82 + antenna_len / 2, AXLE_REAR_Z + 0.05),
-                            rotation=(math.radians(-90 + 8), 0, math.radians(-6)), segments=6)
-    assign(antenna, MAT_TRIM)
-    parts.append(antenna)
+    # jerrycan strapped in the front-left corner of the bed
+    parts.append(finish(add_box('Jerrycan', (0.2, 0.44, 0.34), (-0.5, 1.25, AXLE_REAR_Z - 0.18)), M['PaintChassis'], 0.03, 3))
+    parts.append(finish(add_box('JerrycanHandle', (0.05, 0.05, 0.2), (-0.5, 1.5, AXLE_REAR_Z - 0.18)), M['PaintChassis'], 0.01, 1))
+    parts.append(finish(add_box('BedStrap', (0.24, 0.035, 0.37), (-0.5, 1.3, AXLE_REAR_Z - 0.18)), M['Canvas'], 0.005, 1))
 
-    for p in parts:
-        apply_all_modifiers(p)
+    # --- windshield: frame + glass, leaning back 12°
+    ws_tilt = math.radians(12)
+    ws_base_y, ws_base_z, ws_h = 1.02, -0.3, 0.64
 
-    body = join(parts, 'Body')
-    return body
+    def ws_point(h):
+        return (ws_base_y + h * math.cos(ws_tilt), ws_base_z + h * math.sin(ws_tilt))
+
+    ws_rot = (ws_tilt, 0, 0)
+    py, pz = ws_point(ws_h / 2)
+    for sx in (-1, 1):
+        parts.append(finish(add_box(f'Pillar{sx}', (0.055, ws_h, 0.055), (sx * 0.68, py, pz), ws_rot), M['PaintedMetal'], 0.012, 2))
+    for tag, h in (('Top', ws_h), ('Bottom', 0.03)):
+        by, bz = ws_point(h)
+        parts.append(finish(add_box(f'Windshield{tag}', (1.415, 0.055, 0.055), (0, by, bz), ws_rot), M['PaintedMetal'], 0.012, 2))
+    parts.append(finish(add_box('Windshield', (1.31, ws_h - 0.06, 0.012), (0, py, pz), ws_rot), M['Glass']))
+
+    # --- interior: seats + steering wheel (seen from the chase camera above)
+    for sx in (-1, 1):
+        parts.append(finish(add_box(f'SeatCushion{sx}', (0.5, 0.12, 0.46), (sx * 0.36, 1.08, 0.38)), M['Canvas'], 0.04, 3))
+        parts.append(finish(add_box(f'SeatBack{sx}', (0.5, 0.5, 0.11), (sx * 0.36, 1.36, 0.66), (math.radians(8), 0, 0)), M['Canvas'], 0.04, 3))
+    wheel_tilt = (math.radians(-90 + 55), 0, 0)
+    parts.append(finish(add_torus('SteeringWheel', 0.16, 0.017, (-0.36, 1.36, -0.08), wheel_tilt, 24, 6), M['Tire']))
+    parts.append(finish(add_cylinder('SteeringColumn', 0.025, 0.36, (-0.36, 1.24, -0.2), (math.radians(-35), 0, 0), 8), M['PaintedMetal']))
+
+    # --- roll cage (painted tube)
+    cage_x = CHASSIS_W * 0.42
+    cage_z = (-0.05, AXLE_REAR_Z - 0.05)
+    post_top_y = y + 1.62
+    post_base_y = 1.0
+    for i, (px, pz) in enumerate([(-cage_x, cage_z[0]), (cage_x, cage_z[0]), (-cage_x, cage_z[1]), (cage_x, cage_z[1])]):
+        parts.append(finish(add_cylinder(f'CagePost{i}', 0.035, post_top_y - post_base_y, (px, (post_top_y + post_base_y) / 2, pz), AXIS_Y, 12), M['PaintedMetal'], 0.008, 1))
+    for tag, z in (('Front', cage_z[0]), ('Rear', cage_z[1])):
+        parts.append(finish(add_cylinder(f'CageTop{tag}', 0.032, cage_x * 2 + 0.07, (0, post_top_y, z), AXIS_X, 12), M['PaintedMetal'], 0.008, 1))
+    for sx in (-1, 1):
+        parts.append(finish(add_cylinder(f'CageSide{sx}', 0.032, cage_z[1] - cage_z[0] + 0.07, (sx * cage_x, post_top_y, sum(cage_z) / 2), AXIS_Z, 12), M['PaintedMetal'], 0.008, 1))
+
+    # --- side mirrors (painted housing + real mirror face toward the rear)
+    for sx in (-1, 1):
+        parts.append(finish(add_box(f'MirrorStalk{sx}', (0.18, 0.03, 0.03), (sx * 0.8, 1.2, -0.2)), M['PaintedMetal'], 0.006, 1))
+        parts.append(finish(add_box(f'MirrorHead{sx}', (0.06, 0.13, 0.17), (sx * 0.9, 1.25, -0.2), (0, 0, 0)), M['PaintedMetal'], 0.015, 2))
+        parts.append(finish(add_box(f'MirrorGlass{sx}', (0.045, 0.105, 0.012), (sx * 0.9, 1.25, -0.112)), M['Mirror']))
+
+    # --- spare wheel on the tailgate (same construction as the road wheels)
+    parts.append(finish(add_box('SpareBracket', (0.28, 0.28, 0.1), (0, 1.3, AXLE_REAR_Z + 0.8)), M['PaintedMetal'], 0.015, 2))
+    spare_parts = wheel_parts('Spare', (0, 1.3, AXLE_REAR_Z + 0.97), axis_matrix=Matrix.Rotation(math.radians(90), 4, 'Y'))
+    parts.extend(spare_parts)
+
+    # --- antenna (bare-metal mount + dark whip), rooted on the bed wall top
+    ant_base = (cage_x + 0.06, 1.42, AXLE_REAR_Z + 0.35)
+    parts.append(finish(add_cylinder('AntennaMount', 0.035, 0.07, ant_base, AXIS_Y, 12), M['BareMetal'], 0.008, 1))
+    whip_len = 1.0
+    whip_rot = (math.radians(-90 + 10), 0, math.radians(-5))
+    whip_dir = _xform((0, 0, 0), whip_rot) @ Vector((0, 0, 1))
+    whip_center = Vector(ant_base) + whip_dir * (whip_len / 2 + 0.03)
+    parts.append(finish(add_cylinder('Antenna', 0.009, whip_len, tuple(whip_center), whip_rot, 6, radius_top=0.004), M['PaintedMetal']))
+
+    return join(parts, 'Body')
+
+
+# ---------------------------------------------------------------- wheels
+
+def wheel_parts(tag, center, axis_matrix=None):
+    """All pieces of one wheel, built around the X spin axis at `center`.
+    `axis_matrix` (about the wheel center) re-orients it, e.g. for the spare."""
+    cx, cy, cz = center
+    parts = []
+
+    def place(obj):
+        if axis_matrix is not None:
+            c = Vector(center)
+            obj.data.transform(Matrix.Translation(c) @ axis_matrix @ Matrix.Translation(-c))
+            obj.data.update()
+        return obj
+
+    # Tire carcass: a hollow ring with a well-rounded shoulder, so the
+    # sidewall rolls into the tread instead of meeting it at a hard 90°.
+    carcass_r = WHEEL_R * 0.93
+    parts.append(place(finish(add_tube(f'Tire_{tag}', carcass_r, WHEEL_R * 0.6, WHEEL_W, center, AXIS_X, 36), M['Tire'], 0.06, 4, smooth_angle=30)))
+    # Sidewall bead ring — a slight step at the rim edge, catches a rim-light.
+    parts.append(place(finish(add_tube(f'Bead_{tag}', WHEEL_R * 0.66, WHEEL_R * 0.58, WHEEL_W * 0.94, center, AXIS_X, 36), M['Tire'], 0.012, 2, smooth_angle=30)))
+
+    # Recessed rim dish + raised hub + bare-metal lug nuts.
+    parts.append(place(finish(add_cylinder(f'Rim_{tag}', WHEEL_R * 0.6, WHEEL_W * 0.72, center, AXIS_X, 28), M['Rim'], 0.015, 2)))
+    parts.append(place(finish(add_tube(f'RimLip_{tag}', WHEEL_R * 0.6, WHEEL_R * 0.52, WHEEL_W * 0.86, center, AXIS_X, 28), M['Rim'], 0.01, 2)))
+    parts.append(place(finish(add_cylinder(f'Hub_{tag}', WHEEL_R * 0.2, WHEEL_W * 0.9, center, AXIS_X, 16), M['PaintedMetal'], 0.015, 2)))
+    parts.append(place(finish(add_cylinder(f'HubCap_{tag}', WHEEL_R * 0.09, WHEEL_W * 0.98, center, AXIS_X, 12), M['BareMetal'], 0.008, 1)))
+    lug_ring = WHEEL_R * 0.3
+    for i in range(6):
+        a = (i / 6) * math.tau
+        ly, lz = cy + math.cos(a) * lug_ring, cz + math.sin(a) * lug_ring
+        parts.append(place(finish(add_cylinder(f'Lug_{tag}_{i}', 0.017, WHEEL_W * 0.8, (cx, ly, lz), AXIS_X, 6), M['BareMetal'], 0.004, 1)))
+
+    # Tread: two staggered rows of chevron lugs whose outer face lands
+    # exactly on WHEEL_R (so ground contact matches the physics radius).
+    lugs_per_row = 18
+    lug_depth = WHEEL_R - carcass_r + 0.012
+    lug_center_r = WHEEL_R - lug_depth / 2
+    for row, (x_off, yaw) in enumerate(((-WHEEL_W * 0.23, 14), (WHEEL_W * 0.23, -14))):
+        for i in range(lugs_per_row):
+            ang = ((i + 0.5 * row) / lugs_per_row) * math.tau
+            spin = Matrix.Rotation(ang, 4, 'X')
+            radial = spin @ Vector((0, -1, 0))
+            pos = Vector((cx + x_off, cy, cz)) + radial * lug_center_r
+            mat = Matrix.Translation(pos) @ spin @ Matrix.Rotation(math.radians(yaw), 4, 'Y')
+            lug = add_box(f'Tread_{tag}_{row}_{i}', (WHEEL_W * 0.44, lug_depth, 0.075), None, matrix=mat)
+            parts.append(place(finish(lug, M['TireTread'], 0.008, 1)))
+    return parts
 
 
 def build_wheel(tag, x, z):
-    parts = []
-    # Wheel spin axis is world X (left-right); cylinders default to axis-Z, so
-    # remap Z->X via a 90° rotation about Y.
-    rotation = (0, math.radians(90), 0)
-
-    tire = add_cylinder(f'Tire_{tag}', WHEEL_R, WHEEL_W, (x, WHEEL_R, z), rotation=rotation, segments=24)
-    bevel(tire, 0.05, 3)
-    assign(tire, MAT_TIRE)
-    parts.append(tire)
-
-    rim = add_cylinder(f'Rim_{tag}', WHEEL_R * 0.55, WHEEL_W * 1.04, (x, WHEEL_R, z), rotation=rotation, segments=16)
-    assign(rim, MAT_RIM)
-    parts.append(rim)
-
-    hub = add_cylinder(f'Hub_{tag}', WHEEL_R * 0.14, WHEEL_W * 1.1, (x, WHEEL_R, z), rotation=rotation, segments=12)
-    assign(hub, MAT_TRIM)
-    parts.append(hub)
-
-    # Tread blocks — small boxes radially arrayed around the wheel's rotation
-    # axis (world X), so they vary in height (Y) and depth (Z), not X.
-    n = 14
-    for i in range(n):
-        ang = (i / n) * math.tau
-        by = WHEEL_R - math.cos(ang) * WHEEL_R * 0.98
-        bz = z + math.sin(ang) * WHEEL_R * 0.98
-        block = add_box(f'Tread_{tag}_{i}', (WHEEL_W * 1.02, 0.07, 0.07), (x, by, bz),
-                         rotation=(ang, 0, 0))
-        assign(block, MAT_TIRE)
-        parts.append(block)
-
-    for p in parts:
-        apply_all_modifiers(p)
-
-    wheel = join(parts, f'Wheel_{tag}')
+    wheel = join(wheel_parts(tag, (x, WHEEL_R, z)), f'Wheel_{tag}')
 
     # Set the object's origin to the wheel's rotation axis (x, WHEEL_R, z) so runtime
     # rotation (rolling + steering) happens around the correct point.
@@ -415,28 +538,32 @@ def render_preview(out_dir):
     scene.render.resolution_x = 900
     scene.render.resolution_y = 650
     scene.render.film_transparent = False
+    try:
+        scene.view_settings.view_transform = 'AgX'
+    except TypeError:
+        pass
     scene.world = bpy.data.worlds.new('World')
     scene.world.use_nodes = True
     bg = scene.world.node_tree.nodes.get('Background')
     if bg:
-        bg.inputs[0].default_value = (0.83, 0.80, 0.73, 1.0)
+        bg.inputs[0].default_value = (*srgb('#DCD6C8'), 1.0)
         bg.inputs[1].default_value = 1.0
 
     sun_data = bpy.data.lights.new('Sun', type='SUN')
     sun_data.energy = 3.2
+    sun_data.angle = math.radians(3)
     sun = bpy.data.objects.new('Sun', sun_data)
     bpy.context.collection.objects.link(sun)
-    sun.rotation_euler = (math.radians(55), 0, math.radians(35))
+    sun.rotation_euler = (math.radians(50), 0, math.radians(35))
 
     fill_data = bpy.data.lights.new('Fill', type='SUN')
-    fill_data.energy = 0.8
+    fill_data.energy = 0.6
     fill = bpy.data.objects.new('Fill', fill_data)
     bpy.context.collection.objects.link(fill)
     fill.rotation_euler = (math.radians(60), 0, math.radians(-140))
 
-    ground = add_box('Ground', (10, 10, 0.05), (0, 0, -0.025))
-    ground_mat = new_material('GroundPreview', (0.55, 0.5, 0.4), roughness=0.9)
-    assign(ground, ground_mat)
+    ground = add_box('Ground', (14, 14, 0.05), (0, 0, -0.025))
+    ground.data.materials.append(new_material('GroundPreview', '#B9A988', roughness=0.95))
 
     cam_data = bpy.data.cameras.new('Cam')
     cam_data.lens = 42
@@ -444,19 +571,19 @@ def render_preview(out_dir):
     bpy.context.collection.objects.link(cam)
     scene.camera = cam
 
-    # Tuples are (X=side, Y=depth, Z=height) — Blender's real convention —
-    # now that the vehicle root carries the +90 deg correction, the model's
-    # own "up" is Blender Z, matching a normal scene.
-    import mathutils
+    # Tuples are (X=side, Y=depth, Z=height) in Blender's real convention —
+    # the root's +90° correction maps the model's forward (-Z authored) to
+    # Blender +Y, so "front" cameras sit at +Y and "rear" ones at -Y.
+    # 'chase' matches the in-lab camera (Vehicle.tsx CAM_DISTANCE/CAM_HEIGHT).
     angles = {
-        'front34': (4.2, -5.6, 1.9),
-        'side': (5.8, 0.2, 1.5),
-        'rear34': (4.0, 5.4, 2.1),
+        'front34': ((4.2, 5.6, 1.9), (0, 0, 0.9)),
+        'side': ((5.8, 0.2, 1.5), (0, 0, 0.9)),
+        'rear34': ((4.0, -5.4, 2.1), (0, 0, 0.9)),
+        'chase': ((0.9, -6.4, 2.6), (0, 3.2, 1.1)),
     }
-    target = mathutils.Vector((0, 0, 0.9))
-    for name, pos in angles.items():
+    for name, (pos, target) in angles.items():
         cam.location = pos
-        direction = target - mathutils.Vector(pos)
+        direction = Vector(target) - Vector(pos)
         cam.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
         scene.render.filepath = os.path.join(out_dir, f'vehicle-preview-{name}.png')
         bpy.ops.render.render(write_still=True)
@@ -480,6 +607,7 @@ def main():
         use_selection=True,
         export_apply=True,
         export_yup=True,
+        export_normals=True,
         export_materials='EXPORT',
         export_animations=False,
     )

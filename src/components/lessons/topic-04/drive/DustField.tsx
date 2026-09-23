@@ -6,9 +6,10 @@ import { useFrame } from '@react-three/fiber';
 import type { SoilConfig } from './terrainConfigs';
 import type { HeightSampler } from './heightfield';
 import type { VehiclePose } from './vehicleController';
-import { TRACK, WHEELBASE } from './vehicleController';
+import { TRACK, WHEELBASE, vehicleToWorld } from './vehicleController';
 
 const POOL_SIZE = 36;
+const _emit = new THREE.Vector2();
 
 /** Soft radial-falloff disc, generated once at runtime — no image asset needed. */
 let sharedTexture: THREE.Texture | null = null;
@@ -129,10 +130,10 @@ export function DustField({
     const sideSign = emitSide.current === 0 ? -1 : 1;
     const cos = Math.cos(pose.heading);
     const sin = Math.sin(pose.heading);
-    const localX = (sideSign * TRACK) / 2;
-    const localZ = WHEELBASE / 2 + 0.25;
-    const wx = pose.position.x + localX * cos + localZ * sin;
-    const wz = pose.position.z - localX * sin + localZ * cos;
+    // Just behind a rear wheel.
+    vehicleToWorld((sideSign * TRACK) / 2, WHEELBASE / 2 + 0.25, pose.heading, pose.position, _emit);
+    const wx = _emit.x;
+    const wz = _emit.y;
     const wy = heightAt(wx, wz);
 
     const isSplash = soil.visual.kickup.kind === 'splash';

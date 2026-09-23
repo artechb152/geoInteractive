@@ -6,6 +6,8 @@
  * reviewed and merged into the lesson) — see design/docs/assumptions.md.
  */
 
+import type { TerrainMaterialProfile } from './terrainMaterial';
+
 export type SoilId = 'hard' | 'soft' | 'sand' | 'mud';
 
 export type TerrainPhysics = {
@@ -26,33 +28,42 @@ export type TerrainPhysics = {
 };
 
 export type TerrainVisual = {
+  /** Poster/thumb images for the picker + loading gate (not used by the 3D material). */
   textureDir: string;
-  /** World-space texture tiling repeats across the ~40m playable tile. */
-  repeat: number;
+  /** Layered ground material (soil / rock / moss / wet) — see terrainMaterial.ts. */
+  material: TerrainMaterialProfile;
+  /** Horizon haze: fog colour, sky-dome horizon and HorizonBackdrop base (see atmosphere.ts). */
   fog: string;
+  /** Sky-dome zenith (sage family). */
   sky: string;
+  /** Warm ground-bounce colour for the baked sky light. */
   ambient: string;
+  /** Late-afternoon sunlight colour. Sun direction/intensity live in atmosphere.ts. */
   sun: string;
-  /** drei <Sky> tuning — sets the mood per terrain (clear/hazy/overcast). */
-  atmosphere: {
-    sunPosition: [number, number, number];
-    turbidity: number;
-    rayleigh: number;
-    mieCoefficient: number;
-    mieDirectionalG: number;
-  };
   /** Wheel kickup particles — off for hard rock (nothing to kick up). */
   kickup: { enabled: boolean; color: string; kind: 'dust' | 'splash' };
 };
 
+/** Terrain shape, layered large → medium → small (see landforms.ts). */
 export type TerrainHeightProfile = {
-  /** Overall vertical scale (m) of the terrain's large-scale relief. */
-  macroAmplitude: number;
-  /** Large-scale feature frequency — lower = broader hills/dunes. */
-  macroFrequency: number;
-  /** Small-scale surface roughness amplitude (m), felt as suspension chatter. */
-  detailAmplitude: number;
   style: 'ledges' | 'terraces' | 'dunes' | 'ruts';
+  /** Height scale (m) of the large landforms: knolls, basins, dune ridges, channels. */
+  reliefAmplitude: number;
+  /** Scale (m) of the style's medium structure: ledge / terrace step height, secondary dunes, hummocks. */
+  mediumAmplitude: number;
+  /** Small surface roughness (m), felt as suspension chatter. */
+  detailAmplitude: number;
+  /** Height (m) of the low hills on the visual-only apron just past the boundary stakes. */
+  outerRelief: number;
+  /** How the shared route (terrainRoute.ts) is cut into this ground. */
+  route: {
+    /** 0..1: how far the track bed is graded toward a smooth, level bed (1 = fully engineered road). */
+    grade: number;
+    /** Depth (m) of the twin wheel ruts. */
+    rutDepth: number;
+    /** Height (m) of the spoil berm along each track edge. */
+    bermHeight: number;
+  };
 };
 
 export type SoilConfig = {
@@ -88,15 +99,44 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
     },
     visual: {
       textureDir: `${BASE_TEXTURE_PATH}/hard`,
-      repeat: 9,
-      fog: '#cfc3ac',
-      sky: '#cbd9df',
-      ambient: '#8a8f78',
-      sun: '#fff3d6',
-      atmosphere: { sunPosition: [60, 35, -20], turbidity: 4, rayleigh: 1.2, mieCoefficient: 0.004, mieDirectionalG: 0.8 },
+      // Terra rossa soil with pale limestone breaking through on ledge risers,
+      // boulder crowns and a few outcrop clusters; sage scrub in the gaps.
+      // Ground grain borrows the calm mud texture — the rock photo only shows where rock is exposed.
+      material: {
+        textures: {
+          ground: { dir: `${BASE_TEXTURE_PATH}/mud`, scale: 3.2, contrast: 0.1, normalStrength: 0.55 },
+          rock: { dir: `${BASE_TEXTURE_PATH}/hard`, scale: 4.8, contrast: 1, normalStrength: 1 },
+        },
+        palette: {
+          soilLight: '#9c8469',
+          soilDark: '#766350',
+          soilAlt: '#957260',
+          rockLight: '#c9bfad',
+          rockDark: '#877d6e',
+          moss: '#87915e',
+          mossDark: '#5d6743',
+        },
+        soil: { variation: 0.35, altAmount: 0.45, ridgeLight: 0.25 },
+        rock: { amount: 1, slope: [0.08, 0.24], ridge: 0.6, cluster: 0.9, clusterThreshold: 0.6, creviceMoss: 0.7 },
+        moss: { amount: 0.5, hollowBias: 0.8, heightBias: 0 },
+        wet: { amount: 0, darken: 1 },
+        roughness: { soil: 0.96, rock: 0.84, moss: 0.92, wet: 0.4 },
+      },
+      fog: '#e8d7ba',
+      sky: '#a9bbb3',
+      ambient: '#9a8563',
+      sun: '#ffd8a6',
       kickup: { enabled: false, color: '#9a8f78', kind: 'dust' },
     },
-    height: { macroAmplitude: 1.4, macroFrequency: 0.09, detailAmplitude: 0.16, style: 'ledges' },
+    height: {
+      style: 'ledges',
+      reliefAmplitude: 3,
+      mediumAmplitude: 0.55,
+      detailAmplitude: 0.07,
+      outerRelief: 4.5,
+      // A rough bulldozed trail: graded, but ledge steps still cross it.
+      route: { grade: 0.75, rutDepth: 0.025, bermHeight: 0.14 },
+    },
   },
   soft: {
     id: 'soft',
@@ -116,15 +156,43 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
     },
     visual: {
       textureDir: `${BASE_TEXTURE_PATH}/soft`,
-      repeat: 8,
-      fog: '#e2d3b0',
-      sky: '#dce6d8',
-      ambient: '#a79a72',
-      sun: '#fff6df',
-      atmosphere: { sunPosition: [45, 28, 35], turbidity: 6, rayleigh: 1.6, mieCoefficient: 0.006, mieDirectionalG: 0.82 },
+      // Pale chalky clay; chalk shows only on the steeper terrace risers,
+      // grass patches settle on the flat treads.
+      material: {
+        textures: {
+          ground: { dir: `${BASE_TEXTURE_PATH}/soft`, scale: 3.6, contrast: 0.14, normalStrength: 0.55 },
+          rock: { dir: `${BASE_TEXTURE_PATH}/hard`, scale: 4.2, contrast: 0.6, normalStrength: 0.7 },
+        },
+        palette: {
+          soilLight: '#b8a785',
+          soilDark: '#978669',
+          soilAlt: '#b09a77',
+          rockLight: '#ddd4c2',
+          rockDark: '#aea38f',
+          moss: '#939a6b',
+          mossDark: '#6f7a4f',
+        },
+        soil: { variation: 0.3, altAmount: 0.35, ridgeLight: 0.2 },
+        rock: { amount: 0.75, slope: [0.1, 0.26], ridge: 0.25, cluster: 0.35, clusterThreshold: 0.66, creviceMoss: 0.3 },
+        moss: { amount: 0.45, hollowBias: 0.5, heightBias: -0.2 },
+        wet: { amount: 0, darken: 1 },
+        roughness: { soil: 0.94, rock: 0.86, moss: 0.92, wet: 0.4 },
+      },
+      fog: '#ecdab6',
+      sky: '#b0c1ab',
+      ambient: '#a58d62',
+      sun: '#ffd9a4',
       kickup: { enabled: true, color: '#c9b48a', kind: 'dust' },
     },
-    height: { macroAmplitude: 0.9, macroFrequency: 0.06, detailAmplitude: 0.07, style: 'terraces' },
+    height: {
+      style: 'terraces',
+      reliefAmplitude: 3.2,
+      mediumAmplitude: 0.7,
+      detailAmplitude: 0.035,
+      outerRelief: 4,
+      // Soft ground is easy to engineer: the road is cut cleanly through the hills.
+      route: { grade: 0.92, rutDepth: 0.05, bermHeight: 0.16 },
+    },
   },
   sand: {
     id: 'sand',
@@ -144,15 +212,41 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
     },
     visual: {
       textureDir: `${BASE_TEXTURE_PATH}/sand`,
-      repeat: 10,
-      fog: '#e8d9b2',
-      sky: '#bcdcec',
-      ambient: '#c2ab7c',
-      sun: '#fff8e0',
-      atmosphere: { sunPosition: [70, 22, 10], turbidity: 9, rayleigh: 2.2, mieCoefficient: 0.012, mieDirectionalG: 0.86 },
+      // No exposed stone; lighter crests, warmer troughs, rare dry scrub in the low ground.
+      material: {
+        textures: {
+          ground: { dir: `${BASE_TEXTURE_PATH}/sand`, scale: 4.5, contrast: 0.12, normalStrength: 0.7 },
+        },
+        palette: {
+          soilLight: '#cfb88f',
+          soilDark: '#b0956f',
+          soilAlt: '#c6a67f',
+          rockLight: '#cfb88f',
+          rockDark: '#b0956f',
+          moss: '#a09a6c',
+          mossDark: '#7f7c57',
+        },
+        soil: { variation: 0.28, altAmount: 0.4, ridgeLight: 0.45 },
+        rock: { amount: 0, slope: [1, 1], ridge: 0, cluster: 0, clusterThreshold: 1, creviceMoss: 0 },
+        moss: { amount: 0.22, hollowBias: 0.8, heightBias: -0.8 },
+        wet: { amount: 0, darken: 1 },
+        roughness: { soil: 0.97, rock: 0.9, moss: 0.93, wet: 0.4 },
+      },
+      fog: '#efddb6',
+      sky: '#adc2c0',
+      ambient: '#bb9f70',
+      sun: '#ffdcaa',
       kickup: { enabled: true, color: '#e3cd96', kind: 'dust' },
     },
-    height: { macroAmplitude: 1.1, macroFrequency: 0.045, detailAmplitude: 0.05, style: 'dunes' },
+    height: {
+      style: 'dunes',
+      reliefAmplitude: 2.4,
+      mediumAmplitude: 0.3,
+      detailAmplitude: 0.02,
+      outerRelief: 3.5,
+      // Just a vehicle track over the dunes: it mostly follows the ground.
+      route: { grade: 0.45, rutDepth: 0.07, bermHeight: 0.08 },
+    },
   },
   mud: {
     id: 'mud',
@@ -172,15 +266,42 @@ export const SOIL_CONFIGS: Record<SoilId, SoilConfig> = {
     },
     visual: {
       textureDir: `${BASE_TEXTURE_PATH}/mud`,
-      repeat: 7,
-      fog: '#9aa08c',
-      sky: '#a9b3a2',
-      ambient: '#6c705a',
-      sun: '#e9e6cf',
-      atmosphere: { sunPosition: [-30, 12, 25], turbidity: 18, rayleigh: 3.2, mieCoefficient: 0.018, mieDirectionalG: 0.9 },
+      // Saturated loess: glossy dark water in the puddles and ruts, grass
+      // holding on the slightly higher, drier ground.
+      material: {
+        textures: {
+          ground: { dir: `${BASE_TEXTURE_PATH}/mud`, scale: 3, contrast: 0.16, normalStrength: 0.8 },
+        },
+        palette: {
+          soilLight: '#78634f',
+          soilDark: '#4f4136',
+          soilAlt: '#63523d',
+          rockLight: '#78634f',
+          rockDark: '#4f4136',
+          moss: '#6e7a4e',
+          mossDark: '#4f5a38',
+        },
+        soil: { variation: 0.3, altAmount: 0.35, ridgeLight: 0.15 },
+        rock: { amount: 0, slope: [1, 1], ridge: 0, cluster: 0, clusterThreshold: 1, creviceMoss: 0 },
+        moss: { amount: 0.5, hollowBias: -0.9, heightBias: 0.7 },
+        wet: { amount: 0.9, darken: 0.55 },
+        roughness: { soil: 0.85, rock: 0.8, moss: 0.9, wet: 0.28 },
+      },
+      fog: '#dad3bc',
+      sky: '#a4b1a1',
+      ambient: '#76705a',
+      sun: '#f6d9b0',
       kickup: { enabled: true, color: '#3a3226', kind: 'splash' },
     },
-    height: { macroAmplitude: 0.35, macroFrequency: 0.05, detailAmplitude: 0.06, style: 'ruts' },
+    height: {
+      style: 'ruts',
+      reliefAmplitude: 1,
+      mediumAmplitude: 0.14,
+      detailAmplitude: 0.03,
+      outerRelief: 1.6,
+      // Dirt road churned into deep ruts; puddles sit on the track itself.
+      route: { grade: 0.7, rutDepth: 0.12, bermHeight: 0.1 },
+    },
   },
 };
 

@@ -1,76 +1,99 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useTexture } from '@react-three/drei';
 import type { SoilConfig } from './terrainConfigs';
 import { TILE_HALF_SIZE } from './terrainConfigs';
 import { buildTerrainGeometry, type HeightSampler } from './heightfield';
+import { bakeTerrainMasks, preloadTerrainMaterial, useTerrainMaterial } from './terrainMaterial';
 
 const BOUNDARY_MARKERS = 28;
+const FLAG_COLORS = ['#c94f36', '#e8e2d2'];
 
-export function Terrain({ soil, heightAt }: { soil: SoilConfig; heightAt: HeightSampler }) {
-  const geometry = useMemo(() => buildTerrainGeometry(heightAt), [heightAt]);
+/** Boundary markers — plain survey stakes with a small hazard-tape flag,
+ * rather than bright traffic cones, so the edge-of-area cue doesn't read as a
+ * toy prop. Instanced: two draw calls for all 28 instead of 56 meshes. */
+function BoundaryStakes({ heightAt }: { heightAt: HeightSampler }) {
+  const stakesRef = useRef<THREE.InstancedMesh>(null);
+  const flagsRef = useRef<THREE.InstancedMesh>(null);
 
-  const [diffuse, normal, roughness] = useTexture([
-    `${soil.visual.textureDir}/diffuse.webp`,
-    `${soil.visual.textureDir}/normal.webp`,
-    `${soil.visual.textureDir}/roughness.webp`,
-  ]);
+  const { stakeGeometry, flagGeometry, stakeMaterial, flagMaterial } = useMemo(
+    () => ({
+      stakeGeometry: new THREE.CylinderGeometry(0.022, 0.028, 0.64, 6),
+      flagGeometry: new THREE.BoxGeometry(0.16, 0.07, 0.01),
+      stakeMaterial: new THREE.MeshStandardMaterial({ color: '#4a4032', roughness: 0.9 }),
+      flagMaterial: new THREE.MeshStandardMaterial({ roughness: 0.65 }),
+    }),
+    [],
+  );
 
-  useEffect(() => {
-    for (const tex of [diffuse, normal, roughness]) {
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(soil.visual.repeat, soil.visual.repeat);
-      tex.anisotropy = 4;
-      tex.needsUpdate = true;
-    }
-    diffuse.colorSpace = THREE.SRGBColorSpace;
-  }, [diffuse, normal, roughness, soil.visual.repeat]);
+  useEffect(
+    () => () => {
+      stakeGeometry.dispose();
+      flagGeometry.dispose();
+      stakeMaterial.dispose();
+      flagMaterial.dispose();
+    },
+    [stakeGeometry, flagGeometry, stakeMaterial, flagMaterial],
+  );
 
-  const markers = useMemo(() => {
+  useLayoutEffect(() => {
+    const stakes = stakesRef.current;
+    const flags = flagsRef.current;
+    if (!stakes || !flags) return;
     const radius = TILE_HALF_SIZE - 0.6;
-    return Array.from({ length: BOUNDARY_MARKERS }, (_, i) => {
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const one = new THREE.Vector3(1, 1, 1);
+    const p = new THREE.Vector3();
+    const color = new THREE.Color();
+    for (let i = 0; i < BOUNDARY_MARKERS; i++) {
       const angle = (i / BOUNDARY_MARKERS) * Math.PI * 2;
       const x = Math.sin(angle) * radius;
       const z = -Math.cos(angle) * radius;
-      return { x, z, y: heightAt(x, z) };
-    });
+      const y = heightAt(x, z);
+      stakes.setMatrixAt(i, m.compose(p.set(x, y + 0.32, z), q.identity(), one));
+      flags.setMatrixAt(i, m.compose(p.set(x, y + 0.56, z), q.setFromAxisAngle(up, (i * Math.PI) / 7), one));
+      flags.setColorAt(i, color.set(FLAG_COLORS[i % 2]));
+    }
+    stakes.instanceMatrix.needsUpdate = true;
+    flags.instanceMatrix.needsUpdate = true;
+    if (flags.instanceColor) flags.instanceColor.needsUpdate = true;
+    // Instances span the whole tile; bounds must cover all of them.
+    stakes.computeBoundingSphere();
+    flags.computeBoundingSphere();
   }, [heightAt]);
 
   return (
-    <group>
-      <mesh geometry={geometry} receiveShadow>
-        <meshStandardMaterial
-          map={diffuse}
-          normalMap={normal}
-          roughnessMap={roughness}
-          roughness={1}
-          vertexColors
-        />
-      </mesh>
+    <>
+      <instancedMesh ref={stakesRef} args={[stakeGeometry, stakeMaterial, BOUNDARY_MARKERS]} castShadow />
+      <instancedMesh ref={flagsRef} args={[flagGeometry, flagMaterial, BOUNDARY_MARKERS]} castShadow />
+    </>
+  );
+}
 
-      {/* Boundary markers — plain survey stakes with a small hazard-tape
-          flag, rather than bright traffic cones, so the edge-of-area cue
-          doesn't read as a toy prop. */}
-      {markers.map((m, i) => (
-        <group key={i} position={[m.x, m.y, m.z]}>
-          <mesh position={[0, 0.32, 0]} castShadow>
-            <cylinderGeometry args={[0.022, 0.028, 0.64, 6]} />
-            <meshStandardMaterial color="#4a4032" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 0.56, 0]} rotation={[0, (i * Math.PI) / 7, 0]} castShadow>
-            <boxGeometry args={[0.16, 0.07, 0.01]} />
-            <meshStandardMaterial color={i % 2 === 0 ? '#c94f36' : '#e8e2d2'} roughness={0.65} />
-          </mesh>
-        </group>
-      ))}
+export function Terrain({ soil, heightAt }: { soil: SoilConfig; heightAt: HeightSampler }) {
+  const geometry = useMemo(() => {
+    const g = buildTerrainGeometry(heightAt);
+    bakeTerrainMasks(g);
+    return g;
+  }, [heightAt]);
+
+  useEffect(() => () => geometry.dispose(), [geometry]);
+
+  const material = useTerrainMaterial(soil.visual.material, geometry);
+
+  return (
+    <group>
+      {/* Casts as well as receives: under the low sun, hill and ledge
+          shadows are what make the relief readable (see atmosphere.ts). */}
+      <mesh geometry={geometry} material={material} castShadow receiveShadow />
+      <BoundaryStakes heightAt={heightAt} />
     </group>
   );
 }
 
 export function preloadTerrainTextures(soil: SoilConfig) {
-  useTexture.preload(`${soil.visual.textureDir}/diffuse.webp`);
-  useTexture.preload(`${soil.visual.textureDir}/normal.webp`);
-  useTexture.preload(`${soil.visual.textureDir}/roughness.webp`);
+  preloadTerrainMaterial(soil.visual.material);
 }
