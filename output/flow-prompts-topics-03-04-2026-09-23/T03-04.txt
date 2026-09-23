@@ -1,0 +1,9 @@
+Edit the supplied terrain-occlusion image into the final cumulative frame of the same educational sequence. Preserve the exact landscape, contours, summit pennant, interrupted sightline, olive-hatched blind basin, road, junction, camera and lighting. All previous information remains present but visually subordinate to two new focal areas.
+
+Emphasize two different existing terrain features using the established amber-orange #D97E2B analytical language. First, trace a compact closed outline around the highest summit's usable crest area, following its real surface. Second, trace a separate compact closed outline around the existing three-way dirt-road junction below the pass. The summit outline is an irregular crest-shaped loop; the junction outline follows the branching intersection footprint. Do not use two identical generic circles or floating pins.
+
+Give each outlined area a restrained warm surface tint with crisp edges and very limited local glow. Both must be immediately readable at 600 pixels wide without covering the underlying rock or road. Make the two features comparable in visual importance: the summit illustrates observation advantage, while the junction illustrates the significance of a connection within this particular landscape.
+
+Keep the basin's olive hatching visible and distinct from the orange emphasis. Preserve the interrupted sightline; do not add a 360-degree visibility dome or suggest that the summit sees through every landform. Keep all physical objects unchanged. Leave nearby uncluttered space for later external labels, but generate no text.
+
+No new roads, roadblocks, troops, buildings, weapons, attack arrows, conquest flags, universal safe zones, miniature UI cards, numbers, logos or camera changes. Maintain photorealistic cream limestone, natural olive scrub, deep pine shadows and a restrained warm daylight grade. The final image reads as one realistic landscape with several meaningful layers of analysis.

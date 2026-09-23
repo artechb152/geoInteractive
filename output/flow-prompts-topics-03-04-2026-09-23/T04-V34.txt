@@ -1,0 +1,9 @@
+Create one continuous 4-second transition between the supplied cover-focused start frame and concealment end frame. Lock the camera, focal length, framing, terrain, lighting, vehicles and every plant completely.
+
+Hold the start frame for 0.4 seconds. From 0.4 to 2.8 seconds, animate only the training figure initially standing in front of the separate foreground shrub. That figure takes one or two short natural steps around the shrub's near edge into its exact end-frame position behind the foliage. Maintain the same body, clothing, size and proportions. Use ordinary grounded foot motion with no sliding or teleporting.
+
+The existing opaque leaves progressively block the figure as its body passes behind them. Occlusion must be caused by depth order, not an opacity fade. Keep the leaves fixed, preserve their gaps and retain the small end-frame glimpse of the boot. The figure must never walk through the shrub trunk or become a ghost.
+
+During this movement, gently reveal the end frame's restrained olive boundary and sparse perimeter hatching around the shrub and the bush clump beside the boulder. Keep the amber boulder and obstacle accents at their quieter final intensity. The first figure behind the boulder never moves.
+
+Settle all motion by 3.0 seconds and hold the exact end frame until 4.0 seconds. No foliage growth, magical camouflage, body fading, disappearing vehicles, weapon activity, impacts, thermal effects, camera movement, text, speech, music or sound effects. Preserve the warm photorealistic materials and make the single occlusion action easy to understand when played faster.

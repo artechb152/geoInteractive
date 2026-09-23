@@ -1,0 +1,9 @@
+Create a continuous 4-second transition from the supplied elevation frame to the supplied terrain-occlusion frame. The camera, mountains, road, vegetation, pennant, sunlight and all existing contour alignments remain completely fixed.
+
+Hold the start frame for the first 0.4 seconds. Between 0.4 and 1.7 seconds, progressively draw the single amber analytical sightline from the summit pennant toward the intervening spur, stopping precisely at the terrain contact point shown in the end image. The line must not penetrate, jump over or shine through the rock.
+
+Between 1.7 and 3.0 seconds, reveal the end frame's irregular olive-hatched basin area beyond the blocking crest. Reveal only this analytical wash and hatching, without darkening the physical sunlight or moving the ground. Ease the pre-existing contours down to their quieter end-frame emphasis while retaining their exact geometry.
+
+Hold the finished composition from 3.0 to 4.0 seconds. The story is simple: one viewpoint, one physical obstruction, one local blind area. All information remains stable and readable after the transition.
+
+No camera move, cutaway, x-ray vision, soldiers entering, changing terrain, newly excavated valley, drifting contour lines, green safety glow, tactical route, firing, flashes, text, speech, music or sound effects. Maintain the realistic warm cream and olive material palette throughout.

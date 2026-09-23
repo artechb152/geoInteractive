@@ -1,0 +1,7 @@
+Create one continuous 4-second educational transition between the supplied landscape start frame and elevation-overlay end frame. Lock the camera, focal length, framing, lighting and every physical feature completely. Match the start and end images as closely as possible.
+
+From 0.0 to 0.4 seconds, hold the unannotated landscape still. From 0.4 to 3.0 seconds, reveal the end frame's contour lines in a clean ascending sequence, from the lower slopes toward the summit loops. Each contour is revealed directly along its final fixed alignment. Do not move a horizontal ring upward through the mountain; reveal separate stationary equal-elevation curves. Once revealed, a contour stays in place.
+
+Let the final summit loops settle into their slightly stronger amber-orange emphasis. From 3.0 to 4.0 seconds, hold the exact complete end-frame composition without pulses or continuing motion.
+
+Only the analytical information changes. No rising mountain, rock deformation, changing shadows, camera orbit, zoom, pan, focus pull, scanner aircraft, particle trails, floating grid, text or numbers. Preserve the realistic cream limestone and olive vegetation. Keep the reveal simple enough to remain legible when played faster in a clickable accordion. No speech, music or sound effects.

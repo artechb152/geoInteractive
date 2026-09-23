@@ -27,7 +27,7 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
  * — can't leak onto another scene or topic the way a global, event-driven
  * singleton previously did.
  */
-function HookBackdrop({ bgSrc }: { bgSrc: string }) {
+function HookBackdrop({ bgSrc, bgPositionX = 'left' }: { bgSrc: string; bgPositionX?: string }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -58,8 +58,11 @@ function HookBackdrop({ bgSrc }: { bgSrc: string }) {
   return createPortal(
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 select-none bg-paper-page bg-cover bg-[position:left_center] bg-no-repeat"
-      style={{ backgroundImage: `url('${BASE_PATH}${bgSrc}')` }}
+      className="pointer-events-none fixed inset-0 -z-10 select-none bg-paper-page bg-cover bg-no-repeat"
+      style={{
+        backgroundImage: `url('${BASE_PATH}${bgSrc}')`,
+        backgroundPosition: `${bgPositionX} center`,
+      }}
     />,
     document.body,
   );
@@ -71,6 +74,20 @@ type HookSceneLayoutProps = {
    * `/assets/lessons/topic{NN}/scene-hook/TOPIC{NN}-HOOK-BG.png`.
    */
   bgSrc: string;
+  /**
+   * Horizontal `background-position` keyword/percentage for `bgSrc`, e.g.
+   * `'left'` (default) or `'38%'`. The backdrop is a fixed, full-viewport,
+   * `bg-cover` image anchored at `left center` by default, matching every
+   * asset's "busy focal subject on the left, calm paper continuation on the
+   * right" composition (see the lesson-heroes asset README) — the text
+   * column then sits on that calm continuation. Cover-fit at this project's
+   * 1440×1122 target crops a taller slice than the asset's own 16:9 frame,
+   * so an asset whose calm area only starts past ~45% of its own width gets
+   * that calm area pushed mostly behind the fixed content column (or off
+   * the visible frame entirely) at the default `left` anchor. Override only
+   * for such assets, tuned by eye against a 1440px screenshot.
+   */
+  bgPositionX?: string;
   /** Headline content, rendered inside the shared `<h1>`. */
   title: ReactNode;
   /** Body copy, rendered inside the shared `<p>`. */
@@ -87,13 +104,13 @@ type HookSceneLayoutProps = {
  * PagedLearn hides its own prev/next pair on the hook, so this button is the
  * only forward affordance on the page.
  */
-export function HookSceneLayout({ bgSrc, title, body }: HookSceneLayoutProps) {
+export function HookSceneLayout({ bgSrc, bgPositionX, title, body }: HookSceneLayoutProps) {
   return (
     <section
       id="scene-hook"
       className="min-h-[calc(100dvh-var(--header-h)-5rem)] relative flex items-center justify-start overflow-hidden ps-6 pe-4 py-10 sm:ps-20 lg:ps-32"
     >
-      <HookBackdrop bgSrc={bgSrc} />
+      <HookBackdrop bgSrc={bgSrc} bgPositionX={bgPositionX} />
 
       <motion.div
         initial={{ opacity: 0, y: 28 }}

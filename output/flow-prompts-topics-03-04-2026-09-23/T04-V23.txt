@@ -1,0 +1,7 @@
+Create a continuous 4-second transition from the supplied obstacle-analysis start frame to the supplied cover-focused end frame. Lock the camera and preserve the exact physical world: no change to terrain, rocks, foliage, figures, vehicles, stream, bridge or lighting.
+
+Hold the first frame for 0.4 seconds. From 0.4 to 1.3 seconds, ease the obstacle annotations to their quieter end-frame intensity without removing them. From 1.0 to 3.0 seconds, progressively reveal the restrained amber edge accents on the existing massive boulder and thick earth bank, and then the small warm tint in the pocket behind the boulder. Follow their actual final boundaries without drawing arbitrary circles.
+
+Keep the figure behind the boulder in its existing position. Keep the other figure fully visible in front of the separate shrub. Neither figure moves or changes pose. The animation directs attention to physical thickness and terrain shelter; it does not show people reacting to an attack.
+
+Hold the exact completed end-frame composition from 3.0 to 4.0 seconds. Preserve cream limestone textures, natural olive leaves and deep pine shadows. No rock growing from the soil, floating protective dome, incoming bullets, impacts, explosions, new cover positions, route planning, camera movement, depth-of-field change, text, speech, music or sound effects. Keep the entire reveal compact and readable at faster accordion playback.

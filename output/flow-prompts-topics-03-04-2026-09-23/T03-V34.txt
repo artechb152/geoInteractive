@@ -1,0 +1,7 @@
+Create a single continuous 4-second transition between the supplied terrain-occlusion start frame and final terrain-analysis end frame. Lock the camera and preserve every physical landmark, contour, shadow, road segment, survey pennant and occlusion boundary.
+
+Hold the start frame for 0.4 seconds. From 0.4 to 1.6 seconds, draw the end frame's compact amber outline around the summit crest and gently introduce its warm surface tint. From 1.6 to 2.8 seconds, draw the separate amber outline around the existing road junction and introduce its corresponding tint. The outlines are analytical highlights registered to the ground; the summit and junction themselves do not move or transform.
+
+Keep both highlights visible together after they appear. Let older layers settle to the quieter emphasis shown in the end frame while preserving their positions. From 3.0 to 4.0 seconds, hold the precise completed composition still.
+
+The sequence must clearly show two existing features receiving distinct attention, not a battle unfolding or an army taking control. No objects dropping from above, buildings, extra flags, route arrows, new roads, expanding radar circles, terrain morphing, color flooding, excessive bloom, camera motion, text, speech, music or sound effects. Preserve the natural cream, sand, olive and pine palette with orange used only for focus.

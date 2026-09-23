@@ -1,0 +1,9 @@
+Create one continuous 4-second educational transition between the supplied unannotated terrain start frame and obstacle-analysis end frame. Keep the camera completely locked. Preserve every physical feature, vehicle, training figure, material and shadow.
+
+Hold the start image for 0.4 seconds. From 0.4 to 1.7 seconds, reveal the end frame's amber accents along the existing stream crossing, the already-broken bridge gap and the existing ditch lip. The annotations appear directly in place; water does not emerge from dry ground and the bridge does not collapse.
+
+From 1.7 to 3.0 seconds, draw the small irregular ground boundary and reveal its sparse diagonal hatching. Keep it registered to its final patch of land, without creating a fence, trench or physical mine objects. Match the engineering vehicle's end-frame material contrast without moving it or unfolding its bridge.
+
+From 3.0 to 4.0 seconds, hold the completed frame still. Every overlay remains readable and stable. The truck and engineering vehicle stay on firm ground and never cross a gap or enter the annotated ground area.
+
+No camera movement, terrain deformation, weapon activity, demolition, bridge deployment, new objects, moving figures, particle effects, neon glow, text, music, speech or sound effects. Use the original warm cream, olive and pine palette with restrained orange focus. Keep the transition readable at accelerated interactive playback speed.

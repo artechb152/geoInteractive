@@ -1,0 +1,9 @@
+Edit the supplied terrain image into the second state of an educational mobility sequence. Preserve the exact camera, terrain, track, mud, rocky slope, stream, broken bridge, ditch, two parked vehicles, boulder, earth bank, shrubs, two training figures, sunlight and shadows. All physical objects remain in their original positions.
+
+Add a restrained but clearly readable obstacle-analysis layer. Trace the existing stream crossing and the existing gap in the bridge with short amber-orange #D97E2B analytical edge accents, making the interruption in movement immediately apparent. Outline the lip of the existing excavated ditch with the same focus color. Do not build or destroy anything, and do not recolor the entire stream orange.
+
+On a small empty patch beyond the stream, beside but not overlapping the bridge approach, add one irregular closed cartographic boundary containing sparse amber diagonal hatching. This graphic represents an identified hazardous ground area that will be explained by the adjacent lesson text. It is a ground-registered annotation, not a physical fence. Do not depict individual mines, their placement, hidden mechanisms or a clearance path.
+
+Give the existing tracked engineering vehicle and its folded bridge section enough material contrast to remain recognizable as the support resource in the scene, but keep it parked and the bridge folded. There is no deployed crossing and no suggestion that a vehicle can drive across the broken span.
+
+Keep the scene clean and legible at 600 pixels wide. Preserve the original realistic cream limestone, sand, olive vegetation, muted water and deep pine shadows. The solid boulder and vegetation remain unchanged and unhighlighted for later steps. No new vehicles, personnel, smoke, detonations, arrows through hazards, text, icons, interface panels or camera changes. This is the same terrain with obstacles identified, not an action scene.

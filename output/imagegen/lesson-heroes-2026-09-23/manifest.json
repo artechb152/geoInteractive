@@ -1,0 +1,73 @@
+{
+  "created": "2026-09-23",
+  "generationMode": "built-in image_gen",
+  "assets": [
+    {
+      "n": "04",
+      "title": "ניידות ותמרון",
+      "concept": "מסדרון תנועה בין מטע, קרקע רכה ומחסה קשיח.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-f9eec190-3651-4393-b110-e8d6e6ea67a7.png",
+      "file": "topic-04-hero.png"
+    },
+    {
+      "n": "05",
+      "title": "קווי ראייה ותצפית",
+      "concept": "אמצעי תצפית ושדה ראייה שנחסם בידי מבנים וצמחייה.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-6cb48463-58b9-4669-b274-61c77c036de6.png",
+      "file": "topic-05-hero.png"
+    },
+    {
+      "n": "06",
+      "title": "ניווטים",
+      "concept": "מצפן, מפה מקופלת ומסלול בין נקודות ציון.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-558b5c6d-7b63-47e0-9720-17809ff91f85.png",
+      "file": "topic-06-hero.png"
+    },
+    {
+      "n": "07",
+      "title": "אקלים, מזג אוויר ועונתיות",
+      "concept": "תחנת מזג אוויר, ערפל ודרך רטובה.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-b4cd8078-6119-453e-9af3-2c4104dfec2e.png",
+      "file": "topic-07-hero.png"
+    },
+    {
+      "n": "08",
+      "title": "תשתיות ולוגיסטיקה",
+      "concept": "מרכז תובלה המחבר מסילת רכבת, כביש ורציף.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-f2f1f462-d9df-4b8c-8b7b-039547cd6da9.png",
+      "file": "topic-08-hero.png"
+    },
+    {
+      "n": "09",
+      "title": "משאבים, אנרגיה וגיאו־כלכלה",
+      "concept": "מיצר ימי, מכלית ותשתיות אנרגיה המחוברות למערכת מים.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-6cc1bfa8-b550-48cd-8c66-db000b8a38f2.png",
+      "file": "topic-09-hero.png"
+    },
+    {
+      "n": "10",
+      "title": "לחימה בשטח בנוי",
+      "concept": "עיר בחתך: מגדלים, רחובות ורשת תת־קרקעית.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-047a0ca7-02da-4f88-9944-533f75702329.png",
+      "file": "topic-10-hero.png"
+    },
+    {
+      "n": "11",
+      "title": "גבולות, עומק אסטרטגי ואזורי חיץ",
+      "concept": "גדר גבול ורצועת חיץ המרוחקות מיישוב.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-8b409e56-9439-44c8-9a08-2cdbe332ef2c.png",
+      "file": "topic-11-hero.png"
+    },
+    {
+      "n": "12",
+      "title": "GIS וניתוח מרחבי",
+      "concept": "שכבות ראסטר, וקטור וניתוח מעל מודל של יישוב ורשת דרכים.",
+      "source": "C:\\Users\\idog2\\.codex\\generated_images\\01a0ccf1-4298-7001-9b79-f756ebf96fbc\\exec-bd176fab-841b-4095-a96b-33f87b52ada9.png",
+      "file": "topic-12-hero.png"
+    }
+  ],
+  "refinement": {
+    "lesson": "10",
+    "prompt": "Edit the supplied lesson cover. Preserve its 16:9 composition, ivory-and-muted-olive materials, open pale cream RIGHT 60%, very faint contours, light studio illumination, and cutaway ground/tunnels at lower left. CHANGE ONLY THE ARCHITECTURE AND TUNNEL MATERIALS: this must be a CONTEMPORARY generic 21st-century city, not a historic holy city. Replace both tall bell towers completely with two modern rectangular 14–20-storey residential concrete apartment towers, with simple flat roofs, repeated horizontal balconies and restrained dark olive window bands. Replace domes, arches and religious buildings with dense 4–6-storey flat-roof apartment blocks and ordinary shopfronts without signs, some narrow alleys and one straight street. No religious symbols, domes, crosses, clock towers or landmarks. Retain the educational vertical city structure and an exposed underground utility-tunnel network in lower left, but make tunnels modern concrete-lined and pale ivory rather than ancient arched stone chambers. Reduce amber illumination to a small stairwell detail. Make all architecture handcrafted matte sculpted ivory/plaster miniature with subtle model texture, no glossy glass or photorealistic skyline. Concentrate dense forms within the LEFT 35–40%, smoothly disappear into blank warm paper on right. No words, letters, numbers or UI."
+  }
+}

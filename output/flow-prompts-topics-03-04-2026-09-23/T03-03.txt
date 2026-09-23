@@ -1,0 +1,9 @@
+Edit the supplied elevation-overlay image into the third frame of the same geography lesson. Preserve the exact terrain, camera, crop, road junction, three summits, survey pennant, contour alignments, materials and sunlight. Keep the contours visible as a quieter background layer, without removing or relocating them.
+
+Explain terrain occlusion from one specific viewpoint: the position of the existing survey pennant on the highest summit. Add one narrow, restrained amber-orange analytical sightline from that viewpoint toward the lower-center basin. The line must encounter and terminate at the intervening rocky spur. Its geometry must clearly communicate that solid terrain interrupts a straight sightline. It is a diagrammatic line, not a weapon beam.
+
+Beyond that intervening crest, delineate only the portion of the shallow basin actually screened from the summit viewpoint. Follow the irregular landform with a muted olive translucent wash and sparse olive hatching inspired by #4A5240. Keep the underlying rocks, ground texture and existing contours visible. Give the zone a crisp enough boundary to read at 600 pixels wide. Do not use a rectangular panel, a green safety symbol or a glowing force field.
+
+The viewer's elevated camera can see the marked basin while the summit viewpoint cannot see directly into it. Keep daylight shadows completely unchanged; the marked area is analytical occlusion, not darkness cast by the sun. Leave other parts of the valley unmarked where the summit can see them.
+
+Preserve the warm limestone, cream sand, olive vegetation and deep pine shadows. No people materializing in the basin, hidden weapons, attack routes, trajectories, thermal imagery, transparent mountains, text, numbers or interface elements. Communicate a local blind area relative to one observer, never universal safety or invisibility from every direction.

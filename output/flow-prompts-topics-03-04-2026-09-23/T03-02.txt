@@ -1,0 +1,9 @@
+Edit the supplied landscape image into the second frame of the same educational sequence. Preserve the exact camera, crop, terrain geometry, summit heights, ridge silhouettes, screened basin, dirt road, junction, vegetation, survey pennant, daylight and shadows. The mountain already exists and must not grow, flatten or change shape.
+
+Add one clear elevation-information layer registered to the actual three-dimensional terrain. Draw a restrained family of evenly spaced elevation contours, roughly eight to twelve visible levels across the principal ridge. Every contour represents a horizontal equal-elevation slice: closed nested loops around summits, closer spacing on steep slopes, wider spacing on gentle slopes, and physically coherent bends around spurs and gullies. Lines must never cross one another, run straight uphill or turn into decorative spirals.
+
+Render the contours as crisp warm ochre and amber-orange strokes inspired by #C9A56B and #D97E2B, hugging the rock surface with correct perspective and occlusion. Make a few index contours slightly stronger so the structure reads at a 600-pixel display width. Keep realistic rock detail visible between the lines. No raised terrain terraces, stacked cardboard, glowing cages or vertical light walls.
+
+Give the small uppermost contour loops on the three existing summits slightly stronger emphasis, making the central summit visibly highest. Leave clear space immediately above the summits for height labels that will be added outside the generated image. Do not generate those labels.
+
+Retain the original warm cream limestone, dusty sand, olive vegetation and deep pine shadows. The orange belongs to the analytical overlay, not to the entire mountain. No extra objects, pins, soldiers, text, numbers, logos, interface panels or camera changes. The result is exactly the same realistic landscape with its elevation structure made readable.

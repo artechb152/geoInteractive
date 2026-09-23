@@ -1,0 +1,51 @@
+{
+  "date": "2026-09-23",
+  "dimensions": {
+    "width": 1448,
+    "height": 1086
+  },
+  "verification": {
+    "baseUrl": "http://localhost:3001",
+    "viewport": {
+      "width": 1440,
+      "height": 1122
+    },
+    "lessons": [
+      4,
+      5,
+      6,
+      7,
+      11
+    ],
+    "method": "Rendered browser screenshots inspected for readable title, paragraph, CTA and complete main subjects."
+  },
+  "originalBackups": "C:/Users/idog2/Desktop/Programming/Artech/geoInteractive/output/imagegen/lesson-heroes-v2-2026-09-23/originals",
+  "images": [
+    {
+      "lesson": 4,
+      "file": "topic-04-hero.png",
+      "installed": "C:/Users/idog2/Desktop/Programming/Artech/geoInteractive/public/assets/lessons/topic04/scene-hook/TOPIC04-HOOK-BG.png"
+    },
+    {
+      "lesson": 5,
+      "file": "topic-05-hero.png",
+      "installed": "C:/Users/idog2/Desktop/Programming/Artech/geoInteractive/public/assets/lessons/topic05/scene-hook/TOPIC05-HOOK-BG.png"
+    },
+    {
+      "lesson": 6,
+      "file": "topic-06-hero.png",
+      "installed": "C:/Users/idog2/Desktop/Programming/Artech/geoInteractive/public/assets/lessons/topic06/scene-hook/TOPIC06-HOOK-BG.png"
+    },
+    {
+      "lesson": 7,
+      "file": "topic-07-hero.png",
+      "installed": "C:/Users/idog2/Desktop/Programming/Artech/geoInteractive/public/assets/lessons/topic07/scene-hook/TOPIC07-HOOK-BG.png"
+    },
+    {
+      "lesson": 11,
+      "file": "topic-11-hero.png",
+      "installed": "C:/Users/idog2/Desktop/Programming/Artech/geoInteractive/public/assets/lessons/topic11/scene-hook/TOPIC11-HOOK-BG.png"
+    }
+  ],
+  "notes": "Regenerated complete scenes with soft irregular transitions into cream paper. No implementation code changed for this asset update. The earlier narrow-strip candidates were discarded."
+}

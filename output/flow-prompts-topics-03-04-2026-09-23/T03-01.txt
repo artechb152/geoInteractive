@@ -1,0 +1,11 @@
+Create a photorealistic cinematic terrain image for an educational geography lesson. Landscape 16:9. The visual language is a realistic semi-arid limestone landscape with the clarity of a carefully photographed physical terrain model, but without a tabletop, pedestal, cutaway block, plastic surfaces or miniature tilt-shift blur.
+
+Use a fixed elevated oblique camera looking down approximately 45 degrees, with deep focus, no visible sky and soft daylight from the upper left. If a style reference is supplied, borrow only its natural rock materials, lighting quality and realistic depth; create the new terrain described here.
+
+Compose one coherent fictional ridge system. Place the highest rounded rocky summit near the upper center, a lower summit to its left and another lower summit to its right. Between them show connected ridgelines, readable saddles, natural drainage gullies and uneven slopes. In the lower center, a short intervening rocky spur screens a shallow basin from a viewpoint on the highest summit. The elevated viewer camera can still see into this basin. Make this occluding relationship physically plausible, with a locally convex slope and an actual intervening crest.
+
+A single narrow dirt road follows the lower terrain and reaches a small three-way junction just right of center, below a natural pass. Establish this road and junction now; they remain unchanged throughout the sequence. Put one small plain burnt-orange survey pennant on the highest summit, with no emblem or writing. This is the persistent viewpoint reference, not a national flag.
+
+Use warm cream limestone and dusty sand inspired by #F3E9DC, #F8F2E7, #DCCDB2 and #C9A56B, sparse olive vegetation #38432E and #4A5240, and restrained deep pine shadows #2E3826. Avoid a uniform sepia filter. Keep the three summits, screened basin and junction within the central 60 percent of the image width. Peripheral terrain is expendable crop space.
+
+This first image shows the real landscape before analytical information is added. No contour lines, highlighted zones, visibility beams, numbers, lettering, map icons, military units, buildings, HUD, borders, logos or watermark. Strong three-dimensional relief, believable erosion, clean visual hierarchy and details readable at 600 pixels wide.

@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
@@ -8,7 +9,14 @@ import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
-type View = 'flat' | 'mountain' | 'valley' | 'analyzed';
+export type View = 'flat' | 'mountain' | 'valley' | 'analyzed';
+
+// Split out via next/dynamic so the frame-player (and its canvas/preload
+// logic) doesn't end up in the initial bundle for the rest of the lesson —
+// same technology as topic-01/02/04/OnboardingScene.tsx.
+const SceneOnboardingFramePlayer = dynamic(() => import('./SceneOnboardingFramePlayer'), {
+  loading: () => <ManeuverStageLoading />,
+});
 
 type Step = {
   id: View;
@@ -166,8 +174,8 @@ title = {
         </div>
 
         {/* Visualization — second child → LEFT in RTL */}
-        <div className="surface-elevated bg-bg relative overflow-hidden min-h-[280px]">
-          <TerrainStage view={view} />
+        <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px] [&_canvas]:!w-full [&_canvas]:!h-full">
+          <SceneOnboardingFramePlayer targetState={view} />
         </div>
       </div>
 
@@ -187,190 +195,12 @@ title = {
   );
 }
 
-function TerrainStage({ view }: { view: View }) {
-  const showHeights = view !== 'flat';
-  const showHidden = view === 'valley' || view === 'analyzed';
-  const showTactical = view === 'analyzed';
-
-  const peaks = [
-    { x: 18, y: 38, h: '420' },
-    { x: 50, y: 30, h: '540' },
-    { x: 82, y: 35, h: '480' },
-  ];
-
+function ManeuverStageLoading() {
   return (
-    <div className="relative w-full h-full">
-      <svg viewBox="0 0 100 75" className="w-full h-full">
-        <rect x="0" y="0" width="100" height="75" className="fill-bg-accent" />
-
-        {/* Mountain silhouettes */}
-        <path
-          d="M0 65 L18 38 L34 55 L50 30 L66 48 L82 35 L100 60 L100 75 L0 75 Z"
-          className="fill-terrain-ridge/30 stroke-terrain-ridge/50"
-          strokeWidth="0.3"
-        />
-        <path
-          d="M0 70 L25 50 L45 60 L65 45 L85 58 L100 65 L100 75 L0 75 Z"
-          className="fill-terrain-sand/15"
-        />
-
-        {/* Objective flag on the highest peak — always visible, in every step, so the
-            board itself keeps making the point: this is the ground armies fight for.
-            Planted at the peak marker's own bottom-right corner point so the pole reads
-            as rooted in the summit (and the ridge slope beneath it) in every state,
-            including 'flat' before the peak marker itself appears. */}
-        <g>
-          <line
-            x1={peaks[1].x + 2.6}
-            y1={peaks[1].y + 2.6}
-            x2={peaks[1].x + 2.6}
-            y2={peaks[1].y - 6.4}
-            className="stroke-accent-hot"
-            strokeWidth="0.55"
-            strokeLinecap="round"
-          />
-          <path
-            d={`M ${peaks[1].x + 2.6} ${peaks[1].y - 6.4} L ${peaks[1].x + 8.1} ${peaks[1].y - 4.6} L ${peaks[1].x + 2.6} ${peaks[1].y - 2.8} Z`}
-            className="fill-accent-hot"
-          />
-        </g>
-
-        {/* Peak markers + height labels */}
-        <motion.g initial={false} animate={{ opacity: showHeights ? 1 : 0 }} transition={{ duration: 0.4 }}>
-          {peaks.map((p, i) => {
-            const isCenter = i === 1;
-            // When tactical view is on, tuck the center peak's height label
-            // closer to the triangle so the "שטח שולט" header at the top has
-            // room to breathe.
-            const labelY = isCenter && showTactical ? p.y - 3.2 : p.y - 5;
-            return (
-              <g key={i}>
-                <polygon
-                  points={`${p.x},${p.y - 2.6} ${p.x - 2.6},${p.y + 2.6} ${p.x + 2.6},${p.y + 2.6}`}
-                  className="fill-accent"
-                />
-                <text
-                  x={p.x}
-                  y={labelY}
-                  textAnchor="middle"
-                  className="fill-accent font-display font-bold"
-                  fontSize="4.2"
-                  paintOrder="stroke"
-                  stroke="#ffffff"
-                  strokeWidth="1.3"
-                  strokeLinejoin="round"
-                >
-                  {p.h} מ׳
-                </text>
-              </g>
-            );
-          })}
-        </motion.g>
-
-        {/* Hidden valley (dead space) */}
-        <motion.g initial={false} animate={{ opacity: showHidden ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-          <rect
-            x="33"
-            y="49"
-            width="20"
-            height="15"
-            rx="1.4"
-            className="fill-status-ok/25 stroke-status-ok/80"
-            strokeWidth="0.6"
-            strokeDasharray="1.4 0.9"
-          />
-          <text
-            x="43"
-            y="56"
-            textAnchor="middle"
-            className="fill-status-ok font-display font-bold"
-            fontSize="4.4"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1.4"
-            strokeLinejoin="round"
-          >
-            שטח מת
-          </text>
-          <text
-            x="43"
-            y="61"
-            textAnchor="middle"
-            className="fill-status-ok font-sans font-semibold"
-            fontSize="3"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1"
-            strokeLinejoin="round"
-          >
-            סמוי לאויב
-          </text>
-        </motion.g>
-
-        {/* Tactical overlay — commanding + key terrain */}
-        <motion.g initial={false} animate={{ opacity: showTactical ? 1 : 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-          {/* Commanding terrain — ring around the highest peak */}
-          <circle
-            cx="50"
-            cy="30"
-            r="8"
-            fill="none"
-            className="stroke-accent"
-            strokeWidth="0.7"
-            strokeDasharray="1.4 0.9"
-          />
-          <text
-            x="50"
-            y="9"
-            textAnchor="middle"
-            className="fill-accent font-display font-bold"
-            fontSize="4.6"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-          >
-            שטח שולט
-          </text>
-
-          {/* Key terrain — supply junction */}
-          <circle cx="70" cy="58" r="2.6" className="fill-accent-hot" />
-          <circle cx="70" cy="58" r="2.6" fill="none" className="stroke-accent-hot/50" strokeWidth="0.4">
-            <animate attributeName="r" values="2.6;5;2.6" dur="2.4s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.9;0;0.9" dur="2.4s" repeatCount="indefinite" />
-          </circle>
-          <text
-            x="70"
-            y="67.5"
-            textAnchor="middle"
-            className="fill-accent-hot font-display font-bold"
-            fontSize="4.2"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1.3"
-            strokeLinejoin="round"
-          >
-            שטח חיוני
-          </text>
-          <text
-            x="70"
-            y="72"
-            textAnchor="middle"
-            className="fill-accent-hot font-sans font-semibold"
-            fontSize="3"
-            paintOrder="stroke"
-            stroke="#ffffff"
-            strokeWidth="1"
-            strokeLinejoin="round"
-          >
-            צומת אספקה
-          </text>
-        </motion.g>
-      </svg>
-
-      <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
-        <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-        אותו הר · 4 שכבות הסתכלות
+    <div className="w-full h-full min-h-[280px] flex items-center justify-center">
+      <div className="flex items-center gap-2 text-fg-dim text-xs font-display">
+        <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
+        <span>טוען...</span>
       </div>
     </div>
   );

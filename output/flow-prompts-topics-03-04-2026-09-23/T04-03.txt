@@ -1,0 +1,9 @@
+Edit the supplied obstacle-analysis image into the third state of the same educational sequence. Preserve the exact camera, crop, terrain, road, stream, broken bridge, ditch, vehicles, shrubs, training figures, daylight and all overlay alignments. Keep the obstacle annotations visible at a quieter intensity.
+
+Bring attention to the substantial limestone boulder, the depression immediately behind it and the separate thick earth bank already present in the foreground. Emphasize their real three-dimensional mass with crisp material detail and restrained amber-orange #D97E2B analytical edge accents following only their existing exposed boundaries. Use a soft warm ground tint in the small sheltered pocket behind the boulder. Do not change the direction of sunlight or add artificial theatrical spotlights.
+
+The boulder must clearly be a thick solid rock body, not a thin upright sheet. The bank must clearly have depth and a continuous earth mass behind its crest. Preserve the first training figure partly visible in the depression behind the boulder, at the same position as in the input. The elevated viewer can see part of the figure even though the solid terrain interrupts a lower frontal line of exposure.
+
+Keep the second figure fully visible in front of the separate dense shrub, exactly as before. Do not give the shrub the same amber solid-edge treatment as the boulder. This deliberate contrast prepares the distinction between physical cover and visual concealment in the next image.
+
+Keep the natural cream stone, dusty sand, olive foliage and pine shadows. Strong silhouettes and readable object thickness at 600 pixels wide. No ballistic demonstrations, bullet paths, impacts, shield icons, guaranteed-protection symbols, transparent rocks, new objects, moving figures, text, labels, numbers, camera changes or interface graphics. Convey substantial terrain offering physical shelter without claiming protection against every weapon or direction.
