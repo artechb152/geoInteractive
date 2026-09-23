@@ -3,6 +3,7 @@ import { Heebo, Rubik } from 'next/font/google';
 import './globals.css';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { SiteBackground } from '@/components/ui/SiteBackground';
+import { ASSET_IMG_ERROR_SCRIPT } from '@/components/assets/asset-img-error-script';
 
 const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
@@ -29,6 +30,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl" className={`${heebo.variable} ${rubik.variable}`}>
+      <head>
+        {/* תמונת נכס שנכשלה לפני hydration — מוסתרת מיד (IsometricAsset). */}
+        <script dangerouslySetInnerHTML={{ __html: ASSET_IMG_ERROR_SCRIPT }} />
+      </head>
       <body className="overflow-x-clip">
         {/* מרקם קווי-הגובה של דף הבית, מוחל גלובלית מאחורי כל התוכן
             (דף הבית עצמו מוציא את עצמו — יש לו מרקם מכויל למוקאפ). */}

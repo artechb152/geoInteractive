@@ -3,8 +3,8 @@ import { cn } from '@/lib/utils';
 /**
  * AssetFrame — מסגרת אחידה לנכסי Magnific (design lock): כרטיס לבן מוגבה,
  * רדיוס גדול, קו-שיער tanline, צל card-soft. עוטף IsometricAsset (או כל
- * מדיה) כך שהטיפול בנכסים זהה בכל האתר. ה-placeholder הרועש של נכס חסר
- * נשאר כפי שהוא — בתוך המסגרת.
+ * מדיה) כך שהטיפול בנכסים זהה בכל האתר. מצבי טעינה/חסר של IsometricAsset
+ * מוצגים בתוך המסגרת.
  */
 export function AssetFrame({
   children,

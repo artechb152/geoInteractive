@@ -7,6 +7,10 @@ import { cn } from '@/lib/utils';
  * AssetPlaceholder — placeholder רועש ומכוון לנכס Magnific חסר
  * (lesson-shell-design-system §19).
  *
+ * כלי אבחון למפתחים בלבד: IsometricAsset מרנדר אותו לנכס חסר רק ב-`next dev`
+ * (כיבוי: NEXT_PUBLIC_ASSET_DIAGNOSTICS=0) — לעולם לא בזמן טעינה, ולעולם לא
+ * בבנייה לפרודקשן, שבה לומדים רואים תמיד את החלופה השקטה.
+ *
  * חייב להיראות בבירור לא-סופי: רקע מג'נטה חזק, טקסט "PLACEHOLDER",
  * מזהה הנכס והנתיב הצפוי. לעולם לא איור מלוטש שנראה כעיצוב גמור.
  *

@@ -1,0 +1,229 @@
+/* =======================================================================
+   editor.css — מסך עריכת התוכן (L-12).
+
+   מסך פנימי למדריכים, לא חלק מחוויית הלומד: הוא נטען רק תחת `?editor=1`
+   ולכן אינו נושא את אותה דרישת ליטוש כמו שאר הרכיב. מה שכן — הוא חייב
+   להיות **קריא**, כי מדריך שלא מבין מה הוא רואה יחזור לפתוח פנייה למפתח.
+   ===================================================================== */
+
+.tms-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tms-sp-3);
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: var(--tms-sp-3);
+}
+
+.tms-editor__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tms-sp-2);
+  padding: var(--tms-sp-2) var(--tms-sp-3);
+  background: var(--tms-surface-sunken);
+  border-radius: var(--tms-r-md);
+}
+.tms-editor__bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tms-fs-sm);
+}
+.tms-editor__tools {
+  display: flex;
+  gap: 4px;
+  margin-inline-start: auto;
+}
+
+.tms-editor__body {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 300px;
+  gap: var(--tms-sp-3);
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .tms-editor__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------ רשימה ------------------------------ */
+
+.tms-editor__list ul {
+  list-style: none;
+  margin: var(--tms-sp-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+}
+.tms-editor__list li {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+.tms-editor__item {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 6px 9px;
+  border: 1px solid var(--tms-line);
+  border-radius: var(--tms-r-sm);
+  background: var(--tms-surface);
+  font: inherit;
+  font-size: var(--tms-fs-sm);
+  text-align: start;
+  cursor: pointer;
+}
+.tms-editor__item--on {
+  border-color: var(--tms-accent);
+  background: var(--tms-accent-soft);
+}
+.tms-editor__item code {
+  font-size: 11px;
+  color: var(--tms-ink-soft);
+}
+.tms-editor__del {
+  border: 1px solid var(--tms-line);
+  border-radius: var(--tms-r-sm);
+  background: var(--tms-surface);
+  color: var(--tms-danger);
+  cursor: pointer;
+  padding: 0 8px;
+  font-size: var(--tms-fs-md);
+}
+
+/* ------------------------------ בד ציור ------------------------------ */
+
+.tms-editor__stage {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--tms-r-md);
+  overflow: hidden;
+  background: var(--tms-surface-sunken);
+}
+.tms-editor__stage .tms-map__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tms-editor__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.tms-editor__svg--draw,
+.tms-editor__svg--label,
+.tms-editor__svg--arrow {
+  cursor: crosshair;
+}
+
+.tms-editor__shape {
+  fill: rgba(255, 210, 31, 0.08);
+  stroke: rgba(255, 255, 255, 0.65);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.tms-editor__shape--on {
+  fill: rgba(255, 210, 31, 0.2);
+  stroke: var(--tms-mark);
+  stroke-width: 3.5;
+}
+.tms-editor__anchor {
+  fill: rgba(255, 255, 255, 0.7);
+  stroke: var(--tms-casing);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.tms-editor__anchor--on {
+  fill: var(--tms-mark);
+}
+.tms-editor__arrow {
+  fill: none;
+  stroke: var(--tms-mark);
+  stroke-width: 5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+/* המתאר שנמצא בציור — מקווקו, כדי שיהיה ברור שהוא עוד לא נסגר */
+.tms-editor__pending {
+  fill: none;
+  stroke: #4ad2ff;
+  stroke-width: 3;
+  stroke-dasharray: 8 5;
+  vector-effect: non-scaling-stroke;
+}
+.tms-editor__vertex {
+  fill: #4ad2ff;
+  stroke: var(--tms-casing);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ------------------------------ טופס ------------------------------ */
+
+.tms-editor__form {
+  display: grid;
+  gap: var(--tms-sp-2);
+}
+.tms-editor__form label {
+  display: grid;
+  gap: 3px;
+  font-size: var(--tms-fs-xs);
+  font-weight: var(--tms-fw-medium);
+  color: var(--tms-ink-soft);
+}
+.tms-editor__form input,
+.tms-editor__form select,
+.tms-editor__form textarea {
+  font: inherit;
+  font-size: var(--tms-fs-sm);
+  padding: 6px 8px;
+  border: 1px solid var(--tms-line);
+  border-radius: var(--tms-r-sm);
+  background: var(--tms-surface);
+  color: var(--tms-ink);
+  resize: vertical;
+}
+.tms-editor__hint {
+  margin: 0;
+  font-size: var(--tms-fs-xs);
+  color: var(--tms-ink-soft);
+}
+
+/* ------------------------------ ייצוא ------------------------------ */
+
+.tms-editor__out {
+  display: grid;
+  gap: var(--tms-sp-2);
+}
+.tms-editor__outhead {
+  display: flex;
+  align-items: center;
+  gap: var(--tms-sp-3);
+}
+.tms-editor__ok {
+  color: var(--tms-ok);
+  font-size: var(--tms-fs-sm);
+  font-weight: var(--tms-fw-bold);
+}
+.tms-editor__bad {
+  color: var(--tms-danger);
+  font-size: var(--tms-fs-sm);
+  font-weight: var(--tms-fw-bold);
+}
+.tms-editor__out textarea {
+  width: 100%;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+  padding: var(--tms-sp-2);
+  border: 1px solid var(--tms-line);
+  border-radius: var(--tms-r-sm);
+  background: var(--tms-surface-sunken);
+  color: var(--tms-ink);
+}

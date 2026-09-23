@@ -1,0 +1,112 @@
+/* =======================================================================
+   tokens.css — שפת העיצוב של הרכיב.
+
+   כל ערך מוגדר כ-`var(--course-*, ברירת-מחדל)`: דף הקורס יכול להזריק את
+   הטוקנים שלו על כל אב-קדמון, והרכיב יאמץ אותם בלי שינוי קוד. ברירות המחדל
+   כאן הן פלטה מאופקת (סלייט-טורקיז עמום) — למעט הצהוב, שנשמר בכוונה כצבע
+   הסימון על המפה בשל הניגודיות שלו מול ירוק וחום.
+   ===================================================================== */
+
+.tms {
+  /* ------------------------------- צבע ------------------------------- */
+  --tms-accent: var(--course-accent, #2f6b6f);
+  --tms-accent-strong: var(--course-accent-strong, #1c4b4f);
+  --tms-accent-soft: var(--course-accent-soft, #e8f0f0);
+  --tms-ink: var(--course-ink, #17212a);
+  --tms-ink-soft: var(--course-ink-soft, #4a5860);
+  --tms-surface: var(--course-surface, #ffffff);
+  --tms-surface-sunken: var(--course-surface-sunken, #f1f4f4);
+  --tms-line: var(--course-line, #d7dfe0);
+  --tms-line-strong: var(--course-line-strong, #b3c0c2);
+
+  /* צבע הסימון על המפה — נבחר לניגודיות מול צמחייה ירוקה וקרקע חומה */
+  --tms-mark: var(--course-mark, #ffd21f);
+  --tms-mark-soft: var(--course-mark-soft, #ffe375);
+  --tms-casing: var(--course-casing, #10222a);
+
+  --tms-ok: var(--course-ok, #1c6b3f);
+  --tms-ok-bg: var(--course-ok-bg, #e6f4ec);
+  --tms-warn: var(--course-warn, #7a5200);
+  --tms-warn-bg: var(--course-warn-bg, #fff5d9);
+  --tms-danger: var(--course-danger, #9a2a2a);
+  --tms-danger-bg: var(--course-danger-bg, #fbeaea);
+
+  /* ---------------------------- טיפוגרפיה ---------------------------- */
+  /* גופן עברי מקצועי אם הקורס טוען אותו; אחרת גופני המערכת העבריים. */
+  --tms-font: var(
+    --course-font,
+    'Rubik',
+    'Assistant',
+    'Heebo',
+    'Noto Sans Hebrew',
+    'Arial Hebrew',
+    'Segoe UI',
+    system-ui,
+    sans-serif
+  );
+
+  /* סולם טיפוגרפי אחיד — במקום ערכים אקראיים בין 0.58 ל-1.3rem */
+  --tms-fs-xs: 0.75rem;
+  --tms-fs-sm: 0.8125rem;
+  --tms-fs-base: 0.9375rem;
+  --tms-fs-md: 1.0625rem;
+  --tms-fs-lg: 1.25rem;
+  --tms-fs-xl: 1.5rem;
+
+  --tms-fw-regular: 400;
+  --tms-fw-medium: 600;
+  --tms-fw-bold: 800;
+
+  /* ------------------------------ מרווח ------------------------------ */
+  --tms-sp-1: 4px;
+  --tms-sp-2: 8px;
+  --tms-sp-3: 12px;
+  --tms-sp-4: 16px;
+  --tms-sp-5: 24px;
+  --tms-sp-6: 32px;
+
+  /* ------------------------------ צורה ------------------------------ */
+  --tms-r-sm: 6px;
+  --tms-r-md: 10px;
+  --tms-r-lg: 16px;
+  --tms-r-pill: 999px;
+
+  --tms-shadow-sm: 0 2px 6px rgba(16, 34, 42, 0.16);
+  --tms-shadow-md: 0 6px 18px rgba(16, 34, 42, 0.2);
+  --tms-shadow-lg: 0 14px 36px rgba(16, 34, 42, 0.26);
+
+  /* יעד מגע מינימלי — 44×44 לפי הנחיות הנגישות */
+  --tms-touch: 44px;
+
+  --tms-focus: 0 0 0 3px var(--tms-surface), 0 0 0 5px var(--tms-accent);
+}
+
+/* -------------------------- ניגודיות מוגברת -------------------------- */
+
+@media (prefers-contrast: more) {
+  .tms {
+    --tms-accent: #123f43;
+    --tms-accent-strong: #0b2b2e;
+    --tms-ink: #000000;
+    --tms-ink-soft: #23303a;
+    --tms-line: #4a5860;
+    --tms-line-strong: #23303a;
+  }
+}
+
+/* ---------------------------- צבעים כפויים ---------------------------- */
+/* במצב forced-colors של Windows הדפדפן דורס צבעים; מוודאים שהמבנה נשאר. */
+
+@media (forced-colors: active) {
+  .tms {
+    --tms-accent: Highlight;
+    --tms-accent-strong: Highlight;
+    --tms-ink: CanvasText;
+    --tms-ink-soft: CanvasText;
+    --tms-surface: Canvas;
+    --tms-surface-sunken: Canvas;
+    --tms-line: CanvasText;
+    --tms-mark: Highlight;
+    --tms-casing: Canvas;
+  }
+}

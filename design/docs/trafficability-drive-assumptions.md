@@ -321,3 +321,41 @@ Flag for review before this is integrated into the actual lesson 4 scene.
       colour chain (fog = sky horizon = ridge base).
     - Not verified in a browser (standing instruction). See the manual
       review checklist handed over with this pass.
+
+18. **Vehicle realism pass (2026-09-23)** — `build_vehicle.py` +
+    `vehicleMaterials.ts`. Goal: realistic proportions, believable
+    construction, restrained materials; no new detail, triangle count
+    ≈ unchanged (43.6k → 43.9k), material names unchanged.
+    - **Proportions**: body sides are now one plane (x = ±0.87) from front
+      fender to tail. Before, the fenders sat at 0.97 and the tub at 0.80,
+      with 12 cm dark flares out to ±1.01. Flares are now thin body-colour
+      lips (5 cm, out to ±0.935, just covering the tire). Windshield rake
+      14° → 24°, cage tube Ø 72 → 50 mm, cage top 1.98 → 1.86 m, sill
+      0.60 → 0.56 m. Bevels cut from 20–35 mm to pressed-steel 5–15 mm (wide
+      bevels were the main "moulded toy" cue).
+    - **Wheels**: the physics radius (0.38) and width are unchanged. The rim
+      is now a 16" pressed-steel wheel (was ~18.6" with a beadlock ring and
+      10 bolts). The tire has a tall, nearly straight sidewall and a shallow
+      30-pitch all-terrain tread, down from knobby mud lugs.
+    - **Curvature**: the hood and cowl are crowned lofts. The side panels get
+      a ~1 cm barrel plus ~1.5 cm of tumblehome at the beltline
+      (`side_bow`), applied to every part that meets the side plane so they
+      stay flush.
+    - **Materials**: satin-matte paint (less coat). Painted steel is no
+      longer metallic, and lamps no longer glow in daylight. At runtime,
+      object-space noise varies value and roughness per material, and a
+      faint dust film fades in below ~0.9 m (shader injection, no
+      textures). The Blender previews do not show this runtime layer.
+    - **Wheel node frame fixed (model-side only)**: the export left a +90° X
+      rotation on the root node, so the wheel nodes' parent frame was Z-up.
+      `Vehicle.tsx` writes `position.y` (suspension) and `rotation.y`
+      (steer), so steering tilted the front wheels (camber, up to ±0.5 rad)
+      and suspension slid wheels fore-aft. Checked numerically in three.js.
+      The rotation is now baked into the children, which matches the node
+      contract in the script header. No controller, physics, pivot or camera
+      code changed.
+    - Arch clearance re-checked with the lower sill: ≥ 0.06 m over a fully
+      compressed wheel that is also steered to 0.5 rad. Front aprons moved
+      inboard (x 0.45 → 0.43) because a compressed, steered tire reaches
+      x ≈ 0.475.
+    - Not verified in a browser (standing instruction).

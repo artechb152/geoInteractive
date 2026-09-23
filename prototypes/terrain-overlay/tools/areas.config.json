@@ -1,0 +1,91 @@
+{
+  "_readme": [
+    "מקור האמת היחיד לגאוגרפיה של האזורים. כל סקריפטי ה-pipeline קוראים מכאן —",
+    "אין קבועי LAT/LON מוטמעים באף סקריפט.",
+    "הוספת אזור = הוספת רשומה כאן + טקסטים ב-content/terrain.he.json + הרצת",
+    "npm run generate:area -- --area=<id>",
+    "",
+    "שדות: lat/lon = מרכז התחום; halfMeters = חצי-צלע התיבה ביחידות מרקטור",
+    "(הרוחב בקרקע קטן ממנה בפקטור cos(lat)); topoZoom = רמת אריחי OpenTopoMap;",
+    "demZoom = רמת אריחי הגובה (terrarium, זמין עד z15)."
+  ],
+  "defaults": {
+    "halfMeters": 1400,
+    "topoZoom": 17,
+    "demZoom": 14,
+    "masterWidth": 1600,
+    "widths": [800, 1200, 1600],
+    "attribution": {
+      "aerial": "Esri World Imagery",
+      "topo": "© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors",
+      "dem": "AWS Terrain Tiles (SRTM/NED)"
+    }
+  },
+  "areas": [
+    {
+      "id": "gilboa",
+      "lat": 32.434,
+      "lon": 35.408,
+      "halfMeters": 1400,
+      "order": 1
+    },
+    {
+      "id": "tavor",
+      "lat": 32.687,
+      "lon": 35.39,
+      "halfMeters": 1500,
+      "order": 2
+    },
+    {
+      "id": "sharon",
+      "lat": 32.31,
+      "lon": 34.87,
+      "halfMeters": 1400,
+      "demZoom": 15,
+      "order": 3
+    },
+    {
+      "id": "bental",
+      "lat": 33.129,
+      "lon": 35.7847,
+      "halfMeters": 1400,
+      "order": 4
+    },
+    {
+      "id": "meron",
+      "lat": 32.9976,
+      "lon": 35.4045,
+      "halfMeters": 1600,
+      "order": 5
+    },
+    {
+      "id": "darga",
+      "lat": 31.58,
+      "lon": 35.37,
+      "halfMeters": 1500,
+      "order": 6
+    },
+    {
+      "id": "ramon",
+      "lat": 30.605,
+      "lon": 34.815,
+      "halfMeters": 1900,
+      "order": 7
+    },
+    {
+      "_why": [
+        "עמק יזרעאל וגבעת המורה. האזור נוסף במסגרת L-05 מסיבה אחת מדויקת:",
+        "בקעה וגבעה אינן קיימות באף אחד משבעת האזורים הקודמים. כולם ממוסגרים",
+        "על גב הר או על רכס, ולכן רצפת עמק רחבה המוקפת גבהים — וגבעה בודדת",
+        "המתנשאת מתוכה — פשוט אינן בתחום. תיחום מחדש של אזור קיים היה משנה את",
+        "מה שהוא מלמד; אזור חדש מוסיף בלי לגרוע."
+      ],
+      "id": "yizrael",
+      "lat": 32.6115,
+      "lon": 35.3415,
+      "halfMeters": 3000,
+      "order": 8,
+      "topoZoom": 16
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "id": "darga",
+  "layers": {
+    "aerial": {
+      "widths": [800, 1200, 1600],
+      "sources": {
+        "avif": [
+          {
+            "w": 800,
+            "file": "aerial-800.avif"
+          },
+          {
+            "w": 1200,
+            "file": "aerial-1200.avif"
+          },
+          {
+            "w": 1600,
+            "file": "aerial-1600.avif"
+          }
+        ],
+        "webp": [
+          {
+            "w": 800,
+            "file": "aerial-800.webp"
+          },
+          {
+            "w": 1200,
+            "file": "aerial-1200.webp"
+          },
+          {
+            "w": 1600,
+            "file": "aerial-1600.webp"
+          }
+        ]
+      },
+      "fallback": "aerial-800.jpg",
+      "lqip": "data:image/webp;base64,UklGRsYAAABXRUJQVlA4ILoAAABwBQCdASoYABgAPu1ur1IppiQiqAgBMB2JZQDImYzaXmSe4jRv33+01W7saDyKkrEBLvE8AP6N9o77Y0DRxIRf6yfZweGTr4pI/ryQbF0ebbBrI9GNO54Y6uh/R58tznQs571pjR16nMeyLPrXvMG16X8e2dI10LShJsFjOJbfgPGvOlCFNl3/g5VGIyk+wZ7KpMpCo4D+x2k9gWXgO0lbnNdiv8gK1wVP4uqo3dUfOzTtHxUawT/QAAA=",
+      "avifBytes": 429356
+    },
+    "topo": {
+      "widths": [800, 1200, 1600],
+      "sources": {
+        "avif": [
+          {
+            "w": 800,
+            "file": "topo-800.avif"
+          },
+          {
+            "w": 1200,
+            "file": "topo-1200.avif"
+          },
+          {
+            "w": 1600,
+            "file": "topo-1600.avif"
+          }
+        ],
+        "webp": [
+          {
+            "w": 800,
+            "file": "topo-800.webp"
+          },
+          {
+            "w": 1200,
+            "file": "topo-1200.webp"
+          },
+          {
+            "w": 1600,
+            "file": "topo-1600.webp"
+          }
+        ]
+      },
+      "fallback": "topo-800.png",
+      "lqip": "data:image/webp;base64,UklGRo4AAABXRUJQVlA4IIIAAACQBACdASoYABgAPu1irFAppSQisBgIATAdiWdh4AAP4/RqkXr1JmWBrSE+4oAA/uqW+5U/CFJA5L7V68tk9mGRwzMHyJkV/FFLnWKDEdm+1L+DKC9KSztVSnd6wgc/wLHGqpg06KVt2xo2xgJ4yIufKAD0wDpPVYDiKMsDkabgAAAA",
+      "avifBytes": 479845
+    },
+    "hillshade": {
+      "widths": [800, 1200, 1600],
+      "sources": {
+        "avif": [
+          {
+            "w": 800,
+            "file": "hillshade-800.avif"
+          },
+          {
+            "w": 1200,
+            "file": "hillshade-1200.avif"
+          },
+          {
+            "w": 1600,
+            "file": "hillshade-1600.avif"
+          }
+        ],
+        "webp": [
+          {
+            "w": 800,
+            "file": "hillshade-800.webp"
+          },
+          {
+            "w": 1200,
+            "file": "hillshade-1200.webp"
+          },
+          {
+            "w": 1600,
+            "file": "hillshade-1600.webp"
+          }
+        ]
+      },
+      "fallback": "hillshade-800.jpg",
+      "lqip": "data:image/webp;base64,UklGRuwAAABXRUJQVlA4IOAAAAAwBQCdASoYABgAPu1urlIppiQiqAgBMB2JaQDNwYyKUx7MW0x1BOZlGidatzbQPCOLAAD+seNLNeHUx74nh1E5Uc5UAUGkR201nA8zAxthG+3blPKkpa15is/7I8gihONn3X7CBXcNY6Wuo+/rA4UlW0akA8bAV28Dj3kYkR3uQ3nHUfqsFke9WDpowMtcnx52XGj4t/5krIjdyqzzmmJLmO3dd6iCdBfgnfmdnhTpYhweeg83AxTvZ5WHzNdMJkbe7hMmtYKYy6i+wmnnmpLrq4Ym79hmIZG6bGWVupAAAA==",
+      "avifBytes": 75904
+    }
+  },
+  "quality": {
+    "aerial": 50,
+    "topo": 52,
+    "hillshade": 46
+  },
+  "thumb": "thumb.webp",
+  "totalAvifBytes": 985105
+}

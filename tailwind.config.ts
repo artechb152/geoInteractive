@@ -151,10 +151,23 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        // ברק רך שחוצה חריץ תמונה בטעינה — מימין לשמאל, בכיוון הקריאה (RTL).
+        'asset-sheen': {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(-100%)' },
+        },
+        // משטח הטעינה מופיע רק אחרי השהיה — תמונה זמינה (מטמון/מהירה) לא
+        // מציגה אותו בכלל.
+        'asset-surface-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
         'accordion-up': 'accordion-up 0.25s cubic-bezier(0.22, 1, 0.36, 1)',
+        'asset-sheen': 'asset-sheen 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'asset-surface-in': 'asset-surface-in 200ms ease-out 250ms both',
       },
     },
   },

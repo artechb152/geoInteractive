@@ -48,15 +48,22 @@ Apps Script לא מחזיר כותרות CORS, לכן הווידג'ט שולח �
 בקוד ה-Apps Script, בטל את ההערה מהשורה של `MailApp.sendEmail(...)` כדי לקבל
 מייל לכל הערה חדשה בנוסף לשורה בגיליון.
 
-## הוספת הפרוטוטייפ השלישי (פירמידה)
+## קוד המקור של הפרוטוטייפים
 
-1. שכפל לתוך הפרויקט:
-   ```
-   git clone https://github.com/idog2210/Pyramid3LevelsPrototype01 prototypes/pyramid-3-levels
-   ```
-2. עדכן אותי — אקרא את ה-README, אכתוב כותרת + תיאור, ואבנה:
-   ```
-   npm run prototypes:build
-   ```
-   (כבר רשום ב-`scripts/build-prototypes.mjs`; ידלג אם התיקייה חסרה.)
-3. אוסיף כרטיס ל-`src/lib/prt-prototypes.ts` והוא יופיע אוטומטית ב-`/prt`.
+ארבעת מקורות הפרוטוטייפים נמצאים בתוך הפרויקט, בתיקיות
+`prototypes/terrain-3d`, `prototypes/terrain-overlay`,
+`prototypes/pyramid-3-levels` ו־`prototypes/valley-crossing-3d`.
+המקורות נשמרים ב־Git יחד עם האתר; אין צורך לשכפל מאגר אחר או להפעיל
+`git pull` בתיקיית פרוטוטייפ. קובצי התצוגה תחת `public/embeds/` נבנים מהם.
+
+`npm run dev` ו־`npm run build` בודקים אם קוד המקור השתנה, ובונים מחדש רק
+את הפרוטוטייפים שהשתנו. בהפעלה הראשונה לאחר שינוי, אם חסרות תלויות מקומיות
+של פרוטוטייפ, הן מותקנות אוטומטית. לבנייה יזומה של כולם:
+
+```bash
+npm run prototypes:build
+```
+
+כדי להוסיף פרוטוטייפ, שמים את קוד המקור שלו בתיקייה חדשה תחת `prototypes/`,
+מוסיפים אותו לרשימה ב־`scripts/build-prototypes.mjs` ולרשימת הכרטיסים
+המתאימה (`src/lib/prt-prototypes.ts` או עמוד הפרוטוטייפים הציבורי).

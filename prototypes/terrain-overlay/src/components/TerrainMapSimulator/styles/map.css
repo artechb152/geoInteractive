@@ -1,0 +1,598 @@
+/* =======================================================================
+   map.css — מסגרת המפה, שכבות התמונה, שכבת ה-SVG, זום ולופה.
+   ===================================================================== */
+
+.tms__frame {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--tms-r-lg);
+  overflow: hidden;
+  background: var(--tms-surface-sunken);
+  box-shadow:
+    var(--tms-shadow-lg),
+    inset 0 0 0 1px rgba(16, 34, 42, 0.12);
+  touch-action: none; /* הזזה/צביטה מטופלות בקוד */
+}
+/* סקרים עליון — שומר על קריאות הפקדים הצפים מעל מרקם המפה */
+.tms__frame::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 92px;
+  background: linear-gradient(rgba(16, 34, 42, 0.22), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ------------------------------ שכבות ------------------------------ */
+
+.tms-map__viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+}
+.tms-map__viewport--panning {
+  cursor: grabbing;
+}
+.tms-map__viewport--picking {
+  cursor: crosshair;
+}
+
+/**
+ * ה"עולם": כל השכבות מקבלות transform יחיד, ולכן אזורי הלחיצה נשארים
+ * מיושרים לתמונה בכל רמת זום.
+ */
+.tms-map__world {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+/**
+ * עטיפת שכבה — יושבת **מחוץ** ל-transform ונושאת את החיתוך של הווילון.
+ * חיתוך בתוך המרחב המותמר היה נגרר עם ההזזה, וקו הווילון היה בורח מתחת
+ * לאצבע ברגע שהלומד מזיז את המפה.
+ */
+.tms-map__stack {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* -------------------------- זה לצד זה -------------------------- */
+
+/**
+ * שני חלונות חצי-רוחב. בתוך כל אחד ה"עולם" נשאר ברוחב מלא וממורכז, ולכן
+ * שניהם מציגים בדיוק את אותו קטע שטח: ההשוואה היא בין שתי שכבות של אותו
+ * מקום, ולא בין שני מקומות.
+ */
+.tms-map__split {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px;
+  background: var(--tms-casing);
+}
+.tms-map__pane {
+  position: relative;
+  flex: 1 1 50%;
+  min-width: 0;
+  overflow: hidden;
+}
+/**
+ * ה"עולם" נשאר בגודל החלון המלא וממורכז בתוך החלונית שרוחבה מחצית ממנו:
+ * ‎left = (paneW − 2·paneW) / 2 = −50%‎. מיקום ב-`margin-inline-start` היה
+ * מתהפך בין עברית לאנגלית — והמפה הייתה בורחת החוצה בשפה אחת מהשתיים.
+ */
+.tms-map__pane .tms-map__world {
+  inset: 0 auto 0 -50%;
+  width: 200%;
+}
+.tms-map__pane-tag {
+  position: absolute;
+  inset-block-end: 8px;
+  inset-inline-start: 8px;
+  z-index: 4;
+  padding: 2px 9px;
+  border-radius: var(--tms-r-pill);
+  background: rgba(16, 34, 42, 0.78);
+  color: #fff;
+  font-size: var(--tms-fs-xs);
+  font-weight: var(--tms-fw-bold);
+  pointer-events: none;
+}
+/* העותק הדקורטיבי בחלון השני אינו יעד לחיצה או פוקוס */
+.tms-map__overlay--echo {
+  pointer-events: none;
+}
+
+/* ---------------------------- ידית הווילון ---------------------------- */
+
+.tms-wipe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 0;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.tms-wipe__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1.5px;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(16, 34, 42, 0.55);
+}
+/* יעד גרירה נדיב סביב קו דק — הקו עצמו רחב 3px ואי אפשר לתפוס אותו במגע */
+.tms-wipe::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -22px;
+  width: 44px;
+}
+.tms-wipe__grip {
+  position: absolute;
+  top: 50%;
+  left: -19px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-top: -19px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--tms-ink);
+  box-shadow:
+    0 0 0 1px rgba(16, 34, 42, 0.35),
+    var(--tms-shadow-md);
+}
+.tms-wipe__tag {
+  position: absolute;
+  top: 50%;
+  margin-top: 30px;
+  padding: 2px 9px;
+  border-radius: var(--tms-r-pill);
+  background: rgba(16, 34, 42, 0.78);
+  color: #fff;
+  font-size: var(--tms-fs-xs);
+  font-weight: var(--tms-fw-bold);
+  white-space: nowrap;
+}
+.tms-wipe__tag--start {
+  right: 12px;
+}
+.tms-wipe__tag--end {
+  left: 12px;
+}
+
+.tms-map__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* LQIP — תמונה זעירה מטושטשת עד לטעינת השכבה האמיתית */
+.tms-map__lqip {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(14px);
+  transform: scale(1.06);
+}
+.tms-map__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: visible;
+}
+
+/* ------------------------ טעינה ומצבי שגיאה ------------------------ */
+
+.tms-map__skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(
+    100deg,
+    var(--tms-surface-sunken) 30%,
+    #f8fafa 50%,
+    var(--tms-surface-sunken) 70%
+  );
+  background-size: 200% 100%;
+  animation: tms-shimmer 1.2s linear infinite;
+  pointer-events: none;
+}
+.tms-map__error {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tms-sp-3);
+  padding: var(--tms-sp-5);
+  text-align: center;
+  background: var(--tms-surface-sunken);
+  color: var(--tms-ink);
+}
+.tms-map__error p {
+  margin: 0;
+  max-width: 30ch;
+  font-size: var(--tms-fs-base);
+}
+.tms-map__error small {
+  color: var(--tms-ink-soft);
+  font-size: var(--tms-fs-xs);
+}
+
+/* --------------------- צורות לחיצות ונגישות מקלדת --------------------- */
+
+.tms-feature {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+  cursor: pointer;
+  transition: fill 0.15s ease;
+}
+.tms-feature:hover {
+  fill: rgba(255, 210, 31, 0.16);
+  stroke: var(--tms-mark);
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+}
+/* מחוון פוקוס נראה על ה-path עצמו — המפה נגישה למקלדת ולא רק לעכבר */
+.tms-feature:focus {
+  outline: none;
+}
+.tms-feature:focus-visible {
+  fill: rgba(255, 210, 31, 0.2);
+  stroke: var(--tms-casing);
+  stroke-width: 4;
+  stroke-dasharray: 7 5;
+  vector-effect: non-scaling-stroke;
+}
+/**
+ * נקודות הגילוי. שלוש מדרגות של נוכחות, ולא סימון סטטי אחד:
+ *   טרם נצפתה  → צהובה ומלאה, "יש כאן משהו"
+ *   בריחוף      → מתרחבת, "וזה לחיץ"
+ *   כבר נצפתה   → דוהה כמעט לחלוטין, כדי שהעין תלך אל מה שנשאר
+ * הדהייה היא מה שהופך את המפה למשימה עם סוף במקום לשדה נקודות אחיד.
+ */
+.tms-feature-dot {
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: var(--tms-mark);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    opacity 0.25s ease,
+    transform 0.15s ease,
+    stroke 0.25s ease;
+}
+.tms-feature-dot--seen {
+  stroke: var(--tms-accent);
+  stroke-opacity: 0.5;
+  fill: rgba(255, 255, 255, 0.22);
+  opacity: 0.32;
+}
+/* ריחוף/פוקוס על אזור הלחיצה מגדיל את הנקודה שלו — היא עצמה אינה יעד עכבר */
+.tms-feature-dot--hot {
+  transform: scale(1.5);
+  opacity: 1;
+  stroke: var(--tms-mark);
+  stroke-opacity: 1;
+}
+/* פעימה חד-פעמית בטעינה — הופכת את הנקודות לגלויות כאפשרות לחיצה */
+.tms-feature-dot--pulse {
+  animation: tms-pulse 2.4s ease-out 2;
+}
+
+/* --------------------------- הדגשת הצורה --------------------------- */
+
+.tms-highlight {
+  filter: drop-shadow(0 0 4px rgba(16, 34, 42, 0.45));
+}
+.tms-highlight__casing,
+.tms-highlight__outline,
+.tms-highlight__accent {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tms-draw 0.6s ease forwards;
+}
+.tms-highlight__casing {
+  stroke: var(--tms-casing);
+  stroke-opacity: 0.8;
+  stroke-width: 9;
+}
+.tms-highlight__outline {
+  stroke: var(--tms-mark);
+  stroke-width: 5;
+  stroke-opacity: 0.96;
+}
+.tms-highlight__accent {
+  stroke: var(--tms-mark-soft);
+  stroke-width: 3.2;
+  stroke-opacity: 0.97;
+}
+.tms-highlight--correct .tms-highlight__outline,
+.tms-highlight--correct .tms-highlight__accent {
+  stroke: #3ddc84;
+}
+.tms-highlight--wrong .tms-highlight__outline,
+.tms-highlight--wrong .tms-highlight__accent {
+  stroke: #ff8a7a;
+}
+.tms-flow {
+  opacity: 0;
+  animation: tms-fade 0.3s ease 0.45s forwards;
+}
+.tms-flow__casing,
+.tms-flow__arrow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.tms-flow__casing {
+  stroke: var(--tms-casing);
+  stroke-opacity: 0.85;
+  stroke-width: 8;
+}
+.tms-flow__arrow {
+  stroke: var(--tms-mark);
+  stroke-width: 4;
+}
+
+/* תצוגה מקדימה (ריחוף/פוקוס במקרא) */
+.tms-preview__outline {
+  fill: rgba(255, 210, 31, 0.08);
+  stroke: var(--tms-mark);
+  stroke-width: 2.4;
+  stroke-opacity: 0.85;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---------------------------- "הצג הכול" ---------------------------- */
+
+/**
+ * ללא מילוי: המילוי השקוף שהיה כאן טשטש בדיוק את קווי הגובה שהמצב הזה
+ * אמור להראות. ההבחנה בין המשפחות נעשית בדפוס הקו ולא בצבע בלבד — כדי
+ * שתשרוד גם בעיוורון צבעים וגם במצב ניגודיות כפויה.
+ */
+.tms-all__outline {
+  fill: none;
+  stroke: var(--tms-mark);
+  stroke-width: 2.6;
+  stroke-opacity: 0.95;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke;
+}
+.tms-all__casing {
+  fill: none;
+  stroke: var(--tms-casing);
+  stroke-width: 5;
+  stroke-opacity: 0.55;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.tms-all--convex .tms-all__outline {
+  stroke-dasharray: none;
+}
+.tms-all--concave .tms-all__outline {
+  stroke-dasharray: 9 6;
+}
+.tms-all--pass .tms-all__outline {
+  stroke-dasharray: 2 5;
+}
+.tms-all--surface .tms-all__outline {
+  stroke-dasharray: 14 5 3 5;
+}
+.tms-all--concept .tms-all__outline {
+  stroke-dasharray: 4 4;
+  stroke-opacity: 0.75;
+}
+.tms-all__leader {
+  stroke: var(--tms-mark);
+  stroke-width: 1.6;
+  stroke-opacity: 0.9;
+  vector-effect: non-scaling-stroke;
+}
+.tms-all__leader-casing {
+  stroke: var(--tms-casing);
+  stroke-width: 3.4;
+  stroke-opacity: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+.tms-all__anchor {
+  fill: var(--tms-mark);
+  stroke: var(--tms-casing);
+  stroke-width: 1.2;
+}
+.tms-all__bg {
+  fill: rgba(16, 34, 42, 0.88);
+  stroke: rgba(255, 210, 31, 0.55);
+  stroke-width: 1;
+}
+.tms-all__text {
+  fill: #f2f7f7;
+  font-size: 15px;
+  font-weight: var(--tms-fw-bold);
+}
+
+/* ----------------------- תווית הצורה הנבחרת ----------------------- */
+
+.tms-callout__dot {
+  fill: var(--tms-mark);
+  stroke: var(--tms-casing);
+  stroke-width: 1.5;
+}
+.tms-callout__leader {
+  stroke: rgba(255, 210, 31, 0.9);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.tms-callout__bg {
+  fill: rgba(16, 34, 42, 0.95);
+  stroke: rgba(255, 210, 31, 0.7);
+  stroke-width: 1.5;
+}
+.tms-callout__text {
+  fill: #fff4cf;
+  font-size: 22px;
+  font-weight: var(--tms-fw-bold);
+}
+
+/* --------------------- פריטי מפה: צפון וקנה-מידה --------------------- */
+
+.tms-north__bg,
+.tms-scale__bg {
+  fill: rgba(255, 255, 255, 0.88);
+  stroke: rgba(16, 34, 42, 0.18);
+  stroke-width: 1;
+}
+.tms-north__arrow {
+  fill: var(--tms-ink);
+}
+.tms-north__label {
+  fill: var(--tms-ink);
+  font-size: 16px;
+  font-weight: var(--tms-fw-bold);
+}
+.tms-scale__bar {
+  fill: none;
+  stroke: var(--tms-ink);
+  stroke-width: 2;
+}
+.tms-scale__seg {
+  fill: var(--tms-ink);
+}
+/**
+ * התווית יושבת מעל הסרגל ונכתבת משמאל לימין. בכיוון RTL היא "נשפכה"
+ * שמאלה מנקודת העיגון וכיסתה את הסרגל עצמו.
+ */
+.tms-scale__label {
+  fill: var(--tms-ink);
+  font-size: 15px;
+  font-weight: var(--tms-fw-medium);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* ------------------------------ לופה ------------------------------ */
+
+/**
+ * הלופה מראה את שתי השכבות בו-זמנית: חצי תצ״א מול חצי מפה, באותו מקום
+ * בדיוק. זהו כלי ההוראה המרכזי כאן — הוא עונה על השאלה "מה זה בשטח" ועל
+ * "איך זה נראה במפה" בלי להזיז את העין.
+ */
+.tms-loupe {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 0 5px var(--tms-casing),
+    var(--tms-shadow-md);
+}
+.tms-loupe__pane {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+/* המפה בחצי השמאלי, התצ״א בחצי הימני — תואם למיקום התוויות */
+.tms-loupe__pane--map {
+  clip-path: inset(0 50% 0 0);
+}
+.tms-loupe__divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(16, 34, 42, 0.5);
+}
+.tms-loupe__tag {
+  position: absolute;
+  bottom: 6px;
+  font-size: 10px;
+  font-weight: var(--tms-fw-bold);
+  color: #fff;
+  background: rgba(16, 34, 42, 0.72);
+  border-radius: var(--tms-r-pill);
+  padding: 1px 7px;
+}
+.tms-loupe__tag--a {
+  right: 12%;
+}
+.tms-loupe__tag--m {
+  left: 12%;
+}
+
+/* ---------------------- ריהוט מפה (מחוץ לזום) ---------------------- */
+
+/* חץ הצפון וסרגל קנה המידה אינם חלק מהשטח ולכן אינם משתנים עם הזום */
+.tms-map__furniture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* --------------------------- אנימציות --------------------------- */
+
+@keyframes tms-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes tms-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tms-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes tms-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.55);
+    opacity: 0.45;
+  }
+}

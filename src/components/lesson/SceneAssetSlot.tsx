@@ -4,8 +4,8 @@ import { IsometricAsset } from '@/components/assets/IsometricAsset';
 /**
  * SceneAssetSlot — חריץ נכס Magnific בתוך סצנה: מסגרת AssetFrame אחידה
  * (כרטיס לבן, קו-שיער tanline, צל card-soft) סביב IsometricAsset.
- * נכס חסר ⇒ ה-placeholder המג'נטה הרועש של IsometricAsset נשאר גלוי
- * בכוונה — לעולם לא אמנות-זמנית מלוטשת.
+ * נכס חסר ⇒ החלופה השקטה של IsometricAsset (משטח נייר + קווי-גובה) —
+ * לעולם לא אמנות-זמנית מלוטשת, ולעולם לא פרטי פיתוח בפני הלומד.
  */
 export function SceneAssetSlot({
   assetId,

@@ -1,86 +1,165 @@
 #!/usr/bin/env node
-/**
- * Rebuild the two embedded prototypes (terrain-3d + terrain-overlay)
- * and copy the resulting dist/ folders into public/prototypes/<name>/
- * so they're served by Next.js as static assets and iframed from
- * `PrototypesShowcase`.
- *
- * Expects the source trees to be cloned into `./prototypes/<name>/`
- * (which is gitignored). If a source tree is missing the script
- * skips it with a warning — useful in CI where only the
- * pre-built public/prototypes/ may be present.
- */
-import { execSync } from 'node:child_process';
+/** Build the prototype sources tracked in this repository into public/embeds/. */
+import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 
-const PROTOTYPES = [
-  { name: 'terrain-3d', src: 'prototypes/terrain-3d', outDir: 'dist' },
-  { name: 'terrain-overlay', src: 'prototypes/terrain-overlay', outDir: 'dist' },
-  // Clone idog2210/Pyramid3LevelsPrototype01 into prototypes/pyramid-3-levels/
-  // and this will build it; until then it's skipped (source not found).
-  { name: 'pyramid-3-levels', src: 'prototypes/pyramid-3-levels', outDir: 'dist' },
-  // Clone idog2210/06082026ValleyCrossing3d into prototypes/valley-crossing-3d/
-  // — a Next.js app itself; its next.config.js sets output:'export' so
-  // `npm run build` emits a static out/ dir instead of a Vite dist/.
-  { name: 'valley-crossing-3d', src: 'prototypes/valley-crossing-3d', outDir: 'out' },
+const prototypes = [
+  { name: 'terrain-3d', outDir: 'dist' },
+  { name: 'terrain-overlay', outDir: 'dist' },
+  { name: 'pyramid-3-levels', outDir: 'dist' },
+  { name: 'valley-crossing-3d', outDir: 'out' },
 ];
 
+const ignoredDirs = new Set([
+  '.git', '.next', '.tmp', 'coverage', 'dist', 'dist-lib', 'node_modules',
+  'out', 'playwright-report', 'test-results',
+]);
 const root = process.cwd();
+const sourcesRoot = join(root, 'prototypes');
+const embedsRoot = join(root, 'public', 'embeds');
+const ifChanged = process.argv.includes('--if-changed');
 
-for (const p of PROTOTYPES) {
-  const srcLink = join(root, p.src);
-  if (!existsSync(srcLink)) {
-    console.warn(`[skip] ${p.name}: source not found at ${p.src}`);
+for (const { name, outDir } of prototypes) {
+  const sourcePath = join(sourcesRoot, name);
+  if (!existsSync(join(sourcePath, 'package.json'))) {
+    throw new Error(`Missing prototype source: prototypes/${name}/`);
+  }
+
+  const source = realpathSync(sourcePath);
+  const location = relative(sourcesRoot, source);
+  if (location.startsWith('..') || isAbsolute(location)) {
+    throw new Error(`Prototype source must be inside this project: ${sourcePath}`);
+  }
+
+  const destination = join(embedsRoot, name);
+  const fingerprint = sourceFingerprint(source);
+  const marker = join(destination, '.source-hash');
+  if (
+    ifChanged &&
+    existsSync(join(destination, 'index.html')) &&
+    existsSync(marker) &&
+    readFileSync(marker, 'utf8').trim() === fingerprint
+  ) {
+    console.log(`[current] ${name}`);
     continue;
   }
-  // Resolve junctions/symlinks to their real path before building — Vite/
-  // Rollup realpath the project root internally, and building with a
-  // junction as cwd produces mismatched relative asset paths ("outside
-  // root" errors) when the two disagree.
-  const src = realpathSync(srcLink);
-  console.log(`[build] ${p.name}`);
-  execSync('npm install', { cwd: src, stdio: 'inherit' });
-  execSync('npm run build', { cwd: src, stdio: 'inherit' });
 
-  const dest = join(root, 'public', 'embeds', p.name);
-  if (existsSync(dest)) rmSync(dest, { recursive: true, force: true });
-  mkdirSync(dest, { recursive: true });
-  cpSync(join(src, p.outDir), dest, { recursive: true });
-  fixAbsoluteAssetPaths(dest);
-  console.log(`[done]  ${p.name} → public/embeds/${p.name}/`);
+  console.log(`[build] ${name}`);
+  if (!existsSync(join(source, 'node_modules', '.package-lock.json'))) {
+    console.log(`[install] ${name} (first build only)`);
+    await runNpm(source, 'ci');
+  }
+  await runNpm(source, 'run', 'build');
+
+  const output = join(source, outDir);
+  if (!existsSync(join(output, 'index.html'))) {
+    throw new Error(`Prototype build did not produce ${outDir}/index.html: ${name}`);
+  }
+
+  // Keep the previous working embed until the new build is ready.
+  const staged = join(embedsRoot, `.${name}-next`);
+  if (existsSync(staged)) removeEmbed(staged);
+  mkdirSync(staged, { recursive: true });
+  await copyOutput(output, staged);
+  fixAbsoluteTexturePaths(staged);
+  writeFileSync(join(staged, '.source-hash'), fingerprint + '\n');
+  if (existsSync(destination)) removeEmbed(destination);
+  try {
+    renameSync(staged, destination);
+  } catch (error) {
+    if (process.platform !== 'win32' || error.code !== 'EPERM') throw error;
+    // OneDrive can temporarily block a directory rename immediately after copying.
+    await copyOutput(staged, destination);
+    removeEmbed(staged);
+  }
+  console.log(`[done] ${name} → public/embeds/${name}/`);
 }
 
-/**
- * The embeds are served from /embeds/<name>/, not the site root, so any
- * root-absolute asset URL baked into a bundle (e.g. terrain-3d fetching
- * `/textures/...`) 404s at runtime. Rewrite such references to be
- * relative to the embed's index.html.
- */
-function fixAbsoluteAssetPaths(dir) {
+function removeEmbed(path) {
+  const resolved = realpathSync(path);
+  const location = relative(embedsRoot, resolved);
+  if (!location || location.startsWith('..') || isAbsolute(location)) {
+    throw new Error(`Refusing to remove a directory outside public/embeds: ${path}`);
+  }
+  rmSync(path, { recursive: true, force: true });
+}
+
+function copyOutput(source, destination) {
+  if (process.platform !== 'win32') {
+    return import('node:fs').then(({ cpSync }) => cpSync(source, destination, { recursive: true }));
+  }
+  // Node's recursive cpSync crashes on OneDrive-backed files on this Windows host.
+  return new Promise((resolve, reject) => {
+    const child = spawn('robocopy', [source, destination, '/E', '/NFL', '/NDL', '/NJH', '/NJS', '/NC', '/NS'], {
+      stdio: 'inherit',
+    });
+    child.once('error', reject);
+    child.once('exit', (code, signal) => {
+      if (code !== null && code < 8) resolve();
+      else reject(new Error(`robocopy failed (${signal ?? code})`));
+    });
+  });
+}
+
+function runNpm(cwd, ...args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('npm', args, {
+      cwd,
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
+    child.once('error', reject);
+    child.once('exit', (code, signal) => {
+      if (code === 0) resolve();
+      else reject(new Error(`npm ${args.join(' ')} failed (${signal ?? code}) in ${cwd}`));
+    });
+  });
+}
+
+function sourceFingerprint(dir) {
+  const hash = createHash('sha256');
+  visit(dir, '');
+  return hash.digest('hex');
+
+  function visit(folder, prefix) {
+    for (const entry of readdirSync(folder, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (entry.isDirectory() && ignoredDirs.has(entry.name)) continue;
+      if (entry.name.endsWith('.tsbuildinfo')) continue;
+      const full = join(folder, entry.name);
+      const rel = join(prefix, entry.name);
+      if (entry.isDirectory()) visit(full, rel);
+      else if (entry.isFile()) {
+        hash.update(rel);
+        hash.update(readFileSync(full));
+      }
+    }
+  }
+}
+
+// The terrain app refers to /textures/ in its JavaScript. Its iframe is served
+// under /embeds/terrain-3d/, so make those URLs relative to that directory.
+function fixAbsoluteTexturePaths(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      fixAbsoluteAssetPaths(full);
-    } else if (/\.(js|css|html)$/.test(entry.name)) {
+    if (entry.isDirectory()) fixAbsoluteTexturePaths(full);
+    else if (/\.(js|css|html)$/.test(entry.name)) {
       const before = readFileSync(full, 'utf8');
       const after = before
         .replaceAll('`/textures/', '`textures/')
         .replaceAll('"/textures/', '"textures/')
         .replaceAll("'/textures/", "'textures/");
-      if (after !== before) {
-        writeFileSync(full, after);
-        console.log(`[fix]   rewrote absolute /textures/ paths in ${full}`);
-      }
+      if (after !== before) writeFileSync(full, after);
     }
   }
 }

@@ -1,15 +1,11 @@
 /**
  * The prototypes shown on the secret /prt page.
  *
- * Each entry maps a prebuilt Vite/React SPA (under
- * `public/embeds/<id>/index.html`, produced by
- * `scripts/build-prototypes.mjs`) to a card on /prt and a dedicated
- * viewer at /prt/<id>. Titles + descriptions are derived from each
- * prototype repo's name and README.
+ * Each entry maps a prototype source in `prototypes/<id>/` to its built
+ * embed in `public/embeds/<id>/` and a dedicated viewer at /prt/<id>.
  *
- * To add a prototype: clone its repo into `prototypes/<id>/`, add it to
- * the PROTOTYPES list in `scripts/build-prototypes.mjs`, run
- * `npm run prototypes:build`, then add an entry here.
+ * To add a prototype, put its source in `prototypes/<id>/`, register it in
+ * `scripts/build-prototypes.mjs`, then add an entry here.
  */
 
 export type PrtPrototype = {

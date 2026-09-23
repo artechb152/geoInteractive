@@ -4,6 +4,8 @@ This project must match the provided visual mockups as closely as possible ("pix
 
 ## Source of truth
 
+- Lesson screen definition and planning template: `design/docs/lesson-screen-guide.md`. Read it when designing or implementing a specific lesson screen.
+
 - Master mockup: @design/mockups/mockup.png (1402 × 1122 px — desktop design frame; measurements map ≈1:1 to CSS px)
 - Written spec with exact values: @design/docs/design-spec.md
 - Section crops for close comparison: `design/mockups/mockup-header.png`, `design/mockups/mockup-hero.png`, `design/mockups/mockup-section-1.png`, `design/mockups/mockup-footer.png`

@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# הרצה חדשה על אותו ענף מבטלת את הקודמת — אין טעם לשלם על בדיקה של קוד ישן
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: טיפוסים · lint · בדיקות יחידה
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: בדיקת טיפוסים
+        run: npm run typecheck
+
+      - name: ESLint + Prettier
+        run: npm run lint
+
+      - name: בדיקות יחידה
+        run: npm run test -- --coverage
+
+      # תקציב הנכסים נבדק כאן ולא בסקריפט מקומי: חריגה שמתגלה אצל לומד
+      # ברשת סלולרית היא חריגה שהתגלתה מאוחר מדי
+      - name: תקציב נכסים
+        run: npm run check:budget
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  e2e:
+    name: e2e · נגישות · רגרסיה חזותית
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # ב-CI אין דפדפן מותקן, ולכן כאן כן מורידים אחד
+      - name: התקנת Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: בנייה
+        run: npm run build
+
+      - name: הרצת הבדיקות
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  library:
+    name: בניית הספרייה
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # הרכיב נצרך מבחוץ; בנייה שבורה של הספרייה אינה מתגלה בבניית ההדגמה
+      - name: build:lib
+        run: npm run build:lib
+
+      - name: אימות שהחבילה מכילה את מה שהיא מצהירה
+        run: node tools/check-package.mjs

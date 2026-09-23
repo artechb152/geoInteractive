@@ -1,0 +1,14 @@
+dist/
+node_modules/
+coverage/
+test-results/
+playwright-report/
+tools/.cache/
+package-lock.json
+
+# נוצר אוטומטית ע"י ה-pipeline — עיצוב מחדש רק ייצור רעש ב-diff
+src/data/areas/
+src/data/content.ts
+
+# המסמך מתוחזק ידנית בעברית; שבירת שורות אוטומטית פוגעת בקריאות RTL
+ROADMAP.md

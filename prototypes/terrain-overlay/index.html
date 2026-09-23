@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="סימולטור צורות שטח — זיהוי רכס, כיפה, אוכף, שלוחה וגיא בתצלום אוויר ובמפה טופוגרפית, על שטח אמיתי."
+    />
+    <meta name="color-scheme" content="light" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c4b4f'/%3E%3Cpath d='M4 23c4-9 8-13 12-13s8 4 12 13' fill='none' stroke='%23ffd21f' stroke-width='2.4'/%3E%3Cpath d='M8 27c3.5-7 6.5-10 8-10s4.5 3 8 10' fill='none' stroke='%23ffd21f' stroke-width='2' opacity='.6'/%3E%3C/svg%3E"
+    />
+    <title>סימולטור צורות שטח</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #eef2f3;
+        font-family: 'Rubik', 'Assistant', 'Segoe UI', system-ui, sans-serif;
+      }
+      /* מסגרת הדגמה שמדמה רוחב טור של דף קורס */
+      .harness {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: clamp(12px, 3vw, 28px) clamp(12px, 3vw, 24px)
+          calc(clamp(12px, 3vw, 28px) + env(safe-area-inset-bottom, 0px));
+        background: #fff;
+        min-height: 100dvh;
+        box-shadow: 0 0 40px rgba(20, 40, 52, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,93 @@
+{
+  "name": "terrain-map-simulator",
+  "version": "0.2.0",
+  "description": "סימולטור זיהוי צורות שטח — רכיב React ללימוד קריאת מפה טופוגרפית מול תצלום אוויר",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "module": "./dist-lib/terrain-map-simulator.mjs",
+  "types": "./dist-lib/types/components/TerrainMapSimulator/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist-lib/types/components/TerrainMapSimulator/index.d.ts",
+      "import": "./dist-lib/terrain-map-simulator.mjs"
+    },
+    "./style.css": "./dist-lib/style.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src/assets",
+    "dist-lib",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run check:budget",
+    "build": "tsc --noEmit && vite build",
+    "build:lib": "node tools/build-lib.mjs",
+    "build:types": "tsc -p tsconfig.lib.json",
+    "preview": "vite preview --port 4173",
+    "generate:area": "node tools/generate-area.mjs",
+    "generate:elevation": "node tools/gen-elevation.mjs",
+    "check:budget": "node tools/check-budget.mjs",
+    "verify:shots": "node tools/verify/shots.mjs",
+    "prepare": "node tools/install-hooks.mjs"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mjs,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.10.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.0",
+    "globals": "^16.5.0",
+    "jsdom": "^28.0.1",
+    "lint-staged": "^16.2.7",
+    "playwright-core": "^1.60.0",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.6.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.35.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.47.2",
+    "vite": "^5.4.11",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

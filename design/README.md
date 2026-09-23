@@ -3,6 +3,7 @@
 Index of how design assets are organized. Docs and images are kept separate; each doc starts with a one-line summary of what it is.
 
 - `docs/` — written specs and notes (Markdown only, no images).
+  - `lesson-screen-guide.md` — what counts as one lesson screen, its place in the course hierarchy, and a copyable brief for designing it.
   - `design-spec.md` — pixel-fidelity spec for the homepage (source of truth per `CLAUDE.md`).
   - `design-spec-carousel.md` — spec for the standalone course-plan carousel mockup.
   - `assumptions.md` — running log of visual details that were ambiguous in a mockup, and the assumption made.

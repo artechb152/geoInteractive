@@ -1,0 +1,320 @@
+/* =======================================================================
+   responsive.css — מובייל, לרוחב, תנועה מופחתת, ניגודיות כפויה והדפסה.
+   ===================================================================== */
+
+/* -------------------------- מסך צר (מובייל) -------------------------- */
+
+@media (max-width: 620px) {
+  .tms {
+    font-size: var(--tms-fs-sm);
+  }
+  .tms__header {
+    align-items: flex-start;
+  }
+  .tms__title {
+    font-size: var(--tms-fs-md);
+  }
+
+  /**
+   * הפקדים עוברים לשתי שורות במקום לגלוש מהמסגרת: קודם המחוון (שהוא
+   * הפעולה המרכזית), ומתחתיו שורת הכפתורים.
+   */
+  .tms__control-bar {
+    width: calc(100% - var(--tms-sp-4));
+    max-width: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    top: calc(var(--tms-quiz-h, 0px) + var(--tms-sp-2));
+  }
+  .tms__control-group {
+    justify-content: center;
+    flex-wrap: nowrap;
+  }
+  .tms-compare {
+    flex: 1;
+    justify-content: center;
+  }
+  .tms-compare__range {
+    width: 100%;
+    min-width: 70px;
+  }
+  .tms-btn {
+    padding: 8px 11px;
+  }
+  .tms-btn--icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* סרגל הפקדים תופס את ראש המסגרת, ולכן הסטטוס והייחוס יורדים מתחתיו */
+  .tms__status {
+    bottom: auto;
+    top: calc(var(--tms-quiz-h, 0px) + 104px);
+    font-size: var(--tms-fs-xs);
+    padding: 6px 11px;
+  }
+
+  /* הכרטיס הופך למגירה תחתונה עם מצב מקופל ומורחב */
+  .tms-card,
+  .tms-card--left,
+  .tms-card--right,
+  .tms-card--top {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    border-radius: var(--tms-r-lg) var(--tms-r-lg) 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    transition: max-height 0.22s ease;
+  }
+  .tms-card--sheet-collapsed {
+    max-height: 78px;
+    overflow: hidden;
+  }
+  .tms-card--sheet-expanded {
+    max-height: 62%;
+  }
+  .tms-card__grip {
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: 7px auto 0;
+    border-radius: var(--tms-r-pill);
+    background: var(--tms-line-strong);
+  }
+  .tms-card__head {
+    padding: var(--tms-sp-2) var(--tms-sp-3) var(--tms-sp-1);
+    cursor: pointer;
+  }
+  .tms-card__body {
+    padding: 0 var(--tms-sp-3) var(--tms-sp-3);
+  }
+
+  .tms__attribution {
+    bottom: 86px; /* מעל המגירה המקופלת ומעל סרגל קנה המידה */
+    top: auto;
+    inset-inline-start: var(--tms-sp-2);
+    max-width: calc(100% - var(--tms-sp-4));
+  }
+
+  .tms-legend__chip {
+    font-size: var(--tms-fs-xs);
+    padding: 5px 11px;
+  }
+  .tms-areas__item {
+    min-width: 132px;
+  }
+  .tms-quiz__option {
+    flex-basis: 100%;
+  }
+  .tms-sheet {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .tms-sheet__panel {
+    max-height: 88vh;
+    border-radius: var(--tms-r-lg) var(--tms-r-lg) 0 0;
+    padding-bottom: calc(var(--tms-sp-4) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* מסכים צרים במיוחד (360px) */
+@media (max-width: 380px) {
+  .tms-compare__readout {
+    font-size: 0.6875rem;
+  }
+  .tms__control-group {
+    padding: 4px;
+  }
+}
+
+/* ------------------------------ לרוחב ------------------------------ */
+
+/**
+ * בטלפון לרוחב הגובה הוא המשאב הנדיר: המפה מוגבלת לגובה החלון, והכרטיס
+ * עובר לצד במקום לכסות אותה.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  /* מקום לכותרת ולבורר האזורים המכווץ, כדי שכל המפה תישאר בתוך החלון */
+  .tms__frame {
+    max-width: min(860px, calc(100dvh - 132px));
+  }
+  .tms-card,
+  .tms-card--left,
+  .tms-card--right {
+    top: 84px;
+    bottom: var(--tms-sp-2);
+    left: auto;
+    right: var(--tms-sp-2);
+    width: min(320px, 46%);
+    max-height: none;
+    border-radius: var(--tms-r-lg);
+  }
+  .tms-card--sheet-collapsed,
+  .tms-card--sheet-expanded {
+    max-height: none;
+    overflow: visible;
+  }
+  .tms-card__grip {
+    display: none;
+  }
+  .tms__header {
+    margin-bottom: var(--tms-sp-2);
+  }
+  .tms__subtitle {
+    display: none;
+  }
+  /* בורר האזורים מתכווץ לשורת שמות: בלרוחב הגובה הוא המשאב הנדיר */
+  .tms-areas__thumb,
+  .tms-areas__teaches {
+    display: none;
+  }
+  .tms-areas__item {
+    min-width: 118px;
+    padding: 6px var(--tms-sp-2);
+  }
+  .tms-areas__list {
+    padding-bottom: 4px;
+  }
+  .tms-areas {
+    margin-bottom: var(--tms-sp-2);
+  }
+}
+
+/* ------------------------ העדפת תנועה מופחתת ------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .tms *,
+  .tms *::before,
+  .tms *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .tms-highlight__casing,
+  .tms-highlight__outline,
+  .tms-highlight__accent {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  .tms-flow {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .tms-map__skeleton {
+    animation: none !important;
+  }
+  .tms-feature-dot--pulse {
+    animation: none !important;
+  }
+}
+
+/* --------------------------- צבעים כפויים --------------------------- */
+
+@media (forced-colors: active) {
+  .tms-btn,
+  .tms-legend__chip,
+  .tms-areas__item {
+    border: 1px solid ButtonText;
+  }
+  .tms-legend__chip--active,
+  .tms-btn[aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  /* ההדגשה על המפה חייבת להישאר נראית גם כשהצבעים נדרסים */
+  .tms-highlight__outline,
+  .tms-all__outline {
+    stroke: Highlight !important;
+    forced-color-adjust: none;
+  }
+  .tms-highlight__casing,
+  .tms-all__casing {
+    stroke: Canvas !important;
+    forced-color-adjust: none;
+  }
+  .tms-feature:focus-visible {
+    stroke: Highlight !important;
+    forced-color-adjust: none;
+  }
+  .tms-map__img {
+    forced-color-adjust: none;
+  }
+}
+
+/* ------------------------------ הדפסה ------------------------------ */
+
+@media print {
+  .tms {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    font-size: 10pt;
+  }
+  .tms__frame {
+    box-shadow: none;
+    border: 1px solid #999;
+    max-width: 15cm;
+    break-inside: avoid;
+  }
+  /* פקדים אינטראקטיביים אינם רלוונטיים בנייר */
+  .tms__control-bar,
+  .tms__status,
+  .tms__toolbar,
+  .tms-areas__list,
+  .tms-zoom,
+  .tms-sheet,
+  .tms-quiz,
+  .tms-card__close,
+  .tms-loupe {
+    display: none !important;
+  }
+  .tms-card,
+  .tms-card--left,
+  .tms-card--right,
+  .tms-card--top {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin-top: var(--tms-sp-3);
+    border: 1px solid #999;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .tms-card__body {
+    overflow: visible;
+  }
+
+  /* דף העזר: כל החתימות על עמוד אחד */
+  .tms-cheat {
+    display: block;
+    break-before: page;
+  }
+  .tms-cheat__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10pt;
+  }
+  .tms-cheat__item {
+    display: flex;
+    gap: 8pt;
+    align-items: flex-start;
+    border: 1px solid #bbb;
+    border-radius: 4pt;
+    padding: 6pt;
+    break-inside: avoid;
+  }
+  .tms-cheat__item h3 {
+    margin: 0 0 2pt;
+    font-size: 11pt;
+  }
+  .tms-cheat__item p {
+    margin: 0;
+    font-size: 9pt;
+  }
+  .tms-legend__chip {
+    border: 1px solid #999;
+  }
+}
