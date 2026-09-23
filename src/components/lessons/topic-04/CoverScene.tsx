@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
@@ -60,15 +60,24 @@ const TERRAIN_FEATURES: { feature: string; what: string; defender: string; attac
 
 // design/mockups/topic-04-cover-terrain-atlas-v2.png — one illustration per
 // TERRAIN_FEATURES row, same order. Assets + rationale: design/docs/topic-04-cover-terrain-atlas-handoff.md
-const TERRAIN_ASSETS: { assetId: string; src: string }[] = [
-  { assetId: 'TOPIC04-TERRAIN-CHOKEPOINT', src: '/assets/lessons/topic04/terrain-atlas/chokepoint.png' },
-  { assetId: 'TOPIC04-TERRAIN-SUMMIT', src: '/assets/lessons/topic04/terrain-atlas/summit.png' },
-  { assetId: 'TOPIC04-TERRAIN-VALLEY', src: '/assets/lessons/topic04/terrain-atlas/enclosed-valley.png' },
+// Aspect ratios are each asset's own real pixel dimensions (not a preset):
+// chokepoint 1020x1541 (portrait), summit 1774x887, enclosed-valley 1536x1024.
+const TERRAIN_ASSETS: { assetId: string; src: string; ratio: number; widthPct: number; side: 'start' | 'end' }[] = [
+  { assetId: 'TOPIC04-TERRAIN-CHOKEPOINT', src: '/assets/lessons/topic04/terrain-atlas/chokepoint.png', ratio: 1020 / 1541, widthPct: 38, side: 'end' },
+  { assetId: 'TOPIC04-TERRAIN-SUMMIT', src: '/assets/lessons/topic04/terrain-atlas/summit.png', ratio: 1774 / 887, widthPct: 40, side: 'start' },
+  { assetId: 'TOPIC04-TERRAIN-VALLEY', src: '/assets/lessons/topic04/terrain-atlas/enclosed-valley.png', ratio: 1536 / 1024, widthPct: 46, side: 'end' },
 ];
-const TERRAIN_FOOTER_ASSET = {
-  assetId: 'TOPIC04-TERRAIN-FOOTER',
-  src: '/assets/lessons/topic04/terrain-atlas/mountain-footer.png',
-};
+
+// Waypoint dots + connector, measured off design/mockups/topic-04-cover-terrain-atlas-v2.png
+// (1190x1322 frame) as % of that frame — reproduced proportionally, not as literal px.
+const CONNECTOR_DOTS = [
+  { x: (350 / 1190) * 100, y: (258 / 1322) * 100 },
+  { x: (415 / 1190) * 100, y: (515 / 1322) * 100 },
+  { x: (960 / 1190) * 100, y: (545 / 1322) * 100 },
+  { x: (695 / 1190) * 100, y: (900 / 1322) * 100 },
+] as const;
+const CONNECTOR_PATH = 'M350,258 Q300,420 415,515 Q650,460 960,545 Q950,740 695,900';
+const CONNECTOR_TAIL = 'M960,545 Q1080,500 1190,510';
 
 export function CoverScene() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -208,25 +217,45 @@ export function CoverScene() {
         )}
       </div>
 
-      {/* Terrain features that affect cover/concealment */}
-      <SoftDivider text="3 צורות שטח שמשנות את חוקי המשחק" />
-
-      <div className="relative overflow-hidden rounded-2xl">
-        <div
+      {/* Terrain features that affect cover/concealment — reproduces
+          design/mockups/topic-04-cover-terrain-atlas-v2.png: one continuous
+          cream surface (no card chrome), alternating large illustrations,
+          a faint topo background and one orange waypoint connector spanning
+          all 3 rows. See design/docs/assumptions.md for measurement notes. */}
+      <div className="relative mt-16 overflow-hidden md:mt-20">
+        <div aria-hidden className="pointer-events-none absolute inset-0 topo-bg opacity-[0.12]" />
+        <svg
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-20 opacity-[0.14] md:h-28"
+          viewBox="0 0 1190 1322"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full"
         >
-          <IsometricAsset
-            assetId={TERRAIN_FOOTER_ASSET.assetId}
-            src={TERRAIN_FOOTER_ASSET.src}
-            alt=""
-            fit="cover"
-            position="bottom"
-            className="absolute inset-0 h-full w-full [aspect-ratio:auto]"
+          <path d={CONNECTOR_PATH} fill="none" stroke="#D97E2B" strokeWidth={2.5} vectorEffect="non-scaling-stroke" />
+          <path
+            d={CONNECTOR_TAIL}
+            fill="none"
+            stroke="#D97E2B"
+            strokeWidth={2.5}
+            strokeDasharray="10 9"
+            strokeLinecap="round"
+            opacity={0.6}
+            vectorEffect="non-scaling-stroke"
           />
-        </div>
+        </svg>
+        {CONNECTOR_DOTS.map((dot, i) => (
+          <span
+            key={i}
+            aria-hidden
+            className="absolute z-10 size-3 rounded-full bg-accent ring-4 ring-bg/70"
+            style={{ top: `${dot.y}%`, insetInlineEnd: `${dot.x}%` }}
+          />
+        ))}
 
-        <div className="relative space-y-4">
+        <h2 className="relative font-display text-[32px] font-extrabold leading-[1.15] text-fg text-balance sm:text-4xl md:text-[42px]">
+          3 צורות שטח<br className="hidden md:block" /> שמשנות את חוקי המשחק
+        </h2>
+
+        <div className="relative">
           {TERRAIN_FEATURES.map((tf, i) => (
             <TerrainFeatureRow key={tf.feature} index={i} feature={tf} asset={TERRAIN_ASSETS[i]} />
           ))}
@@ -243,43 +272,97 @@ function TerrainFeatureRow({
 }: {
   index: number;
   feature: (typeof TERRAIN_FEATURES)[number];
-  asset: { assetId: string; src: string };
+  asset: (typeof TERRAIN_ASSETS)[number];
+}) {
+  const illustration = (
+    <div
+      className="relative w-full shrink-0 md:w-[var(--w)]"
+      style={{ aspectRatio: asset.ratio, ['--w' as string]: `${asset.widthPct}%` }}
+    >
+      <IsometricAsset
+        assetId={asset.assetId}
+        src={asset.src}
+        alt=""
+        fit="contain"
+        className="absolute inset-0 h-full w-full [aspect-ratio:auto]"
+      />
+    </div>
+  );
+
+  // Mockup rule: the number sits at the OUTER edge of the text block (the
+  // edge farthest from the illustration), the title at the inner edge next
+  // to it. Text sits opposite the illustration, so which one comes first in
+  // (RTL) DOM order flips with `asset.side`.
+  const numberEl = (
+    <span
+      key="number"
+      aria-hidden
+      className="font-display text-[40px] font-extrabold leading-none text-fg/80 md:text-[52px]"
+    >
+      {String(index + 1).padStart(2, '0')}
+    </span>
+  );
+  const titleEl = (
+    <h3 key="title" className="font-display text-2xl font-extrabold leading-tight text-fg text-balance md:text-[30px]">
+      {feature.feature}
+    </h3>
+  );
+
+  const text = (
+    <div className="flex-1 py-8 md:py-14">
+      <div className="flex items-baseline gap-3 md:gap-4">
+        {asset.side === 'end' ? [numberEl, titleEl] : [titleEl, numberEl]}
+      </div>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-3 md:gap-0">
+        <TerrainColumn dash="bg-accent" label="איך השטח נראה?" divider>
+          {feature.what}
+        </TerrainColumn>
+        <TerrainColumn dash="bg-status-ok" label="למה זה מעולה למי שמתגונן?" divider>
+          {feature.defender}
+        </TerrainColumn>
+        <TerrainColumn dash="bg-status-warn" label="הסיוט (או היתרון) של התוקף">
+          {feature.attacker}
+        </TerrainColumn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative flex flex-col items-center gap-6 py-6 md:flex-row md:items-center md:gap-10">
+      {asset.side === 'end' ? (
+        <>
+          {text}
+          {illustration}
+        </>
+      ) : (
+        <>
+          {illustration}
+          {text}
+        </>
+      )}
+    </div>
+  );
+}
+
+function TerrainColumn({
+  dash,
+  label,
+  divider,
+  children,
+}: {
+  dash: string;
+  label: string;
+  divider?: boolean;
+  children: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated shadow-elevated">
-      <div aria-hidden className="pointer-events-none absolute inset-0 topo-bg opacity-10" />
-
-      <div className="relative flex flex-wrap items-center gap-4 border-b border-border/60 px-5 py-4 md:px-6">
-        <div className="flex flex-1 items-baseline gap-3 min-w-[200px]">
-          <span aria-hidden className="font-display text-2xl font-extrabold text-fg/70 md:text-3xl">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
-            {feature.feature}
-          </h3>
-        </div>
-        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg sm:h-24 sm:w-36 md:h-28 md:w-44">
-          <IsometricAsset
-            assetId={asset.assetId}
-            src={asset.src}
-            alt=""
-            fit="contain"
-            className="absolute inset-0 h-full w-full [aspect-ratio:auto]"
-          />
-        </div>
+    <div className={cn('md:px-5 first:md:ps-0 last:md:pe-0', divider && 'md:border-e md:border-border/70')}>
+      <div className="mb-2 flex items-center gap-2">
+        <span aria-hidden className={cn('inline-block h-[3px] w-6 shrink-0 rounded-full', dash)} />
+        <span className="font-display text-[15px] font-bold text-fg md:text-base">{label}</span>
       </div>
-
-      <div className="relative grid gap-3 p-5 md:grid-cols-3 md:p-6">
-        <InsightCard tone="accent" label="איך השטח נראה?">
-          {feature.what}
-        </InsightCard>
-        <InsightCard tone="ok" label="למה זה מעולה למי שמתגונן?">
-          {feature.defender}
-        </InsightCard>
-        <InsightCard tone="warn" label="הסיוט (או היתרון) של התוקף">
-          {feature.attacker}
-        </InsightCard>
-      </div>
+      <p className="text-sm leading-relaxed text-fg-muted md:text-[15px]">{children}</p>
     </div>
   );
 }
