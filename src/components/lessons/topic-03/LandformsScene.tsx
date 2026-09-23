@@ -1,217 +1,224 @@
 'use client';
 import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-
 type Form = 'hill' | 'spur' | 'valley' | 'saddle' | 'depression';
 type FormData = {
-  id: Form;
-  label: string;
-  english: string;
-  description: string;
-  contourHint: string;
-  tactical: string;
-  example: string;
+id: Form;
+label: string;
+english: string;
+description: string;
+contourHint: string;
+tactical: string;
+example: string;
 };
 const FORMS: FormData[] = [
-  {
-    id: 'hill',
-    label: 'כיפה',
-    english: 'Hill / Peak',
-    description: 'התרוממות בולטת של פני השטח מעל סביבתה.',
-    contourHint: 'במפה: רצף של קווי גובה סגורים זה בתוך זה. המעגל הפנימי ביותר הוא הפסגה..',
-    tactical: 'מאפשרת תצפית פנורמית ושליטה באש. היא העוגן של המגן והיעד המרכזי של התוקף.',
-    example: 'במלחמת יום הכיפורים: כל הקרבות בגולן היו על כיפות (תל פאריס, חרמונית, ועוד). מי שאיבד את הכיפה — איבד את הקרב המקומי.',
-  },
-  {
-    id: 'spur',
-    label: 'שלוחה',
-    english: 'Spur / Ridge',
-    description: 'שטח גבוה וצר המשתפל בהדרגה מהפסגה לכיוון השטח הנמוך.',
-    contourHint: 'קווי גובה בצורת V או U, כאשר הקודקוד מצביע לכיוון השטח הנמוך.',
-    tactical: 'נתיב התקדמות מועדף לחי"ר, המעניק יתרון גובה על העמקים מסביב.',
-    example: 'בלחימה בלבנון, יחידות הסיור נצמדו לשלוחות ככל האפשר — תצפית רחבה, מעט מארבים, יציאה נוחה אם מסתבכים.',
-  },
-  {
-    id: 'valley',
-    label: 'גיא / ואדי',
-    english: 'Valley / Draw',
-    description: 'השטח הנמוך הכלוי בין שתי שלוחות.',
-    contourHint: 'קווי גובה בצורת V המצביעים לכיוון הפסגה. הקו המחבר את הקודקודים הוא קו ניקוז המים.',
-    tactical: 'שטח נמוך המוסתר מהסביבה. מעולה להסתרת לוגיסטיקה, אך מסוכן מאוד לתנועה קרבית בשל חשיפה למארבים מהשלוחות מעליו.',
-    example: 'במבצע"לבנון השנייה" 2006: יחידות שעברו בוואדיות סבלו ממארבים מהשלוחות. כל ואדי לא מאובטח = מלכודת פוטנציאלית.',
-  },
-  {
-    id: 'saddle',
-    label: 'אוכף',
-    english: 'Saddle',
-    description: 'נקודת השפל הנמוכה ביותר על קו הרכס, הממוקמת בין שתי כיפות סמוכות.',
-    contourHint: 'האוכף מופיע כרווח הצר שבין שתי קבוצות סמוכות של קווי גובה סגורים (שתי כיפות). הוא נראה כמו"צוואר בקבוק" המחבר בין שני שטחים גבוהים.',
-    tactical: 'יוצר"אפקט משפך" – כיוון שזהו המעבר הנוח ביותר, כולם נמשכים אליו. לכן, זהו מקום קלאסי למארבים ולתכנון שטחי השמדה.',
-    example: 'מעבר ה-Ardennes במלחמת העולם השנייה — אוכף שכולם חשבו שאי אפשר לעבור בו. הגרמנים הפתיעו ועברו בו.',
-  },
-  {
-    id: 'depression',
-    label: 'מכתש',
-    english: 'Depression',
-    description: 'שטח סגור הנמוך מסביבתו הקרובה.',
-    contourHint: 'קווי גובה סגורים עם זיזים ("קוצים") הפונים פנימה.',
-    tactical: 'מייצר שטח מת (אזור סמוי) מכל הכיוונים. אידיאלי להסתרת מפקדות או תותחים המוגנים מאש בכינון ישיר.',
-    example: 'תותחי הסורים במלחמת יום הכיפורים הוסתרו במכתשים על רמת הגולן — ולכן צה"ל התקשה לזהות אותם מהאוויר.',
-  },
+ {
+id: 'hill',
+label: 'כיפה',
+english: 'Hill / Peak',
+description: 'התרוממות בולטת של פני השטח מעל סביבתה.',
+contourHint: 'במפה: רצף של קווי גובה סגורים זה בתוך זה. המעגל הפנימי ביותר הוא הפסגה..',
+tactical: 'מאפשרת תצפית פנורמית ושליטה באש. היא העוגן של המגן והיעד המרכזי של התוקף.',
+example: 'במלחמת יום הכיפורים: כל הקרבות בגולן היו על כיפות (תל פאריס, חרמונית, ועוד). מי שאיבד את הכיפה — איבד את הקרב המקומי.',
+ },
+ {
+id: 'spur',
+label: 'שלוחה',
+english: 'Spur / Ridge',
+description: 'שטח גבוה וצר המשתפל בהדרגה מהפסגה לכיוון השטח הנמוך.',
+contourHint: 'קווי גובה בצורת V או U, כאשר הקודקוד מצביע לכיוון השטח הנמוך.',
+tactical: 'נתיב התקדמות מועדף לחי"ר, המעניק יתרון גובה על העמקים מסביב.',
+example: 'בלחימה בלבנון, יחידות הסיור נצמדו לשלוחות ככל האפשר — תצפית רחבה, מעט מארבים, יציאה נוחה אם מסתבכים.',
+ },
+ {
+id: 'valley',
+label: 'גיא / ואדי',
+english: 'Valley / Draw',
+description: 'השטח הנמוך הכלוי בין שתי שלוחות.',
+contourHint: 'קווי גובה בצורת V המצביעים לכיוון הפסגה. הקו המחבר את הקודקודים הוא קו ניקוז המים.',
+tactical: 'שטח נמוך המוסתר מהסביבה. מעולה להסתרת לוגיסטיקה, אך מסוכן מאוד לתנועה קרבית בשל חשיפה למארבים מהשלוחות מעליו.',
+example: 'במבצע"לבנון השנייה" 2006: יחידות שעברו בוואדיות סבלו ממארבים מהשלוחות. כל ואדי לא מאובטח = מלכודת פוטנציאלית.',
+ },
+ {
+id: 'saddle',
+label: 'אוכף',
+english: 'Saddle',
+description: 'נקודת השפל הנמוכה ביותר על קו הרכס, הממוקמת בין שתי כיפות סמוכות.',
+contourHint: 'האוכף מופיע כרווח הצר שבין שתי קבוצות סמוכות של קווי גובה סגורים (שתי כיפות). הוא נראה כמו"צוואר בקבוק" המחבר בין שני שטחים גבוהים.',
+tactical: 'יוצר"אפקט משפך" – כיוון שזהו המעבר הנוח ביותר, כולם נמשכים אליו. לכן, זהו מקום קלאסי למארבים ולתכנון שטחי השמדה.',
+example: 'מעבר ה-Ardennes במלחמת העולם השנייה — אוכף שכולם חשבו שאי אפשר לעבור בו. הגרמנים הפתיעו ועברו בו.',
+ },
+ {
+id: 'depression',
+label: 'מכתש',
+english: 'Depression',
+description: 'שטח סגור הנמוך מסביבתו הקרובה.',
+contourHint: 'קווי גובה סגורים עם זיזים ("קוצים") הפונים פנימה.',
+tactical: 'מייצר שטח מת (אזור סמוי) מכל הכיוונים. אידיאלי להסתרת מפקדות או תותחים המוגנים מאש בכינון ישיר.',
+example: 'תותחי הסורים במלחמת יום הכיפורים הוסתרו במכתשים על רמת הגולן — ולכן צה"ל התקשה לזהות אותם מהאוויר.',
+ },
 ];
 type Slope = {
-  id: string;
-  label: string;
-  description: string;
-  contourHint: string;
+id: string;
+label: string;
+description: string;
+contourHint: string;
 };
 const SLOPES: Slope[] = [
-  { id: 'even', label: 'מדרון קצוב', description: 'בעל שיפוע קבוע ואחיד לאורך כל הדרך.', contourHint: 'המרווחים בין קווי הגובה זהים.' },
-  { id: 'convex', label: 'מדרון קמור', description: 'השיפוע מתחיל בצורה מתונה בחלק העליון והופך לתלול מאוד ככל שיורדים.', contourHint: 'קווים מרווחים למעלה וצפופים למטה.' },
-  { id: 'concave', label: 'מדרון קעור', description: 'השיפוע תלול מאוד למעלה והופך למתון ושטוח בבסיסו.', contourHint: 'קווים צפופים מאוד למעלה ומרווחים למטה.' },
-  { id: 'shoulder', label: 'כתף', description: 'רצף השיפוע נקטע באמצע על ידי קטע מישורי, ויוצר צורה של"מדרגה" על ההר.', contourHint: 'קווים צפופים ← קווים מרווחים מאוד ← חזרה לקווים צפופים.' },
+ { id: 'even', label: 'מדרון קצוב', description: 'בעל שיפוע קבוע ואחיד לאורך כל הדרך.', contourHint: 'המרווחים בין קווי הגובה זהים.' },
+ { id: 'convex', label: 'מדרון קמור', description: 'השיפוע מתחיל בצורה מתונה בחלק העליון והופך לתלול מאוד ככל שיורדים.', contourHint: 'קווים מרווחים למעלה וצפופים למטה.' },
+ { id: 'concave', label: 'מדרון קעור', description: 'השיפוע תלול מאוד למעלה והופך למתון ושטוח בבסיסו.', contourHint: 'קווים צפופים מאוד למעלה ומרווחים למטה.' },
+ { id: 'shoulder', label: 'כתף', description: 'רצף השיפוע נקטע באמצע על ידי קטע מישורי, ויוצר צורה של"מדרגה" על ההר.', contourHint: 'קווים צפופים ← קווים מרווחים מאוד ← חזרה לקווים צפופים.' },
 ];
-
 export function LandformsScene() {
-  const [idx, setIdx] = useState(0);
-  const [slope, setSlope] = useState(SLOPES[0].id);
-  const reduce = useReducedMotion();
-  const total = FORMS.length;
-  const meta = FORMS[idx];
-  const isFirst = idx === 0;
-  const isLast = idx === total - 1;
+const [active, setActive] = useState<Form>('hill');
+const [slope, setSlope] = useState(SLOPES[0].id);
+const meta = FORMS.find((f) => f.id === active)!;
+return (
+ <section id="scene-landforms" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <SceneHeader
+step="04.2"
+eyebrow="תבניות נוף"
+title = {
+  <>
+    5 צורות שטח ש<span className="gradient-text">יכולות להכריע קרב</span>
+  </>
+}intro="מתוך אינספור צורות בטבע, קיימות 5 צורות יסוד טופוגרפיות שמעצבות כל שדה קרב יבשתי. מפקד שיודע לזהות אותן על המפה מבין מיד מי שולט בשטח, איפה האויב יציב מארב ומאיפה הכי בטוח להתקדם."
+ />
 
-  return (
-    <section id="scene-landforms" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="04.2"
-        eyebrow="תבניות נוף"
-        title={
-          <>
-            5 צורות שטח ש<span className="gradient-text">יכולות להכריע קרב</span>
-          </>
-        }
-        intro="מתוך אינספור צורות בטבע, קיימות 5 צורות יסוד טופוגרפיות שמעצבות כל שדה קרב יבשתי. מפקד שיודע לזהות אותן על המפה מבין מיד מי שולט בשטח, איפה האויב יציב מארב ומאיפה הכי בטוח להתקדם."
-      />
+ <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start mb-12">
+ {/* Accordion list — first child → RIGHT in RTL (text on right) */}
+ <div className="space-y-3">
+ {FORMS.map((f, i) => {
+const isActive = active === f.id;
+return (
+ <div
+key={f.id}
+className={cn(
+ 'surface overflow-hidden transition-colors relative',
+isActive ? 'border-brand-dark bg-brand/5' : 'hover:border-border-strong'
+ )}
+ >
+ {isActive && (
+ <motion.span
+layoutId="t4-form-bar"
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+ />
+ )}
+ <button
+type="button"
+onClick={() => setActive(f.id)}
+aria-expanded={isActive}
+className="w-full p-4 text-right flex items-center gap-3"
+ >
+ <span
+className={cn(
+ 'size-9 rounded-[3px] flex items-center justify-center shrink-0 transition-all font-display text-sm font-bold',
+isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
+ )}
+ >
+ {i + 1}
+ </span>
+ <div className="flex-1 min-w-0">
+ <div className={cn('font-display font-bold leading-tight', isActive ? 'text-brand-dark' : 'text-fg')}>
+ {f.label}
+ </div>
+ <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{f.english}</div>
+ </div>
+ <motion.span
+animate={{ rotate: isActive ? 180 : 0 }}
+transition={{ duration: 0.25 }}
+className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
+ >
+ <svg
+width="18"
+height="18"
+viewBox="0 0 24 24"
+fill="none"
+stroke="currentColor"
+strokeWidth="1.8"
+strokeLinecap="round"
+strokeLinejoin="round"
+aria-hidden
+ >
+ <path d="m6 9 6 6 6-6" />
+ </svg>
+ </motion.span>
+ </button>
 
-      <div className="mb-12">
-        {/* Central content panel — one landform at a time, replaces the former accordion list */}
-        <div className="surface-elevated relative p-5 sm:p-8">
-          <span
-            aria-hidden
-            className="absolute bottom-4 end-4 size-9 rounded-[3px] flex items-center justify-center bg-brand-dark text-bg-elevated font-display text-sm font-bold"
-          >
-            {String(idx + 1).padStart(2, '0')}
-          </span>
+ <AnimatePresence initial={false}>
+ {isActive && (
+ <motion.div
+key={`panel-${f.id}`}
+initial={{ height: 0, opacity: 0 }}
+animate={{ height: 'auto', opacity: 1 }}
+exit={{ height: 0, opacity: 0 }}
+transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+className="overflow-hidden"
+ >
+ <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
+ <div className="mt-3">
+ <div className="text-sm font-display font-semibold text-accent-cool mb-1 tracking-wider">
+ מה זה?
+ </div>
+ <p className="text-sm leading-relaxed text-fg">{f.description}</p>
+ </div>
+ <div>
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
+ איך מזהים במפה?
+ </div>
+ <p className="text-sm leading-relaxed text-fg">{f.contourHint}</p>
+ </div>
+ <div>
+ <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">
+ משמעות צבאית
+ </div>
+ <p className="text-sm leading-relaxed text-fg">{f.tactical}</p>
+ </div>
+ </div>
+ </motion.div>
+ )}
+ </AnimatePresence>
+ </div>
+ );
+ })}
+ </div>
 
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={meta.id}
-              initial={reduce ? false : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className="mb-5 text-center">
-                <div className="font-display font-bold text-xl text-brand-dark leading-tight">{meta.label}</div>
-                <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{meta.english}</div>
-              </div>
+ {/* Visualization — second child → LEFT in RTL. Two linked boards:
+     the landform in reality (oblique relief) + the same form on the map. */}
+ <div className="surface-elevated relative overflow-hidden sticky top-6 p-3 sm:p-4">
+ <motion.div
+key={active}
+initial={{ opacity: 0 }}
+animate={{ opacity: 1 }}
+transition={{ duration: 0.3 }}
+ >
+ <FormVisual form={active} />
+ </motion.div>
+ </div>
+ </div>
 
-              <FormVisual form={meta.id} />
+ <motion.div
+initial={{ opacity: 0 }}
+whileInView={{ opacity: 1 }}
+viewport={{ once: true }}
+className="surface p-5 mb-12 flex gap-3 items-start"
+ >
+ <Icon name="spark" size={20} className="text-accent shrink-0 mt-0.5" />
+ <div>
+ <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">דוגמה היסטורית</div>
+ <p className="text-sm text-fg-muted leading-relaxed">{meta.example}</p>
+ </div>
+ </motion.div>
 
-              <div className="mt-6 grid sm:grid-cols-3 gap-4">
-                <div>
-                  <div className="text-sm font-display font-semibold text-accent-cool mb-1 tracking-wider">מה זה?</div>
-                  <p className="text-sm leading-relaxed text-fg">{meta.description}</p>
-                </div>
-                <div>
-                  <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">איך מזהים במפה?</div>
-                  <p className="text-sm leading-relaxed text-fg">{meta.contourHint}</p>
-                </div>
-                <div>
-                  <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">משמעות צבאית</div>
-                  <p className="text-sm leading-relaxed text-fg">{meta.tactical}</p>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+ <SoftDivider text="עוד שכבה: לא רק צורת ההר — גם צורת המדרון" />
 
-        {/* Prev / progress dots / Next — chevron squares + dot strip, matching the
-            PagedLearn edge-button and ScenePagerDesktop dot conventions used elsewhere.
-            RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setIdx((v) => Math.max(0, v - 1))}
-            disabled={isFirst}
-            aria-label="הצורה הקודמת"
-            className={cn(
-              'size-11 flex items-center justify-center shrink-0 transition-colors',
-              isFirst
-                ? 'rounded-2xl border border-border-subtle text-fg-dim opacity-40 cursor-not-allowed'
-                : 'surface-elevated text-accent hover:bg-bg-accent cursor-pointer',
-            )}
-          >
-            <ChevronRight size={20} strokeWidth={1.8} aria-hidden />
-          </button>
-
-          <div className="flex items-center gap-1.5" role="tablist" aria-label="ניווט בין צורות נוף">
-            {FORMS.map((f, i) => {
-              const isActive = i === idx;
-              return (
-                <button
-                  key={f.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  aria-label={f.label}
-                  onClick={() => setIdx(i)}
-                  className={cn('h-2 rounded-full transition-all', isActive ? 'w-6 bg-accent' : 'w-2 bg-fg hover:bg-fg-dim')}
-                />
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIdx((v) => Math.min(total - 1, v + 1))}
-            disabled={isLast}
-            aria-label="הצורה הבאה"
-            className={cn(
-              'size-11 flex items-center justify-center shrink-0 transition-colors',
-              isLast
-                ? 'rounded-2xl border border-border-subtle text-fg-dim opacity-40 cursor-not-allowed'
-                : 'surface-elevated text-accent hover:bg-bg-accent cursor-pointer',
-            )}
-          >
-            <ChevronLeft size={20} strokeWidth={1.8} aria-hidden />
-          </button>
-        </div>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="surface p-5 mb-12 flex gap-3 items-start"
-      >
-        <Icon name="spark" size={20} className="text-accent shrink-0 mt-0.5" />
-        <div>
-          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">דוגמה היסטורית</div>
-          <p className="text-sm text-fg-muted leading-relaxed">{meta.example}</p>
-        </div>
-      </motion.div>
-
-      <SoftDivider text="עוד שכבה: לא רק צורת ההר — גם צורת המדרון" />
-
-      <SlopeAnalyzer slopes={SLOPES} active={slope} onSelect={setSlope} />
-    </section>
-  );
+ <SlopeAnalyzer slopes={SLOPES} active={slope} onSelect={setSlope} />
+ </section>
+ );
 }
 // Short cues shown under each board — bind "reality" to "map" per form.
 const REALITY_META: Record<Form, { realWorld: string; mapCue: string }> = {
@@ -518,89 +525,89 @@ function MapDepression() {
   );
 }
 function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: string; onSelect: (id: string) => void }) {
-  const meta = slopes.find((s) => s.id === active)!;
-  const reduce = useReducedMotion();
-  return (
-    <div className="surface-elevated p-6 sm:p-8">
-      <div className="mb-6">
-        <h3 className="font-display font-bold text-xl leading-tight mb-1">4 סוגי מדרונות — איך השלוחות בנויות בפועל</h3>
-        <p className="text-fg-muted text-sm">
-          אפילו שלוחה"פשוטה" יכולה להיות מורכבת ממקטעי שיפוע שונים. ההבחנה ביניהם משנה לחלוטין את קצב התנועה ואת קווי הראייה.
-        </p>
-      </div>
+const meta = slopes.find((s) => s.id === active)!;
+const reduce = useReducedMotion();
+return (
+ <div className="surface-elevated p-6 sm:p-8">
+ <div className="mb-6">
+ <h3 className="font-display font-bold text-xl leading-tight mb-1">4 סוגי מדרונות — איך השלוחות בנויות בפועל</h3>
+ <p className="text-fg-muted text-sm">
+ אפילו שלוחה"פשוטה" יכולה להיות מורכבת ממקטעי שיפוע שונים. ההבחנה ביניהם משנה לחלוטין את קצב התנועה ואת קווי הראייה.
+ </p>
+ </div>
 
-      <div className="grid sm:grid-cols-4 gap-2 mb-5">
-        {slopes.map((s, i) => {
-          const isActive = active === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onSelect(s.id)}
-              className={cn(
-                'p-3 rounded-[3px] border-2 text-start transition-all relative overflow-hidden flex items-center gap-3',
-                isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50',
-              )}
-            >
-              <span
-                className={cn(
-                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
-                  isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border',
-                )}
-              >
-                {i + 1}
-              </span>
-              <div className="font-display font-bold text-sm text-fg leading-tight flex-1">
-                {s.label}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+ <div className="grid sm:grid-cols-4 gap-2 mb-5">
+ {slopes.map((s, i) => {
+const isActive = active === s.id;
+return (
+ <button
+key={s.id}
+type="button"
+onClick={() => onSelect(s.id)}
+className={cn(
+ 'p-3 rounded-[3px] border-2 text-start transition-all relative overflow-hidden flex items-center gap-3',
+isActive ? 'border-accent bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-accent/50'
+ )}
+ >
+ <span
+ className={cn(
+ 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold text-sm',
+ isActive ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
+ )}
+ >
+ {i + 1}
+ </span>
+ <div className="font-display font-bold text-sm text-fg leading-tight flex-1">
+ {s.label}
+ </div>
+ </button>
+ );
+ })}
+ </div>
 
-      {/* Two linked boards — the same slope from the side (profile) and from above (contours) */}
-      <motion.div
-        key={active}
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: reduce ? 0 : 0.3 }}
-        className="mb-6"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <BoardFrame kind="real" labelText="מהצד" sub="פרופיל השטח">
-            <SlopeSideProfile slope={active} />
-          </BoardFrame>
-          <BoardFrame kind="map" labelText="מלמעלה" sub="קווי גובה" mapGrid>
-            <SlopeContourMap slope={active} />
-          </BoardFrame>
-        </div>
-        <p className="mt-3 text-center text-[11px] sm:text-xs text-fg-dim">
-          אותו מדרון — פעם כפרופיל מהצד, פעם כקווי גובה במבט־על. ככל שקווי הגובה צפופים יותר, המדרון תלול יותר.
-        </p>
-      </motion.div>
+ {/* Two linked boards — the same slope from the side (profile) and from above (contours) */}
+ <motion.div
+   key={active}
+   initial={reduce ? false : { opacity: 0 }}
+   animate={{ opacity: 1 }}
+   transition={{ duration: reduce ? 0 : 0.3 }}
+   className="mb-6"
+ >
+   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+     <BoardFrame kind="real" labelText="מהצד" sub="פרופיל השטח">
+       <SlopeSideProfile slope={active} />
+     </BoardFrame>
+     <BoardFrame kind="map" labelText="מלמעלה" sub="קווי גובה" mapGrid>
+       <SlopeContourMap slope={active} />
+     </BoardFrame>
+   </div>
+   <p className="mt-3 text-center text-[11px] sm:text-xs text-fg-dim">
+     אותו מדרון — פעם כפרופיל מהצד, פעם כקווי גובה במבט־על. ככל שקווי הגובה צפופים יותר, המדרון תלול יותר.
+   </p>
+ </motion.div>
 
-      <motion.div
-        key={`text-${active}`}
-        initial={reduce ? false : { opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: reduce ? 0 : 0.3 }}
-        className="grid sm:grid-cols-2 gap-3"
-      >
-        <div className="surface-elevated p-5">
-          <div className="text-sm font-display font-semibold text-accent-cool mb-2 tracking-wider">
-            מה זה?
-          </div>
-          <p className="text-sm leading-relaxed text-fg">{meta.description}</p>
-        </div>
-        <div className="surface p-5">
-          <div className="text-sm font-display font-semibold text-accent mb-2 tracking-wider">
-            איך מזהים במפה?
-          </div>
-          <p className="text-sm leading-relaxed text-fg-muted">{meta.contourHint}</p>
-        </div>
-      </motion.div>
-    </div>
-  );
+ <motion.div
+   key={`text-${active}`}
+   initial={reduce ? false : { opacity: 0, y: 6 }}
+   animate={{ opacity: 1, y: 0 }}
+   transition={{ duration: reduce ? 0 : 0.3 }}
+   className="grid sm:grid-cols-2 gap-3"
+ >
+   <div className="surface-elevated p-5">
+     <div className="text-sm font-display font-semibold text-accent-cool mb-2 tracking-wider">
+       מה זה?
+     </div>
+     <p className="text-sm leading-relaxed text-fg">{meta.description}</p>
+   </div>
+   <div className="surface p-5">
+     <div className="text-sm font-display font-semibold text-accent mb-2 tracking-wider">
+       איך מזהים במפה?
+     </div>
+     <p className="text-sm leading-relaxed text-fg-muted">{meta.contourHint}</p>
+   </div>
+ </motion.div>
+ </div>
+ );
 }
 // [d, e] normalized — d = horizontal distance from the foot (0) to the crest (1),
 // e = height in equal contour intervals (0 = foot, 1 = crest). The same crossings feed
@@ -670,11 +677,11 @@ function SlopeContourMap({ slope }: { slope: string }) {
   );
 }
 function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-12 flex items-center gap-4">
-      <div className="h-px flex-1 bg-border-subtle" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
-      <div className="h-px flex-1 bg-border-subtle" />
-    </div>
-  );
+return (
+ <div className="my-12 flex items-center gap-4">
+ <div className="h-px flex-1 bg-border-subtle" />
+ <span className="text-sm font-display font-semibold text-fg-muted tracking-wider">{text}</span>
+ <div className="h-px flex-1 bg-border-subtle" />
+ </div>
+ );
 }
