@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { InsightCard } from '@/components/lesson/InsightCard';
+import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +57,18 @@ const TERRAIN_FEATURES: { feature: string; what: string; defender: string; attac
     attacker: 'היתרון היחיד: קשה יותר לראות אתכם ממטוסים ורחפנים. החיסרון: אם האויב מחכה לכם למעלה – אתם לכודים באש מכל הכיוונים ואין לאן לברוח.',
   },
 ];
+
+// design/mockups/topic-04-cover-terrain-atlas-v2.png — one illustration per
+// TERRAIN_FEATURES row, same order. Assets + rationale: design/docs/topic-04-cover-terrain-atlas-handoff.md
+const TERRAIN_ASSETS: { assetId: string; src: string }[] = [
+  { assetId: 'TOPIC04-TERRAIN-CHOKEPOINT', src: '/assets/lessons/topic04/terrain-atlas/chokepoint.png' },
+  { assetId: 'TOPIC04-TERRAIN-SUMMIT', src: '/assets/lessons/topic04/terrain-atlas/summit.png' },
+  { assetId: 'TOPIC04-TERRAIN-VALLEY', src: '/assets/lessons/topic04/terrain-atlas/enclosed-valley.png' },
+];
+const TERRAIN_FOOTER_ASSET = {
+  assetId: 'TOPIC04-TERRAIN-FOOTER',
+  src: '/assets/lessons/topic04/terrain-atlas/mountain-footer.png',
+};
 
 export function CoverScene() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -198,22 +211,76 @@ export function CoverScene() {
       {/* Terrain features that affect cover/concealment */}
       <SoftDivider text="3 צורות שטח שמשנות את חוקי המשחק" />
 
-      <div className="space-y-3">
-        {TERRAIN_FEATURES.map((tf) => (
-          <div key={tf.feature} className="grid md:grid-cols-[1fr_1fr_1fr] gap-3">
-            <InsightCard tone="accent" label="איך השטח נראה?" title={tf.feature}>
-              {tf.what}
-            </InsightCard>
-            <InsightCard tone="ok" label="למה זה מעולה למי שמתגונן?">
-              {tf.defender}
-            </InsightCard>
-            <InsightCard tone="warn" label="הסיוט (או היתרון) של התוקף">
-              {tf.attacker}
-            </InsightCard>
-          </div>
-        ))}
+      <div className="relative overflow-hidden rounded-2xl">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-20 opacity-[0.14] md:h-28"
+        >
+          <IsometricAsset
+            assetId={TERRAIN_FOOTER_ASSET.assetId}
+            src={TERRAIN_FOOTER_ASSET.src}
+            alt=""
+            fit="cover"
+            position="bottom"
+            className="absolute inset-0 h-full w-full [aspect-ratio:auto]"
+          />
+        </div>
+
+        <div className="relative space-y-4">
+          {TERRAIN_FEATURES.map((tf, i) => (
+            <TerrainFeatureRow key={tf.feature} index={i} feature={tf} asset={TERRAIN_ASSETS[i]} />
+          ))}
+        </div>
       </div>
     </section>
+  );
+}
+
+function TerrainFeatureRow({
+  index,
+  feature,
+  asset,
+}: {
+  index: number;
+  feature: (typeof TERRAIN_FEATURES)[number];
+  asset: { assetId: string; src: string };
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-bg-elevated shadow-elevated">
+      <div aria-hidden className="pointer-events-none absolute inset-0 topo-bg opacity-10" />
+
+      <div className="relative flex flex-wrap items-center gap-4 border-b border-border/60 px-5 py-4 md:px-6">
+        <div className="flex flex-1 items-baseline gap-3 min-w-[200px]">
+          <span aria-hidden className="font-display text-2xl font-extrabold text-fg/70 md:text-3xl">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
+            {feature.feature}
+          </h3>
+        </div>
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg sm:h-24 sm:w-36 md:h-28 md:w-44">
+          <IsometricAsset
+            assetId={asset.assetId}
+            src={asset.src}
+            alt=""
+            fit="contain"
+            className="absolute inset-0 h-full w-full [aspect-ratio:auto]"
+          />
+        </div>
+      </div>
+
+      <div className="relative grid gap-3 p-5 md:grid-cols-3 md:p-6">
+        <InsightCard tone="accent" label="איך השטח נראה?">
+          {feature.what}
+        </InsightCard>
+        <InsightCard tone="ok" label="למה זה מעולה למי שמתגונן?">
+          {feature.defender}
+        </InsightCard>
+        <InsightCard tone="warn" label="הסיוט (או היתרון) של התוקף">
+          {feature.attacker}
+        </InsightCard>
+      </div>
+    </div>
   );
 }
 
