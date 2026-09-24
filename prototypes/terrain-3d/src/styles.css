@@ -1,22 +1,36 @@
 /* =========================================================================
-   Geography Terrain Simulator — professional field-training UI
-   Muted, mature palette. RTL-ready via logical properties + [dir="rtl"].
+   Geography Terrain Simulator — light, restrained field-training UI.
+   Off-white neutral chrome, one mustard accent, minimal chrome around a
+   3D viewport that stays the richest thing on screen. RTL-ready.
    ========================================================================= */
 
 :root {
-  --bg: #0c0f12;
-  --panel: rgba(18, 22, 27, 0.72);
-  --panel-solid: rgba(22, 27, 33, 0.92);
-  --panel-border: rgba(150, 168, 185, 0.16);
-  --hairline: rgba(150, 168, 185, 0.1);
-  --text: #e8edf2;
-  --text-dim: #9aa7b4;
-  --text-faint: #69757f;
-  --accent: #e8b24c; /* warm amber — the highlight family */
-  --accent-soft: rgba(232, 178, 76, 0.16);
-  --accent-line: rgba(232, 178, 76, 0.55);
-  --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
-  --radius: 12px;
+  --canvas-bg: #0c0f12; /* behind the WebGL canvas only; never seen behind UI */
+
+  --panel: rgba(250, 248, 243, 0.94);
+  --panel-solid: rgba(250, 248, 243, 0.97);
+  --panel-border: #e6e1d3;
+  --hairline: #ece7d9;
+  --text: #2b2a26;
+  --text-dim: #6c675e;
+  --text-faint: #8d887d;
+  --accent: #a9822c;
+  --accent-soft: rgba(169, 130, 44, 0.12);
+  --accent-line: rgba(169, 130, 44, 0.45);
+  --accent-ink: #241c0c; /* dark text set on top of an accent-filled surface */
+  --shadow: 0 1px 2px rgba(40, 32, 14, 0.05), 0 6px 18px rgba(40, 32, 14, 0.08);
+  --radius: 9px;
+  --radius-sm: 8px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
   --font: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial,
     'Noto Sans Hebrew', sans-serif;
   --mono: 'Cascadia Code', ui-monospace, 'SF Mono', 'Consolas', monospace;
@@ -36,7 +50,7 @@ body,
 }
 
 body {
-  background: var(--bg);
+  background: var(--canvas-bg);
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -47,14 +61,15 @@ body {
 .app {
   position: fixed;
   inset: 0;
-  background: var(--bg);
+  background: var(--canvas-bg);
 }
 
 .app canvas {
   display: block;
 }
 
-/* Cinematic vignette framing the viewport. */
+/* Cinematic vignette framing the viewport — the 3D scene stays the richest
+   surface on screen, so this lives outside the neutral-chrome rules below. */
 .vignette {
   position: fixed;
   inset: 0;
@@ -80,333 +95,239 @@ body {
 /* ---- Generic panel ------------------------------------------------------ */
 
 .panel {
-  background: linear-gradient(180deg, rgba(24, 29, 35, 0.78), rgba(14, 18, 23, 0.74));
+  background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  box-shadow: var(--shadow);
 }
 
 .panel-label {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.02em;
   color: var(--text-faint);
-  margin: 0 0 8px;
+  margin: 0 0 var(--sp-2);
   font-weight: 600;
 }
 
-/* ---- Top title bar ------------------------------------------------------ */
+/* ---- Task panel (single panel, right side) ------------------------------ */
 
-.titlebar {
-  position: absolute;
-  inset-block-start: 16px;
-  inset-inline: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 20px;
+.task-panel {
+  width: 100%;
+  padding: var(--sp-6);
 }
 
-.titlebar .brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
+.task-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+  margin: 0;
 }
 
-/* Brand emblem: concentric amber rings — a contour-line motif. */
-.titlebar .mark {
-  width: 28px;
-  height: 28px;
-  flex: none;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    var(--accent) 0 2px,
-    transparent 2px 4px,
-    rgba(232, 178, 76, 0.85) 4px 5px,
-    transparent 5px 7.5px,
-    rgba(232, 178, 76, 0.5) 7.5px 8.5px,
-    transparent 8.5px
-  );
-  border: 1px solid rgba(232, 178, 76, 0.35);
+.task-title {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text);
+  margin: var(--sp-2) 0 0;
 }
 
-.titlebar h1 {
+.task-body {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text);
+  margin: var(--sp-2) 0 0;
+}
+
+.task-empty {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: var(--sp-2) 0 0;
+}
+
+.task-divider {
+  height: 1px;
+  background: var(--hairline);
+  border: none;
+  margin: var(--sp-6) 0;
+}
+
+.task-goal-label {
   font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.titlebar .subtitle {
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 0.04em;
-  margin-block-start: 1px;
-}
-
-.titlebar .status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.titlebar .status .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent);
-}
-
-/* ---- Column layout for side panels ------------------------------------- */
-
-.col {
-  position: absolute;
-  inset-block: 84px 24px;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  pointer-events: none;
-}
-
-.col-start {
-  inset-inline-start: 16px;
-  align-items: flex-start;
-}
-
-.col-end {
-  inset-inline-end: 16px;
-  align-items: flex-end;
-}
-
-/* ---- Instructions panel ------------------------------------------------- */
-
-.instructions {
-  width: 100%;
-  padding: 16px 18px;
-  margin-block-start: auto;
-}
-
-.instructions .keys {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.instructions .row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12.5px;
-  color: var(--text-dim);
-}
-
-.kbd {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-kbd {
-  font-family: var(--mono);
-  font-size: 11px;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--hairline);
-  border-block-end-color: rgba(0, 0, 0, 0.4);
-  border-radius: 5px;
-  padding: 2px 7px;
-  min-width: 22px;
-  text-align: center;
-  line-height: 1.3;
+  margin: 0 0 var(--sp-2);
 }
 
-/* ---- Concept HUD panel -------------------------------------------------- */
-
-.hud {
-  width: 100%;
-  padding: 18px 20px 20px;
-  border-inline-start: 3px solid var(--accent);
+.task-goals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 }
 
-.hud .empty {
-  color: var(--text-faint);
-  font-size: 13px;
-  line-height: 1.6;
+.task-goals li {
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  padding-inline-start: 22px;
 }
 
-.hud .eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
-  font-weight: 700;
-  margin: 0 0 6px;
+.task-goals li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  background: none;
 }
 
-.hud h2 {
-  font-size: 21px;
-  font-weight: 600;
-  margin: 0 0 2px;
-  letter-spacing: 0.01em;
+.task-section {
+  margin-block-end: var(--sp-4);
 }
 
-.hud h2 {
-  margin-block-end: 14px;
-}
-
-.hud-section {
-  margin-block-end: 12px;
-}
-
-.hud-section:last-child {
+.task-section:last-child {
   margin-block-end: 0;
 }
 
-.hud-section-label {
+.task-section-label {
   display: block;
-  font-size: 10px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-faint);
-  font-weight: 700;
-  margin-block-end: 4px;
+  margin-block-end: var(--sp-1);
 }
 
-.hud-section p {
-  font-size: 13px;
-  line-height: 1.62;
+.task-section p {
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--text);
   margin: 0;
 }
 
-/* The map-reading dimension gets the amber treatment to flag the 3D↔map link. */
-.hud-section.map {
-  background: var(--accent-soft);
-  border: 1px solid rgba(232, 178, 76, 0.22);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
-.hud-section.map .hud-section-label {
-  color: var(--accent);
-}
-
-.hud-section.map p {
-  color: var(--text-dim);
-}
-
-/* ---- Layer toggle panel ------------------------------------------------- */
-
-.layers {
+.task-map-image {
   width: 100%;
-  padding: 16px 18px;
+  aspect-ratio: 1 / 1;
+  margin-block-start: var(--sp-3);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
 }
 
-.layer-row {
+.task-map-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* ---- Azimuth / range status pill ----------------------------------------
+   A compact, pill-shaped live readout — the one "status pill" the design
+   brief allows, placed under the task panel. Shown only while a concept is
+   selected (real live state, not decoration). ----------------------------- */
+
+.az-pill {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 9px 4px;
-  border: none;
-  background: none;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  border-block-end: 1px solid var(--hairline);
-  text-align: start;
-}
-
-.layer-row:last-child {
-  border-block-end: none;
-}
-
-.layer-row:hover .layer-name {
-  color: #fff;
-}
-
-.switch {
-  position: relative;
-  width: 34px;
-  height: 19px;
-  flex: none;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--hairline);
-  transition: background 0.18s ease;
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.switch::after {
-  content: '';
-  position: absolute;
-  inset-block-start: 2px;
-  inset-inline-start: 2px;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  transition: transform 0.18s ease, background 0.18s ease;
-}
-
-.layer-row[aria-pressed='true'] .switch {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-}
-
-.layer-row[aria-pressed='true'] .switch::after {
-  transform: translateX(15px);
-  background: var(--accent);
-}
-
-[dir='rtl'] .layer-row[aria-pressed='true'] .switch::after {
-  transform: translateX(-15px);
-}
-
-.layer-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.layer-name {
-  font-weight: 500;
+.az-pill-target {
+  font-weight: 600;
   color: var(--text);
-  transition: color 0.15s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.layer-desc {
-  font-size: 11px;
+.az-pill-sep {
   color: var(--text-faint);
 }
 
-/* ---- Mini-map ----------------------------------------------------------- */
+.az-pill-stat {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.az-pill-caption {
+  font-family: var(--font);
+  font-weight: 400;
+  color: var(--text-faint);
+  margin-inline-start: 2px;
+}
+
+/* ---- Column layout for side panels --------------------------------------
+   Pinned to the physical side named in the brief regardless of text
+   direction — RTL only changes how text reads inside each panel. --------- */
+
+.col {
+  position: fixed;
+  top: 72px;
+  bottom: var(--sp-6);
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  pointer-events: none;
+}
+
+.col-task {
+  right: var(--sp-4);
+  align-items: flex-end;
+  /* Above every other overlay layer (menus, radial menu, modals) — this
+     card must never be obscured; background stays the same .panel opacity. */
+  z-index: 50;
+}
+
+.col-map {
+  left: var(--sp-4);
+  align-items: flex-start;
+}
+
+/* ---- Mini-map ------------------------------------------------------------ */
 
 .minimap {
   width: 100%;
-  padding: 14px 14px 12px;
+  padding: var(--sp-3);
   margin-block-start: auto;
+}
+
+.minimap-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 var(--sp-2);
+}
+
+.minimap-head .panel-label {
+  margin: 0;
+}
+
+.minimap-head .north {
+  font-size: 12px;
+  color: var(--text-faint);
 }
 
 .minimap-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--hairline);
 }
@@ -417,16 +338,7 @@ kbd {
   display: block;
 }
 
-.minimap .legend {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--text-faint);
-  letter-spacing: 0.06em;
-  margin-block-start: 8px;
-}
-
-/* ---- Crosshair ---------------------------------------------------------- */
+/* ---- Crosshair (over the 3D viewport, not part of the neutral UI chrome) */
 
 .crosshair {
   position: fixed;
@@ -462,7 +374,113 @@ kbd {
   border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* ---- Click-to-start prompt --------------------------------------------- */
+/* ---- Radial quick-select wheel (Tab-held mode/layer switch) --------------
+   Opens without releasing pointer lock: mouse-look freezes, relative mouse
+   movement picks a wedge instead, release commits. The hint pill is the only
+   trace of it visible the rest of the time. ------------------------------- */
+
+.radial-hint {
+  position: fixed;
+  inset-block-end: var(--sp-6);
+  inset-inline: 0;
+  margin-inline: auto;
+  width: max-content;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-size: 12px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+/* In guided mode the Previous/Next bar sits at the same bottom-centre spot —
+   lift the hint clear above it instead of letting the two overlap. */
+.radial-hint--guided {
+  inset-block-end: calc(var(--sp-6) + 60px);
+}
+
+.radial-menu {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.radial-ring,
+.radial-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+}
+
+.radial-ring {
+  transform: translate(-50%, -50%);
+  width: 210px;
+  height: 210px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+.radial-center {
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+}
+
+.radial-item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-dim);
+  background: var(--panel-solid);
+  border: 1px solid var(--panel-border);
+  white-space: nowrap;
+  transition: color 0.12s var(--ease-out), background 0.12s var(--ease-out),
+    border-color 0.12s var(--ease-out), transform 0.12s var(--ease-out);
+}
+
+.radial-item.active {
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+
+.radial-item.selected {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.radial-item-key {
+  margin-inline-start: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.7;
+  background: color-mix(in srgb, currentColor 15%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+}
+
+/* ---- Click-to-start prompt ------------------------------------------------
+   Reads as a system message, not a sci-fi card: shown only while an
+   interaction is required, gone the moment the learner is inside. --------- */
 
 .start-prompt {
   position: fixed;
@@ -470,133 +488,67 @@ kbd {
   z-index: 9;
   display: grid;
   place-items: center;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(6, 8, 10, 0.12),
-    rgba(6, 8, 10, 0.42)
-  );
   pointer-events: none;
-  transition: opacity 0.3s ease;
 }
 
 .start-prompt .card {
+  width: min(360px, 90vw);
   text-align: center;
-  padding: 22px 30px;
+  padding: var(--sp-4) 20px;
   border-radius: var(--radius);
   background: var(--panel-solid);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
+  animation: prompt-in 200ms var(--ease-out);
+}
+
+@keyframes prompt-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .start-prompt .card .big {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  color: var(--text);
 }
 
 .start-prompt .card .small {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-dim);
-  margin-block-start: 6px;
-  letter-spacing: 0.03em;
+  margin-block-start: var(--sp-1);
 }
 
-/* ---- Marker labels (drei Html) ----------------------------------------- */
+/* ---- Marker labels (drei Html) ------------------------------------------- */
 
 .marker-label {
   font-family: var(--font);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
   color: var(--text);
-  background: rgba(14, 18, 22, 0.78);
+  background: var(--panel-solid);
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   padding: 3px 10px;
   white-space: nowrap;
   user-select: none;
   pointer-events: none;
-  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
 }
 
 .marker-label.selected {
-  color: #1a1206;
+  color: var(--accent-ink);
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 0 18px rgba(232, 178, 76, 0.55);
 }
 
-.landform-label {
-  font-family: var(--font);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: rgba(232, 237, 242, 0.9);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
-  white-space: nowrap;
-  user-select: none;
-  pointer-events: none;
-}
-
-/* ---- Top-bar controls (mode switch / reset / language) ------------------ */
-
-.topbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.mode-switch {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 9px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid var(--hairline);
-}
-
-.mode-btn,
-.tool-btn {
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--text-dim);
-  background: none;
-  border: none;
-  border-radius: 7px;
-  padding: 6px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.mode-btn:hover {
-  color: var(--text);
-}
-
-.mode-btn.active {
-  color: #1a1206;
-  background: var(--accent);
-  font-weight: 600;
-}
-
-.tool-btn {
-  border: 1px solid var(--panel-border);
-}
-
-.tool-btn:hover {
-  color: var(--text);
-  border-color: var(--accent-line);
-}
-
-.tool-btn.lang {
-  min-width: 64px;
-  text-align: center;
-}
-
-/* ---- Onboarding overlay ------------------------------------------------- */
+/* ---- Onboarding overlay --------------------------------------------------- */
 
 .onboarding {
   position: fixed;
@@ -604,75 +556,83 @@ kbd {
   z-index: 30;
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: radial-gradient(ellipse at center, rgba(8, 11, 14, 0.5), rgba(6, 8, 10, 0.72));
-  backdrop-filter: blur(3px);
+  padding: var(--sp-6);
+  background: rgba(43, 42, 38, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .onb-card {
   position: relative;
-  width: min(720px, 100%);
-  padding: 32px 36px;
+  width: min(680px, 100%);
+  padding: var(--sp-8) var(--sp-8);
   text-align: start;
+  animation: prompt-in 220ms var(--ease-out);
 }
 
 .onb-card .lang-toggle {
   position: absolute;
-  inset-block-start: 20px;
-  inset-inline-end: 20px;
+  inset-block-start: var(--sp-4);
+  inset-inline-end: var(--sp-4);
   font-family: inherit;
   font-size: 12px;
   color: var(--text-dim);
-  background: rgba(0, 0, 0, 0.2);
+  background: none;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   padding: 6px 14px;
   cursor: pointer;
+  transition: color 0.18s var(--ease-out), border-color 0.18s var(--ease-out);
 }
 
 .onb-card .lang-toggle:hover {
-  color: var(--text);
+  color: var(--accent);
   border-color: var(--accent-line);
 }
 
-.onb-emblem {
-  display: block;
-  width: 44px;
-  height: 44px;
-  margin-block-end: 16px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    var(--accent) 0 3px,
-    transparent 3px 6px,
-    rgba(232, 178, 76, 0.85) 6px 7.5px,
-    transparent 7.5px 11px,
-    rgba(232, 178, 76, 0.5) 11px 12.5px,
-    transparent 12.5px
-  );
-  border: 1px solid rgba(232, 178, 76, 0.35);
-}
-
 .onb-card h1 {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  margin: 0 0 10px;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 var(--sp-2);
 }
 
 .onb-intro {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--text-dim);
-  margin: 0 0 24px;
+  margin: 0 0 var(--sp-6);
   max-width: 60ch;
 }
 
 .onb-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  margin-block-end: 28px;
+  gap: var(--sp-8);
+  margin-block-end: var(--sp-6);
+}
+
+.onb-interact {
+  margin-block-end: var(--sp-6);
+}
+
+.onb-interact .onb-subhead {
+  margin-block-start: 0;
+}
+
+.onb-subhead {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: var(--sp-4) 0 var(--sp-2);
+}
+
+.onb-subtext {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0;
+  text-align: justify;
 }
 
 .onb-controls,
@@ -682,14 +642,14 @@ kbd {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .onb-controls li {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
+  gap: var(--sp-3);
+  font-size: 14px;
   color: var(--text-dim);
 }
 
@@ -699,108 +659,86 @@ kbd {
   text-align: center;
 }
 
+kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  background: var(--hairline);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  min-width: 22px;
+  text-align: center;
+  line-height: 1.3;
+}
+
 .onb-objectives li {
   position: relative;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--text-dim);
-  padding-inline-start: 18px;
+  padding-inline-start: 20px;
 }
 
 .onb-objectives li::before {
   content: '';
   position: absolute;
-  inset-inline-start: 2px;
-  inset-block-start: 7px;
-  width: 6px;
-  height: 6px;
+  inset-inline-start: 0;
+  inset-block-start: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--accent);
+  border: 1.5px solid var(--accent);
 }
 
 .onb-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--sp-3);
   flex-wrap: wrap;
 }
 
 .btn {
   font-family: inherit;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: none;
   border: 1px solid var(--panel-border);
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   padding: 11px 22px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: border-color 0.18s var(--ease-out), background 0.18s var(--ease-out);
 }
 
 .btn:hover {
   border-color: var(--accent-line);
 }
 
-.btn:active {
-  transform: translateY(1px);
-}
-
 .btn.primary {
-  color: #1a1206;
+  color: var(--accent-ink);
   font-weight: 600;
-  background: linear-gradient(180deg, #f0bd5a, var(--accent));
-  border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(232, 178, 76, 0.28);
-}
-
-/* ---- Objectives panel --------------------------------------------------- */
-
-.objectives {
-  width: 100%;
-  padding: 16px 18px;
-}
-
-.objectives ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.objectives li {
-  position: relative;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-dim);
-  padding-inline-start: 16px;
-}
-
-.objectives li::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: 1px;
-  inset-block-start: 6px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
   background: var(--accent);
+  border-color: var(--accent);
 }
 
-/* ---- Guided navigation bar ---------------------------------------------- */
+.btn.primary:hover {
+  background: #97711f;
+  border-color: #97711f;
+}
+
+/* ---- Guided navigation bar ------------------------------------------------ */
 
 .guided-bar {
-  position: absolute;
-  inset-block-end: 24px;
+  position: fixed;
+  inset-block-end: var(--sp-6);
   inset-inline: 0;
   margin-inline: auto;
   width: max-content;
   max-width: calc(100% - 32px);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
 }
 
 .guided-center {
@@ -808,108 +746,142 @@ kbd {
   flex-direction: column;
   align-items: center;
   min-width: 150px;
-  padding: 0 6px;
-}
-
-.guided-counter {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  padding: 0 var(--sp-2);
 }
 
 .guided-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .ghost-btn {
   font-family: inherit;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: none;
   border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 9px 16px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: border-color 0.18s var(--ease-out), color 0.18s var(--ease-out);
 }
 
 .ghost-btn:hover:not(:disabled) {
   border-color: var(--accent-line);
+  color: var(--accent);
 }
 
 .ghost-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: default;
 }
 
-.ghost-btn.exit {
-  color: var(--text-dim);
-  margin-inline-start: 4px;
+.key-hint {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  color: var(--text-faint);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  vertical-align: 1px;
 }
 
-/* ---- Demo badge --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .start-prompt .card,
+  .onb-card {
+    animation: none;
+  }
+}
 
-.demo-badge {
+/* ---- Concept detail modal (secondary info screen) ------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+  background: rgba(43, 42, 38, 0.35);
+  animation: prompt-in 180ms var(--ease-out);
+}
+
+.modal-card {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: var(--sp-6);
+}
+
+.modal-close {
   position: absolute;
-  inset-block-end: 24px;
-  inset-inline: 0;
-  margin-inline: auto;
-  width: max-content;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  top: var(--sp-3);
+  inset-inline-end: var(--sp-3);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.modal-close:hover {
   color: var(--text);
+  background: var(--hairline);
 }
 
-.demo-badge .rec-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
-  animation: pulse 1.8s ease-in-out infinite;
+.modal-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--sp-4);
+  padding-inline-end: var(--sp-6);
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
+.modal-section {
+  margin-block-end: var(--sp-4);
 }
 
-/* ---- RTL refinements ---------------------------------------------------- */
-
-[dir='rtl'] .panel-label,
-[dir='rtl'] .hud .eyebrow,
-[dir='rtl'] .hud-section-label,
-[dir='rtl'] .guided-counter,
-[dir='rtl'] .landform-label {
-  letter-spacing: 0.01em;
-  text-transform: none;
+.modal-section:last-child {
+  margin-block-end: 0;
 }
 
-/* ---- Responsive trim ---------------------------------------------------- */
+.modal-section-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+  margin-block-end: var(--sp-1);
+}
+
+.modal-section p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ---- RTL refinements ------------------------------------------------------- */
+
+/* ---- Responsive trim -------------------------------------------------------- */
 
 @media (max-width: 980px) {
   .col {
-    width: 264px;
-  }
-  .titlebar .subtitle {
-    display: none;
+    width: 280px;
   }
   .onb-grid {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: var(--sp-4);
   }
 }

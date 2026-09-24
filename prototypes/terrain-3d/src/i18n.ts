@@ -6,14 +6,10 @@ import type { Lang } from './utils/terrainTypes';
  */
 export interface UIStrings {
   dir: 'ltr' | 'rtl';
-  appTitle: string;
-  appSubtitle: string;
 
   // Modes
   modeFree: string;
   modeGuided: string;
-  modeDemo: string;
-  reset: string;
   langName: string; // label shown on the language toggle (the OTHER language)
 
   // Onboarding
@@ -24,10 +20,10 @@ export interface UIStrings {
   ctlMove: string;
   ctlLookKeys: string;
   ctlLook: string;
-  ctlClickKeys: string;
-  ctlClick: string;
-  ctlLayersKeys: string;
-  ctlLayers: string;
+  ctlQuickMenuKeys: string;
+  ctlQuickMenu: string;
+  onbInteractTitle: string;
+  onbInteractDesc: string;
   objectivesTitle: string;
   objectives: string[];
   startBtn: string;
@@ -37,22 +33,19 @@ export interface UIStrings {
   enterPrompt: string;
   enterHint: string;
 
-  // HUD
-  hudEyebrow: string;
-  hudEmpty: string;
-  hudMeaning: string;
+  // Task panel
+  taskEmpty: string;
   hudRecognize: string;
   hudMapView: string;
+  mapImageAlt: (title: string) => string;
+
+  // Menus
+  radialHint: string;
 
   // Guided
-  guidedCounter: (n: number, total: number) => string;
   prev: string;
   next: string;
-  exitGuided: string;
-
-  // Demo
-  demoBadge: string;
-  exitDemo: string;
+  finish: string;
 
   // Layers
   layersTitle: string;
@@ -60,40 +53,41 @@ export interface UIStrings {
   layerContoursDesc: string;
   layerSlope: string;
   layerSlopeDesc: string;
-  layerLabels: string;
-  layerLabelsDesc: string;
 
   // Mini-map
   mapTitle: string;
   mapCaption: string;
   mapNorth: string;
   mapYou: string;
+
+  // Azimuth / range readout
+  azRangeTitle: string;
+  azimuthLabel: string;
+  rangeLabel: string;
+  azRangeUnit: string;
 }
 
 const en: UIStrings = {
   dir: 'ltr',
-  appTitle: 'Terrain Field Simulator',
-  appSubtitle: 'Interactive geomorphology · landform analysis',
 
   modeFree: 'Free explore',
   modeGuided: 'Guided mode',
-  modeDemo: 'Demo',
-  reset: 'Reset position',
   langName: 'עברית',
 
   onbWelcome: 'Terrain Field Simulator',
   onbIntro:
     'Walk through a realistic 3D landscape and learn to read terrain. Explore freely, or take the guided tour through seven core landform concepts — then see how each one appears on a topographic map.',
-  onbControlsTitle: 'Controls',
+  onbControlsTitle: 'Buttons',
   ctlMoveKeys: 'WASD / Arrows',
   ctlMove: 'Move across the terrain',
   ctlLookKeys: 'Mouse',
   ctlLook: 'Look around',
-  ctlClickKeys: 'Click a beacon',
-  ctlClick: 'Learn the concept',
-  ctlLayersKeys: 'Layer toggles',
-  ctlLayers: 'Show terrain analysis',
-  objectivesTitle: 'Learning objectives',
+  ctlQuickMenuKeys: 'Hold Tab',
+  ctlQuickMenu: 'Switch mode / view without leaving the field',
+  onbInteractTitle: 'Interacting with the field',
+  onbInteractDesc:
+    'Click a beacon to open an explanation of the landform at that spot, and use the layer toggles in the quick menu to overlay a visual analysis — contour lines and a slope heat-map.',
+  objectivesTitle: "Simulator's purpose",
   objectives: [
     'Identify major landforms — hills, ridges, valleys and saddles — in a 3D environment.',
     'Connect what you see in the terrain to how it appears on a topographic map.',
@@ -105,59 +99,55 @@ const en: UIStrings = {
   enterPrompt: 'Click to enter the field',
   enterHint: 'Mouse to look · WASD / Arrows to move · Shift to run · Esc to release',
 
-  hudEyebrow: 'Terrain concept',
-  hudEmpty:
-    'Aim the crosshair at a glowing beacon and click to study that terrain concept — or start the guided tour from the top bar. Press Esc to use the panels.',
-  hudMeaning: 'What it is',
+  taskEmpty: 'Aim at a beacon and click it to open your first task.',
   hudRecognize: 'Spot it in the 3D terrain',
   hudMapView: 'On a topographic map',
+  mapImageAlt: (title) => `Topographic map illustration of a ${title.toLowerCase()}`,
 
-  guidedCounter: (n, total) => `Concept ${n} of ${total}`,
+  radialHint: 'Hold Tab for the quick menu',
+
   prev: 'Previous',
   next: 'Next',
-  exitGuided: 'Exit tour',
-
-  demoBadge: 'Demo mode · automatic tour',
-  exitDemo: 'Exit demo',
+  finish: 'Finish',
 
   layersTitle: 'Visualization layers',
   layerContours: 'Contour lines',
   layerContoursDesc: 'Lines of equal elevation',
   layerSlope: 'Slope visualization',
   layerSlopeDesc: 'Steepness heat-map',
-  layerLabels: 'Landform labels',
-  layerLabelsDesc: 'Names floating on the terrain',
 
   mapTitle: 'Map view',
   mapCaption: 'Top-down · contour relief',
   mapNorth: 'N',
   mapYou: 'You',
+
+  azRangeTitle: 'Azimuth / range',
+  azimuthLabel: 'Azimuth',
+  rangeLabel: 'Range',
+  azRangeUnit: 'm',
 };
 
 const he: UIStrings = {
   dir: 'rtl',
-  appTitle: 'סימולטור תוואי שטח',
-  appSubtitle: 'גאומורפולוגיה אינטראקטיבית · ניתוח תוואי שטח',
 
   modeFree: 'חקירה חופשית',
   modeGuided: 'מצב מודרך',
-  modeDemo: 'הדגמה',
-  reset: 'איפוס מיקום',
   langName: 'English',
 
   onbWelcome: 'סימולטור תוואי שטח',
   onbIntro:
     'מטיילים בנוף תלת-ממדי ריאליסטי ולומדים לקרוא תוואי שטח. אפשר לחקור באופן חופשי, או לצאת לסיור מודרך בין שבעה מושגי יסוד של תוואי שטח — ולראות כיצד כל אחד מהם נראה על מפה טופוגרפית.',
-  onbControlsTitle: 'בקרות',
+  onbControlsTitle: 'כפתורים',
   ctlMoveKeys: 'WASD / חיצים',
   ctlMove: 'תנועה בשטח',
   ctlLookKeys: 'עכבר',
   ctlLook: 'התבוננות מסביב',
-  ctlClickKeys: 'לחיצה על סמן',
-  ctlClick: 'ללמוד את המושג',
-  ctlLayersKeys: 'מתגי שכבות',
-  ctlLayers: 'הצגת ניתוח שטח',
-  objectivesTitle: 'יעדי למידה',
+  ctlQuickMenuKeys: 'החזקת Tab',
+  ctlQuickMenu: 'החלפת מצב/תצוגה בלי לצאת מהשטח',
+  onbInteractTitle: 'פעולות בשטח',
+  onbInteractDesc:
+    'לחיצה על סמן שטח פותחת הסבר על המושג הגאומורפולוגי במיקום הזה, ומתגי השכבות בתפריט המהיר מציגים ניתוח ויזואלי — קווי גובה ומפת שיפועים.',
+  objectivesTitle: 'מטרת הסימולטור',
   objectives: [
     'לזהות תוואי שטח עיקריים — גבעות, רכסים, עמקים ואוכפים — בסביבה תלת-ממדית.',
     'לקשר בין מה שרואים בשטח לבין אופן הופעתו על מפה טופוגרפית.',
@@ -169,33 +159,32 @@ const he: UIStrings = {
   enterPrompt: 'לחצו כדי להיכנס לשטח',
   enterHint: 'עכבר להבטה · WASD / חיצים לתנועה · Shift לריצה · Esc לשחרור',
 
-  hudEyebrow: 'מושג תוואי שטח',
-  hudEmpty:
-    'כוונו את הכוונת אל סמן זוהר ולחצו כדי ללמוד את המושג — או התחילו סיור מודרך מהסרגל העליון. הקישו Esc כדי להשתמש בלוחות.',
-  hudMeaning: 'מה זה',
+  taskEmpty: 'כוונו לעבר סמן ולחצו עליו כדי לפתוח את המשימה הראשונה.',
   hudRecognize: 'זיהוי בשטח התלת-ממדי',
   hudMapView: 'על מפה טופוגרפית',
+  mapImageAlt: (title) => `המחשה של ${title} על מפה טופוגרפית`,
 
-  guidedCounter: (n, total) => `מושג ${n} מתוך ${total}`,
+  radialHint: 'החזיקו Tab לתפריט מהיר',
+
   prev: 'הקודם',
   next: 'הבא',
-  exitGuided: 'סיום הסיור',
-
-  demoBadge: 'מצב הדגמה · סיור אוטומטי',
-  exitDemo: 'סיום הדגמה',
+  finish: 'סיום',
 
   layersTitle: 'שכבות ניתוח',
   layerContours: 'קווי גובה',
   layerContoursDesc: 'קווים של גובה שווה',
   layerSlope: 'המחשת שיפועים',
   layerSlopeDesc: 'מפת חום של תלילות',
-  layerLabels: 'תוויות תוואי שטח',
-  layerLabelsDesc: 'שמות הצפים מעל השטח',
 
   mapTitle: 'תצוגת מפה',
   mapCaption: 'מבט-על · תבליט וקווי גובה',
   mapNorth: 'צ',
   mapYou: 'אתם',
+
+  azRangeTitle: 'אזימוט / טווח',
+  azimuthLabel: 'אזימוט',
+  rangeLabel: 'טווח',
+  azRangeUnit: 'מ׳',
 };
 
 export const UI: Record<Lang, UIStrings> = { en, he };

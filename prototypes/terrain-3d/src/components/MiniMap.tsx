@@ -7,6 +7,7 @@ import {
   getHeightRange,
   terrainColor,
   colorTint,
+  moisture01,
 } from '../utils/terrainHeight';
 import { TERRAIN_CONCEPTS } from '../data/terrainConcepts';
 import { useSimStore } from '../store';
@@ -52,7 +53,7 @@ function buildBase(): HTMLCanvasElement {
       const h = getHeight(x, z);
       const n = getNormal(x, z);
       const slope01 = Math.acos(n[1] < -1 ? -1 : n[1] > 1 ? 1 : n[1]) / (Math.PI / 2);
-      const c = terrainColor(h, slope01, colorTint(x, z));
+      const c = terrainColor(h, slope01, colorTint(x, z), moisture01(x, z));
       const dot = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2];
       // High floor so the whole map stays evenly lit (no near-black areas),
       // with just enough relief shading to read the terrain.
@@ -246,13 +247,12 @@ export default function MiniMap() {
 
   return (
     <div className="panel minimap">
-      <p className="panel-label">{t.mapTitle}</p>
+      <div className="minimap-head">
+        <p className="panel-label">{t.mapTitle}</p>
+        <span className="north">{t.mapNorth} ↑</span>
+      </div>
       <div className="minimap-frame">
         <canvas ref={canvasRef} width={220} height={220} />
-      </div>
-      <div className="legend">
-        <span>{t.mapCaption}</span>
-        <span>{t.mapNorth} ↑</span>
       </div>
     </div>
   );

@@ -1,9 +1,19 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Instances, Instance } from '@react-three/drei';
-import { fbm } from '../utils/noise';
-import { getHeight, getSlope01, HALF, ROCK_ZONES } from '../utils/terrainHeight';
+import { getHeight, getSlope01, HALF, ROCK_ZONES, moisture01 } from '../utils/terrainHeight';
 import { useOptionalPBR } from '../utils/useOptionalTextures';
+import { makeRockGeometry } from '../utils/rockGeometry';
+import { registerColliders, unregisterColliders } from '../colliderRegistry';
+
+// Unscaled rock geometry averages roughly this radius before per-instance scale
+// (see rockGeometry.ts's radiusBase/radiusAmplitude) — used to turn a placement's
+// scale into an approximate ground-plane collision radius.
+const ROCK_RADIUS_FACTOR = 0.8;
+const COLLIDER_OWNER = 'rocks';
+// Rocks poking above the ground by less than this are a step, not a wall — the
+// player walks up onto them instead of being blocked.
+const STEP_HEIGHT = 0.65;
 
 /**
  * Boulders and medium rocks built from several noise-displaced icosahedron
@@ -38,24 +48,6 @@ function mulberry32(seed: number) {
   };
 }
 
-function makeRockGeometry(seed: number): THREE.BufferGeometry {
-  const geo = new THREE.IcosahedronGeometry(1, 3);
-  const pos = geo.attributes.position as THREE.BufferAttribute;
-  const v = new THREE.Vector3();
-  const f = 1.7;
-  for (let i = 0; i < pos.count; i++) {
-    v.fromBufferAttribute(pos, i).normalize();
-    let d = fbm(v.x * f + seed, v.y * f + seed * 0.3);
-    d += fbm(v.y * f - seed, v.z * f + seed * 0.7) * 0.6;
-    d += fbm(v.z * f + seed * 1.3, v.x * f - seed) * 0.4;
-    d /= 2;
-    const r = 0.72 + d * 0.56;
-    pos.setXYZ(i, v.x * r, v.y * r * 0.8, v.z * r);
-  }
-  geo.computeVertexNormals();
-  return geo;
-}
-
 /** Strength of the rocky-zone attraction at a point (0..~1.2). */
 function zoneBoost(x: number, z: number): number {
   let b = 0;
@@ -78,7 +70,7 @@ function buildPlacements(): Placement[] {
     const z = (rng() * 2 - 1) * margin;
     const slope = getSlope01(x, z);
     const boost = zoneBoost(x, z);
-    let p = Math.max(0, (slope - 0.3) * 1.4) + boost * 1.15;
+    const p = Math.max(0, (slope - 0.3) * 1.4) + boost * 1.15;
     if (p <= 0.02 || rng() > p) continue;
 
     const dense = boost > 0.4;
@@ -95,7 +87,16 @@ function buildPlacements(): Placement[] {
       const y = getHeight(ox, oz) - sy * 0.42; // sunk in
       const shade = 0.3 + rng() * 0.16;
       const warm = 0.92 + rng() * 0.12;
-      const color = new THREE.Color(shade * warm, shade * 0.97, shade * 0.86);
+      let color = new THREE.Color(shade * warm, shade * 0.97, shade * 0.86);
+      // Sun-bleached on exposed rocky zones/outcrop; mossier and darker near the stream.
+      const moist = moisture01(x, z);
+      const bleach = boost * 0.18;
+      const moss = moist * 0.14;
+      color = new THREE.Color(
+        color.r * (1 + bleach - moss * 0.5),
+        color.g * (1 + bleach * 0.85 - moss * 0.15),
+        color.b * (1 + bleach * 0.7 - moss * 0.25),
+      );
       // Keep a little per-rock variation, but lifted so the albedo texture shows.
       const texColor = color.clone().lerp(ROCK_TINT, 0.55);
       out.push({
@@ -117,13 +118,42 @@ export default function ImprovedRocks() {
     () => Array.from({ length: VARIANTS }, (_, i) => makeRockGeometry(11 + i * 37)),
     [],
   );
-  const placements = useMemo(buildPlacements, []);
+  const placements = useMemo(() => buildPlacements(), []);
   const byVariant = useMemo(
     () => geometries.map((_, gi) => placements.filter((p) => p.variant === gi)),
     [geometries, placements],
   );
   const flat = !rockTex?.normalMap;
   const hasAlbedo = !!(rockTex && rockTex.map);
+
+  // Each variant's own unscaled peak height (local space), used below to find
+  // each instance's real world-space apex.
+  const geometryTopY = useMemo(
+    () =>
+      geometries.map((g) => {
+        g.computeBoundingBox();
+        return g.boundingBox ? g.boundingBox.max.y : 1;
+      }),
+    [geometries],
+  );
+
+  useEffect(() => {
+    registerColliders(
+      COLLIDER_OWNER,
+      placements.map((p) => {
+        const groundY = getHeight(p.position[0], p.position[2]);
+        const topY = p.position[1] + geometryTopY[p.variant] * p.scale[1];
+        return {
+          x: p.position[0],
+          z: p.position[2],
+          radius: ((p.scale[0] + p.scale[2]) / 2) * ROCK_RADIUS_FACTOR,
+          topY,
+          climbable: topY - groundY < STEP_HEIGHT,
+        };
+      }),
+    );
+    return () => unregisterColliders(COLLIDER_OWNER);
+  }, [placements, geometryTopY]);
 
   return (
     <group>
@@ -145,6 +175,11 @@ export default function ImprovedRocks() {
             map={rockTex?.map}
             normalMap={rockTex?.normalMap}
             roughnessMap={rockTex?.roughnessMap}
+            // Single-sided (default) culls backfaces, so a camera that clips
+            // into a rock's lumpy silhouette sees straight through the mesh
+            // to the sky instead of its interior surface. Double-siding keeps
+            // it looking solid from inside too.
+            side={THREE.DoubleSide}
           />
           {byVariant[gi].map((r, i) => (
             <Instance
