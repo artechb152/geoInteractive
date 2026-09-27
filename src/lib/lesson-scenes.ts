@@ -21,6 +21,10 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
   'topic-02': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
+    { id: 'relief-cover', label: 'תבליט ותכסית' },
+    { id: 'landforms', label: 'תבניות נוף' },
+    { id: 'geology', label: 'גיאולוגיה' },
+    { id: 'landcover', label: 'תכסית' },
     { id: 'topography', label: 'טופוגרפיה' },
     { id: 'scale', label: 'קנה מידה' },
     { id: 'coordinates', label: 'קואורדינטות' },
@@ -32,15 +36,12 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'onboarding', label: 'לפני שמתחילים' },
     { id: 'principles', label: 'עקרונות הניווט' },
     { id: 'planning', label: 'תכנון ציר' },
-    { id: 'combatnav', label: 'ניווט קרבי' },
+    { id: 'combatnav', label: 'טכניקות ניווט' },
     { id: 'recap', label: 'סיכום' },
   ],
   'topic-03': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
-    { id: 'geology', label: 'גיאולוגיה' },
-    { id: 'landforms', label: 'תבניות נוף' },
-    { id: 'tacticalterrain', label: 'שטח טקטי' },
     { id: 'recap', label: 'סיכום' },
   ],
   'topic-04': [
@@ -109,6 +110,21 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'recap', label: 'סיכום' },
   ],
 };
+
+/**
+ * תתי-נושאים בארכיון — הוצאו מרצף השיעור הציבורי (ולכן אינם במערך SCENES
+ * של השיעור ולא ב-lessonScenes), אבל הסצנה נשמרת ונגישה בסיסמה מ-/archive/
+ * בכתובת /archive/<topicId>/<sceneId>/. הקומפוננטה ממופה ב-app/archive/[topicId]/[sceneId].
+ */
+export type ArchivedScene = SceneMeta & { topicId: string };
+
+export const archivedScenes: ArchivedScene[] = [
+  { topicId: 'topic-03', id: 'tacticalterrain', label: 'שטח טקטי' },
+];
+
+export function isArchivedScene(topicId: string, sceneId: string): boolean {
+  return archivedScenes.some((s) => s.topicId === topicId && s.id === sceneId);
+}
 
 /** שם עברי קצר לכל סוג תרגול — לשורת הסטטים ולדף ה-Overview. */
 export const interactionLabels: Record<InteractionKind, string> = {

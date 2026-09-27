@@ -6,7 +6,7 @@
  * נספרים כ"הושלמו". 4 מתוך 12 ⇒ 33% — מקור אמת אחד, פותר את אי-ההתאמה
  * 35%-מול-4/12 שסומנה ב-design-spec §7.
  *
- * SSR-safe: לפני mount מוחזר מצב "טרם התחיל" (percent 0, שיעור 01 פעיל) —
+ * SSR-safe: לפני mount מוחזר מצב "טרם התחיל" (percent 0, השיעור הציבורי הראשון פעיל) —
  * זהה למצב מכשיר טרי, כך שאין hydration mismatch.
  */
 
@@ -26,7 +26,7 @@ export type CourseProgress = {
   totalCount: number;
   /** completedCount / totalCount, מעוגל */
   percent: number;
-  /** השיעור המודגש בקרוסלה — האחרון שביקרו בו, ברירת מחדל topic-01 */
+  /** השיעור המודגש בקרוסלה — האחרון שביקרו בו, ברירת מחדל השיעור הציבורי הראשון */
   activeTopicId: string;
   /** יעד "המשך ללמוד" / "המשך לשיעור הבא" */
   continueHref: string;
@@ -35,7 +35,8 @@ export type CourseProgress = {
 function compute(ready: boolean): CourseProgress {
   const visit = ready ? getLastVisit() : null;
   const total = lessons.length;
-  const completed = visit ? Math.min(total, Math.max(0, visit.topicNumber - 1)) : 0;
+  // מיקום ברשימה הציבורית (לא מספר השיעור — המספור המקורי נשמר גם כשיש ארכיון)
+  const completed = visit ? Math.max(0, lessons.findIndex((l) => l.id === visit.topicId)) : 0;
   const activeTopicId = visit?.topicId ?? lessons[0].id;
   return {
     ready,

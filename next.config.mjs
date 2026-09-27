@@ -17,6 +17,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  // Opt-in private build dir so several local dev servers (concurrent
+  // sessions) don't corrupt one shared `.next/`. Unset ⇒ default `.next`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   images: { unoptimized: true },
   trailingSlash: true,
   basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',

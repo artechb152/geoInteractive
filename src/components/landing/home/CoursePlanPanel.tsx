@@ -1,23 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
-import { lessons, lessonDioramaSrc } from '@/lib/lessons';
+import { lessons, lessonDioramaSrc, type Lesson } from '@/lib/lessons';
 import { lessonScenes } from '@/lib/lesson-scenes';
 
 /**
  * CoursePlanPanel — פאנל "פרקי הקורס" (design/mockups/carouselMockUpHomePage.png).
- * מחובר לנתוני הקורס האמיתיים (@/lib/lessons) וכולל גרירה/גלילה אמיתית
- * של השורה, שגולל לנצח (01→12→01…) על ידי שכפול הרשימה פי 3 וקפיצה
- * שקטה בין העותקים. "צפייה בכל השיעורים" פורש (עם אנימציה) רשת של כל
- * 12 השיעורים בתוך הפאנל.
+ * מחובר לשיעורים הציבוריים (@/lib/lessons — בלי הארכיון) וכולל גרירה/גלילה
+ * אמיתית של השורה, שגולל לנצח על ידי שכפול הרשימה פי 3 וקפיצה שקטה בין
+ * העותקים — רק כשיש מספיק שיעורים כדי למלא את הרוחב (ראו CAN_LOOP).
+ * "צפייה בכל השיעורים" פורש (עם אנימציה) רשת של כל השיעורים בתוך הפאנל.
+ * LessonCard / LessonGridTitle / LESSON_GRID_CLASS משותפים גם לדף /archive/.
  */
 
-type LessonItem = {
+export type LessonItem = {
   id: string;
   num: string;
   title: string;
@@ -38,23 +46,38 @@ const APPROVED_TITLES: Record<string, string> = {
 
 const FRAMING_SCENE_IDS = new Set(['hook', 'onboarding', 'recap']);
 
-/** סדר עולה 01→12 — תחת dir="rtl" הילד הראשון ב-DOM מוצג ימני ביותר */
-const ALL_LESSONS: LessonItem[] = lessons.map((l) => ({
-  id: l.id,
-  num: String(l.number).padStart(2, '0'),
-  title: APPROVED_TITLES[l.id] ?? l.shortTitle,
-  img: lessonDioramaSrc(l.number),
-  chapters: (lessonScenes[l.id] ?? [])
-    .filter((s) => !FRAMING_SCENE_IDS.has(s.id))
-    .map((s) => s.label),
-}));
+export function toLessonItem(l: Lesson): LessonItem {
+  return {
+    id: l.id,
+    num: String(l.number).padStart(2, '0'),
+    title: APPROVED_TITLES[l.id] ?? l.shortTitle,
+    img: lessonDioramaSrc(l.number),
+    chapters: (lessonScenes[l.id] ?? [])
+      .filter((s) => !FRAMING_SCENE_IDS.has(s.id))
+      .map((s) => s.label),
+  };
+}
+
+/** סדר עולה — תחת dir="rtl" הילד הראשון ב-DOM מוצג ימני ביותר */
+const ALL_LESSONS: LessonItem[] = lessons.map(toLessonItem);
+
+/**
+ * לולאה אינסופית רק כשסט אחד רחב מהפאנל (כרטיס 225px + רווח 16px; הפאנל
+ * ברוחב המרבי מכיל ~5 כרטיסים). פחות מזה — סט יחיד ממורכז בלי גרירה,
+ * אחרת היו נראים כפילויות צמודות (02 03 06 02 03 06) והקפיצה בין העותקים נשברת.
+ */
+const CAN_LOOP = ALL_LESSONS.length >= 6;
 
 /** שכפול הרשימה פי 3 כדי לאפשר גלילה אינסופית עם קפיצה בלתי מורגשת בין העותקים */
 const LOOP_COPIES = 3;
-const LOOPED_LESSONS: (LessonItem & { copyKey: string })[] = Array.from(
-  { length: LOOP_COPIES },
-  (_, copyIndex) => ALL_LESSONS.map((lesson) => ({ ...lesson, copyKey: `${copyIndex}-${lesson.id}` })),
-).flat();
+const LOOPED_LESSONS: (LessonItem & { copyKey: string })[] = CAN_LOOP
+  ? Array.from({ length: LOOP_COPIES }, (_, copyIndex) =>
+      ALL_LESSONS.map((lesson) => ({ ...lesson, copyKey: `${copyIndex}-${lesson.id}` })),
+    ).flat()
+  : ALL_LESSONS.map((lesson) => ({ ...lesson, copyKey: lesson.id }));
+
+/** רשת "כל השיעורים" — משותפת לפאנל הפתוח ולדף /archive/ */
+export const LESSON_GRID_CLASS = 'mt-10 grid grid-cols-6 items-stretch gap-3.5 gap-y-4 pb-2';
 
 /** מרחק גרירה מינימלי (px) שמעליו קליק בסיום הגרירה נחשב גרירה ולא בחירה בשיעור */
 const DRAG_CLICK_THRESHOLD = 4;
@@ -95,7 +118,7 @@ export function CoursePlanPanel({
   }, []);
 
   useEffect(() => {
-    if (expanded) return;
+    if (expanded || !CAN_LOOP) return;
     const el = rowRef.current;
     if (!el) return;
     const w = recalcSetWidth();
@@ -111,7 +134,7 @@ export function CoursePlanPanel({
   }, [expanded, recalcSetWidth, wrapIfNeeded]);
 
   const handleRowPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (expanded || e.pointerType !== 'mouse') return;
+    if (expanded || !CAN_LOOP || e.pointerType !== 'mouse') return;
     const el = rowRef.current;
     if (!el) return;
     draggedRef.current = false;
@@ -154,17 +177,9 @@ export function CoursePlanPanel({
       id="syllabus"
       className="relative scroll-mt-6 rounded-[28px] bg-paper-panel p-8 shadow-panel-soft"
     >
-      {/* כותרת — מיושרת למרכז, עם קו מפריד קישוטי */}
-      <div className="flex flex-col items-center gap-2 px-2 text-center">
-        <span className="text-[26px] font-extrabold text-olive-ink">פרקי הקורס</span>
-        <div className="flex items-center gap-2" aria-hidden>
-          <span className="h-px w-8 bg-tanline" />
-          <span className="size-1.5 rotate-45 bg-ember" />
-          <span className="h-px w-8 bg-tanline" />
-        </div>
-      </div>
+      <LessonGridTitle>פרקי הקורס</LessonGridTitle>
 
-      {/* שורת כרטיסים — 01→12 (ימין לשמאל), גלילה אינסופית; גרירה אמיתית בעכבר, גלילת מגע טבעית */}
+      {/* שורת כרטיסים — סדר עולה (ימין לשמאל), גלילה אינסופית; גרירה אמיתית בעכבר, גלילת מגע טבעית */}
       <AnimatePresence mode="popLayout" initial={false}>
         {expanded ? (
           <motion.div
@@ -174,7 +189,7 @@ export function CoursePlanPanel({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
             style={{ willChange: 'opacity, transform' }}
-            className="mt-10 grid grid-cols-6 items-stretch gap-3.5 gap-y-4 pb-2"
+            className={LESSON_GRID_CLASS}
           >
             {ALL_LESSONS.map((lesson) => (
               <LessonCard key={lesson.id} lesson={lesson} compact={false} />
@@ -196,7 +211,10 @@ export function CoursePlanPanel({
               onPointerUp={endRowDrag}
               onPointerCancel={endRowDrag}
               onClickCapture={handleRowClickCapture}
-              className="mt-10 flex cursor-grab select-none items-start gap-4 overflow-x-auto pb-2 active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className={cn(
+                'mt-10 flex select-none items-start gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                CAN_LOOP ? 'cursor-grab active:cursor-grabbing' : 'justify-center',
+              )}
             >
               {LOOPED_LESSONS.map((lesson) => (
                 <LessonCard key={lesson.copyKey} lesson={lesson} compact />
@@ -228,7 +246,21 @@ export function CoursePlanPanel({
   );
 }
 
-function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean }) {
+/** כותרת הפאנל — מיושרת למרכז, עם קו מפריד קישוטי */
+export function LessonGridTitle({ children, as: Tag = 'span' }: { children: ReactNode; as?: 'span' | 'h1' }) {
+  return (
+    <div className="flex flex-col items-center gap-2 px-2 text-center">
+      <Tag className="text-[26px] font-extrabold text-olive-ink">{children}</Tag>
+      <div className="flex items-center gap-2" aria-hidden>
+        <span className="h-px w-8 bg-tanline" />
+        <span className="size-1.5 rotate-45 bg-ember" />
+        <span className="h-px w-8 bg-tanline" />
+      </div>
+    </div>
+  );
+}
+
+export function LessonCard({ lesson, compact }: { lesson: LessonItem; compact: boolean }) {
   return (
     <Link
       href={`/lessons/${lesson.id}/`}

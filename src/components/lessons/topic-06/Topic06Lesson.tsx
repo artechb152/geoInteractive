@@ -13,7 +13,7 @@ const SCENES: PagedScene[] = [
   { id: 'onboarding', label: 'לפני שמתחילים',  Comp: OnboardingScene },
   { id: 'principles', label: 'עקרונות הניווט', Comp: PrinciplesScene },
   { id: 'planning',   label: 'תכנון ציר',      Comp: PlanningScene },
-  { id: 'combatnav',  label: 'ניווט קרבי',     Comp: CombatNavScene },
+  { id: 'combatnav',  label: 'טכניקות ניווט',  Comp: CombatNavScene },
   { id: 'recap',      label: 'סיכום',          Comp: RecapScene },
 ];
 

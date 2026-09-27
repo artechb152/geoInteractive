@@ -48,7 +48,7 @@ export function lessonDioramaSrc(number: number): string {
   return `/assets/isometric/lesson-${String(number).padStart(2, '0')}-${DIORAMA_SLUGS[number]}.png`;
 }
 
-export const lessons: Lesson[] = [
+export const allLessons: Lesson[] = [
   {
     id: 'topic-01',
     number: 1,
@@ -79,6 +79,12 @@ export const lessons: Lesson[] = [
     hero: { color: 'from-terrain-sand/25 via-bg to-bg', icon: 'map' },
     interactions: ['map-explorer'],
     objectives: [
+      'להבחין בין תבליט (מבנה פני הקרקע) לבין תכסית (מה שנמצא עליה) ולשייך רכיבי שטח לכל אחד מהם',
+      'לזהות חמש תבניות נוף בסיסיות (כיפה, שלוחה, גיא, אוכף, מכתש) במפה ובשטח',
+      'לסווג מדרון לאחד מ-4 הסוגים (קצוב, קמור, קעור, כתף)',
+      'להבחין בין שלוש קבוצות סלעים ולהבין את ההשלכות הצבאיות שלהן',
+      'להסביר את ההבדל בין כוחות אנדוגניים לאקסוגניים בעיצוב הנוף',
+      'לסווג תכסית לטבעית או מלאכותית, ולפי סוג: צומח, פעילות האדם ותשתיות',
       'להסביר מהי טופוגרפיה ומדוע מפה טופוגרפית עדיפה על תצ״א לתכנון מבצעי',
       'לחשב מרחק אמיתי לפי קנה מידה ולהבחין בין קנה גדול לקטן',
       'להבדיל בין רשת ישראל החדשה (ITM) לבין WGS84 ולהבין את הסיכון של Datum Shift',
@@ -156,7 +162,7 @@ export const lessons: Lesson[] = [
       'לחשב אזימוט ואזימוט חוזר ולהבחין בין 3 סוגי "צפון"',
       'להבין את המגבלות של GPS ולמה צריך לדעת לעבוד בלעדיו',
       'לבנות "סיפור דרך" עם נקודות אימות ולחשב מרחק בספירת צעדים',
-      'לבחור שיטת ניווט מתאימה לשטח (איגוף / עיוור / שליטה בקצב)',
+      'לבחור שיטת ניווט מתאימה לשטח (טופוגרפיה / עיוור / שליטה בקצב)',
     ],
     tags: ['אזימוט', 'GPS-Denied', 'סיפור דרך'],
   },
@@ -270,18 +276,53 @@ export const lessons: Lesson[] = [
   },
 ];
 
+/**
+ * נושאים בארכיון — התוכן והעמודים נשמרים (נגישים מ-/archive/ בסיסמה),
+ * אך הם מוסתרים מכל הרשימות, הקישורים והניווט הציבוריים.
+ */
+export const ARCHIVED_TOPIC_IDS: ReadonlySet<string> = new Set([
+  'topic-01',
+  // שיעור 3 אוחד לתוך שיעור 2 (2026-09-27): הטופוגרפיה, הגיאולוגיה ותבניות הנוף עברו לשם.
+  'topic-03',
+  'topic-04',
+  'topic-05',
+  'topic-07',
+  'topic-08',
+  'topic-09',
+  'topic-10',
+  'topic-11',
+  'topic-12',
+]);
+
+export function isArchivedTopic(id: string): boolean {
+  return ARCHIVED_TOPIC_IDS.has(id);
+}
+
+/** השיעורים הציבוריים בלבד — המקור לכל רשימה, קרוסלה, ניווט והתקדמות. */
+export const lessons: Lesson[] = allLessons.filter((l) => !isArchivedTopic(l.id));
+
+export const archivedLessons: Lesson[] = allLessons.filter((l) => isArchivedTopic(l.id));
+
+/** מחפש בכל השיעורים, כולל ארכיון (עמודי השיעור עצמם עדיין קיימים). */
 export function getLesson(id: string): Lesson | undefined {
-  return lessons.find((l) => l.id === id);
+  return allLessons.find((l) => l.id === id);
+}
+
+/** ניווט בין שיעורים נשאר בתוך אותה רשימה: ציבורי→ציבורי, ארכיון→ארכיון. */
+function sequenceOf(id: string): Lesson[] {
+  return isArchivedTopic(id) ? archivedLessons : lessons;
 }
 
 export function nextLesson(id: string): Lesson | undefined {
-  const i = lessons.findIndex((l) => l.id === id);
-  return i >= 0 ? lessons[i + 1] : undefined;
+  const seq = sequenceOf(id);
+  const i = seq.findIndex((l) => l.id === id);
+  return i >= 0 ? seq[i + 1] : undefined;
 }
 
 export function prevLesson(id: string): Lesson | undefined {
-  const i = lessons.findIndex((l) => l.id === id);
-  return i > 0 ? lessons[i - 1] : undefined;
+  const seq = sequenceOf(id);
+  const i = seq.findIndex((l) => l.id === id);
+  return i > 0 ? seq[i - 1] : undefined;
 }
 
 export const totalDuration = lessons.reduce((s, l) => s + l.duration, 0);

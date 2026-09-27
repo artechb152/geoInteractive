@@ -13,21 +13,30 @@ type ReadyCalloutProps = {
   /** Headline text. Defaults to "עכשיו אתם מוכנים." */
   title?: string;
   children: ReactNode;
+  /**
+   * The short orange stroke under the title. On by default so existing
+   * callers are unaffected; lessons that drop decorative accent strokes
+   * pass `false`.
+   */
+  signature?: boolean;
 };
 
 export function ReadyCallout({
   title = 'עכשיו אתם מוכנים.',
   children,
+  signature = true,
 }: ReadyCalloutProps) {
   return (
     <section className="mt-8 surface-elevated p-5 md:p-6">
       <h3 className="font-display font-bold text-xl md:text-2xl leading-tight text-balance text-black mb-3">
         {title}
       </h3>
-      <span
-        aria-hidden
-        className="inline-block h-[3px] w-7 rounded-full bg-accent-hover mb-3"
-      />
+      {signature && (
+        <span
+          aria-hidden
+          className="inline-block h-[3px] w-7 rounded-full bg-accent-hover mb-3"
+        />
+      )}
       <div className="text-base md:text-lg text-black leading-relaxed text-pretty">
         {children}
       </div>

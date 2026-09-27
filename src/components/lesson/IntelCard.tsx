@@ -37,9 +37,15 @@ type IntelCardProps = {
    * surface.
    */
   variant?: 'editorial' | 'elevated';
+  /**
+   * The short sage stroke under the headline. On by default so existing
+   * callers are unaffected; lessons that drop decorative accent strokes
+   * pass `false`.
+   */
+  signature?: boolean;
 };
 
-export function IntelCard({ place, headline, lesson, variant = 'editorial' }: IntelCardProps) {
+export function IntelCard({ place, headline, lesson, variant = 'editorial', signature = true }: IntelCardProps) {
   return (
     <article
       className={cn(
@@ -54,10 +60,14 @@ export function IntelCard({ place, headline, lesson, variant = 'editorial' }: In
 
       {/* Typographic signature — always sage, mirrors the accordion bar
           in the OnboardingScene's "lesson context" accordions. */}
-      <span
-        aria-hidden
-        className="mt-2 mb-2.5 inline-block h-[3px] w-8 rounded-full bg-brand-dark"
-      />
+      {signature ? (
+        <span
+          aria-hidden
+          className="mt-2 mb-2.5 inline-block h-[3px] w-8 rounded-full bg-brand-dark"
+        />
+      ) : (
+        <span aria-hidden className="block h-2" />
+      )}
 
       {/* Body */}
       <p className="text-sm md:text-base text-black leading-relaxed text-pretty">

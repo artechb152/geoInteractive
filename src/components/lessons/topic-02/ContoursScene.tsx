@@ -1,347 +1,344 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { ContoursDensitySection } from './ContoursDensitySection';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import type { MountainView } from './ContourCake3D';
+import { MOUNTAIN } from './contourMountain.data';
+import { ACCENT, BAND_COLORS, CONTOUR_INK, INDEX_LEVEL_M } from './contourMountainStyle';
 
 const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
   ssr: false,
   loading: () => (
-    <div className="aspect-video sm:aspect-square max-h-[300px] w-full mx-auto flex items-center justify-center text-fg-dim text-sm">
+    <div className="aspect-video sm:aspect-square max-h-[340px] w-full mx-auto flex items-center justify-center text-fg-dim text-sm">
       טוען מודל תלת־ממד…
     </div>
   ),
 });
 
-type Shape = {
-  id: string;
-  label: string;
-  desc: string;
-  contours: { rx: number; ry: number; cx?: number; cy?: number }[];
-  steepnessHint: 'gentle' | 'mixed' | 'steep' | 'cliff';
-};
-
-const SHAPES: Shape[] = [
+const VIEWS: { id: MountainView; label: string; caption: string }[] = [
   {
-    id: 'gentle',
-    label: 'גבעה מתונה',
-    desc: 'הקווים רחוקים זה מזה. זה אומר שהגובה משתנה לאט מאוד - זהו מדרון נוח. לוחם יכול לטפס כאן בקלות, וגם רכב שטח יעלה פה בלי להתאמץ.',
-    contours: [
-      { rx: 38, ry: 26 },
-      { rx: 28, ry: 19 },
-      { rx: 18, ry: 12 },
-      { rx: 8, ry: 5 },
-    ],
-    steepnessHint: 'gentle',
+    id: 'whole',
+    label: 'הר שלם',
+    caption: 'כך ההר נראה בשטח. כל קו כהה על המדרון מחבר נקודות שנמצאות באותו גובה בדיוק.',
   },
   {
-    id: 'steep',
-    label: 'הר תלול',
-    desc: 'הקווים צפופים מאוד. זה אומר שתוך מרחק קצר אנחנו עולים הרבה בגובה. הטיפוס הרגלי יהיה קשה ומעייף, ורכבים לא יוכלו לעבור כאן בכלל.',
-    contours: [
-      { rx: 36, ry: 26 },
-      { rx: 32, ry: 22 },
-      { rx: 28, ry: 19 },
-      { rx: 24, ry: 16 },
-      { rx: 20, ry: 13 },
-      { rx: 16, ry: 11 },
-      { rx: 12, ry: 8 },
-      { rx: 8, ry: 5 },
-      { rx: 4, ry: 3 },
-    ],
-    steepnessHint: 'steep',
+    id: 'sliced',
+    label: 'פריסה לשכבות',
+    caption: 'חתכנו את ההר כל 10 מטרים. הרימו שכבה ותראו: השפה של כל פרוסה היא בדיוק קו גובה.',
   },
   {
-    id: 'cliff',
-    label: 'מצוק',
-    desc: 'הקווים כמעט נוגעים אחד בשני. זוהי נפילה חדה או קיר סלע. השטח בלתי עביר ברגל ודורש ציוד טיפוס (סנפלינג) או עיקוף של המכשול.',
-    contours: [
-      { rx: 38, ry: 26 },
-      { rx: 32, ry: 23 },
-      { rx: 26, ry: 20 },
-      { rx: 22, ry: 17, cx: 52 },
-      { rx: 21, ry: 16, cx: 53 },
-      { rx: 20, ry: 16, cx: 54 },
-    ],
-    steepnessHint: 'cliff',
+    id: 'top',
+    label: 'מבט מלמעלה',
+    caption: 'מלמעלה הגובה נעלם ונשארים רק הקווים. זו בדיוק המפה.',
   },
 ];
 
+// The density section's data (SHAPES), tabs, map and glossary moved verbatim
+// into ContoursDensitySection.tsx / ContoursShapeMap.tsx.
+
 export function ContoursScene() {
-  const [shapeId, setShapeId] = useState(SHAPES[0].id);
   const [activeRing, setActiveRing] = useState<number | null>(null);
-  const shape = SHAPES.find((s) => s.id === shapeId)!;
+  const [view, setView] = useState<MountainView>('whole');
+  const viewInfo = VIEWS.find((v) => v.id === view)!;
 
   return (
     <section id="scene-contours" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <SceneHeader
         step="02.4"
-        eyebrow="קווי גובה"
-title={
-          <>
-          לפצח את השטח: איך פורסים הר תלת-ממדי ל<span className="gradient-text">קווים שאפשר לקרוא</span>?
-          </>
-        }
+        title="לפצח את השטח: איך פורסים הר תלת-ממדי לקווים שאפשר לקרוא?"
                intro="האתגר הכי גדול במפה הוא להבין איך השטח נראה במציאות. הרי המפה היא דף שטוח, אבל העולם הוא תלת-ממדי. כדי לפתור את זה, אנחנו משתמשים בשיטה חכמה: קווי גובה. דמיינו שחתכנו את ההר לפרוסות אופקיות (כמו עוגת קומות). כל קו שתראו במפה הוא פשוט הקצה של פרוסה כזו."
       />
 
-      <div className="surface-elevated p-6 mb-6 rounded-[4px] border border-border/50">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
+      <div className="surface-elevated p-6 lg:p-8 mb-6">
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
           <div className="space-y-3">
-            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
+            <div className="text-sm font-display font-semibold text-fg-muted">
               מבט תלת־ממדי · ההר כעוגת פרוסות
             </div>
-            <div className="surface bg-bg-accent/20 rounded-[3px] p-4 border border-border/40">
-              <ContourCake3D activeRing={activeRing} setActiveRing={setActiveRing} />
+            <div className="p-4">
+              <ContourCake3D view={view} activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
-            <div className="text-[11px] text-accent/80 font-medium text-center">
-              גררו כדי לסובב · גלגלת לזום
+            <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="אופן הצגת ההר">
+              {VIEWS.map((v, i) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  aria-pressed={view === v.id}
+                  onClick={() => setView(v.id)}
+                  className={cn(
+                    'rounded-xl border px-3.5 py-2 font-display font-bold text-sm text-fg transition-colors duration-200 ease-snap cursor-pointer flex items-center gap-2',
+                    view === v.id
+                      ? 'border-accent bg-accent/10'
+                      : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'size-6 rounded-full text-[13px] tabular-nums flex items-center justify-center transition-colors duration-200',
+                      view === v.id ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                    )}
+                    aria-hidden
+                  >
+                    {i + 1}
+                  </span>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-base text-fg leading-relaxed text-center min-h-[3.25rem]" aria-live="polite">
+              {viewInfo.caption}
+            </p>
+            <div className="text-sm text-fg-muted leading-snug text-center">
+              {view === 'top'
+                ? 'במבט מלמעלה הצפון תמיד למעלה, כמו במפה'
+                : view === 'sliced'
+                  ? 'גררו שכבה למעלה או למטה · גררו את הרקע כדי לסובב'
+                  : 'גררו כדי לסובב את ההר'}
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">
+            <div className="text-sm font-display font-semibold text-fg-muted">
               מבט מלמעלה · איך זה נראה במפה
             </div>
-            <div className="surface bg-bg-accent/20 rounded-[3px] p-4 border border-border/40">
+            <div className="p-4">
               <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
-            <div className="text-[11px] text-accent/80 font-medium text-center animate-pulse">
-               רחפו עם העכבר על הקווים במפה כדי לראות את הפרוסה התואמת
+            <ElevationLegend activeRing={activeRing} setActiveRing={setActiveRing} />
+            <div className="text-sm text-fg-muted leading-snug text-center">
+              רחפו עם העכבר על המפה כדי לראות את הפרוסה התואמת בהר
             </div>
           </div>
         </div>
       </div>
 
-      <SoftDivider text="זיהוי תנאי שטח לפי צפיפות" />
+      <h3 className="mt-14 mb-6 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+        זיהוי תנאי שטח לפי צפיפות
+      </h3>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        {SHAPES.map((s) => {
-          const active = s.id === shapeId;
-          const badgeChar = s.steepnessHint === 'gentle' ? '↘' : s.steepnessHint === 'steep' ? '↑' : '!';
-          const subtitle =
-            s.steepnessHint === 'gentle'
-              ? 'מדרון נוח'
-              : s.steepnessHint === 'steep'
-              ? 'תלול ומאתגר'
-              : 'חסימה / מצוק';
-          return (
-            <button
-              key={s.id}
-              onClick={() => setShapeId(s.id)}
-              className={cn(
-                'surface p-4 text-right transition-all rounded-[3px] relative overflow-hidden flex items-center gap-3',
-                active ? 'border-accent bg-bg-elevated' : 'bg-bg-elevated border-border hover:border-accent/50'
-              )}
-            >
-              {active && (
-                <motion.span
-                  layoutId="t2-shape-bar"
-                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
-                />
-              )}
-              <span
-                className={cn(
-                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all font-display font-bold',
-                  active ? 'bg-accent text-bg-elevated border-accent' : 'bg-bg-accent text-fg-muted border-border'
-                )}
-              >
-                {badgeChar}
-              </span>
-              <div className="flex-1 min-w-0 text-right">
-                <div className="font-display font-bold text-base text-fg leading-tight">{s.label}</div>
-                <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{subtitle}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-stretch">
-        <div className="space-y-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={shape.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="surface p-6 border-r-4 border-accent rounded-[3px]"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <Icon name="mountain" size={36} className="text-accent shrink-0" />
-                <h3 className="font-display font-bold text-2xl leading-tight">{shape.label}</h3>
-              </div>
-              <p className="text-sm text-fg-muted leading-relaxed font-medium">
-                {shape.desc}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
-          <Glossary />
-        </div>
-
-        <div className="surface-elevated bg-bg-accent/20 relative overflow-hidden border border-border/50 rounded-[4px]">
-          <ShapeMap shape={shape} />
-        </div>
-      </div>
+      {/* Tabs + info card + contour map/profile + glossary — see ContoursDensitySection. */}
+      <ContoursDensitySection />
     </section>
   );
 }
 
 /**
- * Shared elevation model for both views, so the side view (cake) and the
- * top view (map) stay perfectly consistent. Index 0 = the lowest band
- * (10 m, widest / outermost / bottom slice); the last index = the peak
- * (50 m, narrowest / innermost / top slice). The `fill`/`op` ramp goes
- * sand → ridge → olive as we climb, and is identical across both views
- * so a band reads as "the same place" in either picture.
+ * Top view of the SAME mountain the 3D diorama shows: the contour lines are
+ * the exact iso-lines of the Blender model (contourMountain.data.ts), not
+ * idealised ellipses, and every band uses the colour of its 3D slice.
+ * Layers, bottom → top: band fills → hovered band → hillshade relief (lit
+ * from the NW, like the 3D key light) → contour lines → steep/gentle
+ * rulers → label chips → summit → north arrow → hover targets.
  */
-const LEVELS = [
-  { h: 10, fill: 'fill-terrain-sand',  op: 0.35 },
-  { h: 20, fill: 'fill-terrain-sand',  op: 0.55 },
-  { h: 30, fill: 'fill-terrain-ridge', op: 0.5 },
-  { h: 40, fill: 'fill-terrain-ridge', op: 0.7 },
-  { h: 50, fill: 'fill-terrain-olive', op: 0.85 },
-];
+const HILLSHADE_URL = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic02/contour-mountain/hillshade.png`;
+// One path per level; a level's rings (usually one) become subpaths.
+const RING_PATHS = MOUNTAIN.levels.map((lv) =>
+  lv.rings.map((ring) => `M${ring.map(([x, y]) => `${x} ${y}`).join('L')}Z`).join(''),
+);
+const LEVEL_COUNT = MOUNTAIN.levels.length;
+const CHIP_FILL = '#FFFFFF';
 
-// Top view (map): perfectly concentric, constant aspect ratio.
-const CX = 50;
-const MAP_CY = 50;
-const RING_K = 0.7;                                  // ry / rx, fixed for all rings
-const ringRx = (i: number) => 40 - i * 8;           // 40 → 8 (outer → inner)
-const ringRy = (i: number) => ringRx(i) * RING_K;
+/** White label plate — the same chip the 3D view uses, so labels read alike. */
+function MapChip({
+  x,
+  y,
+  angle = 0,
+  width,
+  active = false,
+  children,
+}: {
+  x: number;
+  y: number;
+  angle?: number;
+  width: number;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  const h = 4.6;
+  return (
+    <g transform={`rotate(${angle} ${x} ${y})`} className="pointer-events-none">
+      <rect
+        x={x - width / 2}
+        y={y - h / 2}
+        width={width}
+        height={h}
+        rx={1.2}
+        fill={CHIP_FILL}
+        fillOpacity={0.94}
+        stroke={active ? ACCENT : 'none'}
+        strokeWidth={0.45}
+      />
+      <text
+        x={x}
+        y={y}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={3.4}
+        className="font-display font-bold tabular-nums"
+        fill={active ? ACCENT : CONTOUR_INK}
+      >
+        {children}
+      </text>
+    </g>
+  );
+}
+
+/**
+ * A ruler laid across the contours along one ray from the summit, with a dot
+ * at every crossing — "dense = steep, sparse = gentle" measured on the map.
+ */
+function SlopeRuler({ side, label }: { side: 'steep' | 'gentle'; label: string }) {
+  const hits = MOUNTAIN.levels.map((lv) => lv[side]);
+  const outer = hits[0];
+  const inner = hits[hits.length - 1];
+  const dx = outer.x - inner.x;
+  const dy = outer.y - inner.y;
+  const len = Math.hypot(dx, dy);
+  // the word continues the ray outward, just past the 10 m crossing
+  const lx = outer.x + (dx / len) * 7.5;
+  const ly = outer.y + (dy / len) * 7.5;
+  return (
+    <g aria-hidden className="pointer-events-none">
+      <line x1={outer.x} y1={outer.y} x2={inner.x} y2={inner.y} stroke={CONTOUR_INK} strokeOpacity={0.6} strokeWidth={0.4} />
+      {hits.map((h, i) => (
+        <circle key={i} cx={h.x} cy={h.y} r={0.75} fill={CHIP_FILL} stroke={CONTOUR_INK} strokeWidth={0.3} />
+      ))}
+      <rect x={lx - 5.2} y={ly - 2.7} width={10.4} height={5.4} rx={1.2} fill={CHIP_FILL} fillOpacity={0.94} />
+      <text x={lx} y={ly} textAnchor="middle" dominantBaseline="central" fontSize={3.8} className="font-display font-bold" fill={CONTOUR_INK}>
+        {label}
+      </text>
+    </g>
+  );
+}
 
 function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | null; setActiveRing: (n: number | null) => void; }) {
+  const clipId = useId();
+  const s = MOUNTAIN.summit;
   return (
-    <div className="aspect-video sm:aspect-square max-h-[300px] mx-auto">
-      <svg viewBox="0 0 100 100" className="w-full h-full select-none">
-        {Array.from({ length: 11 }).map((_, i) => (
-          <g key={i}>
-            <line x1={i * 10} y1="0" x2={i * 10} y2="100" className="stroke-border-subtle/30" strokeWidth="0.1" />
-            <line x1="0" y1={i * 10} x2="100" y2={i * 10} className="stroke-border-subtle/30" strokeWidth="0.1" />
-          </g>
-        ))}
+    <div className="aspect-video sm:aspect-square max-h-[340px] mx-auto">
+      <svg
+        viewBox="0 0 100 100"
+        className="w-full h-full select-none"
+        role="img"
+        aria-label={`מפת קווי גובה של ההר: חמישה קווים כל 10 מטרים, פסגה בגובה ${s.heightM} מטר. במערב הקווים צפופים (מדרון תלול), בדרום־מזרח הם מרווחים (מדרון מתון).`}
+      >
+        <defs>
+          <clipPath id={clipId}>
+            <rect x="0" y="0" width="100" height="100" rx="1.5" />
+          </clipPath>
+        </defs>
 
-        {/* filled elevation bands — outer (lowest) first, peak painted last on top */}
-        {LEVELS.map((lvl, i) => {
-          const isActive = activeRing === i;
-          return (
-            <ellipse
-              key={`band-${i}`}
-              cx={CX} cy={MAP_CY} rx={ringRx(i)} ry={ringRy(i)}
-              className={cn('transition-all duration-300', isActive ? 'fill-accent/30' : lvl.fill)}
-              style={{ opacity: isActive ? 0.9 : lvl.op }}
+        <g clipPath={`url(#${clipId})`}>
+          {/* hypsometric bands — ground first, summit band painted last */}
+          <rect x="0" y="0" width="100" height="100" fill={BAND_COLORS[0]} />
+          {RING_PATHS.map((d, i) => (
+            <path key={`band-${i}`} d={d} fill={BAND_COLORS[i + 1]} />
+          ))}
+
+          {activeRing !== null && (
+            <path
+              d={RING_PATHS[activeRing] + (activeRing + 1 < LEVEL_COUNT ? RING_PATHS[activeRing + 1] : '')}
+              fillRule="evenodd"
+              fill={ACCENT}
+              fillOpacity={0.45}
             />
-          );
-        })}
+          )}
 
-        {/* contour line strokes + labels + hover targets */}
-        {LEVELS.map((lvl, i) => {
-          const isActive = activeRing === i;
-          const rx = ringRx(i);
-          const ry = ringRy(i);
-          return (
-            <g
-              key={`ring-${i}`}
-              onMouseEnter={() => setActiveRing(i)}
-              onMouseLeave={() => setActiveRing(null)}
-              className="cursor-crosshair"
-            >
-              {/* wider invisible hit area */}
-              <ellipse cx={CX} cy={MAP_CY} rx={rx + 3.5} ry={ry + 3.5} fill="transparent" />
-              <ellipse
-                cx={CX} cy={MAP_CY} rx={rx} ry={ry}
+          {/* shaded relief — makes the flat map read as a mountain */}
+          <image href={HILLSHADE_URL} x="0" y="0" width="100" height="100" preserveAspectRatio="none" />
+
+          {MOUNTAIN.levels.map((lv, i) => {
+            const isActive = activeRing === i;
+            return (
+              <path
+                key={`line-${i}`}
+                d={RING_PATHS[i]}
                 fill="none"
-                stroke="currentColor"
-                strokeWidth={isActive ? 0.9 : 0.45}
-                className={cn('transition-colors', isActive ? 'text-accent' : 'text-terrain-olive/70')}
+                stroke={isActive ? ACCENT : CONTOUR_INK}
+                strokeOpacity={isActive ? 1 : 0.85}
+                strokeWidth={isActive ? 0.95 : lv.heightM === INDEX_LEVEL_M ? 0.6 : 0.34}
+                strokeLinejoin="round"
+                className="transition-colors"
               />
-              <text
-                x={CX} y={MAP_CY - ry - 1.2} textAnchor="middle"
-                className={cn(
-                  'text-[2.6px] font-display font-bold tabular-nums',
-                  isActive ? 'fill-accent' : 'fill-fg-dim'
-                )}
-                paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round"
-              >
-                {lvl.h}
-              </text>
-            </g>
+            );
+          })}
+
+          <SlopeRuler side="steep" label="תלול" />
+          <SlopeRuler side="gentle" label="מתון" />
+
+          {MOUNTAIN.levels.map((lv, i) => (
+            <MapChip key={`label-${i}`} x={lv.label.x} y={lv.label.y} angle={lv.label.angle} width={6.6} active={activeRing === i}>
+              {lv.heightM}
+            </MapChip>
+          ))}
+
+          {/* summit: triangle on the exact high point + spot height */}
+          <path d={`M${s.x} ${s.y - 1.6} L${s.x + 1.5} ${s.y + 1} L${s.x - 1.5} ${s.y + 1} Z`} fill={CONTOUR_INK} className="pointer-events-none" />
+          <MapChip x={s.x} y={s.y + 4.4} width={6.6}>
+            {s.heightM}
+          </MapChip>
+
+          {/* north arrow — the map (and the 3D top view) are north-up */}
+          <g aria-hidden className="pointer-events-none" transform="translate(93 10)">
+            <path d="M0 -5 L2.2 1.2 L0 0 L-2.2 1.2 Z" fill={CONTOUR_INK} />
+            <text x="0" y="4.4" textAnchor="middle" dominantBaseline="central" fontSize={3.2} className="font-display font-bold" fill={CONTOUR_INK}>
+              צ
+            </text>
+          </g>
+
+          {/* hover targets: a band's whole area, inner bands stacked on top */}
+          {RING_PATHS.map((d, i) => (
+            <path
+              key={`hit-${i}`}
+              d={d}
+              fill="transparent"
+              className="cursor-crosshair"
+              onPointerEnter={() => setActiveRing(i)}
+              onPointerLeave={() => setActiveRing(null)}
+              onClick={() => setActiveRing(i)}
+            />
+          ))}
+        </g>
+
+        <rect x="0.2" y="0.2" width="99.6" height="99.6" rx="1.5" fill="none" stroke={CONTOUR_INK} strokeOpacity={0.25} strokeWidth={0.4} />
+      </svg>
+    </div>
+  );
+}
+
+/** Colour key for the bands; hovering a swatch lights up that slice too. */
+function ElevationLegend({ activeRing, setActiveRing }: { activeRing: number | null; setActiveRing: (n: number | null) => void; }) {
+  const bounds = [0, ...MOUNTAIN.levels.map((lv) => lv.heightM), MOUNTAIN.summit.heightM];
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <span className="text-[13px] font-display font-semibold text-fg-muted whitespace-nowrap">גובה (מ׳)</span>
+      <div className="flex">
+        {BAND_COLORS.map((color, band) => {
+          const ring = band - 1; // band 0 is the ground, not a slice
+          const active = ring >= 0 && activeRing === ring;
+          return (
+            <div
+              key={band}
+              className={cn('flex flex-col items-center', ring >= 0 && 'cursor-crosshair')}
+              onPointerEnter={ring >= 0 ? () => setActiveRing(ring) : undefined}
+              onPointerLeave={ring >= 0 ? () => setActiveRing(null) : undefined}
+            >
+              <span
+                className={cn('block h-3 w-11 transition-shadow', active && 'ring-2 ring-accent ring-inset')}
+                style={{ background: color }}
+              />
+              <span dir="ltr" className={cn('text-[13px] tabular-nums mt-1', active ? 'text-accent font-bold' : 'text-fg-muted')}>
+                {bounds[band]}–{bounds[band + 1]}
+              </span>
+            </div>
           );
         })}
-
-        {/* peak marker */}
-        <path d={`M${CX} ${MAP_CY - 2.5} L${CX} ${MAP_CY + 2.5} M${CX - 2.5} ${MAP_CY} L${CX + 2.5} ${MAP_CY}`} className="stroke-accent" strokeWidth="0.5" />
-      </svg>
-    </div>
-  );
-}
-
-function ShapeMap({ shape }: { shape: Shape }) {
-  return (
-    <div className="relative w-full h-full min-h-[280px]">
-      <svg viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        {Array.from({ length: 11 }).map((_, i) => (
-          <g key={i}>
-            <line x1={i * 10} y1="0" x2={i * 10} y2="75" className="stroke-border-subtle/30" strokeWidth="0.1" />
-            <line x1="0" y1={i * 7.5} x2="100" y2={i * 7.5} className="stroke-border-subtle/30" strokeWidth="0.1" />
-          </g>
-        ))}
-
-        {shape.contours.map((c, i) => (
-          <motion.ellipse
-            key={i}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            cx={c.cx ?? 50}
-            cy={c.cy ?? 38}
-            rx={c.rx}
-            ry={c.ry}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={i % 5 === 0 ? 0.7 : 0.3}
-            className="text-accent"
-            style={{ opacity: i % 5 === 0 ? 0.9 : 0.5 }}
-          />
-        ))}
-
-        <circle cx={50} cy={38} r="0.5" className="fill-accent" />
-      </svg>
-    </div>
-  );
-}
-
-function Glossary() {
-  return (
-    <div className="surface p-6 rounded-[3px] space-y-4 bg-bg-accent/10 border border-border/30">
-      <div className="text-sm font-display font-semibold text-accent tracking-wider font-bold mb-2">מילון מושגים לניווט</div>
-      <Item term="קו גובה (Contour Line)" def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר." />
-      <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים." />
-      <Item term="קו אינדקס (Index Contour)" def="כל קו חמישי הוא עבה יותר ורשום עליו הגובה. זה ה'עוגן' שעוזר לספור גבהים מהר." />
-      <Item term="צפיפות = תלילות" def="החוק הכי חשוב: קווים קרובים = הר תלול וקשה. קווים רחוקים = גבעה נוחה או מישור." />
-    </div>
-  );
-}
-
-function Item({ term, def }: { term: string; def: string }) {
-  return (
-    <div className="text-xs group">
-      <div className="font-bold text-fg mb-1 group-hover:text-accent transition-colors">{term}</div>
-      <div className="text-fg-muted leading-relaxed">{def}</div>
-    </div>
-  );
-}
-
-function SoftDivider({ text }: { text: string }) {
-  return (
-    <div className="my-14 flex items-center gap-6">
-      <div className="h-px flex-1 bg-gradient-to-l from-border/50 to-transparent" />
-      <span className="text-sm font-display font-semibold text-fg-muted tracking-wider font-bold">{text}</span>
-      <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent" />
+      </div>
     </div>
   );
 }

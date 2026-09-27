@@ -19,6 +19,7 @@ const NAV_LINKS: { href: string; label: string }[] = [
   { href: '/#syllabus', label: 'תכנית הלימודים' },
   { href: '/#prototypes', label: 'פרוטוטייפים' },
   { href: '/recap-demos', label: 'תרגול חוזר' },
+  { href: '/archive/', label: 'ארכיון' },
 ];
 
 export function AppHeader() {

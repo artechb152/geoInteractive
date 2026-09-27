@@ -7,7 +7,7 @@
  */
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { lessons, type Lesson } from '@/lib/lessons';
+import { allLessons, type Lesson } from '@/lib/lessons';
 import { lessonAssets } from '@/lib/lesson-scenes';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 
@@ -57,7 +57,7 @@ export function LessonHero({
       {/* ── כותרת — ימין ב-RTL ── */}
       <div className="min-w-0">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-bg-accent px-3 py-1 font-display text-xs font-bold text-brand-dark">
-          שיעור {num} מתוך {lessons.length}
+          שיעור {num} מתוך {allLessons.length}
         </span>
         <h1 className="mt-3 font-display font-extrabold tracking-tight text-balance leading-[1.1] text-[clamp(1.75rem,3.8vw,3rem)]">
           {lesson.title}

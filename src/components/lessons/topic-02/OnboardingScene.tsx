@@ -96,13 +96,8 @@ export function OnboardingScene() {
     <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="02.0"
-        eyebrow="לפני שמתחילים"
-title={
-          <>
-          <span className="gradient-text">מפה היא לא תמונה דו-ממדית – היא פאזל של שכבות מידע</span>
-          </>
-        }
-                intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
+        title="מפה היא לא תמונה דו-ממדית – היא פאזל של שכבות מידע"
+        intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
       />
 
       {/* Widened the map column from 2fr:3fr (640px) to 725px at the 1440px
@@ -123,11 +118,10 @@ title={
               <div
                 key={l.id}
                 className={cn(
-                  'surface overflow-hidden transition-all duration-300 ease-snap',
+                  'overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
                   active
                     ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  passed && !active && 'opacity-80'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]'
                 )}
               >
                 <button
@@ -135,12 +129,12 @@ title={
                   onClick={() => clickLayer(i)}
                   aria-expanded={expanded}
                   aria-controls={`layer-panel-${l.id}`}
-                  className="w-full p-4 text-right flex items-center gap-3 relative"
+                  className="w-full p-4 text-start flex items-center gap-3"
                 >
                   <span
                     className={cn(
-                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
+                      active || passed ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
                     )}
                   >
                     {passed && !active ? (
@@ -150,7 +144,7 @@ title={
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight transition-colors text-black text-lg md:text-xl">
+                    <div className="font-display font-bold leading-tight text-black text-lg md:text-xl">
                       {l.label}
                     </div>
                   </div>
@@ -188,11 +182,10 @@ title={
                     >
                       {/* All five panels share one height so the column -- and the
                           map box stretched beside it -- never resize as you click
-                          through. The 211px floor was measured with an extra
-                          (now-removed) heading line -- re-verify against this
-                          shorter two-tier content before trusting the exact number. */}
-                      <div className="px-4 pb-4 pt-1 border-t border-brand/20 md:min-h-[211px]">
-                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                          through. Re-measured at 1440px: the tallest panels
+                          (roads, borders) need 206px, so the 211px floor holds. */}
+                      <div className="px-4 pb-4 pt-1 md:min-h-[211px]">
+                        <div className="text-base font-display font-bold text-black mb-1.5">
                           {l.popupTitle}
                         </div>
                         <p className="text-base leading-relaxed text-black">
@@ -222,7 +215,7 @@ title={
         <HistoricalCasesPanel />
       </div>
 
-      <ReadyCallout title="עכשיו אתם מוכנים">
+      <ReadyCallout title="עכשיו אתם מוכנים" signature={false}>
         <p>הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה":
             <strong className="text-fg"> איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל</strong>.</p>
       </ReadyCallout>
@@ -233,7 +226,7 @@ title={
 function MapStageLoading() {
   return (
     <div className="w-full h-full min-h-[280px] flex items-center justify-center">
-      <div className="flex items-center gap-2 text-fg-dim text-xs font-display">
+      <div className="flex items-center gap-2 text-fg-muted text-sm font-display">
         <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
         <span>טוען...</span>
       </div>

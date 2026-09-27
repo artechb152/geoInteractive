@@ -1,11 +1,13 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { ArchiveGate } from '@/components/archive/ArchiveGate';
 import {
   ArrowLeft,
   ArrowRight,
   ChevronLeft,
 } from 'lucide-react';
-import { lessons, getLesson, nextLesson, prevLesson } from '@/lib/lessons';
+import { allLessons, getLesson, isArchivedTopic, nextLesson, prevLesson } from '@/lib/lessons';
 import { lessonScenes, lessonAssets, interactionLabels } from '@/lib/lesson-scenes';
 import { LessonStatsBar } from '@/components/lesson/LessonStatsBar';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
@@ -21,7 +23,16 @@ import { cn } from '@/lib/utils';
  */
 
 export function generateStaticParams() {
-  return lessons.map((l) => ({ topicId: l.id }));
+  return allLessons.map((l) => ({ topicId: l.id }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ topicId: string }>;
+}): Promise<Metadata> {
+  const { topicId } = await params;
+  return isArchivedTopic(topicId) ? { robots: { index: false, follow: false } } : {};
 }
 
 export default async function LessonOverviewPage({
@@ -38,8 +49,11 @@ export default async function LessonOverviewPage({
   const prev = prevLesson(topicId);
   const next = nextLesson(topicId);
   const num = String(lesson.number).padStart(2, '0');
+  const archived = isArchivedTopic(topicId);
+  // בשיעור ארכיוני "חזרה לרשימה" מובילה לארכיון, לא לסילבוס הציבורי
+  const listHref = archived ? '/archive/' : '/#syllabus';
 
-  return (
+  const page = (
     <main className="relative">
       {/* ── תדריך: Hero דו-עמודי על שולחן המפות ── */}
       <div className="border-b border-border">
@@ -49,7 +63,7 @@ export default async function LessonOverviewPage({
               הקורס שלי
             </Link>
             <ChevronLeft aria-hidden className="size-3.5 text-fg-dim" />
-            <Link href="/#syllabus" className="transition-colors hover:text-brand-dark">
+            <Link href={listHref} className="transition-colors hover:text-brand-dark">
               שיעורים
             </Link>
             <ChevronLeft aria-hidden className="size-3.5 text-fg-dim" />
@@ -63,7 +77,7 @@ export default async function LessonOverviewPage({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusChip tone="brand">
-                  תדריך שיעור {num} מתוך {lessons.length}
+                  תדריך שיעור {num} מתוך {allLessons.length}
                 </StatusChip>
                 <StatusChip tone="neutral">
                   {interactionLabels[lesson.interactions[0]]}
@@ -80,7 +94,7 @@ export default async function LessonOverviewPage({
                 <Button href={`/lessons/${lesson.id}/`} size="lg">
                   <span>התחל שיעור</span>
                 </Button>
-                <Button href="/#syllabus" variant="secondary" size="lg">
+                <Button href={listHref} variant="secondary" size="lg">
                   חזרה לסילבוס
                 </Button>
               </div>
@@ -234,4 +248,7 @@ export default async function LessonOverviewPage({
       </div>
     </main>
   );
+
+  // שיעור בארכיון: כניסה ישירה לכתובת דורשת סיסמה
+  return archived ? <ArchiveGate>{page}</ArchiveGate> : page;
 }

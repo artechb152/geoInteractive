@@ -1,8 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { Icon } from '@/components/Icon';
 
 const TERMS = [
   { term: 'אזימוט',                    def: 'זווית במעלות (0–360) שאומרת באיזה כיוון בדיוק ללכת מצפון.' },
@@ -13,8 +11,8 @@ const TERMS = [
   { term: 'GPS-Denied',                def: 'מצב שבו אין GPS — האויב משבש, או נמצאים מתחת לאדמה.' },
   { term: 'סיפור דרך',                 def: 'תוכנית מסלול כתובה מראש: מה רואים בכל שלב, ובאיזה סדר.' },
   { term: 'ספירת צעדים (Pacing)',      def: 'מודדים מרחק על ידי ספירת זוגות צעדים × אורך הצעד.' },
-  { term: 'הליכת מעקה (Handrailing)',  def: 'הולכים במקביל לתוואי בולט (נחל, רכס) במקום בקו ישר.' },
-  { term: 'ניווט עיוור (Dead Reckoning)', def: 'אזימוט + צעדים בלבד, בלי לראות שטח. לסערות חול וערפל.' },
+  { term: 'ניווט לפי טופוגרפיה ("מעקה")', def: 'מתקדמים מסימן לסימן בשטח — כיפות (תבליט), כפר (תכסית) — ומוודאים מיקום בכל אחד.' },
+  { term: 'ניווט עיוור (Dead Reckoning)', def: 'לא רואים כלום ואין במה להיאחז: מחשבים אזימוט ומרחק, והולכים לפי מצפן וספירת צעדים.' },
   { term: 'שליטה בקצב',                def: 'קצב איטי ומאובטח בשטח חשוף, מהיר ורציף בשטח מוסתר.' },
 ];
 
@@ -26,7 +24,7 @@ export function RecapScene() {
         eyebrow="סיכום השיעור"
         title={
           <>
-            11 מושגים, <span className="gradient-text">דקה אחת</span>
+            11 מושגים, דקה אחת
           </>
         }
         intro="כל מה שעברנו בשיעור — בהגדרה אחת קצרה לכל מושג."
@@ -36,29 +34,21 @@ export function RecapScene() {
 
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
-          <motion.div
-            key={t.term}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.05, duration: 0.4 }}
-            className="surface p-5 relative overflow-hidden"
-          >
-            <div aria-hidden className="absolute -end-8 -top-8 size-20 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
-            <div className="relative flex items-start gap-3">
-              <span className="font-display font-medium tracking-wide text-xs text-accent mt-1 shrink-0">
+          <div key={t.term} className="surface p-5">
+            <div className="flex items-start gap-3">
+              <span className="shrink-0 font-display text-sm font-medium text-fg-muted">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <div className="flex-1 min-w-0">
-                <div className="font-display font-bold mb-1 leading-tight">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 font-display font-bold leading-tight text-fg">
                   {t.term}
                 </div>
-                <div className="text-sm text-fg-muted leading-relaxed">
+                <div className="text-sm leading-relaxed text-fg-muted">
                   {t.def}
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
     </section>
@@ -67,27 +57,13 @@ export function RecapScene() {
 
 function CompletionBanner() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      className="mb-8 relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-bl from-accent/10 via-bg-elevated to-bg-elevated p-6 sm:p-7"
-    >
-      <div className="absolute -end-16 -top-16 size-48 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
-      <div className="absolute -start-16 -bottom-16 size-48 rounded-full bg-accent-cool/10 blur-3xl pointer-events-none" />
-
-      <div className="relative flex items-center gap-4 sm:gap-5">
-        <Icon name="check" size={48} strokeWidth={3} className="text-accent shrink-0" />
-        <div className="flex-1">
-          <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
-            כל הכבוד · סיימת את שיעור הניווטים
-          </div>
-          <div className="font-display font-bold text-xl sm:text-2xl text-balance leading-tight">
-            עכשיו אתה יודע <span className="gradient-text">להגיע ליעד גם בלי GPS</span>
-          </div>
-        </div>
+    <div className="mb-8">
+      <div className="text-sm font-display font-semibold text-fg-muted">
+        כל הכבוד · סיימת את שיעור הניווטים
       </div>
-    </motion.div>
+      <div className="mt-1.5 font-display text-2xl font-bold leading-tight text-fg text-balance sm:text-3xl">
+        עכשיו אתה יודע להגיע ליעד גם בלי GPS
+      </div>
+    </div>
   );
 }

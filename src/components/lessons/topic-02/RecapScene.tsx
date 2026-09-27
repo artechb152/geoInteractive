@@ -1,9 +1,21 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 
 const TERMS = [
+  // תבליט ותכסית → תבניות נוף → גיאולוגיה (אוחדו משיעור 3) → מפות
+  { term: 'תבליט',               def: 'מבנה פני הקרקע — הצורה של השטח: איפה הקרקע עולה ואיפה היא יורדת.' },
+  { term: 'תכסית',               def: 'כל מה שנמצא על פני הקרקע: טבעית (עצים, שיחים, עשב) או מלאכותית (בתים, כבישים, שדות, גדרות).' },
+  { term: 'כיפה',                def: 'התרוממות טופוגרפית בולטת של פני השטח.' },
+  { term: 'שלוחה',               def: 'שטח גבוה יחסית ובעל צורה ארוכה וצרה, היורד בשיפוע הדרגתי מטה מאזור של פסגה או כיפה מרכזית.' },
+  { term: 'גיא / ואדי',          def: 'שטח נמוך הכלוא בין שתי שלוחות.' },
+  { term: 'אוכף',                def: 'נקודת השפל הנמוכה ביותר על גבי קו רכס ארוך, הממוקמת בין שתי כיפות טופוגרפיות סמוכות.' },
+  { term: 'מכתש',                def: 'אזור טופוגרפי סגור ונמוך יותר מכל סביבתו הקרובה.' },
+  { term: 'מסלע',                def: 'החומר המוצק שמרכיב את קרום כדור הארץ. סוג הסלע משפיע על אופי הנוף.' },
+  { term: 'סלעי יסוד',           def: 'נוצרו ממאגמה. קשים מאוד (גרניט, בזלת). מבסיסים מבוצרים מצוינים.' },
+  { term: 'סלעי משקע',           def: 'משכבות שנדחסו (גיר, אבן חול). רכים יותר. קל לחפור בהם מנהרות.' },
+  { term: 'כוחות אנדוגניים',     def: 'כוחות מבפנים — טקטוניים. יוצרים הרים שלמים (מקרו-טופוגרפיה).' },
+  { term: 'כוחות אקסוגניים',     def: 'כוחות מבחוץ — מים, רוח. מעצבים תוואי קטן (מיקרו-טופוגרפיה).' },
   { term: 'טופוגרפיה',         def: 'חקר צורת פני הקרקע — איפה יש הרים, גבעות, עמקים.' },
   { term: 'מפה טופוגרפית',     def: 'מפה מיוחדת שמראה את צורת השטח באמצעות קווים וסמלים.' },
   { term: 'תצ"א',              def: 'תצלום אווירי — תמונה רגילה שצולמה ממטוס. רואים את המציאות אבל לא את הגובה.' },
@@ -26,7 +38,7 @@ export function RecapScene() {
         eyebrow="סיכום"
         title={
           <>
-            12 מושגים, <span className="gradient-text">דקה אחת</span>
+            {TERMS.length} מושגים, דקה אחת
           </>
         }
         intro="כל המושגים שעברנו בשיעור — בהגדרה אחת קצרה לכל אחד."
@@ -34,39 +46,27 @@ export function RecapScene() {
 
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
-          <motion.div
-            key={t.term}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ delay: i * 0.05, duration: 0.4 }}
-            className="surface p-5"
-          >
+          <div key={t.term} className="surface p-5">
             <div className="flex items-start gap-3">
-              <span className="font-display font-medium tracking-wide text-xs text-accent mt-1">{String(i + 1).padStart(2, '0')}</span>
-              <div className="flex-1">
-                <div className="font-display font-bold mb-1">{t.term}</div>
-                <div className="text-sm text-fg-muted">
+              <span className="shrink-0 font-display text-sm font-medium text-fg-muted">{String(i + 1).padStart(2, '0')}</span>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 font-display font-bold leading-tight text-fg">{t.term}</div>
+                <div className="text-sm leading-relaxed text-fg-muted">
                   {t.def}
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="mt-10 surface-elevated p-6 text-center"
-      >
-        <div className="text-sm text-fg-muted mb-2">מוכן להמשיך?</div>
-        <div className="text-lg font-medium">
-          עבור לטאב <strong className="text-accent">תרגול</strong> כדי לתרגל את המושגים, ואז ל
-          <strong className="text-accent">בדיקת ידע</strong> כדי לוודא שהפנמת.
+      <div className="mt-12">
+        <div className="text-sm font-display font-semibold text-fg-muted">מוכן להמשיך?</div>
+        <div className="mt-1.5 text-lg font-medium leading-relaxed text-fg text-pretty md:text-xl">
+          עבור לטאב <strong className="font-bold">תרגול</strong> כדי לתרגל את המושגים, ואז ל
+          <strong className="font-bold">בדיקת ידע</strong> כדי לוודא שהפנמת.
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

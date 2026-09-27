@@ -1,5 +1,7 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { lessons, getLesson, nextLesson, prevLesson } from '@/lib/lessons';
+import { ArchiveGate } from '@/components/archive/ArchiveGate';
+import { allLessons, getLesson, isArchivedTopic, nextLesson, prevLesson } from '@/lib/lessons';
 import { loadTopicContent } from '@/lib/content';
 import { lessonScenes } from '@/lib/lesson-scenes';
 import { quizzes } from '@/lib/quizzes';
@@ -36,7 +38,16 @@ const customLearn: Record<string, () => React.ReactNode> = {
 };
 
 export function generateStaticParams() {
-  return lessons.map((l) => ({ topicId: l.id }));
+  return allLessons.map((l) => ({ topicId: l.id }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ topicId: string }>;
+}): Promise<Metadata> {
+  const { topicId } = await params;
+  return isArchivedTopic(topicId) ? { robots: { index: false, follow: false } } : {};
 }
 
 export default async function LessonPage({
@@ -57,7 +68,7 @@ export default async function LessonPage({
     ? customLearn[topicId]()
     : <LessonContent raw={raw} lesson={lesson} />;
 
-  return (
+  const shell = (
     <LessonShell
       lesson={lesson}
       scenes={lessonScenes[topicId] ?? []}
@@ -74,4 +85,7 @@ export default async function LessonPage({
       }
     />
   );
+
+  // שיעור בארכיון: כניסה ישירה לכתובת דורשת סיסמה
+  return isArchivedTopic(topicId) ? <ArchiveGate>{shell}</ArchiveGate> : shell;
 }

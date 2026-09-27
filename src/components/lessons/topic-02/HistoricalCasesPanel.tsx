@@ -106,10 +106,9 @@ const CASES: HistoricalCase[] = [
 export function HistoricalCasesPanel() {
   const [activeId, setActiveId] = useState(CASES[0].id);
   const active = CASES.find((c) => c.id === activeId) ?? CASES[0];
-  const activeIndex = CASES.findIndex((c) => c.id === activeId);
 
   return (
-    <div className="relative isolate overflow-hidden rounded-[28px] bg-pine-grad p-5 shadow-pine-card sm:p-7 md:p-8">
+    <div className="relative isolate overflow-hidden rounded-2xl bg-pine-grad p-5 shadow-pine-card sm:p-7 md:p-8">
       {/* Background texture — deliberately loaded from the topic01 namespace:
           the panel chrome (BG + CARD-TEXTURE) is shared with lesson 1 by the
           user's decision, so editing lesson 1's art changes this panel too.
@@ -150,10 +149,10 @@ export function HistoricalCasesPanel() {
 
       <div className="relative z-10">
         <div className="mb-6 text-center md:mb-8">
-          <h3 className="font-display text-3xl font-extrabold leading-tight text-paper-bright md:text-4xl">
+          <h3 className="font-display text-2xl font-bold leading-tight text-paper-bright sm:text-3xl">
             לקרוא מפה — להציל חיים
           </h3>
-          <p className="mt-2 text-base text-paper-bright/70 md:text-lg">
+          <p className="mt-2 text-base leading-relaxed text-paper-bright/70">
             כשקנה מידה, נ"צ וקווי גובה פוגשים מציאות
           </p>
         </div>
@@ -169,38 +168,21 @@ export function HistoricalCasesPanel() {
                 aria-expanded={isActive}
                 aria-controls="history-detail-panel"
                 className={cn(
-                  'relative rounded-2xl border p-4 text-right transition-all duration-300 ease-snap',
+                  'rounded-xl border p-4 text-start transition-colors duration-200 ease-snap',
                   isActive
                     ? 'border-ember bg-ember/20'
                     : 'border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.07]'
                 )}
               >
-                <span
-                  aria-hidden
-                  className={cn(
-                    'absolute inset-x-0 top-full mx-auto h-2 w-3.5 [clip-path:polygon(50%_100%,0%_0%,100%_0%)] transition-colors duration-300',
-                    isActive ? 'bg-ember' : 'bg-white/20'
-                  )}
-                />
                 <div className="flex items-start justify-between gap-1.5">
                   <div className="font-display text-base font-bold leading-snug text-paper-bright">
                     {c.headline}
                   </div>
-                  <span
-                    className={cn(
-                      'shrink-0 font-display text-[46px] font-extrabold leading-none',
-                      isActive ? 'text-ember' : 'text-paper-bright/35'
-                    )}
-                  >
+                  <span className="shrink-0 font-display text-[46px] font-extrabold leading-none text-paper-bright/35">
                     {c.number}
                   </span>
                 </div>
-                <div
-                  className={cn(
-                    'mt-2 text-sm font-display font-semibold',
-                    isActive ? 'text-ember-soft' : 'text-paper-bright/50'
-                  )}
-                >
+                <div className="mt-2 text-sm font-display font-semibold text-paper-bright/70">
                   {c.place}
                 </div>
                 <div className="mt-2.5 overflow-hidden rounded-lg">
@@ -213,39 +195,12 @@ export function HistoricalCasesPanel() {
                     compactPlaceholder
                   />
                 </div>
-                <div className="mt-2 text-sm leading-relaxed text-paper-bright/60">
+                <div className="mt-2 text-sm leading-relaxed text-paper-bright/70">
                   {c.teaser}
                 </div>
               </button>
             );
           })}
-        </div>
-
-        <div className="relative mt-4 h-6" aria-hidden>
-          {/* Single full-width line — one literal element, so there is only
-              ever one axis for every dot to sit on (no per-segment flex math
-              that could drift a few px between columns). */}
-          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15" />
-          {/* Dot overlay — same grid-cols/gap as the card grid, so each dot's
-              cell centre is pixel-identical to its card's centre. */}
-          <div className="absolute inset-0 grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-3.5">
-            {CASES.map((c, i) => {
-              const isActive = i === activeIndex;
-              return (
-                <div key={c.id} className="relative flex items-center justify-center">
-                  {isActive && (
-                    <span className="absolute top-1/2 h-[3px] w-2/3 -translate-y-1/2 rounded-full bg-ember" />
-                  )}
-                  <span
-                    className={cn(
-                      'relative rounded-full border-2 transition-all duration-300',
-                      isActive ? 'size-6 border-ember-deep bg-ember ring-4 ring-ember/25' : 'size-4 border-white/25 bg-white/10'
-                    )}
-                  />
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         <div className="relative mt-5 md:mt-6">
@@ -257,7 +212,7 @@ export function HistoricalCasesPanel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-              className="grid overflow-hidden rounded-2xl bg-paper-card bg-cover bg-center shadow-panel-soft md:grid-cols-[1.1fr_1fr]"
+              className="grid overflow-hidden rounded-2xl bg-paper-card bg-cover bg-center md:grid-cols-[1.1fr_1fr]"
               style={{
                 backgroundImage:
                   "url('/assets/lessons/topic01/scene-onboarding/TOPIC01-ONB-HIST-CARD-TEXTURE.png')",
@@ -265,18 +220,15 @@ export function HistoricalCasesPanel() {
             >
               {/* Text column — first child → right in RTL. */}
               <div className="flex flex-col p-6 md:p-8">
-                <h4 className="font-display text-2xl font-bold leading-snug text-fg md:text-3xl">{active.headline}</h4>
-                <div className="mt-1.5 font-display text-base font-semibold text-fg-muted">{active.place}</div>
-                <div className="mt-3 border-t border-fg/10" />
-                <p className="mt-3 text-base leading-relaxed text-fg md:text-lg">{active.lesson}</p>
+                <h4 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{active.headline}</h4>
+                <div className="mt-1 text-sm font-display font-semibold text-fg-muted">{active.place}</div>
+                <p className="mt-4 text-base leading-relaxed text-fg">{active.lesson}</p>
 
-                <div className="mt-4 rounded-xl bg-bg-accent px-4 py-3">
-                  <p className="text-base font-display font-bold text-accent">עובדה מרכזית: {active.stat}</p>
-                </div>
+                <p className="mt-4 text-base font-display font-bold text-fg">עובדה מרכזית: {active.stat}</p>
 
-                <div className="mt-3 rounded-xl bg-pine px-4 py-3.5">
-                  <div className="font-display text-sm font-bold tracking-wide text-ember">למה זה חשוב?</div>
-                  <p className="mt-1 text-base leading-relaxed text-paper-bright/90">{active.why}</p>
+                <div className="mt-5">
+                  <div className="text-base font-display font-bold text-fg">למה זה חשוב?</div>
+                  <p className="mt-1 text-base leading-relaxed text-fg">{active.why}</p>
                 </div>
               </div>
 
@@ -286,7 +238,7 @@ export function HistoricalCasesPanel() {
                   (reference: lesson1part2image2.png), instead of bleeding
                   edge-to-edge. */}
               <div className="relative min-h-[220px] p-4 md:p-5">
-                <div className="relative h-full w-full overflow-hidden rounded-xl border border-border">
+                <div className="relative h-full w-full overflow-hidden rounded-xl">
                   <IsometricAsset
                     assetId={active.assetId}
                     src={active.assetSrc}
@@ -296,7 +248,7 @@ export function HistoricalCasesPanel() {
                     prompt={active.assetPrompt}
                     className="absolute inset-0 h-full w-full [aspect-ratio:auto]"
                   />
-                  <span className="chip absolute top-3 end-3 border-transparent bg-accent text-white">
+                  <span className="absolute top-3 end-3 rounded-lg bg-bg-elevated/90 px-2.5 py-1 text-sm font-display font-semibold text-fg">
                     {active.mapBadge}
                   </span>
                 </div>

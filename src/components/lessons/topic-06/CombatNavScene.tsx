@@ -1,9 +1,48 @@
 'use client';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useState } from 'react';
+import {
+  motion,
+  AnimatePresence,
+  easeInOut,
+  useInView,
+  useMotionValueEvent,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import {
+  HALO,
+  PAPER,
+  Checkpoint,
+  Chevron,
+  ContourTexture,
+  LegendGlyph,
+  PaperBush,
+  PaperHill,
+  PaperHouse,
+  PaperPine,
+  PaperRock,
+  PaperTile,
+  StartDot,
+  TargetMark,
+  TrackedPuck,
+  UnitPuck,
+  angleDeg,
+  dist,
+  lerpPt,
+  linear,
+  useSequence,
+  useStep,
+  useSvgId,
+  useTrack,
+  type Ease,
+  type GlyphKind,
+  type Key,
+  type Pt,
+} from './CombatNavVisuals';
 type Method = 'handrail' | 'dead' | 'pace';
 type MethodData = {
 id: Method;
@@ -18,23 +57,23 @@ example: string;
 const METHODS: MethodData[] = [
  {
 id: 'handrail',
-label: 'הליכה לאורך מעקה',
-english: 'Handrailing',
+label: 'ניווט לפי טופוגרפיה',
+english: 'Terrain Association · Handrailing',
 icon: 'route' as never, // Not used
-oneLiner: 'נעזרים בסימן דרך טבעי וארוך בשטח כדי לשמור על הכיוון, במקום ללכת בקו ישר.',
-detail: 'ללכת בקו ישר אל היעד נשמע כמו הדרך ההגיונית והקצרה ביותר, אבל בשטח מסוכן היא לרוב תהיה חשופה וגלויה מדי. במקום זאת, בוחרים צורת נוף ארוכה ובולטת – כמו ערוץ נחל, שרשרת הרים (רכס) או שביל – והולכים במקביל אליה. ממש כמו שמעקה במדרגות עוזר לנו להרגיש בטוחים בחושך, ה"מעקה" הטבעי בשטח עוזר לנו לשמור על הכיוון מבלי ללכת לאיבוד, גם כשלא רואים כלום.',
-whenToUse: ['בלילה, כשקשה לזהות פרטים קטנים בסביבה.', 'כשמנווטים באזור חדש ולחלוטין לא מוכר.', 'כשיש צורך לעקוף שטחים פתוחים שבהם קל להתגלות.'],
-example: 'במקום לחצות שדה פתוח וחשוף בקו ישר (על בסיס כיוון המצפן), הקבוצה בוחרת ללכת בצמוד לתחתית של הר שמוביל לאותו כיוון. כך כולם נשארים מוסתרים מעיני האויב, ויודעים שהם בכיוון הנכון כל עוד ההר לצידם.',
+oneLiner: 'מתקדמים מסימן בולט אחד בשטח לסימן הבא, כמו יד שעוברת לאורך מעקה.',
+detail: 'בשיטה הזו לא הולכים "על המצפן", אלא קוראים את השטח. בוחרים מראש במפה שרשרת של סימנים שקל לזהות בשטח, ומתקדמים מאחד לשני. הסימנים האלה הם תבליט – צורות הקרקע עצמה, כמו כיפה, רכס או ערוץ – ותכסית – מה שנמצא על הקרקע, כמו כפר, כביש או חורשה. ממש כמו שמעקה במדרגות מוביל את היד מצעד לצעד, שרשרת הסימנים "מובילה" אותנו לאורך הציר, ובכל סימן אפשר לוודא שאנחנו במקום הנכון.',
+whenToUse: ['כשיש בשטח צורות קרקע בולטות – כיפות, רכסים, ערוצים – שקל לזהות גם במפה וגם בעין.', 'כשיש בדרך תכסית ברורה – כפר, כביש, חורשה – שיכולה לשמש נקודת אימות.', 'כשהראות מאפשרת להשוות כל הזמן בין המפה לשטח.'],
+example: 'כוח צריך להגיע לכיכר המרכזית של כפר. במקום ללכת על אזימוט אחד ארוך, הציר שלו בנוי מסימנים: עוברים את הכיפה הראשונה, ממשיכים לשנייה ואז לשלישית – שלוש כיפות שבולטות גם במפה וגם בשטח (תבליט). מהכיפה השלישית כבר רואים את בתי הכפר, נכנסים אליו ומגיעים לכיכר המרכזית (תכסית). בכל כיפה הנווט יודע בדיוק איפה הוא, ולכן קשה מאוד ללכת לאיבוד.',
  },
  {
 id: 'dead',
 label: 'ניווט עיוור',
 english: 'Dead Reckoning',
 icon: 'compass',
-oneLiner: 'מנווטים"על עיוור" בעזרת מצפן וספירת צעדים בלבד.',
-detail: 'זוהי שיטת ניווט למצבי קיצון שבהם אי אפשר להיאחז בשום סימן בשטח. מתבססים רק על שני דברים: הליכה בכיוון מוגדר מראש במצפן (שנקרא"אזימוט") וספירת צעדים מדויקת כדי לדעת איזה מרחק עברנו. השיטה הזו דורשת משמעת ברזל – להמשיך לסמוך על המצפן והספירה שלכם, גם אם תחושת הבטן צועקת שאתם הולכים בכיוון הלא נכון.',
-whenToUse: ['בזמן סופת חול או ערפל כבד, כשהראות יורדת לאפס.', 'באזורים כמו דיונות חול ענקיות שבהם הכל נראה אותו דבר.', 'במדבר פתוח או ימת מלח – שטחים ריקים לגמרי שאין בהם צמחייה, מבנים או הרים (מה שנקרא בשפה המקצועית שטח"חסר תכסית").'],
-example: 'כוח שמנווט במדבר נקלע לפתע לסופת חול, ואי אפשר לראות מטר קדימה. במקום להתבלבל, הלוחמים מכוונים את המצפן לזווית קבועה מראש (למשל 62 מעלות) ופשוט צועדים וסופרים 800 צעדים. כך, למרות"העיוורון" המוחלט בדרך, הם עוברים 1.2 קילומטרים ומגיעים בדיוק ליעד המתוכנן.ד',
+oneLiner: 'לא רואים כלום ואין במה להיאחז – מחשבים מראש מרחק ואזימוט, והולכים לפיהם בלבד.',
+detail: 'יש מצבים שבהם אי אפשר לקרוא את השטח: לא רואים כלום, או שאין בשטח שום סימן להיאחז בו. אז עוברים לניווט עיוור. לפני התנועה מחשבים במפה שני נתונים: האזימוט – הכיוון המדויק ליעד במעלות – והמרחק – כמה מטרים צריך לעבור. את המרחק מתרגמים למספר זוגות צעדים. בשטח הולכים על האזימוט במצפן וסופרים צעדים, עד שהספירה מגיעה למספר שחושב. השיטה דורשת משמעת ברזל – להמשיך לסמוך על המצפן ועל הספירה, גם כשתחושת הבטן אומרת שאתם הולכים לא נכון.',
+whenToUse: ['בסופת חול, בערפל כבד או בחושך מוחלט, כשהראות יורדת לאפס.', 'בשטח שבו הכול נראה אותו דבר, כמו דיונות חול ענקיות.', 'בשטח מישורי וריק – מדבר פתוח או ימת מלח – שאין בו תבליט ולא תכסית להיאחז בהם.'],
+example: 'כוח שמנווט במדבר נקלע לסופת חול, ואי אפשר לראות מטר קדימה. הנווט כבר חישב במפה: היעד נמצא באזימוט 62°, במרחק 1.2 קילומטרים. אורך זוג הצעדים שלו הוא 1.5 מטרים, כלומר 800 זוגות צעדים. הלוחמים מכוונים את המצפן ל־62°, צועדים וסופרים 800 זוגות צעדים – ומגיעים ליעד בלי שראו אותו לאורך כל הדרך.',
  },
  {
 id: 'pace',
@@ -48,116 +87,133 @@ example: 'קבוצה צריכה לחצות שדה פתוח בלילה. הם ית
  },
 ];
 
+// English shown only where the lesson relies on the term itself (the recap and
+// the quiz both use "Dead Reckoning"); it sits inline beside the Hebrew name.
+const INLINE_TERM: ReadonlySet<Method> = new Set<Method>(['dead']);
+
 // — Per-technique supporting content for the left "explanation board" —
-type LegendKind = 'line' | 'dash' | 'dot' | 'box';
-type LegendItem = { kind: LegendKind; className: string; label: string };
-type SupportData = { caption: string; legend: LegendItem[] };
+// `kind` picks the legend glyph, which mirrors the diagram mark 1:1.
+type LegendItem = { kind: GlyphKind; label: string };
+type SupportData = { badge: string; caption: string; legend: LegendItem[] };
 
 const SUPPORT: Record<Method, SupportData> = {
 handrail: {
-caption: 'התרשים מראה תנועה לאורך רוב הדרך במקביל למעקה ברור, ורק בנקודת השבירה פנייה קצרה אל היעד — במקום לחצות שטח פתוח בקו ישר וחשוף.',
+badge: 'מסימן לסימן בשטח',
+caption: 'התרשים מראה ציר שבנוי משרשרת סימנים בשטח: שלוש כיפות (תבליט) ואחריהן כפר עם כיכר מרכזית (תכסית). בכל סימן הנווט מוודא שהוא במקום הנכון וממשיך לסימן הבא.',
 legend: [
- { kind: 'line', className: 'bg-terrain-ridge', label: 'מעקה טבעי — תחתית רכס להיאחז בה' },
- { kind: 'line', className: 'bg-accent', label: 'מסלול בטוח — הליכה במקביל למעקה' },
- { kind: 'dot', className: 'bg-accent', label: 'נקודת שבירה — פנייה ליעד' },
- { kind: 'dash', className: 'bg-status-danger', label: 'קו ישר — חשוף לאויב' },
- { kind: 'dot', className: 'bg-accent-cool', label: 'נקודת זינוק (A)' },
- { kind: 'dot', className: 'bg-accent-hot', label: 'נקודת יעד (B)' },
+ { kind: 'hill', label: 'כיפה — צורת קרקע בולטת (תבליט)' },
+ { kind: 'village', label: 'כפר — מבנים על הקרקע (תכסית)' },
+ { kind: 'route', label: 'הציר — מסימן לסימן' },
+ { kind: 'checkpoint', label: 'נקודת אימות — "אני כאן"' },
+ { kind: 'start', label: 'נקודת זינוק (A)' },
+ { kind: 'target', label: 'היעד — הכיכר המרכזית בכפר (B)' },
 ],
 },
 dead: {
-caption: 'התרשים ממחיש ניווט ״על עיוור״ בתוך סופת חול: נשענים רק על כיוון המצפן וספירת הצעדים, בלי שום סימן בשטח.',
+badge: 'סופת חול · ראות אפסית',
+caption: 'התרשים ממחיש ניווט עיוור בתוך סופת חול: לפני התנועה מחשבים אזימוט ומרחק, ובדרך נשענים רק על המצפן ועל ספירת זוגות הצעדים.',
 legend: [
- { kind: 'dash', className: 'bg-accent', label: 'אזימוט — כיוון מצפן קבוע (62°)' },
- { kind: 'dot', className: 'bg-accent', label: 'הלוחם — מנווט במצפן וספירת צעדים' },
- { kind: 'box', className: 'bg-fg-dim', label: 'סופת חול — ראות אפסית' },
- { kind: 'dot', className: 'bg-accent-cool', label: 'נקודת זינוק (A)' },
- { kind: 'dot', className: 'bg-accent-hot', label: 'נקודת יעד (B)' },
+ { kind: 'bearing', label: 'אזימוט — כיוון מצפן קבוע (62°)' },
+ { kind: 'distance', label: 'מרחק — 1.2 ק״מ = 800 זוגות צעדים' },
+ { kind: 'unit', label: 'הלוחם — מנווט במצפן וספירת צעדים' },
+ { kind: 'storm', label: 'סופת חול — ראות אפסית' },
+ { kind: 'start', label: 'נקודת זינוק (A)' },
+ { kind: 'target', label: 'נקודת יעד (B)' },
 ],
 },
 pace: {
+badge: 'מתאימים קצב לסביבה',
 caption: 'התרשים מראה כיצד מתאימים את קצב התנועה לשטח: לאט ובדילוגים בשטח פתוח, מהיר ורציף כשיש הסתרה טבעית.',
 legend: [
- { kind: 'box', className: 'bg-terrain-sand', label: 'שטח פתוח — חשוף, קצב איטי ודילוגים' },
- { kind: 'box', className: 'bg-terrain-olive', label: 'יער עבות — מוסתר, קצב מהיר ורציף' },
- { kind: 'dot', className: 'bg-accent-cool', label: 'תנועת הכוח לאורך המסלול' },
+ { kind: 'open', label: 'שטח פתוח — חשוף, קצב איטי ודילוגים' },
+ { kind: 'forest', label: 'יער עבות — מוסתר, קצב מהיר ורציף' },
+ { kind: 'unit', label: 'תנועת הכוח לאורך המסלול' },
 ],
 },
 };
 
-function Swatch({ kind, className }: { kind: LegendKind; className: string }) {
-if (kind === 'dot') return <span className={cn('size-2.5 rounded-full shrink-0', className)} />;
-if (kind === 'box') return <span className={cn('size-3 rounded-xl shrink-0', className)} />;
-if (kind === 'dash')
-return (
- <span className="inline-flex items-center gap-[2px] w-4 shrink-0">
- <span className={cn('h-[3px] w-1 rounded-full', className)} />
- <span className={cn('h-[3px] w-1 rounded-full', className)} />
- <span className={cn('h-[3px] w-1 rounded-full', className)} />
- </span>
- );
-return <span className={cn('h-[3px] w-4 rounded-full shrink-0', className)} />;
-}
+/** Motion language (INTERACTION_DNA): snap ease, ~0.3s diagram swaps. */
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+/** Props every board diagram receives. */
+type VisualProps = {
+  /** Start the demo (board has entered the viewport). */
+  play: boolean;
+  /** Bumped by the replay control to run the demo again. */
+  run: number;
+  /** Accessible description of the diagram (the board caption). */
+  label: string;
+};
 
 export function CombatNavScene() {
 const [active, setActive] = useState<Method>('handrail');
+const [run, setRun] = useState(0);
+const reduce = !!useReducedMotion();
+const boardRef = useRef<HTMLDivElement>(null);
+// The demo waits until the learner can actually see the board, then plays
+// once per selection (replay control re-runs it).
+const boardSeen = useInView(boardRef, { once: true, amount: 0.3 });
 const activeIndex = METHODS.findIndex((m) => m.id === active);
 const activeData = METHODS[activeIndex];
 const support = SUPPORT[active];
+const swap = {
+  initial: reduce ? false : ({ opacity: 0, y: 8 } as const),
+  animate: { opacity: 1, y: 0 },
+  exit: reduce ? undefined : { opacity: 0, y: -6 },
+  transition: { duration: 0.3, ease: EASE },
+};
 return (
  <section id="scene-combat" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
 step="03.3"
-eyebrow="ניווט קרבי"
-title={
-          <>
-          הדרך הארוכה היא הקצרה: איך מנווטים כש<span className="gradient-text">אי אפשר ללכת בקו ישר</span>
-          </>
-        }
+eyebrow="טכניקות ניווט"
+title="הדרך הארוכה היא הקצרה: איך מנווטים כשאי אפשר ללכת בקו ישר"
 intro="ניווט בשטח עוין הוא לא עוד טיול בטבע. המטרה היא לא רק להגיע ליעד, אלא להגיע אליו בבטחה: להישאר מוסתרים, להימנע מסכנות בדרך, ולהתאים את ההליכה לתנאי השטח. הנה שלוש טכניקות ניווט מיוחדות למצבי קיצון שכל אחד יכול להבין."
  />
 
- <div className="grid lg:grid-cols-[1fr_1.7fr] gap-6 items-start">
- {/* Accordion list — first child → RIGHT in RTL (text on right) */}
+ {/* Text column 1fr (reads at ~50 chars/line) · board 1.35fr. */}
+ <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
+ {/* Accordion list — first child → RIGHT in RTL (text on right). One open at a time. */}
  <div className="space-y-3">
  {METHODS.map((m, i) => {
 const isActive = active === m.id;
+const btnId = `combatnav-btn-${m.id}`;
+const panelId = `combatnav-panel-${m.id}`;
 return (
  <div
 key={m.id}
 className={cn(
- 'surface overflow-hidden transition-colors relative',
+ 'overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
 isActive
- ? 'border-brand-dark bg-brand/5'
- : 'hover:border-border-strong hover:bg-bg-accent/30'
+ ? 'border-brand/45'
+ : 'border-border hover:border-brand/30 hover:bg-brand/[0.03]'
  )}
  >
  <button
 type="button"
+id={btnId}
 onClick={() => setActive(m.id)}
 aria-expanded={isActive}
-className="w-full p-4 text-right flex items-center gap-3"
+aria-controls={isActive ? panelId : undefined}
+className="w-full p-4 text-start flex items-center gap-3 rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
  >
- <span
-className={cn(
- 'size-9 rounded-xl flex items-center justify-center shrink-0 transition-all',
-isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
- )}
- >
+ <span className="size-9 rounded-xl flex items-center justify-center shrink-0 bg-bg-accent text-fg-muted">
  <span className="font-display font-bold text-sm">{i + 1}</span>
  </span>
- <div className="flex-1 min-w-0 text-right">
- <div className="text-sm font-display font-semibold text-fg-muted mb-0.5 tracking-wider">
- טכניקה {i + 1}
- </div>
- <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
+ <div className="flex-1 min-w-0 text-start">
+ <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
  {m.label}
+ {INLINE_TERM.has(m.id) && (
+ <>
+ {' '}
+ <span className="text-base font-medium text-fg-muted">({m.english})</span>
+ </>
+ )}
  </div>
- <div className="text-xs font-display font-medium tracking-wide text-fg-dim mt-0.5">{m.english}</div>
  </div>
  <motion.span
 animate={{ rotate: isActive ? 180 : 0 }}
-transition={{ duration: 0.25 }}
+transition={{ duration: reduce ? 0 : 0.25 }}
 className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
  >
  <svg
@@ -180,39 +236,41 @@ aria-hidden
  {isActive && (
  <motion.div
 key={`panel-${m.id}`}
+id={panelId}
+role="region"
+aria-labelledby={btnId}
 initial={{ height: 0, opacity: 0 }}
 animate={{ height: 'auto', opacity: 1 }}
 exit={{ height: 0, opacity: 0 }}
-transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
 className="overflow-hidden"
  >
- <div className="px-4 pb-4 pt-1 border-t border-brand/20 space-y-3">
- <div className="mt-3">
- <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+ <div className="px-4 pb-5 pt-1 space-y-5">
+ <div>
+ <div className="text-base font-display font-bold text-fg mb-1.5">
  מה זה ולמה זה עובד
  </div>
- <p className="text-base leading-relaxed text-black">{m.detail}</p>
+ <p className="text-base leading-relaxed text-fg">{m.detail}</p>
  </div>
 
  <div>
- <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+ <div className="text-base font-display font-bold text-fg mb-1.5">
  מתי משתמשים בזה
  </div>
- <ul className="space-y-1.5 text-base">
+ <ul className="list-disc ps-5 space-y-1.5 text-base marker:text-fg-dim">
  {m.whenToUse.map((u) => (
- <li key={u} className="flex gap-2">
- <Icon name="check" size={14} className="text-accent-cool mt-0.5 shrink-0" strokeWidth={2.5} />
- <span className="text-base leading-relaxed text-black">{u}</span>
+ <li key={u} className="leading-relaxed text-fg">
+ {u}
  </li>
  ))}
  </ul>
  </div>
 
- <div className="pt-2 border-t border-border-subtle">
- <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+ <div>
+ <div className="text-base font-display font-bold text-fg mb-1.5">
  דוגמה
  </div>
- <p className="text-base leading-relaxed text-black">{m.example}</p>
+ <p className="text-base leading-relaxed text-fg">{m.example}</p>
  </div>
  </div>
  </motion.div>
@@ -224,69 +282,82 @@ className="overflow-hidden"
  </div>
 
  {/* Explanation board — second child → LEFT in RTL.
-     One cohesive instructional surface: the shared topo grid + warm
-     terrain wash run continuously under the header, diagram and legend,
-     so the diagram reads as part of the board — not an image dropped in
-     a card. Sticky + viewport-capped on desktop so the whole module
-     stays fully visible while the long accordion is read: balance
-     without a forced fixed height. */}
+     The screen's one workspace: a clean elevated surface holding the
+     header, diagram and legend (no background texture). Sticky below
+     the fixed site header (h-20) and capped to the viewport on desktop,
+     so the whole module stays in view while the long accordion is read;
+     the diagram is the only part that flexes when height is short. */}
  <div className="lg:sticky lg:top-24 self-start">
- <div className="relative overflow-hidden rounded-2xl border border-border shadow-elevated bg-bg-elevated topo-bg flex flex-col lg:h-[calc(100vh-7rem)]">
- {/* Warm terrain wash framing the board top → bottom */}
- <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-bg-accent/50 via-transparent to-brand/5" />
-
- {/* Board header — updates with the active technique */}
- <div className="relative flex items-center justify-between gap-3 px-5 pt-5 pb-3">
- <div className="flex items-center gap-2.5 min-w-0">
- <span className="size-9 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
- <Icon name="spark" size={18} />
- </span>
- <div className="min-w-0">
- <div className="text-sm font-display font-bold text-fg leading-tight">הסבר חזותי</div>
- <div className="text-xs text-fg-dim truncate">
- {activeData.label} · {activeData.english}
- </div>
- </div>
- </div>
- <span className="chip border-accent/30 bg-accent/10 text-accent shrink-0">טכניקה {activeIndex + 1}</span>
- </div>
-
- {/* Diagram — drawn directly on the board (transparent SVG). A soft
-     radial light lifts the centre for legibility while the grid and
-     warm tones bleed to the edges, so nothing looks boxed-in. Flexes
-     to fill the capped board height on desktop; natural on mobile. */}
- <div className="relative flex-1 min-h-[230px] lg:min-h-0">
- <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_72%_62%_at_50%_46%,rgba(255,255,255,0.92),transparent_78%)]" />
- <AnimatePresence mode="wait">
- <motion.div
-key={active}
-initial={{ opacity: 0 }}
-animate={{ opacity: 1 }}
-exit={{ opacity: 0 }}
-transition={{ duration: 0.3 }}
-className="absolute inset-0"
+ <div
+ref={boardRef}
+role="group"
+aria-label={`הסבר חזותי · ${activeData.label}`}
+className="surface-elevated overflow-hidden flex flex-col lg:max-h-[calc(100vh-7rem)]"
  >
- {active === 'handrail' && <HandrailVisual />}
- {active === 'dead' && <DeadReckoningVisual />}
- {active === 'pace' && <PaceControlVisual />}
+ {/* Board header — updates with the active technique */}
+ <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-5 pb-2">
+ <div className="min-w-0">
+ <div className="text-base font-display font-bold text-fg leading-tight">הסבר חזותי</div>
+ <div className="mt-0.5 text-sm text-fg-muted truncate">
+ {activeData.label}
+ {INLINE_TERM.has(active) && (
+ <>
+ {' '}
+ <span className="font-medium">({activeData.english})</span>
+ </>
+ )}
+ </div>
+ </div>
+ <span className="text-sm font-display font-semibold text-fg-muted shrink-0">טכניקה {activeIndex + 1}</span>
+ </div>
+
+ {/* Diagram toolbar — what this diagram shows · replay the demo */}
+ <div className="shrink-0 flex items-center justify-between gap-3 px-5">
+ <AnimatePresence mode="wait" initial={false}>
+ <motion.span key={active} {...swap} className="text-sm font-display font-semibold text-fg">
+ {support.badge}
+ </motion.span>
+ </AnimatePresence>
+ <button
+type="button"
+onClick={() => setRun((r) => r + 1)}
+aria-label="הפעלה חוזרת של ההדגמה"
+className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 hover:bg-brand/[0.03] transition-colors inline-flex items-center justify-center"
+ >
+ <Icon name="refresh" size={15} />
+ </button>
+ </div>
+
+ {/* Diagram — a papercut terrain slab drawn on the board.
+     Keeps 4:3 by default; shrinks (never crops) on short screens. */}
+ <div className="relative w-full aspect-[4/3] min-h-[230px] lg:min-h-0 shrink">
+ <AnimatePresence mode="wait" initial={false}>
+ <motion.div key={active} {...swap} className="absolute inset-0 px-2">
+ {active === 'handrail' && <HandrailVisual play={boardSeen} run={run} label={support.caption} />}
+ {active === 'dead' && <DeadReckoningVisual play={boardSeen} run={run} label={support.caption} />}
+ {active === 'pace' && <PaceControlVisual play={boardSeen} run={run} label={support.caption} />}
  </motion.div>
  </AnimatePresence>
  </div>
 
- {/* Caption + legend — part of the same surface, no separate panel */}
- <div className="relative px-5 pb-5 pt-3 space-y-3">
+ {/* Caption + legend — part of the same surface, swaps with the diagram */}
+ <div className="shrink-0 px-5 pb-5 pt-2">
+ <AnimatePresence mode="wait" initial={false}>
+ <motion.div key={active} {...swap} className="space-y-4">
  <p className="text-sm text-fg-muted leading-relaxed">{support.caption}</p>
- <div className="pt-3 border-t border-border-subtle/70">
- <div className="text-[11px] font-display font-semibold text-fg-dim mb-2 tracking-wider">מקרא</div>
- <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+ <div>
+ <div className="text-sm font-display font-semibold text-fg-muted mb-2">מקרא</div>
+ <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2">
  {support.legend.map((it) => (
- <li key={it.label} className="flex items-center gap-2 text-xs text-fg-muted leading-snug">
- <Swatch kind={it.kind} className={it.className} />
+ <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
+ <LegendGlyph kind={it.kind} />
  <span>{it.label}</span>
  </li>
  ))}
  </ul>
  </div>
+ </motion.div>
+ </AnimatePresence>
  </div>
  </div>
  </div>
@@ -296,299 +367,454 @@ className="absolute inset-0"
  </section>
  );
 }
-function HandrailVisual() {
-// Safe route: from A, hug the ridge (parallel) for ~80% of the way, then a
-// sharp break upward at the break point and a short final leg to B.
-const ROUTE = 'M10 50 C 28 48 54 46 74 45 L 84 16';
-// The direct, exposed line A→B straight across open ground.
-const DIRECT = { x1: 10, y1: 50, x2: 84, y2: 16 };
-const BREAK = { x: 74, y: 45 };
-// Small filled arrowhead, tip at +x; rotate to point along travel.
-const ARROW = '-1.2,-1.3 1.8,0 -1.2,1.3';
-// Direction arrows along the safe route (parallel leg → up-turn to B).
-const routeArrows = [
- { x: 28, y: 48.2, rot: -6 },
- { x: 44.6, y: 46.8, rot: -4 },
- { x: 61.4, y: 45.7, rot: -3 },
- { x: 79, y: 30.5, rot: -71 },
+
+/* ═══ Technique 1 — ניווט לפי טופוגרפיה ═══════════════════════════════
+   Terrain association: the route is a chain of recognizable features —
+   three hilltops (relief) and then a village's central square (land cover).
+   Schematic, not a real map; progresses right → left.
+   Demo: the force walks leg by leg; on every hilltop it stops, the
+   checkpoint ticks ✓ ("אני כאן"), then it moves on to the next feature. */
+const HR_A: Pt = { x: 88, y: 57 };
+const HR_HILLS = [
+ { x: 73, y: 47, label: 'כיפה 1' },
+ { x: 55.5, y: 37.5, label: 'כיפה 2' },
+ { x: 38, y: 28.5, label: 'כיפה 3' },
 ];
-// Downslope hachure ticks that read the ridge as a linear landform.
-const hachures = [
- [14, 55.4], [26, 54.6], [38, 54.2], [50, 54], [62, 53.9], [74, 53.8], [86, 53.4],
+const HR_B: Pt = { x: 17, y: 19.5 };
+const HR_PTS: Pt[] = [HR_A, ...HR_HILLS, HR_B];
+const HR_ROUTE = HR_PTS.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' ');
+const HR_LEGS = HR_PTS.slice(1).map((p, i) => dist(HR_PTS[i], p));
+const HR_FRAC = HR_LEGS.map((_, i) => HR_LEGS.slice(0, i + 1).reduce((a, b) => a + b, 0) / HR_LEGS.reduce((a, b) => a + b, 0));
+// Timeline (seconds): leave each point at DEPART[i], reach the next at ARRIVE[i].
+const HR_DEPART = [0.5, 2.6, 4.7, 6.8];
+const HR_ARRIVE = [1.8, 3.9, 6.0, 8.3];
+const HR_T = 9;
+const hrTrack = (pick: (p: Pt) => number): Key[] => [
+ [0, pick(HR_A)],
+ ...HR_DEPART.flatMap((d, i): Key[] => [[d, pick(HR_PTS[i])], [HR_ARRIVE[i], pick(HR_PTS[i + 1])]]),
 ];
+const HR_X = hrTrack((p) => p.x);
+const HR_Y = hrTrack((p) => p.y);
+const HR_DRAW: Key[] = [[0, 0], ...HR_DEPART.flatMap((d, i): Key[] => [[d, i ? HR_FRAC[i - 1] : 0], [HR_ARRIVE[i], HR_FRAC[i]]])];
+// "אני כאן" callout: shown while the force stands on a hilltop.
+const HR_CALLOUT: Key[] = [
+ [0, 0],
+ ...HR_ARRIVE.slice(0, 3).flatMap((a, i): Key[] => [[a, 0], [a + 0.15, 1], [HR_DEPART[i + 1] - 0.15, 1], [HR_DEPART[i + 1], 0]]),
+];
+// Village houses around the central square (top-left corners); the SE
+// sector stays open as the street the route enters by.
+const HR_HOUSES: [number, number][] = [
+ [9, 12], [13.2, 12], [17.4, 12], [21.6, 12.7],
+ [6.6, 16.5], [6.6, 20.9], [25.2, 15.9],
+ [9.6, 25.9], [13.8, 25.9], [18, 25.9],
+];
+const HR_CONTOURS = [
+ 'M4 44 C 18 38, 30 52, 48 50 S 78 36, 96 42',
+ 'M4 54 C 20 48, 34 64, 58 60 S 84 50, 96 55',
+ 'M30 5 C 34 12, 46 13, 52 5',
+ 'M62 66 C 68 60, 84 60, 96 63',
+ 'M58 5 C 62 16, 82 18, 96 12',
+];
+
+function HandrailVisual({ play, run, label }: VisualProps) {
+const { t, reduce } = useSequence(HR_T, play, run);
+const ux = useTrack(t, HR_X);
+const uy = useTrack(t, HR_Y);
+const drawn = useTrack(t, HR_DRAW);
+const callout = useTrack(t, HR_CALLOUT, linear);
+const step = useStep(t, HR_ARRIVE); // hilltops confirmed (0–3), 4 = at the square
+const chevrons = HR_PTS.slice(1).map((p, i) => ({ at: lerpPt(HR_PTS[i], p, 0.5), rot: angleDeg(HR_PTS[i], p) }));
 return (
- <div className="aspect-[4/3] sm:aspect-auto h-full relative">
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
- {/* No opaque base — the cohesive board surface shows through */}
+ <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label={label}>
+ <PaperTile>
+ <ContourTexture paths={HR_CONTOURS} />
+ </PaperTile>
 
- {/* Open, exposed ground (the whole board reads as open terrain; the
-     ridge + its sheltered lane are the only cover) */}
- <rect x="0" y="0" width="100" height="75" className="fill-terrain-sand/8" />
-
- {/* Sheltered lane hugging the ridge — where the safe route stays */}
- <path d="M10 50 C 28 48 54 46 74 45" fill="none" className="stroke-brand/10" strokeWidth="7" strokeLinecap="round" />
-
- {/* The"handrail" — a long, continuous ridge running most of the board.
-     Soft landform body + crest line + downslope hachures. */}
- <path d="M5 57 C 26 55 52 54 74 54 S 92 53 97 52" fill="none" className="stroke-terrain-ridge/20" strokeWidth="8" strokeLinecap="round" />
- <path d="M5 57 C 26 55 52 54 74 54 S 92 53 97 52" fill="none" className="stroke-terrain-ridge/70" strokeWidth="0.8" />
- {hachures.map(([x, y], i) => (
- <line key={i} x1={x} y1={y} x2={x} y2={y + 3} className="stroke-terrain-ridge/40" strokeWidth="0.35" strokeLinecap="round" />
+ {/* Relief — three papercut hilltops */}
+ {HR_HILLS.map((h) => (
+ <PaperHill key={h.label} x={h.x} y={h.y} />
  ))}
 
- {/* Direct path (red — risky, crosses open ground) */}
- <line x1={DIRECT.x1} y1={DIRECT.y1} x2={DIRECT.x2} y2={DIRECT.y2} className="stroke-status-danger/55" strokeWidth="0.6" strokeDasharray="1.6 1.1" />
- <polygon points={ARROW} className="fill-status-danger/60" transform="translate(72 22) rotate(-25) scale(0.8)" />
- {/* Exposure cues along the open crossing */}
- {[[44, 34.4], [60, 27]].map(([x, y], i) => (
- <g key={i}>
- <circle cx={x} cy={y} r="2.4" fill="none" className="stroke-status-danger/35" strokeWidth="0.3" />
- <circle cx={x} cy={y} r="0.9" className="fill-status-danger/70" />
- </g>
+ {/* Land cover — a village: houses around an open central square */}
+ <rect x="12.4" y="16.1" width="9.2" height="6.8" rx="1.4" className="fill-paper-bright" stroke={PAPER.rim} strokeWidth="0.35" strokeDasharray="1 0.7" />
+ {HR_HOUSES.map(([x, y], i) => (
+ <PaperHouse key={i} x={x} y={y} />
  ))}
 
- {/* Safe route (green — the hero) with soft glow + direction arrows */}
- <path d={ROUTE} fill="none" className="stroke-accent/25" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
- <path d={ROUTE} fill="none" className="stroke-accent" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
- {routeArrows.map((a, i) => (
- <polygon key={i} points={ARROW} className="fill-accent" transform={`translate(${a.x} ${a.y}) rotate(${a.rot})`} />
+ {/* The planned route (dashed) → the part already walked (solid) */}
+ <path d={HR_ROUTE} fill="none" className="stroke-accent" strokeOpacity={0.6} strokeWidth="0.7" strokeDasharray="1.6 1.2" strokeLinecap="round" strokeLinejoin="round" />
+ <motion.path d={HR_ROUTE} fill="none" className="stroke-accent" strokeOpacity={0.22} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ pathLength: drawn }} />
+ <motion.path d={HR_ROUTE} fill="none" className="stroke-accent" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ pathLength: drawn }} />
+ {chevrons.map((c, i) => (
+ <Chevron key={i} at={c.at} rot={c.rot} />
  ))}
 
- {/* Break point — the decision to turn off the handrail toward B */}
- <circle cx={BREAK.x} cy={BREAK.y} r="3" fill="none" className="stroke-accent/50" strokeWidth="0.4" />
- <circle cx={BREAK.x} cy={BREAK.y} r="1.5" className="fill-accent" />
-
- {/* Start (A) — sits at the foot of the ridge */}
- <circle cx="10" cy="50" r="2" className="fill-accent-cool" />
- <text x="7" y="46" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="3.4"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">A</text>
-
- {/* End (B) — off the handrail, out in the open */}
- <circle cx="84" cy="16" r="2" className="fill-accent-hot" />
- <text x="88" y="13" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="3.4"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">B</text>
-
- {/* Labels — short Hebrew, white halo, spaced to never overlap */}
- <text x="30" y="38" textAnchor="middle" transform="rotate(-25 30 38)" className="fill-status-danger font-display font-bold" fontSize="3"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">קו ישר חשוף</text>
-
- <text x="52" y="43" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="3"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">הליכה במקביל</text>
-
- <text x="66" y="36.5" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="3"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">נקודת שבירה</text>
-
- <text x="86" y="42" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="2.9"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">פנייה ליעד</text>
-
- <text x="42" y="66.5" textAnchor="middle" className="fill-terrain-ridge font-display font-bold" fontSize="3.4"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">מעקה טבעי</text>
- </svg>
-
- <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
- <Icon name="spark" size={11} className="text-accent" />
- הליכה לאורך מעקה
- </div>
- </div>
- );
-}
-function DeadReckoningVisual() {
-// Blind navigation: no terrain to lean on — only a compass bearing and a
-// counted number of paces carry the force from A to B through the storm.
-const AZ = { x1: 16, y1: 58, x2: 86, y2: 18 };
-const ARROW = '-1.1,-1.2 1.7,0 -1.1,1.2';
-// Wind-driven sand streaks sweeping across the board [x1,y1,x2,y2,opacity].
-const streaks: [number, number, number, number, number][] = [
- [6, 8, 34, 18, 0.18], [45, 5, 80, 17, 0.13], [62, 18, 94, 29, 0.12],
- [4, 30, 28, 39, 0.16], [70, 42, 99, 53, 0.13], [30, 60, 64, 71, 0.12],
- [12, 46, 42, 56, 0.15], [50, 50, 86, 62, 0.1],
-];
-return (
- <div className="aspect-[4/3] sm:aspect-auto h-full relative">
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
- {/* Featureless desert floor */}
- <rect x="0" y="0" width="100" height="75" className="fill-terrain-sand/10" />
-
- {/* Sandstorm veil — palette haze, kept light enough to read through */}
- <rect x="0" y="0" width="100" height="75" className="fill-terrain-ridge/25" />
- <rect x="0" y="0" width="100" height="75" className="fill-fg/20" />
- {/* Blown-sand streaks (white dust + sand), giving the storm direction */}
- {streaks.map(([x1, y1, x2, y2, o], i) => (
- <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
-        stroke={i % 2 ? '#ffffff' : '#c2a26b'} strokeOpacity={o} strokeWidth="1.6" strokeLinecap="round" />
+ {/* Checkpoints on each hilltop — "I am here" */}
+ {HR_HILLS.map((h, i) => (
+ <Checkpoint key={h.label} x={h.x} y={h.y} confirmed={step > i} animated={!reduce} />
  ))}
 
- {/* Planned bearing A→B — the invisible thread the navigator trusts */}
- <line x1={AZ.x1} y1={AZ.y1} x2={AZ.x2} y2={AZ.y2} className="stroke-accent/80" strokeWidth="0.6" strokeDasharray="2 1.2" />
- {/* Pace ticks along the bearing — the counted steps (every 3rd major) */}
- {[0.09, 0.18, 0.27, 0.36, 0.45, 0.54, 0.63, 0.72, 0.81, 0.9].map((s, i) => {
-const bx = 16 + s * 70, by = 58 - s * 40;
-const major = i % 3 === 2;
-const h = major ? 2.2 : 1.3;
-const px = 0.4962 * h, py = 0.8683 * h;
-return <line key={i} x1={bx - px} y1={by - py} x2={bx + px} y2={by + py} className="stroke-accent/70" strokeWidth={major ? 0.5 : 0.3} strokeLinecap="round" />;
- })}
- {/* Travel-direction arrows on the bearing */}
- {[[30, 50], [72, 26]].map(([x, y], i) => (
- <polygon key={i} points={ARROW} className="fill-accent" transform={`translate(${x} ${y}) rotate(-30)`} />
+ {/* Labels — below each feature, clear of the route */}
+ {HR_HILLS.map((h) => (
+ <text key={h.label} x={h.x} y={h.y + 11} textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8" {...HALO}>{h.label}</text>
  ))}
-
- {/* Compass — the instrument the whole move depends on */}
- <g>
- <circle cx="22" cy="24" r="9" className="fill-bg-elevated/60 stroke-accent/50" strokeWidth="0.5" />
- <circle cx="22" cy="24" r="6.6" fill="none" className="stroke-accent/25" strokeWidth="0.3" />
- {Array.from({ length: 12 }).map((_, i) => {
-const a = (i * 30) * Math.PI / 180;
-return <line key={i} x1={22 + Math.sin(a) * 6.6} y1={24 - Math.cos(a) * 6.6} x2={22 + Math.sin(a) * 9} y2={24 - Math.cos(a) * 9} className="stroke-accent/40" strokeWidth="0.3" />;
- })}
- {/* North marker on the housing */}
- <polygon points="22,13.6 20.8,16 23.2,16" className="fill-accent" />
- {/* Magnetic needle pointing along the bearing (up-right) */}
- <polygon points="28.1,20.5 22.6,25 21.4,23" className="fill-accent-hot" />
- <polygon points="16.7,27 22.6,25 21.4,23" className="fill-fg-muted" />
- <circle cx="22" cy="24" r="0.8" className="fill-fg-muted" />
- </g>
- <text x="22" y="38" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="3.2"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">אזימוט 62°</text>
-
- {/* Navigator — hooded figure reading a compass on the bearing */}
- <g>
- <ellipse cx="40" cy="47.6" rx="2.4" ry="0.8" className="fill-fg/15" />
- <path d="M36.8 47.8 C37.3 42.3 42.7 42.3 43.2 47.8 Z" className="fill-accent" />
- <circle cx="40" cy="41.8" r="1.5" className="fill-accent" />
- <line x1="42.6" y1="44.6" x2="45.6" y2="43.6" className="stroke-accent" strokeWidth="0.5" strokeLinecap="round" />
- <circle cx="46" cy="43.4" r="1" className="fill-accent" />
- <circle cx="46" cy="43.4" r="0.4" className="fill-bg-elevated" />
- </g>
- <text x="60" y="40" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="3"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">800 צעדים</text>
+ <text x="44" y="59" textAnchor="middle" fill={PAPER.g3} className="font-display font-bold" fontSize="3.1" {...HALO}>תבליט: שלוש כיפות</text>
+ <text x={HR_B.x} y="9.7" textAnchor="middle" className="fill-tanline-badge font-display font-bold" fontSize="3" {...HALO}>תכסית: כפר</text>
+ <text x="16" y="33.3" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2.8" {...HALO}>כיכר מרכזית (B)</text>
 
  {/* Start (A) */}
- <circle cx="16" cy="58" r="2" className="fill-accent-cool" />
- <text x="12" y="62" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="3.2"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">A</text>
+ <StartDot {...HR_A} />
+ <text x={HR_A.x} y={HR_A.y + 6} textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="3.2" {...HALO}>A</text>
 
- {/* End (B) */}
- <circle cx="86" cy="18" r="2" className="fill-accent-hot" />
- <text x="90" y="15" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="3.2"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">B</text>
+ {/* Destination (B) — the village's central square */}
+ <TargetMark {...HR_B} pulse={step === 4 && !reduce} />
+
+ {/* The force */}
+ <UnitPuck x={ux} y={uy} />
+ {!reduce && (
+ <motion.g style={{ x: ux, y: uy, opacity: callout }} aria-hidden>
+ <path d="M2.4 -3.1 L4 -4.6 L5.6 -4.6 Z" fill="#ffffff" className="stroke-accent" strokeWidth="0.3" strokeLinejoin="round" />
+ <rect x="2.4" y="-9.4" width="12.8" height="4.8" rx="2.4" fill="#ffffff" className="stroke-accent" strokeWidth="0.35" />
+ <text x="8.8" y="-5.9" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8">אני כאן</text>
+ </motion.g>
+ )}
  </svg>
+ );
+}
 
- <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
- <Icon name="spark" size={11} className="text-accent" />
- סופת חול · ראות אפסית
- </div>
- </div>
- );
-}
-// A recognizable pine — layered canopy, trunk and soft ground shadow — so the
-// forest reads as trees on its own, not as a field of dots.
-function Pine({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
-return (
- <g>
- <ellipse cx={x} cy={y + 2.2 * s} rx={2.7 * s} ry={0.85 * s} className="fill-terrain-olive/25" />
- <rect x={x - 0.5 * s} y={y - 0.2 * s} width={1 * s} height={2.6 * s} className="fill-terrain-olive" />
- <polygon points={`${x - 2.4 * s},${y + 0.6 * s} ${x + 2.4 * s},${y + 0.6 * s} ${x},${y - 3 * s}`} className="fill-terrain-olive/70 stroke-terrain-olive" strokeWidth="0.3" strokeLinejoin="round" />
- <polygon points={`${x - 1.7 * s},${y - 1.4 * s} ${x + 1.7 * s},${y - 1.4 * s} ${x},${y - 4.6 * s}`} className="fill-terrain-olive/85 stroke-terrain-olive" strokeWidth="0.3" strokeLinejoin="round" />
- </g>
- );
-}
-// A friendly personnel marker — cool dot with a light ring so it reads on both
-// the open sand and the shaded forest.
-function Unit({ x, y }: { x: number; y: number }) {
-return (
- <g>
- <circle cx={x} cy={y} r="1.6" className="fill-accent-cool" />
- <circle cx={x} cy={y} r="1.6" fill="none" className="stroke-bg-elevated" strokeWidth="0.3" />
- </g>
- );
-}
-function PaceControlVisual() {
-const ARROW = '-1.1,-1.2 1.7,0 -1.1,1.2';
-const pines: [number, number, number][] = [
- [57, 31, 1.1], [66, 24, 1.35], [75, 32, 1.0], [84, 26, 1.2], [93, 35, 0.95],
- [55, 66, 1.0], [60, 58, 1.2], [70, 63, 1.05], [80, 59, 1.3], [90, 63, 1.0], [64, 52, 0.9],
+/* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════
+   Dead reckoning: nothing to lean on in the storm — only the pre-computed
+   azimuth (62°) and distance (1.2 km = 800 pace pairs).
+   Demo: the compass bearing is set (0° → 62°), the planned line appears,
+   then the force walks it inside a tiny circle of visibility while the
+   pace count ticks to 800 — and only then is B revealed. */
+const DR_A: Pt = { x: 16, y: 58 };
+const DR_RAD = (62 * Math.PI) / 180;
+const DR_LEN = 76;
+const DR_DIR: Pt = { x: Math.sin(DR_RAD), y: -Math.cos(DR_RAD) };
+const DR_B: Pt = { x: DR_A.x + DR_DIR.x * DR_LEN, y: DR_A.y + DR_DIR.y * DR_LEN };
+const DR_NORMAL: Pt = { x: -DR_DIR.y, y: DR_DIR.x };
+const DR_C: Pt = { x: 25, y: 20 }; // compass centre
+const DR_R = 8.2;
+const DR_WALK = [1.8, 7.4] as const;
+const DR_T = 8.6;
+const DR_PAIRS = 800;
+// A tick every 100 pace pairs along the bearing (the 800th is B itself).
+const DR_TICKS = [1, 2, 3, 4, 5, 6, 7].map((k) => k / 8);
+const DR_TICK_TIMES = DR_TICKS.map((s) => DR_WALK[0] + s * (DR_WALK[1] - DR_WALK[0]));
+const DR_BEARING = angleDeg(DR_A, DR_B);
+// Wind-driven sand streaks sweeping across the slab [x1, y1, x2, y2].
+const DR_STREAKS: [number, number, number, number][] = [
+ [6, 14, 34, 10], [42, 9, 74, 5], [58, 22, 92, 17], [4, 32, 28, 28],
+ [66, 36, 98, 31], [28, 50, 60, 45], [10, 44, 40, 40], [48, 60, 86, 55],
 ];
+// Dune ripples: the ground is there — you just can't see it.
+const DR_RIPPLES = [
+ 'M8 20 q 5 -2 10 0 t 10 0', 'M44 14 q 5 -2 10 0 t 10 0', 'M70 30 q 5 -2 10 0 t 10 0',
+ 'M12 40 q 5 -2 10 0 t 10 0', 'M40 30 q 5 -2 10 0 t 10 0', 'M30 58 q 5 -2 10 0 t 10 0',
+ 'M62 50 q 5 -2 10 0 t 10 0', 'M78 60 q 4 -1.6 8 0',
+];
+
+const polar = (deg: number, r: number): Pt => {
+const a = (deg * Math.PI) / 180;
+return { x: DR_C.x + Math.sin(a) * r, y: DR_C.y - Math.cos(a) * r };
+};
+
+function DeadReckoningVisual({ play, run, label }: VisualProps) {
+const id = useSvgId('dr');
+const { t, reduce } = useSequence(DR_T, play, run);
+// 1 · set the bearing on the compass
+const az = useTrack(t, [[0, 0], [0.25, 0], [1.25, 62]]);
+const wedge = useTransform(az, (a) => {
+const e = polar(a, 4.6);
+return `M${DR_C.x} ${DR_C.y} L${DR_C.x} ${DR_C.y - 4.6} A4.6 4.6 0 0 1 ${e.x} ${e.y} Z`;
+});
+const shaftX = useTransform(az, (a) => polar(a, DR_R - 2.6).x);
+const shaftY = useTransform(az, (a) => polar(a, DR_R - 2.6).y);
+const head = useTransform(az, (a) => {
+const tip = polar(a, DR_R - 0.9);
+const l = polar(a - 11, DR_R - 3);
+const r = polar(a + 11, DR_R - 3);
+return `${tip.x},${tip.y} ${l.x},${l.y} ${r.x},${r.y}`;
+});
+// 2 · the planned line appears   3 · walk it, counting pace pairs
+const plan = useTrack(t, [[0, 0], [0.9, 0], [1.6, 1]], linear);
+const walked = useTrack(t, [[0, 0], [DR_WALK[0], 0], [DR_WALK[1], 1]], linear);
+const walkedVis = useTransform(walked, (v) => (v > 0.002 ? 1 : 0));
+const ux = useTransform(walked, (v) => DR_A.x + DR_DIR.x * DR_LEN * v);
+const uy = useTransform(walked, (v) => DR_A.y + DR_DIR.y * DR_LEN * v);
+const ticks = useStep(t, DR_TICK_TIMES);
+// 4 · only on arrival does B come out of the storm
+const reveal = useTrack(t, [[0, 0], [DR_WALK[1], 0], [DR_WALK[1] + 0.8, 9]]);
+const arrived = useStep(t, [DR_WALK[1]]) === 1;
+const drift = useTrack(t, [[0, -3], [DR_T, 7]], linear);
 return (
- <div className="aspect-[4/3] sm:aspect-auto h-full relative">
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
- {/* Open, exposed terrain (left half) */}
- <rect x="0" y="0" width="50" height="75" className="fill-terrain-sand/12" />
- {/* Sparse exposure cues — a few rocks + dry tufts keep it feeling bare */}
- {[[12, 45], [22, 64], [38, 60]].map(([x, y], i) => (
- <ellipse key={i} cx={x} cy={y} rx="1.7" ry="1" className="fill-terrain-sand/60" />
+ <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label={label}>
+ <defs>
+ <radialGradient id={`${id}-hole`}>
+ <stop offset="0%" stopColor="#000" />
+ <stop offset="55%" stopColor="#000" />
+ <stop offset="100%" stopColor="#fff" />
+ </radialGradient>
+ <mask id={`${id}-vis`} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="75">
+ <rect x="0" y="0" width="100" height="75" fill="#fff" />
+ <motion.circle cx={ux} cy={uy} r={7} fill={`url(#${id}-hole)`} />
+ <motion.circle cx={DR_B.x} cy={DR_B.y} r={reveal} fill={`url(#${id}-hole)`} />
+ </mask>
+ </defs>
+
+ <PaperTile>
+ {/* Featureless dunes — present, but not visible in the storm */}
+ <g fill="none" stroke={PAPER.rim} strokeWidth="0.45" strokeLinecap="round">
+ {DR_RIPPLES.map((d, i) => (
+ <path key={i} d={d} />
  ))}
- {[[28, 66], [42, 53], [9, 58]].map(([x, y], i) => (
- <g key={i} className="stroke-terrain-olive/45" strokeWidth="0.35" strokeLinecap="round">
- <line x1={x} y1={y} x2={x - 1} y2={y - 2.4} />
- <line x1={x} y1={y} x2={x} y2={y - 2.9} />
- <line x1={x} y1={y} x2={x + 1} y2={y - 2.4} />
  </g>
+ {/* End (B) — hidden in the storm until the count is complete */}
+ <TargetMark {...DR_B} pulse={arrived && !reduce} />
+ <text x={DR_B.x + 4.6} y={DR_B.y - 2.8} textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="3.2" {...HALO}>B</text>
+ {/* Sandstorm veil — only a small circle around the force stays clear */}
+ <g mask={`url(#${id}-vis)`}>
+ <rect x="0" y="0" width="100" height="75" className="fill-tanline-contour" fillOpacity={0.78} />
+ <motion.g style={{ x: drift }} stroke="#ffffff" strokeOpacity={0.5} strokeWidth="1.3" strokeLinecap="round">
+ {DR_STREAKS.map(([x1, y1, x2, y2], i) => (
+ <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
  ))}
- <text x="25" y="12" textAnchor="middle" className="fill-fg-muted font-display font-bold" fontSize="3.5"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">שטח פתוח</text>
- <text x="25" y="70" textAnchor="middle" className="fill-status-warn font-display font-bold" fontSize="2.6"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">חשוף · קצב איטי + דילוגים</text>
+ </motion.g>
+ </g>
+ </PaperTile>
 
- {/* Forest (right half) */}
- <rect x="50" y="0" width="50" height="75" className="fill-terrain-olive/30" />
- {pines.map(([x, y, s], i) => (
- <Pine key={i} x={x} y={y} s={s} />
+ {/* Compass — the instrument the whole move depends on. The needle keeps
+     pointing north; the orange index is set to the bearing. */}
+ <g>
+ <circle cx={DR_C.x + 0.5} cy={DR_C.y + 0.9} r={DR_R + 0.3} className="fill-fg" fillOpacity={0.18} />
+ <circle cx={DR_C.x} cy={DR_C.y} r={DR_R} className="fill-paper-bright" stroke={PAPER.rim} strokeWidth="0.6" />
+ {Array.from({ length: 12 }).map((_, i) => {
+const a = polar(i * 30, DR_R - 0.5);
+const b = polar(i * 30, DR_R - (i % 3 === 0 ? 2 : 1.3));
+return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={PAPER.rim} strokeWidth="0.35" strokeLinecap="round" />;
+ })}
+ <polygon points={`${DR_C.x},${DR_C.y - DR_R + 0.6} ${DR_C.x - 1},${DR_C.y - DR_R + 2.5} ${DR_C.x + 1},${DR_C.y - DR_R + 2.5}`} className="fill-fg" />
+ <motion.path d={wedge} className="fill-accent stroke-accent" fillOpacity={0.18} strokeWidth="0.3" />
+ <polygon points={`${DR_C.x},${DR_C.y - 5.2} ${DR_C.x - 0.8},${DR_C.y} ${DR_C.x + 0.8},${DR_C.y}`} className="fill-fg-muted" />
+ <polygon points={`${DR_C.x},${DR_C.y + 5.2} ${DR_C.x - 0.8},${DR_C.y} ${DR_C.x + 0.8},${DR_C.y}`} fill={PAPER.rim} />
+ <motion.line x1={DR_C.x} y1={DR_C.y} x2={shaftX} y2={shaftY} className="stroke-accent" strokeWidth="0.8" strokeLinecap="round" />
+ <motion.polygon points={head} className="fill-accent" />
+ <circle cx={DR_C.x} cy={DR_C.y} r="0.8" className="fill-fg" />
+ </g>
+ <text x={DR_C.x} y={DR_C.y + DR_R + 5} textAnchor="middle" className="fill-accent font-display font-bold" fontSize="3.1" {...HALO}>אזימוט 62°</text>
+
+ {/* Planned bearing A→B — the thread the navigator trusts — with a tick
+     every 100 pace pairs that lights up as it's counted */}
+ <motion.g style={{ opacity: plan }}>
+ <line x1={DR_A.x} y1={DR_A.y} x2={DR_B.x} y2={DR_B.y} className="stroke-accent" strokeWidth="0.7" strokeDasharray="2 1.3" strokeLinecap="round" />
+ {DR_TICKS.map((s, i) => {
+const p = lerpPt(DR_A, DR_B, s);
+const h = i === 3 ? 1.8 : 1.2;
+return (
+ <line key={i} x1={p.x - DR_NORMAL.x * h} y1={p.y - DR_NORMAL.y * h} x2={p.x + DR_NORMAL.x * h} y2={p.y + DR_NORMAL.y * h}
+className={ticks > i ? 'stroke-accent' : 'stroke-fg-dim'} strokeWidth={i === 3 ? 0.6 : 0.45} strokeLinecap="round" />
+ );
+ })}
+ {[0.31, 0.69].map((s) => (
+ <Chevron key={s} at={lerpPt(DR_A, DR_B, s)} rot={DR_BEARING} />
  ))}
- <text x="75" y="12" textAnchor="middle" className="fill-fg-muted font-display font-bold" fontSize="3.5"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">יער עבות</text>
- <text x="74" y="70" textAnchor="middle" className="fill-status-ok font-display font-bold" fontSize="2.6"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">מוסתר · קצב מהיר ורציף</text>
+ </motion.g>
+ <motion.path d={`M${DR_A.x} ${DR_A.y} L${DR_B.x} ${DR_B.y}`} fill="none" className="stroke-accent" strokeWidth="1" strokeLinecap="round" style={{ pathLength: walked, opacity: walkedVis }} />
 
- {/* Boundary between the two terrain regimes */}
- <line x1="50" y1="6" x2="50" y2="69" className="stroke-fg-dim/70" strokeWidth="0.3" strokeDasharray="1 1" />
+ {/* Start (A) */}
+ <StartDot {...DR_A} />
+ <text x={DR_A.x} y={DR_A.y + 6} textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="3.2" {...HALO}>A</text>
 
- {/* OPEN — slow bounding overwatch: staccato dashed rushes + a covering unit */}
- <line x1="15" y1="55" x2="30" y2="50" className="stroke-accent-cool/60" strokeWidth="0.4" strokeDasharray="0.6 0.9" strokeLinecap="round" />
- <polygon points={ARROW} className="fill-accent-cool" transform="translate(30 50) rotate(-18) scale(0.8)" />
- <line x1="33" y1="49" x2="46" y2="45" className="stroke-accent-cool/60" strokeWidth="0.4" strokeDasharray="0.6 0.9" strokeLinecap="round" />
- <polygon points={ARROW} className="fill-accent-cool" transform="translate(46 45) rotate(-17) scale(0.8)" />
- {/* Covering (overwatch) sightline from the rear unit */}
- <line x1="14" y1="55" x2="33" y2="50" className="stroke-accent-cool/35" strokeWidth="0.3" strokeDasharray="0.5 0.7" />
- <Unit x={14} y={55} />
- <Unit x={31} y={49} />
- <text x="21" y="42" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="2.4"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">חוליה + חיפוי</text>
+ {/* The navigator */}
+ <UnitPuck x={ux} y={uy} />
 
- {/* FOREST — fast continuous column: one smooth arrow, units tight in file */}
- <line x1="47" y1="44.5" x2="90" y2="44" className="stroke-accent-cool" strokeWidth="0.6" strokeLinecap="round" />
- <polygon points={ARROW} className="fill-accent-cool" transform="translate(90 44) rotate(-1)" />
- {[58, 64, 70, 76].map((x, i) => (
- <Unit key={i} x={x} y={44} />
- ))}
- <text x="67" y="38" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="2.4"
-        paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">טור מהיר ורציף</text>
+ {/* The two pre-computed numbers + the live pace count */}
+ <g>
+ <rect x="58.5" y="44.3" width="34" height="19.5" rx="1.8" className="fill-fg" fillOpacity={0.14} />
+ <rect x="58" y="43.5" width="34" height="19.5" rx="1.8" className="fill-paper-bright stroke-tanline" strokeWidth="0.3" />
+ <text x="75" y="49" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8">מרחק: 1.2 ק״מ</text>
+ <text x="75" y="53.4" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8">800 זוגות צעדים</text>
+ <line x1="61.5" y1="55.5" x2="88.5" y2="55.5" className="stroke-border-subtle" strokeWidth="0.3" />
+ <PaceCount walked={walked} />
+ </g>
  </svg>
-
- <div className="absolute top-3 start-3 chip border-accent/30 bg-bg/60 backdrop-blur text-[10px] text-fg-muted">
- <Icon name="spark" size={11} className="text-accent" />
- מתאימים קצב לסביבה
- </div>
- </div>
  );
 }
+
+/** Live pace-pair counter, "000 / 800" (digits only, isolated LTR). */
+function PaceCount({ walked }: { walked: MotionValue<number> }) {
+const [n, setN] = useState(() => Math.round(walked.get() * DR_PAIRS));
+useMotionValueEvent(walked, 'change', (v) => {
+const k = Math.round(v * DR_PAIRS);
+setN((p) => (p === k ? p : k));
+});
+return (
+ <text x="75" y="60.9" textAnchor="middle" direction="ltr" unicodeBidi="isolate" className="font-display font-bold tabular-nums" aria-hidden>
+ <tspan className="fill-accent" fontSize="4.2">{String(n).padStart(3, '0')}</tspan>
+ <tspan className="fill-fg-dim" fontSize="2.8" dx="0.8">/ {DR_PAIRS}</tspan>
+ </text>
+ );
+}
+
+/* ═══ Technique 3 — שליטה בקצב ═══════════════════════════════════════
+   Open, exposed ground → slow bounds from cover to cover, one team moving
+   while the other covers. Concealing forest → one fast, continuous column.
+   Demo: the whole move plays through; the label of the regime the force is
+   in lights up, so the pace change reads as caused by the terrain. */
+const PC_COVER = [
+ { x: 12, y: 51, kind: 'rock' },
+ { x: 22, y: 47.5, kind: 'bush' },
+ { x: 32, y: 44, kind: 'rock' },
+ { x: 42, y: 40.5, kind: 'bush' },
+] as const;
+const PC_E: Pt = { x: 54, y: 39 }; // trail enters the forest
+const PC_X: Pt = { x: 90, y: 37.5 }; // …and leaves it
+const PC_T = 7.9;
+const PC_TIMES = [0, 0.6, 1.4, 2.3, 3.1, 4.0, 4.6, 5.2, 7.2];
+const PC_EASE: Ease[] = [easeInOut, easeInOut, easeInOut, easeInOut, easeInOut, easeInOut, easeInOut, linear];
+const PC_MEMBER: Pt[] = [{ x: -1.8, y: -2.9 }, { x: 1.8, y: -2.9 }];
+const pcAt = (c: Pt, m: Pt): Pt => ({ x: c.x + m.x, y: c.y + m.y });
+const pcCentre = (c: Pt): Pt => ({ x: c.x, y: c.y - 2.9 });
+const PC_LEN = dist(PC_E, PC_X);
+const PC_DIR: Pt = { x: (PC_X.x - PC_E.x) / PC_LEN, y: (PC_X.y - PC_E.y) / PC_LEN };
+const pcSlot = (k: number): Pt => ({ x: PC_E.x - PC_DIR.x * 3.5 * k, y: PC_E.y - PC_DIR.y * 3.5 * k });
+const pcShift = (p: Pt): Pt => ({ x: p.x + PC_X.x - PC_E.x, y: p.y + PC_X.y - PC_E.y });
+const [R0, R1, R2, R3] = PC_COVER;
+// Waypoints per unit at PC_TIMES. Team β (0,1) bounds first; team α (2,3) covers, then swaps.
+const PC_UNITS: Pt[][] = [
+ [pcAt(R0, PC_MEMBER[0]), pcAt(R0, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcSlot(0), pcSlot(0), pcShift(pcSlot(0))],
+ [pcAt(R0, PC_MEMBER[1]), pcAt(R0, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcSlot(1), pcSlot(1), pcShift(pcSlot(1))],
+ [pcAt(R1, PC_MEMBER[0]), pcAt(R1, PC_MEMBER[0]), pcAt(R1, PC_MEMBER[0]), pcAt(R1, PC_MEMBER[0]), pcAt(R3, PC_MEMBER[0]), pcAt(R3, PC_MEMBER[0]), pcAt(R3, PC_MEMBER[0]), pcSlot(2), pcShift(pcSlot(2))],
+ [pcAt(R1, PC_MEMBER[1]), pcAt(R1, PC_MEMBER[1]), pcAt(R1, PC_MEMBER[1]), pcAt(R1, PC_MEMBER[1]), pcAt(R3, PC_MEMBER[1]), pcAt(R3, PC_MEMBER[1]), pcAt(R3, PC_MEMBER[1]), pcSlot(3), pcShift(pcSlot(3))],
+];
+const pcKeys = (pts: Pt[], pick: (p: Pt) => number): Key[] => pts.map((p, i) => [PC_TIMES[i], pick(p)]);
+// Bounds in the open (dashed, exposed): [from, to, start, end].
+const PC_RUSHES: [Pt, Pt, number, number][] = [
+ [pcCentre(R0), pcCentre(R2), 0.6, 1.4],
+ [pcCentre(R1), pcCentre(R3), 2.3, 3.1],
+ [pcCentre(R2), lerpPt(pcSlot(0), pcSlot(1), 0.5), 4.0, 4.6],
+];
+// The team that holds still covers the bound: [position, from, to].
+const PC_WATCH: [Pt, number, number][] = [
+ [pcCentre(R1), 0.35, 1.65],
+ [pcCentre(R2), 2.05, 3.35],
+ [pcCentre(R3), 3.75, 4.8],
+];
+const PC_FOREST_RUN = [5.2, 7.2] as const;
+const PC_PINES: [number, number, number][] = [
+ [56.5, 25.5, 0.95], [62.5, 20, 1.05], [69.5, 25.5, 0.9], [78, 20.5, 1.1], [85.5, 25.5, 0.95], [92, 20, 0.85],
+ [56, 50.5, 1.0], [63.5, 48.5, 1.1], [71.5, 51, 0.95], [79.5, 48.5, 1.1], [87.5, 51, 1.0], [93, 47, 0.8],
+ [59.5, 57.5, 0.9], [67.5, 56.5, 0.85], [83.5, 57, 0.9], [91.5, 56.5, 0.85],
+];
+const PC_TUFTS: [number, number][] = [[8, 58], [26, 57], [38, 52.5], [46, 58], [11, 32], [31, 27], [19, 21]];
+// Cover "fan" pointing ahead of the covering team.
+const pcFan = (p: Pt) => {
+const a = polarFrom(p, -17 - 16, 11);
+const b = polarFrom(p, -17 + 16, 11);
+const c = polarFrom(p, -17, 12.4);
+return `M${p.x} ${p.y} L${a.x} ${a.y} Q${c.x} ${c.y} ${b.x} ${b.y} Z`;
+};
+function polarFrom(p: Pt, deg: number, r: number): Pt {
+const a = (deg * Math.PI) / 180;
+return { x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r };
+}
+
+function PaceControlVisual({ play, run, label }: VisualProps) {
+const { t } = useSequence(PC_T, play, run);
+// 0 = in the open · 1 = in the forest · 2 = done (neutral, also reduced motion)
+const phase = useStep(t, [5.1, PC_T - 0.05]);
+const forestDrawn = useTrack(t, [[0, 0], [PC_FOREST_RUN[0], 0], [PC_FOREST_RUN[1], 1]], linear);
+const forestVis = useTrack(t, [[0, 0], [PC_FOREST_RUN[0] - 0.02, 0], [PC_FOREST_RUN[0], 1]], linear);
+const forestChevrons = useStep(t, [0.35, 0.75].map((s) => PC_FOREST_RUN[0] + s * (PC_FOREST_RUN[1] - PC_FOREST_RUN[0])));
+return (
+ <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label={label}>
+ <PaperTile>
+ {/* Forest floor (right) with a soft, irregular tree line */}
+ <path d="M50 0 C 46 14, 54 26, 49 38 S 47 56, 51 75 L 100 75 L 100 0 Z" fill={PAPER.g1} />
+ {/* Sparse exposure cues in the open — dry tufts */}
+ {PC_TUFTS.map(([x, y], i) => (
+ <g key={i} stroke={PAPER.g2} strokeOpacity={0.7} strokeWidth="0.35" strokeLinecap="round">
+ <line x1={x} y1={y} x2={x - 1} y2={y - 2.2} />
+ <line x1={x} y1={y} x2={x} y2={y - 2.7} />
+ <line x1={x} y1={y} x2={x + 1} y2={y - 2.2} />
+ </g>
+ ))}
+ </PaperTile>
+
+ {/* Region + regime labels — the active regime lights up */}
+ <text x="27" y="11.8" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="3.5" {...HALO}>שטח פתוח</text>
+ <text x="27" y="62.6" textAnchor="middle" className={cn('font-display font-bold transition-colors duration-300', phase === 0 ? 'fill-accent' : 'fill-fg-muted')} fontSize="2.8" {...HALO}>חשוף · קצב איטי + דילוגים</text>
+ <text x="73" y="11.8" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="3.5" {...HALO}>יער עבות</text>
+ <text x="73" y="62.6" textAnchor="middle" className={cn('font-display font-bold transition-colors duration-300', phase === 1 ? 'fill-accent' : 'fill-fg-muted')} fontSize="2.8" {...HALO}>מוסתר · קצב מהיר ורציף</text>
+
+ {/* Cover in the open — rocks and bushes to bound between */}
+ {PC_COVER.map((c, i) => (c.kind === 'rock' ? <PaperRock key={i} x={c.x} y={c.y} /> : <PaperBush key={i} x={c.x} y={c.y} />))}
+
+ {/* The forest */}
+ {PC_PINES.map(([x, y, s], i) => (
+ <PaperPine key={i} x={x} y={y} s={s} />
+ ))}
+
+ {/* OPEN — overwatch fans + short dashed bounds */}
+ {PC_WATCH.map(([p, a, b], i) => (
+ <CoverFan key={i} t={t} at={p} from={a} to={b} />
+ ))}
+ {PC_RUSHES.map(([from, to, a, b], i) => (
+ <RushTrace key={i} t={t} from={from} to={to} start={a} end={b} />
+ ))}
+ <text x="22" y="37.6" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8" {...HALO}>חוליה + חיפוי</text>
+
+ {/* FOREST — one fast, continuous column */}
+ <motion.path d={`M${PC_E.x} ${PC_E.y} L${PC_X.x} ${PC_X.y}`} fill="none" className="stroke-accent" strokeWidth="0.9" strokeLinecap="round" style={{ pathLength: forestDrawn, opacity: forestVis }} />
+ {[0.35, 0.75].map((s, i) => (
+ <g key={s} className={cn('transition-opacity duration-200', forestChevrons > i ? 'opacity-100' : 'opacity-0')}>
+ <Chevron at={lerpPt(PC_E, PC_X, s)} rot={angleDeg(PC_E, PC_X)} />
+ </g>
+ ))}
+ <text x="72" y="33.2" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8" {...HALO}>טור מהיר ורציף</text>
+
+ {/* The force — four units */}
+ {PC_UNITS.map((pts, i) => (
+ <TrackedPuck key={i} t={t} xs={pcKeys(pts, (p) => p.x)} ys={pcKeys(pts, (p) => p.y)} ease={PC_EASE} r={1.6} />
+ ))}
+ </svg>
+ );
+}
+
+/** A bound across open ground: a dashed trace that grows with the rushing team. */
+function RushTrace({ t, from, to, start, end }: { t: MotionValue<number>; from: Pt; to: Pt; start: number; end: number }) {
+const x2 = useTrack(t, [[start, from.x], [end, to.x]]);
+const y2 = useTrack(t, [[start, from.y], [end, to.y]]);
+const shown = useTrack(t, [[start - 0.02, 0], [start, 1]], linear);
+const arrived = useTrack(t, [[end - 0.1, 0], [end, 1]], linear);
+return (
+ <g>
+ <motion.line x1={from.x} y1={from.y} x2={x2} y2={y2} className="stroke-accent" strokeWidth="0.6" strokeDasharray="1.2 1" strokeLinecap="round" style={{ opacity: shown }} />
+ <motion.g style={{ opacity: arrived }}>
+ <Chevron at={lerpPt(from, to, 0.62)} rot={angleDeg(from, to)} scale={0.8} />
+ </motion.g>
+ </g>
+ );
+}
+
+/** Overwatch: the team holding still covers the ground ahead of the bound. */
+function CoverFan({ t, at, from, to }: { t: MotionValue<number>; at: Pt; from: number; to: number }) {
+const opacity = useTrack(t, [[from, 0], [from + 0.2, 1], [to - 0.2, 1], [to, 0]], linear);
+return (
+ <motion.path d={pcFan(at)} className="fill-accent-cool stroke-accent-cool" fillOpacity={0.2} strokeOpacity={0.55} strokeWidth="0.3" strokeLinejoin="round" style={{ opacity }} />
+ );
+}
+
 function ConclusionCard() {
 return (
- <motion.div
-initial={{ opacity: 0 }}
-whileInView={{ opacity: 1 }}
-viewport={{ once: true }}
-className="mt-6 surface-elevated p-6 flex gap-4 items-start"
- >
- <Icon name="spark" size={22} className="text-accent shrink-0 mt-0.5" />
- <div>
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
+ <div className="mt-6 surface p-5 sm:p-6">
+ <div className="text-base font-display font-bold text-fg mb-1.5">
  המסקנה
  </div>
- <p className="text-fg leading-relaxed text-pretty">
+ <p className="text-base text-fg leading-relaxed text-pretty">
 בניווט בסביבה עוינת, המטרה היא לא להגיע הכי מהר, אלא להגיע בבטחה, ללא התגלות, ובדיוק לנקודה הנכונה.
-המשמעות היא שלפעמים ההחלטה החכמה ביותר תהיה לעשות מסלול עוקף וארוך של קילומטר וחצי (פעולה שנקראת"איגוף"), במקום לחתוך 800 מטר בקו ישר וחשוף. לפעמים המשמעות היא לסמוך נטו על ספירת הצעדים שלכם בתוך סופת חול עיוורת, ולפעמים – לדעת מתי לרוץ מהר בתוך יער, ומתי להתקדם לאט ובזהירות בשטח פתוח. סוד ההצלחה האמיתי בניווט הוא הגמישות והיכולת"לקרוא" את השטח. </p>
+המשמעות היא שלפעמים ההחלטה החכמה ביותר תהיה לבחור ציר ארוך יותר שעובר בסימנים ברורים בשטח – כיפות, כפר – במקום לחתוך בקו ישר. לפעמים המשמעות היא לסמוך נטו על האזימוט והמרחק שחישבתם מראש, כשסופת חול מסתירה הכול, ולפעמים – לדעת מתי לרוץ מהר בתוך יער, ומתי להתקדם לאט ובזהירות בשטח פתוח. סוד ההצלחה האמיתי בניווט הוא הגמישות והיכולת "לקרוא" את השטח. </p>
  </div>
- </motion.div>
  );
 }

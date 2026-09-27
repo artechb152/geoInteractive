@@ -8,14 +8,14 @@ import { useCourseProgress } from '@/lib/course-progress';
  * ProgressCard — כרטיס "השיעור האחרון שלך" הכהה (פס תחתון-ימני):
  * מיני-דיורמת השיעור האחרון שביקרו בו, שמו, וכפתור primary "חזרה לשיעור"
  * שמחזיר לנקודה האחרונה (continueHref כולל #scene-<id> כשקיים).
- * מכשיר טרי: שיעור 01 + "התחלת השיעור הראשון".
+ * מכשיר טרי: השיעור הציבורי הראשון + "התחלת השיעור הראשון".
  */
 export function ProgressCard() {
   const progress = useCourseProgress();
 
-  const lessonNumber = progress.visit?.topicNumber ?? 1;
   const lesson =
     lessons.find((l) => l.id === progress.activeTopicId) ?? lessons[0];
+  const lessonNumber = lesson.number;
 
   return (
     <aside className="relative flex h-full flex-col items-center overflow-hidden rounded-3xl bg-pine-grad p-8 text-paper-bright shadow-pine-card">

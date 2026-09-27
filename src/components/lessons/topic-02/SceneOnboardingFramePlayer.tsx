@@ -378,7 +378,7 @@ export default function SceneOnboardingFramePlayer({ targetState }: { targetStat
         <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
           <div className="flex items-center gap-2 rounded-full bg-bg-elevated/90 px-3 py-1.5 shadow-sm">
             <span className="size-2 rounded-full bg-brand-dark animate-pulse" />
-            <span className="text-xs font-display font-bold text-fg-dim">טוען...</span>
+            <span className="text-sm font-display font-bold text-fg-muted">טוען...</span>
           </div>
         </div>
       )}

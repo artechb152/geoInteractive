@@ -1,9 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
-import { FrameCorners } from '@/components/ui/FrameCorners';
 import { cn } from '@/lib/utils';
 type System = {
 id: 'itm' | 'wgs84';
@@ -14,7 +13,6 @@ format: string;
 example: string;
 pros: string[];
 cons: string[];
-color: string;
 };
 const SYSTEMS: System[] = [
  {
@@ -26,7 +24,6 @@ format: 'שני מספרים שלמים במטרים: מזרח (Easting) וצפ�
 example: '178350 / 666250',
 pros: ['הדיוק הכי גבוה בתוך גבולות המדינה', 'מספרים שלמים וקצרים - קל לדווח בקשר', 'השפה העיקרית של המפות הצבאיות בשטח'],
 cons: ['לא תעבוד מחוץ לגבולות ישראל', 'דורשת"תרגום" מתמטי קטן כדי להסתנכרן עם מכשירי GPS'],
-color: 'text-accent',
  },
  {
 id: 'wgs84',
@@ -37,7 +34,6 @@ format: 'קו אורך וקו רוחב במעלות - בדיוק כמו ב-Googl
 example: '35.2007° / 31.7857°',
 pros: ['פועלת בכל נקודה על הגלובוס', 'הבסיס של כל סמארטפון ומכשיר ניווט אזרחי', 'חובה כשעובדים עם צבאות זרים (כמו נאט"ו)'],
 cons: ['מספרים עם שברים עשרוניים - קשה ומסוכן להקריא בקשר', 'אם רוצים לעבוד מול מפה מקומית - חייבים להמיר'],
-color: 'text-accent-cool',
  },
 ];
 export function CoordinatesScene() {
@@ -49,33 +45,26 @@ step="02.3"
 eyebrow="קואורדינטות · נ״צ"
 title={
           <>
-          איך מתרגמים נקודה עצומה במרחב ל<span className="gradient-text">כתובת מבצעית מוחלטת</span>?
+          איך מתרגמים נקודה עצומה במרחב לכתובת מבצעית מוחלטת?
           </>
         }
         intro={`כשרוצים להגיד"תפגע כאן" — צריך מספר שכל המכשירים יבינו. זאת קואורדינטה: שני מספרים שמגדירים נקודה אחת ויחידה בעולם. הבעיה מתחילה כשיש כמה"שפות" (רשתות) שונות. אם אחד דיבר בשפה אחת והשני בשפה אחרת — הירי יחטיא את המטרה.`}
  />
 
- {/* Concept · matched pair feature cards */}
- <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
- <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
- <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
- השפה של הנ"צ
- </div>
- <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
- נקודת ציון <span className="text-fg-muted font-medium text-base sm:text-lg">(Grid Reference)</span>
+ {/* Concept · two plain info columns (pattern 9: demoted so the
+     first strong surface on the screen is the datum-shift workspace) */}
+ <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-12">
+ <div>
+ <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
+ נקודת ציון <span className="font-medium text-fg-muted text-base md:text-lg">(Grid Reference)</span>
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
  ה"מספר האישי" של המיקום שלכם — <strong className="text-fg">צמד מספרים שקובע נקודה אחת בעולם</strong>. כל רשת קואורדינטות היא שפה אחרת לחישוב אותה נקודה, ולכל אחת יש כללים משלה.
  </p>
  </div>
 
- <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
- <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
- נקודת התורפה
- </div>
- <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+ <div>
+ <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
  ספרה אחת שגויה הופכת ל-100 מ' של דו"צ
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
@@ -87,55 +76,49 @@ title={
  {/* Grid of Systems */}
  <div className="grid md:grid-cols-2 gap-5 mb-8">
  {SYSTEMS.map((s) => (
- <motion.article
+ <article
 key={s.id}
-initial={{ opacity: 0, y: 18 }}
-whileInView={{ opacity: 1, y: 0 }}
-viewport={{ once: true }}
-className="surface-elevated p-6 border border-border/50 rounded-[3px]"
+className="surface p-5 sm:p-6"
  >
- <div className="flex items-baseline justify-between mb-4">
- <div>
- <div className={cn('font-display font-bold text-4xl', s.color)}>{s.short}</div>
- <div className="text-sm font-display font-semibold text-fg-muted mt-1 tracking-wider font-bold">
+ <div className="mb-3">
+ <div className="font-display font-bold text-3xl text-fg">{s.short}</div>
+ <div className="text-sm font-display font-semibold text-fg-muted mt-1">
  {s.scope}
  </div>
  </div>
- <Icon name="crosshair" size={28} className={s.color} />
- </div>
 
- <div className="text-xs text-fg-muted mb-4 font-medium italic">{s.long}</div>
+ <div className="text-sm text-fg-muted mb-4">{s.long}</div>
 
- <div className="surface p-4 mb-4 font-display font-medium tracking-wide text-sm border border-border/40 rounded-[3px] bg-bg/50">
- <div className="text-[10px] text-fg-dim mb-1 uppercase tracking-tighter">{s.format}</div>
+ <div className="rounded-xl bg-bg-accent/60 p-4 mb-5 font-display">
+ <div className="text-sm text-fg-muted mb-1">{s.format}</div>
  <div className="text-fg tabular-nums text-lg font-bold">{s.example}</div>
  </div>
 
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-2 gap-5">
  <div>
- <div className="text-sm font-display font-semibold text-status-ok mb-1.5 tracking-wider font-bold">יתרונות</div>
- <ul className="space-y-1.5 text-xs">
+ <div className="text-base font-display font-bold text-fg mb-2">יתרונות</div>
+ <ul className="space-y-2 text-sm">
  {s.pros.map((p) => (
- <li key={p} className="flex gap-2 leading-tight">
- <Icon name="check" size={11} className="text-status-ok mt-0.5 shrink-0" strokeWidth={3} />
+ <li key={p} className="flex gap-2 leading-snug">
+ <Icon name="check" size={14} className="text-fg-muted mt-0.5 shrink-0" strokeWidth={2.5} />
  <span className="text-fg-muted">{p}</span>
  </li>
  ))}
  </ul>
  </div>
  <div>
- <div className="text-sm font-display font-semibold text-status-warn mb-1.5 tracking-wider font-bold">מגבלות</div>
- <ul className="space-y-1.5 text-xs">
+ <div className="text-base font-display font-bold text-fg mb-2">מגבלות</div>
+ <ul className="space-y-2 text-sm">
  {s.cons.map((c) => (
- <li key={c} className="flex gap-2 leading-tight">
- <span className="text-status-warn font-bold shrink-0">·</span>
+ <li key={c} className="flex gap-2 leading-snug">
+ <span className="text-fg-muted font-bold shrink-0">·</span>
  <span className="text-fg-muted">{c}</span>
  </li>
  ))}
  </ul>
  </div>
  </div>
- </motion.article>
+ </article>
  ))}
  </div>
 
@@ -162,12 +145,7 @@ shift < 15
  ? 'דו"צ! הירי נופל ישירות על כוחותינו בגלל טעות בשפת המפה.'
  : 'קטסטרופה: המשימה נכשלה לחלוטין. חוסר התאמה מוחלט בין המערכות.';
 return (
- <motion.div
-initial={{ opacity: 0 }}
-whileInView={{ opacity: 1 }}
-viewport={{ once: true }}
-className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
- >
+ <div className="surface-elevated p-6 lg:p-8 my-10">
  {/* Sidebar (right, DOM-first per this file's RTL convention) + map column
      (left), matching the reference's proportions (map:sidebar ≈ 2.47:1,
      pixel-measured off design/reference/lesson-02/lesson2part5image2.png).
@@ -182,8 +160,8 @@ className="surface-elevated p-6 md:p-8 my-10 rounded-[4px] border border-border/
      width too. The meter slider + its tick captions live inside this same
      map column (not spanning the whole card) so they're exactly as wide as
      the map above them, per this project's request. */}
- <div className="grid md:grid-cols-[1fr_2.4fr] gap-6 md:gap-8 items-start mb-6">
- <div className="flex flex-col gap-4 min-w-0">
+ <div className="grid md:grid-cols-[1fr_2.4fr] gap-6 md:gap-8 items-start">
+ <div className="flex flex-col gap-5 min-w-0">
  <div className="flex flex-col items-start gap-3">
  <div className={cn(
  'px-4 py-2 rounded-full border text-sm font-bold transition-colors',
@@ -194,7 +172,7 @@ dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-st
  {dangerLevel === 'safe' ? '✓ סטטוס: תקין' : dangerLevel === 'warn' ? '! סטטוס: סיכון' : '✗ סטטוס: סטייה קריטית'}
  </div>
  <div>
- <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider font-bold">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-1">
  הדמיה מבצעית: מה קורה כשהשפה לא תואמת
  </div>
  <div className="font-display font-bold text-5xl tabular-nums">
@@ -203,29 +181,29 @@ dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-st
  </div>
  </div>
 
- <div className="surface p-6 flex flex-col justify-center rounded-[3px] bg-bg/30 flex-1">
- <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider font-bold">
+ <div className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-2">
  השלכה מבצעית בשטח
  </div>
  <p className={cn(
- 'text-lg font-bold leading-tight mb-4',
+ 'text-lg font-bold leading-snug',
 dangerLevel === 'safe' && 'text-status-ok',
 dangerLevel === 'warn' && 'text-status-warn',
 dangerLevel === 'danger' && 'text-status-danger',
  )}>
  {consequenceText}
  </p>
- <div className="pt-4 border-t border-border-subtle text-xs text-fg-muted leading-relaxed">
- <strong className="text-fg block mb-1 underline">איך זה קורה בפועל?</strong>
+ </div>
+ <div className="text-sm text-fg-muted leading-relaxed">
+ <strong className="text-fg block mb-1">איך זה קורה בפועל?</strong>
  חייל א׳ מודד נ"צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM.
  <br/><br/>
  <strong>התוצאה:</strong> בלי תרגום נכון ← הקואורדינטה תתפרש כמיקום אחר לגמרי.
  </div>
  </div>
- </div>
 
  <div className="flex flex-col gap-3 min-w-0">
- <div className="surface relative overflow-hidden rounded-[3px] border border-border/40 aspect-[25/14]">
+ <div className="relative overflow-hidden rounded-xl aspect-[25/14]">
  <ImpactMap shift={shift} />
  </div>
 
@@ -236,16 +214,16 @@ max={100}
 step={1}
 value={shift}
 onChange={(e) => setShift(Number(e.target.value))}
-className="w-full h-2 bg-bg-accent rounded-[3px] appearance-none cursor-pointer accent-accent"
+className="w-full h-2 bg-border rounded-full appearance-none cursor-pointer accent-accent"
  />
- <div className="flex justify-between text-[10px] font-display font-medium tracking-wide text-fg-dim">
+ <div className="flex justify-between text-[13px] text-fg-muted">
  <span>0 מ׳</span>
  <span>50 מ׳ (טווח רסיסים)</span>
  <span>100 מ׳ (החטאה מלאה)</span>
  </div>
  </div>
  </div>
- </motion.div>
+ </div>
  );
 }
 function ImpactMap({ shift }: { shift: number }) {
@@ -299,7 +277,6 @@ aria-hidden
 draggable={false}
 className="absolute inset-0 size-full object-cover"
  />
- <FrameCorners tone="sage" />
  {/* North indicator — reference uses a bare solid triangle + "N", not a
      circular icon chip; matched here as a small fixed-px HTML glyph (not
      viewBox-relative, so it can't shrink at other breakpoints).
@@ -514,7 +491,6 @@ function centeredBgPercent(frac: number, scale: number) {
 }
 
 function DigitAnatomy() {
-  const reduce = useReducedMotion();
   const [precision, setPrecision] = useState<Precision>(8);
   const [activeZone, setActiveZone] = useState<DigitZone>(null);
 
@@ -522,16 +498,11 @@ function DigitAnatomy() {
   const north = splitDigits(ANATOMY_NORTH_M, precision);
 
   return (
-    <motion.div
-      initial={reduce ? false : { opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="my-10"
-    >
-      <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">
+    <div className="my-10">
+      <div className="text-sm font-display font-semibold text-fg-muted mb-1">
         אנטומיה של נ&quot;צ: מה כל ספרה אומרת
       </div>
-      <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight mb-4 text-balance">
+      <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance">
         נ&quot;צ הוא לא מספר קסם — הוא שתי כתובות מדויקות, אחת בתוך השנייה
       </h3>
       <p className="text-fg leading-relaxed text-pretty mb-8 max-w-3xl">
@@ -541,7 +512,7 @@ function DigitAnatomy() {
       {/* Digit readouts (visual right) + map (visual left) — first DOM child
           lands at inline-start/right in this RTL page, matching this same
           file's DatumShiftDemo two-column pattern one section up. */}
-      <div className="grid lg:grid-cols-[1fr_1.5fr] gap-6 lg:gap-10 items-start">
+      <div className="surface-elevated p-6 lg:p-8 grid lg:grid-cols-[1fr_1.5fr] gap-6 lg:gap-10 items-start">
         <div className="flex flex-col gap-5">
           <DigitReadout
             axisLabel="Easting · מזרח"
@@ -555,7 +526,7 @@ function DigitAnatomy() {
             activeZone={activeZone}
             onZoneChange={setActiveZone}
           />
-          <div className="p-4 sm:p-5 rounded-[3px] bg-bg/40 border border-border/40">
+          <div>
             <p className="text-sm text-fg-muted leading-relaxed">
               <strong className="text-fg">כל ספרה נוספת בתוך המשבצת מדייקת את המיקום פי 10 בכל ציר בנפרד:</strong> נ&quot;צ של 6 ספרות ({GRID_EAST_KM} / {GRID_NORTH_KM}) מצביע רק על משבצת קילומטר שלמה; נ&quot;צ של 8 ספרות (ספרה נוספת בכל צד, כמו בתרגיל שלמטה) מדייק עוד פי 10 בכל ציר; נ&quot;צ של 10 ספרות מדייק עוד פי 10 נוסף. אבל שימו לב — <strong className="text-fg">אורך הנ&quot;צ לא הופך אתכם למדויקים יותר מהמפה ומהעין שלכם.</strong> קריאה ארוכה בלי הערכה זהירה בשטח נותנת רק ביטחון-יתר מסוכן.
             </p>
@@ -567,7 +538,7 @@ function DigitAnatomy() {
           <AnatomyMap precision={precision} activeZone={activeZone} east={east} north={north} />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -600,7 +571,7 @@ function DigitZoneButton({
       aria-pressed={disabled ? undefined : active}
       aria-label={label}
       className={cn(
-        'rounded-[3px] px-1 -mx-1 transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg-elevated',
+        'rounded-lg px-1 -mx-1 transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg-elevated',
         disabled ? 'opacity-35 cursor-default' : 'cursor-pointer',
         active && !disabled && 'bg-accent/10',
         className,
@@ -624,8 +595,8 @@ function DigitReadout({
 }) {
   const hasFine = digits.fine.length > 0;
   return (
-    <div className="p-4 sm:p-5 rounded-[3px] border border-border/40 bg-bg/30">
-      <div className="text-xs font-display font-semibold tracking-wider mb-3 text-fg-muted">{axisLabel}</div>
+    <div className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
+      <div className="text-sm font-display font-semibold mb-2 text-fg-muted">{axisLabel}</div>
       <bdi dir="ltr" className="flex items-baseline gap-1 font-display font-bold text-4xl sm:text-5xl tabular-nums mb-3">
         <DigitZoneButton
           label={`שלוש הספרות הראשונות של ${axisLabel}: ${digits.km} — מספר משבצת הקילומטר המודפס על המפה`}
@@ -651,7 +622,7 @@ function DigitReadout({
           {hasFine ? digits.fine : '–'}
         </DigitZoneButton>
       </bdi>
-      <div className="flex flex-col gap-1 text-[11px] text-fg-muted leading-snug">
+      <div className="flex flex-col gap-1 text-sm text-fg-muted leading-snug">
         <span className={cn('flex items-center gap-1.5 transition-colors motion-reduce:transition-none', activeZone === 'km' && 'text-fg font-semibold')}>
           <span className="inline-block size-1.5 rounded-full shrink-0 bg-fg" aria-hidden />
           מספר משבצת ק&quot;מ — מודפס על המפה
@@ -694,7 +665,7 @@ function AnatomyMap({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative aspect-square rounded-[4px] overflow-hidden">
+      <div className="relative aspect-square rounded-xl overflow-hidden">
         {/* Raster layer, faded into the page canvas via a graduated CSS
             mask — the pixels themselves are never degraded, so the exact
             same file can be reused unscaled for the zoom inset below. */}
@@ -707,8 +678,6 @@ function AnatomyMap({
             className="size-full object-cover"
           />
         </div>
-
-        <FrameCorners tone="sage" />
 
         <svg
           viewBox={`0 0 ${MAP_VB} ${MAP_VB}`}
@@ -872,8 +841,6 @@ function AnatomyZoomInset({
         aria-label={showTenCell ? 'תקריב על תא של 10 מטר בתוך משבצת המאה מטר, מאותה מפה' : 'תקריב על משבצת הקילומטר, מאותה מפה'}
       />
 
-      <FrameCorners tone="accent" />
-
       <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" preserveAspectRatio="none" aria-hidden>
         {Array.from({ length: 9 }).map((_, i) => (
           <g key={i}>
@@ -913,14 +880,14 @@ const PRECISION_OPTIONS: { value: Precision; label: string; meters: string }[] =
   { value: 10, label: '10 ספרות', meters: 'תא של 10 מ׳ בכל ציר' },
 ];
 
-function PrecisionGlyph({ level, active }: { level: Precision; active: boolean }) {
-  const tone = active ? 'stroke-accent' : 'stroke-fg-muted';
+function PrecisionGlyph({ level }: { level: Precision }) {
+  const tone = 'stroke-fg-muted';
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="shrink-0" aria-hidden>
       <rect x="2" y="2" width="24" height="24" className={tone} strokeWidth="1.5" />
       {level !== 6 && <rect x="7" y="7" width="14" height="14" className={tone} strokeWidth="1.5" />}
       {level === 10 && <rect x="11" y="11" width="6" height="6" className={tone} strokeWidth="1.5" />}
-      <circle cx="14" cy="14" r="1.4" className={active ? 'fill-accent' : 'fill-fg-muted'} />
+      <circle cx="14" cy="14" r="1.4" className="fill-fg-muted" />
     </svg>
   );
 }
@@ -929,27 +896,26 @@ function PrecisionSelector({ precision, onChange }: { precision: Precision; onCh
   return (
     <div>
       <div className="text-sm font-display font-semibold text-fg mb-4">כל ספרה נוספת — פי 10 דיוק בכל ציר</div>
-      <div role="group" aria-label="רמת דיוק הנ״צ" className="flex flex-wrap items-center gap-3 sm:gap-2">
-        {PRECISION_OPTIONS.map((opt, i) => (
-          <div key={opt.value} className="flex items-center gap-3 sm:gap-2">
+      <div role="group" aria-label="רמת דיוק הנ״צ" className="grid grid-cols-3 gap-2">
+        {PRECISION_OPTIONS.map((opt) => (
+          <div key={opt.value} className="flex">
             <button
               type="button"
               aria-pressed={precision === opt.value}
               onClick={() => onChange(opt.value)}
               className={cn(
-                'flex items-center gap-2.5 rounded-[3px] border px-3 py-2 text-start transition-colors motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                precision === opt.value ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-fg-muted',
+                'flex w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-start cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                precision === opt.value ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
               )}
             >
-              <PrecisionGlyph level={opt.value} active={precision === opt.value} />
+              <PrecisionGlyph level={opt.value} />
               <span>
-                <span className={cn('block text-sm font-display font-bold', precision === opt.value ? 'text-accent' : 'text-fg')}>
+                <span className="block text-sm font-display font-bold text-fg">
                   {opt.label}
                 </span>
-                <span className="block text-[11px] text-fg-muted">{opt.meters}</span>
+                <span className="block text-[13px] text-fg-muted">{opt.meters}</span>
               </span>
             </button>
-            {i < PRECISION_OPTIONS.length - 1 && <Icon name="arrow-left" size={14} className="text-fg-dim shrink-0" />}
           </div>
         ))}
       </div>
@@ -1020,7 +986,7 @@ function GridSquare({
 }) {
   return (
     <div className="w-full max-w-[360px] mx-auto">
-      <div className="flex items-center justify-between px-1 mb-1.5 text-[10px] font-display font-semibold tracking-wide text-fg-dim">
+      <div className="flex items-center justify-between px-1 mb-1.5 text-[13px] font-display font-semibold text-fg-muted">
         <span>צפון (Northing) {GRID_NORTH_KM}–{Number(GRID_NORTH_KM) + 1}</span>
       </div>
       <div className="relative" style={{ aspectRatio: '1206 / 1171' }}>
@@ -1083,7 +1049,7 @@ function GridSquare({
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between px-1 mt-1.5 text-[10px] font-display font-semibold tracking-wide text-fg-dim">
+      <div className="flex items-center justify-between px-1 mt-1.5 text-[13px] font-display font-semibold text-fg-muted">
         <span>מזרח (Easting) {GRID_EAST_KM}–{Number(GRID_EAST_KM) + 1}</span>
       </div>
     </div>
@@ -1130,14 +1096,16 @@ function useWalkthrough() {
 
   const text = (
     <>
-      <div className="outline-numeral text-[4.5rem] sm:text-[5.5rem] leading-none opacity-80 mb-1">
-        {String(step + 1).padStart(2, '0')}
+      <div className="mb-2 flex items-baseline gap-2">
+        <div className="font-display text-sm font-bold tabular-nums text-fg">
+          {String(step + 1).padStart(2, '0')}
+        </div>
+        <div className="text-sm font-display font-semibold text-fg-muted">שלב הדגמה — כך עושים את זה</div>
       </div>
-      <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">שלב הדגמה — כך עושים את זה</div>
       <AnimatePresence mode="wait">
         <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
-          <h4 className="font-display font-bold text-lg leading-tight mb-2">{s.title}</h4>
-          <p className="text-sm text-fg-muted leading-relaxed mb-4">{s.body}</p>
+          <h4 className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">{s.title}</h4>
+          <p className="text-base text-fg-muted leading-relaxed mb-5">{s.body}</p>
         </motion.div>
       </AnimatePresence>
       <div className="flex gap-2">
@@ -1197,7 +1165,7 @@ function usePractice() {
       grid: null,
       text: (
         <div className="text-center py-8">
-          <div className="text-4xl font-display font-bold text-accent tabular-nums mb-2">
+          <div className="text-4xl font-display font-bold text-fg tabular-nums mb-2">
             {solvedCount}/{PRACTICE_TARGETS.length}
           </div>
           <p className="text-fg-muted text-sm mb-4">דקירות נכונות מתוך {PRACTICE_TARGETS.length} תרגילים.</p>
@@ -1220,13 +1188,15 @@ function usePractice() {
 
   const text = (
     <>
-      <div className="outline-numeral text-[4.5rem] sm:text-[5.5rem] leading-none opacity-80 mb-1">
-        {String(index + 1).padStart(2, '0')}
+      <div className="mb-2 flex items-baseline gap-2">
+        <div className="font-display text-sm font-bold tabular-nums text-fg">
+          {String(index + 1).padStart(2, '0')}
+        </div>
+        <div className="text-sm font-display font-semibold text-fg-muted">
+          תרגול עצמאי — תרגיל {index + 1} מתוך {PRACTICE_TARGETS.length}
+        </div>
       </div>
-      <div className="text-sm font-display font-semibold text-fg-muted mb-2 tracking-wider">
-        תרגול עצמאי — תרגיל {index + 1} מתוך {PRACTICE_TARGETS.length}
-      </div>
-      <p className="text-sm text-fg leading-relaxed mb-4">
+      <p className="text-base text-fg leading-relaxed mb-4">
         דקרו על המפה את הנקודה בעלת הנ&quot;צ: <strong className="text-fg tabular-nums">{refOf(target)}</strong>
       </p>
       <AnimatePresence mode="wait">
@@ -1235,10 +1205,10 @@ function usePractice() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              'rounded-[3px] border p-3 text-sm mb-4',
+              'rounded-xl p-4 text-sm leading-relaxed mb-4',
               attempt.correct
-                ? 'border-status-ok/40 bg-status-ok/10 text-status-ok'
-                : 'border-status-danger/40 bg-status-danger/10 text-status-danger',
+                ? 'bg-status-ok/10 text-status-ok'
+                : 'bg-status-danger/10 text-status-danger',
             )}
           >
             {attempt.correct
@@ -1274,32 +1244,20 @@ function GridReferenceExercise() {
   const collapsed = mode === 'practice' && practice.done;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="surface-elevated relative overflow-hidden p-6 md:p-8 my-10 rounded-[4px] border border-border/50"
-    >
-      <div aria-hidden className="pointer-events-none absolute inset-0 topo-bg opacity-10" />
-      <div className="relative grid md:grid-cols-[1fr_1.15fr] gap-8 md:gap-10 items-start">
+    <div className="surface-elevated p-6 lg:p-8 my-10">
+      <div className="grid md:grid-cols-[1fr_1.15fr] gap-8 md:gap-10 items-start">
         {/* right column (inline-start) — static header + per-mode text, DOM-first per this codebase's RTL convention */}
         <div>
-          <div className="flex items-start justify-between gap-3 mb-1">
-            <div className="flex items-center gap-3">
-              <Icon name="crosshair" size={24} className="text-accent shrink-0" />
-              <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight text-balance">תרגיל: דקירת נ&quot;צ</h3>
-            </div>
-            <Icon name="compass" size={26} className="text-fg-dim/50 shrink-0" aria-hidden />
-          </div>
-          <p className="text-sm text-fg-muted mb-6 max-w-md">קודם הדגמה מונחית, ואז מתרגלים לבד — לוחצים על המשבצת הנכונה ומקבלים בדיקה מיידית.</p>
+          <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl text-balance">תרגיל: דקירת נ&quot;צ</h3>
+          <p className="mt-2 text-base leading-relaxed text-fg-muted mb-6 max-w-md">קודם הדגמה מונחית, ואז מתרגלים לבד — לוחצים על המשבצת הנכונה ומקבלים בדיקה מיידית.</p>
 
           <div className="flex gap-2 mb-6">
             <button
               type="button"
               onClick={() => setMode('demo')}
               className={cn(
-                'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
-                mode === 'demo' ? 'border-fg bg-fg text-bg-elevated' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
+                'px-4 py-2 rounded-xl text-sm font-display font-semibold text-fg border cursor-pointer transition-colors duration-200 ease-snap',
+                mode === 'demo' ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
               )}
             >
               1. הדגמה
@@ -1308,8 +1266,8 @@ function GridReferenceExercise() {
               type="button"
               onClick={() => setMode('practice')}
               className={cn(
-                'px-4 py-2 rounded-[3px] text-sm font-display font-semibold border transition-colors',
-                mode === 'practice' ? 'border-fg bg-fg text-bg-elevated' : 'border-border bg-bg-elevated text-fg-muted hover:border-fg-muted',
+                'px-4 py-2 rounded-xl text-sm font-display font-semibold text-fg border cursor-pointer transition-colors duration-200 ease-snap',
+                mode === 'practice' ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
               )}
             >
               2. תרגול עצמאי
@@ -1332,32 +1290,26 @@ function GridReferenceExercise() {
           </AnimatePresence>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function CoordinateAnatomy() {
 return (
- <motion.div
-initial={{ opacity: 0, y: 20 }}
-whileInView={{ opacity: 1, y: 0 }}
-viewport={{ once: true }}
-className="surface-elevated p-8 rounded-[3px] flex flex-col md:flex-row gap-6 items-center"
- >
- <Icon name="crosshair" size={48} className="text-accent shrink-0" />
+ <div className="surface p-5 sm:p-6">
  <div>
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider font-bold">
+ <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
  השורה התחתונה: נ"צ הוא לא סתם מספר
  </div>
  <p className="text-base text-fg leading-relaxed max-w-3xl">
- כל נ"צ בנוי משני צירים: הראשון הוא ה-<strong className="text-accent">מזרח (X)</strong> והשני הוא ה-<strong className="text-accent">צפון (Y)</strong>. 
+ כל נ"צ בנוי משני צירים: הראשון הוא ה-<strong className="text-fg">מזרח (X)</strong> והשני הוא ה-<strong className="text-fg">צפון (Y)</strong>.
  <br/>
  תחשבו על זה כעל צירים מתמטיים - השילוב ביניהם יוצר נקודה יחידה ומוחלטת.
  <br/><br/>
- <span className="text-fg-muted italic underline decoration-status-danger/30 decoration-2">חשוב לזכור:</span> טעויות בנ"צ הן הגורם המרכזי בעולם לתקלות מבצעיות ואובדן חיים. 
+ <span className="font-semibold text-fg">חשוב לזכור:</span> טעויות בנ"צ הן הגורם המרכזי בעולם לתקלות מבצעיות ואובדן חיים.
  <strong className="text-fg"> נ"צ מדויק = חיים. נ"צ שגוי = סכנה לכוחותינו.</strong>
  </p>
  </div>
- </motion.div>
+ </div>
  );
 }

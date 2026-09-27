@@ -9,6 +9,9 @@
  * Read by ContinueLearningButton on the landing page.
  */
 
+import { isArchivedTopic } from '@/lib/lessons';
+import { isArchivedScene } from '@/lib/lesson-scenes';
+
 const KEY = 'geo-course:last-visit:v1';
 
 export type LastVisit = {
@@ -29,6 +32,12 @@ export function getLastVisit(): LastVisit | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as LastVisit;
     if (!parsed?.topicId) return null;
+    // ביקור ישן בשיעור שעבר לארכיון לא יוביל "המשך ללמוד" לתוכן ארכיוני
+    if (isArchivedTopic(parsed.topicId)) return null;
+    // תת-נושא שעבר לארכיון — חוזרים לתחילת השיעור במקום לכתובת שכבר לא קיימת בו
+    if (parsed.sceneId && isArchivedScene(parsed.topicId, parsed.sceneId)) {
+      return { ...parsed, sceneId: undefined, sceneLabel: undefined, sceneIdx: undefined, sceneTotal: undefined };
+    }
     return parsed;
   } catch {
     return null;
@@ -41,6 +50,8 @@ export function recordLessonVisit(input: {
   topicShortTitle: string;
 }) {
   if (typeof window === 'undefined') return;
+  // צפייה בארכיון לא דורסת את מיקום הלמידה הציבורי
+  if (isArchivedTopic(input.topicId)) return;
   const prev = getLastVisit();
   const sameTopic = prev?.topicId === input.topicId;
   const next: LastVisit = {
