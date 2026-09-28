@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { IntelCard } from '@/components/lesson/IntelCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -110,10 +109,11 @@ export function OnboardingScene() {
               <div
                 key={s.id}
                 className={cn(
-                  'rounded-xl border bg-bg-elevated overflow-hidden transition-colors duration-200 ease-snap',
+                  'relative isolate rounded-xl border bg-bg-elevated overflow-hidden transition-colors duration-200 ease-snap',
+                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                   active
                     ? 'border-brand/45'
-                    : 'border-border hover:border-brand/30 hover:bg-brand/[0.03]'
+                    : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
                 )}
               >
                 <button
@@ -121,12 +121,12 @@ export function OnboardingScene() {
                   onClick={() => handleStepClick(s.id)}
                   aria-expanded={expanded}
                   aria-controls={`step-panel-${s.id}`}
-                  className="w-full p-4 text-start flex items-center gap-3 cursor-pointer"
+                  className="w-full p-4 text-start flex items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
                 >
                   <span
                     className={cn(
-                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-colors duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border'
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
+                      active || passed ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
                     )}
                   >
                     {passed && !active ? (
@@ -146,8 +146,8 @@ export function OnboardingScene() {
                     className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
-                      width="22"
-                      height="22"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -199,21 +199,25 @@ export function OnboardingScene() {
         </div>
       </div>
 
-      <h3 className="mt-12 mb-6 font-display text-2xl font-bold leading-tight text-black sm:text-3xl">
+      <h3 className="mt-12 mb-6 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
         ניווט גרוע = חיים בסכנה
       </h3>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {HISTORICAL.map((h, i) => (
-          <IntelCard
-            key={h.headline}
-            place={h.place}
-            headline={h.headline}
-            lesson={h.lesson}
-            icon={h.icon}
-            accent={h.accent}
-            signature={false}
-          />
+        {/* Local info cards (spec §1 "Info card") instead of the shared IntelCard,
+            whose rounded-md surface and tracked attribution line are kept for
+            the other lessons that use it. Same content and order as before. */}
+        {HISTORICAL.map((h) => (
+          <article key={h.headline} className="surface flex h-full flex-col p-5 sm:p-6">
+            <h3 className="font-display text-lg font-bold leading-snug text-fg text-balance md:text-xl">
+              {h.headline}
+            </h3>
+            <p className="mt-2 text-base leading-relaxed text-fg text-pretty">{h.lesson}</p>
+            <div className="mt-auto pt-4 text-sm font-display font-semibold text-fg-muted">
+              <span aria-hidden className="me-1.5">—</span>
+              <span>{h.place}</span>
+            </div>
+          </article>
         ))}
       </div>
 

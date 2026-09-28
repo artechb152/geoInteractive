@@ -175,7 +175,7 @@ export function GeologyScene() {
         />
 
         {/* ── Why it matters ─────────────────────────────────────────── */}
-        <div className="grid md:grid-cols-2 gap-x-10 gap-y-6 mb-14">
+        <div className="grid md:grid-cols-2 gap-x-10 gap-y-6 mb-12">
           <WhyCard title="סוג הסלע = הצלחת המשימה">
             סוג הסלע קובע אם הכוח שלך יתקע בבוץ אחרי הגשם הראשון, אם תוכל לחפור עמדות הגנה יציבות, ואם השטח עביר לטנקים או רק ללוחמים רגליים.
           </WhyCard>
@@ -185,7 +185,7 @@ export function GeologyScene() {
         </div>
 
         {/* ── Rock types: select + explanation board ─────────────────── */}
-        <div id="geo-rocks" className="my-14">
+        <div id="geo-rocks" className="my-12">
           <div className="mb-5">
             <h3 id="geo-rocks-title" className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
               3 סוגי הסלעים
@@ -226,8 +226,8 @@ export function GeologyScene() {
                       <RockSwatch kind={r.id} className="size-14 rounded-lg ring-1 ring-black/5" />
                       <span
                         className={cn(
-                          'absolute -top-1.5 -start-1.5 size-6 rounded-full border-2 border-bg-elevated flex items-center justify-center font-display font-bold text-[13px] transition-colors',
-                          active ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                          'absolute -top-1.5 -start-1.5 size-6 rounded-full border-2 flex items-center justify-center font-display font-bold text-[13px] transition-colors',
+                          active ? 'bg-accent text-white border-transparent' : 'bg-bg-accent text-fg-muted border-bg-elevated',
                         )}
                       >
                         {i + 1}
@@ -279,7 +279,7 @@ export function GeologyScene() {
         </div>
 
         {/* ── Forces: select + cause→effect diagram ──────────────────── */}
-        <div id="geo-forces" className="my-14">
+        <div id="geo-forces" className="my-12">
           <div className="mb-5">
             <h3 id="geo-forces-title" className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
               2 כוחות שמעצבים כל הר בכוכב הזה
@@ -357,8 +357,8 @@ export function GeologyScene() {
 
         {/* ── Bottom line ────────────────────────────────────────────── */}
         <div className="surface p-5 sm:p-6">
-          <div className="mb-1.5 text-sm font-display font-semibold text-fg-muted">בשורה התחתונה</div>
-          <p className="text-fg text-base sm:text-lg leading-relaxed text-pretty">
+          <div className="mb-2 font-display text-lg font-bold leading-snug text-fg md:text-xl">בשורה התחתונה</div>
+          <p className="text-base text-fg leading-relaxed text-pretty">
             הנוף הוא"מאבק" תמידי: הכוחות הפנימיים דוחפים למעלה ובונים הרים, בעוד הכוחות החיצוניים מנסים לשחוק ולשטח אותם. סוג הסלע הוא זה שקובע מי מנצח ובאיזו מהירות – וזה ההבדל בין צוק בזלת חד ובלתי עביר לבין גבעת גיר רכה ונוחה לתנועה.
           </p>
         </div>

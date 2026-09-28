@@ -73,15 +73,13 @@ title={
  </div>
  </div>
 
- {/* Grid of Systems */}
- <div className="grid md:grid-cols-2 gap-5 mb-8">
+ {/* Grid of Systems — ONE info card holding the ITM / WGS84 comparison
+     as two columns (pattern 9: not two equal competing cards) */}
+ <div className="surface p-5 sm:p-6 mb-8 grid md:grid-cols-2 gap-6 md:gap-10">
  {SYSTEMS.map((s) => (
- <article
-key={s.id}
-className="surface p-5 sm:p-6"
- >
+ <article key={s.id}>
  <div className="mb-3">
- <div className="font-display font-bold text-3xl text-fg">{s.short}</div>
+ <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{s.short}</div>
  <div className="text-sm font-display font-semibold text-fg-muted mt-1">
  {s.scope}
  </div>
@@ -100,7 +98,7 @@ className="surface p-5 sm:p-6"
  <ul className="space-y-2 text-sm">
  {s.pros.map((p) => (
  <li key={p} className="flex gap-2 leading-snug">
- <Icon name="check" size={14} className="text-fg-muted mt-0.5 shrink-0" strokeWidth={2.5} />
+ <span className="text-fg-muted font-bold shrink-0">·</span>
  <span className="text-fg-muted">{p}</span>
  </li>
  ))}
@@ -181,7 +179,12 @@ dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-st
  </div>
  </div>
 
- <div className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
+ <div className={cn(
+ 'rounded-xl p-4 sm:p-5 transition-colors',
+dangerLevel === 'safe' && 'bg-status-ok/10',
+dangerLevel === 'warn' && 'bg-status-warn/10',
+dangerLevel === 'danger' && 'bg-status-danger/10',
+ )}>
  <div className="text-sm font-display font-semibold text-fg-muted mb-2">
  השלכה מבצעית בשטח
  </div>
@@ -367,13 +370,13 @@ markerEnd="url(#impactArrow)"
      (fixed CSS px size, opaque backing) instead of a stroke-halo hack
      over the busy terrain art. */}
  <div
-className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2 py-0.5 text-[10px] font-display font-bold text-fg whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
+className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2.5 py-1 text-[13px] leading-tight font-display font-bold text-fg whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
 style={{ left: `${targetLeftPct}%`, top: `${targetTopPct}%` }}
  >
 מטרה מבוקשת
  </div>
  <motion.div
-className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2 py-0.5 text-[10px] font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
+className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2.5 py-1 text-[13px] leading-tight font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
 style={{ color: IMPACT_MAROON }}
 animate={{ left: `${impactLeftPct}%`, top: `${impactTopPct}%` }}
 transition={{ type: 'spring', stiffness: 50 }}
@@ -386,7 +389,7 @@ transition={{ type: 'spring', stiffness: 50 }}
      to (the container's top-right corner) instead of sliding smoothly
      from the displacement line's midpoint. */}
  <motion.div
-className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-1.5 py-0.5 text-[9px] font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
+className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2.5 py-1 text-[13px] leading-tight font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
 style={{ color: IMPACT_MAROON }}
 initial={{ opacity: 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
 animate={{ opacity: shift > 4 ? 1 : 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
@@ -395,25 +398,25 @@ transition={{ left: { type: 'spring', stiffness: 50 }, top: { type: 'spring', st
 {shift} מ׳
  </motion.div>
  <div
-className="absolute -translate-x-1/2 text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+className="absolute -translate-x-1/2 text-[13px] leading-tight font-display font-semibold text-fg/80 whitespace-nowrap"
 style={{ left: `${SCALE_X0}%`, top: `${(SCALE_Y / 56) * 100 - 9}%` }}
  >
 0
  </div>
  <div
-className="absolute -translate-x-1/2 text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+className="absolute -translate-x-1/2 text-[13px] leading-tight font-display font-semibold text-fg/80 whitespace-nowrap"
 style={{ left: `${SCALE_X50}%`, top: `${(SCALE_Y / 56) * 100 - 9}%` }}
  >
 50
  </div>
  <div
-className="absolute -translate-x-1/2 text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+className="absolute -translate-x-1/2 text-[13px] leading-tight font-display font-semibold text-fg/80 whitespace-nowrap"
 style={{ left: `${SCALE_X100}%`, top: `${(SCALE_Y / 56) * 100 - 9}%` }}
  >
 100
  </div>
  <div
-className="absolute text-[8px] font-display font-semibold text-fg/80 whitespace-nowrap"
+className="absolute text-[13px] leading-tight font-display font-semibold text-fg/80 whitespace-nowrap"
 style={{ left: `${SCALE_X100 + 3}%`, top: `${(SCALE_Y / 56) * 100}%`, transform: 'translateY(-50%)' }}
  >
 מ׳
@@ -499,9 +502,6 @@ function DigitAnatomy() {
 
   return (
     <div className="my-10">
-      <div className="text-sm font-display font-semibold text-fg-muted mb-1">
-        אנטומיה של נ&quot;צ: מה כל ספרה אומרת
-      </div>
       <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance">
         נ&quot;צ הוא לא מספר קסם — הוא שתי כתובות מדויקות, אחת בתוך השנייה
       </h3>
@@ -715,9 +715,9 @@ function AnatomyMap({
                     exact same bottom-corner band as every east-axis label
                     (which all share y={MAP_VB - 4}) — pushed further up here
                     so the two axes' numerals don't overlap at the origin.
-                    i === WORLD_SPAN_KM (top edge) is pushed further down than
-                    the minimum needed to stay in-frame, so it clears the
-                    top-start FrameCorners bracket occupying that same corner. */}
+                    i === WORLD_SPAN_KM (top edge) sits on the viewBox's top
+                    boundary, so it is placed BELOW its line instead (+30) to
+                    keep the numeral in-frame at the top edge. */}
                 <text
                   x="4"
                   y={
@@ -867,7 +867,7 @@ function AnatomyZoomInset({
         )}
       </svg>
 
-      <div className="absolute bottom-1.5 right-1.5 rounded-[2px] bg-bg-elevated/85 px-1.5 py-0.5 text-[9px] font-display font-semibold text-fg-muted">
+      <div className="absolute bottom-1.5 right-1.5 rounded-full bg-bg-elevated/85 px-2 py-0.5 text-[13px] leading-tight font-display font-semibold text-fg-muted">
         {showTenCell ? '100 מ׳' : '1 ק״מ'}
       </div>
     </div>

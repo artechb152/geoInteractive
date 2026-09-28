@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 
 /** T1 section title (cleanup spec §3) — replaces the labelled SoftDivider; spacing instead of rules. */
-const SECTION_TITLE = 'mt-16 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl';
+const SECTION_TITLE = 'mt-12 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl';
 
 /** Option (clickable) — idle / selected (cleanup spec §1, §2). */
 const OPTION_IDLE = 'border-border bg-bg-elevated text-fg hover:border-brand/30 hover:bg-brand/[0.03]';
@@ -177,7 +177,7 @@ export function LandCoverScene() {
       </div>
 
       {/* ── Screen 2: three types, on one map sample ── */}
-      <div className={SECTION_TITLE}>שלושה סוגי תכסית</div>
+      <h3 className={SECTION_TITLE}>שלושה סוגי תכסית</h3>
 
       {/* One workspace: tabs + explanation/controls + map — the screen's visual focus */}
       <div className="surface-elevated p-5 sm:p-6">
@@ -264,10 +264,14 @@ export function LandCoverScene() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
                     transition={swap}
-                    className="min-h-[132px] rounded-xl bg-bg-accent/60 p-4"
+                    className={cn(
+                      // result inset — tinted by the origin data colour it reports (same key as the dots)
+                      'min-h-[148px] rounded-xl p-4',
+                      selected.origin === 'natural' ? 'bg-brand/10' : 'bg-fg-dim/10',
+                    )}
                   >
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2">
-                      <h4 className="font-display font-bold text-lg text-fg">{selected.label}</h4>
+                      <h4 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h4>
                       <span className="inline-flex items-center gap-1.5 text-sm text-fg-muted">
                         <CatGlyph cat={selected.cat} className="text-fg-muted" />
                         {CATS.find((c) => c.id === selected.cat)!.label}
@@ -289,9 +293,9 @@ export function LandCoverScene() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
                     transition={swap}
-                    className="min-h-[132px] rounded-xl bg-bg-accent/60 p-4"
+                    className="min-h-[148px]"
                   >
-                    <p className="text-base text-fg-muted leading-relaxed">
+                    <p className="text-sm text-fg-muted leading-relaxed">
                       לחצו על אזור במפה או על אחד הרכיבים כדי לראות מה הוא ולאיזה סוג הוא שייך.
                     </p>
                   </motion.div>
@@ -354,10 +358,10 @@ export function LandCoverScene() {
       </div>
 
       {/* ── Screen 3: vegetation, and what shapes it ── */}
-      <div className={SECTION_TITLE}>צומח טבעי: מהנמוך לגבוה</div>
+      <h3 className={SECTION_TITLE}>צומח טבעי: מהנמוך לגבוה</h3>
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch">
-        <div className="surface-elevated p-5">
+        <div className="surface-elevated p-5 sm:p-6">
           <div className="text-sm font-display font-semibold text-fg-muted mb-3">
             תצורות הצומח במרחב הים־תיכוני — לפי הגובה
           </div>
@@ -396,7 +400,7 @@ export function LandCoverScene() {
       </div>
 
       {/* ── Screen 4: quick check ── */}
-      <div className={SECTION_TITLE}>בדיקה מהירה</div>
+      <h3 className={SECTION_TITLE}>בדיקה מהירה</h3>
 
       <SortQuiz
         title="טבעית או מלאכותית?"
@@ -425,7 +429,14 @@ function OriginCard({
   return (
     <article>
       <div className="flex items-start justify-between gap-4 mb-2">
-        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl pt-1">{title}</h3>
+        <h3 className="flex items-center gap-2 font-display text-lg font-bold leading-snug text-fg md:text-xl pt-1">
+          {/* legend key for the origin dots on the feature pills and in the result (sage = natural, grey = man-made) */}
+          <span
+            aria-hidden
+            className={cn('size-2.5 rounded-full shrink-0', tone === 'natural' ? 'bg-brand' : 'bg-fg-dim')}
+          />
+          {title}
+        </h3>
         {/* the vignette carries the identification cue (irregular crowns vs. rows) — kept, bare */}
         <span aria-hidden className="shrink-0 -mt-1">
           {tone === 'natural' ? <NaturalVignette /> : <PlantedVignette />}

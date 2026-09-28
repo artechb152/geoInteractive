@@ -722,7 +722,7 @@ interface NorthMeta {
   english: string;
   /** text-* token — also read as the SVG label/arrow color via currentColor */
   color: string;
-  /** bg tint (10% opacity) — selected-tab fill, in this north's diagram colour */
+  /** bg tint (10% opacity) — selected-tab fill and tabpanel result tint, in this north's diagram colour */
   bg: string;
   /** border-* token — selected-tab border, in this north's diagram colour */
   border: string;
@@ -1157,15 +1157,15 @@ function NorthInfoContent({ id }: { id: NorthId }) {
       </div>
       <dl className="mt-4 space-y-3.5 text-sm">
         <div>
-          <dt className="mb-0.5 font-display text-sm font-semibold text-fg-muted">במה משתמשים?</dt>
+          <dt className="mb-0.5 text-base font-display font-bold text-fg">במה משתמשים?</dt>
           <dd className="text-fg">{meta.who}</dd>
         </div>
         <div>
-          <dt className="mb-0.5 font-display text-sm font-semibold text-fg-muted">מה זה בעצם?</dt>
+          <dt className="mb-0.5 text-base font-display font-bold text-fg">מה זה בעצם?</dt>
           <dd className="leading-relaxed text-fg">{meta.what}</dd>
         </div>
         <div>
-          <dt className="mb-0.5 font-display text-sm font-semibold text-fg-muted">למה כן? / למה לא?</dt>
+          <dt className="mb-0.5 text-base font-display font-bold text-fg">למה כן? / למה לא?</dt>
           <dd className="leading-relaxed text-fg-muted">{meta.why}</dd>
         </div>
       </dl>
@@ -1177,6 +1177,8 @@ function NorthInfoContent({ id }: { id: NorthId }) {
  * Info panel (role=tabpanel). All three contents are stacked invisibly in the
  * same grid cell to reserve the tallest height, so switching tabs never makes
  * the card jump; the visible one cross-fades on top (AnimatePresence, wait).
+ * It is the result of the tab choice, so the inset is tinted with the chosen
+ * north's diagram colour (/10) — one cue family with the tab and its arrow.
  */
 function NorthInfoPanel({ active, panelId, labelledBy }: { active: NorthId; panelId: string; labelledBy: string }) {
   const reduce = !!useReducedMotion();
@@ -1186,7 +1188,7 @@ function NorthInfoPanel({ active, panelId, labelledBy }: { active: NorthId; pane
       id={panelId}
       aria-labelledby={labelledBy}
       tabIndex={0}
-      className="grid h-full rounded-xl bg-bg-accent/60 p-4"
+      className={cn('grid h-full rounded-xl p-4 transition-colors duration-200 ease-snap', NORTHS[active].bg)}
     >
       {NORTH_IDS.map((id) => (
         <div key={id} aria-hidden className="invisible [grid-area:1/1]">
@@ -1339,10 +1341,10 @@ function ConclusionCard() {
   return (
     <div className="surface p-5 sm:p-6">
       <div>
-        <div className="text-sm font-display font-semibold text-fg-muted mb-1">
+        <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
         השורה התחתונה
         </div>
-        <p className="text-fg leading-relaxed text-pretty">
+        <p className="text-base text-fg leading-relaxed text-pretty">
         ניווט הוא לא"בערך". זה <strong className="text-fg">אזימוט מדויק</strong>, הבנה של סוגי הצפונים, ומוכנות מלאה לרגע שבו הטכנולוגיה תפסיק לעבוד. היכולת הזו היא מה שמבדיל בין כוח שמגיע ליעד לבין כוח שהולך לאיבוד בשטח אויב.
         </p>
       </div>

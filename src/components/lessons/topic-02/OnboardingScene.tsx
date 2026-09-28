@@ -118,10 +118,13 @@ export function OnboardingScene() {
               <div
                 key={l.id}
                 className={cn(
-                  'overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
+                  // Rows sit on the textured page — the hover tint lives on a ::before
+                  // layer over the opaque white base, so it never lets the page show through.
+                  'relative isolate overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
+                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                   active
                     ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]'
+                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:before:bg-brand/[0.03]'
                 )}
               >
                 <button
@@ -129,7 +132,7 @@ export function OnboardingScene() {
                   onClick={() => clickLayer(i)}
                   aria-expanded={expanded}
                   aria-controls={`layer-panel-${l.id}`}
-                  className="w-full p-4 text-start flex items-center gap-3"
+                  className="w-full p-4 text-start flex items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
                 >
                   <span
                     className={cn(
@@ -144,7 +147,7 @@ export function OnboardingScene() {
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-tight text-black text-lg md:text-xl">
+                    <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">
                       {l.label}
                     </div>
                   </div>
@@ -154,8 +157,8 @@ export function OnboardingScene() {
                     className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
                   >
                     <svg
-                      width="22"
-                      height="22"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"

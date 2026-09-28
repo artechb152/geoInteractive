@@ -2,10 +2,8 @@
 
 import { useId, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ContoursDensitySection } from './ContoursDensitySection';
-import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import type { MountainView } from './ContourCake3D';
 import { MOUNTAIN } from './contourMountain.data';
@@ -117,7 +115,7 @@ export function ContoursScene() {
         </div>
       </div>
 
-      <h3 className="mt-14 mb-6 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+      <h3 className="mt-12 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
         זיהוי תנאי שטח לפי צפיפות
       </h3>
 

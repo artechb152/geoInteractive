@@ -108,44 +108,11 @@ export function HistoricalCasesPanel() {
   const active = CASES.find((c) => c.id === activeId) ?? CASES[0];
 
   return (
-    <div className="relative isolate overflow-hidden rounded-2xl bg-pine-grad p-5 shadow-pine-card sm:p-7 md:p-8">
-      {/* Background texture — deliberately loaded from the topic01 namespace:
-          the panel chrome (BG + CARD-TEXTURE) is shared with lesson 1 by the
-          user's decision, so editing lesson 1's art changes this panel too.
-          Only the per-case art below lives under /assets/lessons/topic02/.
-
-          TOPIC01-ONB-HIST-BG.png; falls back to the
-          pine gradient above until the asset lands. The panel is much
-          taller than the source image's 16:9 frame, so a single cover-fit
-          copy stretches into a flat green band past the image's textured
-          corners. Stack a second, vertically mirrored copy below it so the
-          texture continues instead of flattening out. */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-1/2">
-          <IsometricAsset
-            assetId="TOPIC01-ONB-HIST-BG"
-            src="/assets/lessons/topic01/scene-onboarding/TOPIC01-ONB-HIST-BG.png"
-            alt=""
-            aspect="16/9"
-            fit="cover"
-            eager
-            compactPlaceholder
-            className="size-full bg-transparent"
-          />
-        </div>
-        <div className="absolute inset-x-0 bottom-0 h-1/2 -scale-y-100">
-          <IsometricAsset
-            assetId="TOPIC01-ONB-HIST-BG"
-            src="/assets/lessons/topic01/scene-onboarding/TOPIC01-ONB-HIST-BG.png"
-            alt=""
-            aspect="16/9"
-            fit="cover"
-            eager
-            compactPlaceholder
-            className="size-full bg-transparent"
-          />
-        </div>
-      </div>
+    <div className="relative isolate overflow-hidden rounded-2xl bg-pine p-5 shadow-pine-card sm:p-7 md:p-8">
+      {/* Flat pine band — the decorative contour-texture backdrop and gradient
+          that lesson 1 shares (TOPIC01-ONB-HIST-BG) were dropped here by the
+          user's 2026-09-28 cleanup decision (patterns 16/17). Lesson 1 keeps
+          them. Only the per-case art below is content. */}
 
       <div className="relative z-10">
         <div className="mb-6 text-center md:mb-8">
@@ -212,11 +179,7 @@ export function HistoricalCasesPanel() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-              className="grid overflow-hidden rounded-2xl bg-paper-card bg-cover bg-center md:grid-cols-[1.1fr_1fr]"
-              style={{
-                backgroundImage:
-                  "url('/assets/lessons/topic01/scene-onboarding/TOPIC01-ONB-HIST-CARD-TEXTURE.png')",
-              }}
+              className="grid overflow-hidden rounded-xl bg-paper-card md:grid-cols-[1.1fr_1fr]"
             >
               {/* Text column — first child → right in RTL. */}
               <div className="flex flex-col p-6 md:p-8">
@@ -224,7 +187,9 @@ export function HistoricalCasesPanel() {
                 <div className="mt-1 text-sm font-display font-semibold text-fg-muted">{active.place}</div>
                 <p className="mt-4 text-base leading-relaxed text-fg">{active.lesson}</p>
 
-                <p className="mt-4 text-base font-display font-bold text-fg">עובדה מרכזית: {active.stat}</p>
+                <p className="mt-4 text-base leading-relaxed text-fg">
+                  <span className="font-display font-bold">עובדה מרכזית:</span> {active.stat}
+                </p>
 
                 <div className="mt-5">
                   <div className="text-base font-display font-bold text-fg">למה זה חשוב?</div>

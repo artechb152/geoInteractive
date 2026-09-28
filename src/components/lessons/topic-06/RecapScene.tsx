@@ -35,15 +35,15 @@ export function RecapScene() {
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
           <div key={t.term} className="surface p-5">
-            <div className="flex items-start gap-3">
-              <span className="shrink-0 font-display text-sm font-medium text-fg-muted">
+            <div className="flex items-baseline gap-3">
+              <span className="shrink-0 font-display text-base font-medium text-fg-muted">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="mb-1 font-display font-bold leading-tight text-fg">
+                <div className="mb-1.5 font-display text-lg font-bold leading-snug text-fg md:text-xl">
                   {t.term}
                 </div>
-                <div className="text-sm leading-relaxed text-fg-muted">
+                <div className="text-base leading-relaxed text-fg-muted text-pretty">
                   {t.def}
                 </div>
               </div>
@@ -57,13 +57,13 @@ export function RecapScene() {
 
 function CompletionBanner() {
   return (
-    <div className="mb-8">
+    <div className="mb-12">
       <div className="text-sm font-display font-semibold text-fg-muted">
         כל הכבוד · סיימת את שיעור הניווטים
       </div>
-      <div className="mt-1.5 font-display text-2xl font-bold leading-tight text-fg text-balance sm:text-3xl">
+      <h3 className="mt-1.5 font-display text-2xl font-bold leading-tight text-fg text-balance sm:text-3xl">
         עכשיו אתה יודע להגיע ליעד גם בלי GPS
-      </div>
+      </h3>
     </div>
   );
 }

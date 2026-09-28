@@ -44,7 +44,7 @@ const FEATURE_LABELS = Object.fromEntries(FEATURES.map((f) => [f.id, f.label])) 
 /** Layer colour cue — the illustration's legend key (sand = relief, sage = cover). */
 const LAYER_SWATCH: Record<Layer, string> = { relief: 'bg-terrain-sand', cover: 'bg-brand' };
 /** Result inset tint = the selected feature's legend colour (cleanup spec §1 result role). */
-const RESULT_TINT: Record<Layer, string> = { relief: 'bg-terrain-sand/15', cover: 'bg-brand/10' };
+const RESULT_TINT: Record<Layer, string> = { relief: 'bg-terrain-sand/20', cover: 'bg-brand/10' };
 
 const QUIZ_ITEMS: SortItem<Layer>[] = [
   { id: 'q-hill',    label: 'גבעה',       answer: 'relief', why: 'גבעה היא צורה של הקרקע עצמה — התרוממות של פני השטח.' },
@@ -107,11 +107,11 @@ export function ReliefCoverIntroScene() {
            interactive workspace below is the first strong surface ── */}
       <div className="surface p-5 sm:p-6">
         <div className="grid md:grid-cols-2 gap-6 md:gap-10">
-          <DefinitionCard term="תבליט" lead="מבנה פני הקרקע.">
+          <DefinitionCard layer="relief" term="תבליט" lead="מבנה פני הקרקע.">
             התבליט הוא הצורה של השטח: איפה הקרקע עולה ואיפה היא יורדת. הרים וגבעות, עמקים ומדרונות, מישורים ושקעים — כולם תבליט.
             את התבליט מתארים באמצעות <strong className="text-fg">תבניות נוף</strong>: צורות יסוד שחוזרות בכל שטח.
           </DefinitionCard>
-          <DefinitionCard term="תכסית" lead="כל מה שנמצא על הקרקע.">
+          <DefinitionCard layer="cover" term="תכסית" lead="כל מה שנמצא על הקרקע.">
             התכסית היא כל מה שמכסה את פני הקרקע. היא יכולה להיות <strong className="text-fg">טבעית</strong> — עצים, שיחים ועשב —
             או <strong className="text-fg">מלאכותית</strong>, כזו שהאדם יצר: בתים, כבישים, שדות ומטעים, גדרות וקווי חשמל.
           </DefinitionCard>
@@ -173,7 +173,7 @@ export function ReliefCoverIntroScene() {
                           onBlur={() => setHoverId(null)}
                           className={cn(
                             'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-display font-semibold text-fg',
-                            'transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-card',
+                            'transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-elevated',
                             isSel
                               ? 'border-accent bg-accent/10'
                               : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer',
@@ -202,22 +202,25 @@ export function ReliefCoverIntroScene() {
               >
                 {selected ? (
                   <div className={cn('rounded-xl p-4 flex-1 min-h-[140px]', RESULT_TINT[selected.layer])}>
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
-                      <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h3>
-                      <span className="inline-flex items-center gap-1.5 text-sm font-display font-semibold text-fg-muted">
-                        <span aria-hidden className={cn('size-2 rounded-full', LAYER_SWATCH[selected.layer])} />
-                        {LAYER_LABEL[selected.layer]}
-                      </span>
-                      {selected.origin && (
-                        <span className="text-sm text-fg-muted">
-                          תכסית {ORIGIN_LABEL[selected.origin]}
+                    <div className="mb-2">
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h3>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-display font-semibold text-fg-muted">
+                          <span aria-hidden className={cn('size-2 rounded-full', LAYER_SWATCH[selected.layer])} />
+                          {LAYER_LABEL[selected.layer]}
                         </span>
+                      </div>
+                      {/* origin on its own line — inline beside the layer key it read as „תכסית תכסית …” */}
+                      {selected.origin && (
+                        <div className="mt-0.5 text-sm text-fg-muted">
+                          תכסית {ORIGIN_LABEL[selected.origin]}
+                        </div>
                       )}
                     </div>
                     <p className="text-base text-fg leading-relaxed">{selected.desc}</p>
                   </div>
                 ) : (
-                  <div className="flex-1 min-h-[140px] rounded-xl bg-bg-accent/60 p-4">
+                  <div className="flex-1 min-h-[140px]">
                     <p className="text-sm text-fg-muted leading-relaxed">
                       בחרו רכיב כדי לגלות אם הוא חלק מהתבליט או מהתכסית. נסו לכבות את שכבת התכסית — ותראו את הקרקע „החשופה”.
                     </p>
@@ -332,7 +335,7 @@ function LayerToggle({
       onClick={onToggle}
       className={cn(
         'rounded-xl border ps-3 pe-2.5 py-2.5 font-display font-bold text-sm whitespace-nowrap transition-colors duration-200 ease-snap cursor-pointer',
-        'flex items-center justify-between gap-2 focus-visible:ring-offset-bg-card',
+        'flex items-center justify-between gap-2 focus-visible:ring-offset-bg-elevated',
         on
           ? layer === 'relief'
             ? 'border-terrain-sand/70 bg-terrain-sand/10 text-fg'
@@ -364,19 +367,25 @@ function CompareHead({ layer, children }: { layer: Layer; children: React.ReactN
   );
 }
 
-/** One definition column inside the opening info card — plain text, no frame. */
+/** One definition column inside the opening info card — plain text, no frame.
+ *  The dot introduces the legend key (sand = relief, sage = cover) reused by the workspace, table and result. */
 function DefinitionCard({
+  layer,
   term,
   lead,
   children,
 }: {
+  layer: Layer;
   term: string;
   lead: string;
   children: React.ReactNode;
 }) {
   return (
     <article>
-      <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{term}</h3>
+      <h3 className="flex items-center gap-2 font-display text-lg font-bold leading-snug text-fg md:text-xl">
+        <span aria-hidden className={cn('size-2.5 shrink-0 rounded-full', LAYER_SWATCH[layer])} />
+        {term}
+      </h3>
       <div className="mt-1 text-base font-display font-bold text-fg">{lead}</div>
       <p className="mt-2 text-base text-fg-muted leading-relaxed text-pretty">{children}</p>
     </article>

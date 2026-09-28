@@ -57,9 +57,6 @@ alt: 'צילום אוויר בקנה מידה 1:250,000 של אזור נרחב �
 },
  },
 ];
-function IconPlaceholder({ className }: { className?: string }) {
-return <span aria-hidden className={cn('inline-block shrink-0 rounded-lg border border-dashed', className)} />;
-}
 export function ScaleScene() {
 const [scale, setScale] = useState<Scale>(SCALES[1]);
 const [mapDistance, setMapDistance] = useState(4); // cm
@@ -106,11 +103,12 @@ return (
 key={s.id}
 onClick={() => setScale(s)}
 className={cn(
- 'flex flex-col items-center text-center gap-2 px-4 py-5 rounded-xl border text-fg cursor-pointer transition-colors duration-200 ease-snap',
-active ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]'
+ // options sit on the textured page — the tint lives on a ::before layer over an opaque white base, so hover/selected never let the page texture through
+ 'relative isolate flex flex-col items-center text-center gap-2 px-4 py-5 rounded-xl border bg-bg-elevated text-fg cursor-pointer transition-colors duration-200 ease-snap before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+active ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
  )}
  >
- <IconPlaceholder className="size-10 border-border bg-bg-accent" />
+ {/* Zoom-level icon goes here once the user supplies it (assumptions 2026-09-14). The empty dashed slot was removed by the 2026-09-28 cleanup decision — it read as unfinished. */}
  <span className="font-display font-bold text-lg tabular-nums">{s.label}</span>
  <span className="text-sm leading-snug text-fg-muted">
  קנה {s.size} · {s.who}

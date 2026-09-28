@@ -119,10 +119,13 @@ export function TopographyScene() {
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => setIdx(i)}
                 className={cn(
-                  'flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 font-display text-base font-bold text-fg transition-colors duration-200 ease-snap cursor-pointer',
+                  // Tabs sit on the textured page, so the translucent option tints ride
+                  // on an opaque white base via ::before (same recipe as Geology/Density).
+                  'relative isolate flex flex-1 items-center justify-center gap-2 rounded-xl border bg-bg-elevated px-3 py-2.5 font-display text-base font-bold text-fg transition-colors duration-200 ease-snap cursor-pointer',
+                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                   isActive
-                    ? 'border-accent bg-accent/10'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                    ? 'border-accent before:bg-accent/10'
+                    : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
                 )}
               >
                 <span
@@ -183,7 +186,7 @@ export function TopographyScene() {
                     <ul className="space-y-1.5 text-base leading-relaxed">
                       {meta.pros.map((p) => (
                         <li key={p} className="flex gap-2">
-                          <span className="text-status-ok">·</span>
+                          <span className="text-fg-muted">·</span>
                           <span className="text-fg">{p}</span>
                         </li>
                       ))}
@@ -211,7 +214,7 @@ export function TopographyScene() {
                     <ul className="space-y-1.5 text-base leading-relaxed">
                       {meta.cons.map((c) => (
                         <li key={c} className="flex gap-2">
-                          <span className="text-status-warn">·</span>
+                          <span className="text-fg-muted">·</span>
                           <span className="text-fg">{c}</span>
                         </li>
                       ))}
@@ -239,10 +242,10 @@ export function TopographyScene() {
             disabled={isFirst}
             aria-label="התצוגה הקודמת"
             className={cn(
-              'size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap',
+              'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
               isFirst
                 ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer',
+                : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
             )}
           >
             <ChevronRight size={22} strokeWidth={2} aria-hidden />
@@ -278,10 +281,10 @@ export function TopographyScene() {
             disabled={isLast}
             aria-label="התצוגה הבאה"
             className={cn(
-              'size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap',
+              'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
               isLast
                 ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer',
+                : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
             )}
           >
             <ChevronLeft size={22} strokeWidth={2} aria-hidden />

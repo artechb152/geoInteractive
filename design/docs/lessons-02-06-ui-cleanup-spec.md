@@ -34,6 +34,9 @@ Outcome per screen: **one visual focus**, an immediate difference between **info
 | **Inset** | Secondary content *inside* a workspace or card (readout, "when to use", example, key fact) | `rounded-xl bg-bg-accent/60 p-4` — **no border, no shadow**. Or no box at all: plain text separated by spacing. **Never** a bordered/shadowed card inside another card. |
 | **Option** (clickable) | Tabs, selectable cards, accordion headers, choice buttons | idle `rounded-xl border border-border bg-bg-elevated transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer` |
 
+- **Options that sit directly on the textured page** (not inside a white workspace) must keep their opaque white base — a translucent `bg-brand/[0.03]` or `bg-accent/10` *replaces* `bg-bg-elevated` and lets the contour texture show through. Paint the tint on a `::before` layer instead (canonical: `GeologyScene.tsx` `OPTION_*`):
+  base `relative isolate rounded-xl border bg-bg-elevated text-start cursor-pointer transition-colors duration-200 ease-snap before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap` · idle `border-border hover:border-brand/30 hover:before:bg-brand/[0.03]` · selected `border-accent before:bg-accent/10`. Inside a white workspace the plain recipe above is fine.
+
 - Nesting depth: page → workspace/info card → inset. Nothing deeper. If an illustration already sits in a workspace, drop extra frames around it (inner border+bg+shadow) unless the frame is the map's own neat-line.
 - Radius set: `rounded-2xl` (workspace, info card), `rounded-xl` (inset, option, image frame, inner button), `rounded-lg` (thumbnail), `rounded-full` (real chips, round badges, pill buttons). Replace `rounded-md`, `rounded-sm`, `rounded-[3px]/[4px]`, `rounded-3xl` on content surfaces.
 - Shadow: only the workspace (and existing `.btn-primary`). Info cards, insets, options: flat.

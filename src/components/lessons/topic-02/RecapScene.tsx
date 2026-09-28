@@ -47,11 +47,11 @@ export function RecapScene() {
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
           <div key={t.term} className="surface p-5">
-            <div className="flex items-start gap-3">
-              <span className="shrink-0 font-display text-sm font-medium text-fg-muted">{String(i + 1).padStart(2, '0')}</span>
+            <div className="flex items-baseline gap-3">
+              <span className="shrink-0 font-display text-base font-medium text-fg-muted">{String(i + 1).padStart(2, '0')}</span>
               <div className="min-w-0 flex-1">
-                <div className="mb-1 font-display font-bold leading-tight text-fg">{t.term}</div>
-                <div className="text-sm leading-relaxed text-fg-muted">
+                <div className="mb-1.5 font-display text-lg font-bold leading-snug text-fg md:text-xl">{t.term}</div>
+                <div className="text-base leading-relaxed text-fg-muted text-pretty">
                   {t.def}
                 </div>
               </div>
@@ -62,7 +62,7 @@ export function RecapScene() {
 
       <div className="mt-12">
         <div className="text-sm font-display font-semibold text-fg-muted">מוכן להמשיך?</div>
-        <div className="mt-1.5 text-lg font-medium leading-relaxed text-fg text-pretty md:text-xl">
+        <div className="mt-1.5 font-display text-lg font-medium leading-snug text-fg text-pretty md:text-xl">
           עבור לטאב <strong className="font-bold">תרגול</strong> כדי לתרגל את המושגים, ואז ל
           <strong className="font-bold">בדיקת ידע</strong> כדי לוודא שהפנמת.
         </div>

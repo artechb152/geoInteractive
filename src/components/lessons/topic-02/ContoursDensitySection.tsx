@@ -96,11 +96,14 @@ export function ContoursDensitySection() {
               tabIndex={active ? 0 : -1}
               onClick={() => setShapeId(s.id)}
               className={cn(
-                'flex items-center gap-3 rounded-xl border p-4 text-start',
+                // Tabs sit on the textured page (not inside a workspace), so the
+                // translucent option tints ride on an opaque white base via ::before.
+                'relative isolate flex items-center gap-3 rounded-xl border bg-bg-elevated p-4 text-start',
                 'transition-colors duration-200 ease-snap cursor-pointer',
+                'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                 active
-                  ? 'border-accent bg-accent/10'
-                  : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                  ? 'border-accent before:bg-accent/10'
+                  : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
               )}
             >
               <span className="flex shrink-0 text-fg-muted">
@@ -169,7 +172,7 @@ function Glossary() {
 function Item({ term, def, emphasis = false }: { term: string; def: string; emphasis?: boolean }) {
   return (
     <div className={cn(emphasis && 'rounded-xl bg-bg-accent/60 p-4')}>
-      <dt className="text-base font-display font-bold text-fg">{term}</dt>
+      <dt className="text-sm font-display font-bold text-fg">{term}</dt>
       <dd className="mt-1 text-sm text-fg-muted leading-relaxed">{def}</dd>
     </div>
   );

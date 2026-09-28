@@ -65,11 +65,11 @@ export function SortQuiz<K extends string>({
           <p className="text-sm text-fg-muted leading-relaxed mt-1">{prompt}</p>
         </div>
         <div className="flex items-center gap-2">
-          {/* live score — a real status chip, so it keeps the pill shape (no icon) */}
+          {/* live score — a real status chip: filled, no border, so it never reads like the bordered reset action beside it */}
           <span
             className={cn(
-              'inline-flex items-center rounded-full border px-3 py-1 text-sm transition-colors duration-300',
-              perfect ? 'border-brand/50 bg-brand/15 text-brand-dark' : 'border-border bg-bg-accent text-fg-muted',
+              'inline-flex items-center rounded-full px-3 py-1 text-sm transition-colors duration-300',
+              perfect ? 'bg-brand/15 text-brand-dark' : 'bg-bg-accent text-fg-muted',
             )}
             aria-live="polite"
           >
@@ -81,9 +81,9 @@ export function SortQuiz<K extends string>({
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-bg-elevated px-3 py-1 text-sm font-display font-semibold text-fg-muted hover:border-brand/30 hover:bg-brand/[0.03] hover:text-fg cursor-pointer transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-elevated"
+              className="btn-secondary px-3 py-1.5 text-sm cursor-pointer focus-visible:ring-offset-bg-elevated"
             >
-              <Icon name="refresh" size={14} />
+              <Icon name="refresh" size={15} />
               התחלה מחדש
             </button>
           )}

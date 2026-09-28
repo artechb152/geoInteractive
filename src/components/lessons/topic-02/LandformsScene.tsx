@@ -119,8 +119,9 @@ export function LandformsScene() {
         <FormBoard active={active} />
       </div>
 
-      <p className="mb-4 text-sm font-display font-semibold text-fg-muted">עוד שכבה: לא רק צורת ההר — גם צורת המדרון</p>
-
+      {/* The former divider line ("עוד שכבה: …") was removed by the user's
+          2026-09-28 decision — the slope workspace opens with its own T1 h3,
+          and the grid above already sets the 48px block gap (mb-12). */}
       <SlopeAnalyzer slopes={SLOPES} active={slope} onSelect={setSlope} />
     </section>
   );
@@ -138,8 +139,11 @@ function FormAccordion({ active, onSelect }: { active: Form; onSelect: (id: Form
           <div
             key={f.id}
             className={cn(
-              'overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
-              isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:bg-brand/[0.03]',
+              // Rows sit on the textured page (not inside a workspace), so the
+              // translucent hover tint rides on an opaque white base via ::before.
+              'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
+              'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+              isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
             )}
           >
             <button
@@ -150,12 +154,7 @@ function FormAccordion({ active, onSelect }: { active: Form; onSelect: (id: Form
               aria-expanded={isActive}
               className="w-full p-5 text-start flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
             >
-              <span
-                className={cn(
-                  'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 font-display text-sm font-bold',
-                  isActive ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted',
-                )}
-              >
+              <span className="size-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-bold bg-bg-accent text-fg-muted">
                 {i + 1}
               </span>
               <div className="flex-1 min-w-0">
@@ -231,10 +230,10 @@ function FormBoard({ active }: { active: Form }) {
   return (
     <div className="lg:sticky lg:top-24 self-start">
       <div className="surface-elevated p-5 sm:p-6">
-        {/* Board header — names the active landform; its badge mirrors the open accordion item */}
+        {/* Board header — names the active landform; its number matches the open accordion item */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3 min-w-0" aria-live="polite">
-            <span className="size-9 rounded-xl bg-brand-dark text-bg-elevated font-display text-sm font-bold flex items-center justify-center shrink-0">
+            <span className="size-9 rounded-xl bg-bg-accent text-fg-muted font-display text-sm font-bold flex items-center justify-center shrink-0">
               {index + 1}
             </span>
             <div className="min-w-0">
@@ -371,8 +370,8 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
             >
               <span
                 className={cn(
-                  'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-colors duration-200 font-display font-bold text-sm',
-                  isActive ? 'bg-accent text-white border-accent' : 'bg-bg-accent text-fg-muted border-border',
+                  'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 font-display font-bold text-sm',
+                  isActive ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
                 )}
               >
                 {i + 1}

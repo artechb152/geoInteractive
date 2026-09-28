@@ -36,7 +36,7 @@ intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפ
  <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-12">
  <div>
  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- סיפור דרך
+ סיפור דרך <span className="font-medium text-fg-muted text-base md:text-lg">(Route Story)</span>
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
  תוכנית מפורטת שמתארת מראש <strong className="text-fg">מה העיניים אמורות לראות בכל קטע</strong>. ככה גם בלילה קשה או בדרך מורכבת — לא מאבדים את החוט.
@@ -130,10 +130,11 @@ return (
  onClick={() => go(i)}
  aria-current={isActive ? 'step' : undefined}
  className={cn(
- 'group w-full p-4 text-start flex items-start gap-3 rounded-xl border cursor-pointer transition-colors duration-200 ease-snap',
+ // the list sits on the textured page: tint is a layer over a solid white base (same recipe as lesson 2's on-page options)
+ 'group relative isolate w-full p-4 text-start flex items-start gap-3 rounded-xl border bg-bg-elevated cursor-pointer transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
  isActive
-   ? 'border-accent bg-accent/10'
-   : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]'
+   ? 'border-accent before:bg-accent/10'
+   : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
  )}
  >
  {/* state badge — mirrors the map marker: orange = current, sage ✓ = passed */}
@@ -144,7 +145,7 @@ isActive
  ? 'bg-accent text-white'
  : passed
  ? 'bg-brand/15 text-brand-dark'
- : 'bg-bg-accent text-fg-muted'
+ : 'text-fg-muted'
  )}
  >
  {passed && !isActive ? (
@@ -268,8 +269,8 @@ useEffect(() => {
 }, [paces, reduce, paceSpring]);
 return (
  <div data-qa="pacing" className="surface-elevated p-6 lg:p-8">
- <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2 text-center">ספירת צעדים — איך מודדים מרחק בלי GPS?</h3>
- <p className="text-base leading-relaxed text-fg-muted text-center mb-8 max-w-2xl mx-auto">
+ <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">ספירת צעדים — איך מודדים מרחק בלי GPS?</h3>
+ <p className="mt-2 mb-8 max-w-2xl text-base leading-relaxed text-fg-muted">
  השיטה הכי פשוטה והכי בטוחה: סופרים כמה 'צעדים כפולים' (כל פעם שרגל ימין פוגשת את הקרקע) אתם עושים.
  זהו 'מד המרחק' האנושי שלכם. גללו את הסרגל כדי לראות כמה צעדים תצטרכו לעשות.
  </p>
@@ -327,7 +328,7 @@ aria-label="מרחק במטרים"
 aria-valuetext={`${distance} מ'`}
  />
  </div>
- <div className="relative h-7 mt-1.5 text-[13px] font-display font-medium text-fg-dim">
+ <div className="relative h-7 mt-1.5 text-[13px] font-display font-medium text-fg-muted">
  {[50, 500, 1000, 1500, 2000].map((val) => {
  const pct = ((val - 50) / (2000 - 50)) * 100; // מיקום אמיתי על הסרגל (מהקצה הימני, RTL)
  return (
@@ -335,7 +336,7 @@ aria-valuetext={`${distance} מ'`}
  key={val}
  className={cn(
    'absolute top-0 flex flex-col items-center rtl:translate-x-1/2 ltr:-translate-x-1/2 whitespace-nowrap tabular-nums transition-colors duration-200',
-   distance >= val && 'text-fg-muted'
+   distance >= val && 'text-fg font-semibold'
  )}
  style={{ insetInlineStart: alongTrack(pct / 100) }}
  >
@@ -352,9 +353,9 @@ aria-valuetext={`${distance} מ'`}
  <Icon name="arrow-left" size={20} strokeWidth={2} />
  </div>
 
- <div className="p-6 rounded-xl flex flex-col items-center justify-center text-center bg-accent/10">
+ <div className="p-6 rounded-xl flex flex-col items-center justify-center text-center bg-bg-accent/60">
  <div className="text-sm font-display font-semibold text-fg-muted mb-2">כמות צמדי צעדים משוערת</div>
- <motion.div className="text-6xl font-display font-bold text-accent tabular-nums mb-2" aria-hidden>{pacesShown}</motion.div>
+ <motion.div className="text-6xl font-display font-bold text-fg tabular-nums mb-2" aria-hidden>{pacesShown}</motion.div>
  <span className="sr-only" aria-live="polite">{paces}</span>
  <div className="text-sm font-bold text-fg">זוגות צעדים</div>
  <div className="text-sm text-fg-muted mt-4 tabular-nums">חישוב: {distance} מ' ÷ 1.5 מ' (אורך צמד צעדים) = {paces}</div>

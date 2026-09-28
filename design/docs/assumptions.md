@@ -580,3 +580,42 @@ Previous editable dioramas are preserved unchanged in `design/blender/terrain-de
 User feedback identified cluttered star-shaped contours and an artificial side view. Replaced the high-frequency angular wobble with slight broad asymmetry and a rounded slope profile. All three examples retain the same elevation interval, shared world scale and west/east orientation. Exact contour/height/density checks pass with the revised model.
 
 Side illustrations now use a generated realistic appearance guided by the updated Blender silhouettes: fine limestone outcrops, olive scrub and directional lighting, without a surrounding terrain tile. PNG sources are preserved in `design/blender/terrain-density/isolated-sides/appearance/`; optimized `*-natural.webp` images are the live assets. The broad landform follows the model; surface details are illustrative, not exact surveyed geometry. Existing archived Blender dioramas remain untouched. No instructional copy, tabs, interaction handlers, layout or color tokens change.
+
+## 2026-09-28 — Lessons 2 & 6: UI-language cleanup (21-pattern brief)
+
+Rules: `design/docs/lessons-02-06-ui-cleanup-spec.md`. That spec extends the topic-01 brief and wins over it for these two lessons. Every learn-mode screen was cleaned except the two hooks, which use the shared `HookSceneLayout`. Each screen was checked against a 1440px baseline and a before/after diff of its rendered text.
+
+### Wording
+
+Wording is unchanged except for the removals the brief allows:
+- **Eyebrow labels.** Examples: הכלי המנחה, למה מראש, השפה של הניווט, טכניקה 1–3, למה זה קריטי?.
+- **English sub-lines.** Examples: rock names, landforms, north types, Relief / Land cover, technique names.
+- **Kept inline (the lesson relies on these terms):** `(Azimuth)`, `(Dead Reckoning)`, `(Route Story)`, `(Pacing)`.
+- **Uppercase dropped on English words.** EASTING now renders as Easting because the source text is mixed-case.
+
+### Heading highlights
+
+Kept: לימוד 2 "תבליט ותכסית" and לימוד 6 "סיפור דרך". All the others were unwrapped.
+
+### Shared components
+
+`ReadyCallout` / `IntelCard` gained an opt-in `signature` prop (default `true`), so other lessons are unaffected. Lessons 2 and 6 pass `false`.
+
+### Option recipe on the textured page
+
+Tints are painted on a `::before` layer, so the contour texture never shows through a hovered or selected option. See spec §1.
+
+### User decisions (asked, then applied on the user's "תעשה את זה", 2026-09-28)
+
+1. **`HistoricalCasesPanel` (lesson 2 onboarding) dark band.** Removed the contour background texture (2× `TOPIC01-ONB-HIST-BG`) and the paper grain behind the detail panel. `bg-pine-grad` became flat `bg-pine`. Lesson 1's own panel keeps them. This supersedes the earlier "shared chrome with lesson 1" decision *for lesson 2 only*.
+2. **Coordinates.** Removed the kicker "אנטומיה של נ״צ: מה כל ספרה אומרת" above the T1 title.
+3. **Landforms.** Removed the floating former-divider line "עוד שכבה: לא רק צורת ההר — גם צורת המדרון". The slope workspace opens with its own T1.
+4. **CombatNav.** Removed the legend heading "מקרא".
+5. **"דוגמה".** Removed in CombatNav too, matching Principles (pattern 4 names it). The scenario paragraph stands on its own.
+6. **Lesson 6 onboarding historical cards.** The call site now uses local `.surface` info cards instead of the shared `IntelCard`, with the same content and order. The 8 other lessons that use `IntelCard` are unchanged.
+7. **Scale.** Removed the three empty dashed icon slots. This supersedes the 2026-09-14 placeholder entry. A code comment marks where the zoom-level icon goes if the user supplies one.
+
+### Pre-existing, not from this pass
+
+- The lesson 2 onboarding map box height sometimes renders ~1053px instead of 617px (canvas aspect).
+- SMIL / infinite pulses inside map SVGs (PlanningRouteMap, lesson 6 onboarding mission map) were kept as map content.

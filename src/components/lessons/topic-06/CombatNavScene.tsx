@@ -183,10 +183,13 @@ return (
  <div
 key={m.id}
 className={cn(
- 'overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
+ // Items sit on the textured page (not inside a workspace), so the hover
+ // tint rides on the opaque white base via ::before instead of replacing it.
+ 'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
+ 'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
 isActive
  ? 'border-brand/45'
- : 'border-border hover:border-brand/30 hover:bg-brand/[0.03]'
+ : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
  )}
  >
  <button
@@ -206,7 +209,7 @@ className="w-full p-4 text-start flex items-center gap-3 rounded-xl focus-visibl
  {INLINE_TERM.has(m.id) && (
  <>
  {' '}
- <span className="text-base font-medium text-fg-muted">({m.english})</span>
+ <span className="text-base font-medium text-fg-muted md:text-lg">({m.english})</span>
  </>
  )}
  </div>
@@ -266,12 +269,8 @@ className="overflow-hidden"
  </ul>
  </div>
 
- <div>
- <div className="text-base font-display font-bold text-fg mb-1.5">
- דוגמה
- </div>
+ {/* "דוגמה" label removed (2026-09-28 user decision, same as PrinciplesScene) — the scenario reads as an example on its own */}
  <p className="text-base leading-relaxed text-fg">{m.example}</p>
- </div>
  </div>
  </motion.div>
  )}
@@ -314,7 +313,7 @@ className="surface-elevated overflow-hidden flex flex-col lg:max-h-[calc(100vh-7
  {/* Diagram toolbar — what this diagram shows · replay the demo */}
  <div className="shrink-0 flex items-center justify-between gap-3 px-5">
  <AnimatePresence mode="wait" initial={false}>
- <motion.span key={active} {...swap} className="text-sm font-display font-semibold text-fg">
+ <motion.span key={active} {...swap} className="text-sm font-display font-semibold text-fg-muted">
  {support.badge}
  </motion.span>
  </AnimatePresence>
@@ -345,8 +344,8 @@ className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border 
  <AnimatePresence mode="wait" initial={false}>
  <motion.div key={active} {...swap} className="space-y-4">
  <p className="text-sm text-fg-muted leading-relaxed">{support.caption}</p>
+ {/* "מקרא" heading removed (2026-09-28 user decision, pattern 4) — the swatch list reads as a legend on its own, like every other legend in lessons 2 & 6 */}
  <div>
- <div className="text-sm font-display font-semibold text-fg-muted mb-2">מקרא</div>
  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2">
  {support.legend.map((it) => (
  <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
@@ -809,7 +808,7 @@ return (
 function ConclusionCard() {
 return (
  <div className="mt-6 surface p-5 sm:p-6">
- <div className="text-base font-display font-bold text-fg mb-1.5">
+ <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
  המסקנה
  </div>
  <p className="text-base text-fg leading-relaxed text-pretty">
