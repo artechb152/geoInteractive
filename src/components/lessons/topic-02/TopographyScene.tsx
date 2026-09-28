@@ -1,11 +1,18 @@
 'use client';
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import dynamic from 'next/dynamic';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
-import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
+
+// One generated terrain shown three ways (3D model / aerial photo / map) in a
+// single live canvas — client-only, and nothing loads until it nears the viewport.
+const TopographyTerrain3D = dynamic(() => import('./TopographyTerrain3D'), {
+  ssr: false,
+  loading: () => <div className="h-full min-h-[560px] w-full rounded-xl bg-bg-accent/40" />,
+});
 type View = '3d' | 'photo' | 'topo';
 const VIEWS: { id: View; label: string; icon: IconName; pros: string[]; cons: string[]; whatItIs: string; whyItMatters: string }[] = [
  {
@@ -57,9 +64,22 @@ cons: [
 whyItMatters: 'המפה היא כלי העבודה מספר 1 של כל מפקד. היא משאירה רק את הנתונים הקריטיים לניווט, ומאפשרת לקבל החלטות מדויקות תחת לחץ.',
  },
 ];
+/** What the viewer shows in each view — the former image alts, verbatim. */
+const ALTS: Record<View, string> = {
+  '3d': 'איור איזומטרי: מודל תלת-ממדי של הר, מציג את פני השטח כמו דגם מוקטן',
+  photo: 'תצלום אווירי של שטח, מבט ישר מלמעלה',
+  topo: 'מפה טופוגרפית עם קווי גובה המתארים שטח תלת-ממדי על גבי דף שטוח',
+};
 export function TopographyScene() {
   const [idx, setIdx] = useState(0); // default: מודל תלת־ממדי — הרצף מתקדם מהמוחשי אל המפה
+  const [stacked, setStacked] = useState(false); // "כל התצוגות יחד": the model lifted off its map
   const reduce = useReducedMotion();
+  // Choosing a view — tab, pager, dot, arrow key or a layer of the stack —
+  // always shows just that view: it leaves "all together".
+  const select = (i: number) => {
+    setIdx(i);
+    setStacked(false);
+  };
   const total = VIEWS.length;
   const meta = VIEWS[idx];
   const isFirst = idx === 0;
@@ -81,7 +101,7 @@ export function TopographyScene() {
     }
     if (next < 0) return;
     e.preventDefault();
-    setIdx(next);
+    select(next);
     if ((e.target as HTMLElement).getAttribute('role') === 'tab') tabRefs.current[next]?.focus();
   };
 
@@ -117,7 +137,7 @@ export function TopographyScene() {
                 aria-selected={isActive}
                 aria-controls={panelId}
                 tabIndex={isActive ? 0 : -1}
-                onClick={() => setIdx(i)}
+                onClick={() => select(i)}
                 className={cn(
                   // Tabs sit on the textured page, so the translucent option tints ride
                   // on an opaque white base via ::before (same recipe as Geology/Density).
@@ -144,193 +164,176 @@ export function TopographyScene() {
           })}
         </div>
 
-        {/* Central content panel — one view at a time, full-width image, replaces the former accordion + cropped side-image layout */}
+        {/* One card, one screen: the explanation (first in DOM → visual right,
+            where RTL reading starts) beside a large live viewer. The pager sits
+            at the end of the text, so reading ends at "next". */}
         <div
           role="tabpanel"
           id={panelId}
           aria-labelledby={tabId(idx)}
           className="surface-elevated p-5 sm:p-6"
         >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={meta.id}
-              initial={reduce ? false : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div className="mb-4 text-center font-display text-lg font-bold leading-snug text-fg md:text-xl">
-                {meta.label}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8">
+            <div className="flex min-w-0 flex-col">
+              {/* All three texts share one grid cell, so the column — and the
+                  viewer beside it — keeps the height of the tallest view:
+                  switching never makes the layout jump. */}
+              <div className="grid [&>*]:[grid-area:1/1]">
+                {VIEWS.map((v, i) => {
+                  const isActive = i === idx;
+                  return (
+                    <motion.div
+                      key={v.id}
+                      aria-hidden={!isActive}
+                      initial={false}
+                      animate={
+                        isActive
+                          ? { opacity: 1, visibility: 'visible' }
+                          : { opacity: 0, transitionEnd: { visibility: 'hidden' } }
+                      }
+                      transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="space-y-4"
+                    >
+                      <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
+                        {v.label}
+                      </div>
+
+                      <div>
+                        <div className="mb-1 font-display text-base font-bold text-fg">
+                          במילים פשוטות
+                        </div>
+                        <p className="text-base leading-relaxed text-fg">{v.whatItIs}</p>
+                      </div>
+
+                      <div>
+                        <div className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg">
+                          <Icon name="check" size={18} strokeWidth={2.25} className="shrink-0 text-fg-muted" />
+                          מה היתרון
+                        </div>
+                        <ul className="space-y-1.5 text-base leading-relaxed">
+                          {v.pros.map((p) => (
+                            <li key={p} className="flex gap-2">
+                              <span className="text-fg-muted">·</span>
+                              <span className="text-fg">{p}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <div className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg">
+                          <svg
+                            width="18"
+                            height="18"
+                            className="shrink-0 text-fg-muted"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.25"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden
+                          >
+                            <path d="M18 6 6 18M6 6l12 12" />
+                          </svg>
+                          מה הבעיה
+                        </div>
+                        <ul className="space-y-1.5 text-base leading-relaxed">
+                          {v.cons.map((c) => (
+                            <li key={c} className="flex gap-2">
+                              <span className="text-fg-muted">·</span>
+                              <span className="text-fg">{c}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="rounded-xl bg-bg-accent/60 p-4">
+                        <div className="mb-1 font-display text-base font-bold text-fg">
+                          למה זה חשוב
+                        </div>
+                        <p className="text-base leading-relaxed text-fg text-pretty">{v.whyItMatters}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
 
-              <div className="mx-auto max-w-2xl overflow-hidden rounded-xl">
-                {meta.id === '3d' && <View3D />}
-                {meta.id === 'photo' && <ViewPhoto />}
-                {meta.id === 'topo' && <ViewTopo />}
-              </div>
-
-              <div className="mt-6 space-y-6">
-                <div>
-                  <div className="mb-1 font-display text-base font-bold text-fg">
-                    במילים פשוטות
-                  </div>
-                  <p className="text-base leading-relaxed text-fg">{meta.whatItIs}</p>
-                </div>
-
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <div className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg">
-                      <Icon name="check" size={18} strokeWidth={2.25} className="shrink-0 text-fg-muted" />
-                      מה היתרון
-                    </div>
-                    <ul className="space-y-1.5 text-base leading-relaxed">
-                      {meta.pros.map((p) => (
-                        <li key={p} className="flex gap-2">
-                          <span className="text-fg-muted">·</span>
-                          <span className="text-fg">{p}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <div className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg">
-                      <svg
-                        width="18"
-                        height="18"
-                        className="shrink-0 text-fg-muted"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.25"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path d="M18 6 6 18M6 6l12 12" />
-                      </svg>
-                      מה הבעיה
-                    </div>
-                    <ul className="space-y-1.5 text-base leading-relaxed">
-                      {meta.cons.map((c) => (
-                        <li key={c} className="flex gap-2">
-                          <span className="text-fg-muted">·</span>
-                          <span className="text-fg">{c}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-bg-accent/60 p-4">
-                  <div className="mb-1 font-display text-base font-bold text-fg">
-                    למה זה חשוב
-                  </div>
-                  <p className="text-base leading-relaxed text-fg text-pretty">{meta.whyItMatters}</p>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Prev / progress dots / Next — matches the LandformsScene pager convention.
-            RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setIdx((v) => Math.max(0, v - 1))}
-            disabled={isFirst}
-            aria-label="התצוגה הקודמת"
-            className={cn(
-              'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-              isFirst
-                ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
-            )}
-          >
-            <ChevronRight size={22} strokeWidth={2} aria-hidden />
-          </button>
-
-          {/* Progress dots — a mouse shortcut mirroring the tab row above
-              (hidden from assistive tech, which uses the tablist). */}
-          <div className="flex items-center gap-2" aria-hidden>
-            {VIEWS.map((v, i) => {
-              const isActive = i === idx;
-              return (
+              {/* Prev / progress dots / Next — matches the LandformsScene pager convention.
+                  RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
+              <div className="mt-auto flex items-center justify-between gap-3 pt-5">
                 <button
-                  key={v.id}
                   type="button"
-                  tabIndex={-1}
-                  onClick={() => setIdx(i)}
-                  className="group flex h-6 items-center justify-center px-0.5 cursor-pointer"
+                  onClick={() => select(Math.max(0, idx - 1))}
+                  disabled={isFirst}
+                  aria-label="התצוגה הקודמת"
+                  className={cn(
+                    'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                    isFirst
+                      ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
+                      : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
+                  )}
                 >
-                  <span
-                    className={cn(
-                      'block h-2.5 rounded-full transition-all duration-300 ease-snap',
-                      isActive ? 'w-8 bg-accent' : 'w-2.5 bg-border-strong/70 group-hover:bg-fg-dim',
-                    )}
-                  />
+                  <ChevronRight size={22} strokeWidth={2} aria-hidden />
                 </button>
-              );
-            })}
-          </div>
 
-          <button
-            type="button"
-            onClick={() => setIdx((v) => Math.min(total - 1, v + 1))}
-            disabled={isLast}
-            aria-label="התצוגה הבאה"
-            className={cn(
-              'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-              isLast
-                ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
-            )}
-          >
-            <ChevronLeft size={22} strokeWidth={2} aria-hidden />
-          </button>
+                {/* Progress dots — a mouse shortcut mirroring the tab row above
+                    (hidden from assistive tech, which uses the tablist). */}
+                <div className="flex items-center gap-2" aria-hidden>
+                  {VIEWS.map((v, i) => {
+                    const isActive = i === idx;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => select(i)}
+                        className="group flex h-6 items-center justify-center px-0.5 cursor-pointer"
+                      >
+                        <span
+                          className={cn(
+                            'block h-2.5 rounded-full transition-all duration-300 ease-snap',
+                            isActive ? 'w-8 bg-accent' : 'w-2.5 bg-border-strong/70 group-hover:bg-fg-dim',
+                          )}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => select(Math.min(total - 1, idx + 1))}
+                  disabled={isLast}
+                  aria-label="התצוגה הבאה"
+                  className={cn(
+                    'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                    isLast
+                      ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
+                      : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
+                  )}
+                >
+                  <ChevronLeft size={22} strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+            </div>
+
+            {/* The viewer — second in DOM → visual left. It stretches to the
+                text column's height (never below 560 px). */}
+            <div className="relative min-h-[560px]">
+              <div className="absolute inset-0">
+                <TopographyTerrain3D
+                  view={meta.id}
+                  stacked={stacked}
+                  onToggleStacked={() => setStacked((s) => !s)}
+                  onSelectView={(v) => select(VIEWS.findIndex((x) => x.id === v))}
+                  ariaLabel={ALTS[meta.id]}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
-  );
-}
-
-// ==========================================
-// תצוגות – איורים מבוססי תמונה (מוצגות במלואן, בלי חיתוך)
-// ==========================================
-function View3D() {
-  return (
-    <IsometricAsset
-      assetId="TOPIC02-TOPO-3D"
-      src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-3D.png"
-      alt="איור איזומטרי: מודל תלת-ממדי של הר, מציג את פני השטח כמו דגם מוקטן"
-      aspect="4/3"
-      className="w-full rounded-lg"
-      prompt="Isometric papercut illustration of a 3D terrain model of a mountain, layered-paper shading, warm cream background, no text."
-    />
-  );
-}
-function ViewPhoto() {
-  return (
-    <IsometricAsset
-      assetId="TOPIC02-TOPO-PHOTO"
-      src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-PHOTO.png"
-      alt="תצלום אווירי של שטח, מבט ישר מלמעלה"
-      aspect="4/3"
-      className="w-full rounded-lg"
-      prompt="Aerial photograph style illustration of terrain viewed from directly above, warm cream background, no text."
-    />
-  );
-}
-function ViewTopo() {
-  return (
-    <IsometricAsset
-      assetId="TOPIC02-TOPO-MAP"
-      src="/assets/lessons/topic02/scene-topography/TOPIC02-TOPO-MAP.png"
-      alt="מפה טופוגרפית עם קווי גובה המתארים שטח תלת-ממדי על גבי דף שטוח"
-      aspect="4/3"
-      className="w-full rounded-lg"
-      prompt="Topographic map illustration with contour lines, papercut style, warm cream background, no text."
-    />
   );
 }

@@ -120,6 +120,9 @@ export type ArchivedScene = SceneMeta & { topicId: string };
 
 export const archivedScenes: ArchivedScene[] = [
   { topicId: 'topic-03', id: 'tacticalterrain', label: 'שטח טקטי' },
+  // Pre-redesign snapshot of topic-02 #scene-topography, kept for visual comparison.
+  // Its own id, so the live 'topography' scene stays in the lesson.
+  { topicId: 'topic-02', id: 'topography-v1', label: 'טופוגרפיה · גרסה קודמת' },
 ];
 
 export function isArchivedScene(topicId: string, sceneId: string): boolean {
