@@ -3,14 +3,8 @@ import { useRef, useState, type ComponentType, type KeyboardEvent, type ReactNod
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
-import {
-  EndogenicVisual,
-  ExogenicVisual,
-  IgneousVisual,
-  MetamorphicVisual,
-  RockSwatch,
-  SedimentVisual,
-} from './GeologyVisuals';
+import { EndogenicVisual, ExogenicVisual } from './GeologyVisuals';
+import { RockDiorama, RockSpecimen } from './RockVisuals';
 
 type Rock = {
   id: 'igneous' | 'sediment' | 'metamorphic';
@@ -74,12 +68,6 @@ const FORCES: Force[] = [
 ];
 
 type Visual = ComponentType<{ reduce: boolean }>;
-
-const ROCK_VISUALS: Record<Rock['id'], Visual> = {
-  igneous: IgneousVisual,
-  sediment: SedimentVisual,
-  metamorphic: MetamorphicVisual,
-};
 
 const FORCE_VISUALS: Record<Force['id'], Visual> = {
   endo: EndogenicVisual,
@@ -161,7 +149,6 @@ export function GeologyScene() {
   const forceData = FORCES.find((f) => f.id === force)!;
   const rockKeys = useTabKeys(ROCK_IDS, rock, setRock);
   const forceKeys = useTabKeys(FORCE_IDS, force, setForce);
-  const RockVisual = ROCK_VISUALS[rock];
   const ForceVisual = FORCE_VISUALS[force];
 
   return (
@@ -223,7 +210,7 @@ export function GeologyScene() {
                     )}
                   >
                     <span className="relative shrink-0">
-                      <RockSwatch kind={r.id} className="size-14 rounded-lg ring-1 ring-black/5" />
+                      <RockSpecimen kind={r.id} className="size-14 rounded-lg ring-1 ring-black/5" />
                       <span
                         className={cn(
                           'absolute -top-1.5 -start-1.5 size-6 rounded-full border-2 flex items-center justify-center font-display font-bold text-[13px] transition-colors',
@@ -263,10 +250,10 @@ export function GeologyScene() {
                     </InfoBlock>
                   </div>
                   <figure className="relative m-0 rounded-xl bg-paper-card overflow-hidden">
-                    <RockVisual reduce={reduce} />
-                    {/* Rock sample — the recognizable texture of this rock family */}
+                    <RockDiorama kind={rock} reduce={reduce} />
+                    {/* Rock sample — a hand specimen of this rock family */}
                     <div className="absolute top-3 start-3 w-[104px] rounded-xl bg-bg-elevated p-1.5">
-                      <RockSwatch kind={rock} className="w-full aspect-square rounded-lg" />
+                      <RockSpecimen kind={rock} className="w-full aspect-square rounded-lg" />
                       <div className="mt-1 px-0.5 text-center text-sm leading-snug text-fg-muted text-balance">
                         {rockData.examples}
                       </div>

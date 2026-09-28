@@ -1,0 +1,11 @@
+Create one photorealistic cinematic nature photograph, landscape 16:9, for an educational film about how rocks form. Understated documentary realism, as if shot on a full-frame camera with a 35mm-equivalent lens on a locked tripod, level horizon, natural light, true-to-life color, gentle contrast. Same photographic treatment as the supplied reference. No illustration, 3D render, miniature, diorama, cutaway, cross-section, infographic look, collage or split screen.
+
+No readable text, captions, labels, arrows, logos, watermarks or signs. Hebrew labels will be added by the website. Output one clean still.
+
+REFERENCE: The supplied image (IGN-START) is the exact composition and camera reference. Keep the same camera position, lens, height, horizon line, cone shape and position, and the same outline of the lava flow and surrounding ground. Do not move, zoom, rotate or re-crop. Only the state of the place changes.
+
+SCENE — THE SAME PLACE, COOLED TO BASALT. Clear, soft mid-morning daylight. The lava flow has completely cooled: the same diagonal band is now solid, rough black-grey basalt with ropy and blocky surfaces, a faint dull sheen and a few pale lichen spots. No glow, no red or orange anywhere, no steam from the flow; at most a faint wisp above the cone. The whole landscape reads as hard, sharp and exposed: angular basalt boulders, sparse dry grass tufts, no trees and almost no natural cover. The sky is pale morning blue. No people, animals, vehicles or buildings.
+
+COMPOSITION: Identical framing to IGN-START. Cone in the upper-center-left, the cooled basalt flow as the same clear diagonal band from about x=35%, y=55% to x=60%, y=92%. Keep the top-right corner (right 20% of the width, top 40% of the height) plain sky and a narrow top-left strip quiet.
+
+MOOD: Still, stark and permanent: the molten rock has become the hardest rock in the landscape.

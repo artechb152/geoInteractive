@@ -1,0 +1,8 @@
+Create one photorealistic macro studio photograph, square 1:1, of two real rock hand specimens for an educational website. True-to-life color and texture, crisp detail across both stones, soft diffused light from the upper left, a soft natural contact shadow. No illustration, 3D render or stylization.
+
+Two hand-sized stones rest side by side on a seamless, very light warm-grey paper background (close to #F2EEE6). Each has one face sawn flat and lightly polished toward the camera; the other faces are natural and rough. The two stones fill about 75% of the frame width, centered with a small gap between them.
+
+LEFT: GRANITE. Coarse, interlocking crystals clearly visible to the eye: pink-salmon feldspar, milky-white and glassy-grey quartz, and small black mica flakes.
+RIGHT: BASALT. Dense charcoal-black, very fine-grained, with a few small round gas-bubble holes (vesicles) on the rough side.
+
+No labels, text, scale bars, coins, rulers, hands, tools, props, reflections or colored backgrounds. Output one clean still.

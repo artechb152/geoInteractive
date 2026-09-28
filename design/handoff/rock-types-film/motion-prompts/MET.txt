@@ -1,0 +1,7 @@
+Create one photorealistic cinematic time-lapse using the supplied START (MET-START) and END (MET-END) images, landscape 16:9. Target duration six seconds, or the supported duration with the same sequence. No sound.
+
+CAMERA: Locked tripod. No pan, tilt, zoom, dolly, orbit, roll, shake or parallax. The valley, distant peaks and overall outline of the rock face stay exactly in place throughout.
+
+SEQUENCE: Hold the exact START image briefly. The flat beds slowly begin to bow and buckle, as if the whole face were being squeezed from the left and the right. The bend grows smoothly into the large arch-and-trough folds of the END image. As the folds form, a faint heat shimmer rises from the base of the face, and the warm beige and tan tones cool into banded grey, white and dark slate-blue with a faint silky sheen. A few thin plates flake off onto the scree, which darkens into slate chips. Ease into the exact END image and hold it for about one second.
+
+RULES: One smooth, continuous, physical deformation, like a real time-lapse of rock under pressure. The rock bends; it does not melt, glow, burn, explode or collapse in a rockfall avalanche. No cut, cross-dissolve, flash, fade to black, flicker, strobing light, sudden jumps, new objects, people, animals or vehicles. No added text, labels, logos, music or sound effects.

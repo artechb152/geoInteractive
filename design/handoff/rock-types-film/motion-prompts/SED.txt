@@ -1,0 +1,7 @@
+Create one photorealistic cinematic time-lapse using the supplied START (SED-START) and END (SED-END) images, landscape 16:9. Target duration six seconds, or the supported duration with the same sequence. No sound.
+
+CAMERA: Locked tripod. No pan, tilt, zoom, dolly, orbit, roll, shake or parallax. The horizon and the rounded hill skyline stay exactly in place throughout.
+
+SEQUENCE: Hold the exact START image briefly. The stream keeps pouring sand and silt into the bay and the plume settles. The water becomes shallower as pale layers of sand and mud build up from the sea floor in visible, flat, horizontal bands, one on top of another. The sea withdraws completely, and the layered deposit hardens into pale rock and rises gently into rounded hills. A dry wadi then erodes into it from the left, exposing the flat beds of the END image. Light stays warm afternoon, with only gentle, smooth shifts. Ease into the exact END image and hold it for about one second.
+
+RULES: Slow, calm and geological: one smooth, continuous change, like a real time-lapse over millions of years. No cut, cross-dissolve, flash, fade to black, day-night flicker, strobing light, sudden jumps, splashing waves, floods, rain, new objects, people, animals, boats or vehicles. The beds must stay flat and horizontal. No added text, labels, logos, music or sound effects.

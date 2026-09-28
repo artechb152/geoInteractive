@@ -533,7 +533,7 @@ Live-background-video status (separate from the above — see the entry directly
   - **Orbit:** layer drags never rotate the view; dragging the background or base still does.
 - **Map light from the NW (cartographic convention); 3D key light from the front-left of the default camera.** The 3D view is seen from the SSE, and an NW key light left every visible face in shadow. The two views are deliberately lit differently.
 - **Labels are white plates, not halos** (cartographic-reviewer rule). The olive bands fail ink-text contrast (~2.3:1), so contour numbers sit on the same white chip the 3D labels use.
-- **Wheel-zoom removed from the 3D view** (it was on before). On a long scrolling lesson it hijacks page scroll. Drag-to-rotate stays, the three-step control sets the framing, and the hint copy changed accordingly. Auto-rotate was also dropped: motion is now driven by the learner's own clicks, and the height labels stay readable.
+- **Wheel-zoom removed from the 3D view** (it was on before). On a long scrolling lesson it hijacks page scroll. Drag-to-rotate stays, the three-step control sets the framing, and the hint copy changed accordingly. Auto-rotate was also dropped: motion is now driven by the learner's own clicks, and the height labels stay readable. *(Superseded 2026-09-28, see "Game-quality pass" below: wheel zoom is back on explicit request.)*
 - **drei `<Html>` under RTL:** its absolutely-positioned inner box has no inline offset, so under `dir="rtl"` labels drift a full label-width sideways. `ContourCake3D` pins it with `style={{ left: 0 }}`, a screen-space anchor and not content alignment. The previous version of this diagram had the same latent offset.
 
 ## 2026-09-27 — MVP upgrade of lesson 2 & 6 interactions without a dedicated screen (copy unchanged)
@@ -581,6 +581,38 @@ User feedback identified cluttered star-shaped contours and an artificial side v
 
 Side illustrations now use a generated realistic appearance guided by the updated Blender silhouettes: fine limestone outcrops, olive scrub and directional lighting, without a surrounding terrain tile. PNG sources are preserved in `design/blender/terrain-density/isolated-sides/appearance/`; optimized `*-natural.webp` images are the live assets. The broad landform follows the model; surface details are illustrative, not exact surveyed geometry. Existing archived Blender dioramas remain untouched. No instructional copy, tabs, interaction handlers, layout or color tokens change.
 
+## 2026-09-28 — Topic-02 contour mountain: game-quality pass ("4K, like GTA"), wheel zoom
+
+Requested: a much more realistic, game-like mountain, and wheel zoom. The owner chose "maximum" quality (~25–30 MB budget) and direct wheel zoom.
+
+- **Terrain rendering is now a game-style splat shader** (`contourMountainMaterials.ts`), not one baked texture.
+  - **Layers:** four tiling CC0 photo materials from Poly Haven (https://polyhaven.com, CC0, no attribution required): grass `aerial_grass_rock`, dry ground `dry_ground_rocks`, rock `cliff_side` (desaturated to grey limestone), woodland floor `forest_leaves_02`. Each is 2K, re-encoded to JPEG.
+  - **Blending:** layers are blended per pixel by a baked splat map, height-blended for natural ragged edges, and sampled triplanar in object space (steep faces don't stretch; textures stay glued to a lifted slice).
+  - **Why "4K":** the detail comes from textures repeating every 4–10 m, which is far denser than any single 4K image stretched over 220 m.
+- **Lighting:**
+  - **Image-based lighting:** CC0 HDRI `drakensberg_solitary_mountain_puresky` (1K).
+  - **Sun:** 4096² PCF shadows.
+  - **Post:** N8AO ambient occlusion, ACES filmic tone mapping.
+  - **Background:** the canvas is transparent so the card's white is not tone-mapped grey.
+- **Geometry (Blender script):**
+  - **Terrain:** a 320² grid (~0.69 m cells).
+  - **Trees:** ~1,150 in three species (maquis shrub, oak, Aleppo-pine groves), built from leaf cards plus crown cores, with spherical crown normals.
+  - **Ground detail:** boulders, and ~48k grass tufts that fade in within ~110 m of the camera.
+  - **Slices:** everything is baked into the slice it stands on, so it lifts with it.
+  - **Size:** GLB is Draco-compressed (~4.7 MB, ~594k triangles). The decoder is self-hosted in `public/draco/` so the static/LMS export works offline.
+- **Assets total ≈ 23 MB**, loaded only when the diorama nears the viewport (progress bar shown). Frames render on demand only.
+- **Performance:** measured 60 fps orbiting and zoomed in on an RTX A5000.
+  - **Hit testing:** raycasting is BVH-accelerated (drei `<Bvh>`). Without it, hover/drag hit-testing all triangles on every pointer move capped the frame rate around 40 fps.
+  - **Resolution:** drops temporarily while the camera moves (`AdaptiveDpr` + `regress`).
+  - **Not measured:** a low-end or integrated GPU.
+- **Navigation:**
+  - **Zoom:** wheel zoom toward the cursor (`zoomToCursor`, 15 m minimum distance). Page scroll pauses while the pointer is over the model.
+  - **Pan:** right-drag pans.
+  - **Re-frame:** re-clicking the active view button re-frames the view.
+  - **Fullscreen:** a new fullscreen button.
+  - **Lifted stack:** the camera now follows a lifted stack relative to the learner's own zoom instead of overriding it.
+- **Dev note:** two `next dev` servers sharing `.next/` corrupted it mid-task (500s on both). The QA server for this work ran with `NEXT_DIST_DIR=.next-contours` (already supported by `next.config.mjs` and gitignored).
+
 ## 2026-09-28 — Lessons 2 & 6: UI-language cleanup (21-pattern brief)
 
 Rules: `design/docs/lessons-02-06-ui-cleanup-spec.md`. That spec extends the topic-01 brief and wins over it for these two lessons. Every learn-mode screen was cleaned except the two hooks, which use the shared `HookSceneLayout`. Each screen was checked against a 1440px baseline and a before/after diff of its rendered text.
@@ -619,3 +651,151 @@ Tints are painted on a `::before` layer, so the contour texture never shows thro
 
 - The lesson 2 onboarding map box height sometimes renders ~1053px instead of 617px (canvas aspect).
 - SMIL / infinite pulses inside map SVGs (PlanningRouteMap, lesson 6 onboarding mission map) were kept as map content.
+
+## 2026-09-28 — Topic-02 landforms (02.1): realistic terrain in the "במציאות" board
+
+User request: keep the 3D demos and their style, but with fewer layers and a bit more realism. Rings belong mainly on the map. Remove the triangle.
+
+- **"במציאות" is now a continuous terrain block.** The stacked contour sheets are gone. Each landform is drawn as a hill-shaded surface with a cream papercut cut-edge and a thin topsoil band. The tint runs sand plain → sage → olive, with the sun at front-left and a light hollow/crest shading. Everything is SVG from the same height field as the map, so the two boards still agree.
+- **Displayed height is softly clamped** between the plain (100 m) and a ridge top (~172 m), so the spur and valley ramps fit the board. The map keeps the exact heights.
+- **Gentle swell (±~1 m) is display-only**, well below the 10 m interval, so plains don't look machined.
+- **The depression rim is now a smooth min instead of a crease.** The 150 m ring moved by less than 1 m on the map.
+- **Build-up animation kept (user follow-up, same day).** The original papercut sheets still stack one contour level at a time, in the same camera and clipped to the block. After the last sheet lands, the realistic surface is mounted and fades in over them over 0.55 s, and then the sheets are unmounted. It reads as "contour layers → the real terrain". Reduced motion shows the final surface directly. Mounting the surface only after the stack keeps its ~150 ms mount out of the moving frames.
+- **Build-up sheets removed (user, later the same day).** The user does not want the sliced stage while the board builds ("בשלב של הבניה אני לא רוצה שיהיה את החלק שזה ככה פרוס"). The sheet geometry and phase logic were removed from `LandformsVisuals.tsx`. This supersedes the line above.
+- **Bottom-to-top build-up kept, as one continuous surface (user, same day).** The user still wants the build to rise from the bottom up ("אני עדיין רוצה שיהיה את האנימציה של הפריסה מלמטה למעלה"). Current sequence:
+  - The block fades in flat and plain-coloured, as a thin slab (about 0.15 s).
+  - The real surface then rises out of it to full relief over about 1 s. Its elevation tint and hill-shading develop with the height.
+  - The key-feature marks fade in once it lands.
+  
+  Assumption: "bottom to top" means the relief growing upward (every height scaled from the block's lowest ground), not a level-by-level reveal. A flat cutting plane would read as slices again.
+  
+  Implementation: the moving frames are drawn with WebGL on a temporary canvas, which replaces the SVG surface only while the build runs. Thousands of quads per frame are too heavy for SVG or a 2D canvas (about 150 ms per frame measured). The canvas uses the same colours, per-vertex averaged so it has no streaks. The finished SVG board paints underneath before the canvas and its context are released. Reduced motion, or no WebGL, shows the finished board directly.
+- **Switching landforms: shape to shape (user, later the same day).** The user wants the change between landforms to go "מצורה לצורה ולא מקרקע ללמעלה". This supersedes the bottom-to-top build-up *on a switch*.
+  - The boards no longer remount on a switch. The ground on screen reshapes straight into the next form over 0.9 s (ease-in-out), with no flat stage. Tint and shading blend along with it.
+  - The contour map changes with it. Every frame re-traces the contours of the height field part-way between the two forms, so rings can split, merge and bend into V's on the way. The block's contact shadow moves with its base.
+  - Old marks, labels and elevation numbers go at the click. The new ones fade in once the form settles. The caption lines cross-fade.
+  - A click mid-move carries on from the shape on screen.
+  - Reduced motion (or no WebGL) swaps straight to the finished board.
+
+  **Assumption:** the bottom-to-top build-up still runs once, when the board first appears (there is no previous shape to change from).
+
+  Implementation: the WebGL canvas now blends any two poses vertex by vertex. Every landform shares one mesh layout, and the blend is again a height field seen from the same side, so the painter's order holds. The hidden SVG board keeps the previous form until the move lands, so its thousands of strips are rebuilt at rest, not in the click's frame.
+- **Depression: no more green on green (user: "לא מספיק ברור בגלל שזה ירוק על ירוק").** Inside the closed pit (spill depth > 0) the ground is bare rock, as in a real makhtesh under a vegetated plateau. It is light rock just under the rim (`tanline.contour` mixed with paper edge), shading to a browner sandy floor (`tanline.badge` mixed with contour) with depth, and darkened with depth. The green → rock change starts at the rim crest, so the highlighted 150 m ring sits on the rock edge. The crest glow is suppressed along the rim. No new colour tokens; only existing illustration colours are mixed. The other four landforms have no closed pit and are unchanged. Tried and rejected: moving the plateau to ~150.5 m so the ring would sit exactly on the crest. The 150 contour then ran where the ground is almost flat and came out wobbly on the map.
+- **Depression sharpened (user follow-up: "not clear enough").**
+  - The profile is now `r^1.8` (was `r^1.25`), so steep walls surround a wide floor, like a makhtesh. The map rings crowd toward the rim, and the innermost ring is wider.
+  - This form alone has a higher camera (`ky 0.52`, about 31° instead of about 24°) so the eye sees into the pit, plus more relief (`kz 0.3`).
+  - Ground inside a closed pit darkens with its depth below the spill level (a priority-fill of the height field). Deep reads as dark, instead of the low-elevation sand tint making the floor look raised. Open forms have no spill depth, so the other four landforms are unchanged.
+- **Rings on the diorama:** only the one contour that is also highlighted on the map, draped on the ground as a single orange line (hill top ring with a light orange tint; depression rim). The spur axis, drainage line, saddle ridge line and saddle point are also draped on the ground and hidden where terrain blocks them.
+- **Triangle removed** from both landform boards: the hill summit and the two saddle peaks, in both "במציאות" and "במפה". **Assumption:** the crest triangle in the slope profile (02.1 slopes, next to the "פסגה" label) was left in place. The request was about the landforms demos, and there the triangle has a label.
+
+## 2026-09-28 — Lesson 2 landforms: realistic slope side views + map-style plan view
+
+User request: make the side view of the 4 slope types realistic, in the lesson-1 render style. Also make the "מלמעלה (קווי גובה)" board clearer and look like a real map.
+
+### Side view ("מהצד")
+
+- **What it is now:** one Cycles render per slope type (`scripts/blender/render_slope_profiles.py`, packaged by `package_slope_profiles.cjs` into `public/assets/lessons/topic02/slope-profiles/*.webp`, ~90 KB each).
+- **How it looks:** a cut slab in the lesson-1 diorama style. The cut face shows a topsoil band over layered limestone. Scrub, grass and boulders sit on the surface, and bare rock takes over on steep stretches.
+- **Textures:** reused the repo's existing CC0 sets (`contour-mountain/textures`, `limestone-section.webp`). Nothing was generated or downloaded.
+- **Framing:** the orthographic camera frames the SVG viewBox (200 × 60) exactly, so the slab's cut edge *is* the profile curve. The script asserts that the crossings land within 0.05 units; the measured error is 0.
+- **Switching types (user request: keep the old animation):** the profile morphs exactly as before. It is drawn on a canvas where each render is warped column by column onto the moving curve: the strip above ground shifts, and the cut face stretches down to the fixed slab underside. Only the new type's render is shown from the first frame (user: no blend of layers): it starts bent to the old shape and morphs into its own. One tween drives the curve, the dots and the drop lines, so they never drift apart. A mid-morph click carries on from the current shape.
+- **Assumption:** vegetation, rocks and texture are illustrative. Only the cut-edge profile carries data.
+
+### Plan view (now captioned "במפה")
+
+- **Style:** the map language of `ContoursShapeMap` in the same lesson: paper plate, grid, brown contours, heavier index lines at 100/200, elevations written on the lines with a knock-out, and a dashed section line.
+- **Assumption — line shape:** contours are drawn as one flank of a hill. Each line bows toward the low ground, as in the spur rule. All lines are the same curve shifted to its crossing, so spacing stays the only variable.
+- **Assumption — relief shading:** added faint shading between lines, darker where the stretch is steeper. This repeats the density = steepness message in a second channel. It is a teaching aid, not a surveyed hillshade.
+- **Zone brackets:** under the plate, brackets name each stretch: "צפוף = תלול", "מרווח = מתון", "מרווחים שווים = שיפוע אחיד". They replace the former static rule line.
+- **Captions:** "מהצד · פרופיל השטח" is now "מהצד · חתך השטח". "מלמעלה · קווי גובה" is now "במפה · אותו מדרון בקווי גובה, מבט מלמעלה".
+
+### Code
+
+- The slope boards moved to their own file, `SlopeVisuals.tsx`, because another session was concurrently rewriting `LandformsVisuals.tsx` (the landform "במציאות" board).
+- The old `SlopeProfile` / `SlopeContours` / `SlopeGlyph` / `SLOPE_GEO` code in `LandformsVisuals.tsx` is now unused.
+- **Cleanup:** delete the old code from `LandformsVisuals.tsx` once that rewrite lands. `Summit` and `faceColor` there are only used by the old slope code.
+
+## 2026-09-28 — Lesson 2 geology: realistic "3 סוגי הסלעים" dioramas (two variants under review)
+
+Request: make the rock-type animation realistic, in the lesson-1 (archived) render style. The user asked for both candidate presentations, and will pick one after comparing them.
+
+### What was built
+
+- **Three Blender cut-away dioramas** (`scripts/blender/render_rock_films.py`), each a miniature slab on a cream tabletop. They share lesson 1's soft overhead-left studio light and tactile, matte Poly Haven rock:
+  - **Igneous:** a magma chamber at depth feeds a conduit into a half-cut stratovolcano. Lava runs down the flank and cools to black basalt at the toe. A coarse-crystal granite body with its feeder dyke sits in the crust.
+  - **Sediment:** a shore on the left slopes into a translucent sea. Grains and shells sink and settle, and three new layers (sandstone, then limestone, then fresh sand) build up over two older ones (limestone, marl). Fossils sit in both limestone layers.
+  - **Metamorphic:** two crust blocks squeeze a layered rock from both sides, and magma heats it from below. The rock thickens and folds, and its beds turn from sedimentary tones to banded marble, quartzite and slate with a slight sheen. A flat-layered "before" sample stands to the right.
+- **Variant A, "סרט מרונדר":** 60 WebP frames (4 s at 15 fps) drawn on one `<canvas>`. The film plays once when the board is on screen and holds the final frame. A "הפעלה חוזרת" button replays it.
+- **Variant B, "תמונה + תנועה":** the final render (`still.webp`) plus light SVG motion that shows only the process: magma blobs climbing the conduit, a pulsing chamber glow, grains sinking in the water, pressure arrows pushing, and heat rising.
+- **Shared by both variants:**
+  - The Hebrew labels are the same terms as before.
+  - The diagram arrows (time, pressure, transformation) are an SVG overlay on the renders' 560 × 360 viewBox.
+  - Anchors are projected from the 3D scenes (`rockFilms.data.ts`, generated), so leaders land on the rendered features.
+- **Rock swatches** in the tabs and the sample card are now rendered hand specimens (granite, layered sediment with an ammonite, folded gneiss/marble), replacing the vector tiles.
+
+### Assumptions
+
+- **Comparison toggle:** it lives only in development (`process.env.NODE_ENV !== 'production'`), above the rock tabs. It never ships in the static export. Once a variant is chosen, delete it along with the unused path in `RockVisuals.tsx`.
+- **Sediment scene:** the shore was added so the viewer can see where the sand comes from. The previous vector version had only water over layers.
+- **Metamorphic scene:** the rendered film shows the transformation itself. The flat "before" sample still stands beside the result, as in the old illustration, so the final frame and the still also carry the before → after comparison.
+- **Granite:** the texture is procedural, with large interlocking crystals of pink feldspar, white quartz and black biotite. It shows slow cooling, and the Poly Haven granite photos were polished floor tiles with grout.
+- **Textures:** CC0 Poly Haven diffuse maps plus the `studio_small_08` HDRI. They are git-ignored, about 29 MB, and re-fetched with `scripts/blender/fetch_rock_textures.cjs`. Only the rendered WebP files ship.
+- **Payload:** each film is loaded only when its tab is opened. Reduced motion loads only the final frame (film) or the still (variant B).
+
+### Update (same day): direction changed to cinematic photography
+
+- The user clarified that "realistic like lesson 1" means lesson 1's **cinematic photographic images** (AI-generated stills and video), not 3D renders.
+- The user will produce the media. Prompts and a production guide are in `design/handoff/rock-types-film/`: a start/end still pair and a fixed-camera time-lapse per rock type, plus three hand-specimen photos.
+- The Blender dioramas stay on the page only as an interim until the media arrive, so the board keeps working.
+- The interaction is kept exactly as it is: the film plays in view, labels fade in by progress, there is a replay button, and variant B (still + motion) remains.
+- **Import:** `scripts/media/import-rock-films.cjs` extracts 12 fps WebP frames plus the still from each delivered film, and prepares the specimens.
+- **Integration work still to do:** move the overlay viewBox from 14:9 (560 × 360) to 16:9 (640 × 360), and place label anchors by hand on the delivered images. Then retire the Blender pipeline (`render_rock_films.py`, `package_rock_films.cjs`, the generated anchors).
+
+### Update 2: the process is animated in code on the delivered photos
+
+- The user produced the six START/END photos and the three specimen photos. They rejected the generated videos because they reached the end state too quickly, and asked for the animation to be done in code.
+- **Approach:** `RockVisuals.tsx` with `rockTimelapseGL.ts`. One WebGL1 fragment shader per rock blends the pixel-registered START/END pair and performs the process in stages at a readable pace (11–12 s):
+  - **Igneous:** the lava glow breathes, then cools from the toe of the flow back to the vent. The front coordinate is the projection on the toe → vent axis, and the brightest cores cool last. The colour goes orange → dull red → the END photo's basalt in dusk light, and only then does morning light dissolve in, sky first.
+  - **Sediment:** the plume drifts, a noise warp inside the plume region. The END photo is revealed from the bottom up, stopping at each measured bedding plane (`SED_STEPS`, shared by the shader and the time arrow). The freshly settled band is tinted as silt, and the water above it turns shallow.
+  - **Metamorphic:** a vertical fold warp `fold(x)`, three Gaussians fitted by eye to the END folds. It bends START's flat beds into the fold while END starts "unfolded" and relaxes; the two are then cross-faded. Heat shimmer and a warm tint appear at the base.
+- **Controls:** the film autoplays once when the board is in view. Below the photo there is a play/pause/replay button and a scrubber (native range, RTL-aware), outside the `role="img"` figure. Labels are pills on a 640 × 360 overlay and appear or leave with their stage. Where it helps, a label hands over at the same spot, e.g. "לבה" → "בזלת".
+- **Fallbacks:** without WebGL, the page cross-fades the two photos by the same progress. Reduced motion opens on the END state with no autoplay, and scrubbing still works.
+- **Removed:** the dev-only A/B toggle and variant B, which the code time-lapse supersedes. The Blender pipeline and the video import script are also removed.
+- **Assumption — geometry fitted by eye:** the fold profile, the cooling axis and the bedding-plane stops were read off the photos, not measured automatically. If a photo is regenerated, re-fit `fold()`, `toe`/`vent` and `SED_STEPS`.
+
+
+## 2026-09-28 — Lesson 2 topography (#scene-topography): one terrain, three representations
+
+User request: show the map, all of its explanation and the pager on one screen, with the map large. Make the 3D model, the aerial photo and the topographic map depict exactly the same ground, with no pre-rendered images. Keep the copy verbatim. Animate the transitions, and add an "all together" view with hover linking between the layers.
+
+- **Spec and plan:** `docs/superpowers/specs/2026-09-28-topography-scene-redesign-design.md` and `docs/superpowers/plans/2026-09-28-topography-scene-redesign.md`.
+- **Previous version:** frozen at `/archive/topic-02/topography-v1/` (`TopographySceneV1.tsx`). Its three PNGs stay because of that.
+
+### Terrain
+
+- **One source.** One height field and one feature layout (`scripts/blender/build_topography_terrain.py`) produce `terrain.glb`, `albedo.jpg` and `topographyTerrain.data.ts`.
+  - The map's contours are the exact iso-lines of the GLB's triangles.
+  - The build fails if a contour vertex is more than 0.5 m off its level, and the measured error is 0.
+  - In the browser, the camera projection of the summit and all six buildings lands within 0.84 px of the map sheet.
+- **Composition follows the former map:** summit 412 m, a rocky spur running S by E, the footpath from the 2×2 cluster, the dirt road across the south, the SE pair of buildings, an orchard (SW), sparse woodland (E) and woodland (NW).
+  - **Assumption:** where the former photo and map disagreed (the photo showed 4 groves, the map 3 areas), the map won.
+- **Drainage is traced, not painted.** Ravines follow the steepest descent of the landform and tributaries bend into them. That's why the contours V upstream in the valleys and downstream on the spur.
+- **Dropped:** the former map's unlabeled grey-green lines. They were not in the legend, and one ran through the summit.
+
+### Map sheet
+
+- **Grid:** true 1 km ITM lines (`202`, `203` E; `692` N) with 100 m ticks.
+  - **Assumption:** this replaces 201–205 / 691–694, whose spacing (~330 m) contradicted the "0–300 מ׳" scale bar. The sheet is 1.4 × 1.05 km, 14 m per sheet unit.
+- **Legend:** the former legend had its Hebrew reversed ("ישר הבוג וק"). It now reads "קו גובה ראשי" / "שביל".
+
+### Relief and lighting
+
+- **Vertical exaggeration:** ×2 in the 3D model only. As the camera rises to the aerial view, the relief settles to true height, so the photo and map show the ground as it is. This is also the "flattened" look the photo text describes.
+- **Buildings:** sized as ~28 × 18 m farm buildings, so they stay visible at ~2 m per screen pixel.
+- **No normal map.** The 2.5 m mesh resolves the relief at display scale, and the albedo carries the fine texture.
+- **Sun:** high in the SW (≈56°), above the steepest exaggerated slope, so no face falls into a hard terminator shadow.
+
+### Copy
+
+- All existing copy is kept verbatim, including four missing spaces before quotes (`יכולים"לעוף"`, `ונראית"מעוכה"`, `מסננת"רעשי רקע"`, `את"שפת המפה"`). They are flagged to the user and not changed.
+- **New UI microcopy:** "כל התצוגות יחד", "טוען שטח תלת־ממדי…", "התצוגה התלת־ממדית אינה זמינה בדפדפן זה", and elevation chips of the form "307 מ׳".

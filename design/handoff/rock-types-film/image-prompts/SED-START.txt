@@ -1,0 +1,9 @@
+Create one photorealistic cinematic nature photograph, landscape 16:9, for an educational film about how rocks form. Understated documentary realism, as if shot on a full-frame camera with a 35mm-equivalent lens on a locked tripod, level horizon, natural light, true-to-life color, gentle contrast, muted palette of limestone cream, sand, olive, turquoise and warm earth. Same photographic treatment throughout the series. No illustration, 3D render, miniature, diorama, cutaway, cross-section, infographic look, collage or split screen.
+
+No readable text, captions, labels, arrows, logos, watermarks or signs. Hebrew labels will be added by the website. Output one clean still.
+
+SCENE — A SHALLOW SEA RECEIVING SEDIMENT. A calm, shallow Mediterranean bay in soft late-afternoon light. From the left, the mouth of a small muddy stream pours a pale brown plume of sand and silt into clear turquoise water; the plume fans out and visibly settles toward the bottom. Near the shore the shallow sandy seabed shows through the water, with scattered pale seashells. Behind the bay, low, rounded, pale hills. The water surface is gentle with soft ripples. No boats, piers, buildings, roads, people or animals.
+
+COMPOSITION: Locked tripod on a low bluff, slightly elevated, looking out over the bay. Water fills the center and the right two thirds. The stream mouth and the sediment plume enter from the left third (about x=5–38%, y=55–85%). The far shoreline of rounded hills runs along the upper third (about y=25–42%). Keep the top-right corner (right 20% of the width, top 40% of the height) quiet, plain sky only, and keep a narrow strip along the top-left edge quiet; small interface elements will sit there. Keep every key feature inside the central 85% of the frame, large and clearly separate.
+
+MOOD: Quiet and slow. Grain by grain, the sea floor is being built. The next image shows the same place millions of years later.

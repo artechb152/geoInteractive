@@ -7,12 +7,10 @@ import { cn } from '@/lib/utils';
 import {
   LandformMap,
   LandformReality,
-  SlopeContours,
-  SlopeGlyph,
-  SlopeProfile,
   type LandformId,
   type LandformMapLabels,
 } from './LandformsVisuals';
+import { SlopeContours, SlopeGlyph, SlopeProfile } from './SlopeVisuals';
 
 type Form = LandformId;
 
@@ -90,7 +88,12 @@ const MAP_LABELS: LandformMapLabels = {
 const SLOPE_LABELS = {
   bottom: 'תחתית',
   top: 'פסגה',
-  rule: 'צפוף = תלול · מרווח = מתון',
+  // named under the map, over the stretch they describe
+  zones: {
+    steep: 'צפוף = תלול',
+    gentle: 'מרווח = מתון',
+    even: 'מרווחים שווים = שיפוע אחיד',
+  },
 };
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -222,7 +225,6 @@ function InfoLabel({ children }: { children: ReactNode }) {
 /* ── Landforms — linked board (reality ↔ map) ────────────────────────────── */
 
 function FormBoard({ active }: { active: Form }) {
-  const reduce = useReducedMotion();
   const index = FORMS.findIndex((f) => f.id === active);
   const form = FORMS[index];
   const meta = REALITY_META[active];
@@ -243,23 +245,12 @@ function FormBoard({ active }: { active: Form }) {
         </div>
 
         <div className="mt-4">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={active}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? { opacity: 1 } : { opacity: 0, y: -6 }}
-              transition={{ duration: reduce ? 0 : 0.25, ease: EASE }}
-            >
-              <LinkedBoards
-                top={{ kind: 'real', sub: meta.realWorld }}
-                bottom={{ kind: 'map', sub: meta.mapCue }}
-              >
-                <LandformReality form={active} ariaLabel={`${form.label} — במציאות: ${meta.realWorld}`} />
-                <LandformMap form={active} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${meta.mapCue}`} />
-              </LinkedBoards>
-            </motion.div>
-          </AnimatePresence>
+          {/* The boards stay mounted: on a switch the terrain and its contours
+              reshape from the current form into the next one. */}
+          <LinkedBoards top={{ kind: 'real', sub: meta.realWorld }} bottom={{ kind: 'map', sub: meta.mapCue }}>
+            <LandformReality form={active} ariaLabel={`${form.label} — במציאות: ${meta.realWorld}`} />
+            <LandformMap form={active} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${meta.mapCue}`} />
+          </LinkedBoards>
           <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
             אותה צורה — פעם כפי שהיא בשטח, פעם כפי שהיא מצוירת בקווי גובה
           </p>
@@ -276,11 +267,23 @@ type BoardCaptionProps = {
 };
 
 function BoardCaption({ kind, sub, labelText }: BoardCaptionProps) {
+  const reduce = useReducedMotion();
   const label = labelText ?? (kind === 'real' ? 'במציאות' : 'במפה');
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-sm font-display font-bold text-fg shrink-0">{label}</span>
-      <span className="text-sm text-fg-muted">· {sub}</span>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={sub}
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduce ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: reduce ? 0 : 0.15, ease: EASE }}
+          className="text-sm text-fg-muted"
+        >
+          · {sub}
+        </motion.span>
+      </AnimatePresence>
     </div>
   );
 }
@@ -389,21 +392,21 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
             crossing straight down onto its contour line. */}
         <div className="mb-6">
           <LinkedBoards
-            top={{ kind: 'real', labelText: 'מהצד', sub: 'פרופיל השטח' }}
-            bottom={{ kind: 'map', labelText: 'מלמעלה', sub: 'קווי גובה' }}
+            top={{ kind: 'real', labelText: 'מהצד', sub: 'חתך השטח' }}
+            bottom={{ kind: 'map', labelText: 'במפה', sub: 'אותו מדרון בקווי גובה, מבט מלמעלה' }}
           >
             <SlopeProfile
               slope={active}
               bottomLabel={SLOPE_LABELS.bottom}
               topLabel={SLOPE_LABELS.top}
-              ariaLabel={`${meta.label} — מהצד: פרופיל השטח`}
+              ariaLabel={`${meta.label} — מהצד: חתך השטח`}
             />
             <SlopeContours
               slope={active}
               bottomLabel={SLOPE_LABELS.bottom}
               topLabel={SLOPE_LABELS.top}
-              ruleLabel={SLOPE_LABELS.rule}
-              ariaLabel={`${meta.label} — מלמעלה: קווי גובה`}
+              zoneLabels={SLOPE_LABELS.zones}
+              ariaLabel={`${meta.label} — במפה: קווי גובה במבט מלמעלה`}
             />
           </LinkedBoards>
           <p className="mt-3 text-center text-sm leading-snug text-fg-muted">

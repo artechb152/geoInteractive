@@ -1,0 +1,7 @@
+Create one photorealistic cinematic time-lapse using the supplied START (IGN-START) and END (IGN-END) images, landscape 16:9. Target duration six seconds, or the supported duration with the same sequence. No sound.
+
+CAMERA: Locked tripod. No pan, tilt, zoom, dolly, orbit, roll, shake or parallax. The cone, horizon and ground outlines stay exactly in place throughout.
+
+SEQUENCE: Hold the exact START image briefly. The lava flow pulses gently and its front creeps forward a little. Then it slowly cools: the glowing cracks shrink and dim, starting at the flow's front and edges and moving back toward the cone. Orange turns to deep red, then to black-grey basalt. The steam thins and fades away. At the same time the sky brightens smoothly from dusk to clear morning, and shadows soften and settle into the END lighting. Ease into the exact END image and hold it for about one second.
+
+RULES: One smooth, continuous, physical change, like a real time-lapse. No cut, cross-dissolve, flash, fade to black, day-night flicker, strobing light, sudden jumps, morphing terrain, new objects, fountaining eruption, explosions, fire, people, animals or vehicles. No added text, labels, logos, music or sound effects.

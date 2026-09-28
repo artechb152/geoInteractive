@@ -1,0 +1,11 @@
+Create one photorealistic cinematic nature photograph, landscape 16:9, for an educational film about how rocks form. Understated documentary realism, as if shot on a full-frame camera with a 35mm-equivalent lens on a locked tripod, level horizon, natural light, true-to-life color, gentle contrast. Same photographic treatment as the supplied reference. No illustration, 3D render, miniature, diorama, cutaway, cross-section diagram, infographic look, collage or split screen.
+
+No readable text, captions, labels, arrows, logos, watermarks or signs. Hebrew labels will be added by the website. Output one clean still.
+
+REFERENCE: The supplied image (SED-START) is the exact composition and camera reference. Keep the same camera position, lens, height and horizon line, and the same skyline of rounded hills. Do not move, zoom, rotate or re-crop. Only the state of the place changes.
+
+SCENE — THE SAME PLACE, MILLIONS OF YEARS LATER. The sea is gone. Where the bay was, the ground has risen into soft, rounded, pale limestone hills. In the center of the frame a dry wadi has cut through them and exposed a tall bank of flat, horizontal sedimentary beds, like a stack of pages: a thick cream-white limestone bed at the top, a soft grey-green marl bed in the middle, and a warm tan sandstone bed below it, the pattern repeating once more lower down. A few fossil seashells show in the lowest limestone bed. A pale, dry gravel wadi floor runs along the bottom of the frame where the stream once entered. Sparse low Mediterranean scrub on the rounded hilltops. Warm, soft afternoon light. No water, people, vehicles, roads, buildings, fences or signs.
+
+COMPOSITION: Same framing as SED-START. The layered bank dominates the center (about x=25–80%, y=35–85%), its horizontal beds large and clearly separated: at least three distinct bands, each tall enough to point a label at. The rounded hill skyline stays where the far shoreline was. Keep the top-right corner (right 20% of the width, top 40% of the height) plain sky and a narrow top-left strip quiet.
+
+MOOD: Soft, rounded, easy terrain, the most common rock landscape in Israel.

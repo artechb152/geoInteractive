@@ -1,0 +1,9 @@
+Create one photorealistic cinematic nature photograph, landscape 16:9, for an educational film about how rocks form. Understated documentary realism, as if shot on a full-frame camera with a 35mm-equivalent lens on a locked tripod, level horizon, natural light, true-to-life color, gentle contrast, muted palette of warm beige, tan, stone grey and cool mountain blue. Same photographic treatment throughout the series. No illustration, 3D render, miniature, diorama, cutaway, cross-section, infographic look, collage or split screen.
+
+No readable text, captions, labels, arrows, logos, watermarks or signs. Hebrew labels will be added by the website. Output one clean still.
+
+SCENE — FLAT SEDIMENTARY LAYERS IN A MOUNTAIN VALLEY. A steep, bare rock face in a remote high-mountain valley under soft, even overcast daylight. The face shows neat, flat, horizontal sedimentary beds evenly stacked like a pile of paper: alternating warm beige limestone, tan sandstone and grey shale. A pale scree slope lies at its foot. Distant peaks behind, with no snow on the face itself. No vegetation on the face, no people, animals, climbing gear, roads or buildings.
+
+COMPOSITION: Locked tripod across the valley, facing the rock face straight on. The layered face fills the center (about x=15–85%, y=25–80%), its horizontal beds large and clearly visible. Scree along the bottom fifth; a strip of sky and distant peaks along the top fifth. Keep the top-right corner (right 20% of the width, top 40% of the height) quiet, plain sky or a plain distant slope, and keep a narrow strip along the top-left edge quiet; small interface elements will sit there. Keep every key feature inside the central 85% of the frame.
+
+MOOD: Ordinary, orderly, layered rock. The next image shows the same face after enormous heat and pressure.

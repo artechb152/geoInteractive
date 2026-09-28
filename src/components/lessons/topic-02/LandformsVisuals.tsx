@@ -6,20 +6,20 @@
  * Every landform is defined ONCE as a height field h(x, y) over a 100×50 map
  * tile. From that single source we derive both boards, so they always agree:
  *
- *   - "במציאות": a papercut diorama. Each contour level is a cut paper sheet
- *     (the region where h ≥ level) raised to its height in a gentle
- *     axonometric view — coloured top face, cream paper edge shaded by the
- *     way it faces the light, soft drop shadow under every sheet.
- *   - "במפה": the same levels traced as contour lines (marching squares) with
+ *   - "במציאות": a terrain block — the continuous surface in a gentle
+ *     axonometric view, coloured by elevation and hill-shaded by the sun, cut
+ *     out of the ground with cream paper edges (the course's papercut look).
+ *     No contour layers here: the rings belong to the map.
+ *   - "במפה": the same surface traced as contour lines (marching squares) with
  *     a constant 10 m interval and a heavier index contour at 150.
  *
- * The landform's key feature (summit / spur axis / drainage line / saddle
+ * The landform's key feature (summit ring / spur axis / drainage line / saddle
  * point / depression rim) is marked the same way in both views. Copy strings
  * are passed in from the scene (single source of copy).
  */
 
-import { useId, useMemo, type ReactNode } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { animate, cubicBezier, motion, useReducedMotion } from 'framer-motion';
 
 /* ── Shared geometry ─────────────────────────────────────────────────────── */
 
@@ -46,14 +46,13 @@ const MAP_H = 55;
 const ROT = (32 * Math.PI) / 180;
 const CR = Math.cos(ROT);
 const SR = Math.sin(ROT);
-const KY = 0.4; // foreshortening of the ground plane
+const KY = 0.4; // foreshortening of the ground plane (sin of the view elevation)
 const VIEW: Pt = [SR, CR]; // plan direction pointing toward the viewer
 const planX = (x: number, y: number) => x * CR - y * SR;
-const planY = (x: number, y: number) => (x * SR + y * CR) * KY;
 const REAL_X = planX(0, 50) - 3; // tile's front-left corner + margin
 const REAL_W = planX(100, 0) - planX(0, 50) + 6;
 const REAL_H = 59; // reality board viewBox height
-const BASE_SLAB = 2.4; // base slab thickness in screen units
+const BASE_SLAB = 3; // block depth below the base plain, in screen units
 
 // Illustration palette (design-spec §3 illustration colours + tanline tokens).
 const C = {
@@ -99,18 +98,43 @@ function faceColor(z: number): string {
   return Math.round((z - BASE) / 10) % 2 ? c : mix(c, C.paperEdge, 0.1);
 }
 
-// Paper-edge (wall) colour by how squarely the wall faces the light (front-left).
+// Terrain block: elevation ramp (sand plain → sage slopes → olive tops), lit by a
+// sun from the viewer's front-left so slopes facing the reader stay readable.
+const GROUND_RAMP: [number, string][] = [
+  [0, mix(SAND, LOW_FACE, 0.35)],
+  [0.3, LOW_FACE],
+  [0.62, C.greenLight],
+  [1, C.greenMid],
+];
+const SUN_EL = (50 * Math.PI) / 180;
+const SUN: [number, number, number] = [-0.6 * Math.cos(SUN_EL), 0.8 * Math.cos(SUN_EL), Math.sin(SUN_EL)];
+const SHADOW_TONE = '#3A4230';
+const LIGHT_TONE = '#F7F0DF';
+// Cut edges of the block — cream paper, the sunlit (south) face brighter.
 const WALL_LIT = mix(C.paperEdge, '#FFFFFF', 0.3);
-const WALL_SHADE = mix(C.rim, C.greenDeep, 0.3);
-const LIGHT: Pt = [-0.514, 0.857]; // plan components of the (unit) light vector
-const SHADES = 8;
-const wallColor = (s: number) => mix(WALL_SHADE, WALL_LIT, s);
+const WALL_SHADE = mix(C.rim, C.paperEdge, 0.35);
+const TOPSOIL = mix(C.greenMid, C.rim, 0.4);
+// Inside a closed pit the ground is bare: light rock just under the rim, a
+// browner sandy floor deeper down (a makhtesh under a vegetated plateau).
+const PIT_ROCK = mix(C.contour, C.paperEdge, 0.3);
+const PIT_FLOOR = mix(C.contourIndex, C.contour, 0.4);
+
+function groundColor(t: number): string {
+  const k = Math.min(1, Math.max(0, t));
+  for (let i = 1; i < GROUND_RAMP.length; i++) {
+    const [t1, c1] = GROUND_RAMP[i];
+    const [t0, c0] = GROUND_RAMP[i - 1];
+    if (k <= t1) return mix(c0, c1, (k - t0) / (t1 - t0));
+  }
+  return GROUND_RAMP[GROUND_RAMP.length - 1][1];
+}
 
 /* ── Landform definitions ────────────────────────────────────────────────── */
 
 type Spec = {
   h: HeightFn;
   kz: number; // oblique: screen-y per metre of elevation (vertical exaggeration)
+  ky?: number; // camera: foreshortening of the ground plane (default KY)
   highlight?: number; // level whose closed contour is the key feature
   numbers: { level: number; at: Pt }[]; // elevation labels on the map
 };
@@ -175,9 +199,14 @@ const SPECS: Record<LandformId, Spec> = {
       const dy = (y - 24) / 18;
       const th = Math.atan2(dy, dx);
       const r = Math.sqrt(dx * dx + dy * dy) * (1 + 0.05 * Math.sin(3 * th + 1));
-      return 112 + 40 * Math.min(1, r) ** 1.25;
+      // smooth min(1, r): a rounded rim instead of a sharp crease
+      const k = Math.max(0.08 - Math.abs(1 - r), 0) / 0.08;
+      // steep walls around a wide, flat floor — a makhtesh, not a funnel
+      return 112 + 40 * (Math.min(1, r) - k * k * 0.02) ** 1.8;
     },
-    kz: 0.2,
+    kz: 0.3,
+    // looked at from a little higher than the rest, so the eye sees INTO the pit
+    ky: 0.52,
     highlight: 150,
     numbers: [
       { level: 150, at: [82, 24] },
@@ -188,7 +217,7 @@ const SPECS: Record<LandformId, Spec> = {
 
 /* ── Contouring (marching squares on a padded grid) ──────────────────────── */
 
-type Grid = { PX: number; PY: number; xs: Float64Array; ys: Float64Array; v: Float64Array };
+type Grid = { PX: number; PY: number; xs: Float64Array; ys: Float64Array; v: ArrayLike<number> };
 
 const STEP = 1;
 const PAD = -1e9;
@@ -310,11 +339,9 @@ const isInterior = (ring: Pt[]) => !ring.some(onBorder);
 
 type Landform = {
   spec: Spec;
+  grid: Grid; // the sampled height field (the map's morph blends these)
   rings: Map<number, Pt[][]>; // level → rings of the region h ≥ level
   levels: number[]; // levels actually present on this tile
-  terr: (x: number, y: number) => number; // terraced (stepped) elevation
-  y0: number; // oblique-view vertical offset (centres the diorama)
-  peaks: Pt[];
 };
 
 const cache = new Map<LandformId, Landform>();
@@ -333,34 +360,7 @@ function getLandform(id: LandformId): Landform {
       levels.push(L);
     }
   }
-  const terr = (x: number, y: number) => {
-    const h = spec.h(x, y);
-    let z = BASE;
-    for (const L of levels) if (h >= L) z = L;
-    return z;
-  };
-  // Vertical bounds of the oblique projection → centre it in the board.
-  let minY = Infinity;
-  for (let y = 0; y <= TH; y += 1) {
-    for (let x = 0; x <= TW; x += 2) {
-      minY = Math.min(minY, planY(x, y) - (terr(x, y) - BASE) * spec.kz);
-    }
-  }
-  const maxY = planY(TW, TH) + BASE_SLAB;
-  const y0 = (REAL_H - (maxY - minY)) / 2 - minY + 0.8;
-  // Local maxima (grid) that stand on the top level = summits.
-  const peaks: Pt[] = [];
-  for (let y = 2; y < TH - 1; y++) {
-    for (let x = 2; x < TW - 1; x++) {
-      const h = spec.h(x, y);
-      if (h < LEVELS[LEVELS.length - 1]) continue;
-      let isMax = true;
-      for (let dy = -1; dy <= 1 && isMax; dy++)
-        for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && spec.h(x + dx, y + dy) > h) isMax = false;
-      if (isMax) peaks.push([x, y]);
-    }
-  }
-  const lf: Landform = { spec, rings, levels, terr, y0, peaks };
+  const lf: Landform = { spec, grid: g, rings, levels };
   cache.set(id, lf);
   return lf;
 }
@@ -426,262 +426,692 @@ function Summit({ at, fill, size = 2.4 }: { at: Pt; fill: string; size?: number 
   );
 }
 
-/* ── "במציאות" — papercut diorama ────────────────────────────────────────── */
+/* ── "במציאות" — terrain block ───────────────────────────────────────────── */
 
-type Layer = { z: number; face: string; walls: { shade: number; d: string }[] };
+// The shown surface is the analytic height, softly held between the base plain
+// and a ridge-top ceiling, so the long ramps of the spur and valley stay on the
+// board. The map keeps the exact heights (it only draws 110–160 anyway).
+const CEIL = 172;
+const softplus = (v: number) => (v > 30 ? v : Math.log1p(Math.exp(v)));
+const shownHeight = (h: number) => {
+  const lo = BASE + 3 * softplus((h - BASE) / 3);
+  return CEIL - 5 * softplus((CEIL - lo) / 5);
+};
 
-// Each level becomes a paper sheet: its top face (the region h ≥ level, lifted
-// to its height) plus the visible edge walls down to the sheet below. Walls are
-// built per contour segment so each can be shaded by the way it faces.
-function buildLayers(lf: Landform): Layer[] {
-  const { kz, h } = lf.spec;
-  const { y0 } = lf;
-  const P = (p: Pt, z: number): string =>
-    `${f2(planX(p[0], p[1]))},${f2(y0 + planY(p[0], p[1]) - (z - BASE) * kz)}`;
+// Gentle ground swell (about ±1 m) so plains and plateaus read as real ground,
+// not a machined surface. Far below the 10 m contour interval.
+const swell = (x: number, y: number) =>
+  0.45 * Math.sin(0.23 * x + 0.12 * y + 1.3) +
+  0.35 * Math.sin(-0.14 * x + 0.29 * y + 0.4) +
+  0.25 * Math.sin(0.37 * x - 0.21 * y + 2.1);
 
-  const layer = (z: number, zFrom: number, rings: Pt[][], isBase: boolean): Layer => {
-    const buckets: string[][] = Array.from({ length: SHADES }, () => []);
-    for (const ring of rings) {
-      for (let i = 0; i < ring.length; i++) {
-        const a = ring[i];
-        const b = ring[(i + 1) % ring.length];
-        const ex = b[0] - a[0];
-        const ey = b[1] - a[1];
-        const len = Math.hypot(ex, ey);
-        if (len < 1e-6) continue;
-        let nx = ey / len;
-        let ny = -ex / len;
-        // orient the normal downhill (out of the sheet)
-        const tx = (a[0] + b[0]) / 2 + nx * 0.4;
-        const ty = (a[1] + b[1]) / 2 + ny * 0.4;
-        const outside = tx < 0 || tx > TW || ty < 0 || ty > TH;
-        if (!(isBase ? outside : outside || h(tx, ty) < z)) {
-          nx = -nx;
-          ny = -ny;
-        }
-        // faces away from the viewer → hidden under the sheet's own face
-        if (nx * VIEW[0] + ny * VIEW[1] <= 0.02) continue;
-        const lambert = nx * LIGHT[0] + ny * LIGHT[1];
-        const s = Math.min(1, Math.max(0, 0.55 + 0.45 * lambert));
-        const k = Math.round(s * (SHADES - 1));
-        buckets[k].push(`M${P(a, z)}L${P(b, z)}L${P(b, zFrom)}L${P(a, zFrom)}Z`);
+const MESH = 1; // surface mesh step (map units)
+
+type Shape = { d: string; fill: string };
+// The same block as raw mesh data, for the moving frames: every ground vertex
+// on screen as if flattened to the block's lowest ground (x, y0) plus its lift
+// to full height (lift).
+type Growth = {
+  nx: number;
+  ny: number;
+  x: Float32Array;
+  y0: Float32Array;
+  lift: Float32Array;
+  fills: string[]; // every quad, row by row from the far edge — hidden ones too
+  hidden: Uint8Array; // quads the finished board leaves out (behind nearer ground)
+  base: { ne: Pt; se: Pt; sw: Pt }; // the block's underside corners (fixed)
+};
+type Terrain = {
+  at: (x: number, y: number) => Pt; // a ground point on screen
+  surface: Shape[]; // painted back → front
+  walls: Shape[];
+  footprint: number[]; // contact-shadow corners, x0, y0, x1, y1, …
+  growth: Growth;
+};
+
+const pointsAttr = (xy: ArrayLike<number>) =>
+  Array.from({ length: xy.length / 2 }, (_, i) => `${f2(xy[2 * i])},${f2(xy[2 * i + 1])}`).join(' ');
+
+const terrainCache = new Map<LandformId, Terrain>();
+
+function getTerrain(form: LandformId): Terrain {
+  const hit = terrainCache.get(form);
+  if (hit) return hit;
+  const { h, kz, highlight, ky = KY } = SPECS[form];
+  const cosTilt = Math.sqrt(1 - ky * ky); // ky = sin(camera elevation)
+  const toViewer = [VIEW[0] * cosTilt, VIEW[1] * cosTilt, ky];
+  const pY = (x: number, y: number) => (x * SR + y * CR) * ky;
+  const H: HeightFn = (x, y) => shownHeight(h(x, y)) + swell(x, y);
+  const form0 = (x: number, y: number) => shownHeight(h(x, y)); // landform only, no swell
+  const nx = Math.round(TW / MESH) + 1;
+  const ny = Math.round(TH / MESH) + 1;
+  const raw = new Float64Array(nx * ny);
+  const Z = new Float64Array(nx * ny);
+  let minY = Infinity;
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const k = j * nx + i;
+      raw[k] = h(i * MESH, j * MESH);
+      Z[k] = H(i * MESH, j * MESH);
+      minY = Math.min(minY, pY(i * MESH, j * MESH) - (Z[k] - BASE) * kz);
+    }
+  }
+  // The block's underside sits a slab below its lowest ground — but never more
+  // than 12 m under its lowest edge, so a pit doesn't turn the block into a box.
+  let edgeMin = Infinity;
+  for (let i = 0; i < nx; i++) edgeMin = Math.min(edgeMin, Z[i], Z[(ny - 1) * nx + i]);
+  for (let j = 0; j < ny; j++) edgeMin = Math.min(edgeMin, Z[j * nx], Z[j * nx + nx - 1]);
+  const floor = Math.max(
+    Z.reduce((a, b) => Math.min(a, b), Infinity),
+    edgeMin - 12,
+  );
+  const maxY = pY(TW, TH) - (floor - BASE) * kz + BASE_SLAB;
+  const y0 = (REAL_H - (maxY - minY)) / 2 - minY;
+  const proj = (x: number, y: number, z: number): Pt => [planX(x, y), y0 + pY(x, y) - (z - BASE) * kz];
+  const V = (i: number, j: number): Pt => proj(i * MESH, j * MESH, Z[j * nx + i]);
+  const fmt = (p: Pt) => `${f2(p[0])},${f2(p[1])}`;
+  const down = (p: Pt, dy: number): Pt => [p[0], p[1] + dy];
+
+  // Depth below the spill level: how deep water poured here would pond. Zero on
+  // open ground (it drains off the tile); only a closed pit has any.
+  const F0 = raw.map(shownHeight);
+  const spill = new Float64Array(nx * ny).fill(Infinity);
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      if (i === 0 || j === 0 || i === nx - 1 || j === ny - 1) spill[j * nx + i] = F0[j * nx + i];
+    }
+  }
+  for (let changed = true, pass = 0; changed; pass++) {
+    changed = false;
+    // alternate the sweep direction so the fill spreads fast both ways
+    for (let n = 0; n < (nx - 2) * (ny - 2); n++) {
+      const m = pass % 2 ? (nx - 2) * (ny - 2) - 1 - n : n;
+      const k = (1 + Math.floor(m / (nx - 2))) * nx + 1 + (m % (nx - 2));
+      const v = Math.max(F0[k], Math.min(spill[k - 1], spill[k + 1], spill[k - nx], spill[k + nx]));
+      if (v < spill[k] - 1e-9) {
+        spill[k] = v;
+        changed = true;
       }
     }
-    return {
-      z,
-      face: rings
-        .map((r) => 'M' + r.map((p) => P(p, z)).join('L') + 'Z')
-        .join(''),
-      walls: buckets
-        .map((list, k) => ({ shade: k / (SHADES - 1), d: list.join('') }))
-        .filter((w) => w.d.length > 0),
-    };
+  }
+  const sunk = F0.map((z, k) => spill[k] - z);
+
+  // Shade each quad: elevation tint, hollows a touch darker and crests a touch
+  // lighter (curvature), a closed pit darkening with depth, then sunlit /
+  // shadowed by its slope. The relief is drawn exaggerated, so the normal uses
+  // the drawn (not true) height.
+  const zw = kz / cosTilt;
+  // Hidden quads get a colour too: while the block rises they are still low
+  // enough to show (see Growth), the final board skips them.
+  const hidden = new Uint8Array((nx - 1) * (ny - 1));
+  const quad = (i: number, j: number): string => {
+    const z00 = Z[j * nx + i];
+    const z10 = Z[j * nx + i + 1];
+    const z01 = Z[(j + 1) * nx + i];
+    const z11 = Z[(j + 1) * nx + i + 1];
+    const gx = ((z10 - z00 + z11 - z01) / (2 * MESH)) * zw;
+    const gy = ((z01 - z00 + z11 - z10) / (2 * MESH)) * zw;
+    const inv = 1 / Math.hypot(gx, gy, 1);
+    const n = [-gx * inv, -gy * inv, inv];
+    // faces away from the viewer → always hidden behind nearer ground
+    if (n[0] * toViewer[0] + n[1] * toViewer[1] + n[2] * toViewer[2] <= 0) hidden[j * (nx - 1) + i] = 1;
+    let col = groundColor(((z00 + z10 + z01 + z11) / 4 - BASE) / (CEIL - 6 - BASE));
+    // depth below the spill level — only inside a closed pit
+    const pit = (sunk[j * nx + i] + sunk[j * nx + i + 1] + sunk[(j + 1) * nx + i] + sunk[(j + 1) * nx + i + 1]) / 4;
+    // green gives way to rock right at the rim (the highlighted 150 m ring)
+    if (pit > 0.15) col = mix(col, mix(PIT_ROCK, PIT_FLOOR, Math.min(1, pit / 30)), Math.min(1, (pit - 0.15) / 0.6));
+    if (form === 'hill' && highlight !== undefined) {
+      const rm = (raw[j * nx + i] + raw[j * nx + i + 1] + raw[(j + 1) * nx + i] + raw[(j + 1) * nx + i + 1]) / 4;
+      if (rm >= highlight) col = mix(col, C.accent, 0.32);
+    }
+    const cx = (i + 0.5) * MESH;
+    const cy = (j + 0.5) * MESH;
+    const f0 = form0(cx, cy);
+    const d = 2.5;
+    const lap = (form0(cx + d, cy) + form0(cx - d, cy) + form0(cx, cy + d) + form0(cx, cy - d) - 4 * f0) / (d * d);
+    // (no crest glow along a pit's rim — the green → rock edge stays crisp)
+    const rimNear = [-3, 3].some(
+      (o) =>
+        sunk[j * nx + Math.min(nx - 1, Math.max(0, i + o))] > 0 ||
+        sunk[Math.min(ny - 1, Math.max(0, j + o)) * nx + i] > 0,
+    );
+    if (lap > 0) col = mix(col, SHADOW_TONE, Math.min(0.24, lap * 0.4));
+    else if (!rimNear) col = mix(col, LIGHT_TONE, Math.min(0.15, -lap * 0.5));
+    // …and darkens with depth — deep reads as dark
+    if (pit > 0) col = mix(col, SHADOW_TONE, 0.4 * Math.min(1, pit / 40) ** 1.6);
+    const lit = n[0] * SUN[0] + n[1] * SUN[1] + n[2] * SUN[2] - SUN[2];
+    return lit < 0 ? mix(col, SHADOW_TONE, Math.min(0.6, -lit * 0.95)) : mix(col, LIGHT_TONE, Math.min(0.35, lit * 0.6));
   };
 
-  const tile: Pt[][] = [[[0, 0], [TW, 0], [TW, TH], [0, TH]]];
-  const out: Layer[] = [layer(BASE, BASE - BASE_SLAB / kz, tile, true)];
-  let prev = BASE;
-  for (const L of lf.levels) {
-    out.push(layer(L, prev, lf.rings.get(L) ?? [], false));
-    prev = L;
+  // Row by row from the far edge, and far → near inside a row: a valid painter's
+  // order for a height field seen from this side. Equal-colour neighbours in a
+  // row merge into one strip.
+  const qw = nx - 1;
+  const fills: string[] = [];
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < qw; i++) fills.push(quad(i, j));
+  const surface: Shape[] = [];
+  for (let j = 0; j < ny - 1; j++) {
+    for (let i = 0; i < qw; ) {
+      const fill = fills[j * qw + i];
+      if (hidden[j * qw + i]) {
+        i++;
+        continue;
+      }
+      let i1 = i;
+      while (i1 + 1 < qw && !hidden[j * qw + i1 + 1] && fills[j * qw + i1 + 1] === fill) i1++;
+      const top: Pt[] = [];
+      const bot: Pt[] = [];
+      for (let k = i; k <= i1 + 1; k++) {
+        top.push(V(k, j));
+        bot.push(V(k, j + 1));
+      }
+      surface.push({ d: 'M' + [...top, ...bot.reverse()].map(fmt).join('L') + 'Z', fill });
+      i = i1 + 1;
+    }
   }
+
+  // Cut edges on the two sides facing the viewer (south, east): cream paper
+  // below a thin topsoil band that traces the terrain's cross-section.
+  const south = Array.from({ length: nx }, (_, i) => V(i, ny - 1));
+  const east = Array.from({ length: ny }, (_, j) => V(nx - 1, j));
+  const baseAt = (x: number, y: number): Pt => down(proj(x, y, floor), BASE_SLAB);
+  const band = (edge: Pt[]) => 'M' + [...edge, ...edge.map((p) => down(p, 0.55)).reverse()].map(fmt).join('L') + 'Z';
+  const walls: Shape[] = [
+    { d: 'M' + [...south, baseAt(TW, TH), baseAt(0, TH)].map(fmt).join('L') + 'Z', fill: WALL_LIT },
+    { d: 'M' + [...east, baseAt(TW, TH), baseAt(TW, 0)].map(fmt).join('L') + 'Z', fill: WALL_SHADE },
+    { d: band(south), fill: TOPSOIL },
+    { d: band(east), fill: mix(TOPSOIL, SHADOW_TONE, 0.25) },
+  ];
+
+  const footprint = ([[0, 0], [TW, 0], [TW, TH], [0, TH]] as Pt[]).flatMap(([x, y]) => down(baseAt(x, y), 0.9));
+
+  const growth: Growth = {
+    nx,
+    ny,
+    x: new Float32Array(nx * ny),
+    y0: new Float32Array(nx * ny),
+    lift: new Float32Array(nx * ny),
+    fills,
+    hidden,
+    base: { ne: baseAt(TW, 0), se: baseAt(TW, TH), sw: baseAt(0, TH) },
+  };
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const k = j * nx + i;
+      const [px, py] = proj(i * MESH, j * MESH, floor);
+      growth.x[k] = px;
+      growth.y0[k] = py;
+      growth.lift[k] = (Z[k] - floor) * kz;
+    }
+  }
+
+  const t: Terrain = { at: (x, y) => proj(x, y, H(x, y)), surface, walls, footprint, growth };
+  terrainCache.set(form, t);
+  return t;
+}
+
+// Build-up (the board's first showing): the flat block fades in, then its
+// relief rises into place.
+const BUILD_S = 1.05;
+const BUILD_FADE = 0.14; // share of BUILD_S
+const BUILD_HOLD = 0.1; // flat, before the rise starts
+// Switching landforms: the shown ground reshapes straight into the next form.
+const MORPH_S = 0.9;
+const MOVE_EASE = cubicBezier(0.45, 0, 0.2, 1);
+
+// a → b by s, element by element
+function lerpArr(a: ArrayLike<number>, b: ArrayLike<number>, s: number): Float32Array {
+  const out = new Float32Array(a.length);
+  for (let i = 0; i < out.length; i++) out[i] = a[i] + (b[i] - a[i]) * s;
   return out;
+}
+
+// The moving frames run on the GPU (thousands of quads a frame — far too many
+// for SVG or a 2D canvas). Every landform yields the same vertices in the same
+// order: the surface in the board's painter's order, then the cut edges, each
+// a strip from the ground edge down to the underside. So any two poses blend
+// vertex by vertex, and every blend is again a height field seen from the same
+// side — the painter's order still holds. A pose is x, y, r, g, b per vertex:
+// `pose` the finished block, `flat` its relief pressed down to the lowest
+// ground, the ground plain-coloured (where the build-up starts).
+type MorphMesh = { index: Uint16Array; pose: Float32Array; flat: Float32Array };
+const hexRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+const morphMeshes = new WeakMap<Terrain, MorphMesh>();
+
+function getMorphMesh(t: Terrain): MorphMesh {
+  const hit = morphMeshes.get(t);
+  if (hit) return hit;
+  const { nx, ny, x, y0, lift, fills, hidden, base } = t.growth;
+  const pose: number[] = [];
+  const flat: number[] = [];
+  const index: number[] = [];
+  const plain = hexRgb(GROUND_RAMP[0][1]);
+  type V3 = [number, number, number]; // flat x, flat y, lift
+  // flat ground is plain-coloured; the tint and the hill-shading come with the relief
+  const vertex = (v: V3, col: number[], ground: boolean) => {
+    pose.push(v[0], v[1] - v[2], col[0], col[1], col[2]);
+    const c = ground ? plain : col;
+    flat.push(v[0], v[1], c[0], c[1], c[2]);
+  };
+  const quad = (a: V3, b: V3, c: V3, d: V3, fill: string) => {
+    const n = pose.length / 5;
+    const col = hexRgb(fill);
+    for (const v of [a, b, c, d]) vertex(v, col, false);
+    index.push(n, n + 1, n + 2, n, n + 2, n + 3);
+  };
+  const V = (k: number): V3 => [x[k], y0[k], lift[k]];
+  const drop = (v: V3, dy: number): V3 => [v[0], v[1] + dy, v[2]];
+  const on = (p: Pt, q: Pt, u: number): V3 => [p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u, 0];
+  // Surface: shared vertices, each coloured with the mean of the quads around
+  // it that show on the finished board (all of them where none does) — smooth
+  // shading, as the board's smoothing filter gives; flat quads would streak.
+  const qw = nx - 1;
+  const quadRgb = fills.map(hexRgb);
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const shown = [0, 0, 0, 0];
+      const any = [0, 0, 0, 0];
+      for (const [qi, qj] of [[i - 1, j - 1], [i, j - 1], [i - 1, j], [i, j]]) {
+        if (qi < 0 || qj < 0 || qi >= qw || qj >= ny - 1) continue;
+        const q = qj * qw + qi;
+        for (const acc of hidden[q] ? [any] : [any, shown]) {
+          for (let c = 0; c < 3; c++) acc[c] += quadRgb[q][c];
+          acc[3]++;
+        }
+      }
+      const m = shown[3] ? shown : any;
+      vertex(V(j * nx + i), [m[0] / m[3], m[1] / m[3], m[2] / m[3]], true);
+    }
+  }
+  for (let j = 0; j < ny - 1; j++) {
+    for (let i = 0; i < qw; i++) {
+      const k = j * nx + i;
+      index.push(k, k + 1, k + nx + 1, k, k + nx + 1, k + nx);
+    }
+  }
+  const south = Array.from({ length: nx }, (_, i) => (ny - 1) * nx + i);
+  const east = Array.from({ length: ny }, (_, j) => j * nx + nx - 1);
+  const wall = (ks: number[], from: Pt, to: Pt, fill: string) => {
+    for (let i = 0; i < ks.length - 1; i++) {
+      const u = (n: number) => n / (ks.length - 1);
+      quad(V(ks[i]), V(ks[i + 1]), on(from, to, u(i + 1)), on(from, to, u(i)), fill);
+    }
+  };
+  const band = (ks: number[], fill: string) => {
+    for (let i = 0; i < ks.length - 1; i++) {
+      quad(V(ks[i]), V(ks[i + 1]), drop(V(ks[i + 1]), 0.55), drop(V(ks[i]), 0.55), fill);
+    }
+  };
+  wall(south, base.sw, base.se, t.walls[0].fill);
+  wall(east, base.ne, base.se, t.walls[1].fill);
+  band(south, t.walls[2].fill);
+  band(east, t.walls[3].fill);
+  const mesh = { index: new Uint16Array(index), pose: new Float32Array(pose), flat: new Float32Array(flat) };
+  morphMeshes.set(t, mesh);
+  return mesh;
+}
+
+const MORPH_VS = `
+attribute vec2 a_pos0;
+attribute vec3 a_col0;
+attribute vec2 a_pos1;
+attribute vec3 a_col1;
+uniform float u_s;
+uniform vec4 u_view;
+varying vec3 v_col;
+void main() {
+  vec2 p = (mix(a_pos0, a_pos1, u_s) - u_view.xy) / u_view.zw * 2.0 - 1.0;
+  gl_Position = vec4(p.x, -p.y, 0.0, 1.0);
+  v_col = mix(a_col0, a_col1, u_s);
+}`;
+const MORPH_FS = `
+precision mediump float;
+varying vec3 v_col;
+void main() { gl_FragColor = vec4(v_col, 1.0); }`;
+
+// Draws the block blended from pose `from` to pose `to` at s (0 → 1) onto the
+// canvas, in the board's viewBox. Null when WebGL isn't available.
+function morphRenderer(canvas: HTMLCanvasElement, index: Uint16Array, from: Float32Array, to: Float32Array) {
+  const gl = canvas.getContext('webgl', { antialias: true, depth: false, stencil: false });
+  if (!gl) return null;
+  const shader = (type: number, src: string) => {
+    const s = gl.createShader(type)!;
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  };
+  const prog = gl.createProgram()!;
+  gl.attachShader(prog, shader(gl.VERTEX_SHADER, MORPH_VS));
+  gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, MORPH_FS));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW);
+  // one buffer per pose, each interleaved x, y, r, g, b
+  [from, to].forEach((data, n) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    const attr = (name: string, size: number, offset: number) => {
+      const loc = gl.getAttribLocation(prog, name);
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 20, offset);
+    };
+    attr(`a_pos${n}`, 2, 0);
+    attr(`a_col${n}`, 3, 8);
+  });
+  const uS = gl.getUniformLocation(prog, 'u_s');
+  gl.uniform4f(gl.getUniformLocation(prog, 'u_view'), REAL_X, 0, REAL_W, REAL_H);
+  return {
+    draw(s: number) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = Math.round(canvas.clientWidth * dpr);
+      const h = Math.round(canvas.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      gl.viewport(0, 0, w, h);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1f(uS, s);
+      gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0);
+    },
+    // free the context right away — the page runs other WebGL scenes too
+    dispose() {
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+    },
+  };
 }
 
 export function LandformReality({ form, ariaLabel }: { form: LandformId; ariaLabel: string }) {
   const reduce = useReducedMotion();
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const lf = getLandform(form);
-  const { kz } = lf.spec;
-  const { y0 } = lf;
-  const project = (x: number, y: number, z: number): Pt => [planX(x, y), y0 + planY(x, y) - (z - BASE) * kz];
-  const onGround = (x: number, y: number): Pt => project(x, y, lf.terr(x, y));
+  const terrain = getTerrain(form);
 
-  const layers = useMemo(() => buildLayers(lf), [lf]);
-  const overlays = realityOverlays(form, lf, project);
-  const footprint = ([[0, 0], [TW, 0], [TW, TH], [0, TH]] as Pt[])
-    .map(([x, y]) => {
-      const [sx, sy] = project(x, y, BASE);
-      return `${f2(sx)},${f2(sy + BASE_SLAB + 0.9)}`;
-    })
-    .join(' ');
+  // The moving frames are drawn on a canvas over the board; the finished board
+  // is painted underneath before the canvas goes.
+  //  - First showing — build-up, bottom to top: the block lands flat, then the
+  //    ground rises out of it to full relief, one continuous surface the whole
+  //    way (user decision 2026-09-28: no stacked contour sheets).
+  //  - Switching landforms — shape to shape: the ground on screen reshapes
+  //    straight into the next form, without going flat again (user decision
+  //    2026-09-28). A click mid-move carries on from the shape on screen.
+  const layerRef = useRef<HTMLDivElement>(null);
+  const footRef = useRef<SVGPolygonElement>(null);
+  // what the canvas shows: pose `from` blended toward `to` by s (and the shadow with it)
+  const shownRef = useRef<{ from: Float32Array; to: Float32Array; foot: [number[], number[]]; s: number } | null>(null);
+  const [stage, setStage] = useState<{ form: LandformId; step: 'landed' | 'done' } | null>(null);
+  // a new form is moving until its own run lands
+  const step = stage?.form === form ? stage.step : 'moving';
+  const built = step !== 'moving';
+  // run by the landing: drops the canvas once the finished board has painted
+  const releaseRef = useRef<() => void>(() => {});
+
+  // A layout effect: the canvas takes over in the same paint as the click, so
+  // the old shape never blinks out.
+  useLayoutEffect(() => {
+    const layer = layerRef.current;
+    const mesh = getMorphMesh(terrain);
+    const prev = shownRef.current;
+    const build = !prev;
+    const run = {
+      from: prev ? lerpArr(prev.from, prev.to, prev.s) : mesh.flat,
+      to: mesh.pose,
+      foot: [prev ? Array.from(lerpArr(prev.foot[0], prev.foot[1], prev.s)) : terrain.footprint, terrain.footprint] as [
+        number[],
+        number[],
+      ],
+      s: 0,
+    };
+    shownRef.current = run;
+    // a fresh canvas per run: a context once released can't be drawn on again
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = `display:block;width:100%;height:100%;opacity:${build ? 0 : 1}`;
+    layer?.appendChild(canvas);
+    const gl = !reduce && layer ? morphRenderer(canvas, mesh.index, run.from, run.to) : null;
+    if (!gl) {
+      canvas.remove();
+      run.s = 1;
+      setStage({ form, step: 'done' });
+      return;
+    }
+    const frame = (p: number) => {
+      if (build) canvas.style.opacity = String(Math.min(1, p / BUILD_FADE));
+      run.s = MOVE_EASE(build ? Math.max(0, (p - BUILD_HOLD) / (1 - BUILD_HOLD)) : p);
+      gl.draw(run.s);
+      footRef.current?.setAttribute('points', pointsAttr(lerpArr(run.foot[0], run.foot[1], run.s)));
+    };
+    frame(0);
+    const controls = animate(0, 1, {
+      duration: build ? BUILD_S : MORPH_S,
+      ease: 'linear',
+      onUpdate: frame,
+      onComplete: () => {
+        run.s = 1;
+        releaseRef.current = () => {
+          gl.dispose();
+          setStage({ form, step: 'done' });
+        };
+        setStage({ form, step: 'landed' });
+      },
+    });
+    return () => {
+      controls.stop();
+      gl.dispose();
+      canvas.remove();
+      // stopped before anything rose (or re-run by Strict Mode): build up afresh
+      if (build && run.s === 0) shownRef.current = null;
+    };
+  }, [form, reduce, terrain]);
+
+  // Landed: the finished board is committed under the canvas's last frame. Two
+  // frames later it has painted, and the canvas goes.
+  useEffect(() => {
+    if (step !== 'landed') return;
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => releaseRef.current());
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [step]);
+
+  // While the ground moves, the hidden board keeps the last settled form: the
+  // next form's thousands of strips are laid in under the canvas once it lands,
+  // not in the frame of the click.
+  const boardForm = built || !stage ? form : stage.form;
+  const board = useMemo(() => {
+    const t = getTerrain(boardForm);
+    return (
+      <>
+        {/* each strip is stroked in its own colour to close hairline seams */}
+        <g strokeWidth={0.32} strokeLinejoin="round" filter={`url(#${uid}-smooth)`}>
+          {t.surface.map((s, i) => (
+            <path key={i} d={s.d} fill={s.fill} stroke={s.fill} />
+          ))}
+        </g>
+        {t.walls.map((w, i) => (
+          <path key={i} d={w.d} fill={w.fill} stroke={w.fill} strokeWidth={0.1} strokeLinejoin="round" />
+        ))}
+      </>
+    );
+  }, [boardForm, uid]);
+  const overlays = useMemo(
+    () => (built ? realityOverlays(form, getLandform(form), terrain) : null),
+    [built, form, terrain],
+  );
+
+  // Prepare the other landforms while the reader is idle, so switching is quick.
+  useEffect(() => {
+    let alive = true;
+    const queue = (Object.keys(SPECS) as LandformId[]).filter((f) => !terrainCache.has(f) || !cache.has(f));
+    const next = () => {
+      const f = queue.shift();
+      if (!alive || !f) return;
+      getMorphMesh(getTerrain(f));
+      getLandform(f);
+      schedule();
+    };
+    // Safari has no requestIdleCallback
+    const idle = window.requestIdleCallback as ((cb: () => void) => number) | undefined;
+    const schedule = () => (idle ? idle.call(window, next) : window.setTimeout(next, 120));
+    schedule();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   return (
-    <svg
-      viewBox={`${f2(REAL_X)} 0 ${f2(REAL_W)} ${REAL_H}`}
-      className="block w-full h-auto"
-      role="img"
-      aria-label={ariaLabel}
-    >
-      <defs>
-        <linearGradient id={`${uid}-sky`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#F6EFE6" />
-        </linearGradient>
-        <filter id={`${uid}-lift`} x="-5%" y="-10%" width="110%" height="130%">
-          <feDropShadow dx="0" dy="0.45" stdDeviation="0.45" floodColor="#3B3524" floodOpacity="0.26" />
-        </filter>
-        <filter id={`${uid}-soft`} x="-20%" y="-80%" width="140%" height="260%">
-          <feGaussianBlur stdDeviation="1.4" />
-        </filter>
-      </defs>
-
-      <rect x={REAL_X} y={0} width={REAL_W} height={REAL_H} fill={`url(#${uid}-sky)`} />
-      {/* soft contact shadow under the whole diorama */}
-      <polygon points={footprint} fill="#5A4628" opacity={0.2} filter={`url(#${uid}-soft)`} />
-
-      {layers.map((l, i) => (
-        <motion.g
-          key={l.z}
-          filter={`url(#${uid}-lift)`}
-          initial={reduce ? false : { opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: reduce ? 0 : 0.35, delay: reduce ? 0 : 0.05 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {/* paper edges — shaded by how much each wall faces the light */}
-          {l.walls.map((w) => (
-            <path key={w.shade} d={w.d} fill={wallColor(w.shade)} stroke={wallColor(w.shade)} strokeWidth={0.12} strokeLinejoin="round" />
-          ))}
-          {/* top face of the sheet */}
-          <path
-            d={l.face}
-            fillRule="evenodd"
-            fill={faceColor(l.z)}
-            stroke={C.greenDeep}
-            strokeOpacity={0.35}
-            strokeWidth={0.14}
-            strokeLinejoin="round"
-          />
-          {overlays.get(l.z)}
-        </motion.g>
-      ))}
-
-      {/* summits sit on the top sheet — nothing can hide them */}
-      <motion.g
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: reduce ? 0 : 0.3, delay: reduce ? 0 : 0.45 }}
+    <div className="relative">
+      <svg
+        viewBox={`${f2(REAL_X)} 0 ${f2(REAL_W)} ${REAL_H}`}
+        className="block w-full h-auto"
+        role="img"
+        aria-label={ariaLabel}
       >
-        {form === 'hill' &&
-          lf.peaks.slice(0, 1).map((p, i) => <Summit key={i} at={onGround(p[0], p[1])} fill={C.accent} size={3} />)}
-        {form === 'saddle' &&
-          lf.peaks.map((p, i) => <Summit key={i} at={onGround(p[0], p[1])} fill={C.ink} size={2.2} />)}
-      </motion.g>
-    </svg>
+        <defs>
+          <linearGradient id={`${uid}-sky`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#FFFFFF" />
+            <stop offset="1" stopColor="#F6EFE6" />
+          </linearGradient>
+          <filter id={`${uid}-soft`} x="-20%" y="-80%" width="140%" height="260%">
+            <feGaussianBlur stdDeviation="1.4" />
+          </filter>
+          {/* smooths the mesh's shading steps inside the terrain while keeping its
+              silhouette crisp: blur, re-solidify, clip back to the sharp shape */}
+          <filter id={`${uid}-smooth`} colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="blur" />
+            <feComponentTransfer in="blur" result="solid">
+              <feFuncA type="linear" slope="40" />
+            </feComponentTransfer>
+            <feComposite in="solid" in2="SourceAlpha" operator="in" />
+          </filter>
+        </defs>
+
+        <rect x={REAL_X} y={0} width={REAL_W} height={REAL_H} fill={`url(#${uid}-sky)`} />
+        {/* soft contact shadow under the block */}
+        <polygon
+          ref={footRef}
+          points={pointsAttr(terrain.footprint)}
+          fill="#5A4628"
+          opacity={0.2}
+          filter={`url(#${uid}-soft)`}
+        />
+
+        <g visibility={built ? undefined : 'hidden'}>{board}</g>
+
+        {/* key feature, draped on the ground once the block is in place */}
+        {built && (
+          <motion.g
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: reduce ? 0 : 0.3 }}
+          >
+            {overlays}
+          </motion.g>
+        )}
+      </svg>
+      {/* the moving frames (canvas added by the effect above) */}
+      {step !== 'done' && <div ref={layerRef} aria-hidden className="pointer-events-none absolute inset-0" />}
+    </div>
   );
 }
 
-type Run = { z: number; pts: { p: Pt; z: number }[] };
-
-// Split a plan-view line into runs lying on one sheet each. The vertical step
-// between two sheets belongs to the higher one (it runs down that sheet's edge).
-function splitByLevel(pts: Pt[], terr: (x: number, y: number) => number): Run[] {
-  const runs: Run[] = [];
-  let cur: Run | null = null;
-  for (const p of pts) {
-    const z = terr(p[0], p[1]);
-    if (!cur || cur.z !== z) {
-      const prev: Run | null = cur;
-      cur = { z, pts: [] };
-      runs.push(cur);
-      if (prev) {
-        if (prev.z > z) prev.pts.push({ p, z });
-        else cur.pts.push(prev.pts[prev.pts.length - 1]);
-      }
-    }
-    cur.pts.push({ p, z });
+// A plan point is visible when no nearer ground rises above it on screen: walk
+// toward the viewer along the view direction (screen x stays fixed on that ray).
+function isVisible(t: Terrain, x: number, y: number): boolean {
+  const sy = t.at(x, y)[1];
+  for (let s = 0.5; ; s += 0.5) {
+    const qx = x + VIEW[0] * s;
+    const qy = y + VIEW[1] * s;
+    if (qx > TW || qy > TH) return true;
+    if (t.at(qx, qy)[1] < sy - 0.08) return false;
   }
-  return runs;
 }
 
-// Key-feature marks for the diorama, grouped by the sheet they lie on so each is
-// painted right after its sheet (and correctly hidden by any higher sheet).
-function realityOverlays(
-  form: LandformId,
-  lf: Landform,
-  project: (x: number, y: number, z: number) => Pt,
-): Map<number, ReactNode[]> {
-  const out = new Map<number, ReactNode[]>();
-  const add = (z: number, node: ReactNode) => {
-    const list = out.get(z);
-    if (list) list.push(node);
-    else out.set(z, [node]);
-  };
-  const feat = FEATURES[form];
-  const runPath = (r: Run) => polyPath(r.pts.map(({ p, z }) => project(p[0], p[1], z)));
-
-  if (lf.spec.highlight) {
-    const rings = (lf.rings.get(lf.spec.highlight) ?? []).filter(isInterior);
-    if (rings.length) {
-      add(
-        lf.spec.highlight,
-        <path
-          key="hl"
-          d={ringsPath(rings, (p) => project(p[0], p[1], lf.spec.highlight!))}
-          fill={form === 'hill' ? C.accent : 'none'}
-          fillOpacity={0.28}
-          stroke={C.accent}
-          strokeWidth={0.6}
-          strokeLinejoin="round"
-        />,
-      );
+// Plan-view line → path on the ground, broken wherever the terrain hides it.
+function drape(t: Terrain, pts: Pt[], closed = false): string {
+  const vis = pts.map(([x, y]) => isVisible(t, x, y));
+  const P = ([x, y]: Pt): Pt => t.at(x, y);
+  if (closed && vis.every(Boolean)) return polyPath(pts.map(P)) + 'Z';
+  // a closed ring starts at a hidden point so no visible run wraps around
+  const start = closed ? vis.indexOf(false) : 0;
+  const order = closed ? [...pts.slice(start), ...pts.slice(0, start + 1)] : pts;
+  const flags = closed ? [...vis.slice(start), ...vis.slice(0, start + 1)] : vis;
+  const runs: Pt[][] = [];
+  let cur: Pt[] = [];
+  order.forEach((p, i) => {
+    if (flags[i]) cur.push(P(p));
+    else if (cur.length) {
+      runs.push(cur);
+      cur = [];
     }
+  });
+  if (cur.length) runs.push(cur);
+  return runs
+    .filter((r) => r.length > 1)
+    .map(polyPath)
+    .join('');
+}
+
+function realityOverlays(form: LandformId, lf: Landform, t: Terrain): ReactNode[] {
+  const { highlight } = lf.spec;
+  const feat = FEATURES[form];
+  const out: ReactNode[] = [];
+
+  // the same closed contour that is highlighted on the map (hill top, depression rim)
+  if (highlight !== undefined) {
+    const d = (lf.rings.get(highlight) ?? [])
+      .filter(isInterior)
+      .map((r) => drape(t, r, true))
+      .join('');
+    if (d) out.push(<path key="hl" d={d} fill="none" stroke={C.accent} strokeWidth={0.6} strokeLinecap="round" strokeLinejoin="round" />);
   }
   if (feat.axis) {
-    splitByLevel(sampleLine(feat.axis), lf.terr).forEach((r, i) =>
-      add(
-        r.z,
-        <path
-          key={'ax' + i}
-          d={runPath(r)}
-          fill="none"
-          stroke={C.accent}
-          strokeWidth={0.65}
-          strokeDasharray="1.6 1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />,
-      ),
+    out.push(
+      <path
+        key="ax"
+        d={drape(t, sampleLine(feat.axis))}
+        fill="none"
+        stroke={C.accent}
+        strokeWidth={0.65}
+        strokeDasharray="1.6 1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />,
     );
     const [ex, ey] = feat.axis.to;
-    const zt = lf.terr(ex, ey + 2.6);
-    const tip = project(ex, ey + 2.6, zt);
-    const from = project(ex, ey, zt);
-    add(zt, <Arrowhead key="axh" tip={tip} dir={[tip[0] - from[0], tip[1] - from[1]]} fill={C.accent} />);
+    if (isVisible(t, ex, ey + 2.6)) {
+      const tip = t.at(ex, ey + 2.6);
+      const from = t.at(ex, ey);
+      out.push(<Arrowhead key="axh" tip={tip} dir={[tip[0] - from[0], tip[1] - from[1]]} fill={C.accent} />);
+    }
   }
   if (feat.drain) {
-    splitByLevel(sampleLine(feat.drain), lf.terr).forEach((r, i) =>
-      add(
-        r.z,
-        <g key={'dr' + i} fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <path d={runPath(r)} stroke={C.riverDeep} strokeWidth={1.4} />
-          <path d={runPath(r)} stroke={C.river} strokeWidth={0.85} />
-        </g>,
-      ),
+    const d = drape(t, sampleLine(feat.drain));
+    out.push(
+      <g key="dr" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d={d} stroke={C.riverDeep} strokeWidth={1.3} />
+        <path d={d} stroke={C.river} strokeWidth={0.8} />
+      </g>,
     );
   }
   if (feat.ridge) {
-    splitByLevel(sampleLine(feat.ridge), lf.terr).forEach((r, i) =>
-      add(
-        r.z,
-        <path
-          key={'rg' + i}
-          d={runPath(r)}
-          fill="none"
-          stroke={C.accent}
-          strokeWidth={0.6}
-          strokeDasharray="1.4 0.9"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />,
-      ),
+    out.push(
+      <path
+        key="rg"
+        d={drape(t, sampleLine(feat.ridge))}
+        fill="none"
+        stroke={C.accent}
+        strokeWidth={0.6}
+        strokeDasharray="1.4 0.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />,
     );
   }
-  if (form === 'saddle' && feat.point) {
-    const [x, y] = feat.point;
-    const z = lf.terr(x, y);
-    const [sx, sy] = project(x, y, z);
-    add(z, <circle key="sp" cx={sx} cy={sy} r={1.3} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.45} />);
+  if (form === 'saddle' && feat.point && isVisible(t, feat.point[0], feat.point[1])) {
+    const [sx, sy] = t.at(feat.point[0], feat.point[1]);
+    out.push(<circle key="sp" cx={sx} cy={sy} r={1.3} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.45} />);
   }
   return out;
 }
@@ -783,7 +1213,54 @@ export function LandformMap({
   const feat = FEATURES[form];
   const highlightRings = lf.spec.highlight ? (lf.rings.get(lf.spec.highlight) ?? []).filter(isInterior) : [];
 
-  const contours = useMemo(() => lf.levels.map((L) => ({ L, d: ringsPath(lf.rings.get(L) ?? [], id) })), [lf]);
+  // Switching landforms: the contours reshape with the ground — every frame
+  // traces the height field part way from the shown form to the next one (every
+  // level, so rings can appear, split and merge on the way). The labels and
+  // key-feature marks wait until the new form has settled.
+  const settledPaths = useMemo(() => LEVELS.map((L) => ringsPath(lf.rings.get(L) ?? [], id)), [lf]);
+  const [moving, setMoving] = useState<string[] | null>(null);
+  const [switched, setSwitched] = useState(false);
+  const shownRef = useRef<{ from: ArrayLike<number>; to: ArrayLike<number>; s: number }>({
+    from: lf.grid.v,
+    to: lf.grid.v,
+    s: 1,
+  });
+  useLayoutEffect(() => {
+    const prev = shownRef.current;
+    const to = lf.grid.v;
+    if (prev.to === to && prev.s === 1) return;
+    const run = { from: lerpArr(prev.from, prev.to, prev.s), to, s: 0 };
+    shownRef.current = run;
+    if (reduce) {
+      run.s = 1;
+      setMoving(null);
+      return;
+    }
+    setSwitched(true);
+    const trace = () => {
+      const g: Grid = { ...lf.grid, v: lerpArr(run.from, run.to, run.s) };
+      setMoving(LEVELS.map((L) => ringsPath(contourRings(g, L), id)));
+    };
+    trace();
+    const controls = animate(0, 1, {
+      duration: MORPH_S,
+      ease: 'linear',
+      onUpdate: (p) => {
+        run.s = MOVE_EASE(p);
+        trace();
+      },
+      onComplete: () => {
+        run.s = 1;
+        setMoving(null);
+      },
+    });
+    return () => controls.stop();
+  }, [lf, reduce]);
+  const paths = moving ?? settledPaths;
+  const still = moving === null;
+  // first showing: the marks follow the contours' fade-in; after a switch they come right away
+  const marks = { duration: reduce ? 0 : 0.3, delay: reduce || switched ? 0 : 0.45 };
+  const marksIn = reduce ? false : { opacity: 0 };
 
   return (
     <svg
@@ -816,21 +1293,25 @@ export function LandformMap({
         transition={{ duration: reduce ? 0 : 0.35, delay: reduce ? 0 : 0.1 }}
       >
         {/* faint layer tint — deeper tint = higher ground, like the diorama */}
-        {contours.map(({ L, d }) => (
-          <path key={'t' + L} d={d} fillRule="evenodd" fill={C.greenLight} fillOpacity={0.045} />
+        {LEVELS.map((L, i) => (
+          <path key={'t' + L} d={paths[i]} fillRule="evenodd" fill={C.greenLight} fillOpacity={0.045} />
         ))}
-        {contours.map(({ L, d }) => (
+        {LEVELS.map((L, i) => (
           <path
             key={L}
-            d={d}
+            d={paths[i]}
             fill="none"
             stroke={L === INDEX_LEVEL ? C.contourIndex : C.contour}
             strokeWidth={L === INDEX_LEVEL ? 0.55 : 0.32}
             strokeLinejoin="round"
           />
         ))}
-        {form === 'depression' && (
-          <path
+        {still && form === 'depression' && (
+          <motion.path
+            key={`hach-${form}`}
+            initial={switched ? marksIn : false}
+            animate={{ opacity: 1 }}
+            transition={marks}
             d={lf.levels.map((L) => hachures(lf, L)).join('')}
             fill="none"
             stroke={C.contourIndex}
@@ -842,11 +1323,12 @@ export function LandformMap({
       <rect x={0} y={0} width={TW} height={TH} fill="none" stroke={C.hairline} strokeWidth={0.35} />
 
       {/* key contour — matches the highlighted sheet on the diorama */}
-      {highlightRings.length > 0 && (
+      {still && highlightRings.length > 0 && (
         <motion.path
-          initial={reduce ? false : { opacity: 0 }}
+          key={`hl-${form}`}
+          initial={marksIn}
           animate={{ opacity: 1 }}
-          transition={{ duration: reduce ? 0 : 0.3, delay: reduce ? 0 : 0.45 }}
+          transition={marks}
           d={ringsPath(highlightRings, id)}
           fill={form === 'hill' ? C.accent : 'none'}
           fillOpacity={0.14}
@@ -857,79 +1339,76 @@ export function LandformMap({
       )}
 
       {/* elevation numbers on the lines (metres) */}
-      {lf.spec.numbers.map(({ level, at }) => {
-        const p = nearestOnLevel(lf, level, at);
-        return p ? (
-          <MapLabel key={level} at={p} text={String(level)} fill={C.contourIndex} size={2.3} charW={0.62} />
-        ) : null;
-      })}
+      {still && (
+        <motion.g key={`num-${form}`} initial={switched ? marksIn : false} animate={{ opacity: 1 }} transition={marks}>
+          {lf.spec.numbers.map(({ level, at }) => {
+            const p = nearestOnLevel(lf, level, at);
+            return p ? (
+              <MapLabel key={level} at={p} text={String(level)} fill={C.contourIndex} size={2.3} charW={0.62} />
+            ) : null;
+          })}
+        </motion.g>
+      )}
 
       {/* key feature — matches the marks on the diorama */}
-      <motion.g
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: reduce ? 0 : 0.3, delay: reduce ? 0 : 0.45 }}
-      >
-        {form === 'hill' && lf.peaks.slice(0, 1).map((p, i) => <Summit key={i} at={[p[0], p[1] + 1]} fill={C.accent} size={2.6} />)}
+      {still && (
+        <motion.g key={`feat-${form}`} initial={marksIn} animate={{ opacity: 1 }} transition={marks}>
+          {form === 'spur' && feat.axis && (
+            <>
+              <line
+                x1={feat.axis.from[0]}
+                y1={feat.axis.from[1]}
+                x2={feat.axis.to[0]}
+                y2={feat.axis.to[1]}
+                stroke={C.accent}
+                strokeWidth={0.6}
+                strokeDasharray="1.6 1"
+                strokeLinecap="round"
+              />
+              <Arrowhead tip={[feat.axis.to[0], feat.axis.to[1] + 2.4]} dir={[0, 1]} fill={C.accent} />
+              <MapLabel at={[50, 47]} text={labels.toLow} fill={C.accent} />
+            </>
+          )}
 
-        {form === 'spur' && feat.axis && (
-          <>
-            <line
-              x1={feat.axis.from[0]}
-              y1={feat.axis.from[1]}
-              x2={feat.axis.to[0]}
-              y2={feat.axis.to[1]}
-              stroke={C.accent}
-              strokeWidth={0.6}
-              strokeDasharray="1.6 1"
-              strokeLinecap="round"
-            />
-            <Arrowhead tip={[feat.axis.to[0], feat.axis.to[1] + 2.4]} dir={[0, 1]} fill={C.accent} />
-            <MapLabel at={[50, 47]} text={labels.toLow} fill={C.accent} />
-          </>
-        )}
+          {form === 'valley' && feat.drain && (
+            <>
+              <line
+                x1={feat.drain.from[0]}
+                y1={feat.drain.from[1]}
+                x2={feat.drain.to[0]}
+                y2={feat.drain.to[1]}
+                stroke={C.river}
+                strokeWidth={0.9}
+                strokeLinecap="round"
+              />
+              {/* reading cue: the V's apex points up-valley, toward the high ground */}
+              <line x1={59} y1={38} x2={59} y2={12} stroke={C.accent} strokeWidth={0.55} strokeLinecap="round" />
+              <Arrowhead tip={[59, 9.4]} dir={[0, -1]} fill={C.accent} />
+              <MapLabel at={[59, 5.6]} text={labels.toPeak} fill={C.accent} />
+              <MapLabel at={[50, 45.5]} text={labels.drainage} fill={C.riverDeep} />
+            </>
+          )}
 
-        {form === 'valley' && feat.drain && (
-          <>
-            <line
-              x1={feat.drain.from[0]}
-              y1={feat.drain.from[1]}
-              x2={feat.drain.to[0]}
-              y2={feat.drain.to[1]}
-              stroke={C.river}
-              strokeWidth={0.9}
-              strokeLinecap="round"
-            />
-            {/* reading cue: the V's apex points up-valley, toward the high ground */}
-            <line x1={59} y1={38} x2={59} y2={12} stroke={C.accent} strokeWidth={0.55} strokeLinecap="round" />
-            <Arrowhead tip={[59, 9.4]} dir={[0, -1]} fill={C.accent} />
-            <MapLabel at={[59, 5.6]} text={labels.toPeak} fill={C.accent} />
-            <MapLabel at={[50, 45.5]} text={labels.drainage} fill={C.riverDeep} />
-          </>
-        )}
+          {form === 'saddle' && feat.ridge && feat.point && (
+            <>
+              <line
+                x1={feat.ridge.from[0] + 3}
+                y1={feat.ridge.from[1]}
+                x2={feat.ridge.to[0] - 3}
+                y2={feat.ridge.to[1]}
+                stroke={C.accent}
+                strokeWidth={0.55}
+                strokeDasharray="1.4 0.9"
+                strokeLinecap="round"
+              />
+              <circle cx={feat.point[0]} cy={feat.point[1]} r={1.2} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.4} />
+              <MapLabel at={[50, 31]} text={labels.saddle} fill={C.accent} />
+            </>
+          )}
 
-        {form === 'saddle' && feat.ridge && feat.point && (
-          <>
-            {lf.peaks.map((p, i) => (
-              <Summit key={i} at={[p[0], p[1] + 1]} fill={C.ink} size={2.2} />
-            ))}
-            <line
-              x1={feat.ridge.from[0] + 3}
-              y1={feat.ridge.from[1]}
-              x2={feat.ridge.to[0] - 3}
-              y2={feat.ridge.to[1]}
-              stroke={C.accent}
-              strokeWidth={0.55}
-              strokeDasharray="1.4 0.9"
-              strokeLinecap="round"
-            />
-            <circle cx={feat.point[0]} cy={feat.point[1]} r={1.2} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.4} />
-            <MapLabel at={[50, 31]} text={labels.saddle} fill={C.accent} />
-          </>
-        )}
-
-        {form === 'depression' && feat.point && <MapLabel at={feat.point} text={labels.low} fill={C.accent} />}
-      </motion.g>
+          {form === 'depression' && feat.point && <MapLabel at={feat.point} text={labels.low} fill={C.accent} />}
+        </motion.g>
+      )}
     </svg>
   );
 }

@@ -42,6 +42,9 @@ const VIEWS: { id: MountainView; label: string; caption: string }[] = [
 export function ContoursScene() {
   const [activeRing, setActiveRing] = useState<number | null>(null);
   const [view, setView] = useState<MountainView>('whole');
+  // Bumped on every view click, so re-clicking the active view re-frames the
+  // camera after the learner has zoomed or panned away.
+  const [viewNonce, setViewNonce] = useState(0);
   const viewInfo = VIEWS.find((v) => v.id === view)!;
 
   return (
@@ -59,7 +62,7 @@ export function ContoursScene() {
               מבט תלת־ממדי · ההר כעוגת פרוסות
             </div>
             <div className="p-4">
-              <ContourCake3D view={view} activeRing={activeRing} setActiveRing={setActiveRing} />
+              <ContourCake3D view={view} viewNonce={viewNonce} activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
             <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="אופן הצגת ההר">
               {VIEWS.map((v, i) => (
@@ -67,7 +70,10 @@ export function ContoursScene() {
                   key={v.id}
                   type="button"
                   aria-pressed={view === v.id}
-                  onClick={() => setView(v.id)}
+                  onClick={() => {
+                    setView(v.id);
+                    setViewNonce((n) => n + 1);
+                  }}
                   className={cn(
                     'rounded-xl border px-3.5 py-2 font-display font-bold text-sm text-fg transition-colors duration-200 ease-snap cursor-pointer flex items-center gap-2',
                     view === v.id
@@ -93,10 +99,10 @@ export function ContoursScene() {
             </p>
             <div className="text-sm text-fg-muted leading-snug text-center">
               {view === 'top'
-                ? 'במבט מלמעלה הצפון תמיד למעלה, כמו במפה'
+                ? 'במבט מלמעלה הצפון תמיד למעלה, כמו במפה · גלגלת לזום'
                 : view === 'sliced'
-                  ? 'גררו שכבה למעלה או למטה · גררו את הרקע כדי לסובב'
-                  : 'גררו כדי לסובב את ההר'}
+                  ? 'גררו שכבה למעלה או למטה · גלגלת לזום · גררו את הרקע כדי לסובב'
+                  : 'גררו כדי לסובב · גלגלת לזום · לחצן ימני להזזה'}
             </div>
           </div>
 

@@ -512,17 +512,17 @@ def base_fields():
     south = np.clip(dHdy / (slope + 1e-6), -1, 1) * smoothstep(0.05, 0.3, slope)
 
     n_a = fbm(PN[9], X / 28.0, Y / 28.0, 3)
-    dryness = np.clip(0.05 + 0.35 * m + 0.3 * south + 0.4 * fbm(PN[1], X / 55.0, Y / 55.0, 3), 0, 0.85)
+    dryness = np.clip(0.05 + 0.2 * m + 0.28 * south + 0.4 * fbm(PN[1], X / 55.0, Y / 55.0, 3), 0, 0.8)
     cav = box_blur(H, 7.0 / cell) - H
     wet = smoothstep(0.4, 2.5, cav)
 
-    outcrop = smoothstep(0.6, 0.76, ridged(PN[5], X / 9.0, Y / 9.0, 3)) * smoothstep(0.25, 0.6, slope) * (0.35 + 0.65 * m)
-    rock = np.clip(smoothstep(0.9, 1.4, slope) + 0.3 * rock0 * smoothstep(0.5, 0.9, slope) + outcrop, 0, 1)
+    outcrop = smoothstep(0.64, 0.78, ridged(PN[5], X / 9.0, Y / 9.0, 3)) * smoothstep(0.3, 0.7, slope) * (0.35 + 0.65 * m)
+    rock = np.clip(smoothstep(0.95, 1.45, slope) + 0.3 * rock0 * smoothstep(0.5, 0.9, slope) + outcrop, 0, 1)
 
     mosaic = smoothstep(0.06, 0.26, fbm(PN[2], X / 7.0, Y / 7.0, 3) + 0.3 * fbm(PN[8], X / 30.0, Y / 30.0, 2))
     woods = smoothstep(0.0, 0.35, fbm(PN[8], X / 16.0, Y / 16.0, 3))
     mq = np.clip(0.7 * mosaic + 0.5 * woods + 0.6 * wet, 0, 1)
-    mq *= (1 - rock) * (1 - smoothstep(0.62, 0.9, m)) * (0.55 + 0.45 * np.clip(0.3 - south, 0, 1))
+    mq *= (1 - rock) * (1 - smoothstep(0.75, 0.97, m)) * (0.6 + 0.4 * np.clip(0.3 - south, 0, 1))
     mq *= np.where(m < 0.06, 0.4, 1.0)
 
     soil = smoothstep(0.8, 0.95, m) * 0.5 * np.clip(0.6 + n_a, 0, 1)
@@ -1112,6 +1112,10 @@ def merge_decoration(obj, deco):
     uvl.data.foreach_set('uv', uv_all)
     col = new.color_attributes.new('Col', 'FLOAT_COLOR', 'CORNER')
     col.data.foreach_set('color', col_all)
+    # Make it the one colour set the exporter writes (as COLOR_0) — otherwise
+    # it emits a white COLOR_0 and puts the tints in COLOR_1, which three.js ignores.
+    new.color_attributes.active_color_name = 'Col'
+    new.color_attributes.default_color_name = 'Col'
     new.normals_split_custom_set(cn_all)
     new.update()
     obj.data = new
@@ -1405,7 +1409,7 @@ def main():
         export_texcoords=True,
         export_materials='EXPORT',
         export_image_format='NONE',
-        export_vertex_color='MATERIAL',
+        export_vertex_color='ACTIVE',
         export_animations=False,
         export_cameras=False,
         export_lights=False,
