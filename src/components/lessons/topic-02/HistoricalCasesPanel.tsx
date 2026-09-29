@@ -23,22 +23,19 @@ type HistoricalCase = {
   previewSrc: string;
 };
 
-// headline / place / lesson are moved verbatim from the FACTS array that
-// used to render these four examples as IntelCards in OnboardingScene.tsx.
-// teaser / stat / why / mapBadge are new slots this layout needs and the
-// topic-02 source had no equivalent for — the wording below was written
-// from the same source facts (no new claims) and approved by the user.
+// Approved introductory copy uses general practical examples, not historical
+// incident claims. Existing IDs and illustrations are retained for continuity.
 const CASES: HistoricalCase[] = [
   {
     id: 'grid',
     number: '01',
-    headline: 'טעות של 100 מטר בגלל רשת ישנה',
-    place: 'ישראל • שנות ה-2000',
-    teaser: 'שדרוג רשת שהזיז כל נקודה על המפה.',
-    lesson: 'צה"ל שדרג את רשת הקואורדינטות שלו (השפה שמייצרת נקודות ציון - נ"צ). המעבר גרם לנקודות על המפה "לזוז" ב-100 מטר. תותחן שהשתמש במפה ישנה, עלול היה לפגוע בטעות בכוחותינו במקום באויב.',
-    stat: 'המעבר בין הרשתות הזיז נקודות על המפה ב-100 מטר.',
-    why: 'נקודת ציון חסרת משמעות בלי לדעת באיזו רשת היא נמדדה — אותו מספר על מפה אחרת מצביע על מקום אחר.',
-    mapBadge: 'רשת ישנה מול חדשה',
+    headline: 'התאמה בין רשתות קואורדינטות',
+    place: 'העברת מיקום בין מפה למערכת ניווט',
+    teaser: 'כדי לפרש נקודת ציון נכון, צריך לדעת באיזו רשת היא נמסרה.',
+    lesson: 'רשת קואורדינטות מאפשרת לתאר מיקום באמצעות מספרים. כאשר מעבירים נקודת ציון — נ״צ — ממפה למערכת ניווט, יש לוודא ששני המקורות משתמשים באותה רשת, או לבצע המרה מתאימה. שימוש במספרים ללא התאמה בין הרשתות עלול להוביל לזיהוי מיקום שגוי.',
+    stat: 'רשת הקואורדינטות היא חלק בלתי נפרד מנתוני המיקום.',
+    why: 'לפני שימוש בנ״צ, יש לזהות את הרשת שבה נמסר ולוודא שהיא מתאימה למפה או למערכת שבה עובדים.',
+    mapBadge: 'השוואה בין רשתות',
     assetId: 'TOPIC02-ONB-HIST-GRID',
     assetSrc: '/assets/lessons/topic02/scene-onboarding/TOPIC02-ONB-HIST-GRID.png',
     assetAlt: 'מפה איזומטרית: אותו שטח עם שתי רשתות קואורדינטות חופפות, היסט בין הנקודות המקבילות',
@@ -50,16 +47,16 @@ const CASES: HistoricalCase[] = [
   {
     id: 'normandy',
     number: '02',
-    headline: 'לנחות בחוף הלא נכון',
-    place: 'חופי נורמנדי • 1944',
-    teaser: 'כל כוח קיבל מפה של הגזרה שלו בלבד.',
-    lesson: 'מבצע הנחיתה הגדול בהיסטוריה דרש מפות סופר-מפורטות ("קנה מידה גדול"). כל כוח קיבל מפה מדויקת של הגזרה שלו. אם היו משתמשים במפות כלליות, חיילים היו נוחתים עיוורים ישר אל תוך האש.',
-    stat: 'מבצע הנחיתה נשען על מפות בקנה מידה גדול — מפה נפרדת לכל גזרה.',
-    why: 'קנה המידה חייב להתאים למשימה — מפה כללית מדי משאירה את הכוח בלי הפרטים שמכריעים ברגע המגע.',
-    mapBadge: 'קנה מידה גדול',
+    headline: 'קנה מידה שמתאים למשימה',
+    place: 'בחירת מפה לתכנון תנועה',
+    teaser: 'רמת הפירוט הנדרשת במפה תלויה במשימה ובהיקף השטח.',
+    lesson: 'תכנון תנועה באזור מצומצם דורש פרטים כגון דרכים, מבנים ומכשולים. לתכנון במרחב גדול נדרשת תמונה רחבה יותר. מפה בקנה מידה גדול מציגה שטח מצומצם בפירוט רב, ואילו מפה בקנה מידה קטן מציגה שטח נרחב בפירוט מועט יותר.',
+    stat: 'קנה המידה משפיע על היקף השטח המוצג ועל רמת הפירוט במפה.',
+    why: 'יש לבחור מפה שמציגה גם את מרחב הפעילות הנדרש וגם את הפרטים החשובים לביצוע המשימה.',
+    mapBadge: 'קנה מידה ורמת פירוט',
     assetId: 'TOPIC02-ONB-HIST-NORMANDY',
     assetSrc: '/assets/lessons/topic02/scene-onboarding/TOPIC02-ONB-HIST-NORMANDY.png',
-    assetAlt: 'מפה איזומטרית: קו חוף נורמנדי מחולק לגזרות נחיתה נפרדות, כל גזרה במסגרת משלה',
+    assetAlt: 'מפה איזומטרית: קו חוף מחולק לגזרות נפרדות, כל גזרה במסגרת משלה',
     assetPrompt:
       'Isometric papercut map illustration, warm cream base, a stretch of coastline divided into several adjacent landing sectors each outlined in a thin orange frame, beach and inland terrain in muted sage/sand tones, no text, no flags.',
     previewAssetId: 'TOPIC02-ONB-HIST-NORMANDY-PREVIEW',
@@ -68,13 +65,13 @@ const CASES: HistoricalCase[] = [
   {
     id: 'belgium',
     number: '03',
-    headline: 'לנווט כשהעיניים לא רואות כלום',
-    place: 'יערות בלגיה • דצמבר 1944',
-    teaser: 'ראות אפס — והמפה היא העיניים היחידות.',
-    lesson: 'נווט איבד את דרכו בסופת שלגים. כשהראות היא אפס, הדרך היחידה שלו לשרוד ולהבין אם הוא הולך לכיוון תהום או פסגה, הייתה "לדמיין" את צורת השטח דרך קווי הגובה המצוירים על המפה.',
-    stat: 'בראות אפס, קווי הגובה היו הדרך היחידה להבחין בין פסגה לתהום.',
-    why: 'קווי גובה הם לא קישוט — הם מאפשרים לראות את צורת השטח גם כשאי אפשר לראות את השטח עצמו.',
-    mapBadge: 'קווי גובה',
+    headline: 'קריאת שטח בתנאי ראות מוגבלת',
+    place: 'ניווט בחושך, בערפל או בשלג',
+    teaser: 'קווי הגובה מסייעים להבין את מבנה הקרקע גם כאשר קשה להבחין בו בשטח.',
+    lesson: 'בתנאי ראות מוגבלת קשה לזהות מרחוק פסגות, עמקים ומדרונות. קווי הגובה במפה מתארים את צורת הקרקע ומאפשרים להעריך היכן צפויות עליות, ירידות ושינויי שיפוע. מידע זה מסייע בתכנון הציר ובבדיקת ההתאמה בין המפה לשטח במהלך התנועה.',
+    stat: 'קווי הגובה מאפשרים להסיק מהמפה כיצד בנויים פני הקרקע.',
+    why: 'קריאה נכונה של קווי הגובה מסייעת לצפות את תנאי השטח ולהיערך אליהם גם בראות מוגבלת.',
+    mapBadge: 'קווי גובה ומבנה הקרקע',
     assetId: 'TOPIC02-ONB-HIST-BELGIUM',
     assetSrc: '/assets/lessons/topic02/scene-onboarding/TOPIC02-ONB-HIST-BELGIUM.png',
     assetAlt: 'מפה איזומטרית: רכס מיוער בסופת שלג, קווי גובה מסומנים מעל צורת השטח',
@@ -86,13 +83,13 @@ const CASES: HistoricalCase[] = [
   {
     id: 'projection',
     number: '04',
-    headline: 'מפת עולם משקרת במרחקים',
-    place: 'תכנון שיגור טילים',
-    teaser: 'אי אפשר לשטח כדור לדף בלי לעוות אותו.',
-    lesson: 'אי אפשר "לשטח" כדור לדף נייר מבלי לעוות אותו. מפה שעובדת נהדר לניווט רגלי בעיר, תהיה שגויה לחלוטין בניסיון לחשב דרכה מסלול של טיל ארוך טווח.',
-    stat: 'כל היטל של כדור על דף מעוות משהו — אין מפה שנכונה לכל שימוש.',
-    why: 'המפה הנכונה תלויה בשאלה — היטל שמדויק לניווט בעיר יכול להיות שגוי לחלוטין לחישוב מסלול ארוך טווח.',
-    mapBadge: 'עיוות ההיטל',
+    headline: 'התאמת היטל המפה לשימוש',
+    place: 'ייצוג פני כדור הארץ במפה שטוחה',
+    teaser: 'כל דרך להצגת פני כדור הארץ על מפה שטוחה כרוכה בעיוותים.',
+    lesson: 'השיטה שבה מציגים את פני כדור הארץ על משטח שטוח נקראת היטל מפה. היטלים שונים משמרים תכונות שונות, כגון צורה או שטח, ומעוותים תכונות אחרות. לכן, התאמת המפה למשימה תלויה גם בהיטל שלה, במיוחד כאשר מודדים מרחקים או מתכננים תנועה על פני אזורים נרחבים.',
+    stat: 'אין היטל שמשמר את כל תכונות המרחב ללא עיוות.',
+    why: 'לפני מדידה במפה, חשוב להכיר את מגבלות ההיטל ולוודא שהוא מתאים לשימוש הנדרש.',
+    mapBadge: 'עיוותים בהיטל המפה',
     assetId: 'TOPIC02-ONB-HIST-PROJECTION',
     assetSrc: '/assets/lessons/topic02/scene-onboarding/TOPIC02-ONB-HIST-PROJECTION.png',
     assetAlt: 'מפה איזומטרית: כדור הארץ נפרש לדף שטוח, העיוות גדל לכיוון השוליים',
@@ -117,10 +114,10 @@ export function HistoricalCasesPanel() {
       <div className="relative z-10">
         <div className="mb-6 text-center md:mb-8">
           <h3 className="font-display text-2xl font-bold leading-tight text-paper-bright sm:text-3xl">
-            לקרוא מפה — להציל חיים
+            המשמעות המעשית של קריאת מפה
           </h3>
           <p className="mt-2 text-base leading-relaxed text-paper-bright/70">
-            כשקנה מידה, נ"צ וקווי גובה פוגשים מציאות
+            ארבע דוגמאות לחשיבותם של רשת קואורדינטות, קנה מידה, קווי גובה והיטל מפה.
           </p>
         </div>
 
@@ -188,11 +185,11 @@ export function HistoricalCasesPanel() {
                 <p className="mt-4 text-base leading-relaxed text-fg">{active.lesson}</p>
 
                 <p className="mt-4 text-base leading-relaxed text-fg">
-                  <span className="font-display font-bold">עובדה מרכזית:</span> {active.stat}
+                  <span className="font-display font-bold">עיקרון מרכזי:</span> {active.stat}
                 </p>
 
                 <div className="mt-5">
-                  <div className="text-base font-display font-bold text-fg">למה זה חשוב?</div>
+                  <div className="text-base font-display font-bold text-fg">המשמעות לתכנון:</div>
                   <p className="mt-1 text-base leading-relaxed text-fg">{active.why}</p>
                 </div>
               </div>

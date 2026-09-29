@@ -968,9 +968,10 @@ def walls_object(H, mats):
     co = np.vstack([top, soil, bottom])
     k = np.arange(rn)
     k1 = (k + 1) % rn
-    # outward-facing quads (ring runs counter-clockwise seen from above)
-    upper = np.concatenate([np.stack([k, k1, rn + k1], 1), np.stack([k, rn + k1, rn + k], 1)])
-    lower = np.concatenate([np.stack([rn + k, rn + k1, 2 * rn + k1], 1), np.stack([rn + k, 2 * rn + k1, 2 * rn + k], 1)])
+    # outward-facing quads (ring runs counter-clockwise seen from above, so
+    # top → below → next-along winds outward; the viewer culls back faces)
+    upper = np.concatenate([np.stack([k, rn + k1, k1], 1), np.stack([k, rn + k, rn + k1], 1)])
+    lower = np.concatenate([np.stack([rn + k, 2 * rn + k1, rn + k1], 1), np.stack([rn + k, 2 * rn + k, 2 * rn + k1], 1)])
     # bottom cap as a fan around its centroid
     co = np.vstack([co, [[0.0, 0.0, -BASE_DEPTH_U]]])
     c = len(co) - 1
@@ -984,10 +985,9 @@ def walls_object(H, mats):
     fn = np.cross(co[tris[:, 1]] - co[tris[:, 0]], co[tris[:, 2]] - co[tris[:, 0]])
     fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-12)
     corner_nrm = np.repeat(fn, 3, axis=0)
-    # flip if the winding came out inward (the bottom must face -z)
-    if fn[-1, 2] > 0:
-        tris = tris[:, [0, 2, 1]]
-        corner_nrm = -corner_nrm
+    # every face must point out: the south wall (ring starts there) to -y, the bottom cap to -z
+    assert fn[0, 1] < -0.99 and fn[len(upper), 1] < -0.99, 'plinth walls wind inward'
+    assert fn[-1, 2] < -0.99, 'plinth bottom winds inward'
     return build_mesh('Walls', co, tris, [mats['Wall']], None, corner_col, corner_nrm, smooth=False)
 
 

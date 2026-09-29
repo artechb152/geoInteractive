@@ -1,0 +1,16 @@
+Photorealistic top-down educational field-navigation still life: an unfolded warm ivory topographic paper map, subtle tactile paper fibers and one restrained natural fold. The printed terrain shows Mediterranean limestone hills, sparse muted olive woodland and narrow dirt paths, with faint brown contour lines. Warm neutral daylight, delicate contact shading in the fold, premium real material photography.
+
+Palette dominated by ivory #F8F2E7, tan #DCCDB2 and dark olive #38432E.
+
+Camera: nearly orthographic, looking straight down. No horizon, no dramatic cinematic perspective, no tilt.
+
+Framing: the paper map fills the ENTIRE frame edge to edge. No table, ground, rocks, plants or sheet edge visible anywhere in the frame. Landscape 10:7, about 1600 x 1120 px or larger.
+
+Composition:
+- A clear trail junction at about 63% of the width from the left and 44% of the height from the top, on open ground (not on a river or dense trees). A live HTML marker will sit exactly on it.
+- Keep the lower-left quarter calm (open slopes, no key feature): a GPS device overlay will rest there.
+- Keep the outer 10% on the left and right free of anything important; the site may crop those edges.
+
+Strictly none of: text, letters, numbers, place names, legend, printed scale bar, coordinate grid or graticule lines, north arrow, markers, pins, UI, orange objects, logos, hands, weapons, watermark.
+
+Detailed realistic paper map, not papercut, not miniature diorama, not cartoon, not a satellite photo.

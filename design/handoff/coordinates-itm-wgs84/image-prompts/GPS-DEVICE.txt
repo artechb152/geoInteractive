@@ -1,0 +1,10 @@
+Photorealistic unbranded handheld rugged GPS receiver, product photograph. Matte dark olive rubber casing (close to #2E3826 / #38432E), a short stubby antenna on top, restrained physical buttons below the screen (a rocker in the middle, two small buttons on each side). The front screen is a blank warm-grey rectangular LCD with no content at all.
+
+Camera: nearly top-down, matching a paper map photographed from directly above; only a small natural perspective. The device stands upright in portrait orientation, not rotated (the website rotates it). The screen faces the camera as a clean, sharp-cornered rectangle, simple enough for a live HTML overlay to sit exactly on it.
+
+Light: warm neutral light from the upper left.
+
+Entire device visible with a margin on all sides. Transparent background with real alpha, not checkerboard pixels.
+If the tool cannot export transparency: a flat pure white #FFFFFF background and NO cast shadow (the site adds its own shadow after cutting the device out).
+
+Strictly none of: lettering, numbers, brand, logo, icons on the buttons, anything on the screen, orange glow, hands, straps, map, table, watermark.

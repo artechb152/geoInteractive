@@ -44,44 +44,44 @@ const CATS: { id: Cat; label: string; def: string }[] = [
   {
     id: 'vegetation',
     label: 'צומח',
-    def: 'הצמחייה שגדלה על הקרקע. רובה טבעית — עשב, שיחים וחורש — אבל יש גם צומח שהאדם נטע, כמו יער נטוע.',
+    def: 'הצמחייה שעל פני הקרקע, ובה עשב, שיחים ועצים. צומח יכול להיות טבעי או נטוע בידי אדם, כמו יער נטוע.',
   },
   {
     id: 'human',
     label: 'פעילות האדם',
-    def: 'מה שהאדם בנה או עיבד כדי לגור בשטח ולהתפרנס ממנו: יישובים ומבנים, וחקלאות — שדות, מטעים וטרסות.',
+    def: 'מרכיבי תכסית שנוצרו בעקבות בנייה ועיבוד חקלאי: יישובים, מבנים, שדות, מטעים וטרסות.',
   },
   {
     id: 'infra',
     label: 'תשתיות',
-    def: 'המערכות שהאדם הקים כדי לנוע בשטח ולהעביר בו משאבים: דרכים, קווי חשמל, מערכות מים וגדרות.',
+    def: 'מערכות ומתקנים שהאדם הקים לצורכי תנועה, אספקה ותיחום שטחים: דרכים, קווי חשמל, מערכות מים וגדרות.',
   },
 ];
 
 const FEATURES: CoverFeature[] = [
   // צומח
-  { id: 'grove',     label: 'חורש',          cat: 'vegetation', origin: 'natural',    desc: 'עצים מעל 2 מטרים יחד עם שיחים ומטפסים, בפיזור לא סדור. לפי צפיפות החופה מבחינים בין חורש פתוח, חצי־סגור וסגור.' },
+  { id: 'grove',     label: 'חורש',          cat: 'vegetation', origin: 'natural',    desc: 'צומח הכולל עצים שגובהם מעל 2 מטרים, לצד שיחים ומטפסים בפיזור לא סדור. לפי צפיפות כיסוי צמרות העצים מבחינים בין חורש פתוח, חצי־סגור וסגור.' },
   { id: 'garrigue',  label: 'גריגה',         cat: 'vegetation', origin: 'natural',    desc: 'שיחים בגובה של כ־0.5–2 מטרים, במשטחים רציפים או ליד עצים.' },
-  { id: 'batha',     label: 'בתה ועשבוני',   cat: 'vegetation', origin: 'natural',    desc: 'עשבים ובני־שיח נמוכים — עד כחצי מטר, בלי עצים. ירוקים בחורף ומתייבשים בקיץ.' },
-  { id: 'planted',   label: 'יער נטוע',      cat: 'vegetation', origin: 'artificial', desc: 'עצים גבוהים (לעיתים מעל 5–6 מטרים) וביניהם מעט שיחים. הסדר והאחידות מסגירים שהאדם נטע אותו — זה לא צומח טבעי.' },
+  { id: 'batha',     label: 'בתה ועשבוני',   cat: 'vegetation', origin: 'natural',    desc: 'תצורות צומח נמוכות ללא עצים: בבתה בולטים בני־שיח נמוכים, עד כחצי מטר, ובצומח עשבוני בולטים עשבים. באיור מוצג השינוי העונתי בין צומח ירוק בחורף לצומח יבש בקיץ.' },
+  { id: 'planted',   label: 'יער נטוע',      cat: 'vegetation', origin: 'artificial', desc: 'יער שהאדם נטע, ובו עצים שעשויים להגיע לגובה של 5–6 מטרים ואף יותר. שורות סדורות ומרווחים קבועים בין העצים עשויים להעיד על נטיעה מתוכננת. לפי מקורו, היער מסווג כתכסית מלאכותית.' },
   // פעילות האדם
-  { id: 'village',   label: 'יישוב ומבנים',  cat: 'human',      origin: 'artificial', desc: 'בתים, מבני ציבור וחצרות. במרכז הכפר — כיכר מרכזית.' },
-  { id: 'fields',    label: 'שדות (גד״ש)',   cat: 'human',      origin: 'artificial', desc: 'גידולי שדה: צמחייה נמוכה וצפופה בחלקות סדורות, שמשנה צבע במהירות לאורך העונה.' },
-  { id: 'orchard',   label: 'מטע',           cat: 'human',      origin: 'artificial', desc: 'עצים בשורות סדורות ובמרווחים קבועים — למשל הדרים, שנשארים ירוקים כל השנה.' },
-  { id: 'terraces',  label: 'טרסות',         cat: 'human',      origin: 'artificial', desc: 'מדרגות אבן שהאדם בנה על המדרון, כדי ליצור משטחים שטוחים לעיבוד.' },
+  { id: 'village',   label: 'יישוב ומבנים',  cat: 'human',      origin: 'artificial', desc: 'שטח בנוי הכולל בתים, מבני ציבור וחצרות. בכפר המוצג באיור יש גם כיכר מרכזית.' },
+  { id: 'fields',    label: 'שדות (גד״ש)',   cat: 'human',      origin: 'artificial', desc: 'חלקות חקלאיות המשמשות לגידולי שדה (גד״ש). מראה הצומח וצבעו משתנים בהתאם לסוג הגידול, לשלב הצמיחה ולעונה.' },
+  { id: 'orchard',   label: 'מטע',           cat: 'human',      origin: 'artificial', desc: 'שטח חקלאי שבו עצים נטועים בשורות ובמרווחים קבועים. באיור מוצג מטע הדרים, שעציו ירוקים לאורך השנה.' },
+  { id: 'terraces',  label: 'טרסות',         cat: 'human',      origin: 'artificial', desc: 'מדרגות חקלאיות שהאדם יצר במדרון בעזרת קירות אבן, כדי לאפשר עיבוד על משטחים מישוריים.' },
   // תשתיות
   { id: 'road',      label: 'כביש',          cat: 'infra',      origin: 'artificial', desc: 'דרך סלולה שמחברת בין יישובים.' },
-  { id: 'track',     label: 'דרך עפר',       cat: 'infra',      origin: 'artificial', desc: 'דרך לא סלולה — למשל דרך שירות שמובילה לשדות ולמטעים.' },
-  { id: 'power',     label: 'קו מתח',        cat: 'infra',      origin: 'artificial', desc: 'עמודים וכבלי חשמל שחוצים את השטח בקו ישר.' },
-  { id: 'reservoir', label: 'מאגר מים',      cat: 'infra',      origin: 'artificial', desc: 'מאגר להשקיה — חלק ממערכת מים שכוללת גם צנרת ותעלות.' },
-  { id: 'fence',     label: 'גדר',           cat: 'infra',      origin: 'artificial', desc: 'גדר שתוחמת שטח — כאן, סביב המטע, עם שער אחד.' },
+  { id: 'track',     label: 'דרך עפר',       cat: 'infra',      origin: 'artificial', desc: 'דרך לא סלולה המשמשת לתנועה בשטח, למשל לצורך גישה לשדות ולמטעים.' },
+  { id: 'power',     label: 'קו מתח',        cat: 'infra',      origin: 'artificial', desc: 'תשתית להעברת חשמל, המורכבת מעמודים ומכבלים העוברים ביניהם.' },
+  { id: 'reservoir', label: 'מאגר מים',      cat: 'infra',      origin: 'artificial', desc: 'מתקן לאגירת מים לצורכי השקיה. המאגר משתלב במערכת אספקת מים הכוללת צינורות או תעלות.' },
+  { id: 'fence',     label: 'גדר',           cat: 'infra',      origin: 'artificial', desc: 'מתקן לתיחום שטח ולהסדרת הכניסה אליו. באיור הגדר מקיפה את המטע וכוללת שער אחד.' },
 ];
 
 const ORIGIN_LABEL: Record<Origin, string> = { natural: 'טבעית', artificial: 'מלאכותית' };
 
 const SEASON_NOTE: Record<Season, string> = {
-  winter: 'בחורף העשב, הבתה והשדות ירוקים, והשיחים בגוון ירוק כהה.',
-  summer: 'בקיץ העשב והשדות מתייבשים ומבליטים את צבע הקרקע, והשיחים מאפירים. עצים ירוקי־עד, כמו מטע הדרים, נשארים ירוקים.',
+  winter: 'בתצוגת החורף העשב, הבתה והשדות מוצגים בירוק, והשיחים בגוון ירוק כהה. השוו לתצוגת הקיץ כדי לזהות את השינויים במראה הצומח.',
+  summer: 'בתצוגת הקיץ העשב והשדות מוצגים כיבשים, צבע הקרקע בולט יותר והשיחים מאפירים. עצים ירוקי־עד, כגון עצי הדר, נשארים ירוקים. בשטח, השינוי תלוי גם בסוג הצומח ובהשקיה.',
 };
 
 /** Mediterranean vegetation, low → high (content/topic-04.md, 4.4). */
@@ -96,14 +96,14 @@ const VEG_LADDER: { label: string; height: string; planted?: boolean }[] = [
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 const QUIZ_ITEMS: SortItem<Origin>[] = [
-  { id: 'q-grove',     label: 'חורש',        answer: 'natural',    why: 'עצים ושיחים שגדלו מעצמם, בפיזור לא סדור.' },
-  { id: 'q-citrus',    label: 'מטע הדרים',   answer: 'artificial', why: 'עצים שהאדם נטע בשורות — צומח, אבל תכסית מלאכותית.' },
-  { id: 'q-garrigue',  label: 'גריגה',       answer: 'natural',    why: 'שיחים שגדלו באופן טבעי.' },
-  { id: 'q-planted',   label: 'יער נטוע',    answer: 'artificial', why: 'זה יער — אבל האדם נטע אותו, ולכן זו תכסית מלאכותית.' },
-  { id: 'q-terraces',  label: 'טרסות',       answer: 'artificial', why: 'מדרגות אבן שהאדם בנה על המדרון.' },
-  { id: 'q-batha',     label: 'בתה',         answer: 'natural',    why: 'עשבים ובני־שיח נמוכים שגדלו באופן טבעי.' },
-  { id: 'q-reservoir', label: 'מאגר מים',    answer: 'artificial', why: 'מאגר שהאדם הקים להשקיה — תשתית.' },
-  { id: 'q-wheat',     label: 'שדה חיטה',    answer: 'artificial', why: 'גידול שדה שהאדם זרע ומעבד.' },
+  { id: 'q-grove',     label: 'חורש',        answer: 'natural',    why: 'העצים והשיחים בחורש גדלו באופן טבעי, ולכן הוא תכסית טבעית.' },
+  { id: 'q-citrus',    label: 'מטע הדרים',   answer: 'artificial', why: 'עצי המטע ניטעו בידי אדם, ולכן המטע הוא תכסית מלאכותית.' },
+  { id: 'q-garrigue',  label: 'גריגה',       answer: 'natural',    why: 'גריגה היא תצורת שיחים שגדלו באופן טבעי, ולכן היא תכסית טבעית.' },
+  { id: 'q-planted',   label: 'יער נטוע',    answer: 'artificial', why: 'היער נוצר בנטיעה בידי אדם, ולכן הוא תכסית מלאכותית.' },
+  { id: 'q-terraces',  label: 'טרסות',       answer: 'artificial', why: 'הטרסות נבנו בידי אדם לצורך עיבוד חקלאי, ולכן הן תכסית מלאכותית.' },
+  { id: 'q-batha',     label: 'בתה',         answer: 'natural',    why: 'בני־השיח בבתה גדלו באופן טבעי, ולכן היא תכסית טבעית.' },
+  { id: 'q-reservoir', label: 'מאגר מים',    answer: 'artificial', why: 'המאגר המוצג הוקם בידי אדם לצורכי השקיה, ולכן הוא תכסית מלאכותית.' },
+  { id: 'q-wheat',     label: 'שדה חיטה',    answer: 'artificial', why: 'החיטה נזרעה בשטח שהאדם מעבד, ולכן השדה הוא תכסית מלאכותית.' },
 ];
 
 export function LandCoverScene() {
@@ -147,8 +147,8 @@ export function LandCoverScene() {
   return (
     <section id="scene-landcover" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <SceneHeader
-        title="מה מכסה את הקרקע?"
-        intro="אחרי שהכרנו את התבליט, את תבניות הנוף ואת הסלעים שמתחתיהם, עוברים לשכבה שמעל הקרקע. תכסית היא כל מה שנמצא על פני הקרקע. מחלקים אותה לפי המקור שלה — טבעית או מלאכותית — ולפי הסוג: צומח, פעילות האדם ותשתיות."
+        title="תכסית: זיהוי וסיווג המרכיבים שעל פני הקרקע"
+        intro="לאחר שהכרנו את מבנה הקרקע ואת סוגי הסלעים, נבחן את התכסית — המרכיבים שנמצאים על פני הקרקע. נלמד לסווג אותם לפי מקורם, טבעי או מלאכותי, ולפי סוגם: צומח, פעילות האדם ותשתיות."
       />
 
       {/* ── Screen 1: natural vs. artificial — one flat info card, so the map workspace is the first strong surface ── */}
@@ -157,27 +157,27 @@ export function LandCoverScene() {
           <OriginCard
             title="תכסית טבעית"
             tone="natural"
-            body="נוצרה בלי התערבות האדם — בעיקר צומח טבעי: עשב, שיחים וחורש."
+            body="תכסית שמקורה בתהליכים טבעיים, כגון עשב, שיחים וחורש שגדלו ללא זריעה או נטיעה בידי אדם."
             examples={['עשבוני ובתה', 'גריגה', 'חורש']}
           />
           <OriginCard
             title="תכסית מלאכותית"
             tone="artificial"
-            body="האדם יצר אותה או שינה אותה: יישובים ומבנים, חקלאות ותשתיות."
+            body="תכסית שהאדם יצר או עיצב באמצעות בנייה, חקלאות והקמת תשתיות, ובה יישובים, שדות ודרכים."
             examples={['בתים', 'שדות ומטעים', 'כבישים', 'קווי חשמל', 'גדרות']}
           />
         </div>
         <div className="mt-6 rounded-xl bg-bg-accent/60 p-4">
-          <p className="font-display text-base font-bold text-fg">לא כל ירוק הוא טבעי</p>
+          <p className="font-display text-base font-bold text-fg">סיווג צומח לפי מקורו</p>
           <p className="mt-1 text-base leading-relaxed text-fg-muted">
-            יער נטוע, מטע ושדה הם צומח — אבל האדם נטע וזרע אותם, ולכן הם תכסית מלאכותית.
-            רמז לזיהוי: שורות ישרות, מרווחים קבועים וגבולות חלקה חדים.
+            יער נטוע, מטע ושדה מסווגים כתכסית מלאכותית משום שנוצרו בנטיעה או בזריעה בידי אדם.
+            שורות ישרות, מרווחים קבועים וגבולות חלקה ברורים עשויים לסייע בזיהוי פעילות זו.
           </p>
         </div>
       </div>
 
       {/* ── Screen 2: three types, on one map sample ── */}
-      <h3 className={SECTION_TITLE}>שלושה סוגי תכסית</h3>
+      <h3 className={SECTION_TITLE}>זיהוי סוגי תכסית בשטח</h3>
 
       {/* One workspace: tabs + explanation/controls + map — the screen's visual focus */}
       <div className="surface-elevated p-5 sm:p-6">
@@ -296,7 +296,7 @@ export function LandCoverScene() {
                     className="min-h-[148px]"
                   >
                     <p className="text-sm text-fg-muted leading-relaxed">
-                      לחצו על אזור במפה או על אחד הרכיבים כדי לראות מה הוא ולאיזה סוג הוא שייך.
+                      בחרו רכיב באיור או ברשימה כדי לקרוא את תיאורו, את סוגו ואת מקורו כתכסית טבעית או מלאכותית.
                     </p>
                   </motion.div>
                 )}
@@ -351,48 +351,48 @@ export function LandCoverScene() {
               ariaLabel="מבט מלמעלה על שטח לדוגמה: חורש, גריגה, בתה, יער נטוע, כפר, שדות, מטע, טרסות, כביש, דרך עפר, קו מתח, מאגר מים וגדר"
             />
             <p className="mt-3 text-sm text-fg-muted leading-snug text-center">
-              מבט מלמעלה על שטח לדוגמה · האיור סכמטי, ואינו מפה או מקרא אמיתיים
+              מבט מלמעלה על שטח לדוגמה · המחשה סכמטית, ללא שימוש בסימני מפה מוסכמים
             </p>
           </div>
         </div>
       </div>
 
       {/* ── Screen 3: vegetation, and what shapes it ── */}
-      <h3 className={SECTION_TITLE}>צומח טבעי: מהנמוך לגבוה</h3>
+      <h3 className={SECTION_TITLE}>תצורות הצומח וגובהן</h3>
 
       <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-stretch">
         <div className="surface-elevated p-5 sm:p-6">
           <div className="text-sm font-display font-semibold text-fg-muted mb-3">
             תצורות הצומח במרחב הים־תיכוני — לפי הגובה
           </div>
-          <VegetationLadder items={VEG_LADDER} legend="מסגרת מקווקוות = צומח שנטע האדם." />
+          <VegetationLadder items={VEG_LADDER} legend="מסגרת בקו מקווקו מציינת צומח שניטע בידי אדם." />
         </div>
 
         <div className="surface p-5 sm:p-6">
-          <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">מה קובע איזה צומח יגדל?</h3>
+          <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">הגורמים המשפיעים על הצומח</h3>
           <p className="mt-2 text-base text-fg-muted leading-relaxed">
-            הצומח לא מתפזר באקראי — הוא תלוי בשכבות שמתחתיו ובסביבה:
+            סוג הצומח, גובהו וצפיפותו מושפעים מתנאי השטח והסביבה:
           </p>
           {/* each item leads with its bold factor — spacing separates them, no bullet dots */}
           <ul className="mt-4 space-y-3 text-base text-fg-muted leading-relaxed">
             <li>
               <span>
-                <strong className="text-fg">התבליט</strong> — גובה מעל פני הים וכיוון המדרון (מפנה). מדרון צפוני מקבל פחות קרינה ישירה, ולכן הצומח בו לרוב צפוף וגבוה יותר. מדרון דרומי חשוף לשמש — הצומח בו נמוך ודליל יותר.
+                <strong className="text-fg">התבליט</strong> — הגובה מעל פני הים וכיוון המדרון, הנקרא מפנה. במרחב הים־תיכוני בישראל, מדרון צפוני מקבל לרוב פחות קרינה ישירה ממדרון דרומי. הבדל זה עשוי להתבטא בצומח צפוף וגבוה יותר במפנה הצפוני.
               </span>
             </li>
             <li>
               <span>
-                <strong className="text-fg">המסלע והקרקע</strong> — גיר קשה עשוי לתמוך בחורש; מסלע רך מתבטא לרוב במעט עשבים ושיחים נמוכים; קרקע עמוקה — בעשבים וקוצים.
+                <strong className="text-fg">המסלע והקרקע</strong> — סוג הסלע, עומק הקרקע ותכונותיה משפיעים על תנאי הצמיחה. יש לבחון אותם יחד עם האקלים ותנאי השטח, ולא להסיק על סוג הצומח מסוג הסלע בלבד.
               </span>
             </li>
             <li>
               <span>
-                <strong className="text-fg">האקלים</strong> — כמות הגשם והטמפרטורות.
+                <strong className="text-fg">האקלים</strong> — כמות המשקעים, פיזורם לאורך השנה והטמפרטורות.
               </span>
             </li>
             <li>
               <span>
-                <strong className="text-fg">פעילות האדם</strong> — כריתה, רעייה, נטיעה ועיבוד.
+                <strong className="text-fg">פעילות האדם</strong> — כריתה, רעייה, נטיעה ועיבוד חקלאי משנים את הרכב הצומח ואת פיזורו.
               </span>
             </li>
           </ul>
@@ -400,11 +400,11 @@ export function LandCoverScene() {
       </div>
 
       {/* ── Screen 4: quick check ── */}
-      <h3 className={SECTION_TITLE}>בדיקה מהירה</h3>
+      <h3 className={SECTION_TITLE}>תרגול: סיווג התכסית לפי מקור</h3>
 
       <SortQuiz
         title="טבעית או מלאכותית?"
-        prompt="לכל סוג תכסית — בחרו אם הוא נוצר בטבע או בידי האדם."
+        prompt="סווגו כל רכיב כתכסית טבעית או מלאכותית לפי מקורו. לאחר הבחירה יוצג הסבר לסיווג."
         options={[
           { id: 'natural', label: 'טבעית' },
           { id: 'artificial', label: 'מלאכותית' },

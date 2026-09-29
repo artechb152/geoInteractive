@@ -61,16 +61,105 @@ const ACCENT = MAP.accent;
 const INK = MAP.ink;
 const SLAB_EDGE = '#E8DCC4';
 const SLAB_H = 0.035;
+/** Plinth bottom below the diorama's y = 0 (build_topography_terrain.py BASE_DEPTH_U). */
+const PLINTH_DEPTH = 0.12;
+/** How close a zoomed-in camera may come to the ground above it. */
+const CAM_CLEARANCE = 0.08;
 const TEX_W = 2048;
 const TEX_H = 1536;
 /** Diorama y-scale that undoes the ×2 vertical exaggeration: the ground at its true relief. */
 const TRUE_RELIEF = 1 / WORLD.ve;
 
 /** "All together" compares the model with the map — the two ends of the abstraction. */
-const LAYERS: { view: TopoView; n: string; label: string; y: number }[] = [
-  { view: '3d', n: '01', label: 'מודל תלת־ממדי', y: STACK_GAP },
-  { view: 'topo', n: '03', label: 'מפה טופוגרפית', y: 0 },
+const LAYERS: { view: TopoView; label: string; y: number }[] = [
+  { view: '3d', label: 'מודל תלת־ממדי', y: STACK_GAP },
+  { view: 'topo', label: 'מפה טופוגרפית', y: 0 },
 ];
+
+// ---------------------------------------------------------------- map features
+// The named things on the sheet. Pointing at one — on either layer of the
+// stack, or at its name in the legend row — outlines it on both layers.
+
+export type FeatureId = 'woodland' | 'sparse' | 'orchard' | 'buildings' | 'road' | 'path';
+export const FEATURES: { id: FeatureId; label: string }[] = [
+  { id: 'woodland', label: 'חורש' },
+  { id: 'sparse', label: 'חורש דליל' },
+  { id: 'orchard', label: 'מטע' },
+  { id: 'buildings', label: 'מבנים' },
+  { id: 'road', label: 'דרך עפר' },
+  { id: 'path', label: 'שביל רגלי' },
+];
+const FEATURE_LABEL = Object.fromEntries(FEATURES.map((f) => [f.id, f.label])) as Record<FeatureId, string>;
+
+type Pt = readonly [number, number];
+/** Hit tolerance around roads, paths and buildings (sheet units, 1 = 14 m). */
+const ROAD_HIT = 1.6;
+const PATH_HIT = 1.2;
+const BUILDING_PAD = 0.5;
+/** Spacing of the points a highlight is draped with (sheet units). */
+const DRAPE_STEP = 0.6;
+
+function buildingRing(b: (typeof TOPO.buildings)[number], pad: number): Pt[] {
+  const a = THREE.MathUtils.degToRad(b.angle);
+  const c = Math.cos(a);
+  const s = Math.sin(a);
+  const hw = b.w / 2 + pad;
+  const hh = b.h / 2 + pad;
+  // SVG rotate(): clockwise on the map (y points south).
+  return ([[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]] as const).map(([dx, dy]) => [b.x + dx * c - dy * s, b.y + dx * s + dy * c]);
+}
+
+function inPolygon(x: number, y: number, ring: readonly Pt[]) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function distToLine(x: number, y: number, pts: readonly Pt[]) {
+  let best = Infinity;
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1];
+    const [bx, by] = pts[i];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const t = THREE.MathUtils.clamp(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy || 1), 0, 1);
+    best = Math.min(best, Math.hypot(x - (ax + t * dx), y - (ay + t * dy)));
+  }
+  return best;
+}
+
+/** The feature under a sheet point — the smallest target wins. */
+function featureAt(x: number, y: number): FeatureId | null {
+  if (TOPO.buildings.some((b) => inPolygon(x, y, buildingRing(b, BUILDING_PAD)))) return 'buildings';
+  if (distToLine(x, y, TOPO.path) < PATH_HIT) return 'path';
+  if (distToLine(x, y, TOPO.road) < ROAD_HIT) return 'road';
+  for (const v of TOPO.vegetation) if (inPolygon(x, y, v.ring)) return v.kind;
+  return null;
+}
+
+/** The feature's outlines on the sheet: closed rings (areas) and open lines. */
+function featureShapes(id: FeatureId): { rings: Pt[][]; lines: Pt[][] } {
+  if (id === 'road') return { rings: [], lines: [[...TOPO.road]] };
+  if (id === 'path') return { rings: [], lines: [[...TOPO.path]] };
+  if (id === 'buildings') return { rings: TOPO.buildings.map((b) => buildingRing(b, 0.25)), lines: [] };
+  return { rings: TOPO.vegetation.filter((v) => v.kind === id).map((v) => [...v.ring]), lines: [] };
+}
+
+/** Evenly spaced points along a polyline, kept inside the neatline. */
+function densify(pts: readonly Pt[]): Pt[] {
+  const out: Pt[] = [];
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1];
+    const [bx, by] = pts[i];
+    const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / DRAPE_STEP));
+    for (let k = i === 1 ? 0 : 1; k <= n; k++) out.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+  }
+  return out.filter(([x, y]) => x >= 0 && x <= SHEET.w && y >= 0 && y <= SHEET.h);
+}
 
 type Size = { w: number; h: number };
 // OrbitControls instance, typed loosely (only enabled/target/update/events are used).
@@ -167,7 +256,8 @@ function CameraRig({
     for (let i = 0; i < 3; i++) c.target[i] += (goal.target[i] - c.target[i]) * k;
 
     camera.fov = c.fov;
-    camera.near = Math.max(0.02, radiusFor(c) * 0.08);
+    // Small enough for the closest zoom (minDistance below) to skim the ground.
+    camera.near = Math.max(0.02, radiusFor(c) * 0.004);
     camera.far = radiusFor(c) * 3 + 10;
     camera.updateProjectionMatrix();
     sph.set(radiusFor(c), Math.max(1e-4, c.phi), c.theta);
@@ -193,7 +283,7 @@ function CameraRig({
     if (settled) {
       animating.current = false;
       // Zoom limits around the settled framing (only orbit modes zoom at all).
-      controls.minDistance = radiusFor(c) * 0.45;
+      controls.minDistance = radiusFor(c) * 0.15;
       controls.maxDistance = radiusFor(c) * 1.6;
     }
     invalidate();
@@ -330,6 +420,57 @@ function Outline({ y, active }: { y: number; active: boolean }) {
 /** Top face of the map slab (world y). */
 const MAP_TOP = SLAB_H / 2;
 
+/**
+ * One feature outlined on both layers of the stack: tinted and outlined on the
+ * map, and outlined along the ground of the model (draped point by point, so
+ * the mountain hides whatever lies behind it, as with the contour lines).
+ */
+function FeatureHighlight({ id, heightAt }: { id: FeatureId; heightAt: Diorama['heightAt'] }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const { lines, fills } = useMemo(() => {
+    const { rings, lines: open } = featureShapes(id);
+    const onMap = (pts: Pt[]) =>
+      pts.map(([sx, sy]) => {
+        const [wx, wz] = sheetToWorld(sx, sy);
+        return [wx, MAP_TOP + 0.005, wz] as [number, number, number];
+      });
+    const onModel = (pts: Pt[]) =>
+      pts.map(([sx, sy]) => {
+        const [wx, wz] = sheetToWorld(sx, sy);
+        return [wx, STACK_GAP + heightAt(wx, wz) + 0.012, wz] as [number, number, number];
+      });
+    const paths = [...rings.map((r) => densify([...r, r[0]])), ...open.map((l) => densify(l))];
+    const fills = rings.map((r) => {
+      // ShapeGeometry lies in x/y; laid flat by rotating −90° about x, so y ↦ −z.
+      const shape = new THREE.Shape(
+        r.map(([sx, sy]) => {
+          const [wx, wz] = sheetToWorld(sx, sy);
+          return new THREE.Vector2(wx, -wz);
+        }),
+      );
+      return new THREE.ShapeGeometry(shape);
+    });
+    return { lines: paths.flatMap((p) => [onMap(p), onModel(p)]), fills };
+  }, [id, heightAt]);
+  useEffect(() => {
+    invalidate();
+    return () => fills.forEach((g) => g.dispose());
+  }, [fills, invalidate]);
+
+  return (
+    <group>
+      {fills.map((g, i) => (
+        <mesh key={i} geometry={g} rotation={[-Math.PI / 2, 0, 0]} position={[0, MAP_TOP + 0.003, 0]}>
+          <meshBasicMaterial color={ACCENT} transparent opacity={0.22} depthWrite={false} toneMapped={false} />
+        </mesh>
+      ))}
+      {lines.map((pts, i) => (
+        <Line key={i} points={pts} color={ACCENT} lineWidth={3} />
+      ))}
+    </group>
+  );
+}
+
 function Scene({
   view,
   stacked,
@@ -337,7 +478,10 @@ function Scene({
   reduce,
   mapSvg,
   labelPortal,
+  controlsRef,
   onSelectView,
+  feature,
+  onFeature,
 }: {
   view: TopoView;
   stacked: boolean;
@@ -346,10 +490,15 @@ function Scene({
   reduce: boolean;
   mapSvg: SVGSVGElement | null;
   labelPortal: React.MutableRefObject<HTMLElement>;
+  controlsRef: ControlsRef;
   onSelectView: (v: TopoView) => void;
+  /** The highlighted map feature (pointed at on a layer or in the legend row). */
+  feature: FeatureId | null;
+  onFeature: (f: FeatureId | null) => void;
 }) {
   const { terrain, rest, walls, heightAt } = useDiorama();
   const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
   const dioramaGroup = useRef<THREE.Group>(null);
   const lift = useRef({ top: 0, relief: 1 });
@@ -394,6 +543,18 @@ function Scene({
     const moving = Math.abs(goalTop - L.top) > 1e-4 || Math.abs(goalRelief - L.relief) > 1e-4;
     if (moving) invalidate();
     else if (!stacked && showStack) setShowStack(false);
+
+    // Zoomed in close, a low orbit would swing the camera into the hill: keep
+    // it above the ground. (Runs after OrbitControls' own update this frame;
+    // below the plinth — the stack seen from underneath — it is left alone.)
+    const p = camera.position;
+    if (Math.abs(p.x) < WORLD.w / 2 && Math.abs(p.z) < WORLD.h / 2 && p.y > L.top - PLINTH_DEPTH) {
+      const floor = L.top + heightAt(p.x, p.z) * L.relief + CAM_CLEARANCE;
+      if (p.y < floor) {
+        p.y = floor;
+        if (controlsRef.current) camera.lookAt(controlsRef.current.target);
+      }
+    }
   });
 
   // ---- hover probe: point anywhere on the map or the model, see the same spot on both.
@@ -405,6 +566,14 @@ function Scene({
   const levelRef = useRef<number | null>(null);
   const [level, setLevel] = useState<number | null>(null);
 
+  const pointedRef = useRef<FeatureId | null>(null);
+
+  const setPointed = (f: FeatureId | null) => {
+    if (f === pointedRef.current) return;
+    pointedRef.current = f;
+    onFeature(f);
+  };
+
   const hideProbe = () => {
     if (probe.current) probe.current.visible = false;
     if (chip.current) chip.current.style.opacity = '0';
@@ -412,6 +581,7 @@ function Scene({
       levelRef.current = null;
       setLevel(null);
     }
+    setPointed(null);
     invalidate();
   };
 
@@ -439,12 +609,16 @@ function Scene({
     }
     chipAnchor.current?.position.set(x, top + 0.07, z);
     const metres = Math.round((ground * WORLD.mPerUnit) / WORLD.ve + WORLD.datumM);
+    // Over a named feature the chip names it and the feature is outlined on
+    // both layers; over bare ground it reads the height and its contour.
+    const f = featureAt((x / WORLD.w + 0.5) * SHEET.w, (z / WORLD.h + 0.5) * SHEET.h);
+    setPointed(f);
     if (chip.current) {
-      chip.current.textContent = `${metres} מ׳`;
+      chip.current.textContent = f ? FEATURE_LABEL[f] : `${metres} מ׳`;
       chip.current.style.opacity = '1';
     }
     const nearest = Math.round(metres / 10) * 10;
-    const lv = TOPO.contours.some((c) => c.heightM === nearest) ? nearest : null;
+    const lv = !f && TOPO.contours.some((c) => c.heightM === nearest) ? nearest : null;
     if (lv !== levelRef.current) {
       levelRef.current = lv;
       setLevel(lv);
@@ -539,6 +713,8 @@ function Scene({
         {stacked &&
           levelLines.map((l) => <Line key={l.key} points={l.points} color={ACCENT} lineWidth={2.4} />)}
 
+        {stacked && feature && <FeatureHighlight id={feature} heightAt={heightAt} />}
+
         <group ref={probe} visible={false}>
           <group ref={stem}>
             <Line
@@ -597,15 +773,6 @@ function Scene({
                     view === l.view ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand/30',
                   )}
                 >
-                  <span
-                    aria-hidden
-                    className={cn(
-                      'size-5 shrink-0 rounded-full text-[11px] tabular-nums flex items-center justify-center',
-                      view === l.view ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
-                    )}
-                  >
-                    {l.n}
-                  </span>
                   {l.label}
                 </button>
               </Html>
@@ -662,6 +829,7 @@ export default function TopographyTerrain3D({
   const [activated, setActivated] = useState(false);
   const [nearTop, setNearTop] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [feature, setFeature] = useState<FeatureId | null>(null);
   const reduce = !!useReducedMotion();
   const controlsRef = useRef(null) as ControlsRef;
   const mode: Mode = stacked ? 'stack' : view;
@@ -744,7 +912,10 @@ export default function TopographyTerrain3D({
                 reduce={reduce}
                 mapSvg={mapSvg}
                 labelPortal={labelPortal}
+                controlsRef={controlsRef}
                 onSelectView={onSelectView}
+                feature={stacked ? feature : null}
+                onFeature={setFeature}
               />
             </Suspense>
             {/* Soft grounding shadow under the plinth. */}
@@ -778,6 +949,30 @@ export default function TopographyTerrain3D({
       </div>
 
       {activated && <LoadingOverlay />}
+
+      {/* "All together": the sheet's named features. Pointing at one outlines
+          it on the model and on the map, as pointing at it on a layer does. */}
+      {stacked && (
+        <div className="absolute inset-x-2 bottom-2 z-10 flex flex-wrap items-center justify-center gap-1.5">
+          {FEATURES.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={feature === f.id}
+              onPointerEnter={() => setFeature(f.id)}
+              onPointerLeave={() => setFeature(null)}
+              onFocus={() => setFeature(f.id)}
+              onBlur={() => setFeature(null)}
+              className={cn(
+                'rounded-[3px] border bg-bg-elevated/95 px-2.5 py-1 text-xs font-display font-bold transition-colors cursor-default',
+                feature === f.id ? 'border-accent text-fg' : 'border-border text-fg-muted',
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <button
         type="button"

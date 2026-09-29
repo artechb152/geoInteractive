@@ -25,32 +25,32 @@ const FORMS: FormData[] = [
   {
     id: 'hill',
     label: 'כיפה',
-    description: 'התרוממות בולטת של פני השטח מעל סביבתה.',
-    contourHint: 'במפה: רצף של קווי גובה סגורים זה בתוך זה. המעגל הפנימי ביותר הוא הפסגה..',
+    description: 'התרוממות בולטת של פני הקרקע מעל סביבתה.',
+    contourHint: 'קווי גובה סגורים המקיפים זה את זה, כאשר הגובה עולה לכיוון המרכז. הפסגה נמצאת בתוך קו הגובה הפנימי ביותר.',
   },
   {
     id: 'spur',
     label: 'שלוחה',
-    description: 'שטח גבוה וצר המשתפל בהדרגה מהפסגה לכיוון השטח הנמוך.',
-    contourHint: 'קווי גובה בצורת V או U, כאשר הקודקוד מצביע לכיוון השטח הנמוך.',
+    description: 'רצועת קרקע גבוהה וצרה היורדת בהדרגה מההר או מהרכס לכיוון השטח הנמוך.',
+    contourHint: 'קווי גובה בצורת V או U, שהבליטה שלהם פונה לכיוון השטח הנמוך.',
   },
   {
     id: 'valley',
     label: 'גיא / ואדי',
-    description: 'השטח הנמוך הכלוי בין שתי שלוחות.',
-    contourHint: 'קווי גובה בצורת V המצביעים לכיוון הפסגה. הקו המחבר את הקודקודים הוא קו ניקוז המים.',
+    description: 'שטח נמוך בין שתי שלוחות, שאליו מתנקזים מי הגשם.',
+    contourHint: 'קווי גובה בצורת V, שקודקודיהם פונים לכיוון השטח הגבוה, במעלה הגיא. הקו המחבר את הקודקודים מציין את נתיב ניקוז המים.',
   },
   {
     id: 'saddle',
     label: 'אוכף',
-    description: 'נקודת השפל הנמוכה ביותר על קו הרכס, הממוקמת בין שתי כיפות סמוכות.',
-    contourHint: 'האוכף מופיע כרווח הצר שבין שתי קבוצות סמוכות של קווי גובה סגורים (שתי כיפות). הוא נראה כמו"צוואר בקבוק" המחבר בין שני שטחים גבוהים.',
+    description: 'קטע נמוך בקו הרכס, בין שתי כיפות סמוכות.',
+    contourHint: 'האוכף נמצא בין שתי קבוצות של קווי גובה סגורים, המייצגות כיפות סמוכות. באזור האוכף נוצר מעבר נמוך בין הכיפות.',
   },
   {
     id: 'depression',
     label: 'מכתש',
-    description: 'שטח סגור הנמוך מסביבתו הקרובה.',
-    contourHint: 'קווי גובה סגורים עם זיזים ("קוצים") הפונים פנימה.',
+    description: 'שקע סגור בפני הקרקע, הנמוך מסביבתו הקרובה.',
+    contourHint: 'קווי גובה סגורים עם סימנים קצרים הפונים פנימה ומציינים ירידה בגובה אל תוך השקע.',
   },
 ];
 
@@ -62,25 +62,25 @@ type Slope = {
 };
 
 const SLOPES: Slope[] = [
-  { id: 'even', label: 'מדרון קצוב', description: 'בעל שיפוע קבוע ואחיד לאורך כל הדרך.', contourHint: 'המרווחים בין קווי הגובה זהים.' },
-  { id: 'convex', label: 'מדרון קמור', description: 'השיפוע מתחיל בצורה מתונה בחלק העליון והופך לתלול מאוד ככל שיורדים.', contourHint: 'קווים מרווחים למעלה וצפופים למטה.' },
-  { id: 'concave', label: 'מדרון קעור', description: 'השיפוע תלול מאוד למעלה והופך למתון ושטוח בבסיסו.', contourHint: 'קווים צפופים מאוד למעלה ומרווחים למטה.' },
-  { id: 'shoulder', label: 'כתף', description: 'רצף השיפוע נקטע באמצע על ידי קטע מישורי, ויוצר צורה של"מדרגה" על ההר.', contourHint: 'קווים צפופים ← קווים מרווחים מאוד ← חזרה לקווים צפופים.' },
+  { id: 'even', label: 'מדרון קצוב', description: 'מדרון בעל שיפוע אחיד לכל אורכו.', contourHint: 'המרווחים בין קווי הגובה שווים לאורך המדרון.' },
+  { id: 'convex', label: 'מדרון קמור', description: 'מדרון שהשיפוע בחלקו העליון מתון, ונעשה תלול יותר ככל שיורדים.', contourHint: 'קווי הגובה מרווחים בחלק העליון וצפופים יותר בחלק התחתון.' },
+  { id: 'concave', label: 'מדרון קעור', description: 'מדרון שהשיפוע בחלקו העליון תלול, ונעשה מתון יותר ככל שיורדים.', contourHint: 'קווי הגובה צפופים בחלק העליון ומרווחים יותר בחלק התחתון.' },
+  { id: 'shoulder', label: 'כתף', description: 'קטע כמעט מישורי הקוטע את רצף המדרון ויוצר בו מעין מדרגה.', contourHint: 'באזור הכתף המרווחים בין קווי הגובה גדולים יותר מאשר בקטעים שמעליו ומתחתיו.' },
 ];
 
 // Short cues shown under each board — bind "reality" to "map" per form.
 const REALITY_META: Record<Form, { realWorld: string; mapCue: string }> = {
-  hill: { realWorld: 'בליטה מעוגלת מעל הסביבה', mapCue: 'טבעות סגורות סביב הפסגה' },
-  spur: { realWorld: 'אצבע גבוהה שיורדת מהרכס', mapCue: 'הקודקוד מצביע אל השטח הנמוך' },
-  valley: { realWorld: 'תעלת ניקוז בין שתי שלוחות', mapCue: 'הקודקוד מצביע אל הפסגה' },
-  saddle: { realWorld: 'המעבר הנמוך בין שתי כיפות', mapCue: 'רווח צר בין שתי קבוצות טבעות' },
-  depression: { realWorld: 'קערה נמוכה מכל סביבתה', mapCue: 'טבעות עם זיזים הפונים פנימה' },
+  hill: { realWorld: 'התרוממות מעל פני השטח שסביבה', mapCue: 'קווי גובה סגורים סביב הפסגה' },
+  spur: { realWorld: 'רצועת קרקע גבוהה היורדת מהרכס', mapCue: 'בליטת הקווים פונה אל השטח הנמוך' },
+  valley: { realWorld: 'שטח נמוך בין שתי שלוחות', mapCue: 'קודקודי הקווים פונים אל השטח הגבוה' },
+  saddle: { realWorld: 'מעבר נמוך בין שתי כיפות', mapCue: 'אזור נמוך בין שתי קבוצות קווים סגורים' },
+  depression: { realWorld: 'שקע סגור הנמוך מסביבתו', mapCue: 'קווים סגורים עם סימנים הפונים פנימה' },
 };
 
 // Labels drawn inside the illustrations — kept here with the rest of the scene copy.
 const MAP_LABELS: LandformMapLabels = {
   toLow: 'אל השטח הנמוך',
-  toPeak: 'אל הפסגה',
+  toPeak: 'אל השטח הגבוה',
   drainage: 'קו ניקוז',
   saddle: 'אוכף',
   low: 'נמוך',
@@ -106,8 +106,8 @@ export function LandformsScene() {
     <section id="scene-landforms" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="02.1"
-        title="5 צורות יסוד שבונות כל נוף"
-        intro="מתוך אינספור צורות בטבע, קיימות 5 צורות יסוד של תבליט שחוזרות בכל נוף. מי שמזהה אותן בשטח ובמפה יודע לקרוא את פני הקרקע: איפה השטח עולה, איפה הוא יורד ואיך החלקים מתחברים זה לזה."
+        title="תבניות נוף: חמש צורות יסוד של התבליט"
+        intro="בשיעור זה נכיר חמש תבניות נוף בסיסיות: כיפה, שלוחה, גיא, אוכף ומכתש. זיהוין מסייע להבין את מבנה הקרקע ואת ייצוגו במפה. בחרו כל תבנית והשוו בין צורתה בשטח לבין קווי הגובה המתארים אותה."
       />
 
       <div
@@ -199,11 +199,11 @@ function FormAccordion({ active, onSelect }: { active: Form; onSelect: (id: Form
                 >
                   <div className="px-5 pb-5 space-y-3">
                     <div>
-                      <InfoLabel>מה זה?</InfoLabel>
+                      <InfoLabel>תיאור התבנית</InfoLabel>
                       <p className="text-base leading-relaxed text-fg">{f.description}</p>
                     </div>
                     <div>
-                      <InfoLabel>איך מזהים במפה?</InfoLabel>
+                      <InfoLabel>זיהוי במפה</InfoLabel>
                       <p className="text-base leading-relaxed text-fg">{f.contourHint}</p>
                     </div>
                   </div>
@@ -248,11 +248,11 @@ function FormBoard({ active }: { active: Form }) {
           {/* The boards stay mounted: on a switch the terrain and its contours
               reshape from the current form into the next one. */}
           <LinkedBoards top={{ kind: 'real', sub: meta.realWorld }} bottom={{ kind: 'map', sub: meta.mapCue }}>
-            <LandformReality form={active} ariaLabel={`${form.label} — במציאות: ${meta.realWorld}`} />
+            <LandformReality form={active} ariaLabel={`${form.label} — בשטח: ${meta.realWorld}`} />
             <LandformMap form={active} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${meta.mapCue}`} />
           </LinkedBoards>
           <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
-            אותה צורה — פעם כפי שהיא בשטח, פעם כפי שהיא מצוירת בקווי גובה
+            ההמחשה מציגה את אותה תבנית נוף בשטח ובמפה באמצעות קווי גובה.
           </p>
         </div>
       </div>
@@ -268,7 +268,7 @@ type BoardCaptionProps = {
 
 function BoardCaption({ kind, sub, labelText }: BoardCaptionProps) {
   const reduce = useReducedMotion();
-  const label = labelText ?? (kind === 'real' ? 'במציאות' : 'במפה');
+  const label = labelText ?? (kind === 'real' ? 'בשטח' : 'במפה');
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="text-sm font-display font-bold text-fg shrink-0">{label}</span>
@@ -339,10 +339,10 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
     <div data-qa="slope-analyzer" className="surface-elevated p-6 sm:p-8">
       <div className="mb-6">
         <h3 id="lf-slopes-title" className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-          4 סוגי מדרונות — איך השלוחות בנויות בפועל
+          ארבעה סוגי מדרונות וזיהוים במפה
         </h3>
         <p className="mt-2 text-base leading-relaxed text-fg-muted">
-          אפילו שלוחה &quot;פשוטה&quot; יכולה להיות מורכבת ממקטעי שיפוע שונים. ההבחנה ביניהם מסבירה איך המדרון נראה בשטח ואיך הוא מצויר במפה.
+          השיפוע עשוי להשתנות לאורך המדרון. בחרו סוג מדרון והשוו בין החתך מהצד לבין המרווחים בין קווי הגובה במפה.
         </p>
       </div>
 
@@ -393,7 +393,7 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
         <div className="mb-6">
           <LinkedBoards
             top={{ kind: 'real', labelText: 'מהצד', sub: 'חתך השטח' }}
-            bottom={{ kind: 'map', labelText: 'במפה', sub: 'אותו מדרון בקווי גובה, מבט מלמעלה' }}
+            bottom={{ kind: 'map', labelText: 'במפה', sub: 'קווי הגובה של המדרון במבט מלמעלה' }}
           >
             <SlopeProfile
               slope={active}
@@ -410,7 +410,7 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
             />
           </LinkedBoards>
           <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
-            אותו מדרון — פעם כפרופיל מהצד, פעם כקווי גובה במבט־על. ככל שקווי הגובה צפופים יותר, המדרון תלול יותר.
+            ההמחשה מציגה את אותו מדרון בחתך מהצד ובמפה. כאשר הפרש הגובה בין הקווים קבוע, מרווחים קטנים יותר מעידים על מדרון תלול יותר.
           </p>
         </div>
 
@@ -425,11 +425,11 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
               className="grid sm:grid-cols-2 gap-4 sm:gap-6"
             >
               <div>
-                <InfoLabel>מה זה?</InfoLabel>
+                <InfoLabel>תיאור המדרון</InfoLabel>
                 <p className="text-base leading-relaxed text-fg">{meta.description}</p>
               </div>
               <div>
-                <InfoLabel>איך מזהים במפה?</InfoLabel>
+                <InfoLabel>זיהוי במפה</InfoLabel>
                 <p className="text-base leading-relaxed text-fg">{meta.contourHint}</p>
               </div>
             </motion.div>

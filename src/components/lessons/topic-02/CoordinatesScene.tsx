@@ -4,38 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-type System = {
-id: 'itm' | 'wgs84';
-short: string;
-long: string;
-scope: string;
-format: string;
-example: string;
-pros: string[];
-cons: string[];
-};
-const SYSTEMS: System[] = [
- {
-id: 'itm',
-short: 'ITM',
-long: 'רשת ישראל החדשה (Israeli Transverse Mercator)',
-scope: 'השפה הצבאית של ישראל',
-format: 'שני מספרים שלמים במטרים: מזרח (Easting) וצפון (Northing)',
-example: '178350 / 666250',
-pros: ['הדיוק הכי גבוה בתוך גבולות המדינה', 'מספרים שלמים וקצרים - קל לדווח בקשר', 'השפה העיקרית של המפות הצבאיות בשטח'],
-cons: ['לא תעבוד מחוץ לגבולות ישראל', 'דורשת"תרגום" מתמטי קטן כדי להסתנכרן עם מכשירי GPS'],
- },
- {
-id: 'wgs84',
-short: 'WGS84',
-long: 'תקן עולמי (World Geodetic System 1984)',
-scope: 'השפה של ה-GPS וכל העולם',
-format: 'קו אורך וקו רוחב במעלות - בדיוק כמו ב-Google Maps',
-example: '35.2007° / 31.7857°',
-pros: ['פועלת בכל נקודה על הגלובוס', 'הבסיס של כל סמארטפון ומכשיר ניווט אזרחי', 'חובה כשעובדים עם צבאות זרים (כמו נאט"ו)'],
-cons: ['מספרים עם שברים עשרוניים - קשה ומסוכן להקריא בקשר', 'אם רוצים לעבוד מול מפה מקומית - חייבים להמיר'],
- },
-];
+import { CoordinateSystemsComparison } from './CoordinateSystemsComparison';
 export function CoordinatesScene() {
 const [shift, setShift] = useState(0);
 return (
@@ -73,52 +42,9 @@ title={
  </div>
  </div>
 
- {/* Grid of Systems — ONE info card holding the ITM / WGS84 comparison
-     as two columns (pattern 9: not two equal competing cards) */}
- <div className="surface p-5 sm:p-6 mb-8 grid md:grid-cols-2 gap-6 md:gap-10">
- {SYSTEMS.map((s) => (
- <article key={s.id}>
- <div className="mb-3">
- <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{s.short}</div>
- <div className="text-sm font-display font-semibold text-fg-muted mt-1">
- {s.scope}
- </div>
- </div>
-
- <div className="text-sm text-fg-muted mb-4">{s.long}</div>
-
- <div className="rounded-xl bg-bg-accent/60 p-4 mb-5 font-display">
- <div className="text-sm text-fg-muted mb-1">{s.format}</div>
- <div className="text-fg tabular-nums text-lg font-bold">{s.example}</div>
- </div>
-
- <div className="grid grid-cols-2 gap-5">
- <div>
- <div className="text-base font-display font-bold text-fg mb-2">יתרונות</div>
- <ul className="space-y-2 text-sm">
- {s.pros.map((p) => (
- <li key={p} className="flex gap-2 leading-snug">
- <span className="text-fg-muted font-bold shrink-0">·</span>
- <span className="text-fg-muted">{p}</span>
- </li>
- ))}
- </ul>
- </div>
- <div>
- <div className="text-base font-display font-bold text-fg mb-2">מגבלות</div>
- <ul className="space-y-2 text-sm">
- {s.cons.map((c) => (
- <li key={c} className="flex gap-2 leading-snug">
- <span className="text-fg-muted font-bold shrink-0">·</span>
- <span className="text-fg-muted">{c}</span>
- </li>
- ))}
- </ul>
- </div>
- </div>
- </article>
- ))}
- </div>
+ {/* ITM / WGS84 — "אותה נקודה. שתי שפות." (one map, one fixed point,
+     two readings; design/docs/2026-09-29-coordinates-opus-handoff.md) */}
+ <CoordinateSystemsComparison />
 
  {/* Simulation */}
  <DatumShiftDemo shift={shift} setShift={setShift} />
@@ -132,102 +58,147 @@ title={
  </section>
  );
 }
+// Slider geometry, same recipe as topic-06 PlanningScene's pacing slider: the
+// native thumb's centre only travels between THUMB/2 and 100% − THUMB/2, so the
+// ember fill and the tick marks are placed on that same inset scale.
+const DATUM_THUMB_PX = 24;
+const datumTrack = (fr: number) => `calc(${DATUM_THUMB_PX / 2}px + (100% - ${DATUM_THUMB_PX}px) * ${fr})`;
+const DATUM_TICKS = [0, 50, 100] as const;
+
 function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: number) => void }) {
-const dangerLevel = shift < 15 ? 'safe' : shift < 40 ? 'warn' : 'danger';
-const consequenceText =
-shift < 15
- ? 'בסדר: הסטייה קטנה מאוד. הירי עדיין יפול בתוך אזור המטרה.'
- : shift < 40
- ? 'סיכון: כוחותינו נמצאים בטווח רסיסים מסוכן מנקודת הפגיעה.'
- : shift < 70
- ? 'דו"צ! הירי נופל ישירות על כוחותינו בגלל טעות בשפת המפה.'
- : 'קטסטרופה: המשימה נכשלה לחלוטין. חוסר התאמה מוחלט בין המערכות.';
-return (
- <div className="surface-elevated p-6 lg:p-8 my-10">
- {/* Sidebar (right, DOM-first per this file's RTL convention) + map column
-     (left), matching the reference's proportions (map:sidebar ≈ 2.47:1,
-     pixel-measured off design/reference/lesson-02/lesson2part5image2.png).
-     The map keeps a fixed aspect ratio matching ImpactMap's own SVG viewBox
-     (100×56 → 25/14) instead of stretching to the sidebar's content height:
-     ImpactMap's overlay SVG uses preserveAspectRatio="none" so its shapes
-     (crosshair, deviation ring, impact marker) are only circular/undistorted
-     when the box's rendered aspect ratio equals the viewBox's — letting the
-     box's height instead track the sidebar (whose height shifts with the
-     "{shift} מ׳" digit count and the paragraph's line count) warped those
-     shapes and, through the shared grid track, could nudge the map's own
-     width too. The meter slider + its tick captions live inside this same
-     map column (not spanning the whole card) so they're exactly as wide as
-     the map above them, per this project's request. */}
- <div className="grid md:grid-cols-[1fr_2.4fr] gap-6 md:gap-8 items-start">
- <div className="flex flex-col gap-5 min-w-0">
- <div className="flex flex-col items-start gap-3">
- <div className={cn(
- 'px-4 py-2 rounded-full border text-sm font-bold transition-colors',
-dangerLevel === 'safe' && 'border-status-ok/40 bg-status-ok/10 text-status-ok',
-dangerLevel === 'warn' && 'border-status-warn/40 bg-status-warn/10 text-status-warn',
-dangerLevel === 'danger' && 'border-status-danger/40 bg-status-danger/10 text-status-danger',
- )}>
- {dangerLevel === 'safe' ? '✓ סטטוס: תקין' : dangerLevel === 'warn' ? '! סטטוס: סיכון' : '✗ סטטוס: סטייה קריטית'}
- </div>
- <div>
- <div className="text-sm font-display font-semibold text-fg-muted mb-1">
- הדמיה מבצעית: מה קורה כשהשפה לא תואמת
- </div>
- <div className="font-display font-bold text-5xl tabular-nums">
- {shift}<span className="text-2xl text-fg-muted ms-2">מ׳ סטייה</span>
- </div>
- </div>
- </div>
+  const dangerLevel = shift < 15 ? 'safe' : shift < 40 ? 'warn' : 'danger';
+  const statusText = dangerLevel === 'safe' ? 'סטטוס: תקין' : dangerLevel === 'warn' ? 'סטטוס: סיכון' : 'סטטוס: סטייה קריטית';
+  const consequenceText =
+    shift < 15
+      ? 'בסדר: הסטייה קטנה מאוד. הירי עדיין יפול בתוך אזור המטרה.'
+      : shift < 40
+        ? 'סיכון: כוחותינו נמצאים בטווח רסיסים מסוכן מנקודת הפגיעה.'
+        : shift < 70
+          ? 'דו"צ! הירי נופל ישירות על כוחותינו בגלל טעות בשפת המפה.'
+          : 'קטסטרופה: המשימה נכשלה לחלוטין. חוסר התאמה מוחלט בין המערכות.';
+  return (
+    <div className="my-10">
+      {/* Same block anatomy as DigitAnatomy below: T1 heading + intro on the
+          page, then ONE workspace card holding readout insets + the map. */}
+      <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance">
+        הדמיה מבצעית: מה קורה כשהשפה לא תואמת
+      </h3>
+      <p className="text-fg leading-relaxed text-pretty mb-8 max-w-3xl">
+        <strong className="text-fg">איך זה קורה בפועל?</strong> חייל א׳ מודד נ&quot;צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM. <strong className="text-fg">התוצאה:</strong> בלי תרגום נכון ← הקואורדינטה תתפרש כמיקום אחר לגמרי.
+      </p>
 
- <div className={cn(
- 'rounded-xl p-4 sm:p-5 transition-colors',
-dangerLevel === 'safe' && 'bg-status-ok/10',
-dangerLevel === 'warn' && 'bg-status-warn/10',
-dangerLevel === 'danger' && 'bg-status-danger/10',
- )}>
- <div className="text-sm font-display font-semibold text-fg-muted mb-2">
- השלכה מבצעית בשטח
- </div>
- <p className={cn(
- 'text-lg font-bold leading-snug',
-dangerLevel === 'safe' && 'text-status-ok',
-dangerLevel === 'warn' && 'text-status-warn',
-dangerLevel === 'danger' && 'text-status-danger',
- )}>
- {consequenceText}
- </p>
- </div>
- <div className="text-sm text-fg-muted leading-relaxed">
- <strong className="text-fg block mb-1">איך זה קורה בפועל?</strong>
- חייל א׳ מודד נ"צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM.
- <br/><br/>
- <strong>התוצאה:</strong> בלי תרגום נכון ← הקואורדינטה תתפרש כמיקום אחר לגמרי.
- </div>
- </div>
+      {/* Sidebar (right, DOM-first per this file's RTL convention) + map column
+          (left), matching the reference's proportions (map:sidebar ≈ 2.47:1,
+          pixel-measured off design/reference/lesson-02/lesson2part5image2.png).
+          The map keeps a fixed aspect ratio matching ImpactMap's own SVG viewBox
+          (100×56 → 25/14) instead of stretching to the sidebar's content height:
+          ImpactMap's overlay SVG uses preserveAspectRatio="none" so its shapes
+          (crosshair, deviation ring, impact marker) are only circular/undistorted
+          when the box's rendered aspect ratio equals the viewBox's. The meter
+          slider + its tick captions live inside this same map column (not
+          spanning the whole card) so they're exactly as wide as the map above
+          them, per this project's request. */}
+      <div className="surface-elevated p-6 lg:p-8 grid lg:grid-cols-[1fr_2.4fr] gap-6 lg:gap-10 items-start">
+        <div className="flex flex-col gap-5 min-w-0">
+          {/* Readout inset — same recipe as DigitReadout. Severity is carried
+              by the dot + the consequence tint only: the raw status hues
+              (amber especially) are unreadable as text on the cream insets. */}
+          <div className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
+            <div className="flex items-center gap-2 text-sm font-display font-semibold mb-2 text-fg-muted">
+              <span
+                className={cn(
+                  'inline-block size-2 rounded-full shrink-0 transition-colors motion-reduce:transition-none',
+                  dangerLevel === 'safe' && 'bg-status-ok',
+                  dangerLevel === 'warn' && 'bg-status-warn',
+                  dangerLevel === 'danger' && 'bg-status-danger',
+                )}
+                aria-hidden
+              />
+              {statusText}
+            </div>
+            <div className="font-display font-bold text-4xl sm:text-5xl tabular-nums text-fg">
+              {shift}
+              <span className="text-2xl text-fg-muted ms-2">מ׳ סטייה</span>
+            </div>
+          </div>
 
- <div className="flex flex-col gap-3 min-w-0">
- <div className="relative overflow-hidden rounded-xl aspect-[25/14]">
- <ImpactMap shift={shift} />
- </div>
+          <div
+            className={cn(
+              'rounded-xl p-4 sm:p-5 transition-colors motion-reduce:transition-none',
+              dangerLevel === 'safe' && 'bg-status-ok/10',
+              dangerLevel === 'warn' && 'bg-status-warn/10',
+              dangerLevel === 'danger' && 'bg-status-danger/10',
+            )}
+          >
+            <div className="text-sm font-display font-semibold text-fg-muted mb-2">השלכה מבצעית בשטח</div>
+            <p className="text-lg font-bold leading-snug text-fg text-pretty">{consequenceText}</p>
+          </div>
+        </div>
 
- <input
-type="range"
-min={0}
-max={100}
-step={1}
-value={shift}
-onChange={(e) => setShift(Number(e.target.value))}
-className="w-full h-2 bg-border rounded-full appearance-none cursor-pointer accent-accent"
- />
- <div className="flex justify-between text-[13px] text-fg-muted">
- <span>0 מ׳</span>
- <span>50 מ׳ (טווח רסיסים)</span>
- <span>100 מ׳ (החטאה מלאה)</span>
- </div>
- </div>
- </div>
- </div>
- );
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="relative overflow-hidden rounded-xl aspect-[25/14]">
+            <ImpactMap shift={shift} />
+          </div>
+
+          <div>
+            <div className="relative h-8">
+              <div aria-hidden className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-bg-accent ring-1 ring-inset ring-border" />
+              <div
+                aria-hidden
+                className="absolute start-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-cta-ember"
+                style={{ width: datumTrack(shift / 100) }}
+              />
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={shift}
+                onChange={(e) => setShift(Number(e.target.value))}
+                aria-label="סטייה במטרים"
+                aria-valuetext={`${shift} מ׳ — ${statusText}`}
+                className={cn(
+                  // the global *:focus-visible ring would box the whole input — the focus cue lives on the thumb instead
+                  'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent rounded-full focus-visible:ring-0 focus-visible:ring-offset-0',
+                  '[&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent',
+                  '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:box-border [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:mt-1 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bg-elevated [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:shadow-cta-ember',
+                  '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:box-border [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-bg-elevated [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-accent',
+                  '[&:focus-visible::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
+                  '[&:focus-visible::-moz-range-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
+                )}
+              />
+            </div>
+            <div aria-hidden className="relative h-1.5 mt-0.5">
+              {DATUM_TICKS.map((v) => (
+                <span
+                  key={v}
+                  className="absolute top-0 h-1.5 w-px bg-border-strong/70"
+                  style={{ insetInlineStart: datumTrack(v / 100) }}
+                />
+              ))}
+            </div>
+            {/* 3 equal columns (not justify-between) so the middle caption is
+                centred exactly under the 50 m tick regardless of the edge
+                captions' differing widths. */}
+            <div className="grid grid-cols-3 gap-2 mt-1 text-[13px] font-display font-medium text-fg-muted tabular-nums">
+              {(['0 מ׳', '50 מ׳ (טווח רסיסים)', '100 מ׳ (החטאה מלאה)'] as const).map((label, i) => (
+                <span
+                  key={label}
+                  className={cn(
+                    'transition-colors motion-reduce:transition-none',
+                    i === 0 ? 'text-start' : i === 1 ? 'text-center' : 'text-end',
+                    shift >= DATUM_TICKS[i] && 'text-fg font-semibold',
+                  )}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 function ImpactMap({ shift }: { shift: number }) {
  // Offset logic for the SVG impact point
@@ -253,6 +224,10 @@ const impactLeftPct = 50 + offsetX;
 const impactTopPct = ((26 - offsetY) / 56) * 100;
 const midLeftPct = 50 + offsetX / 2;
 const midTopPct = ((32 - offsetY / 2) / 56) * 100;
+// The distance chip sits on the line's midpoint; below ~35 m that midpoint
+// is still inside the crosshair, so the chip would cover the target it
+// measures from. The sidebar readout carries the number until then.
+const DISTANCE_CHIP_MIN = 35;
 // Colors pixel-sampled from design/reference/lesson-02/lesson2part5image2.png
 // (medians of solid-fill/darkest-ink regions, paper background excluded).
 // Neither matches an existing token closely enough to reuse: accent.hot
@@ -384,7 +359,7 @@ transition={{ type: 'spring', stiffness: 50 }}
 מיקום פגיעה בפועל
  </motion.div>
  {/* Always mounted (never conditionally rendered) so crossing the
-     shift > 4 threshold only fades opacity in/out — mounting it fresh at
+     DISTANCE_CHIP_MIN threshold only fades opacity in/out — mounting it fresh at
      that moment made it pop in from wherever an unset left/top defaulted
      to (the container's top-right corner) instead of sliding smoothly
      from the displacement line's midpoint. */}
@@ -392,7 +367,7 @@ transition={{ type: 'spring', stiffness: 50 }}
 className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2.5 py-1 text-[13px] leading-tight font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
 style={{ color: IMPACT_MAROON }}
 initial={{ opacity: 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
-animate={{ opacity: shift > 4 ? 1 : 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
+animate={{ opacity: shift >= DISTANCE_CHIP_MIN ? 1 : 0, left: `${midLeftPct}%`, top: `${midTopPct}%` }}
 transition={{ left: { type: 'spring', stiffness: 50 }, top: { type: 'spring', stiffness: 50 }, opacity: { duration: 0.2 } }}
  >
 {shift} מ׳

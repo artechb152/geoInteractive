@@ -30,42 +30,42 @@ type Layer = {
 const LAYERS: Layer[] = [
   {
     id: 'base',
-    label: 'הטבע: הר, נהר, מדבר',
-    desc: 'כל מה שהיה כאן לפני שאנשים נכנסו לשטח.',
-    popupTitle: 'השכבה הבסיסית: הטבע (תבליט)',
-    popupBody: 'התחלנו — רואים רק את הטבע: הרים, נהרות ומדבר. כל ההחלטות הצבאיות מכאן ואילך מסתמכות על הצורה הטבעית של הקרקע. בלי השכבה הזו אין בסיס לשום דבר אחר.',
+    label: 'מבנה הקרקע והסביבה הטבעית',
+    desc: 'מבנה הקרקע והשפעתו על הפעילות בשטח.',
+    popupTitle: 'הבסיס להבנת השטח',
+    popupBody: 'השכבה הראשונה מציגה את הסביבה הטבעית: הרים, נהרות ואזורים מדבריים. צורת פני הקרקע נקראת תבליט, והיא כוללת בין היתר הרים, עמקים ומדרונות. מבנה הקרקע משפיע על אפשרויות התנועה, התצפית וההסתרה, ולכן הוא בסיס לתכנון הפעילות בשטח.',
     icon: 'mountain',
   },
   {
     id: 'roads',
-    label: 'דרכים וצינורות',
-    desc: 'איך זזים בשטח: כבישים, מסילות, צינורות גז ודלק.',
-    popupTitle: 'איך זזים בשטח? (תכסית)',
-    popupBody: 'הוספנו דרכים — עכשיו אפשר לתכנן איך לזוז במרחב. כבישים ומסילות הם העורקים שדרכם הצבא מתנייד ונע במרחב; צינורות הגז והדלק הם תשתיות אנרגיה קריטיות שמזינות אותו, ולכן גם מטרה אסטרטגית. בלי השכבה הזו השטח הוא ים של הרים ובוץ ללא ציר תנועה.',
+    label: 'דרכים ותשתיות',
+    desc: 'דרכים, מסילות וצינורות להעברת מקורות אנרגיה.',
+    popupTitle: 'תנועה ואספקה במרחב',
+    popupBody: 'בשכבה זו נוספות דרכים, מסילות וצינורות גז ודלק. דרכים ומסילות מאפשרות תנועת כוחות והעברת אספקה, וצינורות משמשים להעברת מקורות אנרגיה. זיהוי התשתיות מסייע להעריך כיצד ניתן לנוע במרחב ובאילו נתיבים תלויה האספקה. תשתיות אלו הן חלק מהתכסית — המרכיבים שנמצאים על פני הקרקע.',
     icon: 'truck',
   },
   {
     id: 'buildings',
     label: 'יישובים ומבנים',
-    desc: 'ערים, כפרים, בתים ומתחמים — איפה גרים, עובדים ומסתתרים.',
-    popupTitle: 'איפה אנשים נמצאים? (תכסית)',
-    popupBody: 'הוספנו יישובים — עכשיו ברור איפה אנשים נמצאים. ערים, כפרים, בתים ומתחמים מספרים איפה יימצאו אזרחים, איפה האויב יכול להתחפר, ואיפה חייבים להיזהר במיוחד מפגיעה בחפים מפשע.',
+    desc: 'יישובים ומבנים והשפעתם על הפעילות ועל האוכלוסייה.',
+    popupTitle: 'הסביבה הבנויה והאוכלוסייה',
+    popupBody: 'בשכבה זו נוספים ערים, כפרים ומבנים. הם מצביעים על אזורי מגורים ופעילות ומשפיעים על התנועה, התצפית וההסתרה. בתכנון מבצעי יש להביא בחשבון גם את נוכחות האוכלוסייה האזרחית ואת הצורך לצמצם את הסיכון לפגיעה בה. גם יישובים ומבנים הם חלק מהתכסית.',
     icon: 'capital',
   },
   {
     id: 'borders',
-    label: 'גבולות ושליטה',
-    desc: 'קווים שמסמנים מי שולט באיזה אזור — לרוב לא רואים אותם בשטח, אבל הם משנים הכל.',
-    popupTitle: 'מי שולט באיזה אזור?',
-    popupBody: 'הוספנו גבולות — עכשיו ברור מי שולט באיזה אזור. לרוב אין להן סימון פיזי בשטח, אך יש קווים שדווקא מסומנים בגדר או מכשול — והם קובעים איפה מותר לחצות, איפה צריך אישור מדיני, ואיפה בכלל הקרב יכול להתרחש.',
+    label: 'גבולות ואזורי שליטה',
+    desc: 'גבולות מדיניים וקווים המציינים שליטה בפועל.',
+    popupTitle: 'חלוקת המרחב ומשמעותה',
+    popupBody: 'בשכבה זו מופיעים גבולות ואזורי שליטה. חלקם מסומנים בשטח בגדרות או במכשולים, ואחרים מופיעים במפה בלבד. חשוב להבחין בין גבול מדיני לבין קו שמציין שליטה בפועל. מידע זה מסייע להבין את מגבלות התנועה ואת התיאום הנדרש לפעילות במרחב.',
     icon: 'flag',
   },
   {
     id: 'ops',
-    label: 'שכבה צבאית בזמן אמת',
-    desc: 'איפה הכוחות שלנו, איפה האויב, איפה האיומים — משתנה כל שעה.',
-    popupTitle: 'התמונה המבצעית בזמן אמת',
-    popupBody: 'השכבה האחרונה, והדינמית ביותר: איפה הכוחות שלנו, איפה האויב ואיפה האיומים. עכשיו יש לנו תמונה מלאה לתכנון מבצעי — בלי השכבות הקודמות היינו מקבלים החלטה עיוורת.',
+    label: 'תמונת המצב המבצעית',
+    desc: 'מיקום כוחותינו, כוחות האויב והאיומים הידועים.',
+    popupTitle: 'מיקום כוחות ואיומים',
+    popupBody: 'השכבה האחרונה מציגה את מיקום כוחותינו, כוחות האויב והאיומים הידועים. מידע זה עשוי להשתנות במהירות, ולכן חשוב לבדוק מתי עודכן. שילובו עם שכבות השטח והתשתיות מסייע להעריך את המצב ולתכנן את הפעילות בהתאם למידע הזמין.',
     icon: 'crosshair',
   },
 ];
@@ -96,18 +96,12 @@ export function OnboardingScene() {
     <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="02.0"
-        title="מפה היא לא תמונה דו-ממדית – היא פאזל של שכבות מידע"
-        intro={`תחשבו על מפה צבאית כמו על ערימה של שקפים שמונחים זה על זה. כל שקף מוסיף סוג אחר של מידע. הדליקו את השכבות אחת אחרי השנייה, וראו איך שטח ריק הופך לתמונה מבצעית שלמה.`}
+        title="המפה כמערכת של שכבות מידע"
+        intro="מפה משלבת כמה סוגי מידע: מבנה הקרקע, דרכים, יישובים, גבולות ומיקום כוחות. כל שכבה מוסיפה מידע שמסייע להבין את המרחב ולתכנן בו פעילות. בחרו את השכבות לפי הסדר ובדקו כיצד כל אחת מוסיפה לתמונת השטח."
       />
 
-      {/* Widened the map column from 2fr:3fr (640px) to 725px at the 1440px
-          target. 32:68 is the widest split that still keeps every layer label
-          on one line -- measured: 320px wraps three of them, 330px is clear,
-          this leaves the column at 341px -- so the map grows without any type
-          being resized. The column cannot reach the SVG's 4:3 ratio outright
-          (a 617px-tall box would need 823px of width, squeezing the accordion
-          to ~240px and wrapping the labels), so the residual letterbox is
-          absorbed by the box background instead -- see bg-bg-accent below. */}
+      {/* Preserve the existing 32:68 accordion/map split. Longer approved
+          labels wrap naturally without reducing the type size. */}
       <div className="grid md:grid-cols-[32fr_68fr] gap-6">
         <div className="space-y-1">
           {LAYERS.map((l, i) => {
@@ -185,9 +179,9 @@ export function OnboardingScene() {
                     >
                       {/* All five panels share one height so the column -- and the
                           map box stretched beside it -- never resize as you click
-                          through. Re-measured at 1440px: the tallest panels
-                          (roads, borders) need 206px, so the 211px floor holds. */}
-                      <div className="px-4 pb-4 pt-1 md:min-h-[211px]">
+                          through. At 1440px the approved copy's tallest panels
+                          (roads, buildings) need 232px including padding. */}
+                      <div className="px-4 pb-4 pt-1 md:min-h-[232px]">
                         <div className="text-base font-display font-bold text-black mb-1.5">
                           {l.popupTitle}
                         </div>
@@ -211,16 +205,14 @@ export function OnboardingScene() {
         </div>
       </div>
 
-      {/* Historical examples — same panel layout as lesson 1
-          (topic-01/HistoricalCasesPanel.tsx). Replaced the IntelCard
-          grid; the four examples moved into the panel's CASES array. */}
+      {/* Practical examples use the existing four-case panel layout. */}
       <div className="mt-20 mb-12">
         <HistoricalCasesPanel />
       </div>
 
-      <ReadyCallout title="עכשיו אתם מוכנים" signature={false}>
-        <p>הבנו שמפה היא הרבה יותר מציור על דף. בחלקים הבאים נלמד את "שפת המפה":
-            <strong className="text-fg"> איך מכניסים הר שלם לנייר קטן, איך מודדים מרחק, ואיך קוראים נ"צ בלי להתבלבל</strong>.</p>
+      <ReadyCallout title="בהמשך השיעור" signature={false}>
+        <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר תבליט ותכסית, תבניות נוף וסוגי סלעים, ובהמשך נתרגל
+            <strong className="text-fg"> שימוש בקנה מידה, קריאת נקודות ציון ופענוח קווי גובה</strong>.</p>
       </ReadyCallout>
     </section>
   );

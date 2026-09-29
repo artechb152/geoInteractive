@@ -25,16 +25,16 @@ type Feature = {
 
 const FEATURES: Feature[] = [
   { id: 'hill',    label: 'כיפה',   layer: 'relief', desc: 'התרוממות בולטת של פני הקרקע מעל סביבתה.' },
-  { id: 'saddle',  label: 'אוכף',   layer: 'relief', desc: 'השקע הנמוך שעל קו הרכס, בין שתי כיפות סמוכות.' },
-  { id: 'slope',   label: 'מדרון',  layer: 'relief', desc: 'הצלע המשופעת של ההר — בין הפסגה לשטח הנמוך.' },
-  { id: 'valley',  label: 'גיא',    layer: 'relief', desc: 'שטח נמוך בין שני שטחים גבוהים. לשם מתנקזים המים בזמן גשם.' },
-  { id: 'plain',   label: 'מישור',  layer: 'relief', desc: 'שטח שטוח כמעט ללא הפרשי גובה.' },
+  { id: 'saddle',  label: 'אוכף',   layer: 'relief', desc: 'קטע נמוך בקו הרכס, בין שתי כיפות סמוכות.' },
+  { id: 'slope',   label: 'מדרון',  layer: 'relief', desc: 'משטח קרקע משופע, המחבר בין אזור גבוה לאזור נמוך.' },
+  { id: 'valley',  label: 'גיא',    layer: 'relief', desc: 'שטח נמוך בין שני אזורים גבוהים, שאליו מתנקזים מי הגשם.' },
+  { id: 'plain',   label: 'מישור',  layer: 'relief', desc: 'שטח כמעט שטוח, שהפרשי הגובה בו קטנים.' },
   { id: 'grove',   label: 'חורש',   layer: 'cover', origin: 'natural',    desc: 'עצים ושיחים שגדלו על המדרון באופן טבעי, בפיזור לא סדור.' },
   { id: 'shrubs',  label: 'שיחים',  layer: 'cover', origin: 'natural',    desc: 'צומח נמוך שגדל באופן טבעי בין הסלעים.' },
-  { id: 'houses',  label: 'בתים',   layer: 'cover', origin: 'artificial', desc: 'מבנים שהאדם בנה על הקרקע — חלק מיישוב.' },
-  { id: 'orchard', label: 'מטע',    layer: 'cover', origin: 'artificial', desc: 'עצים שהאדם נטע בשורות ובמרווחים קבועים. זה צומח — אבל נטוע בידי אדם.' },
+  { id: 'houses',  label: 'בתים',   layer: 'cover', origin: 'artificial', desc: 'מבני מגורים שהאדם הקים על הקרקע כחלק מיישוב.' },
+  { id: 'orchard', label: 'מטע',    layer: 'cover', origin: 'artificial', desc: 'עצים שהאדם נטע בשורות ובמרווחים קבועים. מטע נחשב לתכסית מלאכותית משום שנוצר בידי אדם.' },
   { id: 'road',    label: 'כביש',   layer: 'cover', origin: 'artificial', desc: 'דרך שהאדם סלל על פני הקרקע.' },
-  { id: 'power',   label: 'קו מתח', layer: 'cover', origin: 'artificial', desc: 'עמודים וכבלי חשמל — תשתית שהאדם הקים.' },
+  { id: 'power',   label: 'קו מתח', layer: 'cover', origin: 'artificial', desc: 'תשתית להעברת חשמל, הכוללת עמודים וכבלים שהאדם הקים בשטח.' },
 ];
 
 const LAYER_LABEL: Record<Layer, string> = { relief: 'תבליט', cover: 'תכסית' };
@@ -47,28 +47,28 @@ const LAYER_SWATCH: Record<Layer, string> = { relief: 'bg-terrain-sand', cover: 
 const RESULT_TINT: Record<Layer, string> = { relief: 'bg-terrain-sand/20', cover: 'bg-brand/10' };
 
 const QUIZ_ITEMS: SortItem<Layer>[] = [
-  { id: 'q-hill',    label: 'גבעה',       answer: 'relief', why: 'גבעה היא צורה של הקרקע עצמה — התרוממות של פני השטח.' },
-  { id: 'q-grove',   label: 'חורש',       answer: 'cover',  why: 'עצים ושיחים שגדלים על הקרקע — תכסית טבעית.' },
-  { id: 'q-house',   label: 'בית',        answer: 'cover',  why: 'מבנה שהאדם בנה על הקרקע — תכסית מלאכותית.' },
-  { id: 'q-valley',  label: 'עמק',        answer: 'relief', why: 'עמק הוא שטח נמוך בין שטחים גבוהים — צורה של הקרקע.' },
-  { id: 'q-road',    label: 'כביש',       answer: 'cover',  why: 'דרך שהאדם סלל על פני הקרקע — תכסית מלאכותית.' },
-  { id: 'q-slope',   label: 'מדרון',      answer: 'relief', why: 'מדרון הוא הצלע המשופעת של ההר — צורה של הקרקע.' },
-  { id: 'q-olives',  label: 'מטע זיתים',  answer: 'cover',  why: 'עצים שהאדם נטע על הקרקע — תכסית מלאכותית, אף שמדובר בצומח.' },
-  { id: 'q-saddle',  label: 'אוכף',       answer: 'relief', why: 'אוכף הוא השקע שבין שתי כיפות על קו הרכס — צורה של הקרקע.' },
+  { id: 'q-hill',    label: 'גבעה',       answer: 'relief', why: 'גבעה היא התרוממות של פני הקרקע, ולכן היא חלק מהתבליט.' },
+  { id: 'q-grove',   label: 'חורש',       answer: 'cover',  why: 'חורש הוא צומח טבעי על פני הקרקע, ולכן הוא חלק מהתכסית.' },
+  { id: 'q-house',   label: 'בית',        answer: 'cover',  why: 'בית הוא מבנה שהאדם הקים על הקרקע, ולכן הוא תכסית מלאכותית.' },
+  { id: 'q-valley',  label: 'עמק',        answer: 'relief', why: 'עמק הוא אזור נמוך בין אזורים גבוהים. הוא מתאר את מבנה הקרקע, ולכן הוא חלק מהתבליט.' },
+  { id: 'q-road',    label: 'כביש',       answer: 'cover',  why: 'כביש הוא דרך שהאדם סלל על פני הקרקע, ולכן הוא תכסית מלאכותית.' },
+  { id: 'q-slope',   label: 'מדרון',      answer: 'relief', why: 'מדרון הוא משטח קרקע משופע, ולכן הוא חלק מהתבליט.' },
+  { id: 'q-olives',  label: 'מטע זיתים',  answer: 'cover',  why: 'מטע זיתים הוא צומח שהאדם נטע, ולכן הוא תכסית מלאכותית.' },
+  { id: 'q-saddle',  label: 'אוכף',       answer: 'relief', why: 'אוכף הוא קטע נמוך בקו הרכס בין שתי כיפות. הוא מתאר את מבנה הקרקע, ולכן הוא חלק מהתבליט.' },
 ];
 
 const COMPARE_ROWS: { label: string; relief: string; cover: string }[] = [
-  { label: 'מה זה?',            relief: 'הצורה של הקרקע עצמה — איפה היא עולה ואיפה היא יורדת.', cover: 'כל מה שנמצא על פני הקרקע ומכסה אותה.' },
+  { label: 'הגדרה',            relief: 'מבנה פני הקרקע, הכולל אזורים גבוהים, נמוכים ומישוריים.', cover: 'המרכיבים הטבעיים והמלאכותיים שנמצאים על פני הקרקע.' },
   { label: 'דוגמאות',           relief: 'כיפה, שלוחה, גיא, אוכף, מכתש, מדרון, מישור.',          cover: 'עצים, שיחים ועשב · בתים, כבישים, שדות, מטעים, גדרות וקווי חשמל.' },
-  { label: 'איך מחלקים?',       relief: 'לתבניות נוף — צורות יסוד שחוזרות בכל שטח.',            cover: 'לפי המקור: טבעית או מלאכותית. לפי הסוג: צומח, פעילות האדם ותשתיות.' },
-  { label: 'כמה מהר משתנה?',    relief: 'לאט מאוד — בתהליכים טבעיים שנמשכים אלפי שנים ויותר. שינוי מהיר נגרם בעיקר מעבודות הנדסה, כמו חציבה ומילוי.', cover: 'מהר — הצומח משתנה עם העונות, ושדות, בתים וכבישים נוספים או נעלמים בתוך שנים ספורות.' },
-  { label: 'איך מופיע במפה?',   relief: 'בעיקר בקווי גובה.',                                      cover: 'בסמלים ובצבעים מוסכמים, שמוסברים במקרא המפה.' },
+  { label: 'אופן הסיווג',       relief: 'לפי תבניות נוף — צורות יסוד שמופיעות בשטחים שונים.',     cover: 'לפי המקור: טבעית או מלאכותית. לפי הסוג: צומח, פעילות האדם ותשתיות.' },
+  { label: 'קצב השינוי',        relief: 'לרוב משתנה באיטיות, בתהליכים טבעיים ממושכים. עבודות הנדסה, כגון חציבה ומילוי, עשויות לשנות אותו במהירות.', cover: 'עשויה להשתנות בתוך זמן קצר: הצומח משתנה עם העונות, והבנייה והחקלאות משנות את פני השטח.' },
+  { label: 'הייצוג במפה',       relief: 'בעיקר באמצעות קווי גובה.',                               cover: 'באמצעות סמלים וצבעים מוסכמים, המוסברים במקרא המפה.' },
 ];
 
 const NEXT_STEPS = [
   { n: 1, title: 'תבניות נוף',  text: 'צורות היסוד של התבליט: כיפה, שלוחה, גיא, אוכף ומכתש.' },
-  { n: 2, title: 'גיאולוגיה',   text: 'סוגי הסלעים שמתחת לקרקע, והכוחות שמעצבים את פני השטח.' },
-  { n: 3, title: 'תכסית',       text: 'מה נמצא על הקרקע: צומח, פעילות האדם ותשתיות.' },
+  { n: 2, title: 'גיאולוגיה',   text: 'סוגי הסלעים והכוחות שמעצבים את פני השטח.' },
+  { n: 3, title: 'תכסית',       text: 'סיווג המרכיבים שעל פני הקרקע: צומח, פעילות האדם ותשתיות.' },
 ];
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -97,10 +97,10 @@ export function ReliefCoverIntroScene() {
       <SceneHeader
         title={
           <>
-            מה יש בשטח? <span className="gradient-text">תבליט ותכסית</span>
+            מרכיבי השטח: <span className="gradient-text">תבליט ותכסית</span>
           </>
         }
-        intro="כל שטח — במציאות או על המפה — בנוי משתי שכבות: הקרקע עצמה, וכל מה שנמצא עליה. את השכבה הראשונה מכנים תבליט, ואת השנייה — תכסית."
+        intro="כדי לתאר שטח ולקרוא את ייצוגו במפה, מבחינים בין שני מרכיבים: תבליט — מבנה פני הקרקע, ותכסית — המרכיבים שנמצאים על פני הקרקע. ההבחנה ביניהם היא בסיס לקריאת השטח."
       />
 
       {/* ── Screen 1: the two definitions — one flat info card, so the
@@ -108,21 +108,21 @@ export function ReliefCoverIntroScene() {
       <div className="surface p-5 sm:p-6">
         <div className="grid md:grid-cols-2 gap-6 md:gap-10">
           <DefinitionCard layer="relief" term="תבליט" lead="מבנה פני הקרקע.">
-            התבליט הוא הצורה של השטח: איפה הקרקע עולה ואיפה היא יורדת. הרים וגבעות, עמקים ומדרונות, מישורים ושקעים — כולם תבליט.
-            את התבליט מתארים באמצעות <strong className="text-fg">תבניות נוף</strong>: צורות יסוד שחוזרות בכל שטח.
+            התבליט מתאר את צורת הקרקע: הרים וגבעות, עמקים ומדרונות, מישורים ושקעים.
+            כדי לזהות ולתאר את התבליט, נעזרים ב<strong className="text-fg">תבניות נוף</strong> — צורות יסוד שמופיעות בשטחים שונים.
           </DefinitionCard>
-          <DefinitionCard layer="cover" term="תכסית" lead="כל מה שנמצא על הקרקע.">
-            התכסית היא כל מה שמכסה את פני הקרקע. היא יכולה להיות <strong className="text-fg">טבעית</strong> — עצים, שיחים ועשב —
-            או <strong className="text-fg">מלאכותית</strong>, כזו שהאדם יצר: בתים, כבישים, שדות ומטעים, גדרות וקווי חשמל.
+          <DefinitionCard layer="cover" term="תכסית" lead="המרכיבים שנמצאים על פני הקרקע.">
+            התכסית כוללת מרכיבים <strong className="text-fg">טבעיים</strong>, כגון עצים, שיחים ועשב שגדלו באופן טבעי,
+            ומרכיבים <strong className="text-fg">מלאכותיים</strong> שהאדם יצר, כגון בתים, כבישים, שדות ומטעים, גדרות וקווי חשמל.
           </DefinitionCard>
         </div>
         <p className="mt-6 rounded-xl bg-bg-accent/60 p-4 text-base text-fg-muted leading-relaxed text-pretty">
-          דרך פשוטה לזכור: דמיינו שמסירים מהשטח את כל העצים, הבתים והכבישים. מה שנשאר הוא <strong className="text-fg">התבליט</strong>. כל מה שהסרתם הוא <strong className="text-fg">התכסית</strong>.
+          להמחשת ההבחנה, דמיינו שמסירים מהשטח את הצומח, המבנים והתשתיות. צורת הקרקע שנותרת היא <strong className="text-fg">התבליט</strong>; המרכיבים שהוסרו הם <strong className="text-fg">התכסית</strong>.
         </p>
       </div>
 
       {/* ── Screen 2: interactive layered terrain — the scene's workspace ── */}
-      <h3 className={SECTION_TITLE}>מפרקים את השטח לשכבות</h3>
+      <h3 className={SECTION_TITLE}>זיהוי תבליט ותכסית בשטח</h3>
 
       <div className="surface-elevated p-5 sm:p-6 grid lg:grid-cols-[20rem_minmax(0,1fr)] gap-6 items-stretch">
         {/* Controls + info (first child → right in RTL) */}
@@ -130,7 +130,7 @@ export function ReliefCoverIntroScene() {
           <div className="space-y-5">
             <div>
               <div className="text-sm font-display font-semibold text-fg-muted mb-2.5">
-                הדליקו וכבו כל שכבה
+                הציגו או הסתירו כל שכבה
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {(['relief', 'cover'] as Layer[]).map((layer) => (
@@ -143,7 +143,7 @@ export function ReliefCoverIntroScene() {
 
             <div className="space-y-3">
               <div className="text-sm font-display font-semibold text-fg-muted">
-                לחצו על רכיב — באיור או כאן
+                בחרו רכיב באיור או ברשימה
               </div>
               {(['relief', 'cover'] as Layer[]).map((layer) => (
                 <div key={layer} className="flex items-start gap-2.5">
@@ -222,7 +222,7 @@ export function ReliefCoverIntroScene() {
                 ) : (
                   <div className="flex-1 min-h-[140px]">
                     <p className="text-sm text-fg-muted leading-relaxed">
-                      בחרו רכיב כדי לגלות אם הוא חלק מהתבליט או מהתכסית. נסו לכבות את שכבת התכסית — ותראו את הקרקע „החשופה”.
+                      בחרו רכיב כדי לקרוא את תיאורו ואת סיווגו כתבליט או כתכסית. הסתירו את שכבת התכסית כדי לבחון את מבנה הקרקע בנפרד.
                     </p>
                   </div>
                 )}
@@ -267,7 +267,7 @@ export function ReliefCoverIntroScene() {
       </div>
 
       {/* ── Screen 3: side-by-side comparison (static info → flat card) ── */}
-      <h3 className={SECTION_TITLE}>תבליט מול תכסית</h3>
+      <h3 className={SECTION_TITLE}>השוואה בין תבליט לתכסית</h3>
 
       <div className="surface overflow-hidden">
         <div className="grid grid-cols-[minmax(7rem,0.6fr)_1fr_1fr] text-sm">
@@ -285,11 +285,11 @@ export function ReliefCoverIntroScene() {
       </div>
 
       {/* ── Screen 4: quick check ── */}
-      <h3 className={SECTION_TITLE}>בדיקה מהירה</h3>
+      <h3 className={SECTION_TITLE}>תרגול: סיווג מרכיבי השטח</h3>
 
       <SortQuiz
         title="תבליט או תכסית?"
-        prompt="לכל רכיב — בחרו לאיזו שכבה הוא שייך."
+        prompt="סווגו כל רכיב כתבליט או כתכסית. לאחר הבחירה יוצג הסבר לסיווג."
         options={[
           { id: 'relief', label: 'תבליט' },
           { id: 'cover', label: 'תכסית' },
@@ -298,7 +298,7 @@ export function ReliefCoverIntroScene() {
       />
 
       {/* ── Roadmap for the rest of the terrain block (static → one flat card) ── */}
-      <h3 className={SECTION_TITLE}>איך נמשיך</h3>
+      <h3 className={SECTION_TITLE}>בהמשך השיעור</h3>
 
       <ol className="surface p-5 sm:p-6 grid md:grid-cols-3 gap-6">
         {NEXT_STEPS.map((s) => (

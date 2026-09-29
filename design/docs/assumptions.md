@@ -799,3 +799,76 @@ User request: show the map, all of its explanation and the pager on one screen, 
 
 - All existing copy is kept verbatim, including four missing spaces before quotes (`יכולים"לעוף"`, `ונראית"מעוכה"`, `מסננת"רעשי רקע"`, `את"שפת המפה"`). They are flagged to the user and not changed.
 - **New UI microcopy:** "כל התצוגות יחד", "טוען שטח תלת־ממדי…", "התצוגה התלת־ממדית אינה זמינה בדפדפן זה", and elevation chips of the form "307 מ׳".
+
+## 2026-09-29 — ITM / WGS84 comparison concept (mockup only)
+
+- User requested a realistic replacement concept and an Opus handoff for the comparison block. The generated mockup and brief are proposals, not approved production changes.
+- The concept is "one point, two coordinate readouts": a physical-looking map and GPS, an ITM/WGS84 selector, short supporting text and a shared pine insight band. Palette and fonts use existing site references; no new UI color tokens.
+- The map is illustrative, not georeferenced. Generated map names, grid labels and marker placement must not be used as accurate cartography. Production should generate a text-free image and add meaningful overlays in code.
+- Displayed ITM example values are approximate calculations for the WGS84 example. Opus must independently validate the coordinate pair and chosen transformation before publishing.
+- The mockup shows the surrounding header/sidebar only for context. Keep the existing app shell and scene sequence. Only the comparison block is in scope; the datum-shift block below is separate.
+- Detailed brief: `design/docs/2026-09-29-coordinates-opus-handoff.md`. Image and source prompt: `design/mockups/coordinates-2026-09-29/`.
+
+## 2026-09-29 — Lesson 2 coordinates (#scene-coordinates): datum-shift demo restyled to match "נ״צ הוא לא מספר קסם"
+
+- **Block anatomy copied from `DigitAnatomy`.** "הדמיה מבצעית: מה קורה כשהשפה לא תואמת" is promoted from a small in-card label to the block's T1 heading, placed above the card. The "איך זה קורה בפועל?" story moves from the sidebar into the intro paragraph under the heading, so it is read before the learner drags. The wording is unchanged.
+- **Severity colours.** The `status-*` tokens are raw Tailwind hues, and amber `#fbbf24` is unreadable as text on cream. They now appear only as the status dot and the consequence inset's `/10` tint. All text is `text-fg` / `text-fg-muted`. The tokens themselves are unchanged, since changing them needs approval.
+  - **Assumption:** the ✓ / ! / ✗ glyphs in the old status pill are dropped. The coloured dot is the single status cue.
+- **Slider:** this is the topic-06 `PlanningScene` recipe (ember fill, white thumb with an orange ring, ticks at 0/50/100). The captions are unchanged.
+- **Map:** the "{n} מ׳" distance chip now appears from 35 m instead of 5 m. Below that, the line's midpoint lies inside the crosshair and the chip covered the target. The sidebar readout carries the number.
+
+## 2026-09-29 — Lesson 2 contours (#scene-contours): density profile is live again
+
+- **The static Blender photos (`dioramas/*-natural.webp`) under the density map were replaced by a live SVG cross-section.** The user wanted the original dashed drop-lines from the map to the profile back, and a static image can't carry them.
+- **One surface:** switching tabs tweens a weighted mix of the three height models (`blendTerrain` in `contourDensityGeometry.ts`). Every frame, the map rings, the A–B profile and each contour crossing come from that one mixed surface, so the drop-lines stay on the ground throughout the morph. At rest the output equals `GEOMETRY` exactly, to within 1e-7.
+- **Look (assumption):** the slab reuses the slope boards' materials instead of new colours.
+  - The cut face uses the same `limestone-section.webp` texture the slope renders use. Its strata are fixed in space, so the hill reads as carved from them.
+  - Topsoil (contour brown) and grass (`#8A9163`) follow the ground. Scrub uses the §8 illustration greens.
+  - Any stretch steeper than rise/run 2.2 is left as bare rock, so the cliff face shows no soil or scrub.
+- The `*-natural.webp` renders and `contourDensityRenders.data.ts` are no longer used by the page. They are left in place.
+
+## 2026-09-29 — Lesson 2 coordinates (#scene-coordinates): "אותה נקודה. שתי שפות." implemented
+
+Replaces the white two-column ITM/WGS84 card with `CoordinateSystemsComparison.tsx`, built from the brief and mockup (`design/docs/2026-09-29-coordinates-opus-handoff.md`). The rest of the scene is unchanged.
+
+- **Photographic assets are still missing.** The implementation session had no image-generation tool. Two interim visuals stand in, and neither is the approved look:
+  - **Map:** the lesson's existing text-free terrain art (`terrain-map.png`).
+  - **GPS device:** drawn in code.
+  - Prompts, delivery path and swap steps are in `design/handoff/coordinates-itm-wgs84/README.md`.
+- **Sample pair:** 31.7857° N, 35.2007° E ↔ ITM E 219102, N 632555.
+  - Verified with proj4 2.22.0 and the epsg.io EPSG:2039 definition (7-param towgs84). Result: E 219102.03 / N 632555.49, rounded to the metre.
+  - Four-decimal degrees are ≈ ±5 m, so the pair agrees within its written precision.
+  - The old 3-param transform (-48, 55, 52) lands ≈ 10 m away.
+  - Reproducible with `design/handoff/coordinates-itm-wgs84/verify-sample-point.mjs`.
+- **Map grid is an overlay, not cartography.** The ITM km lines (217–220 E, 631–633 N) come from the verified point placed at 63% / 44% of the image and an illustrative scale of 4 km across the image. The map is labelled "מפת המחשה". The mockup's generated grid numbers and place names are not used.
+  - **Assumption:** northing labels sit on the right edge rather than the left (mockup), because the GPS device occupies the lower left.
+- **The GPS device is set to WGS84 in both states** (as in the mockup's ITM state). The point never moves: the same pixel box was measured in every state.
+- **The two states differ in hierarchy and layers** (revised at the user's request, same day), not just a highlight:
+  - **ITM — the map reads the point.**
+    - The km grid is stronger, and the 219 / 632 reading lines are the strongest.
+    - Two dashed orange guides run from the point to margin readings: E 219102 at the top, N 632555 at the right.
+    - The device shrinks into its corner, and its screen dims.
+  - **WGS84 — the device reads the point.**
+    - The whole ITM layer is removed: grid, km labels, metre readings and guides.
+    - The map recedes under a 60% paper veil.
+    - The device grows ×1.3 (from ×0.78), and a dashed orange leader runs from its screen to the point.
+    - A tag reads "המכשיר מוגדר ל־WGS84", so the device is not implied to show WGS84 only.
+  - The E/N badges are shared across the explainer, the map readings and the device screen.
+  - **Assumption:** the "אותה נקודה" tag moved to the marker's upper left, clear of both the guides and the leader.
+  - Switching takes ≈ 200–300 ms: opacity plus one device transform. There is no continuous motion, and nothing moves under reduced motion.
+- **Map column height:** the map stretches to the explainer's height (≈ 612 px at 1440), not the brief's ≈ 480. The image covers the column through CSS container units, so all overlays stay registered to it.
+- **Details disclosure:** "יתרונות ומגבלות" opens as a full-width row under the workspace, not inside the right column. The map never rescales, and the page grows with natural scroll.
+- **Title accent:** "שתי שפות." uses `ember.deep` (#C96714) instead of the mockup's `accent` orange. `accent` on the cream page is ≈ 2.5:1 contrast. `ember.deep` is ≈ 3.2:1, which passes AA for large text.
+- **Omitted from the mockup:**
+  - the eyebrow line, because `SceneHeader` no longer renders eyebrows;
+  - the photo inside the pine band, which the brief allows omitting.
+- **Tabs:** the Latin code sits at the visual left ("ITM · מטרים"), as in the mockup. DOM and reading order are code first.
+- **Pros/cons rewritten:**
+  - Dropped claims about IDF / NATO usage, "most accurate" and "every smartphone".
+  - The new lines were fact-checked. ITM advantage 1 was reworded per axis ("הפרש של 100 בין ערכי E הוא כ־100 מטר…").
+
+## Topic 02 — Topography: feature hover in "כל התצוגות יחד" (2026-09-29)
+
+- **Feature hover:** in the stacked view, pointing at a map feature on either layer, or at its name in the legend row under the stack, outlines it in accent on the model and on the map. The chip then shows the feature's name instead of its height, and the contour line is hidden.
+- **Assumption:** the dense woodland in the north-west corner has no label on the sheet. Its hover name is "חורש", next to the sheet's own "חורש דליל".
+- **Scope:** this only works in the stacked view. The single views never show the model and the map together.

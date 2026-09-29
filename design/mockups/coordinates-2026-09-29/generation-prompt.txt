@@ -1,0 +1,43 @@
+Use case: ui-mockup.
+Create a polished high-fidelity desktop Hebrew RTL e-learning screen mockup, 1440 x 1122 composition, for an existing military geography educational website. This is a redesign of only the ITM / WGS84 comparison learning station, following the current site. It must feel like a REAL implemented premium educational interface, with large photorealistic physical map/navigation imagery, NOT a futuristic dashboard, not infographic clipart, not rows of white boxes.
+
+REFERENCE IMAGES:
+1 current topography screenshot: preserve its website header, right course sidebar, cream page material, existing visual language and typography proportions.
+2 lesson02 map-scale reference: reference for richly detailed aerial/topographic map imagery and restrained olive/tan palette.
+3 real MDO ground scene: reference for photorealistic natural light, limestone terrain and olive vegetation, not its composition.
+
+EXACT PALETTE: warm cream #F3E9DC, paper #F8F2E7, panel #F6EFE6, dark olive #38432E, secondary #4A5240, pine #2E3826, border #DCCDB2, orange #D97E2B only active controls/point. Rubik bold Hebrew headings and Heebo readable Hebrew body. Existing subtle paper and contour-line background, not dense decoration. Thin tan dividers and soft real shadows. Calm editorial layout with generous whitespace. All Hebrew correctly spelled, legible, right-aligned; coordinates ALWAYS LTR.
+
+FRAME:
+Full desktop screen, straight-on browser content only. Top existing white header about 80px high; brand at far right 'גיאוגרפיה צבאית' with existing compass-style logo, nav items 'בית' 'תכנית הלימודים' 'פרוטוטיפים' 'תרגול חוזר' 'ארכיון'.
+Right existing white sidebar 230px wide begins below header, small title 'שיעור 2', bold 'קרטוגרפיה', rule, label 'תוכן השיעור'. Lesson list: 'פתיחה', 'לפני שמתחילים', 'תבליט ותכסית', 'תבניות נוף', 'גיאולוגיה', 'תכסית', 'טופוגרפיה', 'קנה מידה', 'קואורדינטות', 'קווי גובה', 'סיכום'. Highlight 'קואורדינטות' in subtle cream and orange dot. Quiet progress line below. Do not invent new sidebar modules.
+Main content area to LEFT of sidebar, 1080px usable, margin about 56px, begins at y120:
+Small eyebrow 'קואורדינטות · שתי שיטות לתיאור מיקום'
+Strong single centered heading 'אותה נקודה. שתי שפות.' (roughly 40px bold dark olive, second phrase orange)
+Single centered subtitle 'המיקום בשטח נשאר קבוע. הדרך לכתוב אותו משתנה.'
+Below subtitle quiet instruction 'עברו בין השיטות וראו איך אותה נקודה נכתבת אחרת.'
+
+Main learning workspace from y285 to y825 is ONE coherent composition, 1080px wide, 24px round, no two independent white cards:
+At its TOP RIGHT an inline two-tab selector 'ITM · מטרים' (selected with orange underline and label) and 'WGS84 · מעלות' (unselected). Warm paper background.
+Below tabs on RIGHT, a narrow editorial explainer width 300px, open warm paper with no nested boxes. Heading 'ITM' and bold 'רשת ישראל החדשה'. Body 'מיקום על רשת מקומית, במטרים.' A thin tan divider.
+Two clean labelled coordinates as typography on paper, no box:
+'מזרח · E' then '219102'
+'צפון · N' then '632555'
+Numbers large, tabular and dark olive; labelled units 'מטרים'.
+Then two very short text groups separated by generous space:
+'מתי זה שימושי?' / 'קריאה ומדידה על מפה ברשת ישראל.'
+'מה חשוב לזכור?' / 'בודקים שהמכשיר והמפה מוגדרים לאותה מערכת.'
+At bottom of this column one collapsed disclosure row 'יתרונות ומגבלות' with a small chevron.
+
+On LEFT, occupying around 700px width x 485px, the HERO VISUAL: realistic top-down unfolded paper topographic map, tangible fine paper fibers and a slight natural fold, warm limestone hills, sparse olive woodland, faint brown contour lines and fine straight coordinate grid (never wavy). It fills its rounded frame. It is clearly a crafted illustrative training map, NOT an actual location or official geographic product.
+At 63% across the map width and 44% of map height mark one small ORANGE locator circle on a trail junction. Thin restrained olive horizontal/vertical grid lines, NOT cluttered. Small warm paper callout above the orange point says 'אותה נקודה'. Small N north arrow at map upper left, facing up, do not mirror.
+At lower LEFT corner of the map place a beautifully photorealistic handheld rugged GPS receiver, dark matte olive rubber casing, tactile buttons, slight perspective angle, but screen legible. Device around 180px wide, resting on the physical map with soft realistic contact shadow. Screen title 'WGS84', labels 'N 31.7857°' and 'E 35.2007°', clean monochrome LCD typography. No invented logos, no combat scene, no weapons, no glows. A delicate short connector line may link device to map point.
+Small neutral lower edge caption 'מפת המחשה' for honesty.
+
+Directly below workspace, one slim FULL-WIDTH DARK OLIVE insight band, 1080 x 92, radius24:
+Large warm-cream statement 'המספרים משתנים. הנקודה לא.'
+Smaller 'לפני שמעבירים מיקום, מציינים גם את מערכת הקואורדינטות.'
+No icons or decorative badging.
+
+Below it, a quiet next-section teaser outside the band: at right 'בהמשך: מה קורה כשמערבבים בין השיטות?' with a small left arrow, no big new CTA. Keep layout fully visible within frame.
+Avoid charts, pie rings, glossy glassmorphism, neon cyan, generic icon grids, excessive white cards, fake giant military interface, 3D isometric papercut. The point is the tactile photo map and GPS, beautifully integrated with native web text. Design should be realistic, implementable by HTML overlays and one generated background asset.

@@ -3,19 +3,19 @@ export type DensityKind = 'gentle' | 'steep' | 'cliff';
 // ── Layout (viewBox units) ────────────────────────────────────────────────
 const VB_W = 200;
 const VB_H = 190;
-const CX = 100; // summit
-const CY = 58;
+export const CX = 100; // summit
+export const CY = 58;
 const ASPECT = 0.56; // map ellipse squash (N–S / E–W)
-const SEC_A = 16; // section line ends (west A → east B, left → right)
-const SEC_B = 184;
+export const SEC_A = 16; // section line ends (west A → east B, left → right)
+export const SEC_B = 184;
 const MAP_BOTTOM = 116;
 const PROF_TOP = 128;
-const PROF_BASE = 176;
+export const PROF_BASE = 176;
 const Z_MAX = 90; // metres shown in the profile
-const Z_SCALE = (PROF_BASE - PROF_TOP) / Z_MAX;
+export const Z_SCALE = (PROF_BASE - PROF_TOP) / Z_MAX;
 
-const SLOTS = [10, 20, 30, 40, 50, 60, 70, 80]; // contour interval = 10 m
-const INDEX_H = 50; // every 5th line = index contour (thicker)
+export const SLOTS = [10, 20, 30, 40, 50, 60, 70, 80]; // contour interval = 10 m
+export const INDEX_H = 50; // every 5th line = index contour (thicker)
 const K = 72; // samples per contour ring
 const PROFILE_N = 141;
 const LABEL_T = -2.25; // where contour labels sit on their ring (upper-left)
@@ -78,7 +78,7 @@ function solveU(m: Model, f: number, t: number) {
   return (lo + hi) / 2;
 }
 
-type Pt = [number, number];
+export type Pt = [number, number];
 
 export function ringPoint(m: Model, h: number, t: number): Pt {
   const visible = h < m.H;
@@ -90,7 +90,7 @@ export function ringPoint(m: Model, h: number, t: number): Pt {
 const f2 = (n: number) => n.toFixed(2);
 
 /** Closed Catmull-Rom → cubic Bézier path; fixed structure so paths morph. */
-function closedPath(pts: Pt[]) {
+export function closedPath(pts: Pt[]) {
   const n = pts.length;
   let d = `M${f2(pts[0][0])},${f2(pts[0][1])}`;
   for (let i = 0; i < n; i++) {
@@ -163,3 +163,74 @@ export const GEOMETRY: Record<DensityKind, Geometry> = {
   steep: buildGeometry('steep'),
   cliff: buildGeometry('cliff'),
 };
+
+// ── Live blend (the tab morph) ────────────────────────────────────────────
+// Mid-switch the terrain is a weighted mix of the height models. Every model
+// falls monotonically away from the shared summit, so the mix does too: its
+// contours are still found by bisection along each ray, and the map rings, the
+// A–B profile and their crossings all come from one surface — a drop-line
+// never leaves the ground, at any frame. One-hot weights reproduce GEOMETRY.
+export type Weights = Record<DensityKind, number>;
+
+export type Blend = {
+  summit: number; // m
+  /** on: 0 → 1 as the summit rises through the ring's height (it's born as a point). */
+  rings: { h: number; pts: Pt[]; label: Pt; xw: number; xe: number; on: number }[];
+  /** A–B ground line as [x, metres], x ascending, every contour crossing a vertex. */
+  section: Pt[];
+};
+
+const DENSITY_KINDS: DensityKind[] = ['gentle', 'steep', 'cliff'];
+const SECTION_DX = 0.5;
+
+export function blendTerrain(w: Weights): Blend {
+  const kinds = DENSITY_KINDS.filter((k) => w[k] > 0);
+  const summit = kinds.reduce((s, k) => s + w[k] * MODELS[k].H, 0);
+
+  // One ray from the summit: each model's reach along it, and the mixed height at distance r.
+  const ray = (t: number) => {
+    const reach = kinds.map((k) => MODELS[k].R(t));
+    const height = (r: number) => {
+      let z = 0;
+      kinds.forEach((k, i) => {
+        const u = r / reach[i];
+        if (u < 1) z += w[k] * MODELS[k].H * MODELS[k].g(u, t);
+      });
+      return z;
+    };
+    return { height, far: Math.max(...reach) };
+  };
+
+  const pointAt = (h: number, t: number): Pt => {
+    const { height, far } = ray(t);
+    let lo = 0;
+    let hi = far;
+    for (let n = 0; n < 32; n++) {
+      const mid = (lo + hi) / 2;
+      if (height(mid) > h) lo = mid;
+      else hi = mid;
+    }
+    const r = (lo + hi) / 2;
+    return [CX + r * Math.cos(t), CY + r * Math.sin(t) * ASPECT];
+  };
+
+  const rings = SLOTS.map((h) => {
+    if (summit <= h) {
+      const top: Pt = [CX, CY];
+      return { h, pts: Array.from({ length: K }, () => top), label: top, xw: CX, xe: CX, on: 0 };
+    }
+    const pts = Array.from({ length: K }, (_, k) => pointAt(h, (k / K) * Math.PI * 2));
+    return { h, pts, label: pointAt(h, LABEL_T), xw: pts[K / 2][0], xe: pts[0][0], on: Math.min(1, (summit - h) / 2) };
+  });
+
+  const west = ray(Math.PI);
+  const east = ray(0);
+  const section: Pt[] = [];
+  for (let x = SEC_A; x <= SEC_B; x += SECTION_DX) {
+    section.push([x, x < CX ? west.height(CX - x) : east.height(x - CX)]);
+  }
+  for (const r of rings) if (r.on > 0) section.push([r.xw, r.h], [r.xe, r.h]);
+  section.sort((a, b) => a[0] - b[0]);
+
+  return { summit, rings, section };
+}
