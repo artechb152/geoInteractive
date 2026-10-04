@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useState, type KeyboardEvent } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { BordersMap, type BordersMapLabels, type Spot } from './BordersMap';
 import { InsightCard } from '@/components/lesson/InsightCard';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -21,9 +22,6 @@ type Border = {
   example: string;
   strength: string;
   weakness: string;
-  color: string;
-  bg: string;
-  border: string;
 };
 
 const BORDERS: Border[] = [
@@ -39,9 +37,6 @@ const BORDERS: Border[] = [
     example: 'הרי ההימלאיה (בין הודו לסין) שמרו על שקט בין שתי המעצמות במשך אלפי שנים. גם האלפים בין איטליה לשוויץ הם דוגמה מצוינת.',
     strength: 'הגנה פסיבית מעולה. הצבא לא צריך לפרוס כוחות בכל מקום, אלא רק לאבטח את מעברי ההרים המעטים.',
     weakness: 'מנתק קשר אזרחי או מסחרי. אזורים הרריים הם לרוב קשים למחיה, קפואים ולא מפותחים.',
-    color: 'text-terrain-ridge',
-    bg: 'bg-terrain-ridge/10',
-    border: 'border-terrain-ridge/40',
   },
   {
     id: 'river',
@@ -55,9 +50,6 @@ const BORDERS: Border[] = [
     example: 'נהר הריין (מפריד בין גרמניה לצרפת), או נהר הירדן (מפריד בין ישראל לירדן).',
     strength: 'בולם לחלוטין מעבר של טנקים וכלים כבדים. קל מאוד להגן עליו על ידי פיצוץ הגשרים או מארב סביבם.',
     weakness: 'ניתן לחצות את הנהר בקיץ כשמפלס המים יורד, ואם האויב תפס גשר אחד — כל קו ההגנה עלול לקרוס.',
-    color: 'text-terrain-sky',
-    bg: 'bg-terrain-sky/10',
-    border: 'border-terrain-sky/40',
   },
   {
     id: 'coast',
@@ -71,9 +63,6 @@ const BORDERS: Border[] = [
     example: 'מדינות-אי כמו בריטניה ויפן, או מדינות מוקפות אוקיינוסים כמו ארה"ב. בזכות התעלה שלה, בריטניה לא נכבשה מאז שנת 1066.',
     strength: 'דורש מהתוקף להרים צי ספינות עצום ופלישה אווירית וימית מסונכרנת (כמו הפלישה לנורמנדי).',
     weakness: 'ערי נמל עלולות להיות מטרות לתקיפות טילים מהים (כמו צוללות או ספינות קרב).',
-    color: 'text-accent-cool',
-    bg: 'bg-accent-cool/10',
-    border: 'border-accent-cool/40',
   },
   {
     id: 'desert',
@@ -87,9 +76,6 @@ const BORDERS: Border[] = [
     example: 'מדבר סהרה (בין מרוקו לאלג\'יריה), מדבר סיני והנגב (בין ישראל למצרים) או מדבר גובי (בין מונגוליה לסין).',
     strength: '"ים של חול" שיוצר מרחק הרתעתי. קל לזהות אויב מתקרב ממרחק רב (למשל, בעזרת ענני האבק שמעלים הטנקים).',
     weakness: 'קשה מאוד לאטום גבול כזה לחלוטין, מה שמאפשר חדירות של מבריחים וכוחות קטנים שמכירים את השטח.',
-    color: 'text-terrain-sand',
-    bg: 'bg-terrain-sand/15',
-    border: 'border-terrain-sand/40',
   },
   {
     id: 'latitude',
@@ -103,9 +89,6 @@ const BORDERS: Border[] = [
     example: 'חלק ניכר מהגבול בין ארה"ב למקסיקו, גבולות מדינות אפריקה (שנקבעו על ידי האימפריאליזם האירופי), או קו הרוחב 38 המחלק את קוריאה.',
     strength: 'יתרון משפטי בלבד: קל מאוד להסכים עליו בחדר המשא ומתן ולצייר אותו בחוזה.',
     weakness: 'מנותק מהמציאות. הוא חוצה כפרים ומשפחות לשניים, לא מפריד בין צבאות ומהווה מוקד חיכוך והברחות תמידי.',
-    color: 'text-status-warn',
-    bg: 'bg-status-warn/10',
-    border: 'border-status-warn/40',
   },
   {
     id: 'political',
@@ -119,16 +102,63 @@ const BORDERS: Border[] = [
     example: 'הסכמי סייקס-פיקו (1916) שיצרו את לבנון, סוריה וירדן יש מאין. "חלוקת אפריקה" בברלין (1885).',
     strength: 'מקבל הכרה חוקית של האו"ם והקהילה הבינלאומית, ומונע מלחמה בטווח המיידי.',
     weakness: 'הגבול יציב רק כל עוד יש שלום בין המדינות. ברגע שהיחסים קורסים, אין מכשול טבעי שימנע הסלמה ומלחמה.',
-    color: 'text-status-danger',
-    bg: 'bg-status-danger/10',
-    border: 'border-status-danger/40',
   },
 ];
 
+/** In-map labels — terms that already appear in this scene. */
+const MAP_LABELS: BordersMapLabels = {
+  countryA: "מדינה א'",
+  countryB: "מדינה ב'",
+  mountain: 'רכס הרים',
+  bridge: 'גשר',
+  river: 'נהר',
+  sea: 'ים פתוח',
+  dunes: 'דיונות חול',
+  desertSpan: 'עשרות ק"מ של חול וריק',
+  latLine: 'קו רוחב 38° · קו שרירותי',
+  latCut: 'קו שחותך דרך ערים ומשפחות',
+  pact: 'הסכם',
+  pactYear: '1916',
+  sykes: 'סייקס-פיקו',
+  paper: 'פשרה על הנייר - סכסוך במציאות',
+  strength: 'חוזק',
+  weakness: 'חולשה',
+};
+
 export function BordersScene() {
   const [active, setActive] = useState<BorderType>('mountain');
+  // Selected hotspot on the map (חוזק / חולשה). Clicking it again, or the
+  // empty map, clears it; switching type clears it too.
+  const [spot, setSpot] = useState<Spot | null>(null);
+  // Bumped on every hotspot pick and by the replay control → its demo plays once.
+  const [run, setRun] = useState(0);
+  const reduce = !!useReducedMotion();
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const meta = BORDERS.find((b) => b.id === active)!;
+
+  const chooseType = (id: BorderType) => {
+    setActive(id);
+    setSpot(null);
+  };
+  const pickSpot = (next: Spot | null) => {
+    setSpot(next);
+    if (next) setRun((r) => r + 1);
+  };
+
+  /** Tabs follow the WAI-ARIA pattern; in RTL ArrowLeft moves forward. */
+  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, idx: number) => {
+    const n = BORDERS.length;
+    let next = -1;
+    if (e.key === 'ArrowLeft') next = (idx + 1) % n;
+    else if (e.key === 'ArrowRight') next = (idx - 1 + n) % n;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = n - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    chooseType(BORDERS[next].id);
+    tabRefs.current[next]?.focus();
+  };
 
   return (
     <section id="scene-borders" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -137,7 +167,7 @@ export function BordersScene() {
         eyebrow="טיפולוגיית גבולות"
 title = {
   <>
-    <span className="text-accent-hover">גבול טוב</span> הוא לא קו על מפה — הוא מכשול שעובד בשטח
+    <span className="text-brand-dark">גבול טוב</span> הוא לא קו על מפה — הוא מכשול שעובד בשטח
   </>
 }
         intro="ההיסטוריה מלמדת: גבול שנשען על רכס הרים יכול לשמור על שקט במשך 1,000 שנה, בזמן שגבול ששורטט על מפה בידי פוליטיקאים גורם למלחמות עד היום. בואו נכיר 6 סוגי גבולות, מהטבעיים והיציבים ביותר — ועד למלאכותיים והפגיעים ביותר."
@@ -149,30 +179,40 @@ title = {
         <strong className="text-fg block mt-1.5">שורה תחתונה:</strong> גבול טבעי מפריד כוחות ומונע חיכוך, בעוד שגבול מלאכותי הוא כמעט תמיד מתכון לסכסוכים אלימים.
       </InsightCard>
 
-      {/* Selector grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-        {BORDERS.map((b) => {
+      {/* Type tabs — the full keyboard path between the six types */}
+      <div role="tablist" aria-label="טיפולוגיית גבולות" className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4 mb-4">
+        {BORDERS.map((b, i) => {
           const isActive = active === b.id;
           return (
             <button
               key={b.id}
-              onClick={() => setActive(b.id)}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              type="button"
+              role="tab"
+              id={`t11-border-tab-${b.id}`}
+              aria-selected={isActive}
+              aria-controls="t11-border-panel"
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => chooseType(b.id)}
+              onKeyDown={(e) => onTabKey(e, i)}
               className={cn(
-                'relative p-4 text-right transition-all duration-300 ease-snap rounded-[4px] border flex items-center gap-3',
+                'relative overflow-hidden p-4 text-start transition-all duration-300 ease-snap rounded-xl border flex items-center gap-3',
                 isActive
                   ? 'border-accent bg-bg-elevated'
-                  : 'border-border bg-bg-elevated hover:border-accent/50'
+                  : 'border-border bg-bg-elevated hover:border-brand/30'
               )}
             >
               {isActive && (
                 <motion.span
                   layoutId="t11-borders-bar"
-                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
                 />
               )}
               <span
                 className={cn(
-                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                   isActive
                     ? 'bg-accent text-bg-elevated border-accent'
                     : 'bg-bg-accent text-fg-muted border-border'
@@ -184,7 +224,7 @@ title = {
                 <div className="font-display font-bold text-base text-fg leading-tight">
                   {b.label}
                 </div>
-                <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">
+                <div className="font-display font-medium tracking-wide text-[13px] text-fg-dim mt-0.5">
                   {b.category === 'natural' ? 'טבעי' : 'מלאכותי'} · יציבות {b.stability}/5
                 </div>
               </div>
@@ -194,24 +234,47 @@ title = {
       </div>
 
       {/* Visual + details */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={meta.id}
-          initial={{ opacity: 0, y: 8 }}
+          id="t11-border-panel"
+          role="tabpanel"
+          aria-labelledby={`t11-border-tab-${meta.id}`}
+          initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          exit={reduce ? undefined : { opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="surface-elevated p-5 rounded-[4px] mb-6"
+          className="surface-elevated p-5 mb-6"
         >
-          <BorderVisualization border={meta} />
+          <div className="relative">
+            <BordersMap
+              kind={meta.id}
+              spot={spot}
+              onSpot={pickSpot}
+              run={run}
+              labels={MAP_LABELS}
+              ariaLabel={meta.label}
+              describedBy={{ strength: 't11-border-strength', weakness: 't11-border-weakness' }}
+            />
+            {spot && (
+              <button
+                type="button"
+                onClick={() => setRun((r) => r + 1)}
+                aria-label="הפעלה חוזרת של ההדגמה"
+                className="motion-reduce:hidden absolute top-3 end-3 size-8 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 transition-colors inline-flex items-center justify-center"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
+            )}
+          </div>
 
           <div className="grid lg:grid-cols-2 gap-4 mt-5">
             <div>
               <div className="flex items-center gap-3 mb-3">
-                <Icon name={meta.icon} size={32} className={cn(meta.color, 'shrink-0')} />
+                <Icon name={meta.icon} size={32} className="text-brand-dark shrink-0" />
                 <div>
-                  <div className={cn('font-display font-bold text-2xl leading-tight', meta.color)}>{meta.label}</div>
-                  <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">{meta.english} · {meta.category === 'natural' ? 'טבעי' : 'מלאכותי'}</div>
+                  <div className="font-display font-bold text-2xl leading-tight text-fg">{meta.label}</div>
+                  <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">{meta.english} · {meta.category === 'natural' ? 'טבעי' : 'מלאכותי'}</div>
                 </div>
               </div>
 
@@ -219,23 +282,24 @@ title = {
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <StatBar label="יציבות" value={meta.stability} color={meta.color} />
-                <StatBar label="כושר הגנה" value={meta.defensibility} color={meta.color} />
+                <StatBar label="יציבות" value={meta.stability} />
+                <StatBar label="כושר הגנה" value={meta.defensibility} />
               </div>
             </div>
 
             <div className="space-y-3">
-              <div className="surface p-3 rounded-[3px] bg-status-ok/5 border-status-ok/30">
-                <div className="text-sm font-display font-semibold text-status-ok mb-1 tracking-wider">חוזק</div>
-                <p className="text-xs text-fg-muted leading-relaxed">{meta.strength}</p>
+              {/* The map's חוזק / חולשה hotspots point at these two cards */}
+              <div className={cn('surface p-3 rounded-xl bg-brand/5 border-brand/30 transition-shadow', spot === 'strength' && 'ring-2 ring-accent')}>
+                <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">חוזק</div>
+                <p id="t11-border-strength" className="text-[13px] text-fg-muted leading-relaxed">{meta.strength}</p>
               </div>
-              <div className="surface p-3 rounded-[3px] bg-status-warn/5 border-status-warn/30">
-                <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">חולשה</div>
-                <p className="text-xs text-fg-muted leading-relaxed">{meta.weakness}</p>
+              <div className={cn('surface p-3 rounded-xl bg-status-danger/5 border-status-danger/30 transition-shadow', spot === 'weakness' && 'ring-2 ring-accent')}>
+                <div className="text-sm font-display font-semibold text-status-danger mb-1 tracking-wider">חולשה</div>
+                <p id="t11-border-weakness" className="text-[13px] text-fg-muted leading-relaxed">{meta.weakness}</p>
               </div>
-              <div className="surface p-3 rounded-[3px] bg-bg-accent/30">
+              <div className="surface p-3 rounded-xl bg-bg-accent/30">
                 <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה</div>
-                <p className="text-xs text-fg leading-relaxed italic">{meta.example}</p>
+                <p className="text-[13px] text-fg leading-relaxed italic">{meta.example}</p>
               </div>
             </div>
           </div>
@@ -246,9 +310,9 @@ title = {
 
       <div className="">
         <div className="flex gap-4 items-start">
-          <Icon name="compass" size={32} className="text-status-warn shrink-0" />
+          <Icon name="compass" size={32} className="text-brand-dark shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-status-warn mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
               סייקס-פיקו · שיעור כואב בהיסטוריה
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -266,141 +330,9 @@ title = {
   );
 }
 
-function BorderVisualization({ border }: { border: Border }) {
+function StatBar({ label, value }: { label: string; value: number }) {
   return (
-    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden bg-bg-accent">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
-
-        {/* Two countries' territories */}
-        <rect x="0" y="38" width="50" height="18" className="fill-status-danger/15" />
-        <rect x="50" y="38" width="50" height="18" className="fill-accent-cool/15" />
-        <text x="25" y="52" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">מדינה א'</text>
-        <text x="75" y="52" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">מדינה ב'</text>
-
-        {/* Border-specific rendering */}
-        {border.id === 'mountain' && (
-          <g>
-            {/* Mountain range silhouette */}
-            <path d="M40 38 L44 18 L48 28 L52 14 L56 26 L60 38 Z" className="fill-terrain-ridge stroke-terrain-ridge" strokeWidth="0.3" />
-            <path d="M42 38 L46 22 L50 32 L54 20 L58 30 Z" className="fill-terrain-ridge/70" />
-            {/* Snow peaks */}
-            <path d="M51 16 L52 14 L53 16 Z" className="fill-bg-elevated" />
-            <text x="50" y="12" textAnchor="middle" className="fill-terrain-ridge font-display font-bold" fontSize="3" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
-              רכס הרים
-            </text>
-          </g>
-        )}
-
-        {border.id === 'river' && (
-          <g>
-            {/* River cutting through */}
-            <path d="M48 8 Q 52 20 49 32 Q 47 42 51 52" fill="none" className="stroke-terrain-sky" strokeWidth="3" />
-            <path d="M48 8 Q 52 20 49 32 Q 47 42 51 52" fill="none" className="stroke-terrain-sky/60" strokeWidth="5" />
-            {/* Bridge */}
-            <rect x="46" y="28" width="8" height="2" rx="0.4" className="fill-fg/70" />
-            <line x1="46" y1="30" x2="46" y2="34" className="stroke-fg" strokeWidth="0.3" />
-            <line x1="54" y1="30" x2="54" y2="34" className="stroke-fg" strokeWidth="0.3" />
-            <text x="50" y="26" textAnchor="middle" className="fill-terrain-sky font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">
-              גשר
-            </text>
-            <text x="63" y="22" textAnchor="middle" className="fill-terrain-sky font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-              נהר
-            </text>
-          </g>
-        )}
-
-        {border.id === 'coast' && (
-          <g>
-            {/* Land on left, ocean filling right */}
-            <rect x="50" y="0" width="50" height="56" className="fill-terrain-sky/40" />
-            {/* Wavy coast line */}
-            <path d="M50 0 Q 48 10 50 20 Q 52 30 49 40 Q 47 50 50 56" fill="none" className="stroke-terrain-sky" strokeWidth="0.5" />
-            {/* Waves */}
-            {[12, 22, 32, 42].map((y, i) => (
-              <path key={i} d={`M 55 ${y} q 2 -1.5 4 0 t 4 0 t 4 0 t 4 0 t 4 0`} fill="none" className="stroke-terrain-sky" strokeWidth="0.25" opacity="0.6" />
-            ))}
-            {/* Ship */}
-            <g transform="translate(75 26)">
-              <path d="M-3 0 L3 0 L2 2 L-2 2 Z" className="fill-fg" />
-              <line x1="0" y1="-3" x2="0" y2="0" className="stroke-fg" strokeWidth="0.3" />
-            </g>
-            <text x="78" y="48" textAnchor="middle" className="fill-terrain-sky font-display font-bold" fontSize="3" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
-              ים פתוח
-            </text>
-          </g>
-        )}
-
-        {border.id === 'desert' && (
-          <g>
-            {/* Sand dunes */}
-            <path d="M30 38 Q 38 32 46 36 Q 54 30 62 38" fill="none" className="stroke-terrain-sand" strokeWidth="0.4" />
-            <path d="M32 40 Q 40 34 48 38 Q 56 32 64 40" fill="none" className="stroke-terrain-sand/70" strokeWidth="0.3" />
-            <ellipse cx="50" cy="38" rx="20" ry="3" className="fill-terrain-sand/30" />
-            <text x="50" y="35" textAnchor="middle" className="fill-terrain-sand font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">
-              דיונות חול
-            </text>
-            <text x="50" y="22" textAnchor="middle" className="fill-terrain-sand font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-              עשרות ק"מ של חול וריק
-            </text>
-          </g>
-        )}
-
-        {border.id === 'latitude' && (
-          <g>
-            {/* Straight latitude line */}
-            <line x1="0" y1="34" x2="100" y2="34" className="stroke-status-warn" strokeWidth="0.6" strokeDasharray="2 1" />
-            <text x="50" y="30" textAnchor="middle" className="fill-status-warn font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">
-              קו רוחב 38° · קו שרירותי
-            </text>
-            {/* Show that it crosses through cities/groups */}
-            {[18, 38, 58, 78].map((x, i) => (
-              <g key={i}>
-                <rect x={x - 1.5} y="32" width="3" height="4" className="fill-fg/40" />
-                <line x1={x} y1="32" x2={x} y2="36" className="stroke-status-warn" strokeWidth="0.3" />
-              </g>
-            ))}
-            <text x="50" y="46" textAnchor="middle" className="fill-status-warn font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-              קו שחותך דרך ערים ומשפחות
-            </text>
-          </g>
-        )}
-
-        {border.id === 'political' && (
-          <g>
-            {/* Zig-zag artificial line */}
-            <path d="M48 8 L 52 18 L 47 25 L 53 32 L 48 40 L 52 52" fill="none" className="stroke-status-danger" strokeWidth="0.5" strokeDasharray="2 1.2" />
-            {/* "Signed agreement" stamp */}
-            <g transform="translate(50 24)">
-              <circle r="4" fill="none" className="stroke-status-danger" strokeWidth="0.4" />
-              <text x="0" y="0" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">
-                הסכם
-              </text>
-              <text x="0" y="2.5" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="1.4"
-                paintOrder="stroke"
-                stroke="#ffffff"
-                strokeWidth="0.9"
-                strokeLinejoin="round"
-              >
-                1916
-              </text>
-            </g>
-            <text x="50" y="14" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-              סייקס-פיקו
-            </text>
-            <text x="50" y="50" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-              פשרה על הנייר - סכסוך במציאות
-            </text>
-          </g>
-        )}
-      </svg>
-    </div>
-  );
-}
-
-function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="surface p-2.5 rounded-[3px]">
+    <div className="surface p-2.5 rounded-xl">
       <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">{label}</div>
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -408,12 +340,12 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
             key={i}
             className={cn(
               'h-1.5 flex-1 rounded-full',
-              i <= value ? `${color.replace('text-', 'bg-')}` : 'bg-bg-accent border border-border'
+              i <= value ? 'bg-brand-dark' : 'bg-bg-accent border border-border'
             )}
           />
         ))}
       </div>
-      <div className={cn('text-xs font-display font-bold mt-1 tabular-nums', color)}>{value}/5</div>
+      <div className="text-[13px] font-display font-bold mt-1 tabular-nums text-fg">{value}/5</div>
     </div>
   );
 }

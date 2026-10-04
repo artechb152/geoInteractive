@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import {
+  EnfiladeDiagram,
+  URBAN_POSITION_COUNT,
+  UrbanLegendGlyph,
+  UrbanMap,
+  type UrbanMapLabels,
+} from './UrbanMorphologyMap';
 
 type Pattern = 'grid' | 'casbah';
 
@@ -57,9 +64,46 @@ const PATTERNS: PatternData[] = [
   },
 ];
 
+/** In-map labels — the same copy the old inline SVG carried. */
+const MAP_LABELS: UrbanMapLabels = {
+  grid: { los: 'קו ראייה ארוך · 800 מ׳', sniper: 'צלף בקצה הרחוב (Enfilade)' },
+  casbah: { los: 'קו ראייה קצר מ-8 מ׳', threats: ['מארב פתע', 'מטען חבלה (IED)', 'מחבל מסתתר'] },
+};
+
+const MAP_CAPTION: Record<Pattern, string> = {
+  grid: 'רחובות ישרים · קווי אש ארוכים · האויב יודע מאיפה תבואו',
+  casbah: 'סמטאות מתפתלות · הראייה חסומה · איומים צצים מכל פינה',
+};
+
+/** Enfilade diagram labels — terms from the callout below. */
+const ENFILADE_LABELS = { sniper: 'צלף', enfilade: 'Enfilade', ratRun: 'ריצת עכברים' };
+
+const FORCE_LABEL = 'הכוח שלנו';
+
 export function UrbanMorphologyScene() {
   const [pattern, setPattern] = useState<Pattern>('grid');
+  // Force position on the aerial map (null = nothing selected).
+  const [position, setPosition] = useState<number | null>(0);
   const meta = PATTERNS.find((p) => p.id === pattern)!;
+
+  const choosePattern = (p: Pattern) => {
+    setPattern(p);
+    setPosition(0);
+  };
+
+  // Tabs: arrows follow the visual order (RTL — ArrowLeft/ArrowDown move forward).
+  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const n = PATTERNS.length;
+    let next: number;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = (i + 1) % n;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = (i - 1 + n) % n;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = n - 1;
+    else return;
+    e.preventDefault();
+    choosePattern(PATTERNS[next].id);
+    document.getElementById(`urban-tab-${PATTERNS[next].id}`)?.focus();
+  };
 
   return (
     <section id="scene-morphology" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,17 +118,17 @@ title = {
         intro="הצורה הפיזית של העיר משפיעה על הקרב הרבה יותר מאשר סוג הנשק או כמות החיילים. הילחמות ברחוב ישר ומסודר שונה לחלוטין מהילחמות בסמטה צפופה ומתפתלת. זה לא רק עניין של נוף – כל סביבה דורשת שיטת לחימה שונה לחלוטין."
       />
 
-      {/* Two SEPARATE feature cards side-by-side — same orange-accent
-          treatment as the matched pair in topic-09 ChokepointsScene.
-          Promotes a tooltip-style block to core content. */}
+      {/* Two SEPARATE feature cards side-by-side (matched pair, as in
+          topic-09 ChokepointsScene). Promotes a tooltip-style block to core
+          content. Eyebrows in brand green — orange is reserved for state. */}
       <div className="grid md:grid-cols-2 gap-4 md:gap-6 mb-12 items-stretch">
         {/* Card A — definition */}
-        <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
-          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
-            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+          <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-2.5">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
             עיקרון מנחה
           </div>
-          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-accent-hover">
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight mb-3 text-fg">
             MOUT <span className="text-fg-muted font-medium text-base sm:text-lg">(לש"ב · לוחמה בשטח בנוי)</span>
           </h3>
           <p className="text-base text-fg leading-relaxed text-pretty">
@@ -94,12 +138,12 @@ title = {
         </div>
 
         {/* Card B — the critical characteristic */}
-        <div className="surface-elevated p-6 sm:p-8 rounded-[4px] flex flex-col">
-          <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2.5">
-            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        <div className="surface-elevated p-6 sm:p-8 rounded-2xl flex flex-col">
+          <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-2.5">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
             המאפיין הקריטי
           </div>
-          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-accent-hover mb-3">
+          <h3 className="font-display font-bold text-2xl sm:text-3xl text-balance leading-tight text-fg mb-3">
             ק"מ בשטח פתוח ← מטרים בודדים, פנים אל פנים
           </h3>
           <p className="text-base text-fg leading-relaxed text-pretty">
@@ -108,23 +152,25 @@ title = {
         </div>
       </div>
 
-      {/* Pattern selector — styled to match the topic-1 OnboardingScene
-          step cards (accordion-style row with leading icon-badge and a
-          sage active bar). The selector is visually connected to the
-          map directly below via `rounded-b-none` and the matching
-          `rounded-t-none` on the map card, so they read as one
-          continuous control + canvas. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {PATTERNS.map((p) => {
+      {/* Pattern tabs — accordion-style rows with a leading icon-badge and a
+          brand active bar; the map card below is their tab panel. Arrow keys
+          move between them (tabs are the keyboard path for the map). */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="tablist" aria-label="מורפולוגיה עירונית">
+        {PATTERNS.map((p, i) => {
           const isActive = pattern === p.id;
           return (
             <button
               key={p.id}
+              id={`urban-tab-${p.id}`}
               type="button"
-              onClick={() => setPattern(p.id)}
-              aria-pressed={isActive}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls="urban-map-panel"
+              tabIndex={isActive ? 0 : -1}
+              onClick={() => choosePattern(p.id)}
+              onKeyDown={(e) => onTabKey(e, i)}
               className={cn(
-                'relative rounded-[3px] border p-4 text-right flex items-center gap-3 transition-all duration-300 ease-snap cursor-pointer',
+                'relative rounded-xl border p-4 text-start flex items-center gap-3 transition-all duration-300 ease-snap cursor-pointer',
                 isActive
                   ? 'border-accent bg-bg-elevated'
                   : 'border-border bg-bg-elevated hover:border-accent/50 hover:bg-accent/[0.04]',
@@ -133,13 +179,13 @@ title = {
               {isActive && (
                 <motion.span
                   layoutId="urban-pattern-bar"
-                  className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                  className="absolute inset-y-3 end-0 w-1 bg-brand-dark rounded-full"
                   aria-hidden
                 />
               )}
               <span
                 className={cn(
-                  'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                  'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                   isActive
                     ? 'bg-accent text-bg-elevated border-accent'
                     : 'bg-bg-accent text-fg-muted border-border',
@@ -151,7 +197,7 @@ title = {
                 <div className="font-display font-bold text-base leading-tight text-fg">
                   {p.label}
                 </div>
-                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
+                <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim mt-0.5">
                   {p.english}
                 </div>
               </div>
@@ -160,18 +206,53 @@ title = {
         })}
       </div>
 
-      {/* Comparison map — visually attached to the selector above. */}
-      <div className="surface-elevated p-4 rounded-[4px] mt-2 mb-6">
-        <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark mb-3 tracking-wider">
-          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
-          מבט אווירי · {meta.label}
+      {/* Comparison map — the tab panel. Position chips (1–3) place our force;
+          the lit area is computed from that spot (UrbanMorphologyMap). */}
+      <div
+        id="urban-map-panel"
+        role="tabpanel"
+        aria-labelledby={`urban-tab-${pattern}`}
+        className="surface-elevated p-4 rounded-2xl mt-2 mb-6"
+      >
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
+            מבט אווירי · {meta.label}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: URBAN_POSITION_COUNT }, (_, i) => {
+              const on = position === i;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  aria-pressed={on}
+                  aria-label={`${FORCE_LABEL} ${i + 1}`}
+                  onClick={() => setPosition(on ? null : i)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 h-8 ps-2.5 pe-3 rounded-full border text-sm font-display font-bold transition-colors cursor-pointer',
+                    on
+                      ? 'border-accent bg-accent/10 text-fg'
+                      : 'border-border bg-bg-elevated text-fg-muted hover:border-accent/50 hover:text-fg',
+                  )}
+                >
+                  <UrbanLegendGlyph kind="force" />
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <UrbanMap pattern={pattern} />
-        <div className="mt-3 flex items-center justify-center gap-x-4 gap-y-1.5 text-[11px] font-display font-medium tracking-wide text-fg-dim flex-wrap">
-          <span className="flex items-center gap-1.5"><span className="size-2 bg-accent-cool rounded-full" /> הכוח שלנו</span>
-          <span className="flex items-center gap-1.5"><span className="size-2 bg-status-ok/40 rounded-sm" /> שטח מואר (LOS)</span>
-          <span className="flex items-center gap-1.5"><span className="size-2 bg-status-danger/40 rounded-sm" /> שטח מת</span>
-          <span className="flex items-center gap-1.5"><span className="size-2 bg-accent-hot rounded-full" /> איום פוטנציאלי</span>
+        <div className="aspect-[16/9] relative rounded-xl overflow-hidden border border-border-subtle">
+          <UrbanMap pattern={pattern} position={position} onPosition={setPosition} labels={MAP_LABELS} />
+        </div>
+        <p className="mt-3 text-center text-sm font-display font-semibold text-fg-muted">{MAP_CAPTION[pattern]}</p>
+        <div className="mt-2 flex items-center justify-center gap-x-4 gap-y-1.5 text-[13px] font-display font-medium tracking-wide text-fg-dim flex-wrap">
+          <span className="flex items-center gap-1.5"><UrbanLegendGlyph kind="force" /> הכוח שלנו</span>
+          <span className="flex items-center gap-1.5"><UrbanLegendGlyph kind="lit" /> שטח מואר (LOS)</span>
+          <span className="flex items-center gap-1.5"><UrbanLegendGlyph kind="dead" /> שטח מת</span>
+          {/* Both threat states: in view (solid) / hidden in dead space (hollow) */}
+          <span className="flex items-center gap-1.5"><UrbanLegendGlyph kind="threat" /><UrbanLegendGlyph kind="threat-unseen" /> איום פוטנציאלי</span>
         </div>
       </div>
 
@@ -186,15 +267,15 @@ title = {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.25 }}
-          className="surface-elevated p-6 sm:p-8 rounded-[4px] mb-12"
+          className="surface-elevated p-6 sm:p-8 rounded-2xl mb-12"
         >
           {/* Header */}
           <div className="mb-6 pb-6 border-b border-border-subtle">
-            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-2">
-              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+            <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-2">
+              <span className="size-1.5 rounded-full bg-brand" aria-hidden />
               {meta.english}
             </div>
-            <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight mb-3 text-accent-hover">{meta.label}</h3>
+            <h3 className="font-display font-bold text-2xl sm:text-3xl leading-tight mb-3 text-fg">{meta.label}</h3>
             <p className="text-base text-fg leading-relaxed text-pretty">{meta.desc}</p>
           </div>
 
@@ -213,7 +294,7 @@ title = {
 
           {/* Historical example — quoted, restful end to the panel. */}
           <div className="mt-6 pt-6 border-t border-border-subtle">
-            <div className="inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
+            <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted mb-2">
               <span className="size-1.5 rounded-full bg-fg-dim" aria-hidden />
               דוגמה היסטורית
             </div>
@@ -225,9 +306,9 @@ title = {
       {/* Enfilade concept callout */}
       <div className="">
         <div className="flex gap-4 items-start">
-          <Icon name="crosshair" size={32} className="text-accent shrink-0" />
+          <Icon name="crosshair" size={32} className="text-brand-dark shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
               Enfilade (אש לאורך הציר) · מלכודת המוות של הרחובות הישרים
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -238,6 +319,9 @@ title = {
               <strong className="text-fg block mt-1.5">הפתרון בשטח:</strong> במקום ללכת ברחוב כמו מטרות נעות, החיילים נעים דרך גגות או שוברים קירות כדי לעבור בין בתים (שיטה שנקראת "ריצת עכברים"), ובכך עוקפים את הרחוב הראשי לחלוטין.
               <strong className="text-fg block mt-1.5">לזכור:</strong> בסטלינגרד, שדרה אחת ארוכה קיבלה את השם "שדרת המוות". חייל גרמני שהוציא את הראש לרחוב – נורה ומת תוך 3 שניות בממוצע.
             </p>
+            {/* Same grid model as the aerial map: the avenue swept end-to-end,
+                then the rat-run route through the houses beside it. */}
+            <EnfiladeDiagram labels={ENFILADE_LABELS} />
           </div>
         </div>
       </div>
@@ -250,9 +334,9 @@ title = {
 function PropertyRow({ icon, eyebrow, text }: { icon: IconName; eyebrow: string; text: string }) {
   return (
     <div className="flex gap-3 sm:gap-4">
-      <Icon name={icon} size={24} className="text-accent-hover shrink-0 mt-0.5" />
+      <Icon name={icon} size={24} className="text-brand-dark shrink-0 mt-0.5" />
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1.5">
+        <div className="text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-1.5">
           {eyebrow}
         </div>
         <p className="text-base text-fg leading-relaxed text-pretty">{text}</p>
@@ -264,13 +348,13 @@ function PropertyRow({ icon, eyebrow, text }: { icon: IconName; eyebrow: string;
 function RoleRow({ side, eyebrow, text }: { side: 'attacker' | 'defender'; eyebrow: string; text: string }) {
   return (
     <div className={cn(
-      'rounded-[3px] border p-4',
+      'rounded-2xl border p-4',
       side === 'attacker'
         ? 'border-accent-cool/30 bg-accent-cool/5'
         : 'border-accent-hot/30 bg-accent-hot/5',
     )}>
       <div className={cn(
-        'inline-flex items-center gap-2 text-[11px] font-display font-semibold tracking-[0.2em] uppercase mb-2',
+        'inline-flex items-center gap-2 text-[13px] font-display font-semibold tracking-[0.2em] uppercase mb-2',
         side === 'attacker' ? 'text-accent-cool' : 'text-accent-hot',
       )}>
         <span className={cn('size-1.5 rounded-full', side === 'attacker' ? 'bg-accent-cool' : 'bg-accent-hot')} aria-hidden />
@@ -278,193 +362,5 @@ function RoleRow({ side, eyebrow, text }: { side: 'attacker' | 'defender'; eyebr
       </div>
       <p className="text-sm sm:text-base text-fg leading-relaxed text-pretty">{text}</p>
     </div>
-  );
-}
-
-function UrbanMap({ pattern }: { pattern: Pattern }) {
-  return (
-    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="urban-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#e6ebf2" />
-            <stop offset="100%" stopColor="#dde6f0" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="100" height="56" fill="url(#urban-bg)" />
-
-        {pattern === 'grid' && <GridLayout />}
-        {pattern === 'casbah' && <CasbahLayout />}
-      </svg>
-    </div>
-  );
-}
-
-function GridLayout() {
-  // Grid: regular blocks with wide streets
-  const blocks: { x: number; y: number; w: number; h: number }[] = [];
-  for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 7; col++) {
-      blocks.push({ x: 8 + col * 13, y: 5 + row * 12, w: 9, h: 8 });
-    }
-  }
-
-  return (
-    <g>
-      {/* Streets background */}
-      <rect x="0" y="0" width="100" height="56" className="fill-terrain-ridge/10" />
-
-      {/* Blocks */}
-      {blocks.map((b, i) => (
-        <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} className="fill-terrain-ridge/60 stroke-terrain-ridge" strokeWidth="0.2" />
-      ))}
-
-      {/* Soldier position */}
-      <g>
-        <circle cx="15" cy="28" r="1.6" className="fill-accent-cool" />
-      </g>
-
-      {/* Long LOS cone — visible along horizontal street */}
-      <polygon points="15,28 95,26 95,32 15,30" className="fill-status-ok" opacity="0.18" />
-      <line x1="15" y1="28" x2="95" y2="28" className="stroke-status-ok" strokeWidth="0.3" strokeDasharray="1.5 0.8" />
-      <text x="55" y="25" textAnchor="middle" className="fill-status-ok font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-        קו ראייה ארוך · 800 מ׳
-      </text>
-
-      {/* Dead spaces (behind buildings) */}
-      {[
-        { x: 19, y: 16 },
-        { x: 32, y: 16 },
-        { x: 45, y: 16 },
-        { x: 19, y: 40 },
-        { x: 32, y: 40 },
-      ].map((d, i) => (
-        <rect key={i} x={d.x - 1} y={d.y - 1} width="10" height="10" className="fill-status-danger" opacity="0.15" />
-      ))}
-
-      {/* Threat from end of street */}
-      <g>
-        <circle cx="88" cy="28" r="1.3" className="fill-accent-hot" />
-        <circle cx="88" cy="28" r="3" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
-          <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" />
-        </circle>
-        <text x="88" y="24" textAnchor="middle" className="fill-accent-hot font-display font-bold font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-          צלף בקצה הרחוב (Enfilade)
-        </text>
-      </g>
-
-      {/* Stats label */}
-      <text x="50" y="53" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-        רחובות ישרים · קווי אש ארוכים · האויב יודע מאיפה תבואו
-      </text>
-    </g>
-  );
-}
-
-function CasbahLayout() {
-  // Casbah: irregular blocks, twisting alleys
-  const blocks: { x: number; y: number; w: number; h: number; rot?: number }[] = [
-    { x: 8, y: 6, w: 9, h: 7 },
-    { x: 19, y: 4, w: 8, h: 9 },
-    { x: 29, y: 7, w: 10, h: 6 },
-    { x: 41, y: 5, w: 7, h: 8 },
-    { x: 50, y: 6, w: 9, h: 7 },
-    { x: 61, y: 4, w: 8, h: 8 },
-    { x: 71, y: 7, w: 7, h: 7 },
-    { x: 80, y: 5, w: 9, h: 9 },
-    // Row 2 — staggered
-    { x: 7, y: 16, w: 7, h: 8 },
-    { x: 16, y: 18, w: 9, h: 6 },
-    { x: 27, y: 16, w: 8, h: 9 },
-    { x: 37, y: 19, w: 10, h: 6 },
-    { x: 49, y: 17, w: 7, h: 8 },
-    { x: 58, y: 18, w: 9, h: 7 },
-    { x: 69, y: 16, w: 8, h: 9 },
-    { x: 79, y: 18, w: 9, h: 6 },
-    // Row 3
-    { x: 9, y: 27, w: 8, h: 8 },
-    { x: 19, y: 28, w: 9, h: 7 },
-    { x: 30, y: 26, w: 7, h: 9 },
-    { x: 39, y: 29, w: 9, h: 6 },
-    { x: 50, y: 27, w: 8, h: 8 },
-    { x: 60, y: 28, w: 9, h: 7 },
-    { x: 71, y: 26, w: 8, h: 9 },
-    { x: 81, y: 28, w: 8, h: 7 },
-    // Row 4
-    { x: 8, y: 38, w: 9, h: 8 },
-    { x: 19, y: 39, w: 7, h: 7 },
-    { x: 28, y: 37, w: 9, h: 9 },
-    { x: 39, y: 40, w: 8, h: 6 },
-    { x: 49, y: 38, w: 9, h: 8 },
-    { x: 60, y: 39, w: 7, h: 7 },
-    { x: 69, y: 37, w: 9, h: 9 },
-    { x: 80, y: 40, w: 8, h: 6 },
-  ];
-
-  return (
-    <g>
-      {/* Streets background */}
-      <rect x="0" y="0" width="100" height="56" className="fill-terrain-ridge/15" />
-
-      {/* Blocks — irregular */}
-      {blocks.map((b, i) => (
-        <rect
-          key={i}
-          x={b.x}
-          y={b.y}
-          width={b.w}
-          height={b.h}
-          className="fill-terrain-ridge/60 stroke-terrain-ridge"
-          strokeWidth="0.2"
-        />
-      ))}
-
-      {/* Soldier position */}
-      <g>
-        <circle cx="12" cy="32" r="1.6" className="fill-accent-cool" />
-      </g>
-
-      {/* Short LOS cone — just up to first corner */}
-      <polygon points="12,32 22,30 23,34 12,33" className="fill-status-ok" opacity="0.25" />
-      <text x="18" y="29" textAnchor="middle" className="fill-status-ok font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-        קו ראייה קצר מ-8 מ׳
-      </text>
-
-      {/* Dead spaces (everywhere) */}
-      {[
-        { x: 28, y: 32 },
-        { x: 42, y: 30 },
-        { x: 58, y: 32 },
-        { x: 72, y: 28 },
-        { x: 30, y: 42 },
-        { x: 50, y: 44 },
-      ].map((d, i) => (
-        <circle key={i} cx={d.x} cy={d.y} r="3" className="fill-status-danger" opacity="0.18" />
-      ))}
-
-      {/* Multiple threats — appearing from all directions */}
-      {[
-        { x: 32, y: 35, label: 'מארב פתע' },
-        { x: 55, y: 40, label: 'מטען חבלה (IED)' },
-        { x: 78, y: 30, label: 'מחבל מסתתר' },
-      ].map((t, i) => (
-        <g key={i}>
-          <circle cx={t.x} cy={t.y} r="1" className="fill-accent-hot" />
-          <circle cx={t.x} cy={t.y} r="2.5" fill="none" className="stroke-accent-hot/50" strokeWidth="0.25">
-            <animate attributeName="r" values="1.6;4;1.6" dur="2s" repeatCount="indefinite" begin={`${i * 0.4}s`} />
-            <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" begin={`${i * 0.4}s`} />
-          </circle>
-          <text x={t.x} y={t.y - 2.2} textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="1.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">
-            {t.label}
-          </text>
-        </g>
-      ))}
-
-      {/* Stats label */}
-      <text x="50" y="53" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">
-        סמטאות מתפתלות · הראייה חסומה · איומים צצים מכל פינה
-      </text>
-    </g>
   );
 }

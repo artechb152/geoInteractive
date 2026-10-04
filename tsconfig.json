@@ -35,9 +35,10 @@
     "**/*.ts",
     "**/*.tsx",
     ".next-contours/types/**/*.ts",
+    ".next-slopes/types/**/*.ts",
+    ".next-t11/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next-slopes/types/**/*.ts"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules",

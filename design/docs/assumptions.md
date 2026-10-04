@@ -872,3 +872,341 @@ Replaces the white two-column ITM/WGS84 card with `CoordinateSystemsComparison.t
 - **Feature hover:** in the stacked view, pointing at a map feature on either layer, or at its name in the legend row under the stack, outlines it in accent on the model and on the map. The chip then shows the feature's name instead of its height, and the contour line is hidden.
 - **Assumption:** the dense woodland in the north-west corner has no label on the sheet. Its hover name is "חורש", next to the sheet's own "חורש דליל".
 - **Scope:** this only works in the stacked view. The single views never show the model and the map together.
+
+## Topic 02 — Geology: painted terrain for "כוחות פנימיים וחיצוניים בעיצוב הנוף" (2026-10-04)
+
+- **Style:** both force illustrations are painted oblique terrain blocks (sculpted diorama, cut open on the front and left faces to show the beds), after `public/assets/scene-onboarding/topic-02/states/state-1…3`. Only the style is borrowed; no roads, buildings or other onboarding content.
+- **Assumption — how the images were made:** there is no image-generation tool in this workflow, so the terrain is rendered procedurally by `scripts/media/render-geology-forces.cjs` (height fields, sun + sky light, cast shadows, hollows, painted materials, brush finish). This keeps every label and arrow exactly registered, and the uplift can still animate. If AI-generated paintings are preferred later, the SVG overlay can take new anchor points.
+- **Labels and arrows** stay on the SVG layer above the image, in the same 560 × 360 viewBox. All texts, labels and aria-labels are unchanged; only their anchor points moved to the new terrain.
+- **Endogenic motion:** the beds folding up into the ridge plays as a 10-frame flipbook (t = 0 → 1, cross-faded, 1.3 s after a 0.3 s delay). It starts only once all frames are decoded. Reduced motion shows the final frame.
+- **Fix to existing motion:** the exogenic rain drops, wind streaks and tumbling block only faded before. Their translate/rotate keyframes never reached the DOM (framer-motion 11 SVG elements without an initial transform value). They now declare initial `x`/`y`/`rotate`, so they move as the code always intended.
+- **Revision (same day) — continuous landscape:** the painted blocks were replaced by one continuous landscape per force, in a perspective oblique aerial view. It has a foreground, a middle ground and a hazy distance that dissolves into a painted sky; the frames are opaque, so the overlay no longer draws a sky wash or block shadow. A shallow cut along the near edge shows the beds; it is ≈15% of the height, no longer a "layer cake".
+  - **Endogenic:** a fold belt of two parallel anticlines (the cut crosses the plunging nose of the main one), and a fault scarp across the whole land. The **west block is the dropped one**, so the scarp faces the viewer and the sun; the offset is still shown in the cut. A volcanic field (a large cone, a small one, and a cone in the cut fed by the magma chamber) sits beyond the fault.
+  - **Exogenic:** a layered mesa with a two-tier cliff and a scree apron, a stream winding through a valley cut into the beds, and crescent dunes on the western plain.
+  - Every label, arrow, relationship and animation is kept. Only their anchor points moved.
+- **Version toggle:** a "גרסה קודמת" button (top-left of the figure, `aria-pressed`) switches the board back to the previous schematic illustrations, kept verbatim in `GeologyVisualsLegacy.tsx`. The choice holds across both tabs. **Assumption:** it is visible to everyone until the user decides which version to keep.
+
+## Topic 02 — Geology: the volcano in "כוחות פנימיים" (2026-10-04)
+
+- **Composition:** the main volcano moved from the right edge to fully inside the frame, a little forward on the plain. Its crater is at ≈ (464, 60) in the 560 × 360 viewBox, low enough for the plume to rise and fade inside the frame. It is larger than before (rim ≈ 112 above the plain, base radius 108; it was 106 and 82) but stays lower on screen and narrower than the fold ridge, which remains the dominant landform on the left.
+- **Volume:** the cone has concave flanks scored by wandering radial gullies, and a raised crater rim with a burnt, shadowed hollow. Ash and scoria darken toward the summit and grade into the soil on the apron, with scoria blocks strewn there. A dark basalt flow runs from the rim down the sunlit (west) flank onto the plain. It meanders a little, pinches and swells, has a darker channel between lighter rubbly levées and a breakout lobe, and ends in a lobate toe. Light comes from the scene's existing sun. The volcano's cast shadow gets a wider penumbra (endogenic scene only, east of the fault), so it is soft and attached to the cone's foot rather than a hard-edged patch. The small cone in the cut (fed by the chamber) is kept. **Assumption:** the second small cinder cone moved from the far right edge to just in front of the volcano, to keep the field compact and in frame.
+- **Activity (SVG overlay):** after the uplift settles (≈ 1.6 s), three things start one after another.
+  - **≈ 1.7 s:** slow glowing pulses rise up the feeder conduit in the cut, one every ≈ 2.8 s, each taking 3.6 s.
+  - **≈ 1.9 s:** a faint warm glow breathes in the crater (period 5.2 s, low amplitude).
+  - **≈ 2.1 s:** a soft plume of steam and ash begins: warm-grey puffs leave the crater ash-darkened, rise, swell and drift downwind. They drift east, away from the ridge; the wind direction is an **assumption**, chosen so the plume never crosses the ridge or the labels. Puff edges are broken by a displacement filter, so the plume reads as painted rather than as cartoon clouds.
+  - One rAF clock drives all of it. It stops while the figure is off screen or the tab is hidden.
+- **Reduced motion:** the final frame with a still plume and a steady crater glow, at one fixed moment. There are no conduit pulses and nothing moves.
+- **Labels:** strings unchanged. "הרי געש" now sits at (396, 32) with its leader pointing to the new crater's west lip (anchor `craterLip` from `--anchors`).
+
+## 2026-10-04 — MVP upgrade of lesson 12 interactions (archived, copy unchanged)
+
+Same method and conventions as the 2026-09-27 round for lessons 2 & 6 (see that entry). Scope: the three learn sub-topics of topic-12 (`basics`, `costsurface`, `network`); none has a reference screen in `design/reference/`. Hook, onboarding, recap and the shared `src/components/lesson/` were not touched. The lesson stays archived (`ARCHIVED_TOPIC_IDS`, `archivedScenes`, navigation and numbering unchanged).
+
+**Copy.** All 200 strings of the three scene files at HEAD were snapshotted before work began. After the work, a script confirmed every one is still present verbatim in the scene file or its new sibling (`*Map.tsx` / `*Visuals.tsx` / `*Terrain.tsx`). That includes aria-labels, alt text, hints, the empty-state label, and the unrendered `desc`/`english` layer fields, which stay unrendered. The only new string is the replay button's aria-label "הפעלה חוזרת של ההדגמה", reused from the lesson 2/6 round. Labels inside illustrations reuse terms already present in the same scene, numbers, or A/B and node letters.
+
+**Verification route.** A whole archived topic has no `/archive/topic-12/<sceneId>` page: that route only exists for entries in `archivedScenes`. QA used `/lessons/topic-12/#scene-<id>` behind the archive gate, at 1440 × 1122.
+
+**Shared conventions applied.**
+- **Corners:** `rounded-xl` for controls, `rounded-2xl` for cards, pills `rounded-full`. Every `rounded-[3px]`/`[4px]` in the three files is gone.
+- **Orange:** decorative orange (eyebrows, card h3s, callout icons, "רשתי") is now ink or brand green. Orange is left only on active toggles, selections, routes and focus rings. The SceneHeader title highlights stay; they belong to the separate UI-cleanup round.
+- **Feedback colours:** "connected", "safe" and "savings" chips moved from neon `status-ok` to brand greens.
+- **Text size:** every text under 13px in these files (10–12px hints, legends, table heads, chips, the 9px mini table) is now 13px or more.
+- **RTL:** `border-r-4` → `border-s-4`, `text-right` → `text-start`.
+- **Motion:** no infinite SMIL/framer loops remain. Demos run once per change, with a replay button that is hidden under `prefers-reduced-motion`.
+- **Toggles:** `aria-pressed` on every toggle.
+
+### 12.1 basics — `BasicsMap.tsx`, `BasicsVisuals.tsx`
+
+**Drawn: one area model from one height model.** The area is the orthophoto `valley-aerial.jpg` itself. The main road, the settlement ring road, the secondary roads, the dirt track, the wadi and 10 field polygons were re-traced on a coordinate grid laid over the photo. The road traces closely enough that the raster cells it crosses line up with the photo's road. The height model is invented, not surveyed: a hilltop under the settlement, a western hill, and a wadi floor along the field band. That one model feeds both the DTM layer (20 × 20 cells, hypsometric ramp) and the vector panel's contours (25 m interval, 100 m index). The model's valley dip follows the drawn wadi line point by point. The old hand-drawn ellipses are gone. Map labels are ink on white plates; only the observation site's marker is red. The site label sits west of the site so the dirt track stays visible.
+
+**Layers.** The stack draws the four layers as transparent sheets ("שקף שקוף") in an oblique projection. The projection matrix has a positive determinant, so it is never a mirror. The composed map shows the same layers from straight above. Turning a layer off slides its sheet out of the stack, leaving only a dashed frame. The label stays in place and readable. The toggle buttons are the keyboard path, and the sheets are click-only.
+
+**Raster vs vector.** Clicking a raster cell (or using the arrow keys, in map directions) selects one "pixel" and shows its single value: the mean colour of the cell, computed from the photo in the browser. Clicking the road or the observation site, by mouse or with Enter/Space, selects its row in the attribute table, and clicking a row selects the feature. The selected feature's raster cells are outlined on the photo, to show that the raster has no "road" object. Clicking a selection again, or empty map, clears it. The loupe picks the first spot beside the cell that stays in frame and clear of the chips and traced cells. A chip sitting over the picked cell fades to 20%.
+
+**Small layout move.** The mini attribute table moved from an overlay on the vector map to the foot of the vector figure. At 13px it would have covered the fields, and the slot it moved into was empty.
+
+**Query.** Isometric blocks for the four buildings in the table. Each block's height comes from the "גובה (מ׳)" column, exaggerated ×1.3 for legibility. Footprints and layout are illustrative. The query selects rows 2 and 4 and their blocks in orange (ink digit on a white disc, orange ring). Selected rows are ink text on an orange tint with an orange start border. A row (via its ID button, aria-label = type) or a block selects one building, and selecting it again or clicking the ground clears it. "✓ כן" moved from `status-warn` yellow to brand green so it doesn't read as a selection.
+
+**Architecture.** A small static schematic in each card. Local: one workstation and a file. Network: one spatial DB serving two workstations that show the same layer.
+
+### 12.2 costsurface — `CostSurfaceTerrain.tsx`
+
+**Drawn.** One terrain on a 30 × 18 grid of square cells (the old 22 × 13 grid was stretched into a square). Slope is now the real gradient of a height model; the old version used hill height. Water is the river, built-up is the village, threat is a circle of radius 4.6 cells around the site. These factors use the original weighting (5/8/4/12). A road with a bridge was added (owner-approved). Road cells have a base cost of 0.3 instead of 1, slope ×0.4 and no water cost, which gives "כביש סלול" and "נדבק לדרך הקלה" from the copy something to stick to. The terrain is illustrative, but the computation is exact: what you see is the Dijkstra result on that surface.
+
+**Tuned behaviour.** At the default weights the path leaves the road around the threat. At threat 0 it stays on the road the whole way. With built-up at 1 it goes around the village.
+
+**Map.** Cost raster on a sequential olive ramp (light = cheap). The scale is absolute, not re-normalised per setting, so zero weights leave the map pale. Contours, river, road (with a bridge mark at the river), village (solid outline) and the threat ring are drawn over it. The path is orange; the straight line is dashed ink. A is a hollow ring (start) and B a filled disc in a target ring (goal), so they differ by shape as well as letter. The built-up factor uses the village's ink-grey in its thumbnail and slider value, not a second blue next to water.
+
+**New behaviour.**
+- **Factor thumbnails:** each slider has a thumbnail of its factor on the same grid, with opacity set by the weight, so the "sum of factors" is visible.
+- **Sliders:** they run left→right (`dir="ltr"`) as an unrolled numeric scale.
+- **Traveller:** it runs once, 0.4 s after the sliders settle, and again on replay. The old traveller looped forever and threw `cx undefined` errors.
+- **Numbers:** each value takes its line's colour.
+- **Queue:** Dijkstra now uses a binary heap, since it recomputes on every slider step.
+
+### 12.3 network — `NetworkTerrain.tsx`
+
+**Drawn.** One light relief under both maps. The relief and the ravine are schematic. Bridge E spans a short ravine that starts and ends inside the two road faces meeting at E (D·G·E and E·H·F). It therefore never crosses another road, and the given topology is unchanged. Roads are road symbols. The existing labels "בסיס עורף", "חזית I" and "גשר E" are shown for the first time; the other junctions show their letters.
+
+**Network behaviour.**
+- **Junctions:** keyboard buttons (`aria-pressed`, aria-label = existing label).
+- **Blowing a junction:** its roads are cut one after another, ordered by angle (the domino, 0.16 s apart). Whatever is no longer reachable from A fades. An isolated front turns red.
+- **Convoy:** it drives the BFS route once after each change, and on replay.
+- **Reset:** uses `aria-disabled`, so keyboard focus stays on it.
+
+**Buffer behaviour.**
+- **Shared map:** the same terrain and roads (muted) under the rings, so "Network + Buffer" is one map. Junctions inside a Kill Box get a red ring.
+- **Friendly force:** moves by click (existing hint), drag, or arrow keys (map directions). The marker and its focus ring are clamped inside the frame, and its label is clamped separately so it never hangs off an edge.
+- **Threat cards:** each card is a toggle that emphasises its ring and dims the other. Clicking the map clears the pick.
+- **Labels:** placed so none collide (S-400 above its site; the short-range label west of its site). "Kill Box" plates sit on the ring. A dimmed threat (another card picked) fades its ring and marker only; its labels turn ink and stay legible. The old inner dashed ring at 0.6 × range was removed: nothing on screen gave it a meaning.
+- **Place names in the network map:** above A and I, and above-left of E, so no label sits on a road. The isolated front's red "I" is never faded. The base A is a square and the front I a diamond, so they differ by shape too.
+- **Short-range site:** moved from y 50 to 47 so its whole ring stays inside the 56-unit-tall map.
+
+### Content conflicts flagged to the owner (text unchanged)
+
+1. **NetworkScene status chip.** `${path.length - 1} צמתי ביניים` counts roads, not junctions. A‑B‑D‑G‑I shows "4" although it has 3 intermediate junctions. The calculation was left as is.
+2. **The intro and the Targeting card.** The intro says "גשר אחד יכול להפיל אוגדה שלמה" and the card says "נסה לפוצץ את גשר E או צומת C". In the given graph no single junction disconnects A from I: it takes two (B+C or G+H). "Critical" is drawn as "cuts the most roads at once" (E: 5, C: 4, shown as the domino). The graph was not changed.
+3. **Ranges.** The intro says "סוללת טילים מאיימת על 50 ק"מ", while the card shows "SAM S-400 · טווח 18" with no unit, and a real S-400 reaches much further. The rings are schematic, with no scale bar.
+4. **"חיסכון: X%".** It compares two different metrics. The straight line sums every cell including the start, with no diagonal factor. The least-cost path skips the start cell and weights diagonals ×1.414. The calculation was left as is.
+5. **"משטח עלות חי · A ← B".** Bidi renders the arrow pointing at A, while the path runs A → B.
+6. **"4 מבנים בגזרה".** The vector panel's settlement has 10 buildings. The query view draws only the table's 4 buildings, as their own sector.
+7. **"רשת דרכים · בסיס (A) ← חזית (I)".** The arrow follows Hebrew reading order. On the map, which is not mirrored, A is on the left and I on the right, and the route runs left → right, so the arrow points against the drawn direction. Same family as item 5.
+8. **Typo in the network hint "כדי"לפוצץ"".** The space before the quote is missing. Not fixed: zero copy changes this round.
+
+### Review follow-ups not done this round
+
+The visual-qa, rtl-qa and cartographic reviewers ran on all three scenes. Their in-scope findings are fixed above, and the fixes were re-checked at 1440. The remaining RTL findings are copy, flagged as items 5, 7 and 8 above. The following were left, because they need new copy or a shared component:
+- **Legends:** entries for the straight line, river, road, village and threat ring in 12.2, a key for the "junction inside a Kill Box" red ring in 12.3, and a DTM ramp/contour key in 12.1. All of these need new strings.
+- **Shared diagram kit:** `Plate`, `smoothPath`, marching squares, `useRunOnce` and `pointAlong` are duplicated across `BasicsMap`, `CostSurfaceTerrain` and `NetworkTerrain` (and a measured `Plate` exists in topic-10). A shared `src/components/diagram/` kit would be a new shared component, which is outside this round.
+- **12.2 river:** it is not carved into the height model, so contours don't notch at it. Carving it would add slope cost along the banks and retune the paths.
+- **Responsive:** the 13px floor holds at 1440 only. Mobile is a separate task per CLAUDE.md.
+- **Cosmetic:** the 12.2 map card has ~55 px of empty band above and below the map (it centres against the taller controls column), and the native slider track renders near-black.
+
+**Dev note.** With `output: 'export'`, `NEXT_DIST_DIR` only relocates the *export*; `next build` still compiles into the shared `.next`. A build in the main folder therefore races other sessions' dev servers and fails at prerender with `PageNotFoundError`. The verification build for this round ran in a temporary git worktree (HEAD + the 7 topic-12 files) and passed. The QA dev server used `NEXT_DIST_DIR=.next-t12` (dev only).
+
+## 2026-10-04 — MVP upgrade of lesson 10 interactions (archived, copy unchanged)
+
+Same method and conventions as the 2026-09-27 round for lessons 2 & 6. Scope: the three learn sub-topics of topic-10 (`urbanmorphology`, `threedim`, `civilian`); none has a reference screen in `design/reference/`. Hook, onboarding, recap, `SceneHeader.tsx`, `Topic10Lesson.tsx` and the shared `src/components/lesson/` are byte-identical to before. The lesson stays archived (`ARCHIVED_TOPIC_IDS`, `archivedScenes`, navigation and numbering untouched).
+
+**Copy.** The pre-change topic-10 files were copied aside before work began. A script (TypeScript AST: every JSX text node + every Hebrew or capitalised-Latin string literal outside `className`/`cn()`/imports) confirmed all 190 strings of the three scene files are still present verbatim in the scene file or its new sibling. Strings that used to live inline in the old SVGs ("צלף בקצה הרחוב (Enfilade)", "— פני הקרקע —", the site letters H/M/S/W/U/P …) now sit in label constants in the scene file and are passed to the illustration, so every illustration file is copy-free. The only new strings: the replay button's aria-label, reused verbatim from lesson 6 ("הפעלה חוזרת של ההדגמה"); tablist aria-labels and the position chips' aria-label ("הכוח שלנו 1–3") reuse existing strings; in-illustration labels reuse terms already in the same scene ("צלף", "Enfilade", "ריצת עכברים", "פיר במרתף", "מטרה", "כוחותינו", "גובה הרחוב") or are numbers/units (scale bars "200 מ׳", "10 מ׳"; axis tick "+5 מ׳").
+
+**Verification route.** As for lesson 12: a whole archived topic has no `/archive/topic-10/<sceneId>` page (that route serves only `archivedScenes` entries). QA used `/lessons/topic-10/#scene-<id>` behind the archive gate, 1440 × 1122, normal and reduced motion; an audit pass measured every rendered text node (SVG included) for < 13px and for SVG labels clipped by their frame — zero of each in all three scenes, every state.
+
+**Shared conventions applied.**
+- **Corners:** `rounded-xl` controls, `rounded-2xl` cards, `rounded-full` pills; every `rounded-[3px]`/`[4px]` in the three files is gone.
+- **Orange:** decorative orange (eyebrows, card h3s, property icons, callout icons, the school's identity colour, the "street" dimension's identity colour) is now ink or brand green. Orange is left on active tabs/chips/toggles, the selected site/position, the rat-run route and focus. SceneHeader title highlights stay (UI-cleanup round).
+- **Feedback colours:** the corridor toggle's active state, the corridor banner and the "advantages" box moved from neon `status-ok` to brand greens / the standard active treatment.
+- **Text size:** everything under 13px in the three files (10–12px eyebrows, legends, English sub-labels, altitudes, examples) is now 13px — size only.
+- **RTL:** `border-r-4` → `border-s-4`, `text-right` → `text-start`, the pattern bar's `rounded-l-full` → inset `rounded-full`. Tabs are `role="tab"` with arrow keys in visual order (ArrowLeft/ArrowDown = next). Signed axis labels ("-10 מ׳") get a render-time LRM (`bidiNum`) so the sign stays before the digits; the string itself is unchanged.
+- **Labels:** white pill plates (`Plate`, measured, clamped inside the frame) instead of the old white stroke halos. `Plate`, `ForcePuck`, `ThreatMark` and the illustration palette are exported from `UrbanMorphologyMap.tsx` and reused by the other two files. The timeline engine (`useSequence`, `useSvgId`) is imported from topic-06 `CombatNavVisuals.tsx` — a cross-lesson dependency.
+- **Dashes:** dashed = exposed / hostile only (fire lines, unseen threats, rat-run street crossings, the "360°" exposure ring). Protection rings, the UN compound wall, the 8 m reference ring and the free position marks are solid and faint.
+- **Motion:** no infinite SMIL/framer loops remain. Demos play once per selection (or once on scroll for the two callout diagrams), with a replay button hidden under `prefers-reduced-motion`; reduced motion shows the end state.
+
+### 10.1 urbanmorphology — `UrbanMorphologyMap.tsx`
+
+**Drawn.** Two street models, each at its own scale because the scene's own numbers (an 800 m avenue vs. alleys under 8 m) cannot share one. The grid is 8 × 7 blocks split into houses, 1 unit = 6.4 m, with a double-width main avenue closed at its east end by one building — the sniper sits in its window. The casbah is a hand-drawn network of winding alley centre-lines (1 unit = 1 m) cut through an irregular roofscape, with two dead ends, a small square and one roofed passage. Each map has a scale bar.
+
+**Precise vs. schematic.** Line of sight is computed, not drawn: the model is rasterised into a free-space mask and the lit area is a visibility polygon cast from the force (2048 rays, stop at the first wall). Every street cell outside it is hatched dead space; each threat switches between hollow (in dead space) and solid with a dashed fire line (mutually visible) by the same ray test. Grid position 1 is exactly 800 m (125 units) from the sniper, so "קו ראייה ארוך · 800 מ׳" is drawn only there, on a dimension line; position 2 (a junction) sees him at ≈447 m; position 3 (a parallel street) does not. In the casbah, position 1 sees 6.0 m at most, so "קו ראייה קצר מ-8 מ׳" and an 8 m ring are shown only there; position 2 meets the ambush at 5.5 m and position 3 the IED at 5.3 m around a bend; the hidden gunman in the dead end is never visible. Block sizes, house splits and alley widths are illustrative.
+
+**Behaviour.** The two pattern buttons are tabs (the map is their panel). Three force-position chips (1–3) are the keyboard path; the numbered marks on the map are mouse targets. Re-clicking the selected position, or clicking empty map, clears the selection (plain map, no LOS). Switching pattern resets to position 1. The lit area spreads from the force once per selection. The legend's "איום פוטנציאלי" shows both threat states.
+
+**Enfilade diagram.** A crop of the same grid model: the avenue swept end to end by fire from the sniper, then the rat-run ("ריצת עכברים") route through the houses of the row facing the avenue — solid (covered) inside buildings, dashed (exposed) across the cross streets, which the sniper cannot see. It plays once when scrolled into view.
+
+### 10.2 threedim — `ThreeDimVisuals.tsx`
+
+**Drawn.** One section model — ten buildings with floor bands, ground floors and basements; the main street with two soldiers, a tank and a parked car; a side alley; a tunnel network with a deep branch, two chambers and six shafts to basements or the street — feeds both the main section and the "עקרון השילוב" diagram.
+
+**Precise vs. schematic.** The vertical axis is piecewise and says so: +5…+150 m compressed, the 0–5 m street band expanded (people and vehicles must read), 0…−30 m in between, with break symbols on the axis and a tint on the expanded band. The old tick labels were not to any scale (+150 and +50 nearly the same spacing) and were clipped off-frame under RTL; they now sit on the axis at their true positions in each band. Horizontal distances are illustrative. Each band's four threats are pinned 1–4 where the scene's list puts them (roof RPG, high-window ATGM onto the tank roof, window drop onto the street, rooftop OP; IED in a parked car, side-alley fire, the next street corner, face to face; a shaft behind the force, a booby-trapped basement opening, an abduction shaft, weapons moving under the street).
+
+**Behaviour.** The three dimension buttons are tabs; the threat list is numbered with the same red discs, and hovering a list item rings its pin (and vice versa). Clicking a band selects it; clicking the active band again clears the selection and hides the details panel. Each band plays one demo on selection: above — observation fan, ATGM onto the tank roof, a drop from a window, the sniper's shot; street — fire converging from above, the side and below, then a 360° ring; below — a fighter travels the tunnel and surfaces behind the force. The combined diagram (same model, cropped) plays once on scroll: the sniper fires from a roof, drops through the building to the basement shaft, runs the tunnel and surfaces on a roof at the far end of the city while our force breaks into the now-empty building.
+
+### 10.3 civilian — `CivilianMap.tsx`
+
+**Drawn.** A schematic district plan (north up, no scale): a main E–W road, the main N–S road the corridor uses, a secondary grid, generated building footprints, a park. The six sites are drawn as their own buildings (hospital H-plan, walled UN compound, mosque with minaret, L-shaped school, water tanks, media tower) with a protection ring each; the target (מטרה) sits between the hospital and the mosque, as in the dilemma paragraph; our forces (כוחותינו) attack it from the east along the main road. Ring size is uniform — the copy gives no ranking to draw.
+
+**Behaviour.** The six site buttons are tabs; clicking a site on the map selects it, clicking it again or empty map clears it (details panel hidden). The corridor toggle (`aria-pressed`) draws the corridor south→north along the N–S road and plays once: civilians move north, aid trucks come in, and the attack axis halts at the corridor with a stop bar for as long as it is open. The previous map drew the corridor west–east along the bottom edge.
+
+### Content conflicts flagged (not fixed — copy unchanged)
+
+1. **10.3 corridor direction.** "אזרחים יוצאים מאזורי לחימה דרום-צפון" — direction of movement vs. axis is ambiguous. Drawn as movement south → north.
+2. **10.3 missing refugee camp.** The dilemma paragraph names "מחנה פליטים מאוכלס", but the map is "6 אתרים רגישים" and has none. Not added (it would make seven).
+3. **10.3 visible backslash.** The dilemma paragraph renders "אמנת ז\'נווה" with a literal backslash (a `\'` escape inside JSX text). Fix = delete the backslash.
+4. **10.1 "קו ראייה קצר מ-8 מ׳".** Reads as "from 8 m"; interpreted as "shorter than 8 m" and drawn only where the computed sight is < 8 m.
+5. **10.2 GPS claim.** "אין קליטת GPS, כך שאי אפשר לאתר אותך מרחוק" — GPS is receive-only, so lack of reception does not prevent being located. Worth a fact check.
+6. **10.2 escape from height.** Advantage "לברוח ולהיעלם דרך מעברים פנימיים בין בניינים" vs. weakness "קשה לו מאוד לברוח מהר ממגדל גבוה". Drawn as escape through a connected mid-rise building; the towers stand alone.
+7. **10.2 axis not to scale.** Without new copy the piecewise axis can only be signalled graphically (break marks + band tint). A short note such as "קנה מידה משתנה" would need owner-approved copy.
+
+**Dev note.** As the lesson-12 entry says, `NEXT_DIST_DIR` does not keep `next build` out of the shared `.next`. This round's verification build (exit 0) ran in the main folder and did write into `.next`; the shared dev server on :3000 returned 500 for a while and recovered on its own. QA used a private dev server (`NEXT_DIST_DIR=.next-t10`, port 3010). Use a temporary git worktree for future verification builds.
+
+## 2026-10-04 — MVP upgrade of lesson 11 interactions (archived, copy unchanged)
+
+Same method and conventions as the 2026-09-27 round for lessons 2 & 6 (see that entry). Scope: the three learn sub-topics of topic-11 (`depth`, `buffer`, `borders`); lesson 11 has no reference screens in `design/reference/`. Hook, onboarding, recap and the shared `src/components/lesson/` (including the `InsightCard` in 11.3) were not touched. The lesson stays archived (`ARCHIVED_TOPIC_IDS`, `archivedScenes`, navigation and numbering unchanged).
+
+**Copy.** All 232 user-facing strings of the three scene files at HEAD (82 / 73 / 77) were snapshotted before work began. After the work, a script confirmed every one is still present verbatim in the scene file or its new sibling (`DepthVisuals.tsx`, `BufferVisuals.tsx`, `BordersMap.tsx`). That includes aria-labels, chip and tile labels, and the English sub-lines. The only new string is the replay button's aria-label "הפעלה חוזרת של ההדגמה", reused from the lesson 2/6 round. Labels inside the illustrations are the scenes' own terms (the old SVG labels, "חוזק" / "חולשה", "ק"מ") or numbers, and they are passed in from the scene files. The depth readouts now print thousands separators ("4,500" instead of "4500"), matching the ruler and the cards.
+
+**Verification route.** As for lesson 12, `/archive/topic-11/<sceneId>` does not exist (that route only serves `archivedScenes`). QA ran at `/lessons/topic-11/#scene-<id>` behind the archive gate, at 1440 × 1122. A script checked that every visible text (HTML, and SVG after viewBox scaling) is at least 13px, that every SVG `<text>` sets `textAnchor`, and that no label spills or overlaps. It ran on the default states and on all six border types × {idle, חוזק, חולשה}. The depth and buffer demo states were checked by screenshot. The visual-qa, rtl-qa and cartographic reviewers ran on all three scenes, and their in-scope findings were fixed (see "Reviewer follow-ups").
+
+**Shared conventions applied.**
+- **Corners:** every `rounded-[3px]` / `[4px]` is gone. Controls use `rounded-xl`; cards fall back to `surface`'s `rounded-2xl`.
+- **Orange:** decorative orange (eyebrows, dots, card h3s, icons) is now ink or brand green, and the per-type and per-doctrine category colours are removed. Orange remains only on:
+  - selections: the picked preset, ruler row, tab and hotspot;
+  - controls and values: the slider fill and thumb, the active doctrine zone, the depth bar;
+  - demo marks: the buffer warning bracket and detection pulse, and the highlighted effects in the border demos;
+  - focus rings.
+- **Title highlights:** the SceneHeader highlight spans were recoloured brand-dark, not unwrapped. Unwrapping belongs to the UI-cleanup round.
+- **Status colours:** "מה זה מאפשר" and "חוזק" moved from neon `status-ok` to brand greens. "חולשה" moved from amber `status-warn` to `status-danger`, pairing it with "מה זה לא מאפשר". `status-danger` also stays on the two alerts, "⚠ סכנה קיומית מיידית!" and "⚠ אין הגנה".
+- **Text size:** every 10–12px label in these files is now 13px or more.
+- **RTL:**
+  - `text-right` → `text-start` and `sm:text-left` → `sm:text-end`;
+  - `rounded-l-full` → `rounded-e-full` on the active-item bars;
+  - the `right-0` bars and `style.right` ticks are now logical positions inside `dir="ltr"` scales.
+- **Motion:**
+  - The old infinite loops are gone: the looping attack arrow, the pulsing capital ring and the looping enemy dot.
+  - Demos play once per selection, and only while on screen.
+  - The replay button is hidden under `prefers-reduced-motion`, which shows the end states instead.
+
+### 11.1 depth — `DepthVisuals.tsx`
+
+**One log scale.** A single 10–4,500 km log scale is shared by the slider, the cross-section axis and the comparison ruler.
+- **Slider:** an unrolled scale that runs left→right (10 km at the left) and is not mirrored for RTL. Its labels 10 / 500 / 2,000 / 4,500 now sit at their true positions with tick marks; they used to be evenly spaced.
+- **Steps:** 1 km below 100, 10 km below 1,000, 50 km above. On the old linear track, 10–100 km was about 2% of the length and Israel's 14 km was off the step-10 grid; both are now reachable, by drag and by keyboard. Five notches mark the example countries.
+
+**Cross-section.** A schematic papercut side cut:
+- enemy land (brick) on the left, a border post, our land with towns, and the heartland at its log position;
+- a log axis has no zero, so the border sits one step before the 10 km tick, behind an axis-break mark;
+- axis ticks at 10 / 100 / 1,000 / 4,500 km, and an orange bar for the current depth;
+- the four doctrine zones use the scene's thresholds (30 / 200 / 1,000 km), now shared constants. The 30 and 200 breaks carry ticks, the active zone is orange, and each zone's doctrine name is in an SVG `<title>`.
+
+The doctrine chip and card are now ink and brand (user decision); risk reads from the zone band instead.
+
+**Demo.** A settled selection starts the demo: a preset, a ruler row, or 450 ms after the slider stops.
+- The attack arrow runs from the border to the heartland once.
+- An elapsed-time chip counts up to the value in the "זמן עד הגעה לבירה" tile. It uses the same formula: 30 km/day with a half-day minimum.
+- There is a replay button.
+
+**Selection.**
+- The preset buttons and the ruler rows share one "picked country" (`aria-pressed`). Clicking it again clears it, and so does dragging the slider. The picked country's card gets an orange ring.
+- The ruler bars run left→right on the shared scale. The picked bar is orange, the others brand green, and an orange hairline marks the slider's current depth.
+
+### 11.2 buffer — `BufferVisuals.tsx`
+
+**Drawn.** A plan view of the approach to our line, at one scale: 12 SVG units per km, with a 0–5–10 km scale bar. Enemy land is on the left and our land (a town and groves) on the right. It is accurate to the scene's numbers and schematic otherwise:
+- **Physical buffer:** a 4 km hatched strip. The text says "קילומטרים ספורים", and the DMZ example is ~4 km.
+- **Fence:** a 1 km detection band.
+- **Seismic sensors:** an 8 km band, with buried nodes drawn inside it.
+- **Radar:** a sector from a mast 7.5 km behind our line. Its arc reaches 25 km in front of the line at the lane.
+
+The footprints show the stated detection ranges, not sensor physics. The sensor blue and radar violet stay inside the SVG; their text labels use darker variants for contrast.
+
+**Demo.** Every layer change starts the demo:
+- An enemy unit advances from 29 km out at constant speed.
+- It is drawn with a dashed outline while undetected, and turns solid with an orange pulse once it enters the outermost active footprint.
+- An orange bracket then marks the warning distance to our line, labelled with the scene's warning-time text.
+- With no collection layer, it is noticed only at the line ("מיידי בלבד"). With no layer at all, "⚠ אין הגנה" also shows.
+
+**Layout.** On desktop the board is sticky (`lg:sticky lg:top-24`, `self-start`), so the map stays beside the open accordion items. It no longer stretches into a letterboxed SVG. The accordion stays the control (open = layer on), and Radix provides the keyboard path. The detection range now comes from one `LAYER_RANGE_KM` table; the results are the same as the old nested ternary.
+
+**Examples.** Each card has a width gauge on a shared 0–10 km tape (left→right): 4 / 10 / 7 km. For Cyprus, 7 km is the maximum width.
+
+### 11.3 borders — `BordersMap.tsx`
+
+**Drawn.** One plan-view frame serves all six types: מדינה א' and מדינה ב', with the feature drawn as the border itself. The old drawings put a mountain glyph above two country strips. It is schematic, not to scale:
+- **Mountain:** a ridge with two passes and guard posts.
+- **River:** a meandering river as the boundary, one bridge, and a summer ford where it narrows.
+- **Coast:** A's coast, open sea, and B's coast with a beach and a port.
+- **Desert:** a sand belt with dunes, the border running through it, and B's observation and patrol posts.
+- **Latitude:** a straight line through three villages, a hill and a river. A is to the north and B to the south, because the label says "קו רוחב".
+- **Political:** a zigzag line on featureless ground, with the 1916 agreement stamp.
+
+Labels are white pills (no stroke halos) and are drawn above the demos.
+
+**Hotspots.** Each type has two, "חוזק" and "חולשה", placed where that strength or weakness lives. Each demo plays once:
+
+| Type | חוזק | חולשה |
+|---|---|---|
+| Mountain | advances stopped at the guarded passes | the road between the two towns detours over the pass |
+| River | the blown bridge stops the column | a crossing at the summer ford that fans out |
+| Coast | invasion fleet plus air route | missile arc to the port |
+| Desert | dust plume spotted from the post | smuggler paths between the posts |
+| Latitude | the line drawn with a ruler | families crossing in the cut villages |
+| Political | the stamp is pressed and the line recognised | the stamp cracks and escalation comes from both sides |
+
+- A selected hotspot rings its matching card below and gets a replay button.
+- It is a `role=button` with `aria-pressed`, and `aria-describedby` points at that card's text.
+- Selecting it again, clicking the empty map, or switching type clears it.
+
+**Keyboard.** The six cards are a tablist: roving tabindex, ArrowLeft = next in RTL, Home/End. Only the active type's two hotspots exist, so they are the only map stops in the Tab order. The focus ring shows only on keyboard focus.
+
+**Line language** (after the cartographic review):
+- State borders are dash-dot everywhere, in this map and in the buffer map.
+- Plain dashes are kept for covert or indirect movement: smugglers, the missile arc, and the attempted direct road.
+- Solid brick is an overt advance; the air route also carries a small aircraft.
+- Ink is civilian or neutral movement.
+- Orange is the selected effect or highlighted route. The mountain detour is the civilian trade route, not an enemy advance.
+
+**Colours.** The per-type text colours are removed: the title is ink, and the icon and stat bars are brand-dark.
+
+### Reviewer follow-ups
+
+- **Not done, because they need new copy:**
+  - a legend for the line language;
+  - text labels for the doctrine zones, the port, the ford and the warship (glyphs and `<title>`s carry them for now).
+- **Not done, out of this round's scope:**
+  - Wide `tracking-*` on Hebrew labels ("מה זה מאפשר", "דוקטרינה כפויה", "תוצאה") belongs to the UI-cleanup round.
+  - A shared diagram kit is a follow-up refactor. `useDemo`, the palette and small glyphs are duplicated across the three visuals files.
+
+### Content conflicts flagged (text not changed)
+
+Drawn per the reasonable interpretation:
+1. **Depth · Israel.** The card says "≈ 11 שעות עד לב המדינה", but the computed tile and the demo show "12 שעות". The formula has a half-day minimum: 14 / 30 = 0.47 day → 0.5.
+2. **Depth · USA.** The card says "לא רלוונטי — אוקיינוס חוצץ", with the doctrine "הגנה מעבר לים (Forward Defense)". At 4,500 km the slider computes "150 ימים" and shows the doctrine "ספיגה והתשה".
+3. **Depth · Russia.** The card gives 4,000 km "מהגבול המערבי למוסקבה", yet the same card says that after losing "…ואפילו פאתי מוסקבה" there are "2,500 ק"מ של מרחב מאחור". Moscow is about 400–500 km from the western border. Drawn as given: the heartland is at 4,000 km.
+4. **Depth · USA.** The card gives 4,500 km "מכל גבול ימי לוושינגטון", but Washington is near the Atlantic coast; 4,500 km is about the coast-to-coast width. Drawn as given.
+5. **Buffer · physical strip.** The layer text says the distance itself delays the enemy, but with only that layer on, the chip reads "זיהוי 0 ק"מ · התרעה מיידי בלבד". Drawn per the chip: the unit crosses the strip undetected.
+6. **Buffer · fence.** The text says "מתריעה רק כשנוגעים בה — כלומר לא מספקת עומק התרעתי", but the chip says "זיהוי 1 ק"מ". Drawn per the chip, as a 1 km band.
+
+Facts for the content owner to verify (they do not affect the drawings):
+- **Haifa:** about 35–40 km from the Lebanese border; the card says 60.
+- **Kyiv:** about 250–300 km from the nearest Russian border; the card says 600. "תל אביב ללוקסור" is about 700 km.
+- **"מלחמת יום הכיפורים (1974)":** the war was in 1973; the disengagement agreement was in 1974.
+- **Himalayas:** the card says they "שמרו על שקט … במשך אלפי שנים", but the 1962 Sino-Indian war was fought there.
+- **US–Mexico:** given as a latitude-line example; check it.
+- **11.3 order:** the intro promises natural → artificial, "מהטבעיים והיציבים ביותר", but coast (5/5) comes after river (4/5).
+
+**Dev note.** This confirms the lesson-12 note: a `next build` in the main folder compiles into the shared `.next`. One such build was started by mistake in this round and stopped after about 30 s. It had already written to `.next`; the shared dev servers on ports 3000 / 3001 / 3007 had been returning 500 since before it ran. The verification build ran in a temporary worktree (HEAD plus the 6 topic-11 files) and passed. That worktree is removed. The QA dev server used `NEXT_DIST_DIR=.next-t11` (dev only, port 3011); it is stopped, and its `tsconfig.json` include line and `.next-t11/` folder are removed.
+
+## Topic 02 — Geology: rain and processes in "כוחות חיצוניים" (2026-10-04)
+
+- **The cloud is now in the world.** It is a ray-marched cumulus (soft ellipsoids, a flat grey base, lit by the scene's sun) hovering ≈ 50–100 units above the mesa's front rim. It casts a soft shadow on the plateau behind and east of it. **Assumption:** the cloud hovers low, as in a diorama. With this steep camera, a cloud at a realistic height would sit above the frame.
+- **Rain in space.**
+  - Drops leave the cloud base and fall with one wind slant (west, the same wind as over the dunes) until they meet the land.
+  - Near drops fall past the cliff face onto the scree. The middle bands land on the plateau just beyond the rim. The farthest band falls just behind a low knoll, which hides where those drops land; the rain sheet behind the knoll is cut by its crest.
+  - There are four depth bands. Far drops are thinner, fainter and hazier than near ones.
+  - Visibility is computed per point of each fall from the render's depth buffer and the cloud's on-screen opacity. The cloud hides the top of most drops, which emerge below its base. 40 of 132 drop paths have their lower part hidden by the knoll.
+  - **Assumption (new relief):** a low knoll on the plateau, behind the rim and under the far half of the shower. It is ≈ 15 high and ≈ 64 × 19 across, a remnant of the next bed up: gentle toward the viewer, steep at its back. **Why:** nothing in the existing terrain stands between the camera and the shower's lower ends. Ground hidden from the camera exists only along the stream canyon's walls, a few dune lees and the mesa's far west flank. Moving the rain there would lose the cliff, scree and runoff story, or crowd the "ערוצי נחל" and "רוח" labels. Mapped in the Task 2 workspace: `t2/shots/hidden.png`. It changes no educational content.
+- **Runoff.** **Assumption:** three shallow dry rills (wadi channels, ≈ 1–1.4 deep with a bed that only falls downstream) are carved from the scree apron under the shower, across the plain, into the stream. Without them the plain was flat with pits, and steepest descent stopped at the scree foot. They read as faint grooves in the painting. The animated rivulets follow D8 steepest descent on the height field from four points where drops land on the scree.
+- **The stream** flows toward the viewer and out through the cut (**assumption:** there is no slope in the data). After the rain, the water below the junction swells: it turns silty, widens slightly and flows faster.
+- **Sand.**
+  - In each gust, grains hop up the windward (east) slopes of seven automatically chosen crests (spread out, clear of the dunes label), cross the crest and settle on the lee.
+  - Spindrift wisps stream off the crests.
+  - The grains are drawn sunlit over the shaded windward slopes, with small shadows below them, so the hops read at 1:1.
+- **Rockfall.** The trajectories come from a small physics simulation (a block of radius 3, gravity, bounces, rolling resistance) on the height field, starting from the cap rock west of the shower. One block falls per cycle, and the three paths alternate. It comes to rest on the lower scree and fades before the next cycle, so blocks never pile up.
+- **One 15 s cycle.** The stream's gentle flow runs throughout.
+
+| Process | Timing |
+|---|---|
+| Rain | 0.3–5 s |
+| Runoff | Wet front leaves at 1.2 s and reaches the stream ≈ 3.3 s. Water runs until ≈ 7 s; rills dry by 10 s. |
+| Stream swell | 3.6–10.4 s |
+| Gust over the dunes | 7.6–11.4 s |
+| Rockfall | Loosens at 11.5 s, rests ≈ 13.2 s, fades 14.1–14.9 s |
+
+- **Wind streaks.** **Assumption:** they stay faint (20 %) while the air is calm and sweep downwind with each gust.
+- **Reduced motion.** One still moment, t = 3.4 s: rain at depth (some of it falling behind the knoll), the rivulets reaching the stream, static wind streaks, every label.
+- **Labels.** The strings are unchanged.
+  - "גשם" points to the rain under the cloud's west end.
+  - "מצוקים" and "דרדרות" point to the cliff and scree east of the shower, which stay clear of rain. The rockfall happens west of the shower.
+- **Code.**
+  - The exogenic overlay lives in `ExogenicActivity.tsx`.
+  - Its geometry is generated into `exogenicOverlay.data.ts` by `scripts/media/render-geology-forces.cjs` (`--only exo` or `--overlay`).
+  - The shared process clock no longer steps backwards on its first frame: a rAF timestamp can precede the effect's start.

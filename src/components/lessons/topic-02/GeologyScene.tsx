@@ -4,6 +4,7 @@ import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
 import { EndogenicVisual, ExogenicVisual } from './GeologyVisuals';
+import { EndogenicVisualLegacy, ExogenicVisualLegacy } from './GeologyVisualsLegacy';
 import { RockDiorama, RockSpecimen } from './RockVisuals';
 
 type Rock = {
@@ -81,6 +82,12 @@ const FORCE_VISUALS: Record<Force['id'], Visual> = {
   exo: ExogenicVisual,
 };
 
+/** The previous (schematic) illustrations, reachable through the version toggle. */
+const LEGACY_FORCE_VISUALS: Record<Force['id'], Visual> = {
+  endo: EndogenicVisualLegacy,
+  exo: ExogenicVisualLegacy,
+};
+
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
@@ -152,11 +159,12 @@ export function GeologyScene() {
   const reduce = !!useReducedMotion();
   const [rock, setRock] = useState<Rock['id']>('sediment');
   const [force, setForce] = useState<Force['id']>('endo');
+  const [legacyVisual, setLegacyVisual] = useState(false);
   const rockData = ROCKS.find((r) => r.id === rock)!;
   const forceData = FORCES.find((f) => f.id === force)!;
   const rockKeys = useTabKeys(ROCK_IDS, rock, setRock);
   const forceKeys = useTabKeys(FORCE_IDS, force, setForce);
-  const ForceVisual = FORCE_VISUALS[force];
+  const ForceVisual = (legacyVisual ? LEGACY_FORCE_VISUALS : FORCE_VISUALS)[force];
 
   return (
     <MotionConfig reducedMotion="user">
@@ -340,8 +348,23 @@ export function GeologyScene() {
                       ))}
                     </ul>
                   </div>
-                  <figure className="m-0 rounded-xl bg-paper-card overflow-hidden">
+                  <figure className="relative m-0 rounded-xl bg-paper-card overflow-hidden">
                     <ForceVisual reduce={reduce} />
+                    {/* Version toggle: switch back to the previous (schematic) illustration */}
+                    <div className="absolute top-2 end-2 z-10">
+                      <button
+                        type="button"
+                        aria-pressed={legacyVisual}
+                        onClick={() => setLegacyVisual((v) => !v)}
+                        className={cn(
+                          OPTION_BASE,
+                          'px-2.5 py-1 font-display text-sm font-bold text-fg shadow-sm',
+                          legacyVisual ? OPTION_ACTIVE : OPTION_IDLE,
+                        )}
+                      >
+                        גרסה קודמת
+                      </button>
+                    </div>
                   </figure>
                 </motion.div>
               </AnimatePresence>

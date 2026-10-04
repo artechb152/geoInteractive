@@ -1,11 +1,25 @@
 'use client';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import valleyAerial from './assets/valley-aerial.jpg';
-type Layer = 'elevation' | 'roads' | 'buildings' | 'threats';
+import {
+  LayerComposite,
+  LayerStack,
+  chipOverCell,
+  RasterGridOverlay,
+  RASTER_N,
+  ROAD_CELLS,
+  SITE_CELL,
+  useCellColors,
+  VectorAreaMap,
+  type LayerId,
+  type VectorFeature,
+} from './BasicsMap';
+import { LocalSchematic, NetworkSchematic, QueryBlocks } from './BasicsVisuals';
+type Layer = LayerId;
 type LayerData = {
 id: Layer;
 label: string;
@@ -73,6 +87,8 @@ const BUILDINGS: Building[] = [
 export function BasicsScene() {
 const [activeLayers, setActiveLayers] = useState<Set<Layer>>(new Set(['elevation', 'roads']));
 const [queriedSensitive, setQueriedSensitive] = useState(false);
+// Buildings picked in the attribute table / block view (the query picks 2 and 4).
+const [picked, setPicked] = useState<Set<number>>(new Set());
 const toggleLayer = (id: Layer) => {
 setActiveLayers((prev) => {
 const next = new Set(prev);
@@ -81,6 +97,17 @@ else next.add(id);
 return next;
  });
  };
+const runQuery = () => {
+const on = !queriedSensitive;
+setQueriedSensitive(on);
+setPicked(on ? new Set(BUILDINGS.filter((b) => b.sensitive).map((b) => b.id)) : new Set());
+ };
+// One building at a time; clicking the only picked one again (or empty ground) clears.
+const pickBuilding = (id: number | null) => {
+setQueriedSensitive(false);
+setPicked((prev) => (id === null || (prev.size === 1 && prev.has(id)) ? new Set() : new Set([id])));
+ };
+const layerLabels = Object.fromEntries(LAYERS.map((l) => [l.id, l.label])) as Record<Layer, string>;
 return (
  <section id="scene-basics" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
@@ -109,9 +136,11 @@ const isActive = activeLayers.has(l.id);
 return (
  <button
 key={l.id}
+type="button"
+aria-pressed={isActive}
 onClick={() => toggleLayer(l.id)}
 className={cn(
- 'relative p-4 text-right transition-all duration-300 ease-snap rounded-[4px] border flex items-center gap-3',
+ 'relative overflow-hidden p-4 text-start transition-all duration-300 ease-snap rounded-xl border flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
 isActive
  ? 'border-accent bg-bg-elevated'
  : 'border-border bg-bg-elevated hover:border-accent/50'
@@ -119,13 +148,13 @@ isActive
  >
 {isActive && (
  <motion.span
-layoutId="t12-basics-bar"
-className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+layoutId={`t12-basics-bar-${l.id}`}
+className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-s-full"
  />
 )}
  <span
 className={cn(
- 'size-10 rounded-[3px] flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+ 'size-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
 isActive
  ? 'bg-accent text-bg-elevated border-accent'
  : 'bg-bg-accent text-fg-muted border-border'
@@ -137,7 +166,7 @@ isActive
  <div className="font-display font-bold text-base text-fg leading-tight">
  {l.label}
  </div>
- <div className="font-display font-medium tracking-wide text-xs text-fg-dim mt-0.5">
+ <div className="font-display font-medium tracking-wide text-[13px] text-fg-dim mt-0.5">
  {l.type === 'raster' ? '◧ ראסטר' : '◢ וקטור'}
  </div>
  </div>
@@ -146,20 +175,27 @@ isActive
  })}
  </div>
 
- {/* Map */}
- <div className="surface-elevated p-4 rounded-[4px] mb-6">
+ {/* Map — the composed top-down view (inline-start) + the same layers as a stack of transparent sheets */}
+ <div className="surface-elevated p-4 rounded-2xl mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  מפת GIS · {activeLayers.size}/4 שכבות פעילות
  </div>
  </div>
- <LayerMap activeLayers={activeLayers} />
+ <div className="grid gap-4 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] items-center">
+ <div className="aspect-square relative rounded-xl overflow-hidden bg-bg-accent">
+ <LayerComposite activeLayers={activeLayers} emptyLabel="אין שכבות פעילות" />
+ </div>
+ <div className="aspect-[224/150] relative">
+ <LayerStack activeLayers={activeLayers} labels={layerLabels} onToggle={toggleLayer} />
+ </div>
+ </div>
  </div>
 
  <SoftDivider text="ראסטר מול וקטור · אותו אזור, שני אופנים" />
 
  {/* Raster vs Vector — same real area, two encodings */}
- <div className="surface-elevated p-4 rounded-[4px] mb-12">
+ <div className="surface-elevated p-4 rounded-2xl mb-12">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
  אותו שטח מבצעי · פעם כראסטר, פעם כוקטור
  </div>
@@ -170,8 +206,8 @@ isActive
 
  <RasterVectorCompare />
 
- <div className="mt-4 surface p-4 rounded-[3px] flex gap-3 items-start">
- <Icon name="satellite" size={20} className="text-accent shrink-0 mt-0.5" />
+ <div className="mt-4 surface p-4 rounded-2xl flex gap-3 items-start">
+ <Icon name="satellite" size={20} className="text-brand-dark shrink-0 mt-0.5" />
  <p className="text-sm text-fg-muted leading-relaxed text-pretty">
  <strong className="text-fg">אותו שטח, שתי שיטות אחסון.</strong> ראסטר עונה על <strong className="text-fg">״מה יש בכל נקודה״</strong> — גובה, כיסוי, חום. וקטור עונה על <strong className="text-fg">״אילו אובייקטים יש ומה מותר לשאול עליהם״</strong> — כביש, מבנה, טווח. בניתוח מבצעי משתמשים בשניהם יחד: הראסטר הוא הרקע, הוקטור הוא מה שמחליטים עליו — למשל, לספור מבנים בטווח 200 מטר מהכביש כדי להחליט היכן למקם מחסום.
  </p>
@@ -185,34 +221,53 @@ isActive
  </p>
 
  {/* Vector query demo */}
- <div className="surface-elevated p-5 rounded-[4px] mb-12">
+ <div className="surface-elevated p-5 rounded-2xl mb-12">
  <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
  טבלת תכונות · 4 מבנים בגזרה
  </div>
 
- <div className="overflow-x-auto -mx-5 px-5 mb-4">
+ <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] items-center mb-4">
+ <div className="overflow-x-auto -mx-5 px-5 lg:mx-0 lg:px-0">
  <table className="w-full text-sm border-collapse">
  <thead>
  <tr className="border-b border-border">
- <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">ID</th>
- <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">סוג</th>
- <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">גובה (מ׳)</th>
- <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">אוכלוסייה</th>
- <th className="text-right py-2 px-3 text-xs font-display font-medium tracking-wide text-fg-dim">רגיש?</th>
+ <th className="text-start py-2 px-3 text-[13px] font-display font-medium tracking-wide text-fg-dim">ID</th>
+ <th className="text-start py-2 px-3 text-[13px] font-display font-medium tracking-wide text-fg-dim">סוג</th>
+ <th className="text-start py-2 px-3 text-[13px] font-display font-medium tracking-wide text-fg-dim">גובה (מ׳)</th>
+ <th className="text-start py-2 px-3 text-[13px] font-display font-medium tracking-wide text-fg-dim">אוכלוסייה</th>
+ <th className="text-start py-2 px-3 text-[13px] font-display font-medium tracking-wide text-fg-dim">רגיש?</th>
  </tr>
  </thead>
  <tbody>
  {BUILDINGS.map((b) => {
-const highlight = queriedSensitive && b.sensitive;
+const highlight = picked.has(b.id);
 return (
- <tr key={b.id} className={cn('border-b border-border-subtle transition-colors', highlight && 'bg-status-warn/10')}>
- <td className="py-2 px-3 font-display font-medium tracking-wide text-fg-dim tabular-nums">{b.id}</td>
+ <tr
+key={b.id}
+onClick={() => pickBuilding(b.id)}
+className={cn('relative cursor-pointer border-b border-border-subtle transition-colors', highlight ? 'bg-accent/10' : 'hover:bg-bg-accent')}
+ >
+ <td className={cn('py-2 px-3 font-display font-medium tracking-wide tabular-nums border-s-2', highlight ? 'border-s-accent text-fg font-bold' : 'border-s-transparent text-fg-dim')}>
+ {/* the ID is the keyboard handle for the row (row click is the mouse path) */}
+ <button
+type="button"
+aria-pressed={highlight}
+aria-label={b.type}
+onClick={(e) => {
+e.stopPropagation();
+pickBuilding(b.id);
+ }}
+className="rounded-xl px-1 -mx-1 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+ >
+ {b.id}
+ </button>
+ </td>
  <td className="py-2 px-3 text-fg">{b.type}</td>
  <td className="py-2 px-3 tabular-nums">{b.height}</td>
  <td className="py-2 px-3 tabular-nums">{b.pop}</td>
  <td className="py-2 px-3">
  {b.sensitive ? (
- <span className="text-status-warn font-display font-bold tracking-wide">✓ כן</span>
+ <span className="text-brand-dark font-display font-bold tracking-wide">✓ כן</span>
  ) : (
  <span className="text-fg-dim font-display font-medium tracking-wide">לא</span>
  )}
@@ -223,12 +278,18 @@ return (
  </tbody>
  </table>
  </div>
+ <div className="aspect-[108/73] w-full max-w-[400px] mx-auto">
+ <QueryBlocks buildings={BUILDINGS} selected={picked} onSelect={pickBuilding} />
+ </div>
+ </div>
 
  <div className="flex items-center gap-3 flex-wrap">
  <button
-onClick={() => setQueriedSensitive(!queriedSensitive)}
+type="button"
+aria-pressed={queriedSensitive}
+onClick={runQuery}
 className={cn(
- 'px-4 py-2 rounded-[3px] font-bold text-sm flex items-center gap-2 transition-all',
+ 'px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
 queriedSensitive
  ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
@@ -237,7 +298,7 @@ queriedSensitive
  <Icon name={queriedSensitive ? 'check' : 'compass'} size={14} strokeWidth={2.5} />
  {queriedSensitive ? 'מציג: SELECT WHERE sensitive = true' : 'הפעל שאילתה: מבנים רגישים'}
  </button>
- <p className="text-xs text-fg-muted">
+ <p className="text-[13px] text-fg-muted">
  <strong className="text-fg">זה הכוח של וקטור:</strong> במקום לצייר ידנית, פקודה אחת ובחירה.
  </p>
  </div>
@@ -246,24 +307,30 @@ queriedSensitive
  {/* Architecture callout */}
  <div className="">
  <div className="flex gap-4 items-start">
- <Icon name="satellite" size={32} className="text-accent shrink-0" />
+ <Icon name="satellite" size={32} className="text-brand-dark shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
  ארכיטקטורת עבודה
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">
  איך שומרים ומנהלים את הנתונים?
  </h3>
  <div className="grid sm:grid-cols-2 gap-3 mt-3">
- <div className="surface p-3 rounded-[3px]">
+ <div className="surface p-3 rounded-2xl flex items-center gap-3">
+ <div className="min-w-0 flex-1">
  <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">לוקלי</div>
  <div className="font-display font-bold text-sm mb-1">Shapefile / GDB</div>
- <p className="text-xs text-fg-muted leading-relaxed">קבצים על המחשב האישי. מתאים לניתוח עצמאי ופשוט. אין סנכרון.</p>
+ <p className="text-[13px] text-fg-muted leading-relaxed">קבצים על המחשב האישי. מתאים לניתוח עצמאי ופשוט. אין סנכרון.</p>
  </div>
- <div className="surface p-3 rounded-[3px]">
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">רשתי</div>
+ <LocalSchematic />
+ </div>
+ <div className="surface p-3 rounded-2xl flex items-center gap-3">
+ <div className="min-w-0 flex-1">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">רשתי</div>
  <div className="font-display font-bold text-sm mb-1">SDE — Spatial DB Engine</div>
- <p className="text-xs text-fg-muted leading-relaxed">שרת מרכזי. קמ"ן בחטיבה וקמ"ן באוגדה עובדים על אותה שכבה בו-זמנית. תמונה אחידה.</p>
+ <p className="text-[13px] text-fg-muted leading-relaxed">שרת מרכזי. קמ"ן בחטיבה וקמ"ן באוגדה עובדים על אותה שכבה בו-זמנית. תמונה אחידה.</p>
+ </div>
+ <NetworkSchematic />
  </div>
  </div>
  </div>
@@ -272,89 +339,54 @@ queriedSensitive
  </section>
  );
 }
-function LayerMap({ activeLayers }: { activeLayers: Set<Layer> }) {
-return (
- <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden bg-bg-accent">
- <svg viewBox="0 0 100 56" className="w-full h-full">
- <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
-
- {/* Layer 1: Elevation (raster heatmap) */}
- {activeLayers.has('elevation') && (
- <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
- {Array.from({ length: 200 }).map((_, i) => {
-const col = i % 20;
-const row = Math.floor(i / 20);
-const cx = col * 5;
-const cy = row * 5.6;
- // Simple elevation noise
-const e = Math.sin(col * 0.4) * Math.cos(row * 0.5) * 0.5 + 0.5;
-const colorClass = e > 0.7 ? 'fill-terrain-ridge' : e > 0.5 ? 'fill-terrain-olive' : e > 0.3 ? 'fill-terrain-sand' : 'fill-bg-warm';
-return (
- <rect key={i} x={cx} y={cy} width="5" height="5.6" className={colorClass} opacity="0.5" />
- );
- })}
- </motion.g>
- )}
-
- {/* Layer 2: Roads (vector lines) */}
- {activeLayers.has('roads') && (
- <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
- <path d="M0 30 L 30 28 L 60 32 L 100 30" fill="none" className="stroke-accent" strokeWidth="1.2" />
- <path d="M40 0 L 40 56" fill="none" className="stroke-accent" strokeWidth="0.8" />
- <path d="M70 0 L 75 56" fill="none" className="stroke-accent" strokeWidth="0.6" />
- </motion.g>
- )}
-
- {/* Layer 3: Buildings (vector polygons) */}
- {activeLayers.has('buildings') && (
- <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
- {[
- { x: 20, y: 18, w: 6, h: 4 },
- { x: 50, y: 22, w: 8, h: 5 },
- { x: 30, y: 38, w: 7, h: 4 },
- { x: 78, y: 42, w: 6, h: 5 },
- { x: 60, y: 14, w: 5, h: 3 },
- ].map((b, i) => (
- <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} className="fill-accent-cool/70 stroke-accent-cool" strokeWidth="0.3" />
- ))}
- </motion.g>
- )}
-
- {/* Layer 4: Threats (vector points) */}
- {activeLayers.has('threats') && (
- <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
- {[
- { x: 65, y: 28 },
- { x: 25, y: 45 },
- ].map((t, i) => (
- <g key={i}>
- <circle cx={t.x} cy={t.y} r="6" fill="none" className="stroke-status-danger" strokeWidth="0.3" strokeDasharray="0.7 0.5" />
- <circle cx={t.x} cy={t.y} r="1.2" className="fill-status-danger" />
- <circle cx={t.x} cy={t.y} r="3" fill="none" className="stroke-status-danger/50" strokeWidth="0.3">
- <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" />
- </circle>
- </g>
- ))}
- </motion.g>
- )}
-
- {/* If no layers — empty message */}
- {activeLayers.size === 0 && (
- <text x="50" y="28" textAnchor="middle" className="fill-fg-dim font-display" fontSize="3" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
- אין שכבות פעילות
- </text>
- )}
- </svg>
- </div>
- );
-}
+// "Raster vs vector" — the same area twice. Picking a raster cell shows its single
+// value; picking a vector feature (or its attribute row) outlines the raster cells
+// it crosses. Re-picking the same thing, or empty ground, clears the pick.
+const START_CELL = 4 * RASTER_N + 6;
 function RasterVectorCompare() {
+const colors = useCellColors(valleyAerial.src);
+const [cell, setCell] = useState<number | null>(START_CELL);
+const [feature, setFeature] = useState<VectorFeature | null>(null);
+const traced = feature === 'road' ? ROAD_CELLS : feature === 'site' ? new Set([SITE_CELL]) : null;
+const pickCell = (e: MouseEvent<HTMLDivElement>) => {
+const r = e.currentTarget.getBoundingClientRect();
+const cx = Math.min(RASTER_N - 1, Math.floor(((e.clientX - r.left) / r.width) * RASTER_N));
+const cy = Math.min(RASTER_N - 1, Math.floor(((e.clientY - r.top) / r.height) * RASTER_N));
+const id = cy * RASTER_N + cx;
+setCell((prev) => (prev === id ? null : id));
+ };
+// Arrow keys move the pixel in map directions (a map is never mirrored for RTL).
+const moveCell = (e: KeyboardEvent<HTMLDivElement>) => {
+const d: Record<string, [number, number]> = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+if (e.key === 'Escape') {
+setCell(null);
+return;
+ }
+const step = d[e.key];
+if (!step) return;
+e.preventDefault();
+setCell((prev) => {
+const p = prev ?? START_CELL;
+const x = Math.max(0, Math.min(RASTER_N - 1, (p % RASTER_N) + step[0]));
+const y = Math.max(0, Math.min(RASTER_N - 1, Math.floor(p / RASTER_N) + step[1]));
+return y * RASTER_N + x;
+ });
+ };
+const pickRow = (f: VectorFeature) => setFeature((prev) => (prev === f ? null : f));
+// a chip that sits over the picked pixel fades out of the way
+const underChip = chipOverCell(cell);
 return (
  <div className="grid gap-4 md:grid-cols-2">
  {/* ── RASTER panel: real satellite image ── */}
- <figure className="relative overflow-hidden rounded-[3px] border border-border bg-bg-accent">
- <div className="relative aspect-square">
+ <figure className="relative flex flex-col overflow-hidden rounded-2xl border border-border bg-bg-accent">
+ <div
+className="relative aspect-square cursor-crosshair focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+tabIndex={0}
+role="group"
+aria-label="כל פיקסל = ערך אחד"
+onClick={pickCell}
+onKeyDown={moveCell}
+ >
  <img
 src={valleyAerial.src}
 alt="אורתופוטו של אזור כפרי הררי — כביש מתפתל, יישוב על גבעה ושדות חקלאיים. דוגמה לשכבת ראסטר: כל פיקסל מחזיק ערך אחד."
@@ -362,123 +394,56 @@ className="absolute inset-0 h-full w-full object-cover"
 loading="lazy"
 draggable={false}
  />
- {/* pixel-grid overlay signals 'this image is a grid of value-cells'.
-     Dual-tone (dark casing + light line) so the grid reads over both the
-     dark forest and the light dirt-road / bare-field areas of the photo. */}
- <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
- {Array.from({ length: 15 }).map((_, i) => (
- <line key={`gvd${i}`} x1={((i + 1) * 100) / 16} y1="0" x2={((i + 1) * 100) / 16} y2="100" stroke="#1c1c1c" strokeWidth="0.4" opacity="0.18" />
- ))}
- {Array.from({ length: 15 }).map((_, i) => (
- <line key={`ghd${i}`} x1="0" y1={((i + 1) * 100) / 16} x2="100" y2={((i + 1) * 100) / 16} stroke="#1c1c1c" strokeWidth="0.4" opacity="0.18" />
- ))}
- {Array.from({ length: 15 }).map((_, i) => (
- <line key={`gvl${i}`} x1={((i + 1) * 100) / 16} y1="0" x2={((i + 1) * 100) / 16} y2="100" stroke="#FFFBF7" strokeWidth="0.18" opacity="0.32" />
- ))}
- {Array.from({ length: 15 }).map((_, i) => (
- <line key={`ghl${i}`} x1="0" y1={((i + 1) * 100) / 16} x2="100" y2={((i + 1) * 100) / 16} stroke="#FFFBF7" strokeWidth="0.18" opacity="0.32" />
- ))}
- <rect x={(6 * 100) / 16} y={(4 * 100) / 16} width={100 / 16} height={100 / 16} fill="none" stroke="#EB9E48" strokeWidth="0.9" />
- </svg>
- <span className="chip absolute top-2 end-2 border-border bg-bg-elevated/90 text-fg backdrop-blur-sm font-display font-semibold">◧ ראסטר</span>
- <span className="chip absolute bottom-2 start-2 border-border bg-bg-elevated/90 text-fg-muted backdrop-blur-sm">כל פיקסל = ערך אחד</span>
+ {/* pixel-grid overlay signals 'this image is a grid of value-cells' */}
+ <RasterGridOverlay selectedCell={cell} colors={colors} traced={traced} />
+ <span className={cn('chip text-[13px] absolute top-2 end-2 border-border bg-bg-elevated/90 text-fg backdrop-blur-sm font-display font-semibold transition-opacity', underChip === 'top' && 'opacity-20')}>◧ ראסטר</span>
+ <span className={cn('chip text-[13px] absolute bottom-2 start-2 border-border bg-bg-elevated/90 text-fg-muted backdrop-blur-sm transition-opacity', underChip === 'bottom' && 'opacity-20')}>
+ {cell !== null && (
+ <span aria-hidden className="size-3.5 rounded-[5px] border border-border shrink-0" style={{ backgroundColor: colors?.[cell] }} />
+ )}
+ כל פיקסל = ערך אחד
+ </span>
  </div>
- <figcaption className="border-t border-border-subtle bg-bg-elevated p-3">
+ <figcaption className="flex-1 border-t border-border-subtle bg-bg-elevated p-3">
  <div className="font-display font-bold text-sm text-fg leading-tight mb-0.5">אורתופוטו · שכבת רקע רציפה</div>
- <p className="text-xs text-fg-muted leading-relaxed text-pretty">
+ <p className="text-[13px] text-fg-muted leading-relaxed text-pretty">
  ערך לכל פיקסל: צבע, גובה, חום. מצוין ל<strong className="text-fg">תמונה של כל השטח</strong> — אבל אי אפשר לשאול אותו ״כמה מבנים יש?״
  </p>
- <p className="text-xs text-fg-muted leading-relaxed text-pretty mt-2">
+ <p className="text-[13px] text-fg-muted leading-relaxed text-pretty mt-2">
   <strong className="text-fg">זהו אורתופוטו</strong> — תמונה (אווירית או לוויינית) שעברה תיקון גיאומטרי (אורתורקטיפיקציה) שמסיר את עיוותי זווית הצילום וגובה השטח, כך שכל פיקסל יושב במיקום האמיתי שלו. בזכות זה אפשר למדוד עליו מרחקים ולהלביש עליו שכבות וקטוריות בדיוק — בתצלום רגיל (לא מתוקן) המרחקים משתבשים ליד הקצוות.
  </p>
  </figcaption>
  </figure>
 
  {/* ── VECTOR panel: same area as clean objects ── */}
- <figure className="relative overflow-hidden rounded-[3px] border border-border bg-bg-elevated">
+ <figure className="relative flex flex-col overflow-hidden rounded-2xl border border-border bg-bg-elevated">
  <div className="relative aspect-square">
- <VectorMap />
- <span className="chip absolute top-2 end-2 border-border bg-bg-elevated/90 text-fg backdrop-blur-sm font-display font-semibold">◢ וקטור</span>
- {/* attribute table — the core 'each object is a row' idea */}
- <div className="absolute top-2 start-2 rounded-[3px] border border-border bg-bg-elevated/95 px-2 py-1.5 shadow-sm backdrop-blur-sm">
- <div className="mb-0.5 text-[9px] font-display font-medium tracking-wide text-fg-dim">טבלת תכונות</div>
- <table className="text-[9px] leading-tight tabular-nums">
+ <VectorAreaMap
+selected={feature}
+onSelect={setFeature}
+labels={{ buildings: 'מבנים', site: 'אתר תצפית', road: 'כביש ראשי', wadi: 'נחל אכזב' }}
+ />
+ <span className="chip text-[13px] absolute top-2 end-2 border-border bg-bg-elevated/90 text-fg backdrop-blur-sm font-display font-semibold">◢ וקטור</span>
+ </div>
+ <figcaption className="flex-1 border-t border-border-subtle bg-bg-elevated p-3">
+ <div className="font-display font-bold text-sm text-fg leading-tight mb-0.5">אובייקטים · נקודות · קווים · פוליגונים</div>
+ <p className="text-[13px] text-fg-muted leading-relaxed text-pretty">
+ כל אובייקט נפרד עם טבלת תכונות. מצוין ל<strong className="text-fg">שאילתות חכמות</strong> — ״כל המבנים בטווח 200 מטר מכביש ראשי״.
+ </p>
+ {/* attribute table — the core 'each object is a row' idea; rows are linked to the map */}
+ <div className="mt-3 rounded-xl border border-border bg-bg-elevated px-3 py-2">
+ <div className="mb-1 text-[13px] font-display font-medium tracking-wide text-fg-dim">טבלת תכונות</div>
+ <table className="w-full text-[13px] leading-snug tabular-nums">
  <tbody>
- <tr className="text-fg-dim"><td className="pe-2 text-start">id</td><td className="pe-2 text-start">סוג</td><td className="text-start">שם</td></tr>
- <tr className="text-fg font-medium"><td className="pe-2 text-start">1</td><td className="pe-2 text-start">כביש</td><td className="text-start">ראשי</td></tr>
- <tr className="text-fg font-medium"><td className="pe-2 text-start">2</td><td className="pe-2 text-start">אתר</td><td className="text-start">תצפית</td></tr>
+ <tr className="text-fg-dim"><td className="pe-3 py-0.5 text-start">id</td><td className="pe-3 py-0.5 text-start">סוג</td><td className="py-0.5 text-start">שם</td></tr>
+ <tr onClick={() => pickRow('road')} className={cn('cursor-pointer font-medium transition-colors', feature === 'road' ? 'bg-accent/15 text-fg font-bold' : 'text-fg hover:bg-bg-accent')}><td className="pe-3 py-0.5 text-start">1</td><td className="pe-3 py-0.5 text-start">כביש</td><td className="py-0.5 text-start">ראשי</td></tr>
+ <tr onClick={() => pickRow('site')} className={cn('cursor-pointer font-medium transition-colors', feature === 'site' ? 'bg-accent/15 text-fg font-bold' : 'text-fg hover:bg-bg-accent')}><td className="pe-3 py-0.5 text-start">2</td><td className="pe-3 py-0.5 text-start">אתר</td><td className="py-0.5 text-start">תצפית</td></tr>
  </tbody>
  </table>
  </div>
- </div>
- <figcaption className="border-t border-border-subtle bg-bg-elevated p-3">
- <div className="font-display font-bold text-sm text-fg leading-tight mb-0.5">אובייקטים · נקודות · קווים · פוליגונים</div>
- <p className="text-xs text-fg-muted leading-relaxed text-pretty">
- כל אובייקט נפרד עם טבלת תכונות. מצוין ל<strong className="text-fg">שאילתות חכמות</strong> — ״כל המבנים בטווח 200 מטר מכביש ראשי״.
- </p>
  </figcaption>
  </figure>
  </div>
- );
-}
-function VectorMap() {
-return (
- <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" className="absolute inset-0 h-full w-full">
- <rect x="0" y="0" width="100" height="100" className="fill-bg-elevated" />
-
- {/* Agricultural fields (polygons) — same tilled patches as the photo */}
- <g className="fill-brand/10 stroke-brand-dark/50" strokeWidth="0.25">
- <polygon points="1,70 22,67 27,86 3,90" />
- <polygon points="24,80 43,77 47,95 27,97" />
- <polygon points="45,84 62,82 64,97 47,98" />
- <polygon points="86,2 99,1 99,15 88,16" />
- </g>
-
- {/* Contour lines (elevation as vector) around the hilltop settlement.
-     Top edge kept below the attribute-table overlay so they never collide. */}
- <g fill="none" className="stroke-fg-dim" strokeWidth="0.25" opacity="0.4">
- <ellipse cx="74" cy="33" rx="23" ry="15" />
- <ellipse cx="75" cy="32" rx="15" ry="9" />
- <ellipse cx="76" cy="31" rx="8" ry="5" />
- <ellipse cx="15" cy="52" rx="14" ry="10" />
- </g>
-
- {/* Seasonal stream / wadi (line) */}
- <path d="M0 80 C 12 79, 20 87, 31 87 C 41 87, 45 93, 53 94" fill="none" className="stroke-terrain-sky" strokeWidth="0.7" strokeLinecap="round" opacity="0.85" />
-
- {/* Main road (winding) — white casing then accent, matches the photo's S-curve */}
- <path d="M16 6 C 27 7, 34 8, 31 17 C 28 27, 21 30, 22 41 C 23 50, 34 46, 37 53 C 40 60, 47 51, 49 56 C 52 63, 61 58, 67 59 C 75 60, 79 56, 83 63 C 88 70, 78 75, 81 82 C 83 89, 78 93, 84 100" fill="none" stroke="#FFFBF7" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
- <path d="M16 6 C 27 7, 34 8, 31 17 C 28 27, 21 30, 22 41 C 23 50, 34 46, 37 53 C 40 60, 47 51, 49 56 C 52 63, 61 58, 67 59 C 75 60, 79 56, 83 63 C 88 70, 78 75, 81 82 C 83 89, 78 93, 84 100" fill="none" className="stroke-accent" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-
- {/* Secondary track up to the settlement (dashed) */}
- <path d="M67 59 C 70 52, 66 46, 72 41" fill="none" className="stroke-accent/60" strokeWidth="0.6" strokeDasharray="1 0.8" strokeLinecap="round" />
- {/* Settlement loop road */}
- <path d="M66 30 C 66 24, 72 21, 79 22 C 87 23, 90 28, 88 33 C 86 38, 78 39, 72 37 C 68 36, 66 34, 66 30 Z" fill="none" className="stroke-accent/70" strokeWidth="0.5" />
-
- {/* Buildings (polygons) — the settlement cluster */}
- <g className="fill-accent-cool/70 stroke-accent-cool" strokeWidth="0.2">
- <rect x="70" y="26" width="3" height="2.2" />
- <rect x="74" y="25" width="2.6" height="2" />
- <rect x="77.5" y="26.5" width="3.2" height="2.4" />
- <rect x="71.5" y="29.5" width="2.4" height="2" />
- <rect x="75" y="29" width="3" height="2.4" />
- <rect x="79" y="30" width="2.6" height="2.2" />
- <rect x="82.5" y="27.5" width="3" height="2.2" />
- <rect x="73" y="32.5" width="2.8" height="2" />
- <rect x="77" y="33" width="3" height="2.2" />
- <rect x="81" y="33" width="2.4" height="2" />
- </g>
-
- {/* Point feature — observation / threat site with buffer ring */}
- <circle cx="54" cy="43" r="4.5" fill="none" className="stroke-status-danger/60" strokeWidth="0.35" strokeDasharray="0.9 0.7" />
- <circle cx="54" cy="43" r="1.1" className="fill-status-danger" />
-
- {/* Feature labels — white halo, placed clear of one another */}
- <text x="59" y="23" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="3.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="1.05" strokeLinejoin="round">מבנים</text>
- <text x="53" y="37" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="3.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="1.05" strokeLinejoin="round">אתר תצפית</text>
- <text x="31" y="64" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="3.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="1.05" strokeLinejoin="round">כביש ראשי</text>
- <text x="21" y="75" textAnchor="middle" className="fill-terrain-sky font-display font-bold" fontSize="3.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="1.05" strokeLinejoin="round">נחל אכזב</text>
- </svg>
  );
 }
 function SoftDivider({ text }: { text: string }) {

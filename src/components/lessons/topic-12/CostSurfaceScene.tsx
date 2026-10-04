@@ -1,41 +1,11 @@
 'use client';
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-
-// Grid dimensions
-const W = 22;
-const H = 13;
-
-// Generate a fixed terrain grid: each cell has slope, water, urban (0-1)
-type Cell = { slope: number; water: number; urban: number; threat: number };
-function generateGrid(): Cell[][] {
-const g: Cell[][] = [];
-for (let x = 0; x < W; x++) {
-g[x] = [];
-for (let y = 0; y < H; y++) {
- // Slope: 2 hills
-const slope =
-Math.exp(-(((x - 8) ** 2) / 22 + ((y - 4) ** 2) / 12)) * 0.9 +
-Math.exp(-(((x - 15) ** 2) / 18 + ((y - 9) ** 2) / 14)) * 0.7;
- // River across middle
-const water = Math.exp(-((y - 7 + Math.sin(x * 0.5) * 0.8) ** 2) * 1.4) * 0.85;
- // Urban patch
-const urban =
-x >= 11 && x <= 14 && y >= 2 && y <= 4 ? 0.9 :
-x >= 17 && x <= 19 && y >= 8 && y <= 10 ? 0.7 : 0;
- // Threat near (16, 6)
-const dx = x - 16;
-const dy = y - 6;
-const threat = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / 5);
-g[x][y] = { slope, water, urban, threat };
- }
- }
-return g;
-}
-const GRID = generateGrid();
+// The terrain (slope from one height model, river, village, threat, paved road)
+// and its map live beside the scene.
+import { COST_RAMP, CostMap, END, FactorThumb, GRID, H, LegendSwatch, START, W, type Factor } from './CostSurfaceTerrain';
 
 // Compute cost surface from grid + weights
 function computeCost(weights: { slope: number; water: number; urban: number; threat: number }): number[][] {
@@ -45,9 +15,9 @@ cost[x] = [];
 for (let y = 0; y < H; y++) {
 const c = GRID[x][y];
 cost[x][y] =
-1 + // base cost
-c.slope * weights.slope * 5 +
-c.water * weights.water * 8 +
+(c.road ? 0.3 : 1) + // base cost — a paved road is cheap to move on
+c.slope * (c.road ? 0.4 : 1) * weights.slope * 5 +
+(c.road ? 0 : c.water) * weights.water * 8 + // the road crosses the river on a bridge
 c.urban * weights.urban * 4 +
 c.threat * weights.threat * 12;
  }
@@ -73,14 +43,41 @@ prev[x][y] = null;
  }
 dist[start[0]][start[1]] = 0;
 
- // Simple priority queue using a sorted array
+ // Binary-heap priority queue (recomputed on every slider step)
 const queue: { x: number; y: number; d: number }[] = [
  { x: start[0], y: start[1], d: 0 },
  ];
+const push = (n: { x: number; y: number; d: number }) => {
+queue.push(n);
+let i = queue.length - 1;
+while (i > 0) {
+const p = (i - 1) >> 1;
+if (queue[p].d <= queue[i].d) break;
+[queue[p], queue[i]] = [queue[i], queue[p]];
+i = p;
+ }
+ };
+const pop = () => {
+const top = queue[0];
+const last = queue.pop()!;
+if (queue.length > 0) {
+queue[0] = last;
+let i = 0;
+for (;;) {
+const l = 2 * i + 1, r = l + 1;
+let m = i;
+if (l < queue.length && queue[l].d < queue[m].d) m = l;
+if (r < queue.length && queue[r].d < queue[m].d) m = r;
+if (m === i) break;
+[queue[m], queue[i]] = [queue[i], queue[m]];
+i = m;
+ }
+ }
+return top;
+ };
 const visited = new Set<string>();
 while (queue.length > 0) {
-queue.sort((a, b) => a.d - b.d);
-const u = queue.shift()!;
+const u = pop();
 const key = `${u.x},${u.y}`;
 if (visited.has(key)) continue;
 visited.add(key);
@@ -121,9 +118,17 @@ export function CostSurfaceScene() {
 const [weights, setWeights] = useState({ slope: 0.5, water: 0.7, urban: 0.4, threat: 1.0 });
 const [showDirect, setShowDirect] = useState(false);
 const cost = useMemo(() => computeCost(weights), [weights]);
-const start: [number, number] = [1, 11];
-const end: [number, number] = [20, 2];
+const start = START;
+const end = END;
 const lcp = useMemo(() => leastCostPath(cost, start, end), [cost]);
+// The traveller runs once along the path ~0.4 s after the sliders settle,
+// and again on replay — never in a loop.
+const [run, setRun] = useState(0);
+const pathKey = lcp.path.map((p) => p.join(',')).join(' ');
+useEffect(() => {
+const id = window.setTimeout(() => setRun((r) => r + 1), 400);
+return () => window.clearTimeout(id);
+ }, [pathKey]);
 
  // Direct line for comparison
 const directDist = useMemo(() => {
@@ -154,12 +159,12 @@ intro="כל תא בשטח מקבל ציון קושי לתנועה — שיפוע
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
- <div className="surface-elevated p-6 rounded-[4px]">
- <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+ <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
  הקלט
  </div>
- <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
  Cost Surface — ראסטר של "קושי לתנועה"
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
@@ -169,12 +174,12 @@ intro="כל תא בשטח מקבל ציון קושי לתנועה — שיפוע
  <strong className="text-fg">"עלות" כאן היא לא מרחק ולא זמן</strong> — היא ציון מצטבר שנבנה מסכום גורמים: שיפוע (כמה קשה לטפס), מכשולים כמו נחל או שטח בנוי (כמה קשה לחצות או לעקוף), וקרבה לאיום (כמה מסוכן להיחשף). לכל גורם יש משקל שקובעים בסליידרים למטה — אותו תא בשטח יכול להיות "זול" במשימה שקטה ו"יקר" כשמעלים את משקל האיום.
  </p>
  </div>
- <div className="surface-elevated p-6 rounded-[4px]">
- <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+ <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
  הפלט
  </div>
- <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
  Least-Cost Path — אלגוריתם שזורם כמו מים
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
@@ -186,70 +191,89 @@ intro="כל תא בשטח מקבל ציון קושי לתנועה — שיפוע
  {/* Main interactive */}
  <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6 items-stretch mb-12">
  {/* Map */}
- <div className="surface-elevated p-4 rounded-[4px] flex flex-col">
+ <div className="surface-elevated p-4 rounded-2xl flex flex-col">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  משטח עלות חי · A ← B
  </div>
- <div className="chip border-status-ok/40 bg-status-ok/10 text-status-ok">
+ <div className="flex items-center gap-2">
+ <div className="chip text-[13px] border-brand/40 bg-brand/10 text-brand-dark">
  <Icon name="check" size={12} strokeWidth={2.5} />
  <span className="font-display font-medium tracking-wide">חיסכון: {savings}%</span>
  </div>
+ <button
+type="button"
+onClick={() => setRun((r) => r + 1)}
+aria-label="הפעלה חוזרת של ההדגמה"
+className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 transition-colors inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+ >
+ <Icon name="refresh" size={15} />
+ </button>
+ </div>
  </div>
 
- <div className="flex-1 min-h-0 flex">
- <CostMap cost={cost} path={lcp.path} start={start} end={end} showDirect={showDirect} />
+ {/* square cells: the map keeps the grid's 30:18 aspect; map + legend stay together */}
+ <div className="flex-1 min-h-0 flex flex-col justify-center">
+ <div className="w-full aspect-[30/18] rounded-xl overflow-hidden bg-bg-accent">
+ <CostMap cost={cost} path={lcp.path} showDirect={showDirect} runKey={run} />
  </div>
 
- <div className="mt-3 flex items-center gap-4 text-[11px] font-display font-medium tracking-wide text-fg-dim flex-wrap">
- <span className="flex items-center gap-1"><span className="size-2 bg-status-ok rounded-sm" /> עלות נמוכה</span>
- <span className="flex items-center gap-1"><span className="size-2 bg-status-warn rounded-sm" /> עלות בינונית</span>
- <span className="flex items-center gap-1"><span className="size-2 bg-status-danger rounded-sm" /> עלות גבוהה</span>
- <span className="flex items-center gap-1"><span className="size-2 bg-accent rounded-sm" /> נתיב Least-Cost</span>
+ <div className="mt-3 flex items-center gap-4 text-[13px] font-display font-medium tracking-wide text-fg-muted flex-wrap">
+ <span className="flex items-center gap-1.5"><LegendSwatch fill={COST_RAMP[1]} /> עלות נמוכה</span>
+ <span className="flex items-center gap-1.5"><LegendSwatch fill={COST_RAMP[3]} /> עלות בינונית</span>
+ <span className="flex items-center gap-1.5"><LegendSwatch fill={COST_RAMP[6]} /> עלות גבוהה</span>
+ <span className="flex items-center gap-1.5"><LegendSwatch line /> נתיב Least-Cost</span>
+ </div>
  </div>
  </div>
 
  {/* Controls */}
  <div className="space-y-3">
- <div className="surface-elevated p-5 rounded-[4px]">
+ <div className="surface-elevated p-5 rounded-2xl">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
  משקלות עלות
  </div>
- <p className="text-xs text-fg-muted leading-relaxed mb-3">
+ <p className="text-[13px] text-fg-muted leading-relaxed mb-3">
  איך כל גורם משפיע על "עלות הנתיב"? 0 = לא חשוב. 1 = חשוב מאוד.
  </p>
 
  <WeightSlider
 label="שיפוע (גובה)"
+factor="slope"
 value={weights.slope}
 setValue={(v) => setWeights({ ...weights, slope: v })}
 color="text-terrain-ridge"
  />
  <WeightSlider
 label="מים (נחל)"
+factor="water"
 value={weights.water}
 setValue={(v) => setWeights({ ...weights, water: v })}
 color="text-terrain-sky"
  />
  <WeightSlider
 label="שטח בנוי"
+factor="urban"
 value={weights.urban}
 setValue={(v) => setWeights({ ...weights, urban: v })}
-color="text-accent-cool"
+color="text-fg-muted"
  />
  <WeightSlider
 label="קרבה לאיום"
+factor="threat"
 value={weights.threat}
 setValue={(v) => setWeights({ ...weights, threat: v })}
 color="text-status-danger"
  />
  </div>
 
- <div className="surface p-3 rounded-[3px] flex items-center gap-2">
+ <div className="surface p-3 rounded-2xl flex items-center gap-2">
  <button
+type="button"
+aria-pressed={showDirect}
 onClick={() => setShowDirect(!showDirect)}
 className={cn(
- 'flex-1 px-3 py-2 rounded-[3px] text-xs font-bold transition-all flex items-center justify-center gap-1.5',
+ 'flex-1 px-3 py-2 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
 showDirect
  ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
@@ -261,13 +285,14 @@ showDirect
  </div>
 
  <div className="grid grid-cols-2 gap-2">
- <div className="surface p-3 rounded-[3px] text-center">
- <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">עלות LCP</div>
- <div className="font-display font-bold text-xl text-status-ok tabular-nums">{lcp.total.toFixed(0)}</div>
+ {/* each number takes the colour of its line on the map */}
+ <div className="surface p-3 rounded-2xl text-center">
+ <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">עלות LCP</div>
+ <div className="font-display font-bold text-xl text-accent tabular-nums">{lcp.total.toFixed(0)}</div>
  </div>
- <div className="surface p-3 rounded-[3px] text-center">
- <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">קו ישיר</div>
- <div className="font-display font-bold text-xl text-status-danger tabular-nums">{directDist.toFixed(0)}</div>
+ <div className="surface p-3 rounded-2xl text-center">
+ <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">קו ישיר</div>
+ <div className="font-display font-bold text-xl text-fg tabular-nums">{directDist.toFixed(0)}</div>
  </div>
  </div>
  </div>
@@ -276,9 +301,9 @@ showDirect
  {/* Concept callout */}
  <div className="">
  <div className="flex gap-4 items-start">
- <Icon name="compass" size={32} className="text-accent shrink-0" />
+ <Icon name="compass" size={32} className="text-brand-dark shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">"כמו מים זורמים"
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">"כמו מים זורמים"
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">
  הנתיב הזול לא תמיד הוא הקצר
@@ -293,147 +318,15 @@ showDirect
  </section>
  );
 }
-function CostMap({
-cost,
-path,
-start,
-end,
-showDirect,
-}: {
-cost: number[][];
-path: [number, number][];
-start: [number, number];
-end: [number, number];
-showDirect: boolean;
-}) {
-const cellW = 100 / W;
-const cellH = 100 / H;
-
- // Find max cost for normalization
-let maxCost = 1;
-for (let x = 0; x < W; x++) {
-for (let y = 0; y < H; y++) {
-if (cost[x][y] > maxCost) maxCost = cost[x][y];
- }
- }
-return (
- <div className="relative w-full h-full min-h-[260px] rounded-[3px] overflow-hidden bg-bg-accent">
- <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
- {/* Cost heatmap */}
- {Array.from({ length: W }).map((_, x) =>
-Array.from({ length: H }).map((_, y) => {
-const c = cost[x][y] / maxCost;
-const colorClass =
-c > 0.7 ? 'fill-status-danger' :
-c > 0.5 ? 'fill-status-warn' :
-c > 0.3 ? 'fill-status-ok' :
- 'fill-accent-cool';
-return (
- <rect
-key={`${x}-${y}`}
-x={x * cellW}
-y={y * cellH}
-width={cellW}
-height={cellH}
-className={colorClass}
-opacity={0.15 + c * 0.5}
- />
- );
- })
- )}
-
- {/* Grid lines (subtle) */}
- {Array.from({ length: W + 1 }).map((_, i) => (
- <line key={`gx${i}`} x1={i * cellW} y1="0" x2={i * cellW} y2="100" className="stroke-fg-dim" strokeWidth="0.05" opacity="0.2" />
- ))}
- {Array.from({ length: H + 1 }).map((_, i) => (
- <line key={`gy${i}`} x1="0" y1={i * cellH} x2="100" y2={i * cellH} className="stroke-fg-dim" strokeWidth="0.05" opacity="0.2" />
- ))}
-
- {/* Direct line (if toggled) */}
- {showDirect && (
- <line
-x1={start[0] * cellW + cellW / 2}
-y1={start[1] * cellH + cellH / 2}
-x2={end[0] * cellW + cellW / 2}
-y2={end[1] * cellH + cellH / 2}
-className="stroke-status-danger"
-strokeWidth="0.7"
-strokeDasharray="2 1.2"
-opacity="0.8"
- />
- )}
-
- {/* Least-cost path */}
- <motion.polyline
-points={path.map((p) => `${p[0] * cellW + cellW / 2},${p[1] * cellH + cellH / 2}`).join(' ')}
-fill="none"
-className="stroke-accent"
-strokeWidth="1.2"
-strokeLinejoin="round"
-strokeLinecap="round"
-initial={{ pathLength: 0 }}
-animate={{ pathLength: 1 }}
-transition={{ duration: 0.5 }}
- />
-
- {/* Animated traveler */}
- <motion.circle
-r="1"
-className="fill-accent"
-animate={{
-cx: path.map((p) => p[0] * cellW + cellW / 2),
-cy: path.map((p) => p[1] * cellH + cellH / 2),
- }}
-transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
- />
-
- {/* Start marker */}
- <circle cx={start[0] * cellW + cellW / 2} cy={start[1] * cellH + cellH / 2} r="2" className="fill-accent-cool" stroke="#ffffff" strokeWidth="0.4" />
- <text
-x={start[0] * cellW + cellW / 2}
-y={start[1] * cellH + cellH / 2 - 3}
-textAnchor="middle"
-className="fill-accent-cool font-display font-bold"
-fontSize="3"
-paintOrder="stroke"
-stroke="#ffffff"
-strokeWidth="0.95"
-strokeLinejoin="round"
- >
-A
- </text>
-
- {/* End marker */}
- <circle cx={end[0] * cellW + cellW / 2} cy={end[1] * cellH + cellH / 2} r="2" className="fill-accent-hot" stroke="#ffffff" strokeWidth="0.4" />
- <circle cx={end[0] * cellW + cellW / 2} cy={end[1] * cellH + cellH / 2} r="3.5" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
- <animate attributeName="r" values="2.5;5;2.5" dur="2.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.8;0;0.8" dur="2.4s" repeatCount="indefinite" />
- </circle>
- <text
-x={end[0] * cellW + cellW / 2}
-y={end[1] * cellH + cellH / 2 - 3}
-textAnchor="middle"
-className="fill-accent-hot font-display font-bold"
-fontSize="3"
-paintOrder="stroke"
-stroke="#ffffff"
-strokeWidth="0.95"
-strokeLinejoin="round"
- >
-B
- </text>
- </svg>
- </div>
- );
-}
 function WeightSlider({
 label,
+factor,
 value,
 setValue,
 color,
 }: {
 label: string;
+factor: Factor;
 value: number;
 setValue: (v: number) => void;
 color: string;
@@ -441,21 +334,27 @@ color: string;
 return (
  <div className="mb-3 last:mb-0">
  <div className="flex items-baseline justify-between mb-1">
- <div className="text-xs font-medium">{label}</div>
+ <div className="text-[13px] font-medium">{label}</div>
  <div className={cn('text-sm font-display font-bold tabular-nums', color)}>
  {value.toFixed(1)}
  </div>
  </div>
+ <div className="flex items-center gap-3">
+ {/* where this factor sits on the map, at the strength its weight gives it */}
+ <FactorThumb factor={factor} weight={value} />
+ {/* a numeric scale unrolls left → right (0 at left); not mirrored for RTL */}
  <input
 type="range"
+dir="ltr"
 min={0}
 max={1}
 step={0.05}
 value={value}
 onChange={(e) => setValue(Number(e.target.value))}
-className="w-full accent-accent"
+className="min-w-0 flex-1 accent-accent"
 aria-label={label}
  />
+ </div>
  </div>
  );
 }

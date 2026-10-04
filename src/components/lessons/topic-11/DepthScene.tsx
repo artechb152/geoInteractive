@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { DepthCrossSection, DepthScale, ZONE_BREAKS, depthToFrac } from './DepthVisuals';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -89,54 +90,72 @@ const COUNTRIES: CountryExample[] = [
   },
 ];
 
-/* Visual scale for the comparison bars. Linear scale crushes Israel
+/* Visual scale for the comparison bars, the slider and the cross-section:
+   one log scale (DepthVisuals.depthToFrac). Linear scale crushes Israel
    (14 km) to invisible width next to the USA (4500 km). Log-scale
    keeps all 5 countries visible AND reflects how perception of "more
    depth" diminishes (each doubling matters less than the previous). */
-const MAX_DEPTH = 4500;
-const MIN_DEPTH = 10;
-const logMin = Math.log10(MIN_DEPTH);
-const logMax = Math.log10(MAX_DEPTH);
-function depthToPct(km: number): number {
-  return ((Math.log10(km) - logMin) / (logMax - logMin)) * 100;
-}
+const depthToPct = (km: number) => depthToFrac(km) * 100;
+
+type Doctrine = 'offensive' | 'layered' | 'flexible' | 'absorptive';
+const DOCTRINE_ORDER: Doctrine[] = ['offensive', 'layered', 'flexible', 'absorptive'];
 
 export function DepthScene() {
   const [depth, setDepth] = useState(80);
+  // The example country the learner picked (preset button or ruler row).
+  // Clicking it again clears it; dragging the slider clears it too.
+  const [pinned, setPinned] = useState<string | null>('lebanon');
+  // Bumped once per settled selection and by the replay control → the
+  // attack demo in the cross-section plays once per bump.
+  const [run, setRun] = useState(0);
+  const reduce = !!useReducedMotion();
+
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const id = window.setTimeout(() => setRun((r) => r + 1), 450);
+    return () => window.clearTimeout(id);
+  }, [depth]);
+
+  const pickCountry = (c: CountryExample) => {
+    if (pinned === c.id) {
+      setPinned(null);
+      return;
+    }
+    setPinned(c.id);
+    setDepth(c.depth);
+  };
 
   // Calculations
   const enemySpeed = 30; // km/day for ground advance
   const daysToCapital = Math.max(0.5, depth / enemySpeed);
-  const doctrine: 'offensive' | 'layered' | 'flexible' | 'absorptive' =
-    depth < 30 ? 'offensive' : depth < 200 ? 'layered' : depth < 1000 ? 'flexible' : 'absorptive';
-  
+  const formatTime = (days: number) =>
+    daysToCapital < 1 ? `${Math.round(days * 24)} שעות` : `${Math.round(days)} ימים`;
+  const doctrine: Doctrine =
+    depth < ZONE_BREAKS[0] ? 'offensive' : depth < ZONE_BREAKS[1] ? 'layered' : depth < ZONE_BREAKS[2] ? 'flexible' : 'absorptive';
+
   const doctrineMeta = {
-    offensive: { 
-      label: 'מתקפת מנע (התקפה מקדימה)', 
-      color: 'text-status-danger', 
-      bg: 'bg-status-danger/10', 
-      desc: 'כשאין עומק - אין לאן לסגת. הצבא חייב ליזום, לתקוף ראשון ולהעביר את הלחימה מיד לשטח האויב לפני שהאיום יגיע לאזרחים.' 
+    offensive: {
+      label: 'מתקפת מנע (התקפה מקדימה)',
+      desc: 'כשאין עומק - אין לאן לסגת. הצבא חייב ליזום, לתקוף ראשון ולהעביר את הלחימה מיד לשטח האויב לפני שהאיום יגיע לאזרחים.'
     },
-    layered: { 
-      label: 'הגנה בשכבות (מרובדת)', 
-      color: 'text-status-warn', 
-      bg: 'bg-status-warn/10', 
-      desc: 'יש מספיק שטח כדי לבנות מספר קווי הגנה זה אחר זה. האסטרטגיה נשענת על מכשולים בטבע (הרים, וואדיות) כדי לעכב את האויב, אבל אי אפשר לסגת לאחור לנצח.' 
+    layered: {
+      label: 'הגנה בשכבות (מרובדת)',
+      desc: 'יש מספיק שטח כדי לבנות מספר קווי הגנה זה אחר זה. האסטרטגיה נשענת על מכשולים בטבע (הרים, וואדיות) כדי לעכב את האויב, אבל אי אפשר לסגת לאחור לנצח.'
     },
-    flexible: { 
-      label: 'הגנה גמישה והשהייה', 
-      color: 'text-accent', 
-      bg: 'bg-accent/10', 
-      desc: 'השטח הגדול מאפשר לצבא לסגת לאחור בצורה מסודרת תוך כדי לחימה. אפשר להקים קווי הגנה חדשים, להתיש את האויב ולמשוך זמן יקר — למשל, עד שיגיע סיוע או נשק ממדינות בחו"ל.' 
+    flexible: {
+      label: 'הגנה גמישה והשהייה',
+      desc: 'השטח הגדול מאפשר לצבא לסגת לאחור בצורה מסודרת תוך כדי לחימה. אפשר להקים קווי הגנה חדשים, להתיש את האויב ולמשוך זמן יקר — למשל, עד שיגיע סיוע או נשק ממדינות בחו"ל.'
     },
-    absorptive: { 
-      label: 'ספיגה והתשה (נסיגה אסטרטגית)', 
-      color: 'text-status-ok', 
-      bg: 'bg-status-ok/10', 
-      desc: 'עומק עצום שמאפשר פשוט "לבלוע" את צבא האויב פנימה. ככל שהאויב מתקדם לעומק השטח, קווי האספקה שלו מתארכים ונהיים פגיעים, עד שהוא קורס מעייפות ומחסור בציוד.' 
+    absorptive: {
+      label: 'ספיגה והתשה (נסיגה אסטרטגית)',
+      desc: 'עומק עצום שמאפשר פשוט "לבלוע" את צבא האויב פנימה. ככל שהאויב מתקדם לעומק השטח, קווי האספקה שלו מתארכים ונהיים פגיעים, עד שהוא קורס מעייפות ומחסור בציוד.'
     },
   };
-  
+
   const dm = doctrineMeta[doctrine];
 
   // Find closest country example
@@ -151,31 +170,31 @@ export function DepthScene() {
         eyebrow="עומק אסטרטגי"
 title = {
   <>
-    <span className="text-accent-hover">עומק אסטרטגי</span> הוא הזמן שמדינה קונה לעצמה
+    <span className="text-brand-dark">עומק אסטרטגי</span> הוא הזמן שמדינה קונה לעצמה
   </>
 }
         intro={`כל קילומטר של מרחק בין קו החזית לבין מרכזי האוכלוסייה הוא למעשה עוד שעה של זמן חסד לקבלת החלטות. בואו נשחק עם המרחק ונראה איך אותה מתקפת אויב נראית כשיש למדינה רק 14 ק"מ של עומק, לעומת 4,000 ק"מ.`}
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-6 rounded-[4px]">
-          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
-            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        <div className="surface-elevated p-6">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
             ההגדרה
           </div>
-          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
             עומק אסטרטגי = המרחק בין החזית ללב המדינה
           </h3>
           <p className="text-base text-fg leading-relaxed text-pretty">
             המרחק הפיזי בין אזור הלחימה (החזית) לבין לב המדינה — המקום שבו נמצאים האזרחים, מפעלי התעשייה ומוסדות השלטון. הוא הגורם שקובע את חופש הפעולה של הצבא ושל מקבלי ההחלטות מאחור.
           </p>
         </div>
-        <div className="surface-elevated p-6 rounded-[4px]">
-          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
-            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        <div className="surface-elevated p-6">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
             למה זה קובע הכל
           </div>
-          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
             העומק קובע 3 דברים קריטיים
           </h3>
           <p className="text-base text-fg leading-relaxed text-pretty">
@@ -187,34 +206,61 @@ title = {
       {/* Main interactive */}
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-stretch mb-12">
         {/* Visualization */}
-        <div className="surface-elevated p-4 rounded-[4px] flex flex-col">
+        <div className="surface-elevated p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
               מבט חתך: מהגבול ועד ללב המדינה
             </div>
-            <div className={cn('chip', dm.bg, dm.color, 'border-current/40')}>
-              <Icon name="shield" size={12} strokeWidth={2.5} />
-              <span className="font-display font-medium tracking-wide">{dm.label}</span>
+            <div className="flex items-center gap-2">
+              <div className="chip text-[13px] border-brand/40 bg-brand/10 text-brand-dark">
+                <Icon name="shield" size={12} strokeWidth={2.5} />
+                <span className="font-display font-medium tracking-wide">{dm.label}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRun((r) => r + 1)}
+                aria-label="הפעלה חוזרת של ההדגמה"
+                className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 hover:bg-brand/[0.03] transition-colors inline-flex items-center justify-center"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
             </div>
           </div>
 
           <div className="flex-1 min-h-0 flex">
-            <DepthVisualization depth={depth} doctrine={doctrine} />
+            <DepthCrossSection
+              depth={depth}
+              days={daysToCapital}
+              zone={DOCTRINE_ORDER.indexOf(doctrine)}
+              zoneTitles={DOCTRINE_ORDER.map((d) => doctrineMeta[d].label)}
+              showAlert={doctrine === 'offensive'}
+              formatTime={formatTime}
+              run={run}
+              ariaLabel="מבט חתך: מהגבול ועד ללב המדינה"
+              labels={{
+                enemy: 'שטח אויב',
+                border: 'גבול',
+                heart: 'לב המדינה',
+                attack: 'התקפה',
+                alert: '⚠ סכנה קיומית מיידית!',
+                depth: `עומק · ${depth.toLocaleString('en-US')} ק"מ`,
+              }}
+            />
           </div>
 
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="surface p-2 rounded-[3px] text-center">
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">עומק</div>
-              <div className="font-display font-bold text-lg text-accent tabular-nums">{depth} ק"מ</div>
+            <div className="surface p-2 rounded-xl text-center">
+              <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">עומק</div>
+              <div className="font-display font-bold text-lg text-fg tabular-nums">{depth.toLocaleString('en-US')} ק"מ</div>
             </div>
-            <div className="surface p-2 rounded-[3px] text-center">
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">זמן עד הגעה לבירה</div>
-              <div className={cn('font-display font-bold text-lg tabular-nums', daysToCapital < 1 ? 'text-status-danger' : daysToCapital < 5 ? 'text-status-warn' : 'text-status-ok')}>
-                {daysToCapital < 1 ? `${Math.round(daysToCapital * 24)} שעות` : `${Math.round(daysToCapital)} ימים`}
+            <div className="surface p-2 rounded-xl text-center">
+              <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">זמן עד הגעה לבירה</div>
+              <div className="font-display font-bold text-lg tabular-nums text-fg">
+                {formatTime(daysToCapital)}
               </div>
             </div>
-            <div className="surface p-2 rounded-[3px] text-center">
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">בדומה למדינה:</div>
+            <div className="surface p-2 rounded-xl text-center">
+              <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">בדומה למדינה:</div>
               <div className="font-display font-bold text-sm text-fg">{closestCountry.name}</div>
             </div>
           </div>
@@ -222,40 +268,42 @@ title = {
 
         {/* Controls + doctrine */}
         <div className="space-y-3">
-          <div className="surface-elevated p-5 rounded-[4px]">
+          <div className="surface-elevated p-5">
             <div className="text-sm font-display font-semibold text-fg-muted tracking-wider mb-3">
               עומק אסטרטגי
             </div>
-            <div className="font-display font-bold text-3xl tabular-nums text-accent mb-3">
-              {depth}<span className="text-sm text-fg-muted ms-1">ק"מ</span>
+            <div className="font-display font-bold text-3xl tabular-nums text-fg mb-3">
+              {depth.toLocaleString('en-US')}<span className="text-sm text-fg-muted ms-1">ק"מ</span>
             </div>
-            <input
-              type="range"
-              min={10}
-              max={4500}
-              step={10}
+            <DepthScale
               value={depth}
-              onChange={(e) => setDepth(Number(e.target.value))}
-              className="w-full accent-accent"
-              aria-label="עומק"
+              onChange={(km) => {
+                setPinned(null);
+                setDepth(km);
+              }}
+              ariaLabel="עומק"
+              valueText={`${depth.toLocaleString('en-US')} ק"מ`}
+              ticks={[
+                { km: 10, text: '10' },
+                { km: 500, text: '500' },
+                { km: 2000, text: '2,000' },
+                { km: 4500, text: '4,500' },
+              ]}
+              marks={COUNTRIES.map((c) => ({ km: c.depth, active: pinned === c.id }))}
             />
-            <div className="flex justify-between text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1">
-              <span>10</span>
-              <span>500</span>
-              <span>2,000</span>
-              <span>4,500</span>
-            </div>
 
-            {/* Preset country buttons */}
-            <div className="grid grid-cols-5 gap-1 mt-3">
+            {/* Preset country buttons — click again to clear the pick */}
+            <div className="grid grid-cols-5 gap-1.5 mt-3">
               {COUNTRIES.map((c) => (
                 <button
                   key={c.id}
-                  onClick={() => setDepth(c.depth)}
+                  type="button"
+                  onClick={() => pickCountry(c)}
+                  aria-pressed={pinned === c.id}
                   className={cn(
-                    'px-1.5 py-1 rounded-md text-[11px] font-display font-medium tracking-wide border transition-colors text-center',
-                    Math.abs(depth - c.depth) < 5
-                      ? 'border-accent bg-accent/10 text-accent'
+                    'px-1.5 py-1.5 rounded-xl text-[13px] font-display font-medium tracking-wide border transition-colors text-center',
+                    pinned === c.id
+                      ? 'border-accent bg-accent/10 text-fg'
                       : 'border-border hover:border-border-strong text-fg-muted'
                   )}
                 >
@@ -265,23 +313,22 @@ title = {
             </div>
           </div>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={doctrine}
-              initial={{ opacity: 0, y: 6 }}
+              initial={reduce ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
+              exit={reduce ? undefined : { opacity: 0, y: -6 }}
               transition={{ duration: 0.2 }}
-              className={cn('surface p-4 rounded-[3px] border-2', dm.bg)}
-              style={{ borderColor: 'currentColor' }}
+              className="surface p-4 border-2 border-brand/40 bg-brand/5"
             >
-              <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', dm.color)}>
+              <div className="text-sm font-display font-semibold mb-1 tracking-wider text-brand-dark">
                 שיטת הלחימה הנדרשת
               </div>
-              <div className={cn('font-display font-bold text-lg leading-tight mb-1', dm.color)}>
+              <div className="font-display font-bold text-lg leading-tight mb-1 text-fg">
                 {dm.label}
               </div>
-              <p className="text-xs text-fg-muted leading-relaxed">{dm.desc}</p>
+              <p className="text-sm text-fg-muted leading-relaxed">{dm.desc}</p>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -291,36 +338,57 @@ title = {
 
       {/* Quick log-scale ruler — lets the eye compare all 5 at once
           before reading the individual cards. */}
-      <div className="surface-elevated p-5 rounded-[4px] mb-4">
+      <div className="surface-elevated p-5 mb-4">
         <div className="text-sm font-display font-semibold text-fg-muted mb-3 tracking-wider">
           קנה מידה השוואתי · ק"מ מהגבול ללב המדינה (סולם לוגריתמי — כל הכפלה היא צעד אחד)
         </div>
-        <div className="space-y-2">
-          {COUNTRIES.map((c) => (
-            <div key={c.id} className="grid grid-cols-[100px_1fr_60px] items-center gap-3 text-sm">
-              <span className="font-display font-bold text-fg shrink-0">{c.name}</span>
-              <div className="relative h-2 bg-bg-accent rounded-full overflow-hidden">
-                <div
-                  className="absolute inset-y-0 right-0 bg-accent rounded-full"
-                  style={{ width: `${depthToPct(c.depth)}%` }}
-                />
-              </div>
-              <span className="font-display font-bold tabular-nums text-accent text-right">
-                {c.depth.toLocaleString()} ק"מ
-              </span>
-            </div>
-          ))}
+        {/* Each row picks its country (syncs the slider + cross-section above);
+            clicking the picked row again clears it. The bars share the slider's
+            log scale and run left→right like it — a scale is never mirrored.
+            The orange hairline is the slider's current depth. */}
+        <div className="space-y-1">
+          {COUNTRIES.map((c) => {
+            const isPicked = pinned === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pickCountry(c)}
+                aria-pressed={isPicked}
+                className={cn(
+                  'w-full grid grid-cols-[100px_1fr_72px] items-center gap-3 text-sm text-start rounded-xl px-2 py-1.5 transition-colors',
+                  isPicked ? 'bg-accent/10' : 'hover:bg-brand/[0.05]'
+                )}
+              >
+                <span className="font-display font-bold text-fg shrink-0">{c.name}</span>
+                <span dir="ltr" className="relative block h-2 bg-bg-accent rounded-full">
+                  <span
+                    className={cn('absolute inset-y-0 start-0 rounded-full transition-colors', isPicked ? 'bg-accent' : 'bg-brand/70')}
+                    style={{ width: `${depthToPct(c.depth)}%` }}
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute -inset-y-1 w-0.5 -ms-px rounded-full bg-accent"
+                    style={{ insetInlineStart: `${depthToPct(depth)}%` }}
+                  />
+                </span>
+                <span className="font-display font-bold tabular-nums text-fg text-end">
+                  {c.depth.toLocaleString()} ק"מ
+                </span>
+              </button>
+            );
+          })}
           {/* Scale markers */}
-          <div className="grid grid-cols-[100px_1fr_60px] gap-3 text-[10px] font-display font-medium tracking-wide text-fg-dim pt-1">
+          <div className="grid grid-cols-[100px_1fr_72px] gap-3 px-2 text-[13px] font-display font-medium tracking-wide text-fg-dim pt-1">
             <span />
-            <div className="relative h-3">
+            <div dir="ltr" className="relative h-4">
               {[10, 100, 1000, 4500].map((k) => (
                 <span
                   key={k}
-                  className="absolute"
-                  style={{ right: `${depthToPct(k)}%`, transform: 'translateX(50%)' }}
+                  className="absolute top-0 flex w-0 justify-center tabular-nums"
+                  style={{ insetInlineStart: `${depthToPct(k)}%` }}
                 >
-                  {k.toLocaleString()}
+                  <span className="whitespace-nowrap">{k.toLocaleString()}</span>
                 </span>
               ))}
             </div>
@@ -338,21 +406,21 @@ title = {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.06 }}
-            className="surface-elevated p-5 sm:p-6 rounded-[4px]"
+            className={cn('surface-elevated p-5 sm:p-6 transition-shadow', pinned === c.id && 'ring-2 ring-accent')}
           >
             {/* Header: name + region + the two big numbers */}
             <div className="grid sm:grid-cols-[1fr_auto] gap-4 mb-4 pb-4 border-b border-border-subtle">
               <div>
                 <h4 className="font-display font-bold text-xl leading-tight text-fg">{c.name}</h4>
-                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim mt-1">
+                <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim mt-1">
                   {c.region}
                 </div>
               </div>
-              <div className="sm:text-left">
-                <div className="font-display font-bold text-3xl tabular-nums text-accent-hover leading-none">
+              <div className="sm:text-end">
+                <div className="font-display font-bold text-3xl tabular-nums text-fg leading-none">
                   {c.depth.toLocaleString()}<span className="text-base text-fg-muted ms-1">ק"מ</span>
                 </div>
-                <div className="text-xs text-fg-muted mt-1">{c.timeLabel}</div>
+                <div className="text-[13px] text-fg-muted mt-1">{c.timeLabel}</div>
               </div>
             </div>
 
@@ -363,14 +431,14 @@ title = {
 
             {/* The instructional pair: allows / prevents */}
             <div className="grid sm:grid-cols-2 gap-3 mb-4">
-              <div className="rounded-[3px] border border-status-ok/30 bg-status-ok/5 p-3">
-                <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-ok mb-1.5">
+              <div className="rounded-xl border border-brand/30 bg-brand/5 p-3">
+                <div className="text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-1.5">
                   מה זה מאפשר
                 </div>
                 <p className="text-sm text-fg leading-relaxed text-pretty">{c.allows}</p>
               </div>
-              <div className="rounded-[3px] border border-status-danger/30 bg-status-danger/5 p-3">
-                <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-status-danger mb-1.5">
+              <div className="rounded-xl border border-status-danger/30 bg-status-danger/5 p-3">
+                <div className="text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-status-danger mb-1.5">
                   מה זה לא מאפשר
                 </div>
                 <p className="text-sm text-fg leading-relaxed text-pretty">{c.prevents}</p>
@@ -378,8 +446,8 @@ title = {
             </div>
 
             {/* Doctrine + historical case */}
-            <div className="rounded-[3px] bg-bg-accent/40 p-3">
-              <div className="text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-accent-hover mb-1">
+            <div className="rounded-xl bg-bg-accent/40 p-3">
+              <div className="text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-brand-dark mb-1">
                 דוקטרינה כפויה · {c.doctrine}
               </div>
               <p className="text-sm text-fg leading-relaxed text-pretty">{c.historical}</p>
@@ -388,91 +456,6 @@ title = {
         ))}
       </div>
     </section>
-  );
-}
-
-function DepthVisualization({
-  depth,
-  doctrine,
-}: {
-  depth: number;
-  doctrine: 'offensive' | 'layered' | 'flexible' | 'absorptive';
-}) {
-  // Scale depth (10-4500 km) to visual width (10-90 viewBox units)
-  const visualDepth = Math.max(8, Math.min(90, 8 + (Math.log10(depth) - 1) * 25));
-  const borderX = 10;
-  const capitalX = borderX + visualDepth;
-  const enemyProgress = 0.15; // enemy has advanced 15% into depth
-
-  return (
-    <div className="relative w-full h-full min-h-[240px] rounded-[3px] overflow-hidden bg-bg-accent">
-      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        <rect x="0" y="0" width="100" height="56" className="fill-bg-accent" />
-
-        {/* Enemy territory (left of border) */}
-        <rect x="0" y="0" width={borderX} height="56" className="fill-status-danger/10" />
-        <text x={borderX / 2} y="9" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-          שטח אויב
-        </text>
-
-        {/* Own territory (from border to capital + beyond) */}
-        <rect x={borderX} y="0" width={Math.max(visualDepth, 90 - borderX)} height="56" className="fill-terrain-ridge/15" />
-
-        {/* Border line */}
-        <line x1={borderX} y1="0" x2={borderX} y2="56" className="stroke-accent-hot" strokeWidth="0.6" />
-        <text x={borderX} y="14" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="3" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
-          גבול
-        </text>
-
-        {/* Depth bar / ruler */}
-        <line x1={borderX} y1="40" x2={borderX + visualDepth} y2="40" className="stroke-accent" strokeWidth="0.5" strokeDasharray="2 1" />
-        <text x={borderX + visualDepth / 2} y="37" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">
-          עומק · {depth.toLocaleString()} ק"מ
-        </text>
-
-        {/* Capital marker (heartland) */}
-        <g>
-          <circle cx={capitalX} cy="28" r="2.5" className="fill-accent" />
-          <circle cx={capitalX} cy="28" r="4" fill="none" className="stroke-accent/50" strokeWidth="0.3">
-            <animate attributeName="r" values="3;6;3" dur="2.4s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.7;0;0.7" dur="2.4s" repeatCount="indefinite" />
-          </circle>
-          <text x={capitalX} y="22" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="3" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
-            לב המדינה
-          </text>
-        </g>
-
-        {/* Population centers / cities along the depth */}
-        {visualDepth > 20 && (
-          <g>
-            {[0.3, 0.6, 0.85].map((p, i) => (
-              <g key={i}>
-                <rect x={borderX + visualDepth * p - 1} y="27" width="2" height="2" className="fill-fg/50" />
-              </g>
-            ))}
-          </g>
-        )}
-
-        {/* Enemy advance arrow */}
-        <motion.g
-          animate={{ x: [0, visualDepth * enemyProgress, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-        >
-          <line x1={borderX} y1="46" x2={borderX + 6} y2="46" className="stroke-status-danger" strokeWidth="0.5" />
-          <polygon points={`${borderX + 6},45 ${borderX + 8},46 ${borderX + 6},47`} className="fill-status-danger" />
-        </motion.g>
-        <text x={borderX + 4} y="50" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-          התקפה
-        </text>
-
-        {/* Time-to-capital indicator on right */}
-        {doctrine === 'offensive' && (
-          <text x="50" y="9" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.9" strokeLinejoin="round">
-            ⚠ סכנה קיומית מיידית!
-          </text>
-        )}
-      </svg>
-    </div>
   );
 }
 

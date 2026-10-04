@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { BufferMap, LAYER_RANGE_KM, WidthGauge, type BufferLayer } from './BufferVisuals';
 import { Icon, type IconName } from '@/components/Icon';
 import {
   Accordion,
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 
-type Layer = 'physical' | 'fence' | 'sensors' | 'radar';
+type Layer = BufferLayer;
 
 type LayerData = {
   id: Layer;
@@ -76,6 +77,7 @@ const BUFFER_EXAMPLES = [
     name: 'האזור המפורז הקוריאני (DMZ)',
     english: 'Korean DMZ · 1953',
     width: '~4 ק"מ',
+    widthKm: 4,
     length: '~250 ק"מ',
     desc: 'הרצועה הצבאית המתוחה בעולם שעדיין פעילה. מלאה ב-2 מיליון מוקשים, מצלמות, ואלפי חיילים החמושים עד השיניים משני צידי המתרס.',
     success: 'הרתעה קפואה אך יציבה — למרות המתח האדיר, מ-1953 לא פרצה שם מלחמה כוללת.',
@@ -85,6 +87,7 @@ const BUFFER_EXAMPLES = [
     name: 'כוח אונדו"ף (UNDOF) ברמת הגולן',
     english: 'UN Disengagement Observer Force · 1974',
     width: '~10 ק"מ',
+    widthKm: 10,
     length: '~80 ק"מ',
     desc: 'רצועת שטח שחוצצת בין צה"ל לצבא סוריה מאז מלחמת יום הכיפורים (1974). אסור להכניס אליה נשק כבד, והיא מפוקחת על ידי חיילי או"ם.',
     success: 'הצליחה לשמור על גבול שקט כמעט לחלוטין במשך 40 שנה, עד שפרצה מלחמת האזרחים בסוריה ב-2011.',
@@ -94,6 +97,7 @@ const BUFFER_EXAMPLES = [
     name: '"הקו הירוק" בקפריסין',
     english: 'Green Line · 1974',
     width: '~7 ק"מ ברוחב המקסימלי',
+    widthKm: 7,
     length: '~180 ק"מ',
     desc: 'שטח הפרדה שחוצה את האי קפריסין (ואת הבירה ניקוסיה) לשניים, ומפריד בין הקפריסאים היוונים לטורקים כדי למנוע מלחמת אזרחים.',
     success: 'מנע בהצלחה הידרדרות אלימה, אך הנציח סטטוס-קוו בעייתי שמונע פתרון פוליטי כבר מעל ל-50 שנה.',
@@ -112,13 +116,20 @@ export function BufferScene() {
     setActiveLayers(new Set(vals as Layer[]));
   };
 
-  const detectionRange = activeLayers.has('radar')
-    ? 25
-    : activeLayers.has('sensors')
-      ? 8
-      : activeLayers.has('fence')
-        ? 1
-        : 0;
+  // Outermost footprint of the active collection layers (radar 25 · sensors 8 · fence 1).
+  const detectionRange = Math.max(0, ...Array.from(activeLayers, (l) => LAYER_RANGE_KM[l] ?? 0));
+
+  // The intrusion demo plays once per layer change (and on the replay control).
+  const [run, setRun] = useState(0);
+  const layersKey = Array.from(activeLayers).sort().join(',');
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    setRun((r) => r + 1);
+  }, [layersKey]);
   const reactionTime = activeLayers.has('radar')
     ? '15+ דקות'
     : activeLayers.has('sensors')
@@ -134,31 +145,31 @@ export function BufferScene() {
         eyebrow="אזורי חיץ וטכנולוגיה"
 title = {
   <>
-    כשאין עומק למדינה — <span className="text-accent-hover">הטכנולוגיה צריכה לקנות לה זמן</span>
+    כשאין עומק למדינה — <span className="text-brand-dark">הטכנולוגיה צריכה לקנות לה זמן</span>
   </>
 }
         intro={`מדינה צרה לא יכולה להרשות לעצמה אזור הפרדה של 100 ק"מ. במקום זה, היא משתמשת במודיעין וסנסורים: גדרות חכמות, חיישני קרקע ומערכות רדאר. הטכנולוגיה מנסה לקנות את מה שהגיאוגרפיה לא נותנת — זמן התרעה. לחצו על שכבה ברשימה — היא תיפתח להסבר ותידלק בתצוגה.`}
       />
 
       <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
-        <div className="surface-elevated p-6 rounded-[4px]">
-          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
-            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        <div className="surface-elevated p-6">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
             הגדרת היסוד
           </div>
-          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
             אזור חיץ — שטח שמרכך את המכה הראשונה
           </h3>
           <p className="text-base text-fg leading-relaxed text-pretty">
             שטח "נקי" מצבא (מפורז) או דליל מאוד בכוחות, שמפריד בין שתי מדינות עוינות. המטרה שלו כפולה: <strong className="text-fg">למנוע חיכוך יומיומי</strong>, ו<strong className="text-fg">לקלוט את המכה הראשונה</strong> במקרה של פלישה כדי לתת התרעה מוקדמת.
           </p>
         </div>
-        <div className="surface-elevated p-6 rounded-[4px]">
-          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
-            <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+        <div className="surface-elevated p-6">
+          <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+            <span className="size-1.5 rounded-full bg-brand" aria-hidden />
             כשאין שטח
           </div>
-          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+          <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
             אזור חיץ וירטואלי — טכנולוגיה במקום מרחק
           </h3>
           <p className="text-base text-fg leading-relaxed text-pretty">
@@ -194,7 +205,7 @@ title = {
                   {isActive && (
                     <motion.span
                       layoutId="t11-buffer-bar"
-                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-l-full"
+                      className="absolute inset-y-0 end-0 w-1 bg-brand-dark rounded-e-full"
                     />
                   )}
                   <span
@@ -211,14 +222,14 @@ title = {
                     <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
                       {l.label}
                     </div>
-                    <div className="font-display font-medium tracking-wide text-[11px] text-fg-dim mt-0.5">
+                    <div className="font-display font-medium tracking-wide text-[13px] text-fg-dim mt-0.5">
                       {l.english}
                     </div>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                    <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+                    <span className="size-1.5 rounded-full bg-brand" aria-hidden />
                     מה השכבה הזו עושה
                   </div>
                   <div className="space-y-3">
@@ -248,23 +259,49 @@ title = {
         </Accordion>
 
         {/* Left (RTL): cumulative buffer visualisation */}
-        <div className="surface-elevated bg-bg-accent/30 rounded-[4px] p-4 overflow-hidden flex flex-col">
+        {/* Sticky so the map stays in view while the learner reads the open layers. */}
+        <div className="surface-elevated p-4 overflow-hidden flex flex-col lg:sticky lg:top-24 self-start">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="inline-flex items-center gap-2 text-sm font-display font-semibold text-brand-dark tracking-wider">
-              <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+              <span className="size-1.5 rounded-full bg-brand" aria-hidden />
               אזור חיץ עם שכבות טכנולוגיה
             </div>
-            <div className="chip border-accent/40 bg-accent/10 text-accent">
-              <Icon name="eye" size={12} strokeWidth={2.5} />
-              <span className="font-display font-medium tracking-wide tabular-nums">
-                זיהוי {detectionRange} ק"מ · התרעה {reactionTime}
-              </span>
+            <div className="flex items-center gap-2">
+              <div className="chip text-[13px] border-brand/40 bg-brand/10 text-brand-dark">
+                <Icon name="eye" size={12} strokeWidth={2.5} />
+                <span className="font-display font-medium tracking-wide tabular-nums">
+                  זיהוי {detectionRange} ק"מ · התרעה {reactionTime}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRun((r) => r + 1)}
+                aria-label="הפעלה חוזרת של ההדגמה"
+                className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 hover:bg-brand/[0.03] transition-colors inline-flex items-center justify-center"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
             </div>
           </div>
 
-          <div className="flex-1 min-h-[360px] flex">
-            <BufferViz activeLayers={activeLayers} />
-          </div>
+          <BufferMap
+            active={activeLayers}
+            range={detectionRange}
+            warning={reactionTime}
+            run={run}
+            ariaLabel="אזור חיץ עם שכבות טכנולוגיה"
+            labels={{
+              enemy: 'שטח אויב',
+              buffer: 'אזור חיץ מפורז',
+              ours: 'שטחנו',
+              fence: 'גדר חכמה',
+              sensors: 'חיישנים סייסמיים',
+              radar: 'רדאר',
+              radarScan: '↤ סריקה לטווח 25 ק"מ עמוק לשטח האויב',
+              noDefense: '⚠ אין הגנה',
+              km: 'ק"מ',
+            }}
+          />
         </div>
       </div>
 
@@ -279,27 +316,31 @@ title = {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ delay: i * 0.08 }}
-            className="surface p-5 rounded-[3px]"
+            className="surface p-5"
           >
             <div className="mb-3">
               <div className="font-display font-bold leading-tight">{e.name}</div>
-              <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">{e.english}</div>
+              <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">{e.english}</div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
-              <div className="surface p-2 rounded-[3px]">
-                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">רוחב</div>
-                <div className="font-display font-bold text-sm text-accent">{e.width}</div>
+            <div className="grid grid-cols-2 gap-2 mb-3 text-[13px]">
+              <div className="surface p-2 rounded-xl">
+                <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">רוחב</div>
+                <div className="font-display font-bold text-sm text-fg">{e.width}</div>
               </div>
-              <div className="surface p-2 rounded-[3px]">
-                <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">אורך</div>
-                <div className="font-display font-bold text-sm text-accent">{e.length}</div>
+              <div className="surface p-2 rounded-xl">
+                <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">אורך</div>
+                <div className="font-display font-bold text-sm text-fg">{e.length}</div>
               </div>
+            </div>
+            {/* Same 0–10 km tape on all three cards, so the widths compare at a glance */}
+            <div className="mb-3">
+              <WidthGauge km={e.widthKm} />
             </div>
 
             <p className="text-sm text-fg-muted leading-relaxed mb-3">{e.desc}</p>
-            <div className="text-sm text-fg bg-bg-accent/40 rounded-[3px] p-3 leading-relaxed">
-              <strong className="text-fg block mb-1 text-[11px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted">
+            <div className="text-sm text-fg bg-bg-accent/40 rounded-xl p-3 leading-relaxed">
+              <strong className="text-fg block mb-1 text-[13px] font-display font-semibold tracking-[0.2em] uppercase text-fg-muted">
                 תוצאה
               </strong>
               {e.success}
@@ -308,115 +349,6 @@ title = {
         ))}
       </div>
     </section>
-  );
-}
-
-function BufferViz({ activeLayers }: { activeLayers: Set<Layer> }) {
-  return (
-    <div className="relative w-full h-full min-h-[360px] rounded-[3px] overflow-hidden">
-      <svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        {/* Enemy territory (left) */}
-        <rect x="0" y="0" width="20" height="56" className="fill-status-danger/10" />
-        <text x="10" y="9" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-          שטח אויב
-        </text>
-
-        {/* Buffer zone (physical layer) */}
-        {activeLayers.has('physical') && (
-          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <rect x="20" y="0" width="35" height="56" className="fill-status-warn/15" />
-            <text x="37.5" y="9" textAnchor="middle" className="fill-status-warn font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-              אזור חיץ מפורז
-            </text>
-          </motion.g>
-        )}
-
-        {/* Own territory (right) */}
-        <rect x="55" y="0" width="45" height="56" className="fill-terrain-ridge/15" />
-        <text x="77" y="9" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-          שטחנו
-        </text>
-
-        {/* Borders */}
-        <line x1="20" y1="0" x2="20" y2="56" className="stroke-status-danger" strokeWidth="0.5" strokeDasharray="1.5 0.8" />
-        <line x1="55" y1="0" x2="55" y2="56" className="stroke-accent" strokeWidth="0.5" strokeDasharray="1.5 0.8" />
-
-        {/* Smart fence */}
-        {activeLayers.has('fence') && (
-          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <line x1="55" y1="20" x2="55" y2="46" className="stroke-accent" strokeWidth="0.8" />
-            {[20, 24, 28, 32, 36, 40, 44].map((y, i) => (
-              <line key={i} x1="54.5" y1={y} x2="55.5" y2={y} className="stroke-accent" strokeWidth="0.4" />
-            ))}
-            {[25, 35].map((y, i) => (
-              <circle key={i} cx="55" cy={y} r="0.6" className="fill-accent" />
-            ))}
-            <text x="55" y="50" textAnchor="middle" className="fill-accent font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">
-              גדר חכמה
-            </text>
-          </motion.g>
-        )}
-
-        {/* Seismic sensors */}
-        {activeLayers.has('sensors') && (
-          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {[
-              { x: 60, y: 25 },
-              { x: 65, y: 32 },
-              { x: 70, y: 26 },
-              { x: 60, y: 40 },
-              { x: 70, y: 42 },
-            ].map((s, i) => (
-              <g key={i}>
-                <circle cx={s.x} cy={s.y} r="0.8" className="fill-accent-cool" />
-                <circle cx={s.x} cy={s.y} r="2" fill="none" className="stroke-accent-cool" strokeWidth="0.2" strokeDasharray="0.4 0.3" />
-              </g>
-            ))}
-            <text x="65" y="50" textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">
-              חיישנים סייסמיים
-            </text>
-          </motion.g>
-        )}
-
-        {/* Radar dome */}
-        {activeLayers.has('radar') && (
-          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <line x1="85" y1="32" x2="85" y2="40" className="stroke-fg" strokeWidth="0.5" />
-            <ellipse cx="85" cy="30" rx="2.5" ry="1.4" className="fill-accent-hot stroke-accent-hot" strokeWidth="0.3" />
-            <path
-              d="M 85 30 A 35 35 0 0 0 50 30 A 35 35 0 0 0 50 30 L 85 30"
-              fill="none"
-              className="stroke-accent-hot"
-              strokeWidth="0.3"
-              strokeDasharray="1 0.7"
-              opacity="0.5"
-            />
-            <path d="M 85 30 L 18 5 L 18 55 Z" fill="currentColor" className="text-accent-hot" opacity="0.08" />
-            <text x="85" y="44" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">
-              רדאר
-            </text>
-            <text x="40" y="14" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-              ↤ סריקה לטווח 25 ק"מ עמוק לשטח האויב
-            </text>
-          </motion.g>
-        )}
-
-        {/* Approaching enemy figure */}
-        <motion.g
-          animate={{ x: [0, 15, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-        >
-          <circle cx="5" cy="32" r="1.2" className="fill-status-danger" />
-        </motion.g>
-
-        {/* Status label */}
-        {activeLayers.size === 0 && (
-          <text x="50" y="28" textAnchor="middle" className="fill-status-danger font-display font-bold" fontSize="4" paintOrder="stroke" stroke="#ffffff" strokeWidth="1.4" strokeLinejoin="round">
-            ⚠ אין הגנה
-          </text>
-        )}
-      </svg>
-    </div>
   );
 }
 

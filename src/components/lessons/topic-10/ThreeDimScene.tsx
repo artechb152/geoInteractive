@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-
-type Dim = 'above' | 'street' | 'below';
+import { CombineDiagram, ThreatBadge, UrbanSection, type Dim, type SectionLabels } from './ThreeDimVisuals';
 
 type DimData = {
   id: Dim;
@@ -18,9 +17,6 @@ type DimData = {
   advantages: string[];
   weakness: string;
   example: string;
-  color: string;
-  bg: string;
-  border: string;
 };
 
 const DIMS: DimData[] = [
@@ -43,9 +39,6 @@ const DIMS: DimData[] = [
     ],
     weakness: 'חשיפה קטלנית מהאוויר. מי שנמצא על הגג גלוי לחלוטין לרחפנים, מסוקים ומטוסי קרב. בנוסף, למרות שלצלף יש זווית מצוינת, קשה לו מאוד לברוח מהר ממגדל גבוה.',
     example: 'בקרב על מוסול שבעיראק, צלפי דאעש פעלו מתוך מגדלי משרדים גבוהים. כוחות הקואליציה (בהובלת ארה"ב) הצליחו לפגוע בהם רק אחרי שאיתרו אותם במדויק מהאוויר והשתמשו בטילים מונחים.',
-    color: 'text-accent-hot',
-    bg: 'bg-accent-hot/10',
-    border: 'border-accent-hot/40',
   },
   {
     id: 'street',
@@ -66,9 +59,6 @@ const DIMS: DimData[] = [
     ],
     weakness: 'החיילים ברחוב הם המטרה הנוחה ביותר. הם מותקפים מכל הכיוונים — מלמעלה (גגות), מהצדדים (חלונות) ומלמטה (מנהרות). הצורך להיות דרוכים ב-360 מעלות יוצר לחץ מנטלי (קוגניטיבי) עצום.',
     example: 'במלחמת צ\'צ\'ניה (1994), טור טנקים רוסי נכנס לרחוב הראשי של העיר גרוזני וחטף אש משלושה כיוונים בו-זמנית. הכוח נלכד, ובתוך 3 שעות בלבד כ-100 רכבים משוריינים הושמדו לחלוטין.',
-    color: 'text-accent',
-    bg: 'bg-accent/10',
-    border: 'border-accent/40',
   },
   {
     id: 'below',
@@ -90,15 +80,56 @@ const DIMS: DimData[] = [
     ],
     weakness: 'הלוחמים מתמודדים עם חוסר חמצן, תנועה איטית וקושי לירות בתוך מנהרה צרה. בנוסף, המנהרה פועלת כמו "תיבת תהודה" גדולה — החיילים שנמצאים בחוץ יכולים לשמוע כל רעש או צעד שקורה בפנים.',
     example: 'בעזה (2023), העולם נחשף ל"מטרו" של חמאס: רשת מנהרות התקפיות באורך של מאות קילומטרים. פתחי המנהרות הוסתרו בכוונה מתחת לבתי חולים, בתי ספר ומסגדים, במטרה לשלב באופן קטלני בין תקיפה מהאדמה לבין הסתתרות בתוך אוכלוסייה אזרחית.',
-    color: 'text-status-danger',
-    bg: 'bg-status-danger/10',
-    border: 'border-status-danger/40',
   },
 ];
 
+const dimLabel = (d: Dim) => DIMS.find((x) => x.id === d)!.label;
+
+/** In-section labels — the same copy the old inline SVG carried. */
+const SECTION_LABELS: SectionLabels = {
+  bands: { above: dimLabel('above'), street: dimLabel('street'), below: dimLabel('below') },
+  ground: '— פני הקרקע —',
+  sniper: 'צלף',
+  ied: 'IED',
+  tunnels: 'רשת מנהרות · אין קליטת לווינים (GPS)',
+  ticks: [
+    { m: 150, label: '+150 מ׳' },
+    { m: 50, label: '+50 מ׳' },
+    { m: 5, label: '+5 מ׳' },
+    { m: 0, label: '0' },
+    { m: -10, label: '-10 מ׳' },
+    { m: -25, label: '-25 מ׳' },
+  ],
+};
+
+/** "עקרון השילוב" diagram labels — terms from that paragraph. */
+const COMBINE_LABELS = { sniper: 'צלף', shaft: 'פיר במרתף' };
+
 export function ThreeDimScene() {
-  const [activeDim, setActiveDim] = useState<Dim>('above');
-  const meta = DIMS.find((d) => d.id === activeDim)!;
+  const [activeDim, setActiveDim] = useState<Dim | null>('above');
+  // Threat number under the pointer (list ↔ section link).
+  const [hover, setHover] = useState<number | null>(null);
+  const [run, setRun] = useState(0);
+  const meta = activeDim ? DIMS.find((d) => d.id === activeDim)! : null;
+
+  const choose = (d: Dim | null) => {
+    setActiveDim(d);
+    setHover(null);
+  };
+
+  // Tabs: arrows follow the visual order (RTL — ArrowLeft/ArrowDown move forward).
+  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const n = DIMS.length;
+    let next: number;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = (i + 1) % n;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = (i - 1 + n) % n;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = n - 1;
+    else return;
+    e.preventDefault();
+    choose(DIMS[next].id);
+    document.getElementById(`threedim-tab-${DIMS[next].id}`)?.focus();
+  };
 
   return (
     <section id="scene-threedim" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,40 +153,63 @@ title = {
         </div>
       </div>
 
-      {/* 3D Cross-section visualization */}
-      <div className="surface-elevated p-4 rounded-[4px] mb-6 overflow-hidden">
+      {/* 3D Cross-section visualization — one section model (ThreeDimVisuals) */}
+      <div className="surface-elevated p-4 rounded-2xl mb-6 overflow-hidden">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
             חתך צד של לחימה בעיר · לחצו על הממדים למטה
           </div>
-          <div className={cn('chip', meta.border, meta.bg, meta.color)}>
-            <Icon name={meta.icon} size={12} />
-            <span className="font-mono">{meta.label}</span>
+          <div className="flex items-center gap-2">
+            {meta && (
+              <div className="chip border-border bg-bg-elevated text-fg text-[13px]">
+                <Icon name={meta.icon} size={14} className="text-brand-dark" />
+                <span>{meta.label}</span>
+              </div>
+            )}
+            {meta && (
+              <button
+                type="button"
+                onClick={() => setRun((r) => r + 1)}
+                aria-label="הפעלה חוזרת של ההדגמה"
+                className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 hover:bg-brand/[0.03] transition-colors inline-flex items-center justify-center"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
+            )}
           </div>
         </div>
 
-        <CrossSection activeDim={activeDim} onSelect={setActiveDim} />
+        <div className="aspect-[160/84] relative rounded-xl overflow-hidden border border-border-subtle">
+          <UrbanSection active={activeDim} onBand={choose} hover={hover} onHover={setHover} run={run} labels={SECTION_LABELS} />
+        </div>
       </div>
 
-      {/* Dimension selector + details */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {DIMS.map((d) => {
+      {/* Dimension tabs + details (the tab panel) */}
+      <div className="grid grid-cols-3 gap-2 mb-4" role="tablist" aria-label="ממד אנכי ותת-קרקע">
+        {DIMS.map((d, i) => {
           const isActive = activeDim === d.id;
           return (
             <button
               key={d.id}
-              onClick={() => setActiveDim(d.id)}
+              id={`threedim-tab-${d.id}`}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls="threedim-panel"
+              tabIndex={isActive || (activeDim === null && i === 0) ? 0 : -1}
+              onClick={() => choose(d.id)}
+              onKeyDown={(e) => onTabKey(e, i)}
               className={cn(
-                'surface p-4 text-right transition-all rounded-[3px] flex items-center gap-3',
-                isActive ? `${d.border} ${d.bg}` : 'hover:border-border-strong'
+                'surface p-4 text-start transition-all rounded-xl flex items-center gap-3 cursor-pointer',
+                isActive ? 'border-accent bg-accent/10' : 'hover:border-border-strong'
               )}
             >
-              <Icon name={d.icon} size={28} className={cn(d.color, 'shrink-0')} />
+              <Icon name={d.icon} size={28} className={cn(isActive ? 'text-accent-deep' : 'text-brand-dark', 'shrink-0')} />
               <div className="min-w-0">
-                <div className={cn('font-display font-bold text-sm leading-tight', isActive && d.color)}>
+                <div className="font-display font-bold text-sm leading-tight text-fg">
                   {d.label}
                 </div>
-                <div className="text-[10px] font-mono text-fg-dim mt-0.5">{d.altitude}</div>
+                <div className="text-[13px] text-fg-dim mt-0.5">{d.altitude}</div>
               </div>
             </button>
           );
@@ -164,70 +218,81 @@ title = {
 
       {/* Active dimension details */}
       <AnimatePresence mode="wait">
-        <motion.div
-          key={meta.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.25 }}
-          className={cn('surface-elevated p-6 rounded-[4px] border-r-4 mb-12', meta.border.replace('border-', 'border-r-'))}
-        >
-          <div className="mb-5">
-            <div className={cn('text-sm font-display font-semibold mb-1 tracking-wider', meta.color)}>
-              {meta.english} · {meta.altitude}
-            </div>
-            <h3 className="font-display font-bold text-2xl leading-tight text-accent-deep">{meta.label}</h3>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <div className="surface p-4 rounded-[3px] bg-status-danger/5 border-status-danger/30">
-              <div className="text-sm font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
-                <Icon name="crosshair" size={11} />
-                איומים
+        {meta && (
+          <motion.div
+            key={meta.id}
+            id="threedim-panel"
+            role="tabpanel"
+            aria-labelledby={`threedim-tab-${meta.id}`}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25 }}
+            className="surface-elevated p-6 rounded-2xl border-s-4 border-s-brand mb-12"
+          >
+            <div className="mb-5">
+              <div className="text-sm font-display font-semibold mb-1 tracking-wider text-brand-dark">
+                {meta.english} · {meta.altitude}
               </div>
-              <ul className="space-y-1.5 text-sm">
-                {meta.threats.map((t) => (
-                  <li key={t} className="flex gap-2">
-                    <Icon name="spark" size={11} className="text-status-danger shrink-0 mt-1" />
-                    <span className="text-fg leading-relaxed">{t}</span>
-                  </li>
-                ))}
-              </ul>
+              <h3 className="font-display font-bold text-2xl leading-tight text-fg">{meta.label}</h3>
             </div>
-            <div className="surface p-4 rounded-[3px] bg-status-ok/5 border-status-ok/30">
-              <div className="text-sm font-display font-semibold text-status-ok mb-2 tracking-wider flex items-center gap-1.5">
-                <Icon name="shield" size={11} />
-                היתרונות (למי ששולט במרחב)
+
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div className="surface p-4 rounded-2xl bg-status-danger/5 border-status-danger/30">
+                <div className="text-sm font-display font-semibold text-status-danger mb-2 tracking-wider flex items-center gap-1.5">
+                  <Icon name="crosshair" size={13} />
+                  איומים
+                </div>
+                {/* Numbered as on the section above; hover links both ways. */}
+                <ul className="space-y-1.5 text-sm">
+                  {meta.threats.map((t, i) => (
+                    <li
+                      key={t}
+                      className="flex gap-2"
+                      onMouseEnter={() => setHover(i + 1)}
+                      onMouseLeave={() => setHover(null)}
+                    >
+                      <ThreatBadge n={i + 1} hot={hover === i + 1} />
+                      <span className="text-fg leading-relaxed">{t}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-1.5 text-sm">
-                {meta.advantages.map((a) => (
-                  <li key={a} className="flex gap-2">
-                    <Icon name="check" size={11} strokeWidth={2.5} className="text-status-ok shrink-0 mt-1" />
-                    <span className="text-fg leading-relaxed">{a}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="surface p-4 rounded-2xl bg-brand/5 border-brand/30">
+                <div className="text-sm font-display font-semibold text-brand-dark mb-2 tracking-wider flex items-center gap-1.5">
+                  <Icon name="shield" size={13} />
+                  היתרונות (למי ששולט במרחב)
+                </div>
+                <ul className="space-y-1.5 text-sm">
+                  {meta.advantages.map((a) => (
+                    <li key={a} className="flex gap-2">
+                      <Icon name="check" size={13} strokeWidth={2.5} className="text-brand-dark shrink-0 mt-1" />
+                      <span className="text-fg leading-relaxed">{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
 
-          <div className="surface p-4 rounded-[3px] mb-3">
-            <div className={cn('text-sm font-display font-semibold mb-1.5 tracking-wider', meta.color)}>החיסרון המרכזי (נקודת התורפה)</div>
-            <p className="text-sm text-fg-muted leading-relaxed">{meta.weakness}</p>
-          </div>
+            <div className="surface p-4 rounded-2xl mb-3">
+              <div className="text-sm font-display font-semibold mb-1.5 tracking-wider text-brand-dark">החיסרון המרכזי (נקודת התורפה)</div>
+              <p className="text-sm text-fg-muted leading-relaxed">{meta.weakness}</p>
+            </div>
 
-          <div className="surface p-3 rounded-[3px] bg-bg-accent/30 border border-border">
-            <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה מבצעית</div>
-            <p className="text-xs text-fg-muted leading-relaxed italic">"{meta.example}"</p>
-          </div>
-        </motion.div>
+            <div className="surface p-3 rounded-2xl bg-bg-accent/30 border border-border">
+              <div className="text-sm font-display font-semibold text-fg-muted mb-1 tracking-wider">דוגמה מבצעית</div>
+              <p className="text-[13px] text-fg-muted leading-relaxed italic">"{meta.example}"</p>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Key insight: combined threat */}
       <div className="">
         <div className="flex gap-4 items-start">
-          <Icon name="spark" size={32} className="text-accent shrink-0" />
+          <Icon name="spark" size={32} className="text-brand-dark shrink-0" />
           <div className="flex-1">
-            <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
+            <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
               עקרון השילוב
             </div>
             <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -237,171 +302,12 @@ title = {
               דאעש במוסול, חמאס בעזה והצ'צ'נים בגרוזני הוכיחו דבר אחד: אסטרטגיה עירונית מנצחת בנויה על <strong className="text-fg">שילוב ממדים</strong>. צלף יורה מהגג (למעלה), בורח מיד אל פיר במרתף (למטה), ומופיע מחדש בקצה השני של העיר. כשהצבא פורץ אל הבניין כדי לתפוס אותו — הוא כבר מזמן לא שם.
               <strong className="text-fg block mt-1.5">איך צבא מודרני מתמודד עם זה?</strong> בעזרת שילוב טכנולוגיות בעצמו: כלבים ורובוטים לגילוי מנהרות, רחפנים זעירים שסורקים חלונות, מכ"מים שרואים דרך קירות, ויחידות קומנדו שמתמחות בלחימה בחושך המוחלט שמתחת לאדמה.
             </p>
+            {/* Same section model: roof → shaft in the basement → tunnel →
+                out at the far end, while the force breaks into an empty building. */}
+            <CombineDiagram labels={COMBINE_LABELS} />
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function CrossSection({ activeDim, onSelect }: { activeDim: Dim; onSelect: (d: Dim) => void }) {
-  return (
-    <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
-      <svg viewBox="0 0 100 56" className="w-full h-full">
-        <defs>
-          <linearGradient id="sky-cross" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dde6f0" />
-            <stop offset="100%" stopColor="#f0f4f9" />
-          </linearGradient>
-          <linearGradient id="earth" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7a6648" />
-            <stop offset="100%" stopColor="#3a2f1f" />
-          </linearGradient>
-        </defs>
-
-        {/* Sky */}
-        <rect x="0" y="0" width="100" height="34" fill="url(#sky-cross)" />
-        {/* Earth */}
-        <rect x="0" y="34" width="100" height="22" fill="url(#earth)" opacity="0.85" />
-
-        {/* === ABOVE GROUND zone === */}
-        <g
-          onClick={() => onSelect('above')}
-          style={{ cursor: 'pointer' }}
-          opacity={activeDim === 'above' ? 1 : 0.7}
-        >
-          {/* High-rises */}
-          {[
-            { x: 6, w: 7, h: 28 },
-            { x: 15, w: 6, h: 18 },
-            { x: 23, w: 9, h: 23 },
-            { x: 35, w: 7, h: 30 },
-            { x: 44, w: 8, h: 16 },
-            { x: 56, w: 6, h: 25 },
-            { x: 65, w: 9, h: 19 },
-            { x: 77, w: 7, h: 27 },
-            { x: 87, w: 8, h: 21 },
-          ].map((b, i) => (
-            <g key={i}>
-              <rect x={b.x} y={34 - b.h} width={b.w} height={b.h} className={cn(activeDim === 'above' ? 'fill-accent-hot/30' : 'fill-terrain-ridge/35', 'stroke-terrain-ridge')} strokeWidth="0.2" />
-              {Array.from({ length: Math.floor(b.h / 3) }).map((_, f) => (
-                <rect key={f} x={b.x + 0.6} y={34 - b.h + 1.5 + f * 3} width={b.w - 1.2} height="0.8" className="fill-accent-cool" opacity="0.4" />
-              ))}
-            </g>
-          ))}
-          {/* Sniper marker on tallest building */}
-          {activeDim === 'above' && (
-            <g>
-              <circle cx="38" cy="6" r="1.4" className="fill-accent-hot" />
-              <circle cx="38" cy="6" r="3" fill="none" className="stroke-accent-hot/50" strokeWidth="0.3">
-                <animate attributeName="r" values="2;5;2" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite" />
-              </circle>
-              <line x1="38" y1="6" x2="80" y2="32" className="stroke-accent-hot" strokeWidth="0.3" strokeDasharray="0.8 0.5" />
-              <text x="38" y="3" textAnchor="middle" className="fill-accent-hot font-display font-bold font-bold" fontSize="2.4" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.8" strokeLinejoin="round">צלף</text>
-            </g>
-          )}
-          <text x={activeDim === 'above' ? 5 : 5} y="6" className={cn('font-display font-bold', activeDim === 'above' ? 'fill-accent-hot' : 'fill-fg-dim')} fontSize="2.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.95" strokeLinejoin="round">
-            מעל הקרקע
-          </text>
-        </g>
-
-        {/* Ground line */}
-        <line x1="0" y1="34" x2="100" y2="34" className="stroke-fg" strokeWidth="0.4" />
-        <text x="50" y="33" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="1.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">— פני הקרקע —</text>
-
-        {/* === STREET LEVEL === */}
-        <g
-          onClick={() => onSelect('street')}
-          style={{ cursor: 'pointer' }}
-          opacity={activeDim === 'street' ? 1 : 0.7}
-        >
-          {/* Soldier */}
-          <circle cx="50" cy="32" r="1.4" className={cn(activeDim === 'street' ? 'fill-accent' : 'fill-accent-cool')} />
-          <line x1="50" y1="33.5" x2="52" y2="34" className="stroke-fg" strokeWidth="0.4" />
-
-          {/* Vehicle */}
-          <rect x="62" y="31.5" width="6" height="2.5" rx="0.4" className={cn(activeDim === 'street' ? 'fill-accent' : 'fill-accent-cool/80')} />
-          <circle cx="63.5" cy="34.2" r="0.5" className="fill-fg" />
-          <circle cx="66.5" cy="34.2" r="0.5" className="fill-fg" />
-
-          {activeDim === 'street' && (
-            <g>
-              {/* IED markers */}
-              {[28, 72].map((x, i) => (
-                <g key={i}>
-                  <rect x={x - 1} y="32" width="2" height="2" className="fill-status-danger" />
-                  <text x={x} y="30" textAnchor="middle" className="fill-status-danger font-display font-bold font-bold" fontSize="2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.7" strokeLinejoin="round">IED</text>
-                </g>
-              ))}
-            </g>
-          )}
-        </g>
-
-        {/* === UNDERGROUND === */}
-        <g
-          onClick={() => onSelect('below')}
-          style={{ cursor: 'pointer' }}
-          opacity={activeDim === 'below' ? 1 : 0.7}
-        >
-          {/* Tunnel network */}
-          <path
-            d="M5 42 L 30 42 L 30 48 L 56 48 L 56 44 L 80 44 L 80 50 L 95 50"
-            fill="none"
-            className={cn(activeDim === 'below' ? 'stroke-accent-hot' : 'stroke-accent-hot/50')}
-            strokeWidth="0.6"
-          />
-          <path
-            d="M22 52 L 38 52 L 38 46 L 65 46"
-            fill="none"
-            className={cn(activeDim === 'below' ? 'stroke-accent-hot/80' : 'stroke-accent-hot/40')}
-            strokeWidth="0.5"
-          />
-
-          {/* Vertical shafts */}
-          {[12, 38, 62, 86].map((x, i) => (
-            <line key={i} x1={x} y1="34" x2={x} y2="42" className={cn(activeDim === 'below' ? 'stroke-accent-hot' : 'stroke-accent-hot/50')} strokeWidth="0.4" strokeDasharray="0.6 0.4" />
-          ))}
-
-          {/* Tunnel rooms / nodes */}
-          {[18, 40, 70].map((x, i) => (
-            <rect key={i} x={x - 2} y="42" width="4" height="6" className={cn(activeDim === 'below' ? 'fill-accent-hot/30 stroke-accent-hot' : 'fill-accent-hot/15 stroke-accent-hot/50')} strokeWidth="0.3" />
-          ))}
-
-          {activeDim === 'below' && (
-            <g>
-              {/* Underground figure */}
-              <motion.circle
-                r="0.8"
-                className="fill-accent-hot"
-                animate={{ cx: [10, 90], cy: [42, 50] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-              />
-              <text x="50" y="55" textAnchor="middle" className="fill-accent-hot font-display font-bold font-bold" fontSize="2.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.85" strokeLinejoin="round">
-                רשת מנהרות · אין קליטת לווינים (GPS)
-              </text>
-            </g>
-          )}
-          {activeDim !== 'below' && (
-            <text x="50" y="55" textAnchor="middle" className="fill-fg-dim font-display font-bold" fontSize="2.2" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.75" strokeLinejoin="round">
-              תת-קרקע
-            </text>
-          )}
-        </g>
-
-        {/* Depth labels (left side) */}
-        {[
-          { y: 5, label: '+150 מ׳' },
-          { y: 18, label: '+50 מ׳' },
-          { y: 34, label: '0' },
-          { y: 44, label: '-10 מ׳' },
-          { y: 54, label: '-25 מ׳' },
-        ].map((d, i) => (
-          <text key={i} x="2" y={d.y + 0.7} className="fill-fg-dim font-display font-bold" fontSize="1.8" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">
-            {d.label}
-          </text>
-        ))}
-      </svg>
-    </div>
   );
 }

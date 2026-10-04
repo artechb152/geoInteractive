@@ -1,9 +1,11 @@
 'use client';
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+// One terrain under both maps (roads, relief, ravine under bridge E).
+import { BufferTerrainMap, NetworkRoadMap } from './NetworkTerrain';
 
 // Network: nodes (junctions/bridges) and edges (roads)
 type Node = { id: string; x: number; y: number; label: string; isCritical?: boolean };
@@ -32,7 +34,8 @@ const EDGES: [string, string][] = [
 type Threat = { id: string; x: number; y: number; label: string; range: number; type: string };
 const THREATS: Threat[] = [
  { id: 't1', x: 55, y: 32, label: 'SAM S-400', range: 18, type: 'נ"מ ארוך טווח' },
- { id: 't2', x: 30, y: 50, label: 'SAM קצר טווח', range: 8, type: 'MANPADS' },
+ // y 47 (was 50): keeps the whole 8-unit ring inside the 56-unit-tall map
+ { id: 't2', x: 30, y: 47, label: 'SAM קצר טווח', range: 8, type: 'MANPADS' },
 ];
 
 // BFS for connectivity from A to I
@@ -76,6 +79,15 @@ return next;
  });
  };
 const reset = () => setDisabled(new Set());
+// Convoy drives the route once after each change (after the domino settles) and on replay.
+const [run, setRun] = useState(0);
+const blownKey = [...disabled].sort().join('-');
+useEffect(() => {
+const id = window.setTimeout(() => setRun((r) => r + 1), 900);
+return () => window.clearTimeout(id);
+ }, [blownKey]);
+// Picked threat card → its ring is emphasised. Picking it again, or the map, clears.
+const [focusedThreat, setFocusedThreat] = useState<string | null>(null);
 return (
  <section id="scene-network" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
@@ -90,24 +102,24 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
  />
 
  <div className="grid md:grid-cols-2 gap-4 mb-12 items-stretch">
- <div className="surface-elevated p-6 rounded-[4px]">
- <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+ <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
  ניתוח טופולוגי
  </div>
- <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
  Network Analysis — מי מתחבר למי, ומה קורה כשמנתקים
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
  ניתוח של קווים מחוברים — כבישים, צינורות דלק, כבלי תקשורת. מזהה את <strong className="text-fg">נקודות הכשל</strong>: מה יקרה אם גשר מסוים יפוצץ? אילו כוחות יישארו מנותקים? אילו צמתים שולטים על הזרימה?
  </p>
  </div>
- <div className="surface-elevated p-6 rounded-[4px]">
- <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-accent mb-2">
- <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+ <div className="surface-elevated p-6 rounded-2xl">
+ <div className="inline-flex items-center gap-2 text-sm font-display font-semibold tracking-wide text-brand-dark mb-2">
+ <span className="size-1.5 rounded-full bg-brand-dark" aria-hidden />
  ניתוח מרחבי
  </div>
- <h3 className="font-display font-bold text-xl leading-tight mb-3 text-accent-hover">
+ <h3 className="font-display font-bold text-xl leading-tight mb-3 text-fg">
  Buffer Analysis — טבעות איום סביב מטרות
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
@@ -117,39 +129,53 @@ intro={`גשר אחד יכול להפיל אוגדה שלמה. סוללת טיל
  </div>
 
  {/* Network analysis */}
- <div className="surface-elevated p-4 rounded-[4px] mb-6">
+ <div className="surface-elevated p-4 rounded-2xl mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  רשת דרכים · בסיס (A) ← חזית (I)
  </div>
+ <div className="flex items-center gap-2">
  <div className={cn(
- 'chip',
-isConnected ? 'border-status-ok/40 bg-status-ok/10 text-status-ok' : 'border-status-danger/40 bg-status-danger/10 text-status-danger'
+ 'chip text-[13px]',
+isConnected ? 'border-brand/40 bg-brand/10 text-brand-dark' : 'border-status-danger/40 bg-status-danger/10 text-status-danger'
  )}>
  <Icon name={isConnected ? 'check' : 'spark'} size={12} strokeWidth={2.5} />
  <span className="font-display font-medium tracking-wide">
  {isConnected ? `מחובר · ${path.length - 1} צמתי ביניים` : 'מנותק! החזית מבודדת'}
  </span>
  </div>
+ <button
+type="button"
+onClick={() => setRun((r) => r + 1)}
+aria-label="הפעלה חוזרת של ההדגמה"
+className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border bg-bg-elevated text-fg-muted hover:text-fg hover:border-brand/30 transition-colors inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+ >
+ <Icon name="refresh" size={15} />
+ </button>
+ </div>
  </div>
 
- <NetworkMap
+ <div className="aspect-[100/56] relative rounded-xl overflow-hidden">
+ <NetworkRoadMap
 nodes={NODES}
 edges={EDGES}
 disabled={disabled}
 path={path}
 onToggle={toggleNode}
+runKey={run}
  />
+ </div>
 
  <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
- <div className="text-[10px] text-fg-dim">
+ <div className="text-[13px] text-fg-dim">
  לחץ על צומת כדי"לפוצץ" אותו וראה את אפקט הדומינו
  </div>
  <button
-onClick={reset}
-disabled={disabled.size === 0}
+type="button"
+onClick={() => disabled.size > 0 && reset()}
+aria-disabled={disabled.size === 0}
 className={cn(
- 'px-3 py-1.5 rounded-[3px] text-xs font-medium border transition-colors flex items-center gap-1.5',
+ 'px-3 py-1.5 rounded-xl text-[13px] font-medium border transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
 disabled.size > 0
  ? 'border-border hover:border-border-strong text-fg'
  : 'border-border text-fg-dim cursor-not-allowed opacity-50'
@@ -161,9 +187,9 @@ disabled.size > 0
  </div>
 
  {/* Targeting insight */}
- <div className="surface-elevated p-5 rounded-[4px] mb-12">
+ <div className="surface-elevated p-5 rounded-2xl mb-12">
  <div className="flex gap-3 items-start">
- <Icon name="crosshair" size={20} className="text-accent shrink-0 mt-0.5" />
+ <Icon name="crosshair" size={20} className="text-brand-dark shrink-0 mt-0.5" />
  <div className="text-sm leading-relaxed">
  <strong className="text-fg">Targeting חכם:</strong> פגיעה ב<strong className="text-fg">צומת קריטי</strong> (נקודות עם דגל ⚠ במפה) מנתקת מספר מסלולים בו-זמנית. זה אפקט הדומינו — פגיעה במטרה אחת משתקת גזרה רחבה. נסה לפוצץ את גשר E או צומת C ותראה.
  </div>
@@ -173,15 +199,15 @@ disabled.size > 0
  <SoftDivider text="Buffer Analysis · מעגלי השפעה ואיום" />
 
  {/* Buffer analysis */}
- <div className="surface-elevated p-4 rounded-[4px] mb-6">
+ <div className="surface-elevated p-4 rounded-2xl mb-6">
  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
  <div className="text-sm font-display font-semibold text-fg-muted tracking-wider">
  מעגלי השפעה · כוח ידידותי מול 2 איומים
  </div>
  <div className={cn(
- 'chip',
-threatsAffecting.length === 0 ? 'border-status-ok/40 bg-status-ok/10 text-status-ok' :
-threatsAffecting.length === 1 ? 'border-status-warn/40 bg-status-warn/10 text-status-warn' :
+ 'chip text-[13px]',
+threatsAffecting.length === 0 ? 'border-brand/40 bg-brand/10 text-brand-dark' :
+threatsAffecting.length === 1 ? 'border-status-warn/60 bg-status-warn/10 text-tanline-badge' :
  'border-status-danger/40 bg-status-danger/10 text-status-danger'
  )}>
  <Icon name={threatsAffecting.length === 0 ? 'check' : 'shield'} size={12} strokeWidth={2.5} />
@@ -191,22 +217,31 @@ threatsAffecting.length === 1 ? 'border-status-warn/40 bg-status-warn/10 text-st
  </div>
  </div>
 
- <BufferMap
+ <div className="aspect-[100/56] relative rounded-xl overflow-hidden">
+ <BufferTerrainMap
+nodes={NODES}
+edges={EDGES}
 threats={THREATS}
 showBuffers={showThreatBuffers}
 friendlyPos={friendlyPos}
 setFriendlyPos={setFriendlyPos}
 threatsAffecting={threatsAffecting.map((t) => t.id)}
+focused={focusedThreat}
+onBackground={() => setFocusedThreat(null)}
+labels={{ friendly: 'כוח ידידותי', killBox: 'Kill Box' }}
  />
+ </div>
 
  <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
- <div className="text-[10px] text-fg-dim">
+ <div className="text-[13px] text-fg-dim">
  לחץ על המפה כדי להזיז את הכוח הידידותי וראה איזה איומים מאיימים עליו
  </div>
  <button
+type="button"
+aria-pressed={showThreatBuffers}
 onClick={() => setShowThreatBuffers(!showThreatBuffers)}
 className={cn(
- 'px-3 py-1.5 rounded-[3px] text-xs font-medium transition-colors flex items-center gap-1.5',
+ 'px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
 showThreatBuffers
  ? 'bg-accent text-bg-elevated'
  : 'border-2 border-border hover:border-border-strong'
@@ -218,37 +253,42 @@ showThreatBuffers
  </div>
  </div>
 
- {/* Threats details */}
+ {/* Threats details — each card picks its threat on the map */}
  <div className="grid sm:grid-cols-2 gap-3 mb-12">
  {THREATS.map((t, i) => {
 const isAffecting = threatsAffecting.some((tt) => tt.id === t.id);
+const isPicked = focusedThreat === t.id;
 return (
- <motion.div
+ <motion.button
+type="button"
 key={t.id}
+aria-pressed={isPicked}
+onClick={() => setFocusedThreat(isPicked ? null : t.id)}
 initial={{ opacity: 0, y: 10 }}
 whileInView={{ opacity: 1, y: 0 }}
 viewport={{ once: true, amount: 0.3 }}
 transition={{ delay: i * 0.08 }}
 className={cn(
- 'surface p-4 rounded-[3px] border-r-4 transition-all',
-isAffecting ? 'border-r-status-danger bg-status-danger/5' : 'border-r-status-warn'
+ 'surface p-4 rounded-2xl border-s-4 text-start transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+isAffecting ? 'border-s-status-danger bg-status-danger/5' : 'border-s-status-warn',
+isPicked && 'ring-2 ring-accent'
  )}
  >
  <div className="flex items-center gap-3">
- <Icon name="crosshair" size={30} className={cn(isAffecting ? 'text-status-danger' : 'text-status-warn', 'shrink-0')} />
+ <Icon name="crosshair" size={30} className={cn(isAffecting ? 'text-status-danger' : 'text-tanline-badge', 'shrink-0')} />
  <div className="flex-1">
  <div className={cn('font-display font-bold leading-tight', isAffecting && 'text-status-danger')}>
  {t.label}
  </div>
- <div className="text-[11px] font-display font-medium tracking-wide text-fg-dim">{t.type} · טווח {t.range}</div>
+ <div className="text-[13px] font-display font-medium tracking-wide text-fg-dim">{t.type} · טווח {t.range}</div>
  </div>
  {isAffecting && (
- <div className="text-status-danger font-display font-bold tracking-wide text-xs">
+ <div className="text-status-danger font-display font-bold tracking-wide text-[13px]">
  ⚠ בסכנה
  </div>
  )}
  </div>
- </motion.div>
+ </motion.button>
  );
  })}
  </div>
@@ -256,9 +296,9 @@ isAffecting ? 'border-r-status-danger bg-status-danger/5' : 'border-r-status-war
  {/* Use case callout */}
  <div className="">
  <div className="flex gap-4 items-start">
- <Icon name="spark" size={32} className="text-accent shrink-0" />
+ <Icon name="spark" size={32} className="text-brand-dark shrink-0" />
  <div className="flex-1">
- <div className="text-sm font-display font-semibold text-accent mb-1 tracking-wider">
+ <div className="text-sm font-display font-semibold text-brand-dark mb-1 tracking-wider">
  שימוש מבצעי כפול
  </div>
  <h3 className="font-display font-bold text-lg leading-tight mb-2">
@@ -272,271 +312,6 @@ Network + Buffer = ניתוח שטח מלא
  </div>
  </div>
  </section>
- );
-}
-function NetworkMap({
-nodes,
-edges,
-disabled,
-path,
-onToggle,
-}: {
-nodes: Node[];
-edges: [string, string][];
-disabled: Set<string>;
-path: string[];
-onToggle: (id: string) => void;
-}) {
-const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-const pathSet = new Set(path);
-const pathEdges = new Set<string>();
-for (let i = 0; i < path.length - 1; i++) {
-pathEdges.add([path[i], path[i + 1]].sort().join('-'));
- }
-return (
- <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
- <svg viewBox="0 0 100 56" className="w-full h-full">
- <rect x="0" y="0" width="100" height="56" className="fill-bg-elevated" />
-
- {/* Grid background */}
- {Array.from({ length: 11 }).map((_, i) => (
- <line key={`gx${i}`} x1={i * 10} y1="0" x2={i * 10} y2="56" className="stroke-border-subtle" strokeWidth="0.08" />
- ))}
- {Array.from({ length: 6 }).map((_, i) => (
- <line key={`gy${i}`} x1="0" y1={i * 11} x2="100" y2={i * 11} className="stroke-border-subtle" strokeWidth="0.08" />
- ))}
-
- {/* Edges */}
- {edges.map(([a, b]) => {
-const na = nodeMap.get(a)!;
-const nb = nodeMap.get(b)!;
-const edgeKey = [a, b].sort().join('-');
-const isOnPath = pathEdges.has(edgeKey);
-const isBroken = disabled.has(a) || disabled.has(b);
-return (
- <line
-key={edgeKey}
-x1={na.x}
-y1={na.y}
-x2={nb.x}
-y2={nb.y}
-className={
-isBroken ? 'stroke-status-danger' :
-isOnPath ? 'stroke-status-ok' :
- 'stroke-fg-dim'
- }
-strokeWidth={isOnPath ? 0.9 : 0.5}
-strokeDasharray={isBroken ? '1.5 1' : undefined}
-opacity={isBroken ? 0.4 : 1}
- />
- );
- })}
-
- {/* Nodes */}
- {nodes.map((n) => {
-const isDisabled = disabled.has(n.id);
-const isOnPath = pathSet.has(n.id);
-const isEndpoint = n.id === 'A' || n.id === 'I';
-return (
- <g key={n.id} onClick={() => !isEndpoint && onToggle(n.id)} style={{ cursor: isEndpoint ? 'default' : 'pointer' }}>
- {/* Pulse on path */}
- {isOnPath && !isDisabled && (
- <circle cx={n.x} cy={n.y} r="3" fill="none" className="stroke-status-ok" strokeWidth="0.3">
- <animate attributeName="r" values="2;5;2" dur="2.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.8;0;0.8" dur="2.4s" repeatCount="indefinite" />
- </circle>
- )}
- {/* Critical marker */}
- {n.isCritical && !isDisabled && (
- <circle cx={n.x} cy={n.y} r="3.5" fill="none" className="stroke-status-warn" strokeWidth="0.3" strokeDasharray="0.6 0.4" />
- )}
- {/* Node circle */}
- <circle
-cx={n.x}
-cy={n.y}
-r={isEndpoint ? 2.2 : 1.8}
-className={
-isDisabled ? 'fill-status-danger/30 stroke-status-danger' :
-n.id === 'A' ? 'fill-accent-cool stroke-accent-cool' :
-n.id === 'I' ? 'fill-accent-hot stroke-accent-hot' :
-isOnPath ? 'fill-status-ok stroke-status-ok' :
- 'fill-bg-card stroke-fg'
- }
-strokeWidth="0.4"
- />
- {/* Disabled X */}
- {isDisabled && (
- <g>
- <line x1={n.x - 1.4} y1={n.y - 1.4} x2={n.x + 1.4} y2={n.y + 1.4} className="stroke-status-danger" strokeWidth="0.7" strokeLinecap="round" />
- <line x1={n.x - 1.4} y1={n.y + 1.4} x2={n.x + 1.4} y2={n.y - 1.4} className="stroke-status-danger" strokeWidth="0.7" strokeLinecap="round" />
- </g>
- )}
- {/* Label */}
- <text
-x={n.x}
-y={n.y + 0.8}
-textAnchor="middle"
-className={cn(
- 'font-display font-bold',
-isDisabled ? 'fill-status-danger' :
-isEndpoint ? 'fill-bg' :
-isOnPath ? 'fill-bg' : 'fill-fg'
- )}
-fontSize="2.2"
- >
- {n.id}
- </text>
- {/* Critical badge */}
- {n.isCritical && !isDisabled && (
- <text x={n.x + 2.5} y={n.y - 2} className="fill-status-warn font-display font-bold font-bold" fontSize="2"
-        paintOrder="stroke"
-        stroke="#ffffff"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      >
- ⚠
- </text>
- )}
- </g>
- );
- })}
-
- {/* Animated traffic blip along path */}
- {path.length > 1 && (
- <motion.circle
-r="0.8"
-className="fill-accent"
-animate={{
-cx: path.map((id) => nodeMap.get(id)!.x),
-cy: path.map((id) => nodeMap.get(id)!.y),
- }}
-transition={{ duration: path.length * 1.2, repeat: Infinity, ease: 'linear' }}
- />
- )}
- </svg>
- </div>
- );
-}
-function BufferMap({
-threats,
-showBuffers,
-friendlyPos,
-setFriendlyPos,
-threatsAffecting,
-}: {
-threats: Threat[];
-showBuffers: boolean;
-friendlyPos: { x: number; y: number };
-setFriendlyPos: (p: { x: number; y: number }) => void;
-threatsAffecting: string[];
-}) {
-return (
- <div className="aspect-[16/9] relative rounded-[3px] overflow-hidden">
- <svg
-viewBox="0 0 100 56"
-preserveAspectRatio="none"
-className="w-full h-full"
-style={{ cursor: 'crosshair' }}
-onClick={(e) => {
-const svg = e.currentTarget as SVGSVGElement;
-const rect = svg.getBoundingClientRect();
-const x = ((e.clientX - rect.left) / rect.width) * 100;
-const y = ((e.clientY - rect.top) / rect.height) * 56;
-setFriendlyPos({ x, y });
- }}
- >
- <rect x="0" y="0" width="100" height="56" className="fill-bg-elevated" />
-
- {/* Terrain hints */}
- <path d="M0 40 L25 36 L50 42 L75 38 L100 40 L100 56 L0 56 Z" className="fill-terrain-sand/20" />
-
- {/* Grid */}
- {Array.from({ length: 11 }).map((_, i) => (
- <line key={i} x1={i * 10} y1="0" x2={i * 10} y2="56" className="stroke-border-subtle" strokeWidth="0.08" opacity="0.4" />
- ))}
-
- {/* Threat buffers */}
- {showBuffers && threats.map((t) => (
- <g key={t.id} className="pointer-events-none">
- {/* Outer buffer ring */}
- <circle cx={t.x} cy={t.y} r={t.range} fill="currentColor" className="text-status-danger" opacity="0.08" />
- {/* Ring border */}
- <circle cx={t.x} cy={t.y} r={t.range} fill="none" className="stroke-status-danger" strokeWidth="0.4" strokeDasharray="1.5 0.8" opacity="0.5" />
- {/* Inner ring (50%) */}
- <circle cx={t.x} cy={t.y} r={t.range * 0.6} fill="none" className="stroke-status-danger" strokeWidth="0.25" strokeDasharray="0.8 0.5" opacity="0.4" />
- {/* Range label */}
- <text x={t.x + t.range - 2} y={t.y - 1} className="fill-status-danger font-display font-bold" fontSize="1.6" paintOrder="stroke" stroke="#ffffff" strokeWidth="0.6" strokeLinejoin="round">
-Kill Box
- </text>
- </g>
- ))}
-
- {/* Threat markers */}
- {threats.map((t) => (
- <g key={`marker-${t.id}`} className="pointer-events-none">
- <circle cx={t.x} cy={t.y} r="1.5" className="fill-status-danger" stroke="#ffffff" strokeWidth="0.4" />
- <circle cx={t.x} cy={t.y} r="3" fill="none" className="stroke-status-danger/50" strokeWidth="0.3">
- <animate attributeName="r" values="2;5;2" dur="2.4s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.7;0;0.7" dur="2.4s" repeatCount="indefinite" />
- </circle>
- <text
-x={t.x}
-y={t.y - 3.5}
-textAnchor="middle"
-className="fill-status-danger font-display font-bold"
-fontSize="2.2"
-paintOrder="stroke"
-stroke="#ffffff"
-strokeWidth="0.75"
-strokeLinejoin="round"
- >
- {t.label}
- </text>
- </g>
- ))}
-
- {/* Friendly position (draggable target) */}
- <g className="pointer-events-none">
- <circle
-cx={friendlyPos.x}
-cy={friendlyPos.y}
-r="2"
-className={cn(
-threatsAffecting.length === 0 ? 'fill-accent-cool stroke-accent-cool' : 'fill-status-warn stroke-status-warn'
- )}
-stroke="#ffffff"
-strokeWidth="0.4"
- />
- <circle
-cx={friendlyPos.x}
-cy={friendlyPos.y}
-r="4"
-fill="none"
-className={threatsAffecting.length === 0 ? 'stroke-accent-cool' : 'stroke-status-warn'}
-strokeWidth="0.3"
- >
- <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
- <animate attributeName="opacity" values="0.8;0;0.8" dur="2s" repeatCount="indefinite" />
- </circle>
- <text
-x={friendlyPos.x}
-y={friendlyPos.y + 4.5}
-textAnchor="middle"
-className={cn(
- 'font-display font-bold',
-threatsAffecting.length === 0 ? 'fill-accent-cool' : 'fill-status-warn'
- )}
-fontSize="2.2"
-paintOrder="stroke"
-stroke="#ffffff"
-strokeWidth="0.75"
-strokeLinejoin="round"
- >
- כוח ידידותי
- </text>
- </g>
- </svg>
- </div>
  );
 }
 function SoftDivider({ text }: { text: string }) {
