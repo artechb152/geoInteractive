@@ -19,13 +19,13 @@ id: '10k',
 ratio: 10000,
 label: '1:10,000',
 size: 'גדול',
-who: 'מפת עיר / ניווט טקטי',
-use: 'תכנון פשיטה או מעצר ברמת הלוחם הבודד והצוות.',
-detail: ['"זום חזק" פנימה', 'רואים בניינים, גדרות ועצים בודדים', 'כל קו גובה = 5 מטרים'],
+who: 'תכנון מקומי מפורט',
+use: 'תכנון תנועה בתוך יישוב או במרחב מצומצם, תוך התייחסות למבנים ולדרכים.',
+detail: ['מציג שטח מצומצם ברמת פירוט גבוהה', 'מאפשר להציג מבנים ודרכים מקומיות', 'כל ס״מ במפה מייצג 100 מטר בשטח'],
 mapAsset: {
 assetId: 'TOPIC02-SCALE-10K',
 src: '/assets/lessons/topic02/scene-scale/TOPIC02-SCALE-10K.webp',
-alt: 'צילום אוויר בקנה מידה 1:10,000 של יישוב בודד עם מבנים, כבישים ונחל',
+alt: 'המחשה לקנה מידה 1:10,000: יישוב עם מבנים, כבישים ונחל',
 },
  },
  {
@@ -33,13 +33,13 @@ id: '50k',
 ratio: 50000,
 label: '1:50,000',
 size: 'בינוני',
-who: 'ניווט רגלי - הסטנדרט הצה"לי',
-use: 'השפה המשותפת של הצבא. תכנון תנועת גדוד וחטיבה.',
-detail: ['איזון בין פירוט לשטח', 'רואים יישובים, ערוצי נחלים ודרכי עפר', 'כל קו גובה = 10 מטרים'],
+who: 'ניווט ותכנון תנועה',
+use: 'בחינת מסלול ניווט והקשר בין צורות השטח, היישובים והדרכים שלאורכו.',
+detail: ['משלב פירוט עם הצגת מרחב רחב יותר', 'מציג יישובים, נחלים ודרכי עפר', 'כל ס״מ במפה מייצג 500 מטר בשטח'],
 mapAsset: {
 assetId: 'TOPIC02-SCALE-50K',
 src: '/assets/lessons/topic02/scene-scale/TOPIC02-SCALE-50K.webp',
-alt: 'צילום אוויר בקנה מידה 1:50,000 של כמה יישובים, נחל וכבישים אזוריים',
+alt: 'המחשה לקנה מידה 1:50,000: כמה יישובים, נחל וכבישים אזוריים',
 },
  },
  {
@@ -47,13 +47,13 @@ id: '250k',
 ratio: 250000,
 label: '1:250,000',
 size: 'קטן',
-who: 'תכנון אסטרטגי / טיסות',
-use: 'ראיית"התמונה הגדולה". תנועת אוגדות ומטוסים במרחב.',
-detail: ['"זום החוצה" למבט על', 'רואים ערים ככתם ורק כבישים ארציים', 'קווי גובה כלליים (50-100 מ\')'],
+who: 'תכנון אזורי',
+use: 'בחינת אזור נרחב והקשרים בין ערים, דרכים ראשיות ומרחבי פעילות.',
+detail: ['מציג אזור נרחב ברמת פירוט כללית', 'מדגיש ערים ודרכים ראשיות', 'כל ס״מ במפה מייצג 2.5 ק״מ בשטח'],
 mapAsset: {
 assetId: 'TOPIC02-SCALE-250K',
 src: '/assets/lessons/topic02/scene-scale/TOPIC02-SCALE-250K.webp',
-alt: 'צילום אוויר בקנה מידה 1:250,000 של אזור נרחב הכולל ערים והרים',
+alt: 'המחשה לקנה מידה 1:250,000: אזור נרחב הכולל ערים והרים',
 },
  },
 ];
@@ -68,28 +68,28 @@ step="02.2"
 eyebrow="קנה מידה"
 title={
           <>
-          איך יחס של מספר אחד קטן — משנה את כל התמונה המבצעית
+          קנה מידה: הקשר בין המרחק במפה למרחק בשטח
           </>
-        }intro={`קנה מידה הוא הדרך שלנו להבין כמה השטח"התכווץ" כדי להיכנס למפה. הנוסחה פשוטה: 1 ס"מ במפה = X סנטימטרים במציאות. למשל ב-1:50,000, כל ס"מ במפה שווה ל-500 מטר בשטח.`}
+        }intro={`קנה מידה הוא היחס בין מרחק במפה למרחק האופקי המקביל בשטח, באותן יחידות מידה. למשל, במפה בקנה מידה 1:50,000, ס״מ אחד מייצג 50,000 ס״מ בשטח, שהם 500 מטר.`}
  />
 
  {/* Concept · two rules read before choosing a scale — plain info text, so the picker below is the first strong surface */}
  <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-12">
  <div>
  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- גדול או קטן? <span className="font-medium text-fg-muted text-base md:text-lg">לפי הפירוט — לא המספר</span>
+ קנה מידה גדול <span className="font-medium text-fg-muted text-base md:text-lg">שטח מצומצם, יותר פירוט</span>
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
- אל תסתכלו על המספר הגדול במכנה — תחשבו על רמת הפירוט. <strong className="text-fg">1:10,000 הוא קנה מידה גדול</strong> כי רואים בו פרטים גדולים וברורים (כמו זום חזק פנימה).
+ <strong className="text-fg">1:10,000 הוא קנה מידה גדול יותר מ־1:50,000.</strong> באותו גודל של מפה, הוא מציג שטח מצומצם יותר ומאפשר להציג יותר פרטים.
  </p>
  </div>
 
  <div>
  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- ככל שהמספר גדול יותר — קנה המידה קטן יותר
+ ככל שהמכנה גדל, קנה המידה קטן
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
- ב-1:250,000 כל ס"מ במפה שווה ל-2.5 ק"מ בשטח — רואים את התמונה הגדולה אבל מאבדים את הפרטים. <strong className="text-fg">קנה מידה קטן = זום החוצה</strong>.
+ המכנה הוא המספר שאחרי הנקודתיים. ב־1:250,000 כל ס״מ מייצג 2.5 ק״מ בשטח. <strong className="text-fg">באותו גודל של מפה מוצג שטח נרחב יותר, עם פחות פרטים.</strong>
  </p>
  </div>
  </div>
@@ -111,7 +111,7 @@ active ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand
  {/* Zoom-level icon goes here once the user supplies it (assumptions 2026-09-14). The empty dashed slot was removed by the 2026-09-28 cleanup decision — it read as unfinished. */}
  <span className="font-display font-bold text-lg tabular-nums">{s.label}</span>
  <span className="text-sm leading-snug text-fg-muted">
- קנה {s.size} · {s.who}
+ קנה מידה {s.size} · {s.who}
  </span>
  </button>
  );
@@ -140,10 +140,10 @@ active ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand
  {/* the workspace's one divider — scale readout above, distance calculator below */}
  <div className="mt-5 pt-5 border-t border-border-subtle">
  <div className="text-base font-display font-bold text-fg mb-1">
- מחשבון"מה המרחק?"
+ חישוב מרחק בשטח
  </div>
  <div className="text-sm leading-snug text-fg-muted mb-3">
- כמה נלך ברגל? מדדו בס"מ וקבלו את המרחק האמיתי
+ בחרו קנה מידה והזינו מרחק בס״מ במפה כדי לחשב את המרחק בשטח.
  </div>
 
  <div className="flex items-end gap-2 mb-3">
@@ -153,6 +153,7 @@ min={0.1}
 max={100}
 step={0.1}
 value={mapDistance}
+aria-label="מרחק במפה בסנטימטרים"
 onChange={(e) => setMapDistance(Number(e.target.value) || 0)}
 className="w-24 bg-bg-elevated border border-border rounded-xl px-3 py-2 font-display font-medium text-xl tabular-nums hover:border-brand/30 focus:border-accent outline-none transition-colors duration-200 ease-snap"
  />
@@ -161,7 +162,7 @@ className="w-24 bg-bg-elevated border border-border rounded-xl px-3 py-2 font-di
 
  {/* result — changes with the input above and the selected scale */}
  <div className="rounded-xl bg-bg-accent/60 px-4 py-3">
- <div className="text-sm text-fg-muted">מרחק אווירי בשטח</div>
+ <div className="text-sm text-fg-muted">מרחק אופקי בשטח</div>
  <div className="flex items-baseline gap-2">
  <span className="font-display font-bold text-4xl tabular-nums text-fg">
  {realKm.toFixed(2)}
@@ -171,7 +172,7 @@ className="w-24 bg-bg-elevated border border-border rounded-xl px-3 py-2 font-di
  </div>
 
  <div className="mt-3 text-sm leading-snug text-fg-muted">
- * טיפ: במפת 1:50,000, פשוט מחלקים את הס"מ ב-2 כדי לקבל ק"מ.
+ במפה בקנה מידה 1:50,000, מחלקים את המרחק בס״מ ב־2 לקבלת ק״מ. החישוב אינו כולל את השפעת השיפועים על אורך המסלול.
  </div>
  </div>
  </div>
@@ -196,7 +197,7 @@ active
  )}
  >
  <div className="text-base font-display font-bold text-fg mb-2">
- רזולוציה קרטוגרפית
+ רמת הפירוט והמרחקים
  </div>
  <ul className="list-disc ps-5 space-y-1.5 text-sm leading-snug text-fg marker:text-fg-dim mb-5">
  {scale.detail.map((d) => (
@@ -204,7 +205,7 @@ active
  ))}
  </ul>
  <div>
- <div className="text-base font-display font-bold text-fg mb-1">משימה אופיינית</div>
+ <div className="text-base font-display font-bold text-fg mb-1">דוגמה לשימוש</div>
  <div className="text-sm text-fg leading-relaxed">{scale.use}</div>
  </div>
  </div>
@@ -248,25 +249,25 @@ function ProjectionCallout() {
 return (
  <div className="mt-8 surface p-5 sm:p-6">
  <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
- למה כל מפה"משקרת" קצת?
+ מדוע נוצרים עיוותים במפה?
  </div>
  <p className="text-base text-fg leading-relaxed mb-6 text-pretty">
- כדור הארץ הוא כדור עגול, אבל המפה שלכם היא דף שטוח. אי אפשר לשטח כדור בלי למתוח או לקרוע אותו – תחשבו על ניסיון לשטח קליפה של תפוז על שולחן. 
- השיטה שבה בוחרים"למתוח" את העולם נקראת <strong>היטל</strong>, וכל בחירה כזו היא פשרה בין דיוק במרחק, בצורה או בכיוון.
+ פני כדור הארץ קמורים, והמפה שטוחה. השיטה המתמטית להעברת פני השטח למפה נקראת <strong>היטל</strong>.
+ אין היטל ששומר בו־זמנית על כל המרחקים, השטחים, הצורות והכיוונים. לכן בוחרים היטל שמתאים לאזור המוצג ולמטרת המפה.
  </p>
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
- <ProjectionTile name="Transverse Mercator" scope="היטל צבאי מקומי" tradeoff="המדויק ביותר לישראל. משמש את צה''ל לניווט, תצפית וירי ארטילרי." 
+ <ProjectionTile name="Transverse Mercator" scope="היטל מרקטור רוחבי" tradeoff="מאפשר לצמצם עיוותים לאורך רצועה מצפון לדרום. רשת ישראל החדשה (ITM) מבוססת על היטל זה."
  />
- <ProjectionTile name="Web Mercator" scope="גוגל מפות (Web)" tradeoff="נוח לניווט עירוני, אבל מעוות שטחים (גרינלנד נראית גדולה מאפריקה)." 
+ <ProjectionTile name="Web Mercator" scope="היטל נפוץ במפות מקוונות" tradeoff="משמש להצגת מפות באינטרנט. עיוותי השטח והמרחק גדלים ככל שמתרחקים מקו המשווה."
  />
- <ProjectionTile name="UTM" scope="סטנדרט נאט''ו" tradeoff="מחלק את העולם ל-60 רצועות דיוק. חיוני לעבודה עם צבאות זרים." 
+ <ProjectionTile name="UTM" scope="מערכת קואורדינטות אזורית" tradeoff="מחלקת את העולם ל־60 אזורים לאורך קווי האורך, למעט אזורי הקטבים. בכל אזור משתמשים בהיטל מרקטור רוחבי המותאם לו."
  />
  </div>
 
  <div className="mt-6 rounded-xl bg-bg-accent/60 p-4 text-sm leading-relaxed text-fg-muted">
  <span>
- <strong className="text-fg">טעות קריטית:</strong> שימוש בהיטל לא נכון בתכנון מסלול של טיל ארוך טווח יגרום להחטאת המטרה בעשרות קילומטרים בגלל עיוותי המפה.
+ <strong className="text-fg">לפני מדידה או שילוב מפות:</strong> בדקו את קנה המידה ואת מערכת הקואורדינטות. הבדלים בין מערכות עלולים ליצור שגיאות במיקום ובמדידה אם לא מבצעים המרה מתאימה.
  </span>
  </div>
  </div>

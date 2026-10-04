@@ -12,11 +12,11 @@ feature: string;
 icon: IconName;
 };
 const CHECKPOINTS: Checkpoint[] = [
- { id: '1', label: 'נקודה 1: יוצאים לדרך (נ.ה)', feature: 'אזימוט 070° (מזרח), כ-400 מ׳ (±50): הולכים בקשת חדה לכיוון מזרח אל עבר תחילת ערוץ הנחל.', icon: 'flag' },
- { id: '2', label: 'נקודה 2: עיקול הנחל', feature: 'אזימוט 035° (צפון-מזרח), כ-500 מ׳ (±50) מנקודה 1: מגיעים לערוץ משמעותי ובו זרימת נחל. חוצים את הנחל ונכנסים בשיפוע מתון לכיוון צפון מזרח.', icon: 'wave' },
- { id: '3', label: 'נקודה 3: אוכף הרכס', feature: 'אזימוט 065°, כ-700 מ׳ (±50) מנקודה 2: עולים אל קו הרכס ומכוונים אל האוכף — המעבר הנמוך בין שתי הפסגות. הקרקע עולה משני הצדדים ויורדת במעבר, סימן ודאי שאתם על הציר.', icon: 'mountain' },
- { id: '4', label: 'נקודה 4: חציית ציר', feature: 'אזימוט 050°, כ-500 מ׳ (±50) מנקודה 3: מגיעים לדרך עפר רחבה וחוצים אותה בזהירות.', icon: 'truck' },
- { id: '5', label: 'היעד: נקודת הסיום (נ.ס)', feature: 'אזימוט 040°, כ-600 מ׳ (±50) מנקודה 4: נכנסים לחורשת העצים ומגיעים לקרקע סלעית עם קבוצת עצי אורן בולטים — זהו היעד. מוודאים אימות אחרון ועוצרים.', icon: 'target' },
+ { id: '1', label: 'נקודה 1: נקודת ההתחלה (נ.ה)', feature: 'יציאה לנקודה 2 — אזימוט 035°, כ־500 מ׳: מאמתים את נקודת ההתחלה במפה ובשטח, ובודקים את הכיוון ואת המרחק לעיקול הנחל.', icon: 'flag' },
+ { id: '2', label: 'נקודה 2: עיקול הנחל', feature: 'אזימוט 035°, כ־500 מ׳ מנקודה 1: מזהים את עיקול הנחל ומשווים את צורת הערוץ וסביבתו למפה. לאחר אימות המיקום ממשיכים לכיוון האוכף.', icon: 'wave' },
+ { id: '3', label: 'נקודה 3: אוכף הרכס', feature: 'אזימוט 065°, כ־700 מ׳ מנקודה 2: מזהים את האוכף שבין שתי הפסגות. בודקים את התאמת צורת הקרקע, הכיוון והמרחק לתכנון כדי לאמת את המיקום.', icon: 'mountain' },
+ { id: '4', label: 'נקודה 4: חציית דרך עפר', feature: 'אזימוט 050°, כ־500 מ׳ מנקודה 3: מזהים את דרך העפר ובודקים את כיוונה ואת נקודת החצייה ביחס לתכנון. ממשיכים ממנה אל החורשה.', icon: 'truck' },
+ { id: '5', label: 'נקודה 5: נקודת הסיום (נ.ס)', feature: 'אזימוט 040°, כ־600 מ׳ מנקודה 4: עוברים בחורשה ומזהים את קבוצת האורנים בקרקע הסלעית. מאמתים את נקודת הסיום לפי הסימנים שסביבה והמרחק שעברנו.', icon: 'target' },
 ];
 export function PlanningScene() {
 return (
@@ -26,29 +26,29 @@ step="03.2"
 eyebrow="תכנון ציר ותנועה"
 title={
           <>
-          לא רק למתוח קו: איך בונים <span className="gradient-text">סיפור דרך</span> שיעבוד לכם גם בחושך
+          תכנון ציר: בניית <span className="gradient-text">סיפור דרך</span>
           </>
         }
-intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפורטת — מעין 'ספוילר' של מה שהעיניים שלכם אמורות לראות בכל קטע בדרך. ככה גם אם הלילה קשה והדרך מורכבת, אתם לא מאבדים את החוט."
+intro="לפני היציאה מחלקים את המסלול לקטעים ומתארים את הכיוון, המרחק וסימני השטח בכל קטע. התכנון מסייע לעקוב אחר ההתקדמות ולזהות סטייה מהמסלול."
  />
 
  {/* Concept · read before the builder — plain info text (no cards), so the builder is the first strong surface */}
  <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-12">
  <div>
  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- סיפור דרך <span className="font-medium text-fg-muted text-base md:text-lg">(Route Story)</span>
+ סיפור דרך <span className="font-medium text-fg-muted text-base md:text-lg">(Route Description)</span>
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
- תוכנית מפורטת שמתארת מראש <strong className="text-fg">מה העיניים אמורות לראות בכל קטע</strong>. ככה גם בלילה קשה או בדרך מורכבת — לא מאבדים את החוט.
+ תיאור מסודר של המסלול, הכולל <strong className="text-fg">כיוונים, מרחקים וסימנים צפויים בשטח</strong>. בכל קטע בוחרים נקודות שבהן אפשר לבדוק את המיקום ביחס למפה.
  </p>
  </div>
 
  <div>
  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- בחושך, המוח עובד פחות — התסריט עובד תמיד
+ תכנון מראש ובקרה בתנועה
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
- תחת לחץ או אחרי שעות של הליכה, המוח עובד פחות טוב. סיפור דרך מוכן מאפשר לנווט <strong className="text-fg">על אוטומט</strong> — עוקבים אחרי ההוראות של עצמכם, בלי חישובים מיותרים.
+ הכנת סיפור הדרך מרכזת את הנתונים הדרושים לפני היציאה. במהלך התנועה ממשיכים <strong className="text-fg">להשוות בין התכנון לשטח</strong> ולבדוק כל אי־התאמה.
  </p>
  </div>
  </div>
@@ -67,7 +67,7 @@ intro="לפני שיוצאים לשטח, אנחנו בונים תוכנית מפ
 // card text opens with. They drive the to-scale map geometry and its leg tags.
 // Card 1 = the departure bearing out of נ.ה; cards 2–5 = the leg arriving there.
 const LEGS: RouteLeg[] = [
-  { az: 70, m: 400 },
+  { az: 35, m: 500 },
   { az: 35, m: 500 },
   { az: 65, m: 700 },
   { az: 50, m: 500 },
@@ -107,16 +107,16 @@ return (
  <div data-qa="route-builder" className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 items-start">
  <div>
  <div id={titleId} className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
- המסלול ב-5 נקודות אימות
+ סיפור דרך בחמש נקודות
  </div>
  <p className="mt-1 text-sm text-fg-muted leading-relaxed mb-4">
- כל נקודה בסיפור דרך נפתחת ב<strong className="text-fg">אזימוט</strong> וב<strong className="text-fg">מרחק במטרים</strong> (עם טווח משוער) — ורק אז מגיע תיאור הדרך או המקום.
+ בחרו נקודה כדי לראות במפה את קטע הדרך הקשור אליה. בכל תיאור מופיעים <strong className="text-fg">אזימוט</strong>, <strong className="text-fg">מרחק משוער</strong> וסימנים לבדיקת המיקום. הנתונים הם דוגמה לימודית.
  </p>
  <ol aria-labelledby={titleId} onKeyDown={onListKey} className="space-y-2.5">
  {CHECKPOINTS.map((c, i) => {
 const isActive = active === i;
 const passed = active > i;
-// split "אזימוט …, כ-… מ׳ (±50)…" from the description (text unchanged) so the numbers read as the lead
+// Split the bearing/distance lead from the description at the first colon.
 const cut = c.feature.indexOf(':');
 const head = cut > -1 ? c.feature.slice(0, cut + 1) : '';
 const tail = cut > -1 ? c.feature.slice(cut + 1) : c.feature;
@@ -255,7 +255,7 @@ const alongTrack = (fr: number) => `calc(${THUMB_PX / 2}px + (100% - ${THUMB_PX}
 
 function PacingDemo() {
 const [distance, setDistance] = useState(500);
-const stepLength = 1.5; // אורך צמד צעדים ממוצע
+const stepLength = 1.5; // Illustrative double-pace length, not a universal average.
 const paces = Math.round(distance / stepLength);
 const reduce = useReducedMotion();
 const frac = (distance - PACE_MIN) / (PACE_MAX - PACE_MIN);
@@ -269,17 +269,16 @@ useEffect(() => {
 }, [paces, reduce, paceSpring]);
 return (
  <div data-qa="pacing" className="surface-elevated p-6 lg:p-8">
- <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">ספירת צעדים — איך מודדים מרחק בלי GPS?</h3>
+ <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">ספירת צעדים: הערכת מרחק</h3>
  <p className="mt-2 mb-8 max-w-2xl text-base leading-relaxed text-fg-muted">
- השיטה הכי פשוטה והכי בטוחה: סופרים כמה 'צעדים כפולים' (כל פעם שרגל ימין פוגשת את הקרקע) אתם עושים.
- זהו 'מד המרחק' האנושי שלכם. גללו את הסרגל כדי לראות כמה צעדים תצטרכו לעשות.
+ צעד כפול הוא זוג צעדים; סופרים בכל פעם שאותה רגל נוגעת בקרקע. שנו את המרחק במחוון כדי לראות את מספר הצעדים הכפולים המשוער. בהדגמה מניחים אורך של 1.5 מטר לצעד כפול; בפועל נדרשת מדידה אישית.
  </p>
 
  <div className="grid md:grid-cols-[minmax(0,1.25fr)_auto_minmax(0,1fr)] gap-6 md:gap-5 items-stretch">
  <div className="rounded-xl bg-bg-accent/60 p-5 sm:p-6 flex flex-col justify-center">
  <div className="flex justify-between items-end mb-4">
- <span className="text-sm font-display font-semibold text-fg-muted">מרחק שצריך לעבור:</span>
- <span className="text-4xl font-display font-bold text-fg tabular-nums">{distance} מ'</span>
+ <span className="text-sm font-display font-semibold text-fg-muted">מרחק מתוכנן:</span>
+ <span className="text-4xl font-display font-bold text-fg tabular-nums">{distance} מ׳</span>
  </div>
 
  {/* footprint trail — grows with the distance, head mark rides above the thumb */}
@@ -325,7 +324,7 @@ className={cn(
   '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:box-border [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-bg-elevated [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-accent'
 )}
 aria-label="מרחק במטרים"
-aria-valuetext={`${distance} מ'`}
+aria-valuetext={`${distance} מטרים`}
  />
  </div>
  <div className="relative h-7 mt-1.5 text-[13px] font-display font-medium text-fg-muted">
@@ -341,7 +340,7 @@ aria-valuetext={`${distance} מ'`}
  style={{ insetInlineStart: alongTrack(pct / 100) }}
  >
  <span className="block h-1.5 w-px bg-border-strong/70 mb-0.5" aria-hidden />
- {val === 50 ? "50 מ'" : val.toLocaleString()}
+ {val === 50 ? '50 מ׳' : val.toLocaleString()}
  </span>
  );
  })}
@@ -354,11 +353,11 @@ aria-valuetext={`${distance} מ'`}
  </div>
 
  <div className="p-6 rounded-xl flex flex-col items-center justify-center text-center bg-bg-accent/60">
- <div className="text-sm font-display font-semibold text-fg-muted mb-2">כמות צמדי צעדים משוערת</div>
+ <div className="text-sm font-display font-semibold text-fg-muted mb-2">מספר משוער</div>
  <motion.div className="text-6xl font-display font-bold text-fg tabular-nums mb-2" aria-hidden>{pacesShown}</motion.div>
- <span className="sr-only" aria-live="polite">{paces}</span>
- <div className="text-sm font-bold text-fg">זוגות צעדים</div>
- <div className="text-sm text-fg-muted mt-4 tabular-nums">חישוב: {distance} מ' ÷ 1.5 מ' (אורך צמד צעדים) = {paces}</div>
+ <span className="sr-only" aria-live="polite">כ־{paces} צעדים כפולים למרחק של {distance} מטרים</span>
+ <div className="text-sm font-bold text-fg">צעדים כפולים</div>
+ <div className="text-sm text-fg-muted mt-4 tabular-nums">חישוב לדוגמה: {distance} מ׳ ÷ 1.5 מ׳ ≈ {paces} צעדים כפולים</div>
  </div>
  </div>
 
@@ -366,13 +365,13 @@ aria-valuetext={`${distance} מ'`}
  <div className="flex gap-3 items-start">
  <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">1</div>
  <p className="text-sm text-fg-muted leading-relaxed">
- <strong className="text-fg">מדידה מראש:</strong> כל אחד צועד קצת אחרת. תמדדו כמה צעדים כפולים לוקח לכם לעבור 100 מטרים במישור.
+ <strong className="text-fg">מדידה אישית:</strong> הולכים קטע מדוד של 100 מטר במישור וסופרים צעדים כפולים. חוזרים על המדידה כדי לקבל אומדן מייצג.
  </p>
  </div>
  <div className="flex gap-3 items-start">
  <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">!</div>
  <p className="text-sm text-fg-muted leading-relaxed">
- <strong className="text-fg">פקטור שטח:</strong> בעלייה הצעד מתקצר (תספרו יותר), בירידה הוא מתארך. נווט מנוסה יודע 'לפצות' על זה בספירה.
+ <strong className="text-fg">התאמה לתנאים:</strong> שיפוע, קרקע לא אחידה ומשקל הציוד משפיעים על אורך הצעד. מתרגלים את הספירה בתנאים דומים ומשלבים אותה עם בדיקת סימני שטח.
  </p>
  </div>
  </div>
@@ -386,7 +385,7 @@ return (
  סיכום התכנון
  </div>
  <p className="text-base text-fg leading-relaxed text-pretty">
- תכנון ציר הוא לא רק לסמן קו על מפה. זה לבנות <strong className="text-fg">סיפור</strong> שתוכלו לעקוב אחריו תוך כדי תנועה, ולאמת אותו בעזרת <strong className="text-fg">ספירת צעדים</strong> מדויקת. ככה — גם אם פתאום אין GPS, או שחשוך לגמרי — המסלול עצמו מנחה אתכם הביתה.
+ <strong className="text-fg">סיפור דרך</strong> מקשר בין המסלול במפה לבין הסימנים הצפויים בשטח. <strong className="text-fg">ספירת צעדים</strong> מוסיפה אומדן למרחק שעברנו. השילוב בין כיוון, מרחק וסימני שטח מסייע לבדוק את ההתקדמות לאורך המסלול.
  </p>
  </div>
  );

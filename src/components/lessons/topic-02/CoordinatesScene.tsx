@@ -14,10 +14,10 @@ step="02.3"
 eyebrow="קואורדינטות · נ״צ"
 title={
           <>
-          איך מתרגמים נקודה עצומה במרחב לכתובת מבצעית מוחלטת?
+          קואורדינטות: כיצד מציינים מיקום במפה ובשטח?
           </>
         }
-        intro={`כשרוצים להגיד"תפגע כאן" — צריך מספר שכל המכשירים יבינו. זאת קואורדינטה: שני מספרים שמגדירים נקודה אחת ויחידה בעולם. הבעיה מתחילה כשיש כמה"שפות" (רשתות) שונות. אם אחד דיבר בשפה אחת והשני בשפה אחרת — הירי יחטיא את המטרה.`}
+        intro={`קואורדינטות הן ערכים מספריים המתארים מיקום במערכת ייחוס מוגדרת. בחלק זה נלמד לקרוא נקודת ציון, לזהות את המערכת שבה היא נכתבה ולסמן את המיקום המתאים במפה.`}
  />
 
  {/* Concept · two plain info columns (pattern 9: demoted so the
@@ -28,16 +28,16 @@ title={
  נקודת ציון <span className="font-medium text-fg-muted text-base md:text-lg">(Grid Reference)</span>
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
- ה"מספר האישי" של המיקום שלכם — <strong className="text-fg">צמד מספרים שקובע נקודה אחת בעולם</strong>. כל רשת קואורדינטות היא שפה אחרת לחישוב אותה נקודה, ולכל אחת יש כללים משלה.
+ נקודת ציון, או נ״צ, מתארת מיקום על גבי רשת המפה. ברשת שנלמד כאן קוראים <strong className="text-fg">ערך מזרח וערך צפון</strong>. כדי לפרש אותם נכון, יש לדעת באיזו מערכת ובאילו יחידות נכתבו.
  </p>
  </div>
 
  <div>
  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- ספרה אחת שגויה הופכת ל-100 מ' של דו"צ
+ מדוע חשוב לבדוק את הנ״צ?
  </h3>
  <p className="text-base text-fg leading-relaxed text-pretty">
- דו"צ (ירי דו-צדדי) הוא פגיעה בטעות בכוחותינו. רוב המקרים קורים מ<strong className="text-fg">בלבול של ספרה אחת בנ"צ</strong> או משימוש ברשת קואורדינטות לא נכונה — ההפרש בשטח קטלני.
+ שגיאה בספרה, בסדר הערכים או בזיהוי המערכת עלולה להצביע על מיקום אחר. <strong className="text-fg">גודל הסטייה תלוי בסוג הטעות ובמקום הספרה במספר.</strong> לכן בודקים את הערכים ואת הגדרות המערכת לפני השימוש.
  </p>
  </div>
  </div>
@@ -67,24 +67,24 @@ const DATUM_TICKS = [0, 50, 100] as const;
 
 function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: number) => void }) {
   const dangerLevel = shift < 15 ? 'safe' : shift < 40 ? 'warn' : 'danger';
-  const statusText = dangerLevel === 'safe' ? 'סטטוס: תקין' : dangerLevel === 'warn' ? 'סטטוס: סיכון' : 'סטטוס: סטייה קריטית';
+  const statusText = shift === 0 ? 'ללא סטייה' : dangerLevel === 'safe' ? 'סטייה קטנה בהדמיה' : dangerLevel === 'warn' ? 'סטייה בינונית בהדמיה' : 'סטייה גדולה בהדמיה';
   const consequenceText =
     shift < 15
-      ? 'בסדר: הסטייה קטנה מאוד. הירי עדיין יפול בתוך אזור המטרה.'
+      ? 'שתי הנקודות קרובות זו לזו. בערך אפס הן חופפות.'
       : shift < 40
-        ? 'סיכון: כוחותינו נמצאים בטווח רסיסים מסוכן מנקודת הפגיעה.'
+        ? 'המרחק בין המיקום המבוקש למיקום המוצג גדל.'
         : shift < 70
-          ? 'דו"צ! הירי נופל ישירות על כוחותינו בגלל טעות בשפת המפה.'
-          : 'קטסטרופה: המשימה נכשלה לחלוטין. חוסר התאמה מוחלט בין המערכות.';
+          ? 'המיקום המוצג נמצא באזור אחר של המפה ביחס לנקודה המבוקשת.'
+          : 'הסטייה בולטת בהדמיה וממחישה את החשיבות של בדיקת התאמה בין המערכות.';
   return (
     <div className="my-10">
       {/* Same block anatomy as DigitAnatomy below: T1 heading + intro on the
           page, then ONE workspace card holding readout insets + the map. */}
       <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance">
-        הדמיה מבצעית: מה קורה כשהשפה לא תואמת
+        הדמיה: סטייה בין המיקום המבוקש למיקום המוצג
       </h3>
       <p className="text-fg leading-relaxed text-pretty mb-8 max-w-3xl">
-        <strong className="text-fg">איך זה קורה בפועל?</strong> חייל א׳ מודד נ&quot;צ ב-GPS (שעובד ב-WGS84) ושולח אותו ברשת. מפעיל הארטילריה מזין את המספרים למערכת — אבל המערכת מצפה ל-ITM. <strong className="text-fg">התוצאה:</strong> בלי תרגום נכון ← הקואורדינטה תתפרש כמיקום אחר לגמרי.
+        <strong className="text-fg">אי־התאמה בין מערכות עלולה ליצור שגיאת מיקום.</strong> הזיזו את המחוון ובחנו כיצד גדל הפער בין הנקודות. זוהי המחשה סכמטית: ערכי הסטייה נבחרים לצורך ההדגמה ואינם תוצאה של המרה בין ITM ל־WGS84.
       </p>
 
       {/* Sidebar (right, DOM-first per this file's RTL convention) + map column
@@ -130,7 +130,7 @@ function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: numb
               dangerLevel === 'danger' && 'bg-status-danger/10',
             )}
           >
-            <div className="text-sm font-display font-semibold text-fg-muted mb-2">השלכה מבצעית בשטח</div>
+            <div className="text-sm font-display font-semibold text-fg-muted mb-2">משמעות הסטייה בהדמיה</div>
             <p className="text-lg font-bold leading-snug text-fg text-pretty">{consequenceText}</p>
           </div>
         </div>
@@ -181,7 +181,7 @@ function DatumShiftDemo({ shift, setShift }: { shift: number; setShift: (n: numb
                 centred exactly under the 50 m tick regardless of the edge
                 captions' differing widths. */}
             <div className="grid grid-cols-3 gap-2 mt-1 text-[13px] font-display font-medium text-fg-muted tabular-nums">
-              {(['0 מ׳', '50 מ׳ (טווח רסיסים)', '100 מ׳ (החטאה מלאה)'] as const).map((label, i) => (
+              {(['0 מ׳', '50 מ׳', '100 מ׳'] as const).map((label, i) => (
                 <span
                   key={label}
                   className={cn(
@@ -348,7 +348,7 @@ markerEnd="url(#impactArrow)"
 className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2.5 py-1 text-[13px] leading-tight font-display font-bold text-fg whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
 style={{ left: `${targetLeftPct}%`, top: `${targetTopPct}%` }}
  >
-מטרה מבוקשת
+מיקום מבוקש
  </div>
  <motion.div
 className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-bg-elevated/90 px-2.5 py-1 text-[13px] leading-tight font-display font-bold whitespace-nowrap shadow-[0_1px_4px_rgba(0,0,0,0.1)]"
@@ -356,7 +356,7 @@ style={{ color: IMPACT_MAROON }}
 animate={{ left: `${impactLeftPct}%`, top: `${impactTopPct}%` }}
 transition={{ type: 'spring', stiffness: 50 }}
  >
-מיקום פגיעה בפועל
+מיקום מוצג
  </motion.div>
  {/* Always mounted (never conditionally rendered) so crossing the
      DISTANCE_CHIP_MIN threshold only fades opacity in/out — mounting it fresh at
@@ -478,10 +478,10 @@ function DigitAnatomy() {
   return (
     <div className="my-10">
       <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance">
-        נ&quot;צ הוא לא מספר קסם — הוא שתי כתובות מדויקות, אחת בתוך השנייה
+        מבנה הנ״צ: מזרח, צפון ומיקום בתוך המשבצת
       </h3>
       <p className="text-fg leading-relaxed text-pretty mb-8 max-w-3xl">
-        קוראים תמיד <strong className="text-fg">מזרח קודם, צפון אחר-כך</strong> — ואף פעם לא הפוך. בכל אחת משתי המחציות, שלוש הספרות הראשונות הן מספר משבצת הקילומטר <strong className="text-fg">המודפס על המפה עצמה</strong>; הספרות שאחריהן הן המיקום המדויק בתוך אותה משבצת, שאותו מודדים בעזרת <strong className="text-fg">מד קואורדינטות (&quot;מדקו&quot;)</strong> — סרגל שקוף שמחלק כל משבצת קילומטר לעשרה חלקים שווים.
+        ברשת המוצגת כאן קוראים <strong className="text-fg">מזרח תחילה, ולאחר מכן צפון</strong>. בכל ערך, שלוש הספרות הראשונות מזהות את קו הקילומטר שממנו מתחילים למדוד. הספרות הנוספות מציינות מיקום בתוך המשבצת. למדידה משתמשים ב<strong className="text-fg">מד קואורדינטות (מדקו)</strong>, סרגל שקוף המותאם לקנה המידה של המפה.
       </p>
 
       {/* Digit readouts (visual right) + map (visual left) — first DOM child
@@ -503,7 +503,7 @@ function DigitAnatomy() {
           />
           <div>
             <p className="text-sm text-fg-muted leading-relaxed">
-              <strong className="text-fg">כל ספרה נוספת בתוך המשבצת מדייקת את המיקום פי 10 בכל ציר בנפרד:</strong> נ&quot;צ של 6 ספרות ({GRID_EAST_KM} / {GRID_NORTH_KM}) מצביע רק על משבצת קילומטר שלמה; נ&quot;צ של 8 ספרות (ספרה נוספת בכל צד, כמו בתרגיל שלמטה) מדייק עוד פי 10 בכל ציר; נ&quot;צ של 10 ספרות מדייק עוד פי 10 נוסף. אבל שימו לב — <strong className="text-fg">אורך הנ&quot;צ לא הופך אתכם למדויקים יותר מהמפה ומהעין שלכם.</strong> קריאה ארוכה בלי הערכה זהירה בשטח נותנת רק ביטחון-יתר מסוכן.
+              <strong className="text-fg">הוספת ספרה לכל ציר מקטינה את אורך צלע התא פי 10.</strong> בשיטת הכתיבה שבדוגמה, 6 ספרות (מזרח {GRID_EAST_KM}, צפון {GRID_NORTH_KM}) מציינות תא של קילומטר; 8 ספרות מציינות תא של 100 מטר; ו־10 ספרות מציינות תא של 10 מטר. <strong className="text-fg">יותר ספרות אינן מבטיחות מדידה מדויקת יותר.</strong> הדיוק תלוי גם במפה, במכשיר ובאופן המדידה.
             </p>
           </div>
         </div>
@@ -574,7 +574,7 @@ function DigitReadout({
       <div className="text-sm font-display font-semibold mb-2 text-fg-muted">{axisLabel}</div>
       <bdi dir="ltr" className="flex items-baseline gap-1 font-display font-bold text-4xl sm:text-5xl tabular-nums mb-3">
         <DigitZoneButton
-          label={`שלוש הספרות הראשונות של ${axisLabel}: ${digits.km} — מספר משבצת הקילומטר המודפס על המפה`}
+          label={`שלוש הספרות הראשונות של ${axisLabel}: ${digits.km} — ערך קו הקילומטר שממנו מודדים`}
           active={activeZone === 'km'}
           onActivate={() => onZoneChange('km')}
           onDeactivate={() => onZoneChange(null)}
@@ -585,8 +585,8 @@ function DigitReadout({
         <DigitZoneButton
           label={
             hasFine
-              ? `הספרה האחרונה של ${axisLabel}: ${digits.fine} — המיקום בתוך המשבצת, נמדד במד הקואורדינטות`
-              : `אין ספרת מיקום פנימית ברמת דיוק של 6 ספרות`
+              ? `הספרות הנוספות של ${axisLabel}: ${digits.fine} — מיקום בתוך המשבצת, נמדד במד הקואורדינטות`
+              : `בנ״צ של 6 ספרות אין ספרות לציון מיקום בתוך המשבצת`
           }
           active={activeZone === 'fine'}
           disabled={!hasFine}
@@ -600,7 +600,7 @@ function DigitReadout({
       <div className="flex flex-col gap-1 text-sm text-fg-muted leading-snug">
         <span className={cn('flex items-center gap-1.5 transition-colors motion-reduce:transition-none', activeZone === 'km' && 'text-fg font-semibold')}>
           <span className="inline-block size-1.5 rounded-full shrink-0 bg-fg" aria-hidden />
-          מספר משבצת ק&quot;מ — מודפס על המפה
+          ערך קו הקילומטר — מודפס על המפה
         </span>
         <span
           className={cn(
@@ -813,7 +813,7 @@ function AnatomyZoomInset({
           backgroundPosition: `${centeredBgPercent(cropFracX, scalePct / 100)}% ${centeredBgPercent(cropFracY, scalePct / 100)}%`,
         }}
         role="img"
-        aria-label={showTenCell ? 'תקריב על תא של 10 מטר בתוך משבצת המאה מטר, מאותה מפה' : 'תקריב על משבצת הקילומטר, מאותה מפה'}
+        aria-label={showTenCell ? 'תקריב על תא של 10 מטר בתוך משבצת של 100 מטר באותה מפה' : 'תקריב על משבצת הקילומטר באותה מפה'}
       />
 
       <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" preserveAspectRatio="none" aria-hidden>
@@ -870,8 +870,8 @@ function PrecisionGlyph({ level }: { level: Precision }) {
 function PrecisionSelector({ precision, onChange }: { precision: Precision; onChange: (p: Precision) => void }) {
   return (
     <div>
-      <div className="text-sm font-display font-semibold text-fg mb-4">כל ספרה נוספת — פי 10 דיוק בכל ציר</div>
-      <div role="group" aria-label="רמת דיוק הנ״צ" className="grid grid-cols-3 gap-2">
+      <div className="text-sm font-display font-semibold text-fg mb-4">בחרו מספר ספרות ובחנו כיצד גודל התא משתנה</div>
+      <div role="group" aria-label="מספר הספרות בנ״צ" className="grid grid-cols-3 gap-2">
         {PRECISION_OPTIONS.map((opt) => (
           <div key={opt.value} className="flex">
             <button
@@ -918,7 +918,7 @@ const PRACTICE_TARGETS: GridTarget[] = [
 ];
 
 function refOf(t: GridTarget) {
-  return `${GRID_EAST_KM}${t.eDigit} / ${GRID_NORTH_KM}${t.nDigit}`;
+  return `מזרח ${GRID_EAST_KM}${t.eDigit}, צפון ${GRID_NORTH_KM}${t.nDigit}`;
 }
 
 /* Reference-art grid card (design/reference/lesson-02/lesson2part5image4.png,
@@ -1033,22 +1033,22 @@ function GridSquare({
 
 const WALKTHROUGH_STEPS: { title: string; body: string; highlightCol?: number; highlightRow?: number; showTarget?: boolean }[] = [
   {
-    title: '1 · המשבצת המודפסת',
-    body: `זו משבצת קילומטר בודדת מהמפה — בדיוק כמו הדוגמה שראיתם למעלה. הקווים המודפסים נותנים את שלוש הספרות הראשונות של כל ציר: מזרח ${GRID_EAST_KM}, צפון ${GRID_NORTH_KM}.`,
+    title: '1 · זיהוי משבצת הקילומטר',
+    body: `זהו את הקווים התוחמים את המשבצת ממערב ומדרום: מזרח ${GRID_EAST_KM}, צפון ${GRID_NORTH_KM}. ערכים אלה הם שלוש הספרות הראשונות בכל ציר בדוגמה.`,
   },
   {
-    title: '2 · קודם מזרח',
-    body: 'מניחים את מד הקואורדינטות לאורך התחתית ומעריכים כמה חלקים מתוך עשרה הנקודה מרוחקת מהקו השמאלי — זו הספרה הרביעית בציר המזרח.',
+    title: '2 · קריאת ערך המזרח',
+    body: 'קראו במד הקואורדינטות כמה עשיריות משבצת מפרידות בין הקו השמאלי לנקודה. מספר העשיריות השלמות הוא הספרה הרביעית בערך המזרח.',
     highlightCol: DEMO_TARGET.eDigit,
   },
   {
-    title: '3 · אחר-כך צפון',
-    body: 'אותו דבר על הציר האנכי: סופרים כמה חלקים מתוך עשרה מהתחתית — זו הספרה הרביעית בציר הצפון.',
+    title: '3 · קריאת ערך הצפון',
+    body: 'קראו כמה עשיריות משבצת מפרידות בין הקו התחתון לנקודה. מספר העשיריות השלמות הוא הספרה הרביעית בערך הצפון.',
     highlightRow: DEMO_TARGET.nDigit,
   },
   {
-    title: '4 · מרכיבים את הנ"צ',
-    body: `מחברים את שתי המחציות: מזרח ${GRID_EAST_KM}${DEMO_TARGET.eDigit}, צפון ${GRID_NORTH_KM}${DEMO_TARGET.nDigit}. זה נ"צ מלא של הנקודה — בסדר הנכון, מזרח לפני צפון.`,
+    title: '4 · כתיבת הנ״צ',
+    body: `כתבו תחילה מזרח ${GRID_EAST_KM}${DEMO_TARGET.eDigit}, ולאחר מכן צפון ${GRID_NORTH_KM}${DEMO_TARGET.nDigit}. בשיטת הכתיבה שבדוגמה, שמונה הספרות מזהות את התא שבו נמצאת הנקודה: 100 מטר בכל ציר.`,
     highlightCol: DEMO_TARGET.eDigit,
     highlightRow: DEMO_TARGET.nDigit,
     showTarget: true,
@@ -1075,7 +1075,7 @@ function useWalkthrough() {
         <div className="font-display text-sm font-bold tabular-nums text-fg">
           {String(step + 1).padStart(2, '0')}
         </div>
-        <div className="text-sm font-display font-semibold text-fg-muted">שלב הדגמה — כך עושים את זה</div>
+        <div className="text-sm font-display font-semibold text-fg-muted">הדגמה מונחית</div>
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
@@ -1143,7 +1143,7 @@ function usePractice() {
           <div className="text-4xl font-display font-bold text-fg tabular-nums mb-2">
             {solvedCount}/{PRACTICE_TARGETS.length}
           </div>
-          <p className="text-fg-muted text-sm mb-4">דקירות נכונות מתוך {PRACTICE_TARGETS.length} תרגילים.</p>
+          <p className="text-fg-muted text-sm mb-4">זיהיתם את המשבצות הנכונות בכל {PRACTICE_TARGETS.length} התרגילים.</p>
           <button type="button" onClick={reset} className="btn-secondary text-sm px-4 py-2">
             תרגלו שוב
           </button>
@@ -1172,7 +1172,7 @@ function usePractice() {
         </div>
       </div>
       <p className="text-base text-fg leading-relaxed mb-4">
-        דקרו על המפה את הנקודה בעלת הנ&quot;צ: <strong className="text-fg tabular-nums">{refOf(target)}</strong>
+        סמנו את המשבצת המתאימה לנ״צ: <strong className="text-fg tabular-nums">{refOf(target)}</strong>
       </p>
       <AnimatePresence mode="wait">
         {attempt && (
@@ -1187,8 +1187,8 @@ function usePractice() {
             )}
           >
             {attempt.correct
-              ? `בדיוק! דקרתם ${refOf(attempt)} — תואם.`
-              : `דקרתם ${refOf(attempt)}, אבל הנ"צ המבוקש הוא ${refOf(target)} (מסומן בעיגול הירוק המקווקו). נסו שוב.`}
+              ? `נכון. המשבצת שסימנתם תואמת לנ״צ ${refOf(attempt)}.`
+              : `סימנתם ${refOf(attempt)}. הנ״צ המבוקש הוא ${refOf(target)}, ומיקומו מסומן בעיגול מקווקו. בדקו תחילה את ערך המזרח ולאחר מכן את ערך הצפון, ונסו שוב.`}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1224,7 +1224,7 @@ function GridReferenceExercise() {
         {/* right column (inline-start) — static header + per-mode text, DOM-first per this codebase's RTL convention */}
         <div>
           <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl text-balance">תרגיל: דקירת נ&quot;צ</h3>
-          <p className="mt-2 text-base leading-relaxed text-fg-muted mb-6 max-w-md">קודם הדגמה מונחית, ואז מתרגלים לבד — לוחצים על המשבצת הנכונה ומקבלים בדיקה מיידית.</p>
+          <p className="mt-2 text-base leading-relaxed text-fg-muted mb-6 max-w-md">דקירת נ״צ היא סימון מיקום במפה לפי הקואורדינטות שלו. עברו על ההדגמה, ולאחר מכן סמנו בתרגול את המשבצת המתאימה לכל נ״צ וקבלו משוב.</p>
 
           <div className="flex gap-2 mb-6">
             <button
@@ -1274,15 +1274,15 @@ return (
  <div className="surface p-5 sm:p-6">
  <div>
  <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
- השורה התחתונה: נ"צ הוא לא סתם מספר
+ סיכום: קריאה והעברה של נקודת ציון
  </div>
  <p className="text-base text-fg leading-relaxed max-w-3xl">
- כל נ"צ בנוי משני צירים: הראשון הוא ה-<strong className="text-fg">מזרח (X)</strong> והשני הוא ה-<strong className="text-fg">צפון (Y)</strong>.
+ ברשת שהוצגה כאן קוראים תחילה את ערך ה<strong className="text-fg">מזרח (E)</strong>, ולאחר מכן את ערך ה<strong className="text-fg">צפון (N)</strong>.
  <br/>
- תחשבו על זה כעל צירים מתמטיים - השילוב ביניהם יוצר נקודה יחידה ומוחלטת.
+ מספר הספרות קובע את גודל התא המתואר; דיוק המדידה תלוי במקורות המידע ובאופן הקריאה.
  <br/><br/>
- <span className="font-semibold text-fg">חשוב לזכור:</span> טעויות בנ"צ הן הגורם המרכזי בעולם לתקלות מבצעיות ואובדן חיים.
- <strong className="text-fg"> נ"צ מדויק = חיים. נ"צ שגוי = סכנה לכוחותינו.</strong>
+ <span className="font-semibold text-fg">לפני העברת נ״צ:</span> בדקו את הספרות, את סדר הערכים ואת יחידות המידה.
+ <strong className="text-fg"> ציינו גם את מערכת הקואורדינטות, כדי שהנמען יוכל לפרש את המיקום נכון.</strong>
  </p>
  </div>
  </div>

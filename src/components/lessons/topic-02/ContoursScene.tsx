@@ -13,7 +13,7 @@ const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
   ssr: false,
   loading: () => (
     <div className="aspect-video sm:aspect-square max-h-[340px] w-full mx-auto flex items-center justify-center text-fg-dim text-sm">
-      טוען מודל תלת־ממד…
+      טוען מודל תלת־ממדי…
     </div>
   ),
 });
@@ -22,17 +22,17 @@ const VIEWS: { id: MountainView; label: string; caption: string }[] = [
   {
     id: 'whole',
     label: 'הר שלם',
-    caption: 'כך ההר נראה בשטח. כל קו כהה על המדרון מחבר נקודות שנמצאות באותו גובה בדיוק.',
+    caption: 'המודל מציג את צורת ההר. הקווים הכהים שנוספו למדרון מחברים נקודות הנמצאות באותו גובה.',
   },
   {
     id: 'sliced',
     label: 'פריסה לשכבות',
-    caption: 'חתכנו את ההר כל 10 מטרים. הרימו שכבה ותראו: השפה של כל פרוסה היא בדיוק קו גובה.',
+    caption: 'המודל מחולק לשכבות בהפרשי גובה של 10 מטרים. גררו שכבה ובחנו כיצד גבול החיתוך מתאים לקו הגובה במפה.',
   },
   {
     id: 'top',
     label: 'מבט מלמעלה',
-    caption: 'מלמעלה הגובה נעלם ונשארים רק הקווים. זו בדיוק המפה.',
+    caption: 'במבט מלמעלה אפשר לראות כיצד קווי הגובה מתארים את צורת ההר על גבי המפה.',
   },
 ];
 
@@ -51,15 +51,15 @@ export function ContoursScene() {
     <section id="scene-contours" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <SceneHeader
         step="02.4"
-        title="לפצח את השטח: איך פורסים הר תלת-ממדי לקווים שאפשר לקרוא?"
-               intro="האתגר הכי גדול במפה הוא להבין איך השטח נראה במציאות. הרי המפה היא דף שטוח, אבל העולם הוא תלת-ממדי. כדי לפתור את זה, אנחנו משתמשים בשיטה חכמה: קווי גובה. דמיינו שחתכנו את ההר לפרוסות אופקיות (כמו עוגת קומות). כל קו שתראו במפה הוא פשוט הקצה של פרוסה כזו."
+        title="קווי גובה: כיצד קוראים את צורת השטח במפה?"
+        intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה. בהדמיה ההר מחולק לשכבות אופקיות: גבול החיתוך של כל שכבה יוצר קו גובה. עברו בין התצוגות ובחנו את הקשר בין המודל למפה."
       />
 
       <div className="surface-elevated p-6 lg:p-8 mb-6">
         <div className="grid lg:grid-cols-2 gap-8 items-start">
           <div className="space-y-3">
             <div className="text-sm font-display font-semibold text-fg-muted">
-              מבט תלת־ממדי · ההר כעוגת פרוסות
+              מודל תלת־ממדי · חלוקה לשכבות גובה
             </div>
             <div className="p-4">
               <ContourCake3D view={view} viewNonce={viewNonce} activeRing={activeRing} setActiveRing={setActiveRing} />
@@ -99,30 +99,30 @@ export function ContoursScene() {
             </p>
             <div className="text-sm text-fg-muted leading-snug text-center">
               {view === 'top'
-                ? 'במבט מלמעלה הצפון תמיד למעלה, כמו במפה · גלגלת לזום'
+                ? 'בתצוגה זו הצפון כלפי מעלה · השתמשו בגלגלת לשינוי התקריב'
                 : view === 'sliced'
-                  ? 'גררו שכבה למעלה או למטה · גלגלת לזום · גררו את הרקע כדי לסובב'
-                  : 'גררו כדי לסובב · גלגלת לזום · לחצן ימני להזזה'}
+                  ? 'גררו שכבה לשינוי גובהה · גלגלת לשינוי התקריב · גררו את הרקע לסיבוב'
+                  : 'גררו לסיבוב · גלגלת לשינוי התקריב · גררו בלחצן הימני להזזה'}
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="text-sm font-display font-semibold text-fg-muted">
-              מבט מלמעלה · איך זה נראה במפה
+              מבט מלמעלה · קווי הגובה במפה
             </div>
             <div className="p-4">
               <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
             </div>
             <ElevationLegend activeRing={activeRing} setActiveRing={setActiveRing} />
             <div className="text-sm text-fg-muted leading-snug text-center">
-              רחפו עם העכבר על המפה כדי לראות את הפרוסה התואמת בהר
+              העבירו את הסמן על המפה כדי להדגיש את השכבה המתאימה במודל
             </div>
           </div>
         </div>
       </div>
 
       <h3 className="mt-12 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-        זיהוי תנאי שטח לפי צפיפות
+        הערכת תלילות לפי צפיפות קווי הגובה
       </h3>
 
       {/* Tabs + info card + contour map/profile + glossary — see ContoursDensitySection. */}
@@ -229,7 +229,7 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
         viewBox="0 0 100 100"
         className="w-full h-full select-none"
         role="img"
-        aria-label={`מפת קווי גובה של ההר: חמישה קווים כל 10 מטרים, פסגה בגובה ${s.heightM} מטר. במערב הקווים צפופים (מדרון תלול), בדרום־מזרח הם מרווחים (מדרון מתון).`}
+        aria-label={`מפת קווי גובה של ההר: חמישה קווים בהפרשי גובה של 10 מטרים, פסגה בגובה ${s.heightM} מטר. במערב הקווים צפופים (מדרון תלול), בדרום־מזרח הם מרווחים (מדרון מתון).`}
       >
         <defs>
           <clipPath id={clipId}>

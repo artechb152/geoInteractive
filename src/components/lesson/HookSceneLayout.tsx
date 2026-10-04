@@ -92,6 +92,8 @@ type HookSceneLayoutProps = {
   title: ReactNode;
   /** Body copy, rendered inside the shared `<p>`. */
   body: ReactNode;
+  /** Optional lesson-specific label for the start button. */
+  startLabel?: string;
 };
 
 /**
@@ -104,7 +106,7 @@ type HookSceneLayoutProps = {
  * PagedLearn hides its own prev/next pair on the hook, so this button is the
  * only forward affordance on the page.
  */
-export function HookSceneLayout({ bgSrc, bgPositionX, title, body }: HookSceneLayoutProps) {
+export function HookSceneLayout({ bgSrc, bgPositionX, title, body, startLabel }: HookSceneLayoutProps) {
   return (
     <section
       id="scene-hook"
@@ -141,9 +143,9 @@ export function HookSceneLayout({ bgSrc, bgPositionX, title, body }: HookSceneLa
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('learn:next'))}
             className="inline-flex items-center justify-center select-none rounded-xl bg-cta-ember px-7 py-4 font-display text-base font-bold text-white shadow-cta-ember transition-all duration-200 ease-snap hover:brightness-105 active:translate-y-px"
-            aria-label="התחל את השיעור"
+            aria-label={startLabel ?? 'התחל את השיעור'}
           >
-            <span>לחץ כדי להתחיל</span>
+            <span>{startLabel ?? 'לחץ כדי להתחיל'}</span>
           </button>
         </motion.div>
       </motion.div>

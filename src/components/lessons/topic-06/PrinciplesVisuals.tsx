@@ -93,7 +93,7 @@ export function GpsDeniedIllustration({ className }: { className?: string }) {
       viewBox="0 0 480 176"
       className={cn('h-auto w-full', className)}
       role="img"
-      aria-label="GPS ✕ → מפה, מצפן, ספירת צעדים"
+      aria-label="כאשר GPS אינו זמין, נעזרים במפה, במצפן ובספירת צעדים"
       {...observe}
     >
       {/* ground line — soft papercut shelf the tools sit on */}

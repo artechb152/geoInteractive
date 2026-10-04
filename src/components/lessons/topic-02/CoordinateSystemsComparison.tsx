@@ -49,14 +49,14 @@ const SYSTEMS: System[] = [
       { label: 'צפון', axis: 'N', value: String(SAMPLE_ITM.n), unit: 'מטרים' },
     ],
     useful: 'קריאה ומדידה על מפה ברשת ישראל.',
-    remember: 'בודקים שהמכשיר והמפה מוגדרים לאותה מערכת.',
+    remember: 'בדקו שהמכשיר והמפה משתמשים באותה מערכת.',
     pros: [
       'הערכים במטרים: הפרש של 100 בין ערכי E הוא כ־100 מטר בשטח, לאורך אותו ציר.',
-      'מספרים שלמים, בלי מעלות ובלי שברים — נוח לקריאה ולהעברה.',
+      'בקריאה למטרים שלמים אפשר להעביר את המיקום ללא ספרות עשרוניות.',
     ],
     cons: [
       'מוגדרת לשימוש בישראל ובסביבתה. מחוץ לאזור הזה משתמשים ברשתות אחרות.',
-      'מעבר ל־WGS84 ובחזרה דורש המרה מוגדרת (היטל והתמרה בין מערכות ייחוס) — לא העתקת מספרים.',
+      'מעבר ל־WGS84 ובחזרה דורש המרת קואורדינטות המתחשבת בהגדרות שתי המערכות.',
     ],
   },
   {
@@ -64,20 +64,20 @@ const SYSTEMS: System[] = [
     code: 'WGS84',
     tabUnit: 'מעלות',
     name: 'מערכת ייחוס עולמית',
-    summary: 'מיקום לפי קו רוחב וקו אורך, במעלות.',
+    summary: 'כאן המיקום מוצג בקו רוחב ובקו אורך, במעלות.',
     fields: [
       { label: 'קו רוחב', axis: 'N', value: '31.7857°', unit: 'מעלות' },
       { label: 'קו אורך', axis: 'E', value: '35.2007°', unit: 'מעלות' },
     ],
     useful: 'שיתוף מיקום במערכות המבוססות על WGS84.',
-    remember: 'מציינים גם את פורמט המעלות ואת סדר הערכים.',
+    remember: 'ציינו את סדר הערכים ואת אופן כתיבת המעלות, למשל מעלות עשרוניות.',
     pros: [
-      'מערכת עולמית: אותו אופן כתיבה מתאים לכל מקום על פני כדור הארץ.',
+      'מערכת ייחוס עולמית המאפשרת לתאר מיקומים על פני כדור הארץ.',
       'מערכת הייחוס של GPS, ולכן נפוצה במכשירי ניווט ובשיתוף מיקום.',
     ],
     cons: [
       'מעלות אינן מטרים: מעלת אורך אחת מייצגת מרחק שונה בקווי רוחב שונים, ולכן קשה למדוד מרחק ישירות מהערכים.',
-      'מול מפה ברשת ישראל צריך להמיר את הערכים לפני שמסמנים את הנקודה.',
+      'לסימון הנקודה על רשת ישראל יש להמיר את הערכים למערכת המתאימה.',
     ],
   },
 ];
@@ -175,13 +175,13 @@ export function CoordinateSystemsComparison() {
           id={titleId}
           className="mx-auto max-w-3xl font-display font-extrabold tracking-tight text-balance leading-[1.1] text-fg text-[clamp(1.875rem,3.8vw,2.875rem)]"
         >
-          אותה נקודה. <span className="text-ember-deep">שתי שפות.</span>
+          אותה נקודה. <span className="text-ember-deep">שתי מערכות.</span>
         </h3>
         <p className="mx-auto mt-4 max-w-2xl font-display text-lg font-semibold leading-snug text-fg sm:text-xl text-pretty">
           המיקום בשטח נשאר קבוע. הדרך לכתוב אותו משתנה.
         </p>
         <p className="mx-auto mt-2 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg text-pretty">
-          עברו בין השיטות וראו איך אותה נקודה נכתבת אחרת.
+          עברו בין המערכות והשוו את הערכים ואת יחידות המידה.
         </p>
       </header>
 
@@ -313,17 +313,17 @@ export function CoordinateSystemsComparison() {
 
       <SurfaceCard tone="pine" className="mt-4 rounded-3xl px-6 py-5 text-center sm:px-10">
         <p className="font-display text-2xl font-bold leading-tight text-paper-bright sm:text-3xl text-balance">
-          המספרים משתנים. הנקודה לא.
+          הערכים משתנים, המיקום נשאר קבוע.
         </p>
         <p className="mt-1.5 text-base leading-relaxed text-paper-bright/85 sm:text-lg text-pretty">
-          לפני שמעבירים מיקום, מציינים גם את מערכת הקואורדינטות.
+          בעת העברת מיקום, ציינו גם את מערכת הקואורדינטות.
         </p>
       </SurfaceCard>
 
       {/* Bridge line only — the datum-shift block follows directly below, so
           no extra navigation path is created. */}
       <p className="mt-5 flex items-center gap-1.5 text-base font-medium text-fg-muted">
-        בהמשך: מה קורה כשמערבבים בין השיטות?
+        בהמשך: כיצד נראית סטייה במיקום?
         <ChevronLeft size={18} strokeWidth={2} aria-hidden className="shrink-0" />
       </p>
     </section>
@@ -450,7 +450,7 @@ function ComparisonMap({ system }: { system: SystemId }) {
   const [ref, size] = useBoxSize<HTMLDivElement>();
   const label = `מפת המחשה: נקודה אחת מסומנת על המפה. ברשת ישראל היא נקראת מזרח ${SAMPLE_ITM.e}, צפון ${SAMPLE_ITM.n} מטרים. מכשיר GPS שמוגדר ל־WGS84 מציג את אותה נקודה: קו רוחב 31.7857 מעלות צפון, קו אורך 35.2007 מעלות מזרח. ${
     itm
-      ? 'מודגשות רשת הקילומטרים של ITM ושתי קווי עזר מהנקודה אל קריאת המזרח בשוליים העליונים ואל קריאת הצפון בשוליים הימניים.'
+      ? 'מודגשים רשת הקילומטרים של ITM ושני קווי עזר מהנקודה אל קריאת המזרח בשוליים העליונים ואל קריאת הצפון בשוליים הימניים.'
       : 'רשת ITM מוסתרת, המפה מעומעמת, ומכשיר ה־GPS מוגדל ומחובר בקו אל הנקודה.'
   }`;
 

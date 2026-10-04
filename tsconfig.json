@@ -34,8 +34,10 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-contours/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    ".next-slopes/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

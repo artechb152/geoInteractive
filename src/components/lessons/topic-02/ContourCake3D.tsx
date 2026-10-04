@@ -741,7 +741,7 @@ export default function ContourCake3D({
           onClick={resetLayers}
           className="absolute top-2 end-2 rounded-[3px] border border-border bg-bg-elevated/95 px-2.5 py-1 text-xs font-display font-bold text-fg-muted hover:border-accent/50 hover:text-fg transition-colors cursor-pointer"
         >
-          ↺ סדר מחדש
+          ↺ איפוס שכבות
         </button>
       )}
     </div>

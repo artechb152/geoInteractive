@@ -23,19 +23,19 @@ const SHAPES: Shape[] = [
   {
     id: 'gentle',
     label: 'גבעה מתונה',
-    desc: 'הקווים רחוקים זה מזה. זה אומר שהגובה משתנה לאט מאוד - זהו מדרון נוח. לוחם יכול לטפס כאן בקלות, וגם רכב שטח יעלה פה בלי להתאמץ.',
+    desc: 'הקווים מרווחים: אותו הפרש גובה נפרס על פני מרחק אופקי גדול יותר. זהו מדרון מתון. נוחות התנועה תלויה גם בקרקע, בצמחייה ובמכשולים.',
     steepnessHint: 'gentle',
   },
   {
     id: 'steep',
     label: 'הר תלול',
-    desc: 'הקווים צפופים מאוד. זה אומר שתוך מרחק קצר אנחנו עולים הרבה בגובה. הטיפוס הרגלי יהיה קשה ומעייף, ורכבים לא יוכלו לעבור כאן בכלל.',
+    desc: 'הקווים צפופים: הגובה משתנה במידה רבה לאורך מרחק אופקי קצר. זהו מדרון תלול, שעלול להקשות על התנועה. קווי הגובה לבדם אינם מספיקים לקביעת העבירות.',
     steepnessHint: 'steep',
   },
   {
     id: 'cliff',
     label: 'מצוק',
-    desc: 'הקווים כמעט נוגעים אחד בשני. זוהי נפילה חדה או קיר סלע. השטח בלתי עביר ברגל ודורש ציוד טיפוס (סנפלינג) או עיקוף של המכשול.',
+    desc: 'בהמחשה הקווים מתקרבים מאוד זה לזה באזור המצוק, שבו יש שינוי גובה חד על פני מרחק אופקי קצר מאוד. במפה יש לבדוק גם את סימון המצוק ואת המקרא כדי לזהות את המכשול.',
     steepnessHint: 'cliff',
   },
 ];
@@ -70,7 +70,7 @@ export function ContoursDensitySection() {
     <div data-qa="density-section">
       <div
         role="tablist"
-        aria-label="זיהוי תנאי שטח לפי צפיפות"
+        aria-label="הערכת תלילות לפי צפיפות קווי הגובה"
         className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6"
         onKeyDown={onTabKey}
       >
@@ -78,10 +78,10 @@ export function ContoursDensitySection() {
           const active = s.id === shapeId;
           const subtitle =
             s.steepnessHint === 'gentle'
-              ? 'מדרון נוח'
+              ? 'קווים מרווחים'
               : s.steepnessHint === 'steep'
-              ? 'תלול ומאתגר'
-              : 'חסימה / מצוק';
+              ? 'קווים צפופים'
+              : 'שינוי גובה חד';
           return (
             <button
               key={s.id}
@@ -158,12 +158,12 @@ export function ContoursDensitySection() {
 function Glossary() {
   return (
     <div className="surface p-5 sm:p-6">
-      <div className="mb-4 font-display text-lg font-bold leading-snug text-fg md:text-xl">מילון מושגים לניווט</div>
+      <div className="mb-4 font-display text-lg font-bold leading-snug text-fg md:text-xl">מושגים לקריאת קווי גובה</div>
       <dl className="space-y-4">
-        <Item term="קו גובה (Contour Line)" def="הקו שמחבר את כל הנקודות בגובה זהה. תחשבו עליו כעל 'פרוסה' של ההר." />
-        <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה הקבוע בין קו לקו. במפות צה''ל זה תמיד 10 מטרים." />
-        <Item term="קו אינדקס (Index Contour)" def="כל קו חמישי הוא עבה יותר ורשום עליו הגובה. זה ה'עוגן' שעוזר לספור גבהים מהר." />
-        <Item term="צפיפות = תלילות" def="החוק הכי חשוב: קווים קרובים = הר תלול וקשה. קווים רחוקים = גבעה נוחה או מישור." emphasis />
+        <Item term="קו גובה (Contour Line)" def="קו המחבר נקודות הנמצאות באותו גובה. צורת הקווים והמרווחים ביניהם מסייעים להבין את פני השטח." />
+        <Item term="רווח אנכי (Contour Interval)" def="הפרש הגובה בין קווי גובה עוקבים. ערכו מצוין בשולי המפה או במקרא ומשתנה בין מפות. בהדגמה כאן הוא 10 מטרים." />
+        <Item term="קו גובה ראשי (Index Contour)" def="קו גובה מודגש שעליו מצוין בדרך כלל ערך הגובה. במפות רבות מודגש כל קו חמישי, כדי להקל על קריאת הגבהים." />
+        <Item term="הקשר בין צפיפות לתלילות" def="באותו קנה מידה ובאותו רווח אנכי, קווים צפופים מציינים מדרון תלול יותר, וקווים מרווחים מציינים מדרון מתון יותר." emphasis />
       </dl>
     </div>
   );
