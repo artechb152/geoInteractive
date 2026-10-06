@@ -1183,7 +1183,7 @@ Facts for the content owner to verify (they do not affect the drawings):
   - Near drops fall past the cliff face onto the scree. The middle bands land on the plateau just beyond the rim. The farthest band falls just behind a low knoll, which hides where those drops land; the rain sheet behind the knoll is cut by its crest.
   - There are four depth bands. Far drops are thinner, fainter and hazier than near ones.
   - Visibility is computed per point of each fall from the render's depth buffer and the cloud's on-screen opacity. The cloud hides the top of most drops, which emerge below its base. 40 of 132 drop paths have their lower part hidden by the knoll.
-  - **Assumption (new relief):** a low knoll on the plateau, behind the rim and under the far half of the shower. It is ≈ 15 high and ≈ 64 × 19 across, a remnant of the next bed up: gentle toward the viewer, steep at its back. **Why:** nothing in the existing terrain stands between the camera and the shower's lower ends. Ground hidden from the camera exists only along the stream canyon's walls, a few dune lees and the mesa's far west flank. Moving the rain there would lose the cliff, scree and runoff story, or crowd the "ערוצי נחל" and "רוח" labels. Mapped in the Task 2 workspace: `t2/shots/hidden.png`. It changes no educational content.
+  - **Assumption (new relief):** a low, rounded knoll on the plateau, behind the rim and under the far half of the shower. It is ≈ 15 high and ≈ 72 × 32 across: a swell of the plateau surface itself (same soil, pavement and scrub; its sunlit face toned down so it does not read as a bright mound), long and gentle toward the viewer, steeper at its back. **Why:** nothing in the existing terrain stands between the camera and the shower's lower ends. Ground hidden from the camera exists only along the stream canyon's walls, a few dune lees and the mesa's far west flank. Moving the rain there would lose the cliff, scree and runoff story, or crowd the "ערוצי נחל" and "רוח" labels. Mapped in the Task 2 workspace: `t2/shots/hidden.png`. It changes no educational content.
 - **Runoff.** **Assumption:** three shallow dry rills (wadi channels, ≈ 1–1.4 deep with a bed that only falls downstream) are carved from the scree apron under the shower, across the plain, into the stream. Without them the plain was flat with pits, and steepest descent stopped at the scree foot. They read as faint grooves in the painting. The animated rivulets follow D8 steepest descent on the height field from four points where drops land on the scree.
 - **The stream** flows toward the viewer and out through the cut (**assumption:** there is no slope in the data). After the rain, the water below the junction swells: it turns silty, widens slightly and flows faster.
 - **Sand.**
@@ -1210,3 +1210,130 @@ Facts for the content owner to verify (they do not affect the drawings):
   - The exogenic overlay lives in `ExogenicActivity.tsx`.
   - Its geometry is generated into `exogenicOverlay.data.ts` by `scripts/media/render-geology-forces.cjs` (`--only exo` or `--overlay`).
   - The shared process clock no longer steps backwards on its first frame: a rAF timestamp can precede the effect's start.
+
+## Topic 02 — Geology: the rock player becomes an automatic illustration (2026-10-06)
+
+- **No controls.** The play/pause button and the scrubber under the rock figure are gone; the film is an illustration inside the screen. Nothing else on the board changed.
+- **One clock** (`RockDiorama`):
+  - The process plays once when at least 35 % of the figure is in view, and holds its final state.
+  - **Assumption:** "fully left the viewport" means no part of the figure is intersecting the viewport. Only then does the process reset, so the next view replays it from the start. Scrolling it partly out of view and back keeps the final state.
+  - A tab switch remounts the figure, so it replays.
+  - The clock stops while the figure is below 35 % or the document is hidden. A long hidden gap never skips ahead (each frame advances at most 100 ms).
+  - Reduced motion: `p = 1`, final labels, no autoplay, no replay.
+- **Fallback without WebGL** uses the same clock for the START to END cross-fade.
+- **Films declare their images.** `FILMS[kind].images = { start, end, aux? }`. Igneous keeps its photographs and shader; sediment and metamorphic are painted scenes.
+- **AUX texture API** (`createTimelapse(canvas, images, fragment)`):
+  - The optional third image is bound as `uniform sampler2D uC` (texture unit 2, declared in `GLSL_PRELUDE`).
+  - It is uploaded as RGBA with `LINEAR` filtering, `UNPACK_COLORSPACE_CONVERSION_WEBGL = NONE` and `UNPACK_PREMULTIPLY_ALPHA_WEBGL = false`, so data values arrive unaltered.
+  - A film without AUX gets a 1 × 1 black texture on `uC`.
+
+## Topic 02 — Geology: the sedimentary rock is a painted scene (2026-10-06)
+
+- **What changed.** The "סלעי משקע" tab of the rock board no longer plays the photo time-lapse. It shows a painted terrain in the forces board's language: the same camera family, brush finish and paper grain.
+  - The scene is painted by `scripts/media/render-geology-rocks.cjs` into `public/assets/lessons/topic02/scene-geology/rocks/` (`sediment-start.webp`, `sediment-end.webp`, `sediment-aux.png`, 250 KB together).
+  - The old `sediment-start/end.webp` photos stay on disk, unreferenced.
+- **Scene.**
+  - Eroding hills across the back. A stream comes down a valley from the top left (clear of the specimen card) into a shallow bay.
+  - The near edge is cut open over a third of the frame height.
+  - **Assumption:** the cut shows the basin eroded into older, tilted, darker rock. Its walls step down along the tilted beds, with a bench part-way down, and its floor is uneven. The new horizontal beds lap onto those walls, so they read as new.
+  - The water in the section is painted with horizontal strokes and soft mottling. It is darker toward the floor and beside the walls, with a soft light band under the surface.
+  - **Assumption:** the limestone is two beds, the upper one full of fossils, under the one label "גיר". The order bottom → top stays גיר / אבן חול / חוואר, with a thin soil on the marl at the end.
+- **Process.** 12 s; `p` windows live in `SED` in `RockVisuals.tsx`, geometry in the AUX map.
+
+| Stage | p |
+|---|---|
+| The muddy plume reaches out from the stream mouth | 0–0.08, then a tongue out of the channel's tip at the delta front |
+| Limestone settles (silt clouds the water in the cut, a few grains fall) | 0.10–0.21 |
+| Limestone with fossils | 0.26–0.37 |
+| Sandstone (sand-coloured silt) | 0.42–0.50 |
+| Marl (grey-green mud); where the delta reaches the bay behind the cut, the water lens there fills with marl, never before 0.55 | 0.55–0.62 |
+| Pauses at the bedding planes (clear water, a trickle of grains; the growth arrow holds while the bed below compacts) | 0.21–0.26, 0.37–0.42, 0.50–0.555 in every column of the cut |
+| The delta grows from the mouth; the strip along the cut fills last and the sea is gone | 0.10–0.61 |
+| Each bed compacts and cements once buried, youngest last | limestone 0.26–0.48, fossil limestone 0.42–0.62, sandstone 0.55–0.78, marl 0.66–0.94 |
+
+- **The delta.**
+  - The bay fills as a lobe from the mouth along the stream's channel. Its tongue runs toward the cut and it widens behind it, so the side shores fill later.
+  - The waterline is crisp, with a narrow sandy shoal just ahead of it.
+  - New land is bare silt at first: damp and dark at the waterline, then drying pale. The END plain and its scrub grow in after a lag, and by the old coast the new land joins the old land without a seam.
+  - The AUX B channel stores the lobe size at which the delta covers each point (o = 1 − e^(−a / 170)). The shader inverts it, so the waterline, shoal and plume keep their width in world units.
+
+- **Loose → rock.**
+  - A freshly settled bed is 30 % thicker, paler, softer and grainy.
+  - Once it is buried it thins back. Cement spreads up through it from its base, with a damp line marking the front, until it is the rock of the END painting.
+  - Pore water rises as small pale specks through compacting beds.
+  - **Assumption:** the deposit cannot rise above sea level before the bay has filled. The marl fills the room that compaction makes, so the land surface never bulges above the plain.
+- **Water over the pile.** Silt clouds it while a bed settles, most near the surface and toward the delta's channel, in slow sinking wisps. A few muted grains in the bed's colour fall through it. **Assumption:** the cloudiness carries the effect rather than bright particles, which the style forbids.
+- **Fossils.** The shells are painted as domed shells lit from the upper left, with soft growth ridges and a soft shadow, and no outline. They are larger and fewer than before.
+- **Motion drawing.** The plume, the falling grains, the pore water, the stream's ripples and drifting silt are drawn by the shader in the one canvas. The SVG overlay only carries the growth arrow and the labels.
+- **Labels and arrow.** Strings and staging are unchanged.
+  - The bed labels sit on their beds at x = 320.
+  - "מיליוני שנים" sits at the foot of the growth arrow (x = 190). The arrow rises from the basin floor, and its tip follows the deposit's top with the same stacking as the shader.
+- **Assumption — size.** At a 1440 px viewport the rock figure renders about 579 px wide, not 830. Grains, specks and fossils were sized to read at 579 px.
+- **Description.** Only the prefix changed: "צילום בהילוך מהיר:" → "איור:".
+- **Code.**
+  - The painting kit shared by both render scripts now lives in `scripts/media/lib/painted-terrain.cjs`, parameterised by frame and camera; `render-geology-forces.cjs` imports it.
+  - The forces output is unchanged: re-rendering all eleven images and `exogenicOverlay.data.ts` gives byte-identical files (max pixel difference 0).
+- **AUX map** (`sediment-aux.png`, 640 × 366, raw data):
+  - R, G: the flow phase along the stream and the delta's axis.
+  - B: the shoreline's order, o = 1 − e^(−a / 170), with a the delta's lobe size in world units. The strip along the cut stays below 0.98, so every point is land at the end.
+  - A: the flow weight, never below 128 so no browser loses data to premultiplying.
+  - Rows 361–365: the cut's final bed tops per column, as 16-bit values.
+
+## Topic 02 — Geology: the metamorphic rock is a painted scene (2026-10-06)
+
+- **What changed.** The "סלעים מותמרים" tab of the rock board no longer plays the photo time-lapse. It now shows a painted terrain from the same set as the sedimentary tab and the forces board: the same camera family, cut depth, brush finish and paper grain.
+  - The scene is painted by `scripts/media/render-geology-rocks.cjs --only metamorphic` into `public/assets/lessons/topic02/scene-geology/rocks/`: `metamorphic-start.webp` (109 KB), `metamorphic-end.webp` (123 KB) and `metamorphic-aux.png` (18 KB), 250 KB together.
+  - The old `metamorphic-start/end.webp` photos stay on disk, unreferenced.
+- **Scene.**
+  - A mountain belt seen obliquely. Its folded ridges run back from the viewer into a high range and plunge out onto a plateau that rests on flat beds. Flat-bedded ledges step across the plateau, and a dry wash runs down the middle valley.
+  - The near edge is cut open over a third of the frame. The cut shows flat beds of limestone interbedded with dark, fissile shale. Two of the limestone beds are rich in fossils, drawn larger than in the sedimentary scene so that their flattening reads at the figure's size.
+  - The limestone stands out in jointed ledges, and the shale weathers back into their shade.
+  - The top-right corner, under the specimen card, holds only the distant range.
+  - **Assumption:** the ridges sit over the anticlines of the cut, the eastern one larger. In the END painting they have grown out to the near edge: the deformation front of the belt has advanced onto the plateau's flat beds. The surface at the near edge rises about 6 units over the synclines, about 19 over the western anticline and about 24 over the eastern one.
+- **The deformation** (`MET` in the script; `RockVisuals.tsx` copies XC, K, TH, WTOP, ZT and BASE).
+  - The section shortens by 12 % toward its middle, thickens 5 % and folds. A rock point (X, Z) of the flat beds moves to x = XC + (X − XC)(1 − K·f) and z = Z(1 + TH·f) + f·Fd·(1 + (WTOP − 1)·Z / ZT).
+  - Fd is the fold at depth in the point's final column, stored as an AUX table. The inverse is exact.
+  - **The folds are not twins.** Two anticlines each have their own crest, height and limb widths: at x ≈ 168 (height 46) and x ≈ 472 (height 66). Both lean east, with a short steep east limb and a long west one. Their hinges are rounded. Small Z-shaped parasitic folds sit on the long west limb of the eastern anticline. Open synclines lie between and at the sides.
+  - **Assumption:** the folds are strongest at depth, where the rock is hot and ductile, and gentle at the surface (WTOP 0.26).
+  - **Assumption:** the anticlines grow up from the base and the synclines stay on it (Fd ≥ 0). So no rock that is in view ever moves below the frame, and its final place is always in the END painting.
+  - The rock under the base that is lifted into the anticline cores continues the sequence downward: a limestone under the basal shale, and so on, repeating every 47 units. It is not a mirror image, so the cores show no stacked chevrons.
+  - The rock beyond the frame's sides, which the shortening brings in, is the mirror image of the rock inside.
+- **END painting.**
+  - The marble has flowed into the hinges and thinned on the limbs, and each contact pinches and swells on its own, so the bands vary in thickness. Because of this, the bands in END differ from the START contacts by up to about 2 units, which shows only at the moment a grain changes.
+  - The marble stands proud of the face: lit along its top and shaded underneath. The slate is recessed into the shade under the marble ledge above it. The marble/slate contrast is kept moderate, and each bed has its own shade.
+  - Everything in the slate runs along its vertical cleavage. This includes the face's relief: the shared painting kit gained `flags.cleaved`, which turns the cut-face relief to follow the cleavage instead of the bedding. The forces and sediment outputs are unchanged by it.
+  - **Assumption:** the cleavage, and the slight vertical drawing-out of the marble's grains, are vertical. That is perpendicular to the squeeze (axial-planar for these upright folds).
+- **Process.** 11 s. The `p` windows live in `MET` in `RockVisuals.tsx`, the geometry in the script.
+
+| Stage | p |
+|---|---|
+| Flat beds at rest ("סלעים קיימים") | 0–0.10 |
+| The arrows press in. The beds shorten and fold, and the ridges and the cut's top rise. The arrow tips ride on the rock (x 78 → 107 and 562 → 533). Fold progress f = 1 − (1 − s)^2.2: it starts at once with the arrows, and is about a third done by 0.2. | s = seg(p, 0.10, 0.72) |
+| A soft warm zone appears with its label as a faint band at the base (40 % strength, 0.12–0.16). It gains full strength only once the squeeze is under way (0.18–0.32). Its upper edge (the isotherm) climbs slowly to about 52 units in the middle (less toward the sides), with warmth drifting slowly upward through it. | 0.12 →, isotherm 0.12–0.50, holds, fades 0.82–0.97 |
+| Well ahead of the front, and never before 0.16, the limestone is flattened: its grains and fossils are drawn out vertically, up to 3× their height, over about 0.2 p. | moves with the front |
+| Just ahead of the front, the old grain fades and the new fabric (slate cleavage, marble grain) shows through. | moves with the front |
+| The transformation front leaves the hot, squeezed base of the middle and spreads up and outward through the rock. It reaches the top of the middle at about 0.64 and the far top corners at about 0.83–0.88. Limestone turns into pale, sugary marble in patches (the fossils are gone). Shale turns into dark blue-grey slate in thin vertical slivers. | 0.30 → |
+| The land takes on the END light over the rising ridges | 0.28–0.90 |
+| "שיש וצפחה" | 0.84 → |
+
+- **Labels.** Label staging is content and unchanged, so "חום" appears at 0.12. The warm zone it names appears at the same moment, faint, so the label never floats over nothing; it becomes strong only after the squeeze leads (full at 0.32).
+- **No melting.** The heat is a dull, earthy tint mixed into the rock (at most 50 %) that keeps the rock's light and dark. It lightens nothing but the darkest slate, and that only by a few percent. It is never a glow and never liquid. The rock changes only in the solid state, grain by grain, while it keeps its folds.
+- **Not a cross-fade.** The cut is re-drawn every frame from the rock's own coordinates: START is sampled where the rock was, END where it will be. The folding, the shortening, the flattening and the front are therefore movements of the rock itself.
+  - The land is START lifted and END lowered to the ridges' current height (an image warp). END's light blends in over the window above.
+  - p = 0 reproduces the START painting and p = 1 the END painting exactly. The one exception is the bottom 1.2 units of the cut at p = 0.
+- **Label anchors.** Strings and staging are unchanged; the anchors moved into the cut:
+  - "סלעים קיימים" at (320, 289)
+  - "לחץ" under the arrows, at (58, 330) and (582, 330), clear of the specimen card
+  - "שיש וצפחה" at (320, 266)
+  - **Assumption:** "חום" sits on the warm base at (226, 342), beside the middle rather than over it, so it does not cover the spot where the change begins.
+- **Reduced motion** shows p = 1: the END painting with "לחץ" ×2, the arrows and "שיש וצפחה". Without WebGL the existing START → END cross-fade runs.
+- **Description.** Only the prefix changed: "צילום בהילוך מהיר:" → "איור:".
+- **AUX map** (`metamorphic-aux.png`, 640 × 363, raw data):
+  - R: the land's rise at f = 1 as a screen offset, 0.5 + d/64.
+  - G: limestone or shale, in the flat-bed frame.
+  - B: the middle of the bed / 128.
+  - Rows 361–362: START's top of the cut per column and the fold at depth + 128 per final column, each 16-bit.
+- **Code.**
+  - `--only metamorphic` skips the sediment scene's slow precomputed fields.
+  - Both scenes write their AUX maps through the shared `put16` / `writeAux` helpers.
+  - Re-rendering gives byte-identical `sediment-*` files and byte-identical forces images and `exogenicOverlay.data.ts`.

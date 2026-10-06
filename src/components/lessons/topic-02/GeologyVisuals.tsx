@@ -347,6 +347,18 @@ function VolcanoActivity({ clock, reduce }: { clock: MotionValue<number>; reduce
   );
 }
 
+/** One earthquake pulse ring, driven by the process clock (so it stops off-screen): 1.8 s loops, easeOut up to the peak and back down. */
+function QuakeRing({ r, peak, delay, clock }: { r: number; peak: number; delay: number; clock: MotionValue<number> }) {
+  const opacity = useTransform(clock, (t) => {
+    if (t < delay) return 0;
+    const ph = ((t - delay) / 1.8) % 1;
+    const half = ph < 0.5 ? ph * 2 : (ph - 0.5) * 2;
+    const e = 1 - (1 - half) * (1 - half) * (1 - half);
+    return ph < 0.5 ? peak * e : peak * (1 - e);
+  });
+  return <motion.circle cx={QUAKE[0]} cy={QUAKE[1]} r={r} fill="none" stroke={HEAT} strokeWidth="1.6" style={{ opacity }} />;
+}
+
 export function EndogenicVisual({ reduce }: { reduce: boolean }) {
   const { ref, seen } = useSeen();
   const ready = useDecoded(ENDO_FRAMES, !reduce);
@@ -406,18 +418,7 @@ export function EndogenicVisual({ reduce }: { reduce: boolean }) {
           reduce ? (
             <circle key={r} cx={QUAKE[0]} cy={QUAKE[1]} r={r} fill="none" stroke={HEAT} strokeWidth="1.6" strokeOpacity={i ? 0.45 : 0.8} />
           ) : (
-            <motion.circle
-              key={r}
-              cx={QUAKE[0]}
-              cy={QUAKE[1]}
-              r={r}
-              fill="none"
-              stroke={HEAT}
-              strokeWidth="1.6"
-              initial={{ opacity: 0 }}
-              animate={go ? { opacity: [0, i ? 0.5 : 0.85, 0] } : undefined}
-              transition={{ duration: 1.8, repeat: Infinity, delay: 1.6 + i * 0.25, ease: 'easeOut' }}
-            />
+            <QuakeRing key={r} r={r} peak={i ? 0.5 : 0.85} delay={1.6 + i * 0.25} clock={clock} />
           ),
         )}
         <circle cx={QUAKE[0]} cy={QUAKE[1]} r="4" fill={HEAT} />

@@ -7,6 +7,11 @@
  * driven by `p` (0 → 1 process progress) and `t` (seconds, for living detail
  * like glow and drifting silt). Coordinates in the shaders: `v` is 0..1 with
  * (0, 0) at the photo's top-left, i.e. the same frame as the SVG overlay.
+ *
+ * An optional third image, AUX (`uC`), carries per-pixel data for painted scenes
+ * (masks, heights, flow). It is uploaded as raw RGBA: LINEAR filtering, no
+ * colour-space conversion, no premultiplied alpha. Films without AUX get a
+ * 1 x 1 black texture on `uC`.
  */
 
 const VERTEX = `
@@ -27,6 +32,7 @@ precision mediump float;
 varying vec2 v;
 uniform sampler2D uA;   // START photo
 uniform sampler2D uB;   // END photo
+uniform sampler2D uC;   // AUX data map (raw RGBA); 1x1 black when a film has none
 uniform float uP;       // process progress 0..1
 uniform float uT;       // seconds (living detail)
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -75,19 +81,25 @@ function loadImage(src: string) {
   });
 }
 
+/** Image URLs of a film; `aux` is optional per-pixel data bound to `uC`. */
+export type TimelapseImages = { start: string; end: string; aux?: string };
+
 /**
- * Resolves once both photos are on the GPU; rejects when WebGL (or an image)
+ * Resolves once all images are on the GPU; rejects when WebGL (or an image)
  * is unavailable so the caller can fall back to a plain cross-fade.
  */
 export async function createTimelapse(
   canvas: HTMLCanvasElement,
-  startSrc: string,
-  endSrc: string,
+  images: TimelapseImages,
   fragment: string,
 ): Promise<Timelapse> {
   const gl = canvas.getContext('webgl', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
   if (!gl) throw new Error('webgl unavailable');
-  const [a, b] = await Promise.all([loadImage(startSrc), loadImage(endSrc)]);
+  const [a, b, c] = await Promise.all([
+    loadImage(images.start),
+    loadImage(images.end),
+    images.aux ? loadImage(images.aux) : Promise.resolve(null),
+  ]);
 
   const prog = gl.createProgram()!;
   gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERTEX));
@@ -103,7 +115,7 @@ export async function createTimelapse(
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-  const textures = [a, b].map((img, unit) => {
+  const textures = [a, b, c].map((img, unit) => {
     const tex = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0 + unit);
     gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -111,11 +123,21 @@ export async function createTimelapse(
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img);
+    if (unit < 2) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, img!);
+    } else {
+      // AUX data map: values must reach the shader unaltered
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      if (img) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
+    }
     return tex;
   });
   gl.uniform1i(gl.getUniformLocation(prog, 'uA'), 0);
   gl.uniform1i(gl.getUniformLocation(prog, 'uB'), 1);
+  gl.uniform1i(gl.getUniformLocation(prog, 'uC'), 2);
   const uP = gl.getUniformLocation(prog, 'uP');
   const uT = gl.getUniformLocation(prog, 'uT');
 

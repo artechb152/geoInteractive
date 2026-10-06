@@ -58,18 +58,18 @@ export function windSweep(t: number, k: number) {
   return { x: (12 - 22 * ph) * smooth(0, 0.35, g), opacity: Math.max(0.2 * (1 - g), 0.85 * Math.sin(Math.PI * ph) * g) };
 }
 /** The rockfall: the block loosens, falls, rests on the scree and fades before the cycle ends. */
-const ROCK_T = { loosen: 11.5, fall: 11.75, fadeFrom: 14.1, fadeTo: 14.9 };
+const ROCK_T = { loosen: 11.5, fall: 11.75, fadeFrom: 14.6, fadeTo: 14.95 };
 /** The moment reduced motion shows: rain at depth (some of it falling behind the knoll), the rills running into the stream. */
 export const EXO_STILL_T = 3.4;
 
 // ── Rain ────────────────────────────────────────────────────────────────────
-const RAIN = { speed: 210, streak: 15, splash: 0.4 }; // world units / s, world units of motion blur, s
+const RAIN = { speed: 210, streak: 19, splash: 0.4 }; // world units / s, world units of motion blur, s
 /** Near → far: stroke width, opacity, colour (far drops are thinner, fainter, hazier). */
 const DROP_LOOK = [
-  { w: 1.4, o: 0.8, c: '#557B8C' },
-  { w: 1.15, o: 0.68, c: '#66889A' },
-  { w: 0.95, o: 0.6, c: '#7894A2' },
-  { w: 0.85, o: 0.62, c: '#7E97A4' },
+  { w: 2.1, o: 0.88, c: '#4A7385' },
+  { w: 1.75, o: 0.8, c: '#567E90' },
+  { w: 1.4, o: 0.72, c: '#6A8B9B' },
+  { w: 1.2, o: 0.7, c: '#728F9D' },
 ] as const;
 const depthClass = (d: ExoDrop) => Math.min(3, Math.floor(d.dep * 4));
 
@@ -95,6 +95,17 @@ function visiblePart(d: ExoDrop, u0: number, u1: number): [number, number] | nul
   }
   return best;
 }
+
+/** The shower's slant on screen (dx per dy), for the sheets' streak texture. */
+const SLANT = DROPS.reduce((s, d) => s + (d.b[0] - d.a[0]) / (d.b[1] - d.a[1]), 0) / DROPS.length;
+/** The streak texture's tile (viewBox units), its fall speed on screen, and its streaks (irregular, so it never reads as a hatch). */
+const SHEET = { w: 19, h: 44, speed: 150 };
+const SHEET_STREAKS = Array.from({ length: 24 }, (_, i) => {
+  const x = (SHEET.w * (i + 0.5 * hash(i, 41))) / 24;
+  const y = SHEET.h * hash(i, 42);
+  const len = 4 + 7 * hash(i, 43);
+  return `M${f2(x)} ${f2(y)}v${f2(Math.min(len, SHEET.h - y))}${y + len > SHEET.h ? `M${f2(x)} 0v${f2(y + len - SHEET.h)}` : ''}`;
+}).join('');
 
 const ellipse = (c: Pt, rx: number, ry: number) =>
   `M${f2(c[0] - rx)} ${f2(c[1])}a${f2(rx)} ${f2(ry)} 0 1 0 ${f2(2 * rx)} 0a${f2(rx)} ${f2(ry)} 0 1 0 ${f2(-2 * rx)} 0`;
@@ -179,7 +190,7 @@ function streamAt(s: number) {
   const u = (v - a[3]) / Math.max(1e-6, b[3] - a[3]);
   return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, hw: a[2] + (b[2] - a[2]) * u, haze: a[4] + (b[4] - a[4]) * u, seen: a[5] && b[5] };
 }
-const FLOW = { speed: 11, swell: 0.8 }; // world units / s; extra speed at the height of the swell
+const FLOW = { speed: 16, swell: 0.8 }; // world units / s; extra speed at the height of the swell
 /** ∫ swell dt over one cycle, tabulated (the flow runs faster while the stream is swollen). */
 const SWELL_TAB = (() => {
   const n = 300;
@@ -194,11 +205,12 @@ function flowClock(t: number) {
   const swollen = Math.floor(t / CYCLE) * SWELL_TAB[n] + SWELL_TAB[i] + (SWELL_TAB[Math.min(n, i + 1)] - SWELL_TAB[i]) * (x - i);
   return t + FLOW.swell * swollen;
 }
-const GLINTS = Array.from({ length: 34 }, (_, i) => ({ s0: hash(i, 11) * S_TOTAL, lat: (hash(i, 12) - 0.5) * 1.25, len: 2 + 5 * hash(i, 13), v: 0.8 + 0.4 * hash(i, 14), dim: hash(i, 15) < 0.55 ? 1 : 0 }));
+const GLINTS = Array.from({ length: 34 }, (_, i) => ({ s0: hash(i, 11) * S_TOTAL, lat: (hash(i, 12) - 0.5) * 1.1, len: 3.5 + 5 * hash(i, 13), v: 0.8 + 0.4 * hash(i, 14), dim: hash(i, 15) < 0.45 ? 1 : 0 }));
 const SILT = Array.from({ length: 10 }, (_, i) => ({ s0: hash(i, 21), lat: (hash(i, 22) - 0.5) * 0.6, len: 9 + 7 * hash(i, 23), v: 1.1 + 0.25 * hash(i, 24) }));
 
 function streamFrame(t: number, swell: number) {
   const glints = ['', '', '', '', '', ''];
+  const troughs = ['', '', ''];
   const ft = flowClock(t);
   const seg = (s: number, len: number, lat: number) => {
     const h = streamAt(s);
@@ -209,7 +221,14 @@ function streamFrame(t: number, swell: number) {
   for (const g of GLINTS) {
     const s = (((g.s0 + FLOW.speed * g.v * ft) % S_TOTAL) + S_TOTAL) % S_TOTAL;
     const p = seg(s, g.len, g.lat);
-    if (p) glints[(p.haze > 0.6 ? 2 : p.haze > 0.25 ? 1 : 0) + 3 * g.dim] += p.d;
+    if (!p) continue;
+    const band = p.haze > 0.6 ? 2 : p.haze > 0.25 ? 1 : 0;
+    glints[band + 3 * g.dim] += p.d;
+    // the darker trough just upstream of each bright crest: a wavelet moving downstream
+    if (!g.dim) {
+      const q = seg(s - g.len - 0.6, g.len * 0.8, g.lat * 0.8);
+      if (q) troughs[band] += q.d;
+    }
   }
   // silt: turbid streaks below the junction while the stream is swollen
   let silt = '';
@@ -222,7 +241,7 @@ function streamFrame(t: number, swell: number) {
       const p = seg(s, g.len, g.lat);
       if (p) silt += p.d;
     }
-  return { glints, silt };
+  return { glints, troughs, silt };
 }
 
 // ── Dunes: saltation in the gust ────────────────────────────────────────────
@@ -314,7 +333,7 @@ function rockFrame(t: number) {
   const c = cyc(t);
   const n = Math.floor(t / CYCLE);
   const rock = ROCKS[((n % ROCKS.length) + ROCKS.length) % ROCKS.length];
-  const size = rock.k * 4.6;
+  const size = rock.k * 8.2;
   if (c < ROCK_T.loosen) return null;
   const fade = 1 - smooth(ROCK_T.fadeFrom, ROCK_T.fadeTo, c);
   const p0 = rock.pts[0];
@@ -355,6 +374,8 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
     const q = (k: string) => g.querySelector(`[data-k="${k}"]`);
     const el = {
       veil: VEIL.map((_, i) => q(`veil${i}`)),
+      sheet: VEIL.map((_, i) => q(`sheet${i}`)),
+      sheetPattern: g.querySelector('pattern'),
       tails: DROP_LOOK.map((_, i) => q(`tail${i}`)),
       heads: DROP_LOOK.map((_, i) => q(`drops${i}`)),
       rings: [q('ring0'), q('ring1')],
@@ -363,6 +384,7 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
       rillWater: RILLS.map((_, i) => q(`rillwater${i}`)),
       rillGlint: RILLS.map((_, i) => q(`rillglint${i}`)),
       glints: [0, 1, 2, 3, 4, 5].map((i) => q(`glint${i}`)),
+      troughs: [0, 1, 2].map((i) => q(`trough${i}`)),
       silt: q('silt'),
       turbid: q('turbid'),
       flying: q('flying'),
@@ -384,7 +406,11 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
       set(el.rings[0], 'd', r.rings[0] || 'M0 0');
       set(el.rings[1], 'd', r.rings[1] || 'M0 0');
       set(el.wet, 'd', r.wet || 'M0 0');
-      VEIL.forEach((v, i) => set(el.veil[i], 'opacity', f2(rain * (v.cut ? 0.9 : 0.95 - 0.4 * v.dep))));
+      VEIL.forEach((v, i) => {
+        set(el.veil[i], 'opacity', f2(rain * (v.cut ? 0.55 : 0.85 - 0.4 * v.dep)));
+        set(el.sheet[i], 'opacity', f2(rain * (v.cut ? 0.95 : 0.8 - 0.3 * v.dep)));
+      });
+      set(el.sheetPattern, 'patternTransform', `skewX(${f1((Math.atan(SLANT) * 180) / Math.PI)}) translate(0 ${f2((t * SHEET.speed) % SHEET.h)})`);
       // runoff: the wet front runs down the rills, water trickles in them, then they dry
       const front = Math.max(0, c - FRONT.from) * FRONT.speed;
       const flow = runoffFlowAt(c);
@@ -404,9 +430,10 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
       const swell = swellAt(c);
       const s = streamFrame(t, swell);
       s.glints.forEach((d, i) => set(el.glints[i], 'd', d || 'M0 0'));
+      s.troughs.forEach((d, i) => set(el.troughs[i], 'd', d || 'M0 0'));
       set(el.silt, 'd', s.silt || 'M0 0');
       set(el.silt, 'opacity', f2(swell));
-      set(el.turbid, 'opacity', f2(0.85 * swell));
+      set(el.turbid, 'opacity', f2(swell));
       // sand in the gust
       const gust = gustAt(c);
       const sand = gust > 0.001 || (c > GUST_FROM && c < 12) ? duneFrame(c) : { flying: '', settled: '', shadows: '' };
@@ -432,7 +459,7 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
         const d = rk?.dust[i];
         if (!d) return set(e, 'opacity', '0');
         const [age, x, y, k] = d;
-        const grow = 0.9 + 3 * Math.sqrt(age / 0.9) * (0.5 + k);
+        const grow = 1.6 + 5.4 * Math.sqrt(age / 0.9) * (0.5 + k);
         set(e, 'transform', `translate(${f1(x)} ${f1(y - 0.6 - 1.2 * age)}) scale(${f2(grow)} ${f2(grow * 0.7)})`);
         set(e, 'opacity', f2(0.95 * (0.5 + 0.5 * k) * Math.pow(1 - age / 0.9, 1.2) * (rk?.o ?? 1)));
       });
@@ -456,12 +483,32 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
           const ys = v.pts.map((p) => p[1]);
           return (
             <linearGradient key={i} id={`${ids}-veil${i}`} gradientUnits="userSpaceOnUse" x1={0} y1={Math.min(...ys)} x2={0} y2={Math.max(...ys)}>
-              <stop offset="0" stopColor={v.cut ? '#7D909B' : '#8396A0'} stopOpacity={v.cut ? 0.5 : 0.42} />
-              <stop offset="0.55" stopColor={v.cut ? '#7D909B' : '#90A2AA'} stopOpacity={v.cut ? 0.48 : 0.22} />
-              <stop offset="1" stopColor={v.cut ? '#7D909B' : '#A3B1B6'} stopOpacity={v.cut ? 0.46 : 0} />
+              <stop offset="0" stopColor="#8396A0" stopOpacity={v.cut ? 0.36 : 0.42} />
+              <stop offset="0.55" stopColor="#90A2AA" stopOpacity={v.cut ? 0.3 : 0.22} />
+              <stop offset="1" stopColor="#A3B1B6" stopOpacity={v.cut ? 0.26 : 0} />
             </linearGradient>
           );
         })}
+        {/* where each sheet's streaks show: all the way down to a crest that cuts it, else fading toward the ground */}
+        {VEIL.map((v, i) => {
+          const ys = v.pts.map((p) => p[1]);
+          return (
+            <g key={i}>
+              <linearGradient id={`${ids}-sheetfade${i}`} gradientUnits="userSpaceOnUse" x1={0} y1={Math.min(...ys)} x2={0} y2={Math.max(...ys)}>
+                <stop offset="0" stopColor="#fff" stopOpacity={1} />
+                <stop offset="0.6" stopColor="#fff" stopOpacity={v.cut ? 1 : 0.7} />
+                <stop offset="1" stopColor="#fff" stopOpacity={v.cut ? 1 : 0} />
+              </linearGradient>
+              <mask id={`${ids}-sheetmask${i}`} maskUnits="userSpaceOnUse">
+                <polygon points={v.pts.map((p) => p.join(',')).join(' ')} fill={`url(#${ids}-sheetfade${i})`} />
+              </mask>
+            </g>
+          );
+        })}
+        {/* the streak texture: thin, broken rain streaks, slanted with the wind and falling */}
+        <pattern id={`${ids}-rainpat`} patternUnits="userSpaceOnUse" width={SHEET.w} height={SHEET.h}>
+          <path d={SHEET_STREAKS} fill="none" stroke="#5F7C8B" strokeOpacity={0.6} strokeWidth={0.7} strokeLinecap="round" />
+        </pattern>
         {veilBox.map((b, i) => (
           <g key={i}>
             <linearGradient id={`${ids}-veilfade${i}`} gradientUnits="userSpaceOnUse" x1={b.x0} y1={0} x2={b.x1} y2={0}>
@@ -502,18 +549,25 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
       </defs>
 
       {/* the stream: swollen, silty water below the junction; ripples moving downstream */}
-      <path data-k="turbid" d={turbid} fill="#8A7652" fillOpacity={0.6} opacity={0} filter={`url(#${ids}-bank)`} />
+      <path data-k="turbid" d={turbid} fill="#9A7647" fillOpacity={0.9} opacity={0} filter={`url(#${ids}-bank)`} />
       {[
-        { w: 1.05, o: 0.5 },
-        { w: 0.85, o: 0.4 },
-        { w: 0.65, o: 0.3 },
-        { w: 1.05, o: 0.26 },
-        { w: 0.85, o: 0.2 },
-        { w: 0.65, o: 0.15 },
+        { w: 1.5, o: 0.42 },
+        { w: 1.2, o: 0.34 },
+        { w: 0.95, o: 0.26 },
       ].map((s, i) => (
-        <path key={i} data-k={`glint${i}`} d="M0 0" fill="none" stroke="#D5E9EE" strokeOpacity={s.o} strokeWidth={s.w} strokeLinecap="round" />
+        <path key={i} data-k={`trough${i}`} d="M0 0" fill="none" stroke="#2C5F72" strokeOpacity={s.o} strokeWidth={s.w} strokeLinecap="round" />
       ))}
-      <path data-k="silt" d="M0 0" fill="none" stroke="#A08A62" strokeOpacity={0.7} strokeWidth={2.2} strokeLinecap="round" opacity={0} />
+      {[
+        { w: 1.6, o: 0.9 },
+        { w: 1.3, o: 0.75 },
+        { w: 1, o: 0.55 },
+        { w: 1.3, o: 0.5 },
+        { w: 1.05, o: 0.4 },
+        { w: 0.85, o: 0.3 },
+      ].map((s, i) => (
+        <path key={i} data-k={`glint${i}`} d="M0 0" fill="none" stroke="#EEF7F8" strokeOpacity={s.o} strokeWidth={s.w} strokeLinecap="round" />
+      ))}
+      <path data-k="silt" d="M0 0" fill="none" stroke="#B39566" strokeOpacity={0.85} strokeWidth={2.6} strokeLinecap="round" opacity={0} />
 
       {/* runoff: the damp trace of each rill, the water in it and its surges running down */}
       {RILLS.map((_, i) => (
@@ -539,9 +593,9 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
       <ellipse data-k="rockshadow" cx={0} cy={0} rx={1.1} ry={0.45} fill="#3F362C" opacity={0} />
       <g data-k="rock" opacity={0}>
         <g data-k="rockspin">
-          <polygon points={BLOCK} fill="#9A8C76" />
-          <polygon points={BLOCK_TOP} fill="#B9AC94" />
-          <polygon points={BLOCK_FLANK} fill="#6C6153" />
+          <polygon points={BLOCK} fill="#AE9874" />
+          <polygon points={BLOCK_TOP} fill="#CDBA96" />
+          <polygon points={BLOCK_FLANK} fill="#7C6A52" />
         </g>
         <circle cx={-0.35} cy={-0.4} r={0.55} fill={`url(#${ids}-lit)`} />
       </g>
@@ -550,6 +604,9 @@ export function ExogenicActivity({ clock }: { clock: MotionValue<number> }) {
       {VEIL.map((v, i) => (
         <g key={i} mask={`url(#${ids}-veilmask${i})`}>
           <polygon data-k={`veil${i}`} points={v.pts.map((p) => p.join(',')).join(' ')} fill={`url(#${ids}-veil${i})`} filter={`url(#${ids}-${v.cut ? 'softcut' : 'soft'})`} opacity={0} />
+          <g mask={`url(#${ids}-sheetmask${i})`}>
+            <rect data-k={`sheet${i}`} x={veilBox[i].x0} y={veilBox[i].y0} width={veilBox[i].x1 - veilBox[i].x0} height={veilBox[i].y1 - veilBox[i].y0} fill={`url(#${ids}-rainpat)`} opacity={0} />
+          </g>
         </g>
       ))}
       <path data-k="wet" d="M0 0" fill="#5B4A39" fillOpacity={0.18} />
