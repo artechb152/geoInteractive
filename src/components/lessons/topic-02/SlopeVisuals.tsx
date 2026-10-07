@@ -329,7 +329,7 @@ export function SlopeProfile({
         {LEVELS.map((e) => (
           <g key={e}>
             <line x1={16} y1={py(e)} x2={P_RIGHT + 4} y2={py(e)} stroke={C.level} strokeOpacity={0.7} strokeWidth={0.28} strokeDasharray="1.4 1.2" />
-            <text x={11} y={py(e) + 1.05} textAnchor="middle" fontSize={2.9} fill={C.contour} className="font-display font-semibold">
+            <text x={11} y={py(e) + 1.05} textAnchor="middle" fontSize={3.4} fill={C.contour} className="font-display font-semibold">
               {ELEV(e)}
             </text>
           </g>
@@ -353,10 +353,10 @@ export function SlopeProfile({
         ))}
 
         {/* crest + foot */}
-        <text x={sx(1)} y={py(1) - 8.5} textAnchor="middle" fontSize={3.6} fill={C.ink} className="font-display font-bold">
+        <text x={sx(1)} y={py(1) - 8.5} textAnchor="middle" fontSize={4.2} fill={C.ink} className="font-display font-bold">
           {topLabel}
         </text>
-        <text x={sx(0) - 7} y={P_H - 1.6} textAnchor="middle" fontSize={3.6} fill={C.ink} className="font-display font-bold">
+        <text x={sx(0) - 7} y={P_H - 1.6} textAnchor="middle" fontSize={4.2} fill={C.ink} className="font-display font-bold">
           {bottomLabel}
         </text>
       </svg>
@@ -509,8 +509,8 @@ export function SlopeContours({
         const y = LABEL_ROWS[i % 2];
         return (
           <motion.g key={'lbl' + i} initial={false} animate={{ x: contourX(sx(d), y, i), y }} transition={tr}>
-            <rect x={-3.7} y={-2.3} width={7.4} height={4.6} rx={1} fill={C.plate} />
-            <text textAnchor="middle" dominantBaseline="central" fontSize={3.6} fontWeight={700} fill={C.contour} className="font-display tabular-nums">
+            <rect x={-4.3} y={-2.7} width={8.6} height={5.4} rx={1.1} fill={C.plate} />
+            <text textAnchor="middle" dominantBaseline="central" fontSize={4.2} fontWeight={700} fill={C.contour} className="font-display tabular-nums">
               {ELEV(e)}
             </text>
           </motion.g>
@@ -522,10 +522,10 @@ export function SlopeContours({
         points={`${f2(summitX)},${f2(M_MID - 5.4)} ${f2(summitX - 1.6)},${f2(M_MID - 2.6)} ${f2(summitX + 1.6)},${f2(M_MID - 2.6)}`}
         fill={C.ink}
       />
-      <text x={summitX} y={M_MID - 8.2} textAnchor="middle" fontSize={3.4} fill={C.ink} className="font-display font-bold">
+      <text x={summitX} y={M_MID - 8.2} textAnchor="middle" fontSize={3.9} fill={C.ink} className="font-display font-bold">
         {topLabel}
       </text>
-      <text x={(P_LEFT + sx(0)) / 2} y={M_MID - 8.2} textAnchor="middle" fontSize={3.4} fill={C.ink} className="font-display font-bold">
+      <text x={(P_LEFT + sx(0)) / 2} y={M_MID - 8.2} textAnchor="middle" fontSize={3.9} fill={C.ink} className="font-display font-bold">
         {bottomLabel}
       </text>
 
@@ -542,7 +542,7 @@ export function SlopeContours({
           return (
             <g key={z.from}>
               <path d={`M${f2(x1)} ${M_BOT + 2.2}V${M_BOT + 3.8}H${f2(x2)}V${M_BOT + 2.2}`} fill="none" stroke={C.ink} strokeWidth={0.4} strokeLinejoin="round" />
-              <text x={(x1 + x2) / 2} y={M_BOT + 9.4} textAnchor="middle" fontSize={3.3} fill={C.ink} className="font-display font-bold">
+              <text x={(x1 + x2) / 2} y={M_BOT + 9.4} textAnchor="middle" fontSize={3.8} fill={C.ink} className="font-display font-bold">
                 {zoneLabels[z.kind]}
               </text>
             </g>

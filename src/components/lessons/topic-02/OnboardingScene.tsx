@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
-import { HistoricalCasesPanel } from './HistoricalCasesPanel';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -205,10 +204,8 @@ export function OnboardingScene() {
         </div>
       </div>
 
-      {/* Practical examples use the existing four-case panel layout. */}
-      <div className="mt-20 mb-12">
-        <HistoricalCasesPanel />
-      </div>
+      {/* The practical-examples panel moved to PracticalMeaningScene (before recap). */}
+      <div className="mt-20" />
 
       <ReadyCallout title="בהמשך השיעור" signature={false}>
         <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר תבליט ותכסית, תבניות נוף וסוגי סלעים, ובהמשך נתרגל

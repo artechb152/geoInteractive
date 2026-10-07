@@ -9,7 +9,9 @@ import { LandCoverScene } from './LandCoverScene';
 import { TopographyScene } from './TopographyScene';
 import { ScaleScene } from './ScaleScene';
 import { CoordinatesScene } from './CoordinatesScene';
+import { CoordinatesPart2Scene } from './CoordinatesPart2Scene';
 import { ContoursScene } from './ContoursScene';
+import { PracticalMeaningScene } from './PracticalMeaningScene';
 import { RecapScene } from './RecapScene';
 import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 
@@ -22,9 +24,11 @@ const SCENES: PagedScene[] = [
   { id: 'landcover',   label: 'תכסית',         Comp: LandCoverScene },
   { id: 'topography',  label: 'טופוגרפיה',     Comp: TopographyScene },
   { id: 'scale',       label: 'קנה מידה',      Comp: ScaleScene },
-  { id: 'coordinates', label: 'קואורדינטות',   Comp: CoordinatesScene },
+  { id: 'coordinates', label: 'קואורדינטות 1', Comp: CoordinatesScene },
+  { id: 'coordinates-2', label: 'קואורדינטות 2', Comp: CoordinatesPart2Scene },
   { id: 'contours',    label: 'קווי גובה',     Comp: ContoursScene },
-  { id: 'recap',       label: 'סיכום',         Comp: RecapScene },
+  { id: 'practice',    label: 'משמעות מעשית',  Comp: PracticalMeaningScene },
+  { id: 'recap',      label: 'סיכום',         Comp: RecapScene },
 ];
 
 export function Topic02Lesson() {

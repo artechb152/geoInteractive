@@ -157,7 +157,7 @@ const FORCE_IDS = FORCES.map((f) => f.id);
 
 export function GeologyScene() {
   const reduce = !!useReducedMotion();
-  const [rock, setRock] = useState<Rock['id']>('sediment');
+  const [rock, setRock] = useState<Rock['id']>(ROCKS[0].id);
   const [force, setForce] = useState<Force['id']>('endo');
   const [legacyVisual, setLegacyVisual] = useState(false);
   const rockData = ROCKS.find((r) => r.id === rock)!;

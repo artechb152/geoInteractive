@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
@@ -98,6 +98,44 @@ const SLOPE_LABELS = {
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+// Short screens: the two views narrow (centred in the board) until their bottom
+// edge sits on the first screen, so the map never needs a scroll. Applies while
+// the views stand side by side (md+); below that they stack at full width.
+const FIT_GAP = 24; // px kept clear under the views
+const VIEW_MIN_W = 280; // px — narrowest a view may get
+
+function useViewsFit(row: RefObject<HTMLDivElement | null>) {
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = row.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    const sideBySide = window.matchMedia('(min-width: 768px)');
+    const fit = () => {
+      const frames = [...el.querySelectorAll<HTMLElement>('[data-view-frame]')];
+      if (!sideBySide.matches || frames.length === 0) return setWidth(null);
+      const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+      const ratio = Math.max(...frames.map((f) => f.offsetHeight / f.offsetWidth)); // views keep their aspect
+      const top = Math.max(...frames.map((f) => f.getBoundingClientRect().top)) + window.scrollY;
+      const viewW = Math.max(VIEW_MIN_W, (window.innerHeight - FIT_GAP - top) / ratio);
+      const w = Math.floor(viewW * 2 + gap);
+      setWidth(w < box.clientWidth ? w : null);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
+    ro.observe(el);
+    window.addEventListener('resize', fit);
+    sideBySide.addEventListener('change', fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', fit);
+      sideBySide.removeEventListener('change', fit);
+    };
+  }, [row]);
+  return width;
+}
+
 export function LandformsScene() {
   const [active, setActive] = useState<Form>('hill');
   const [slope, setSlope] = useState(SLOPES[0].id);
@@ -110,110 +148,13 @@ export function LandformsScene() {
         intro="בשיעור זה נכיר חמש תבניות נוף בסיסיות: כיפה, שלוחה, גיא, אוכף ומכתש. זיהוין מסייע להבין את מבנה הקרקע ואת ייצוגו במפה. בחרו כל תבנית והשוו בין צורתה בשטח לבין קווי הגובה המתארים אותה."
       />
 
-      <div
-        data-qa="forms-grid"
-        className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start mb-12"
-      >
-        {/* Accordion list — first child → RIGHT in RTL (text on right) */}
-        <FormAccordion active={active} onSelect={setActive} />
-
-        {/* Visualization — second child → LEFT in RTL. Sticky on desktop so the
-            board stays in view while the accordion is read. */}
-        <FormBoard active={active} />
-      </div>
+      <FormBoard active={active} onSelect={setActive} />
 
       {/* The former divider line ("עוד שכבה: …") was removed by the user's
           2026-09-28 decision — the slope workspace opens with its own T1 h3,
-          and the grid above already sets the 48px block gap (mb-12). */}
+          and the board above already sets the 48px block gap (mb-12). */}
       <SlopeAnalyzer slopes={SLOPES} active={slope} onSelect={setSlope} />
     </section>
-  );
-}
-
-/* ── Landforms — accordion ───────────────────────────────────────────────── */
-
-function FormAccordion({ active, onSelect }: { active: Form; onSelect: (id: Form) => void }) {
-  const reduce = useReducedMotion();
-  return (
-    <div className="space-y-3">
-      {FORMS.map((f, i) => {
-        const isActive = active === f.id;
-        return (
-          <div
-            key={f.id}
-            className={cn(
-              // Rows sit on the textured page (not inside a workspace), so the
-              // translucent hover tint rides on an opaque white base via ::before.
-              'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
-              'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-              isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
-            )}
-          >
-            <button
-              type="button"
-              id={`lf-form-btn-${f.id}`}
-              aria-controls={`lf-form-panel-${f.id}`}
-              onClick={() => onSelect(f.id)}
-              aria-expanded={isActive}
-              className="w-full p-5 text-start flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-            >
-              <span className="size-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-bold bg-bg-accent text-fg-muted">
-                {i + 1}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{f.label}</div>
-              </div>
-              <motion.span
-                animate={{ rotate: isActive ? 180 : 0 }}
-                transition={{ duration: reduce ? 0 : 0.25 }}
-                className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </motion.span>
-            </button>
-
-            <AnimatePresence initial={false}>
-              {isActive && (
-                <motion.div
-                  key={`panel-${f.id}`}
-                  id={`lf-form-panel-${f.id}`}
-                  role="region"
-                  aria-labelledby={`lf-form-btn-${f.id}`}
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-5 pb-5 space-y-3">
-                    <div>
-                      <InfoLabel>תיאור התבנית</InfoLabel>
-                      <p className="text-base leading-relaxed text-fg">{f.description}</p>
-                    </div>
-                    <div>
-                      <InfoLabel>זיהוי במפה</InfoLabel>
-                      <p className="text-base leading-relaxed text-fg">{f.contourHint}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -222,41 +163,147 @@ function InfoLabel({ children }: { children: ReactNode }) {
   return <div className="text-base font-display font-bold text-fg mb-1">{children}</div>;
 }
 
-/* ── Landforms — linked board (reality ↔ map) ────────────────────────────── */
+/* ── Landforms — tabs + terrain beside its map ───────────────────────────── */
 
-function FormBoard({ active }: { active: Form }) {
-  const index = FORMS.findIndex((f) => f.id === active);
-  const form = FORMS[index];
+// One workspace that fits the first screen at any size: the five forms as tabs
+// on top, the terrain and its map side by side (terrain → RIGHT in RTL, read
+// first), and the form's description beneath them.
+function FormBoard({ active, onSelect }: { active: Form; onSelect: (id: Form) => void }) {
+  const form = FORMS.find((f) => f.id === active)!;
   const meta = REALITY_META[active];
+  const reduce = useReducedMotion();
+  const rowRef = useRef<HTMLDivElement>(null);
+  const rowW = useViewsFit(rowRef);
 
   return (
-    <div className="lg:sticky lg:top-24 self-start">
-      <div className="surface-elevated p-5 sm:p-6">
-        {/* Board header — names the active landform; its number matches the open accordion item */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 min-w-0" aria-live="polite">
-            <span className="size-9 rounded-xl bg-bg-accent text-fg-muted font-display text-sm font-bold flex items-center justify-center shrink-0">
-              {index + 1}
-            </span>
-            <div className="min-w-0">
-              <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{form.label}</div>
-            </div>
-          </div>
-        </div>
+    <div data-qa="forms-board" className="surface-elevated p-5 sm:p-6 mb-12">
+      <FormTabs active={active} onSelect={onSelect} />
 
-        <div className="mt-4">
-          {/* The boards stay mounted: on a switch the terrain and its contours
-              reshape from the current form into the next one. */}
-          <LinkedBoards top={{ kind: 'real', sub: meta.realWorld }} bottom={{ kind: 'map', sub: meta.mapCue }}>
+      <div role="tabpanel" id="lf-form-panel" aria-labelledby={`lf-form-tab-${active}`}>
+        {/* The views stay mounted: on a switch the terrain and its contours
+            reshape from the current form into the next one. */}
+        <div
+          ref={rowRef}
+          className="mx-auto grid gap-4 md:grid-cols-2"
+          style={rowW ? { maxWidth: rowW } : undefined}
+        >
+          <BoardView caption={{ kind: 'real', sub: meta.realWorld }}>
             <LandformReality form={active} ariaLabel={`${form.label} — בשטח: ${meta.realWorld}`} />
+          </BoardView>
+          <BoardView caption={{ kind: 'map', sub: meta.mapCue }} frameClassName="bg-paper-bright">
             <LandformMap form={active} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${meta.mapCue}`} />
-          </LinkedBoards>
-          <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
-            ההמחשה מציגה את אותה תבנית נוף בשטח ובמפה באמצעות קווי גובה.
-          </p>
+          </BoardView>
+        </div>
+        <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
+          ההמחשה מציגה את אותה תבנית נוף בשטח ובמפה באמצעות קווי גובה.
+        </p>
+
+        <div aria-live="polite" className="mt-4 rounded-xl bg-bg-accent/60 p-4 sm:p-5">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`text-${active}`}
+              initial={reduce ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
+              transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
+              className="grid sm:grid-cols-2 gap-4 sm:gap-6"
+            >
+              <div>
+                <InfoLabel>תיאור התבנית</InfoLabel>
+                <p className="text-base leading-relaxed text-fg">{form.description}</p>
+              </div>
+              <div>
+                <InfoLabel>זיהוי במפה</InfoLabel>
+                <p className="text-base leading-relaxed text-fg">{form.contourHint}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </div>
+  );
+}
+
+function FormTabs({ active, onSelect }: { active: Form; onSelect: (id: Form) => void }) {
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Arrow keys follow the visual order in RTL: ArrowLeft → next tab.
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const n = FORMS.length;
+    let next = -1;
+    if (e.key === 'ArrowLeft') next = (i + 1) % n;
+    else if (e.key === 'ArrowRight') next = (i - 1 + n) % n;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = n - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    onSelect(FORMS[next].id);
+    tabRefs.current[next]?.focus();
+  };
+
+  return (
+    <div role="tablist" aria-label="תבניות נוף" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
+      {FORMS.map((f, i) => {
+        const isActive = active === f.id;
+        return (
+          <button
+            key={f.id}
+            ref={(el) => {
+              tabRefs.current[i] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`lf-form-tab-${f.id}`}
+            aria-selected={isActive}
+            aria-controls="lf-form-panel"
+            tabIndex={isActive ? 0 : -1}
+            onClick={() => onSelect(f.id)}
+            onKeyDown={(e) => onKeyDown(e, i)}
+            className={cn(
+              'px-3 py-2 rounded-xl border text-start transition-colors duration-200 ease-snap flex items-center gap-3',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
+              isActive
+                ? 'border-accent bg-accent/10'
+                : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+            )}
+          >
+            <span
+              className={cn(
+                'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 font-display font-bold text-sm',
+                isActive ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+              )}
+            >
+              {i + 1}
+            </span>
+            <span className="font-display font-bold text-lg text-fg leading-tight flex-1 min-w-0">{f.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// One view with its caption above it. Both views share the row, so the terrain
+// and its map are compared side by side at the same size. The frames stretch to
+// the taller view; the shorter one sits centred on its own paper colour.
+function BoardView({
+  caption,
+  frameClassName,
+  children,
+}: {
+  caption: BoardCaptionProps;
+  frameClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <figure className="m-0 min-w-0 flex flex-col">
+      <figcaption className="mb-2">
+        <BoardCaption {...caption} />
+      </figcaption>
+      <div data-view-frame className={cn('flex-1 flex flex-col justify-center rounded-xl overflow-hidden', frameClassName)}>
+        {children}
+      </div>
+    </figure>
   );
 }
 
@@ -321,12 +368,13 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
   const reduce = useReducedMotion();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Arrow keys follow the visual order in RTL: ArrowLeft → next tab.
+  // Arrow keys follow the visual order in RTL: ArrowLeft → next tab. On desktop
+  // the tabs stack in a column, so ArrowDown / ArrowUp step through them too.
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
     const n = slopes.length;
     let next = -1;
-    if (e.key === 'ArrowLeft') next = (i + 1) % n;
-    else if (e.key === 'ArrowRight') next = (i - 1 + n) % n;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = (i + 1) % n;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = (i - 1 + n) % n;
     else if (e.key === 'Home') next = 0;
     else if (e.key === 'End') next = n - 1;
     if (next < 0) return;
@@ -346,51 +394,95 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
         </p>
       </div>
 
-      <div role="tablist" aria-labelledby="lf-slopes-title" className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-        {slopes.map((s, i) => {
-          const isActive = active === s.id;
-          return (
-            <button
-              key={s.id}
-              ref={(el) => {
-                tabRefs.current[i] = el;
-              }}
-              type="button"
-              role="tab"
-              id={`lf-slope-tab-${s.id}`}
-              aria-selected={isActive}
-              aria-controls="lf-slope-panel"
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => onSelect(s.id)}
-              onKeyDown={(e) => onKeyDown(e, i)}
-              className={cn(
-                'p-3 rounded-xl border text-start transition-colors duration-200 ease-snap flex items-center gap-3',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
-                isActive
-                  ? 'border-accent bg-accent/10'
-                  : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-              )}
-            >
-              <span
-                className={cn(
-                  'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 font-display font-bold text-sm',
-                  isActive ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
-                )}
-              >
-                {i + 1}
-              </span>
-              <span className="font-display font-bold text-base text-fg leading-tight flex-1 min-w-0">{s.label}</span>
-              <SlopeGlyph slope={s.id} className="w-10 h-[22px] shrink-0 text-fg-muted" />
-            </button>
-          );
-        })}
-      </div>
+      {/* Tabs, drawings and text share one screen: on desktop the tabs and the
+          description sit in the first column (→ RIGHT in RTL) beside the linked
+          drawings, as in the landforms block above, so switching a slope never
+          pushes its description below the fold. */}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
+        {/* Takes whatever width the drawings leave; once it is wide enough
+            (short screens cap the drawings) the tabs go two per row. */}
+        <div className="flex flex-col gap-5 lg:flex-1 lg:min-w-[15rem]">
+          <div
+            role="tablist"
+            aria-labelledby="lf-slopes-title"
+            className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2"
+          >
+            {slopes.map((s, i) => {
+              const isActive = active === s.id;
+              return (
+                <button
+                  key={s.id}
+                  ref={(el) => {
+                    tabRefs.current[i] = el;
+                  }}
+                  type="button"
+                  role="tab"
+                  id={`lf-slope-tab-${s.id}`}
+                  aria-selected={isActive}
+                  aria-controls="lf-slope-panel lf-slope-figure"
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={() => onSelect(s.id)}
+                  onKeyDown={(e) => onKeyDown(e, i)}
+                  className={cn(
+                    'p-3 lg:py-2 rounded-xl border text-start transition-colors duration-200 ease-snap flex items-center gap-3',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
+                    isActive
+                      ? 'border-accent bg-accent/10'
+                      : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 font-display font-bold text-sm',
+                      isActive ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="font-display font-bold text-base text-fg leading-tight flex-1 min-w-0">{s.label}</span>
+                  <SlopeGlyph slope={s.id} className="w-10 h-[22px] shrink-0 text-fg-muted" />
+                </button>
+              );
+            })}
+          </div>
 
-      <div role="tabpanel" id="lf-slope-panel" aria-labelledby={`lf-slope-tab-${active}`}>
+          {/* The panel holds the text; the drawings beside it name the active
+              slope in their own labels and are listed in each tab's aria-controls. */}
+          <div
+            role="tabpanel"
+            id="lf-slope-panel"
+            aria-labelledby={`lf-slope-tab-${active}`}
+            aria-live="polite"
+            className="rounded-xl bg-bg-accent/60 p-4 sm:p-5 lg:p-4"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`text-${active}`}
+                initial={reduce ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
+                transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
+                className="grid sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4"
+              >
+                <div>
+                  <InfoLabel>תיאור המדרון</InfoLabel>
+                  <p className="text-base leading-relaxed text-fg">{meta.description}</p>
+                </div>
+                <div>
+                  <InfoLabel>זיהוי במפה</InfoLabel>
+                  <p className="text-base leading-relaxed text-fg">{meta.contourHint}</p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
         {/* The same slope from the side (profile) and from above (contours). The
             drawings morph between types — the drop lines carry every equal-height
-            crossing straight down onto its contour line. */}
-        <div className="mb-6">
+            crossing straight down onto its contour line. Both keep a fixed aspect
+            (height ≈ 0.62 × width), so on short screens the width is capped by the
+            viewport height: nav + card padding + header + captions ≈ 360px. */}
+        <div id="lf-slope-figure" className="min-w-0 lg:basis-[min(72%,calc((100svh_-_360px)_*_1.6))]">
           <LinkedBoards
             top={{ kind: 'real', labelText: 'מהצד', sub: 'חתך השטח' }}
             bottom={{ kind: 'map', labelText: 'במפה', sub: 'קווי הגובה של המדרון במבט מלמעלה' }}
@@ -412,28 +504,6 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
           <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
             ההמחשה מציגה את אותו מדרון בחתך מהצד ובמפה. כאשר הפרש הגובה בין הקווים קבוע, מרווחים קטנים יותר מעידים על מדרון תלול יותר.
           </p>
-        </div>
-
-        <div aria-live="polite" className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`text-${active}`}
-              initial={reduce ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
-              transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
-              className="grid sm:grid-cols-2 gap-4 sm:gap-6"
-            >
-              <div>
-                <InfoLabel>תיאור המדרון</InfoLabel>
-                <p className="text-base leading-relaxed text-fg">{meta.description}</p>
-              </div>
-              <div>
-                <InfoLabel>זיהוי במפה</InfoLabel>
-                <p className="text-base leading-relaxed text-fg">{meta.contourHint}</p>
-              </div>
-            </motion.div>
-          </AnimatePresence>
         </div>
       </div>
     </div>
