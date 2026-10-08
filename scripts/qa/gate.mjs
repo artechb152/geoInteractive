@@ -7,6 +7,7 @@
 //   node scripts/qa/gate.mjs <label> [--cwd <dir>] -- <command> [args…]
 //
 // Prints: RAW_EXIT=<n> OURS=<n> FOREIGN=<n>, then the OURS lines and the first FOREIGN lines.
+// Exits 2 (and runs nothing) if the command or an arg has whitespace or any of & | < > ^ ( ) % " ' ;
 import { spawnSync } from 'node:child_process';
 import { closeSync, mkdirSync, openSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -22,6 +23,18 @@ const opts = argv.slice(1, sep);
 const cwdAt = opts.indexOf('--cwd');
 const cwd = cwdAt >= 0 ? resolve(opts[cwdAt + 1]) : process.cwd();
 const [cmd, ...args] = argv.slice(sep + 1);
+
+// The command runs through the shell (shell: true is needed for npx/.cmd shims on Windows), and cmd.exe
+// splits unquoted args at spaces and treats & | < > ^ ( ) % " as live syntax — a pipe could replace the
+// exit code. So refuse any command part that could be re-interpreted; --cwd is exempt (it goes through
+// the cwd option, not the shell).
+const UNSAFE = /[\s&|<>^()%"';]/;
+for (const part of [cmd, ...args]) {
+  if (UNSAFE.test(part)) {
+    console.error(`gate: refusing arg with shell metacharacters or spaces: ${part}`);
+    process.exit(2);
+  }
+}
 
 const OURS = [
   'terrainBlockGeometry', 'terrainBlock', 'LandformsVisuals', 'LandformsScene',
