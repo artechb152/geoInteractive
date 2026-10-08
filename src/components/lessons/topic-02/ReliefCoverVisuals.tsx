@@ -106,7 +106,7 @@ export function ReliefCoverBlock({ state, ariaLabel }: { state: StateId; ariaLab
                 transition: { duration: reduce ? 0 : 0.45, ease: EASE, delay: reduce ? 0 : Math.min(0.5, i * 0.012) },
               }}
               exit={{ opacity: 0, y: reduce ? 0 : 1.2, transition: { duration: reduce ? 0 : 0.35, ease: EASE } }}
-              style={{ transformBox: 'fill-box', transformOrigin: '50% 100%' }}
+              style={{ originX: 0.5, originY: 1 }}
             >
               {p.node}
             </motion.g>
