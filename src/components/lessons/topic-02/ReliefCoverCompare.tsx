@@ -58,9 +58,39 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
     if (done) setSummaryOpen(true);
   }, [done]);
 
+  const stepsRef = useRef<HTMLOListElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const questionRef = useRef<HTMLDivElement>(null);
   const focusSoon = (el: () => HTMLElement | null | undefined) => requestAnimationFrame(() => el()?.focus());
+
+  // feedback waits for the boards' transition (cover objects ≈ 0.5 s, quarry morph 0.9 s)
+  const settleFor = (s: StateId) => (reduce ? 0 : s === 'quarry' ? 0.95 : 0.6);
+
+  // Screen-reader announcement of the feedback. The live region is mounted from the first paint
+  // (a region inserted together with its text is usually not announced) and is filled only when the
+  // learner arrives at a state by prediction — after the same delay as the visible feedback.
+  // Revisits, "continue" and reset leave it empty.
+  const [announcement, setAnnouncement] = useState('');
+  const announceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const clearAnnouncement = () => {
+    clearTimeout(announceTimer.current);
+    setAnnouncement('');
+  };
+  useEffect(() => () => clearTimeout(announceTimer.current), []);
+
+  // After a prediction the card takes focus once the new state's content has mounted (see FocusOnMount):
+  // with mode="wait" the old content is still on screen right after the click.
+  const focusAfterSwap = useRef(false);
+  const predict = (a: Answer) => {
+    const target = STATES[flow.view + 1] as Exclude<StateId, 'bare'>;
+    focusAfterSwap.current = true;
+    dispatch({ type: 'predict', answer: a });
+    clearAnnouncement();
+    announceTimer.current = setTimeout(
+      () => setAnnouncement(feedbackAnnouncement(target, a, copy)),
+      settleFor(target) * 1000,
+    );
+  };
 
   const cellText = (ref: CellRef) => {
     const row = rows.find((r) => r.label === ref.row);
@@ -73,15 +103,14 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
   const last = flow.view === STATES.length - 1;
   const answer = state === 'bare' ? undefined : flow.answers[state];
   const chip = CHIP[state];
-  // feedback waits for the boards' transition (cover objects ≈ 0.5 s, quarry morph 0.9 s)
-  const settle = reduce ? 0 : state === 'quarry' ? 0.95 : 0.6;
+  const settle = settleFor(state);
 
   return (
     <>
       <div data-qa="relief-cover-compare" className="surface-elevated p-5 sm:p-6">
         {/* stepper: reached states re-open; later ones wait for a prediction */}
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <ol aria-label={copy.stepsLabel} className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+          <ol ref={stepsRef} aria-label={copy.stepsLabel} className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
             {STATES.map((s, i) => {
               const isView = i === flow.view;
               const reached = i <= flow.reached;
@@ -91,7 +120,10 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                     type="button"
                     disabled={!reached}
                     aria-current={isView ? 'step' : undefined}
-                    onClick={() => dispatch({ type: 'view', index: i })}
+                    onClick={() => {
+                      dispatch({ type: 'view', index: i });
+                      clearAnnouncement();
+                    }}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-start transition-colors duration-200 ease-snap',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
@@ -122,6 +154,9 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
               onClick={() => {
                 dispatch({ type: 'reset' });
                 setSummaryOpen(false);
+                clearAnnouncement();
+                // this button unmounts (nothing reached any more) — keep focus in the flow, at its start
+                focusSoon(() => stepsRef.current?.querySelector('button'));
               }}
               className="btn-secondary cursor-pointer px-3 py-1.5 text-sm focus-visible:ring-offset-bg-elevated"
             >
@@ -175,8 +210,11 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
           ref={cardRef}
           tabIndex={-1}
           data-qa="rc-state-card"
-          className="mt-5 rounded-xl bg-bg-accent/60 p-4 focus-visible:outline-none sm:p-5"
+          className="mt-5 rounded-xl bg-bg-accent/60 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated sm:p-5"
         >
+          <p data-qa="rc-status" role="status" aria-live="polite" className="sr-only">
+            {announcement}
+          </p>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={state}
@@ -185,10 +223,16 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
               exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
               transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
             >
+              <FocusOnMount
+                run={() => {
+                  if (!focusAfterSwap.current) return;
+                  focusAfterSwap.current = false;
+                  cardRef.current?.focus();
+                }}
+              />
               {state !== 'bare' && answer && (
                 <motion.div
                   data-qa="rc-feedback"
-                  role="status"
                   initial={reduce ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: reduce ? 0 : 0.3, ease: EASE, delay: frontier ? settle : 0 }}
@@ -216,6 +260,7 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                       type="button"
                       onClick={() => {
                         dispatch({ type: 'continue' });
+                        clearAnnouncement();
                         focusSoon(() => questionRef.current?.querySelector('button'));
                       }}
                       className="btn-primary cursor-pointer px-5 text-sm"
@@ -235,10 +280,7 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                           <button
                             key={a}
                             type="button"
-                            onClick={() => {
-                              dispatch({ type: 'predict', answer: a });
-                              focusSoon(() => cardRef.current);
-                            }}
+                            onClick={() => predict(a)}
                             className={cn(
                               'cursor-pointer rounded-xl border border-border bg-bg-elevated px-3 py-2.5 font-display text-base font-semibold text-fg',
                               'transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] focus-visible:ring-offset-bg-elevated',
@@ -273,35 +315,61 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
             {summaryOpen ? copy.summary.hide : copy.summary.show}
           </button>
         </div>
-        <AnimatePresence initial={false}>
-          {summaryOpen && (
-            <motion.div
-              key="table"
-              id={`${uid}-table`}
-              initial={reduce ? false : { opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, height: 0 }}
-              transition={{ duration: reduce ? 0 : 0.35, ease: EASE }}
-              className="overflow-hidden"
-            >
-              <div className="pt-4">
-                <CompareTable rows={rows} layers={copy.layers} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* always mounted, so aria-controls always resolves; the table animates inside it */}
+        <div id={`${uid}-table`}>
+          <AnimatePresence initial={false}>
+            {summaryOpen && (
+              <motion.div
+                key="table"
+                initial={reduce ? false : { opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, height: 0 }}
+                transition={{ duration: reduce ? 0 : 0.35, ease: EASE }}
+                className="overflow-hidden"
+              >
+                <div className="pt-4">
+                  <CompareTable rows={rows} layers={copy.layers} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </section>
     </>
   );
 }
 
-function Feedback({ state, answer, copy }: { state: Exclude<StateId, 'bare'>; answer: Answer; copy: ReliefCoverCopy }) {
+/** The feedback's heading: „נכון” or „התשובה הנכונה: …” — shared by the visible feedback and the announcement. */
+function feedbackHead(state: Exclude<StateId, 'bare'>, answer: Answer, copy: ReliefCoverCopy) {
   const right = answer === CORRECT[state];
+  return { right, text: right ? copy.correct : `${copy.wrong} ${copy.answers[CORRECT[state]]}` };
+}
+
+/** The same feedback as plain text, for the screen-reader live region (no new strings). */
+function feedbackAnnouncement(state: Exclude<StateId, 'bare'>, answer: Answer, copy: ReliefCoverCopy) {
+  const body =
+    state === 'quarry'
+      ? [copy.feedback.quarry.lead, ...(['relief', 'cover'] as Layer[]).map((l) => `${copy.layers[l]} — ${copy.feedback.quarry[l]}`)].join(' ')
+      : copy.feedback[state];
+  return `${feedbackHead(state, answer, copy).text}. ${body}`;
+}
+
+/** Runs `run` once when it mounts. The keyed state content renders one, so it fires after the swap. */
+function FocusOnMount({ run }: { run: () => void }) {
+  const latest = useRef(run);
+  useEffect(() => {
+    latest.current();
+  }, []);
+  return null;
+}
+
+function Feedback({ state, answer, copy }: { state: Exclude<StateId, 'bare'>; answer: Answer; copy: ReliefCoverCopy }) {
+  const { right, text } = feedbackHead(state, answer, copy);
   return (
     <div className={cn('mb-5 rounded-lg p-3.5', right ? 'bg-brand/10' : 'bg-status-danger/[0.06]')}>
       <p className={cn('flex items-center gap-1.5 font-display text-base font-bold', right ? 'text-brand-dark' : 'text-status-danger')}>
         <Icon name={right ? 'check' : 'x'} size={15} strokeWidth={2.6} />
-        {right ? copy.correct : `${copy.wrong} ${copy.answers[CORRECT[state]]}`}
+        {text}
       </p>
       {state === 'quarry' ? (
         <div className="mt-2 space-y-1.5 text-base leading-relaxed text-fg">
