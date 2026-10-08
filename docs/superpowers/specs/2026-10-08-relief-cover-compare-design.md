@@ -1,6 +1,6 @@
 # Topic 02 · Relief vs. land cover (`#scene-relief-cover`, screen 3): "same hill, three landscapes"
 
-**Status:** approved 2026-10-08 (with the revisions in §12); implementation per `docs/superpowers/plans/2026-10-08-relief-cover-compare.md` · **Date:** 2026-10-08
+**Status:** implemented through plan Task 7 (pushed to main); Task 8 fixes, Task 9 (final checks, worktree `next build`) NOT done — not build-verified. Open items: `docs/superpowers/plans/2026-10-08-relief-cover-compare-todo.md` · **Date:** 2026-10-08
 **Scope:** screen 3 of `src/components/lessons/topic-02/ReliefCoverIntroScene.tsx` ("השוואה בין תבליט לתכסית"). The engine is extracted out of `LandformsVisuals.tsx`. New files are listed in §8.
 
 ## 1. Problem
