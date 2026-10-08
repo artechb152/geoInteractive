@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { SortQuiz, type SortItem } from './SortQuiz';
 import { ReliefCoverTerrain } from './ReliefCoverTerrain';
+import { ReliefCoverCompare, type ReliefCoverCopy } from './ReliefCoverCompare';
 import { cn } from '@/lib/utils';
 
 /**
@@ -75,6 +76,43 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 /** T1 section title (cleanup spec §3) — replaces the labelled SoftDividers. */
 const SECTION_TITLE = 'mt-12 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl';
+
+/** Screen 3 — „אותה גבעה, שלושה נופים” (ReliefCoverCompare): UI chrome and supportive
+ *  feedback only. The lesson content is COMPARE_ROWS above, shown verbatim. */
+const COMPARE_COPY: ReliefCoverCopy = {
+  states: { bare: 'שטח חשוף', grove: 'חורש טבעי', built: 'מבנים ומטע', quarry: 'חציבה' },
+  stepsLabel: 'שלבי ההמחשה',
+  question: 'מה ישתנה במעבר מהמצב הנוכחי למצב הבא?',
+  answers: { relief: 'תבליט', cover: 'תכסית', both: 'שניהם' },
+  correct: 'נכון',
+  wrong: 'התשובה הנכונה:',
+  feedback: {
+    grove: 'צורת הגבעה לא השתנתה, ולכן קווי הגובה במפה נשארו זהים. על פני הקרקע נוסף חורש — תכסית טבעית — ובמפה הוא מסומן בסמל משלו.',
+    built: 'במעבר הזה התבליט לא השתנה, וקווי הגובה נשארו במקומם. התכסית הטבעית הוחלפה בתכסית מלאכותית: מבנים ומטע. מטע נחשב לתכסית מלאכותית משום שנוצר בידי אדם.',
+    quarry: {
+      lead: 'החציבה שינתה את צורת הקרקע, ולכן גם קווי הגובה המתארים אותה השתנו.',
+      relief: 'חציבת הקרקע שינתה את צורת הגבעה.',
+      cover: 'עצי המטע שעמדו באזור החציבה הוסרו.',
+    },
+  },
+  chips: { same: 'קווי הגובה: ללא שינוי', changed: 'קווי הגובה השתנו' },
+  legendTitle: 'מקרא',
+  legend: {
+    contour: 'קו גובה',
+    index: 'קו גובה ראשי',
+    grove: 'חורש',
+    orchard: 'מטע',
+    houses: 'מבנים',
+    quarry: 'אזור חציבה',
+    before: 'קווי הגובה לפני החציבה',
+  },
+  disclaimer: 'המחשה סכמטית — הסמלים אינם מקרא רשמי',
+  boards: { real: 'בשטח', map: 'במפה' },
+  layers: LAYER_LABEL,
+  next: 'המשך',
+  restart: 'התחלה מחדש',
+  summary: { title: 'סיכום ההשוואה', show: 'הצגת ההשוואה המלאה', hide: 'הסתרת ההשוואה המלאה' },
+};
 
 export function ReliefCoverIntroScene() {
   const [showRelief, setShowRelief] = useState(true);
@@ -266,23 +304,11 @@ export function ReliefCoverIntroScene() {
         </figure>
       </div>
 
-      {/* ── Screen 3: side-by-side comparison (static info → flat card) ── */}
+      {/* ── Screen 3: same hill, three landscapes — predict, then see (ReliefCoverCompare);
+           the original table closes it as the summary ── */}
       <h3 className={SECTION_TITLE}>השוואה בין תבליט לתכסית</h3>
 
-      <div className="surface overflow-hidden">
-        <div className="grid grid-cols-[minmax(7rem,0.6fr)_1fr_1fr] text-sm">
-          <div className="p-3.5 bg-bg-accent/60 border-b border-border-subtle" />
-          <CompareHead layer="relief">תבליט</CompareHead>
-          <CompareHead layer="cover">תכסית</CompareHead>
-          {COMPARE_ROWS.map((row, i) => (
-            <div key={row.label} className="contents">
-              <div className={cn('px-4 py-3.5 font-display font-semibold text-fg', i > 0 && 'border-t border-border-subtle')}>{row.label}</div>
-              <div className={cn('px-4 py-3.5 text-fg-muted leading-relaxed', i > 0 && 'border-t border-border-subtle')}>{row.relief}</div>
-              <div className={cn('px-4 py-3.5 text-fg-muted leading-relaxed', i > 0 && 'border-t border-border-subtle')}>{row.cover}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <ReliefCoverCompare rows={COMPARE_ROWS} copy={COMPARE_COPY} />
 
       {/* ── Screen 4: quick check ── */}
       <h3 className={SECTION_TITLE}>תרגול: סיווג מרכיבי השטח</h3>
@@ -355,15 +381,6 @@ function LayerToggle({
         <motion.span layout transition={{ duration: 0.2, ease: EASE }} className="size-3.5 rounded-full bg-white shadow-sm" />
       </span>
     </button>
-  );
-}
-
-function CompareHead({ layer, children }: { layer: Layer; children: React.ReactNode }) {
-  return (
-    <div className="px-4 py-3.5 bg-bg-accent/60 border-b border-border-subtle font-display font-bold text-base text-fg flex items-center gap-2">
-      <span aria-hidden className={cn('size-2.5 rounded-full', LAYER_SWATCH[layer])} />
-      {children}
-    </div>
   );
 }
 

@@ -207,3 +207,35 @@ test('splitExamples splits at the one " · " and joins back exactly', () => {
   assert.throws(() => splitExamples('ללא מפריד'));
   assert.throws(() => splitExamples('א · ב · ג'));
 });
+
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+const SCENE = 'src/components/lessons/topic-02/ReliefCoverIntroScene.tsx';
+function compareRows(src) {
+  const start = src.indexOf('const COMPARE_ROWS');
+  const block = src.slice(start, src.indexOf('];', start));
+  return [...block.matchAll(/\{\s*label:\s*'([^']*)',\s*relief:\s*'([^']*)',\s*cover:\s*'([^']*)'\s*\}/g)].map((m) => ({
+    label: m[1],
+    relief: m[2],
+    cover: m[3],
+  }));
+}
+
+test('COMPARE_ROWS is unchanged since the approved spec (1984b5f)', () => {
+  const now = compareRows(readFileSync(SCENE, 'utf8'));
+  const then = compareRows(execFileSync('git', ['show', `1984b5f:${SCENE}`], { encoding: 'utf8' }));
+  assert.equal(then.length, 5);
+  assert.deepEqual(now, then);
+  const ex = now.find((r) => r.label === 'דוגמאות').cover;
+  assert.equal(splitExamples(ex).join(' · '), ex, 'the cover "דוגמאות" cell splits and re-joins exactly');
+  for (const s of STATES) for (const c of STATE_CELLS[s]) assert.ok(now.some((r) => r.label === c.row), `row "${c.row}" exists`);
+});
+
+test('the screen renders the component, and the reused orchard sentence is quoted verbatim', () => {
+  const src = readFileSync(SCENE, 'utf8');
+  assert.ok(src.includes('<ReliefCoverCompare rows={COMPARE_ROWS}'), 'screen 3 renders ReliefCoverCompare from COMPARE_ROWS');
+  assert.ok(src.includes('<h3 className={SECTION_TITLE}>השוואה בין תבליט לתכסית</h3>'), 'section heading kept');
+  const sentence = 'מטע נחשב לתכסית מלאכותית משום שנוצר בידי אדם.';
+  assert.equal(src.split(sentence).length - 1, 2, 'once in FEATURES.orchard.desc, once in the 2→3 feedback');
+});
