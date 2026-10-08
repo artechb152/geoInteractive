@@ -8,7 +8,7 @@
  * Pure TS, no React: scripts/qa/relief-cover-compare.test.mjs imports it.
  */
 import {
-  BASE, C, PIT_ROCK, buildContours, buildTerrain, mix,
+  BASE, C, PIT_FLOOR, PIT_ROCK, buildContours, buildTerrain, mix,
   type Contours, type HeightFn, type Terrain, type TerrainLook, type TerrainSpec,
 } from './terrainBlockGeometry';
 
@@ -101,8 +101,10 @@ export const HILL: HeightFn = (x, y) => {
 };
 
 /** The quarry: a notch in the hill's south flank (the side facing the camera), open downhill.
- *  x0–x1 × y0–y1 is the mask's outer edge; `band` is the soft transition just inside it. */
-export const QUARRY = { x0: 44, x1: 56, y0: 28.5, y1: 46, band: 1.5, floor: 120 } as const;
+ *  x0–x1 × y0–y1 is the mask's outer edge; `band` is the soft transition just inside it.
+ *  The floor sits 1 m above the 120 m contour level, not on it: a flat floor exactly on a level
+ *  snaps that contour to the grid nodes, and the map shows it as a staircase. */
+export const QUARRY = { x0: 44, x1: 56, y0: 28.5, y1: 46, band: 1.5, floor: 121 } as const;
 
 const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
@@ -153,7 +155,8 @@ export const GROVE: Tree[] = (() => {
       const x = cx + Math.cos(a) * d * 1.3; // a little wider E–W, like the hill
       const y = cy + Math.sin(a) * d * 0.8;
       if (out.some((t) => Math.hypot(t.x - x, t.y - y) < 1.9)) continue;
-      out.push({ id: `g${out.length}`, x, y, r: 1.1 + rand() * 0.8, tone: Math.floor(rand() * 3) as 0 | 1 | 2 });
+      // crowns ≥ 2.5 screen units across: ≥ 10 px on the 1440 board (≈ 4.2 px per unit)
+      out.push({ id: `g${out.length}`, x, y, r: 1.25 + rand() * 0.75, tone: Math.floor(rand() * 3) as 0 | 1 | 2 });
       placed++;
     }
   }
@@ -165,10 +168,13 @@ export const GROVE: Tree[] = (() => {
 export const ORCHARD: Tree[] = Array.from({ length: 9 * 5 }, (_, i) => {
   const col = i % 9;
   const row = Math.floor(i / 9);
-  return { id: `o${row}-${col}`, x: 50 + col * 3, y: 33 + row * 3, r: 1.05 };
+  return { id: `o${row}-${col}`, x: 50 + col * 3, y: 33 + row * 3, r: 1.25 };
 });
 /** The orchard's parcel on the map (plan units). */
 export const ORCHARD_PARCEL = { x0: 48.5, y0: 31.5, x1: 75.5, y1: 46.5 } as const;
+/** …after the quarry (state 4): the quarry site (mask ≥ 0.5, east edge at x1 − band / 2) has taken
+ *  its western part — every tree there is gone — so the parcel starts where the site ends. */
+export const ORCHARD_PARCEL_CUT = { ...ORCHARD_PARCEL, x0: QUARRY.x1 - QUARRY.band / 2 } as const;
 
 /** Village: small flat-roofed houses on the eastern plain. */
 export const HOUSES: House[] = [
@@ -210,14 +216,25 @@ const EARTH_RAMP: [number, string][] = [
   [0.5, mix(C.rim, C.paperEdge, 0.15)],
   [1, mix(C.contour, C.rim, 0.5)],
 ];
-// The quarry site (cut faces, floor and yard) in the engine's bare-rock tone.
+// The band along the top of the block's cut edges: soil, not the landforms' vegetated topsoil.
+const EARTH_TOPSOIL = mix(C.contourIndex, C.rim, 0.4);
+// The quarry site in the engine's bare-rock tones: the cut floor and the open yard pale (fresh
+// rock), the cut faces a darker rock, so the notch reads as a cut and not as a soft dip.
+const QUARRY_FLOOR = mix(PIT_ROCK, C.paper, 0.65);
+const QUARRY_FACE = PIT_FLOOR;
 const quarryTint: NonNullable<TerrainLook['tint']> = (col, q) => {
   const w = quarryMask(q.x, q.y);
-  return w > 0 ? mix(col, PIT_ROCK, 0.85 * w) : col;
+  if (w <= 0) return col;
+  // a crisp edge: rock wherever ground was cut (from the faces' top rim down), and on the uncut
+  // yard from mask 0.5 — the line the map draws as the quarry area
+  const cut = HILL(q.x, q.y) - q.raw; // metres removed here
+  const site = Math.max(smooth((w - 0.35) / 0.3), smooth((cut - 0.5) / 1.5));
+  const face = smooth((q.raw - QUARRY.floor) / 6); // 0 on the floor and yard, 1 up the faces
+  return mix(col, mix(QUARRY_FLOOR, QUARRY_FACE, face), 0.9 * site);
 };
 const KZ = 0.28; // the landforms hill's vertical exaggeration
-export const HILL_SPEC: TerrainSpec = { h: HILL, kz: KZ, look: { ramp: EARTH_RAMP } };
-export const QUARRY_SPEC: TerrainSpec = { h: QUARRIED, kz: KZ, look: { ramp: EARTH_RAMP, tint: quarryTint } };
+export const HILL_SPEC: TerrainSpec = { h: HILL, kz: KZ, look: { ramp: EARTH_RAMP, topsoil: EARTH_TOPSOIL } };
+export const QUARRY_SPEC: TerrainSpec = { h: QUARRIED, kz: KZ, look: { ramp: EARTH_RAMP, tint: quarryTint, topsoil: EARTH_TOPSOIL } };
 
 export const terrainFor = (s: StateId): Terrain => buildTerrain(s === 'quarry' ? QUARRY_SPEC : HILL_SPEC);
 export const contoursFor = (s: StateId): Contours => buildContours(s === 'quarry' ? QUARRIED : HILL);

@@ -10,7 +10,7 @@
  * All copy comes from the scene (single source); the table cells stay verbatim.
  */
 
-import { useEffect, useId, useReducer, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,8 @@ export type ReliefCoverCopy = {
 const EASE = [0.22, 1, 0.36, 1] as const;
 /** Layer dot — the same legend key as the scene's LAYER_SWATCH (sand = relief, sage = cover). */
 const LAYER_DOT: Record<Layer, string> = { relief: 'bg-terrain-sand', cover: 'bg-brand' };
+/** Map-key entries drawn with contour lines (relief); every other entry is a land-cover symbol. */
+const CONTOUR_KEYS: readonly LegendKey[] = ['contour', 'index', 'before'];
 
 export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: ReliefCoverCopy }) {
   const reduce = useReducedMotion();
@@ -81,8 +83,19 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
   // After a prediction the card takes focus once the new state's content has mounted (see FocusOnMount):
   // with mode="wait" the old content is still on screen right after the click.
   const focusAfterSwap = useRef(false);
+  // The flow as of the last click, not of the last render: during the ~0.2 s exit the old answer
+  // buttons are still on screen with this render's handlers, and a second click must not announce
+  // an answer the reducer ignores (it stores only the first).
+  const flowRef = useRef(flow);
+  useLayoutEffect(() => {
+    flowRef.current = flow;
+  }, [flow]);
   const predict = (a: Answer) => {
-    const target = STATES[flow.view + 1] as Exclude<StateId, 'bare'>;
+    const cur = flowRef.current;
+    const next = flowReducer(cur, { type: 'predict', answer: a });
+    if (next === cur) return; // not asking any more — the reducer ignores it, so does the announcement
+    flowRef.current = next;
+    const target = STATES[next.view] as Exclude<StateId, 'bare'>;
     focusAfterSwap.current = true;
     dispatch({ type: 'predict', answer: a });
     clearAnnouncement();
@@ -90,6 +103,11 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
       () => setAnnouncement(feedbackAnnouncement(target, a, copy)),
       settleFor(target) * 1000,
     );
+  };
+  /** Leaving the prediction path (revisit, "continue", reset): nothing pending may fire later. */
+  const cancelPending = () => {
+    clearAnnouncement();
+    focusAfterSwap.current = false;
   };
 
   const cellText = (ref: CellRef) => {
@@ -122,7 +140,7 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                     aria-current={isView ? 'step' : undefined}
                     onClick={() => {
                       dispatch({ type: 'view', index: i });
-                      clearAnnouncement();
+                      cancelPending();
                     }}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-start transition-colors duration-200 ease-snap',
@@ -148,22 +166,27 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
               );
             })}
           </ol>
-          {flow.reached > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                dispatch({ type: 'reset' });
-                setSummaryOpen(false);
-                clearAnnouncement();
-                // this button unmounts (nothing reached any more) — keep focus in the flow, at its start
-                focusSoon(() => stepsRef.current?.querySelector('button'));
-              }}
-              className="btn-secondary cursor-pointer px-3 py-1.5 text-sm focus-visible:ring-offset-bg-elevated"
-            >
-              <Icon name="refresh" size={15} />
-              {copy.restart}
-            </button>
-          )}
+          {/* always laid out, so the stepper never reflows; hidden (and out of the a11y tree and the
+              tab order) until there is something to restart */}
+          <button
+            type="button"
+            disabled={flow.reached === 0}
+            aria-hidden={flow.reached === 0 || undefined}
+            onClick={() => {
+              dispatch({ type: 'reset' });
+              setSummaryOpen(false);
+              cancelPending();
+              // this button hides (nothing reached any more) — keep focus in the flow, at its start
+              focusSoon(() => stepsRef.current?.querySelector('button'));
+            }}
+            className={cn(
+              'btn-secondary cursor-pointer px-3 py-1.5 text-sm focus-visible:ring-offset-bg-elevated',
+              flow.reached === 0 && 'invisible',
+            )}
+          >
+            <Icon name="refresh" size={15} />
+            {copy.restart}
+          </button>
         </div>
 
         {/* the two boards; row 2 = the map key, under the map */}
@@ -173,35 +196,49 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
               <ReliefCoverBlock state={state} ariaLabel={`${copy.states[state]} — ${copy.boards.real}`} />
             </div>
           </BoardView>
-          <BoardView caption={{ kind: 'map', sub: copy.states[state] }} frameClassName="bg-paper-bright">
-            <div data-qa="rc-map" className="relative">
-              <ReliefCoverMap state={state} ariaLabel={`${copy.states[state]} — ${copy.boards.map}`} />
-              <AnimatePresence initial={false}>
-                {chip && (
-                  <motion.span
-                    key={chip}
-                    data-qa="rc-chip"
-                    initial={reduce ? false : { opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.3, ease: EASE, delay: frontier ? settle : 0 } }}
-                    exit={{ opacity: 0, transition: { duration: reduce ? 0 : 0.15 } }}
-                    className="absolute end-2 top-2 rounded-full bg-white/90 px-2.5 py-1 font-display text-sm font-semibold text-fg shadow-sm"
-                  >
-                    {copy.chips[chip]}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </div>
-          </BoardView>
+          {/* grid: the figure keeps the row's full height, so both frames stay equal */}
+          <div className="relative grid">
+            <BoardView caption={{ kind: 'map', sub: copy.states[state] }} frameClassName="bg-paper-bright">
+              <div data-qa="rc-map">
+                <ReliefCoverMap state={state} ariaLabel={`${copy.states[state]} — ${copy.boards.map}`} />
+              </div>
+            </BoardView>
+            {/* the contour chip sits on the map's caption line (spec §5), clear of every symbol and label */}
+            <AnimatePresence initial={false}>
+              {chip && (
+                <motion.span
+                  key={chip}
+                  data-qa="rc-chip"
+                  initial={reduce ? false : { opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.3, ease: EASE, delay: frontier ? settle : 0 } }}
+                  exit={{ opacity: 0, transition: { duration: reduce ? 0 : 0.15 } }}
+                  className="absolute -top-0.5 end-0 rounded-full bg-bg-accent px-2.5 py-0.5 font-display text-sm font-semibold leading-5 text-fg"
+                >
+                  {copy.chips[chip]}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
           <div aria-hidden className="hidden md:block" />
-          <div data-qa="rc-legend" className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-fg-muted">
-            <span className="font-display font-bold text-fg">{copy.legendTitle}</span>
-            {LEGEND[state].map((k) => (
-              <span key={k} className="inline-flex items-center gap-1.5">
-                <LegendSwatch k={k} />
-                {copy.legend[k]}
-              </span>
-            ))}
-            <span className="basis-full">{copy.disclaimer}</span>
+          {/* map key: one line of contour entries, one line of land-cover symbols (kept even when empty,
+              so the key — and the card below it — keeps its height in every state), the disclaimer */}
+          <div data-qa="rc-legend" className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm text-fg-muted">
+            <span className="font-display font-bold leading-5 text-fg">{copy.legendTitle}</span>
+            <div className="grid gap-y-1.5">
+              {[true, false].map((contour) => (
+                <div key={String(contour)} className="flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1.5">
+                  {LEGEND[state]
+                    .filter((k) => CONTOUR_KEYS.includes(k) === contour)
+                    .map((k) => (
+                      <span key={k} className="inline-flex items-center gap-1.5 leading-5">
+                        <LegendSwatch k={k} />
+                        {copy.legend[k]}
+                      </span>
+                    ))}
+                </div>
+              ))}
+            </div>
+            <span className="col-span-2 leading-5">{copy.disclaimer}</span>
           </div>
         </div>
 
@@ -231,14 +268,28 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                 }}
               />
               {state !== 'bare' && answer && (
-                <motion.div
-                  data-qa="rc-feedback"
-                  initial={reduce ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: reduce ? 0 : 0.3, ease: EASE, delay: frontier ? settle : 0 }}
-                >
-                  <Feedback state={state} answer={answer} copy={copy} />
-                </motion.div>
+                <div className="relative mb-5">
+                  {/* while the boards play the change, the feedback's place shows as a quiet panel,
+                      not a hole; it cross-fades into the feedback when the change lands */}
+                  {frontier && settle > 0 && (
+                    <motion.div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-lg bg-bg-accent"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 0 }}
+                      transition={{ duration: 0.3, ease: EASE, delay: settle }}
+                    />
+                  )}
+                  <motion.div
+                    data-qa="rc-feedback"
+                    className="relative"
+                    initial={reduce ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: reduce ? 0 : 0.3, ease: EASE, delay: frontier ? settle : 0 }}
+                  >
+                    <Feedback state={state} answer={answer} copy={copy} />
+                  </motion.div>
+                </div>
               )}
 
               <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
@@ -248,7 +299,7 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                       <span aria-hidden className={cn('size-2 rounded-full', LAYER_DOT[ref.layer])} />
                       {ref.row} · {copy.layers[ref.layer]}
                     </dt>
-                    <dd className="mt-1 text-base leading-relaxed text-fg">{cellText(ref)}</dd>
+                    <dd className="mt-1 text-pretty text-base leading-relaxed text-fg">{cellText(ref)}</dd>
                   </div>
                 ))}
               </dl>
@@ -260,7 +311,7 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                       type="button"
                       onClick={() => {
                         dispatch({ type: 'continue' });
-                        clearAnnouncement();
+                        cancelPending();
                         focusSoon(() => questionRef.current?.querySelector('button'));
                       }}
                       className="btn-primary cursor-pointer px-5 text-sm"
@@ -366,13 +417,13 @@ function FocusOnMount({ run }: { run: () => void }) {
 function Feedback({ state, answer, copy }: { state: Exclude<StateId, 'bare'>; answer: Answer; copy: ReliefCoverCopy }) {
   const { right, text } = feedbackHead(state, answer, copy);
   return (
-    <div className={cn('mb-5 rounded-lg p-3.5', right ? 'bg-brand/10' : 'bg-status-danger/[0.06]')}>
+    <div className={cn('rounded-lg p-3.5', right ? 'bg-brand/10' : 'bg-status-danger/[0.06]')}>
       <p className={cn('flex items-center gap-1.5 font-display text-base font-bold', right ? 'text-brand-dark' : 'text-status-danger')}>
         <Icon name={right ? 'check' : 'x'} size={15} strokeWidth={2.6} />
         {text}
       </p>
       {state === 'quarry' ? (
-        <div className="mt-2 space-y-1.5 text-base leading-relaxed text-fg">
+        <div className="mt-2 space-y-1.5 text-pretty text-base leading-relaxed text-fg">
           <p>{copy.feedback.quarry.lead}</p>
           {(['relief', 'cover'] as Layer[]).map((l) => (
             <p key={l} className="flex items-start gap-2">
@@ -384,7 +435,7 @@ function Feedback({ state, answer, copy }: { state: Exclude<StateId, 'bare'>; an
           ))}
         </div>
       ) : (
-        <p className="mt-2 text-base leading-relaxed text-fg">{copy.feedback[state]}</p>
+        <p className="mt-2 text-pretty text-base leading-relaxed text-fg">{copy.feedback[state]}</p>
       )}
     </div>
   );

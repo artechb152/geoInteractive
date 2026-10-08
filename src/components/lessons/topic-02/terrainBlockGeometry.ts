@@ -89,6 +89,8 @@ export type TerrainLook = {
   ramp: [number, string][];
   /** Extra tint for one surface quad (centre x, y; mean raw height): after the pit tint, before curvature and sun. */
   tint?: (col: string, quad: { x: number; y: number; raw: number }) => string;
+  /** The thin band along the top of the cut edges (default: the landforms' vegetated topsoil). */
+  topsoil?: string;
 };
 
 export type TerrainSpec = {
@@ -460,11 +462,12 @@ export function buildTerrain(spec: TerrainSpec): Terrain {
   const east = Array.from({ length: ny }, (_, j) => V(nx - 1, j));
   const baseAt = (x: number, y: number): Pt => down(proj(x, y, floor), BASE_SLAB);
   const band = (edge: Pt[]) => 'M' + [...edge, ...edge.map((p) => down(p, 0.55)).reverse()].map(fmt).join('L') + 'Z';
+  const topsoil = look.topsoil ?? TOPSOIL;
   const walls: Shape[] = [
     { d: 'M' + [...south, baseAt(TW, TH), baseAt(0, TH)].map(fmt).join('L') + 'Z', fill: WALL_LIT },
     { d: 'M' + [...east, baseAt(TW, TH), baseAt(TW, 0)].map(fmt).join('L') + 'Z', fill: WALL_SHADE },
-    { d: band(south), fill: TOPSOIL },
-    { d: band(east), fill: mix(TOPSOIL, SHADOW_TONE, 0.25) },
+    { d: band(south), fill: topsoil },
+    { d: band(east), fill: mix(topsoil, SHADOW_TONE, 0.25) },
   ];
 
   const footprint = ([[0, 0], [TW, 0], [TW, TH], [0, TH]] as Pt[]).flatMap(([x, y]) => down(baseAt(x, y), 0.9));

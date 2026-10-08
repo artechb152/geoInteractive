@@ -20,7 +20,7 @@ import {
 } from './terrainBlockGeometry';
 import { ContourMapSheet, MapLabel, TerrainBlockView, useContourMorph, useIdlePrefetch } from './terrainBlock';
 import {
-  COVER, HILL, ORCHARD_PARCEL, QUARRY, contoursFor, quarryMask, terrainFor,
+  COVER, HILL, ORCHARD_PARCEL, ORCHARD_PARCEL_CUT, QUARRY, contoursFor, quarryMask, terrainFor,
   type House, type LegendKey, type StateId, type Tree,
 } from './reliefCoverCompare.data';
 
@@ -162,7 +162,8 @@ export function ReliefCoverMap({ state, ariaLabel }: { state: StateId; ariaLabel
     exit: { opacity: 0 },
     transition: { duration: reduce ? 0 : 0.4, ease: EASE },
   } as const;
-  const P = ORCHARD_PARCEL;
+  // in state 4 the quarry site has taken the parcel's western part (its trees are gone)
+  const P = quarry ? ORCHARD_PARCEL_CUT : ORCHARD_PARCEL;
 
   return (
     <ContourMapSheet
@@ -182,7 +183,7 @@ export function ReliefCoverMap({ state, ariaLabel }: { state: StateId; ariaLabel
           )}
           {c.orchard.length > 0 && (
             <motion.rect
-              key="orchard-parcel"
+              key={quarry ? 'orchard-parcel-cut' : 'orchard-parcel'}
               {...fade}
               x={P.x0}
               y={P.y0}
