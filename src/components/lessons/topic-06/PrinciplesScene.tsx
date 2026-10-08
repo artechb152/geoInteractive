@@ -5,12 +5,14 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { AnimatePresence, motion, useSpring, useMotionValueEvent, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
-import { GpsDeniedIllustration, NorthGlyph } from './PrinciplesVisuals';
+import { NorthGlyph } from './PrinciplesVisuals';
+import { LocationCheckActivity } from './LocationCheckActivity';
+import { BearingMap, CompassInstrument } from './CompassMapVisuals';
+import { AZIMUTH_MAX, AZIMUTH_START, backAzimuth, backEquation, formatDeg, shortestTurn } from './compassMapGeometry';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -74,10 +76,8 @@ export function PrinciplesScene() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Azimuth explorer — slider tape + draggable compass dial driving one value
+// Azimuth explorer — "מצפן ומפה": one degree slider drives the compass and the map
 // ─────────────────────────────────────────────────────────────────────────────
-
-const normDeg = (d: number) => ((d % 360) + 360) % 360;
 
 function directionOf(az: number) {
   return az < 22 || az >= 338 ? 'צפון'
@@ -90,27 +90,27 @@ function directionOf(az: number) {
     : 'צפון־מערב';
 }
 
+/**
+ * One azimuth, two synchronized views: a realistic compass (rendered body +
+ * live pointers) and a fictional topographic map on which B circles the fixed
+ * origin A at a fixed distance. The degree slider is the only control — the
+ * compass and the map are passive, north stays up. The back azimuth, its
+ * dashed ray and the equation are always shown.
+ *
+ * Every pointer, number and the equation come from one animated angle
+ * (useSmoothedAngle), so mid-sweep they always agree; the slider and assistive
+ * tech carry the target value.
+ */
 function AzimuthExplorer() {
-  const [azimuth, setAzimuth] = useState(47);
-  // The dial needle sweeps to its target with a damped spring so it reads like a real
-  // compass hand. Every number on screen (digit readout, direction word, back azimuth)
-  // is derived from that same animated angle — never from the raw slider value — so
-  // what you read always matches exactly where the needle is pointing, mid-sweep or not.
+  const [azimuth, setAzimuth] = useState(AZIMUTH_START);
   const angle = useSmoothedAngle(azimuth);
-  const displayAzimuth = Math.round(normDeg(angle)) % 360;
-  const back = (displayAzimuth + 180) % 360;
-  const direction = directionOf(displayAzimuth);
+  const eq = backEquation(angle);
+  const azimuthLabel = formatDeg(eq.azimuth);
+  const backLabel = formatDeg(eq.back);
 
-  // Assistive tech gets the *target* value (not the mid-sweep spring value).
-  const targetBack = (azimuth + 180) % 360;
-  const valueText = `${azimuth} מעלות, כיוון ${directionOf(azimuth)}`;
-
-  // "Settled" = the learner stopped moving the needle for a beat. Only then does
-  // the dial draw the ±180° sweep from the needle to the back-azimuth needle, so
-  // the relation is demonstrated as a consequence of the choice, not as noise
-  // during the drag.
-  // Tracked as "the value that settled" so a new value is un-settled in the very
-  // same render it appears (no one-frame flash of a stale sweep).
+  // Announce the back azimuth once the learner stops moving the slider for a
+  // beat — never mid-drag. Tracked as "the value that settled" so a new value
+  // is un-settled in the same render it appears.
   const [settledValue, setSettledValue] = useState<number | null>(null);
   useEffect(() => {
     const t = window.setTimeout(() => setSettledValue(azimuth), 550);
@@ -119,174 +119,132 @@ function AzimuthExplorer() {
   const settled = settledValue === azimuth;
 
   return (
-    <div className="surface-elevated relative overflow-hidden select-none">
-      {/* Single navigation-instrument board: a 2-col / 2-row grid on desktop (data
-          block + card share the right column, the compass spans both rows on the
-          left) that collapses to plain DOM-order stacking on mobile — data block,
-          then compass, then the back-azimuth card — via the `lg:` grid placement
-          below being inert until that breakpoint. */}
-      <div className="relative grid gap-8 p-6 lg:p-8 lg:gap-x-10 lg:grid-cols-[1fr_1.3fr]">
-        {/* 1. Title, 2. slider, 3–7. big azimuth / direction / back-azimuth / equation / note */}
-        <div className="lg:col-start-1 lg:row-start-1 flex flex-col gap-6 lg:pe-8">
-          <div>
-            <div className="mb-3 text-base font-display font-bold text-fg">
-            שנו את האזימוט במחוון או בגרירה על המצפן
-            </div>
-            <AzimuthTape value={azimuth} onChange={setAzimuth} valueText={valueText} />
+    <div className="surface-elevated p-6 lg:p-8" data-activity="compass-map">
+      {/* Desktop: compass column at the inline start (right), map at the end
+          (left) with the card title above it, as in the selected mockup. */}
+      <div className="grid gap-x-7 gap-y-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl lg:col-start-2 lg:row-start-1 lg:self-end lg:text-end">
+          מהמצפן אל המפה
+        </h3>
+        <p className="text-lg leading-snug text-black lg:col-start-1 lg:row-start-1 lg:self-end">
+          הזיזו את המחוון וצפו בשינוי הכיוון.
+        </p>
+
+        <div className="flex flex-col lg:col-start-1 lg:row-start-2">
+          <div className="mx-auto aspect-square w-full max-w-[340px]">
+            <CompassInstrument angle={angle} azimuthLabel={azimuthLabel} backLabel={backLabel} />
           </div>
-
-          <div>
-            <div className="font-mono font-bold text-6xl sm:text-7xl leading-none tabular-nums text-fg">
-            {displayAzimuth}<span className="text-3xl sm:text-4xl text-accent-hot align-top">°</span>
-            </div>
-            <div className="mt-2 text-lg sm:text-xl font-display font-semibold text-fg-muted">
-            {direction}
-            </div>
-
-            {/* Back-azimuth readout (the result of the choice) — an inset tinted in the
-                same cool blue as the dashed back needle and its bezel tag on the dial
-                (data/legend colour), so the three read as one thing. */}
-            <div className="mt-5 rounded-xl bg-accent-cool/10 p-4">
-              <div className="flex items-baseline gap-2.5">
-                <span aria-hidden className="inline-block w-5 self-center border-t-2 border-dashed border-accent-cool" />
-                <span className="text-sm font-display font-semibold text-fg-muted">אזימוט חוזר</span>
-                <span className="font-mono font-bold text-2xl sm:text-3xl tabular-nums text-accent-cool">
-                {back}°
-                </span>
-              </div>
-              <div className="mt-2 font-mono text-sm text-fg-muted tabular-nums">
-              {displayAzimuth}° <span className="font-semibold text-accent-cool">{displayAzimuth >= 180 ? '−' : '+'} 180°</span> = {back}°
-              </div>
-              <p className="mt-2 text-sm text-fg-muted leading-relaxed">
-              הכיוון ההפוך לאזימוט {displayAzimuth}° הוא {back}°. לחישובו מוסיפים 180° כשהאזימוט קטן מ־180°, ומפחיתים 180° בשאר המקרים.
-              </p>
-            </div>
-          </div>
-
-          {/* Polite, settled-only announcement (never mid-sweep) */}
-          <span className="sr-only" aria-live="polite" aria-atomic="true">
-            {settled ? `${azimuth}° ${directionOf(azimuth)}. אזימוט חוזר ${targetBack}°` : ''}
-          </span>
+          <AzimuthReadouts azimuth={azimuthLabel} back={backLabel} />
+          <AzimuthSlider value={azimuth} onChange={setAzimuth} />
         </div>
 
-        {/* The compass instrument — second in DOM → left in RTL, spans both rows on
-            desktop. Drag / click anywhere on the dial to aim the needle; arrow keys
-            work when it has focus. */}
-        <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 relative flex flex-col items-center justify-center gap-4">
-          <CompassDialControl
-            angle={angle}
-            azimuth={azimuth}
-            displayAzimuth={displayAzimuth}
-            back={back}
-            settled={settled}
-            onChange={setAzimuth}
-            valueText={valueText}
-          />
-          <div className="relative flex items-center gap-5 text-sm font-display font-medium text-fg-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-[3px] w-4 rounded-full bg-accent-hot" aria-hidden />
-              אזימוט
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-4 border-t-2 border-dashed border-accent-cool" aria-hidden />
-              אזימוט חוזר
-            </span>
-          </div>
+        <div className="lg:col-start-2 lg:row-start-2">
+          <BearingMap angle={angle} azimuthLabel={azimuthLabel} backLabel={backLabel} />
         </div>
+      </div>
 
-        {/* 8–9. "When to use it" + dynamic example — plain info text (no box), so it
-            reads as explanation, apart from the tinted result readout above */}
-        <div className="lg:col-start-1 lg:row-start-2 lg:pe-8">
-          <div>
-            <h4 className="text-base font-display font-bold text-fg mb-1.5">מתי משתמשים באזימוט חוזר?</h4>
-            <p className="text-sm text-fg-muted leading-relaxed">
-            אזימוט חוזר מסייע לקבוע כיוון חזרה לאורך קטע ישר ולבדוק כיוונים בין נקודות. כדי לחזור לנקודת המוצא נדרשים גם מרחק מתאים ובדיקת מיקום; הכיוון לבדו אינו מספיק.
-            </p>
-            <div className="mt-3">
-              <p className="text-sm text-fg leading-relaxed">
-              עבור אזימוט <strong className="font-mono">{displayAzimuth}°</strong>, האזימוט החוזר הוא{' '}
-              <strong className="font-mono text-accent-cool">{back}°</strong>.
-              </p>
-            </div>
-          </div>
+      <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl bg-bg-accent px-6 py-5 text-center sm:flex-row sm:justify-center sm:gap-10 sm:text-start">
+        <p className="max-w-md text-lg leading-snug text-black">
+          {/* each "180°" is an LTR island, so the degree sign stays after the digits;
+              nowrap keeps a value with its word */}
+          אזימוט חוזר מצביע לכיוון ההפוך: מתחת <span className="whitespace-nowrap">ל־<span dir="ltr">180°</span></span>{' '}
+          <span className="whitespace-nowrap">מוסיפים <span dir="ltr">180°</span></span>, ומ־<span dir="ltr">180°</span> ומעלה{' '}
+          <span className="whitespace-nowrap">מפחיתים <span dir="ltr">180°</span></span>.
+        </p>
+        <span aria-hidden className="hidden w-px self-stretch bg-border sm:block" />
+        <p dir="ltr" className="shrink-0 font-display text-4xl font-bold leading-none tabular-nums text-fg" data-equation>
+          {azimuthLabel} {eq.op} 180° = {backLabel}
+        </p>
+      </div>
+
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {settled ? `אזימוט חוזר ${backAzimuth(azimuth)} מעלות` : ''}
+      </span>
+    </div>
+  );
+}
+
+/** Azimuth and back azimuth as plain display text — azimuth on the left, as in the mockup. */
+function AzimuthReadouts({ azimuth, back }: { azimuth: string; back: string }) {
+  return (
+    <div className="mt-1 flex flex-row-reverse items-stretch" data-readouts>
+      <div className="flex-1 text-center">
+        <div dir="ltr" className="font-display text-5xl font-bold leading-none tabular-nums text-fg" data-readout="azimuth">
+          {azimuth}
         </div>
+        <div className="mt-2 text-xl font-bold leading-tight text-fg">אזימוט</div>
+      </div>
+      <span aria-hidden className="w-px bg-border" />
+      <div className="flex-1 text-center">
+        <div dir="ltr" className="font-display text-5xl font-bold leading-none tabular-nums text-fg" data-readout="back">
+          {back}
+        </div>
+        <div className="mt-2 text-xl leading-tight text-black">אזימוט חוזר</div>
       </div>
     </div>
   );
 }
 
 /**
- * The slider is the compass rose unrolled into a tape. Like the dial itself it is
- * an instrument scale, so it is NOT mirrored for RTL: 0° sits at the left and
- * values grow to the right — dragging right turns the needle clockwise, exactly
- * as the needle tip moves at the top of the dial. Scale labels sit at their true
- * positions (90° at ¼, 180° at ½, 270° at ¾), aligned with the thumb centre.
+ * The degree slider — the activity's only control. Like the compass it is an
+ * instrument scale, so it is NOT mirrored for RTL: 0° at the left, 359° at the
+ * right. Scale marks sit at their true positions (90° at 90/359 of the travel),
+ * aligned with the thumb centre. Arrows ±1°, Shift + arrows ±10°, Home/End and
+ * PageUp/PageDown work as on any native slider.
  */
-const TAPE_THUMB_PX = 24;
-const tapePos = (v: number) => `calc(${TAPE_THUMB_PX / 2}px + (100% - ${TAPE_THUMB_PX}px) * ${v / 359})`;
+const SLIDER_THUMB_PX = 26;
+const sliderPos = (v: number) => `calc(${SLIDER_THUMB_PX / 2}px + (100% - ${SLIDER_THUMB_PX}px) * ${v / AZIMUTH_MAX})`;
 
-function AzimuthTape({
-  value,
-  onChange,
-  valueText,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  valueText: string;
-}) {
-  const labels = [
-    { v: 0, text: '0° צפון' },
-    { v: 90, text: '90° מזרח' },
-    { v: 180, text: '180° דרום' },
-    { v: 270, text: '270° מערב' },
-  ];
+function AzimuthSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const marks = [0, 90, 180, 270, AZIMUTH_MAX];
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!e.shiftKey) return;
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 10 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -10 : 0;
+    if (!step) return;
+    e.preventDefault();
+    onChange(Math.max(0, Math.min(AZIMUTH_MAX, value + step)));
+  };
   return (
-    <div dir="ltr" className="relative">
-      <div className="relative h-6">
-        <div aria-hidden className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-bg-accent ring-1 ring-inset ring-border" />
+    <div dir="ltr" className="relative mt-5 w-full" data-slider>
+      <div className="relative h-[26px]">
+        <div aria-hidden className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-bg-accent ring-1 ring-inset ring-border" />
         <div
           aria-hidden
-          className="absolute start-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-accent-hot/70"
-          style={{ width: tapePos(value) }}
+          className="absolute start-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-accent"
+          style={{ width: sliderPos(value) }}
         />
         <input
           type="range"
           min={0}
-          max={359}
+          max={AZIMUTH_MAX}
           step={1}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
+          onKeyDown={onKeyDown}
           aria-label="אזימוט"
-          aria-valuetext={valueText}
+          aria-valuetext={`${value} מעלות, ${directionOf(value)}`}
           className={cn(
-            'absolute inset-0 h-6 w-full cursor-pointer appearance-none bg-transparent',
+            'absolute inset-0 h-[26px] w-full cursor-pointer appearance-none bg-transparent',
+            // the focus ring goes on the thumb (below), not around the whole track
             'focus-visible:ring-0 focus-visible:ring-offset-0',
-            '[&::-webkit-slider-runnable-track]:h-6 [&::-webkit-slider-runnable-track]:bg-transparent',
-            '[&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full',
+            '[&::-webkit-slider-runnable-track]:h-[26px] [&::-webkit-slider-runnable-track]:bg-transparent',
+            '[&::-webkit-slider-thumb]:size-[26px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full',
             // pseudo-elements don't get preflight's `border-style: solid`, so set it explicitly
-            '[&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-accent-hot [&::-webkit-slider-thumb]:bg-bg-elevated',
-            '[&::-webkit-slider-thumb]:shadow-elevated [&::-webkit-slider-thumb]:transition-shadow',
-            '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:rounded-full',
-            '[&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-accent-hot [&::-moz-range-thumb]:bg-bg-elevated',
-            '[&:focus-visible::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
-            '[&:focus-visible::-moz-range-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
+            '[&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:bg-bg-elevated',
+            '[&::-webkit-slider-thumb]:shadow-elevated',
+            '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:size-[26px] [&::-moz-range-thumb]:rounded-full',
+            '[&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-accent [&::-moz-range-thumb]:bg-bg-elevated',
+            // keyboard focus: a white gap + ink ring around the thumb
+            '[&:focus-visible::-webkit-slider-thumb]:shadow-[0_0_0_3px_#FFFFFF,0_0_0_6px_#38432E]',
+            '[&:focus-visible::-moz-range-thumb]:shadow-[0_0_0_3px_#FFFFFF,0_0_0_6px_#38432E]',
           )}
         />
       </div>
-      {/* scale ticks every 30°, cardinal ticks taller */}
-      <div aria-hidden className="relative mt-1 h-2">
-        {Array.from({ length: 12 }, (_, i) => i * 30).map((v) => (
-          <span
-            key={v}
-            className={cn('absolute top-0 w-px', v % 90 === 0 ? 'h-2 bg-fg-dim/80' : 'h-1.5 bg-fg-dim/40')}
-            style={{ insetInlineStart: tapePos(v) }}
-          />
-        ))}
-      </div>
-      <div className="relative mt-1 h-5 text-[13px] leading-5 font-display font-medium text-fg-muted">
-        {labels.map((l) => (
-          <span key={l.v} className="absolute top-0 flex w-0 justify-center" style={{ insetInlineStart: tapePos(l.v) }}>
-            <span dir="rtl" className="whitespace-nowrap">{l.text}</span>
+      <div aria-hidden className="relative mt-1.5 h-7">
+        {marks.map((v) => (
+          <span key={v} className="absolute top-0 flex w-0 flex-col items-center" style={{ insetInlineStart: sliderPos(v) }}>
+            <span className="h-2 w-px bg-fg-muted" />
+            <span className="mt-1 whitespace-nowrap text-sm font-semibold leading-none tabular-nums text-fg">{v}°</span>
           </span>
         ))}
       </div>
@@ -297,8 +255,8 @@ function AzimuthTape({
 /**
  * Drives a single damped-spring angle toward `target`, always taking the shortest
  * rotational path (so 359°→0° sweeps forward 1°, never backward through 358°).
- * Shared by the digit readout and the dial needle so they can never drift apart
- * — see AzimuthExplorer. Under prefers-reduced-motion, the raw target is returned
+ * Shared by every pointer and number so they can never drift apart — see
+ * AzimuthExplorer. Under prefers-reduced-motion, the raw target is returned
  * directly and the spring is left idle.
  */
 function useSmoothedAngle(target: number) {
@@ -307,414 +265,11 @@ function useSmoothedAngle(target: number) {
   const [angle, setAngle] = useState(target);
   const unwrapped = useRef(target);
   useEffect(() => {
-    const currentMod = normDeg(unwrapped.current);
-    let delta = (target - currentMod) % 360;
-    if (delta > 180) delta -= 360;
-    else if (delta < -180) delta += 360;
-    unwrapped.current += delta;
+    unwrapped.current += shortestTurn(unwrapped.current, target);
     spring.set(unwrapped.current);
   }, [target, spring]);
   useMotionValueEvent(spring, 'change', (v) => setAngle(v));
   return reduceMotion ? target : angle;
-}
-
-/**
- * Makes the dial itself a control (role="slider"): press/drag anywhere on the
- * face to aim the needle at the pointer, or use the keyboard when focused
- * (←/→/↑/↓ ±1°, Shift or PageUp/PageDown ±10°, Home = north). Values wrap
- * around 0/360 like a real compass.
- */
-function CompassDialControl({
-  angle,
-  azimuth,
-  displayAzimuth,
-  back,
-  settled,
-  onChange,
-  valueText,
-}: {
-  angle: number;
-  azimuth: number;
-  displayAzimuth: number;
-  back: number;
-  settled: boolean;
-  onChange: (v: number) => void;
-  valueText: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const angleFromPointer = (clientX: number, clientY: number) => {
-    const el = ref.current;
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    const dx = clientX - (r.x + r.width / 2);
-    const dy = clientY - (r.y + r.height / 2);
-    // ignore the pivot area — the angle is meaningless that close to the centre
-    if (Math.hypot(dx, dy) < r.width * 0.06) return null;
-    return Math.round(normDeg((Math.atan2(dx, -dy) * 180) / Math.PI)) % 360;
-  };
-
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
-    // No preventDefault: the native mousedown focuses the dial (tabIndex=0), so
-    // arrow keys keep working after a click without a keyboard-style focus ring.
-    ref.current?.setPointerCapture(e.pointerId);
-    setDragging(true);
-    const a = angleFromPointer(e.clientX, e.clientY);
-    if (a !== null) onChange(a);
-  };
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-    const a = angleFromPointer(e.clientX, e.clientY);
-    if (a !== null) onChange(a);
-  };
-  const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (ref.current?.hasPointerCapture(e.pointerId)) ref.current.releasePointerCapture(e.pointerId);
-    setDragging(false);
-  };
-
-  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const big = e.shiftKey ? 10 : 1;
-    let next: number | null = null;
-    switch (e.key) {
-      case 'ArrowRight':
-      case 'ArrowUp':
-        next = azimuth + big;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowDown':
-        next = azimuth - big;
-        break;
-      case 'PageUp':
-        next = azimuth + 10;
-        break;
-      case 'PageDown':
-        next = azimuth - 10;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = 359;
-        break;
-    }
-    if (next === null) return;
-    e.preventDefault();
-    onChange(normDeg(next));
-  };
-
-  return (
-    <div className="relative aspect-square w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[440px]">
-      {/* Circular contact shadow — the instrument's own cast shadow on the table */}
-      <div aria-hidden className="absolute inset-[3%] rounded-full shadow-pine-card" />
-      <div
-        ref={ref}
-        role="slider"
-        tabIndex={0}
-        aria-label="מצפן"
-        aria-valuemin={0}
-        aria-valuemax={359}
-        aria-valuenow={azimuth}
-        aria-valuetext={valueText}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onKeyDown={onKeyDown}
-        className={cn(
-          'relative size-full touch-none rounded-full',
-          dragging ? 'cursor-grabbing' : 'cursor-grab',
-        )}
-      >
-        <CompassDial angle={angle} azimuth={azimuth} displayAzimuth={displayAzimuth} back={back} settled={settled} />
-      </div>
-    </div>
-  );
-}
-
-/** Point on the dial at compass bearing `deg` (0 = up, clockwise), radius `r`. */
-function dialPoint(deg: number, r: number) {
-  const a = ((deg - 90) * Math.PI) / 180;
-  return { x: Math.cos(a) * r, y: Math.sin(a) * r };
-}
-
-function CompassDial({
-  angle,
-  azimuth,
-  displayAzimuth,
-  back,
-  settled,
-}: {
-  angle: number;
-  azimuth: number;
-  displayAzimuth: number;
-  back: number;
-  settled: boolean;
-}) {
-  const uid = useId();
-  const reduce = !!useReducedMotion();
-  const faceClipId = `compass-face-clip-${uid}`;
-  const needleShadowId = `compass-needle-shadow-${uid}`;
-
-  // Azimuth wedge — "the angle measured clockwise from north" made visible.
-  const a = normDeg(angle);
-  const WEDGE_R = 20;
-  let wedge: string | null = null;
-  if (a > 0.5 && a < 359.5) {
-    const p = dialPoint(a, WEDGE_R);
-    wedge = `M 0 0 L 0 ${-WEDGE_R} A ${WEDGE_R} ${WEDGE_R} 0 ${a > 180 ? 1 : 0} 1 ${p.x} ${p.y} Z`;
-  }
-
-  // ±180° sweep from the needle to the back needle (drawn once the value settles).
-  const SWEEP_R = 14.5;
-  const forward = azimuth < 180;
-  const sweepFrom = dialPoint(azimuth, SWEEP_R);
-  const sweepTo = dialPoint(azimuth + 180, SWEEP_R);
-  const sweepPath = `M ${sweepFrom.x} ${sweepFrom.y} A ${SWEEP_R} ${SWEEP_R} 0 0 ${forward ? 1 : 0} ${sweepTo.x} ${sweepTo.y}`;
-  const sweepLabelAt = dialPoint(forward ? azimuth + 90 : azimuth - 90, SWEEP_R);
-
-  return (
-    // direction:ltr — an instrument face: keeps "+180°" / "−180°" from being
-    // bidi-reordered to "180°+" by the page's RTL cascade.
-    <svg
-      viewBox="-50 -50 100 100"
-      className="relative w-full h-full"
-      preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
-      style={{ direction: 'ltr' }}
-    >
-      <defs>
-        <clipPath id={faceClipId}>
-          <circle cx="0" cy="0" r="40" />
-        </clipPath>
-        {/* #38432E below is the literal value of the `fg` token — filter flood-color
-            can't reference Tailwind classes, so it's duplicated here rather than
-            inventing a new color. */}
-        <filter id={needleShadowId} x="-80%" y="-80%" width="260%" height="260%">
-          <feDropShadow dx="0.3" dy="0.5" stdDeviation="0.4" floodColor="#38432E" floodOpacity="0.25" />
-        </filter>
-      </defs>
-
-      {/* Housing — a single solid, monochrome ring, a crisp edge on its own
-          boundary, and a thin seam where it meets the face */}
-      <circle cx="0" cy="0" r="45.1" className="fill-border-strong" />
-      <circle cx="0" cy="0" r="45.1" className="fill-none stroke-fg/20" strokeWidth="0.3" />
-      <circle cx="0" cy="0" r="40.6" className="fill-bg" />
-      <circle cx="0" cy="0" r="40.6" className="fill-none stroke-fg/25" strokeWidth="0.45" />
-
-      {/* Faint topographic contour texture, clipped to the face — no labels or roads */}
-      <g clipPath={`url(#${faceClipId})`} opacity="0.4" fill="none" className="stroke-border-strong" strokeWidth="0.3">
-        <path d="M -32,-11 C -20,-19 -8,-5 6,-15 C 18,-23 28,-11 35,-17" />
-        <path d="M -30,5 C -16,-1 -2,13 12,3 C 22,-3 30,7 37,1" />
-        <path d="M -27,19 C -15,27 -1,17 13,25 C 21,29 27,19 33,23" />
-        <path d="M -13,-3 C -7,-9 3,-7 7,-3 C 11,1 7,7 1,5 C -5,3 -9,1 -13,-3 Z" opacity="0.7" />
-      </g>
-
-      {/* Azimuth wedge from N to the needle */}
-      {wedge && (
-        <>
-          <path d={wedge} className="fill-accent-hot/[0.07]" />
-          <path d={wedge} className="fill-none stroke-accent-hot/45" strokeWidth="0.4" strokeLinejoin="round" />
-        </>
-      )}
-
-      {/* Tick marks — 5° minor / 10° medium / 30° major, thin ink-toned hairlines */}
-      {Array.from({ length: 72 }).map((_, i) => {
-        const deg = i * 5;
-        const isMajor = deg % 30 === 0;
-        const isMedium = !isMajor && deg % 10 === 0;
-        const outer = dialPoint(deg, 39.6);
-        const inner = dialPoint(deg, isMajor ? 32.2 : isMedium ? 35.4 : 37.7);
-        return (
-          <line
-            key={deg}
-            x1={inner.x}
-            y1={inner.y}
-            x2={outer.x}
-            y2={outer.y}
-            className={isMajor ? 'stroke-fg/65' : isMedium ? 'stroke-fg-muted/55' : 'stroke-fg-dim/45'}
-            strokeWidth={isMajor ? 0.55 : isMedium ? 0.32 : 0.2}
-            strokeLinecap="round"
-          />
-        );
-      })}
-
-      {/* Degree numbers every 30°, except the cardinal points (which get letters below) */}
-      {[30, 60, 120, 150, 210, 240, 300, 330].map((deg) => {
-        const p = dialPoint(deg, 27.2);
-        return (
-          <text
-            key={deg}
-            x={p.x}
-            y={p.y + 1.35}
-            textAnchor="middle"
-            className="fill-fg-muted font-mono font-medium text-[4px]"
-          >
-            {deg}
-          </text>
-        );
-      })}
-
-      {/* Cardinal letters — N is only a size/weight step up */}
-      {[
-        { deg: 0, label: 'N', primary: true },
-        { deg: 90, label: 'E', primary: false },
-        { deg: 180, label: 'S', primary: false },
-        { deg: 270, label: 'W', primary: false },
-      ].map((c) => {
-        const p = dialPoint(c.deg, 25);
-        return (
-          <text
-            key={c.label}
-            x={p.x}
-            y={p.y + (c.primary ? 2.2 : 1.9)}
-            textAnchor="middle"
-            className={cn('font-display fill-fg', c.primary ? 'font-bold text-[7px]' : 'font-semibold text-[5.6px]')}
-          >
-            {c.label}
-          </text>
-        );
-      })}
-
-      {/* ±180° relation: a cool-blue half-turn from the needle to the back needle */}
-      <AnimatePresence>
-        {settled && (
-          <motion.g
-            key={`sweep-${azimuth}`}
-            initial={{ opacity: reduce ? 1 : 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.12 } }}
-          >
-            <motion.path
-              d={sweepPath}
-              fill="none"
-              className="stroke-accent-cool"
-              strokeWidth="0.7"
-              strokeLinecap="round"
-              initial={{ pathLength: reduce ? 1 : 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: reduce ? 0 : 0.6, ease: EASE }}
-            />
-            <motion.g
-              initial={{ opacity: reduce ? 1 : 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.25, delay: reduce ? 0 : 0.35 }}
-            >
-              <rect
-                x={sweepLabelAt.x - 7.4}
-                y={sweepLabelAt.y - 2.9}
-                width="14.8"
-                height="5.8"
-                rx="2.9"
-                className="fill-bg-elevated stroke-accent-cool/60"
-                strokeWidth="0.35"
-              />
-              <text
-                x={sweepLabelAt.x}
-                y={sweepLabelAt.y + 1.4}
-                textAnchor="middle"
-                className="fill-accent-cool font-mono font-bold text-[4px]"
-              >
-                {forward ? '+' : '−'}180°
-              </text>
-            </motion.g>
-          </motion.g>
-        )}
-      </AnimatePresence>
-
-      {/* Static contact shadow beneath the needle pivot */}
-      {/* (was `fill-fg/8` — not a generated opacity step, so it rendered solid black) */}
-      <ellipse cx="0.5" cy="1.3" rx="3.2" ry="1.5" className="fill-fg/[0.08]" />
-
-      {/* Azimuth + back-azimuth needles, anchored at the dial center */}
-      <CompassNeedles angle={angle} needleShadowId={needleShadowId} />
-
-      {/* Center pin — a plain rivet */}
-      <circle cx="0" cy="0" r="2.6" className="fill-bg stroke-fg-dim/70" strokeWidth="0.4" />
-      <circle cx="0" cy="0" r="1.1" className="fill-fg-dim" />
-
-      {/* Bezel tags — the live values printed right where each needle points.
-          The red one doubles as the grab handle. */}
-      <BezelTag deg={angle + 180} text={`${back}°`} tone="back" shadowId={needleShadowId} />
-      <BezelTag deg={angle} text={`${displayAzimuth}°`} tone="forward" shadowId={needleShadowId} />
-    </svg>
-  );
-}
-
-function BezelTag({
-  deg,
-  text,
-  tone,
-  shadowId,
-}: {
-  deg: number;
-  text: string;
-  tone: 'forward' | 'back';
-  shadowId: string;
-}) {
-  const p = dialPoint(deg, 42.85);
-  const h = 6.6;
-  const w = text.length * 2.45 + 3.6;
-  return (
-    <g transform={`translate(${p.x} ${p.y})`} filter={`url(#${shadowId})`}>
-      <rect
-        x={-w / 2}
-        y={-h / 2}
-        width={w}
-        height={h}
-        rx={h / 2}
-        className={tone === 'forward' ? 'fill-accent-hot' : 'fill-accent-cool'}
-        stroke="#FFFFFF"
-        strokeWidth="0.5"
-      />
-      <text x="0" y="1.45" textAnchor="middle" fill="#FFFFFF" className="font-mono font-bold text-[4px]">
-        {text}
-      </text>
-    </g>
-  );
-}
-
-/**
- * Two needles drawn pointing straight up from the dial center (0,0) and rotated
- * with the native SVG `transform="rotate(a)"` — which always pivots around the
- * user-space origin (0,0 == viewBox center). `angle` is the same damped-spring
- * value (see useSmoothedAngle) that drives the digit readout, so needle and
- * number can never disagree.
- */
-function CompassNeedles({ angle, needleShadowId }: { angle: number; needleShadowId: string }) {
-  return (
-    <>
-      {/* Back azimuth (azimuth + 180°) — secondary: dashed cool-blue line + open
-          chevron, same color as its bezel tag and the readout box. */}
-      <g transform={`rotate(${angle + 180})`}>
-        <line
-          x1="0"
-          y1="-3"
-          x2="0"
-          y2="-21.5"
-          className="stroke-accent-cool"
-          strokeWidth="0.9"
-          strokeDasharray="1.6 1.2"
-          strokeLinecap="round"
-        />
-        <polyline
-          points="-2,-18.8 0,-22.2 2,-18.8"
-          className="stroke-accent-cool"
-          strokeWidth="0.8"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </g>
-      {/* Forward azimuth — primary: a narrow, sharp navigation needle */}
-      <g transform={`rotate(${angle})`} filter={`url(#${needleShadowId})`}>
-        <polygon points="0,3 -1,7.2 0,6 1,7.2" className="fill-fg-dim/60" />
-        <polygon points="0,-30 -1.6,-9 0,-3.2 1.6,-9" className="fill-accent-hot" />
-        <polygon points="0,-30 0,-3.2 1.6,-9" className="fill-accent/55" />
-      </g>
-    </>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1297,49 +852,13 @@ function ThreeNorthsCard() {
 // GPS-Denied + conclusion
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * GPS-Denied station: the location check without GPS — an eye-level 3D
+ * observation and a printed map of one fictional terrain, with the three short
+ * reasons GPS may be unavailable underneath (LocationCheckActivity).
+ */
 function GpsDeniedCard() {
-  const items: { title: string; desc: string }[] = [
-    {
-      title: 'שיבוש אותות',
-      desc: 'שידורי הפרעה עלולים למנוע מהמכשיר לקלוט את אותות הלוויינים. הפגיעה היא ביכולת הקליטה באזור ההפרעה, ואינה מחייבת תקלה בלוויינים עצמם.',
-    },
-    {
-      title: 'חסימת קליטה',
-      desc: 'בתוך מבנים, מתחת לאדמה ובערוצים עמוקים, מכשולים עלולים לחסום את אותות הלוויינים או להחזיר אותם. כתוצאה מכך, המיקום עלול להיות לא מדויק או לא זמין.',
-    },
-    {
-      title: 'תקלה במכשיר או בסוללה',
-      desc: 'גם כשאותות הלוויינים זמינים, מכשיר תקול או סוללה שהתרוקנה מונעים שימוש בו. מפת נייר ומצפן מגנטי מאפשרים להמשיך לנווט ללא מקור חשמל.',
-    },
-  ];
-  // Static explanation block → a flat info card (no shadow), so the two interactive
-  // boards above stay the workspaces of this screen.
-  return (
-    <div className="surface p-5 sm:p-6">
-      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 lg:gap-8 items-stretch">
-        <div className="flex flex-col">
-          <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2">מגבלות הניווט באמצעות GPS</h3>
-          <p className="text-fg-muted text-base leading-relaxed">
-          GPS מסייע בקביעת המיקום, אך הדיוק והזמינות שלו תלויים בקליטת האותות ובתקינות המכשיר.
-          <br /><br />
-          המונח <strong className="text-fg">GPS-Denied</strong> מתאר סביבה שבה אי אפשר להסתמך על GPS לניווט. שימוש במפת נייר ובמצפן מגנטי, לצד זיהוי סימני שטח והערכת מרחק בספירת צעדים, מסייע לשמור על ההתמצאות ללא קליטת לוויינים.
-          </p>
-          <div aria-hidden className="min-h-5 flex-1" />
-          <div className="rounded-xl bg-bg-accent/60 px-4 pb-3 pt-4">
-            <GpsDeniedIllustration />
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          {items.map((it) => (
-            <div key={it.title} className="flex flex-1 flex-col justify-center rounded-xl bg-bg-accent/60 p-4">
-              <h4 className="text-base font-display font-bold text-fg mb-1">{it.title}</h4>
-              <p className="text-sm text-fg-muted leading-relaxed">{it.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <LocationCheckActivity />;
 }
 
 function ConclusionCard() {

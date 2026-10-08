@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>שיעור 6 — הצעות לעקרונות הניווט</title>
+<style>
+@font-face{font-family:Heebo;src:url('Heebo-Hebrew.woff2')}@font-face{font-family:Heebo;src:url('Heebo-Latin.woff2');unicode-range:U+0000-00FF}
+:root{--bg:#F3E9DC;--surface:#FFFFFF;--ink:#38432E;--muted:#4A5240;--border:#DCCDB2;--accent:#D97E2B;--panel:#F6EFE6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:16px/1.65 Heebo,Arial,sans-serif;color:#000}main{max-width:1290px;margin:24px auto 48px;padding-inline:24px}h1{font-size:28px;font-weight:800;line-height:1.2;margin:0 0 12px}h2{font-size:20px;margin:0 0 8px;font-weight:700}p{margin:0 0 12px}header{display:flex;gap:32px;justify-content:space-between;align-items:center}.intro{max-width:840px}a{color:var(--ink);text-underline-offset:4px}.download{padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;white-space:nowrap}nav{display:flex;gap:12px;margin-block:20px}button{font:700 16px Heebo,Arial;cursor:pointer;border:1px solid var(--border);background:var(--surface);padding:12px 20px;border-radius:12px;color:var(--ink);flex:1}button[aria-selected=true]{border-color:var(--accent);background:var(--panel);box-shadow:inset 0 -3px var(--accent)}button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}.brief{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:16px}.brief strong{color:#000}.small{font-size:16px;color:var(--muted)}figure{margin:0;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:var(--surface);box-shadow:0 6px 18px rgba(90,70,40,.07)}figure img{display:block;width:100%;height:auto}figcaption{padding:12px 20px;border-top:1px solid var(--border)}footer{padding-top:20px;color:var(--muted)}[hidden]{display:none}
+</style></head>
+<body><main>
+<header><div class="intro"><h1>שיעור 6 — ארבע הצעות לעקרונות הניווט</h1><p>הכיוון המומלץ: לקשר את המצפן, המפה והשטח למשימה ולמשוב — בהמשך לשפה של שיעור 2.</p><p class="small">מוקאפים סטטיים לבחירה. הפקדים בתוך התמונות אינם פעילים; המעבר בין ההצעות פעיל.</p></div><a class="download" href="review.md" download>האפיון למסירה לקלוד ↓</a></header>
+<nav role="tablist" aria-label="בחירת מוקאפ">
+<button id="tab-0" role="tab" aria-selected="true" aria-controls="panel" tabindex="0">1 · כיוון ליעד</button>
+<button id="tab-1" role="tab" aria-selected="false" aria-controls="panel" tabindex="-1">2 · כיוון חזרה</button>
+<button id="tab-2" role="tab" aria-selected="false" aria-controls="panel" tabindex="-1">3 · סוגי צפון</button>
+<button id="tab-3" role="tab" aria-selected="false" aria-controls="panel" tabindex="-1">4 · בדיקת מיקום</button>
+</nav>
+<section id="panel" role="tabpanel" aria-labelledby="tab-0" tabindex="0">
+<div class="brief"><div><h2 id="heading"></h2><p id="action"></p></div><div><p><strong>מה זה מוסיף מול הקיים?</strong></p><p id="benefit"></p><p class="small" id="scope"></p></div></div>
+<figure><img id="mockup" width="1421" height="1107" src="01-azimuth.png" alt=""><figcaption><a id="full" href="01-azimuth.png" target="_blank" rel="noopener">פתיחת המוקאפ בגודל מלא ↗</a> · <span id="caption"></span></figcaption></figure>
+</section>
+<footer>מומלץ להתחיל בתחנות 1–2 ולבחור אחר כך אם להוסיף 3–4. המפות ונתוני ההדגמה בדויים; במימוש יש להפיק את הגאומטריה מנתונים משותפים. <a href="review.md">סקירה, מצבים, משוב והנחות</a></footer>
+</main>
+<script>
+const concepts=[
+{file:'01-azimuth.png',title:'לאיזה כיוון נמצא היעד?',action:'מכוונים את המצפן אל B. המחט וקו הכיוון במפה משתנים יחד, והיעד מסומן גם במודל השטח. במצב תרגול התשובה נחשפת אחרי בדיקה.',benefit:'המחוון מקבל מטרה: הלומד מתרגם מספר לכיוון ממשי ורואה אם הבחירה תואמת ליעד.',scope:'מורכבות בינונית; גבוהה יותר אם מוסיפים מודל תלת־ממדי מסונכרן.',caption:'תחנה 1 · אזימוט ומשמעותו במרחב',alt:'מוקאפ תחנה 1: מפה ומודל שטח עם A ו־B, מצפן על 047 מעלות ופעולת בדיקת כיוון.'},
+{file:'02-back-azimuth.png',title:'הכיוון נכון. האם חזרתם לנקודת המוצא?',action:'בוחרים גם כיוון וגם מרחק. בדוגמה: 227° ו־450 מ׳ מחזירים לכיוון A, אך משאירים 50 מטרים עד הנקודה. אפשר לתקן ולבדוק שוב.',benefit:'הלומד רואה את הטעות שלו במרחב ומבחין בין אזימוט חוזר לבין חזרה למיקום.',scope:'קטע ישר במישור לימודי; תכנון ציר וספירת צעדים נשארים בחלק הבא.',caption:'תחנה 2 · כיוון נכון ומרחק קצר מדי',alt:'מוקאפ תחנה 2: קו חזרה כחול מ־B ל־C, כיוון 227 מעלות, מרחק 450 מטר ופער 50 מטר עד A.'},
+{file:'03-north-reference.png',title:'אותו יעד. צפון אחר. מספר אחר.',action:'מעבירים כיוון מהמפה למצפן. בתרגיל בלבד: צפון מגנטי 8° ממזרח לצפון הרשת, ולכן 047° במפה הופכים ל־039° במצפן.',benefit:'במקום החלפת הגדרה בלבד, רואים מדוע אותו כיוון פיזי מקבל מדידה מספרית שונה.',scope:'הנתון 8° הוא הדגמה. תרשים החצים בתמונה סכמטי; במימוש מחשבים את הזוויות.',caption:'תחנה 3 · שינוי נקודת הייחוס',alt:'מוקאפ תחנה 3: יעד A אל B נשאר קבוע, סוגי צפון לבחירה וקריאות 047 מעלות ברשת ו־039 מעלות במצפן.'},
+{file:'04-gps-denied.png',title:'אין GPS. מה עדיין אפשר לבדוק?',action:'בוחרים סימן בתצפית ומתאימים אותו למפה, ואז בוחנים אם גם הכיוון והמרחק מחזקים את הזיהוי. המיקום האחרון אינו מוצג כמיקום נוכחי.',benefit:'הסבר ה־GPS הופך למשימת הצלבת ראיות, בלי לגלות מיד את המיקום הנכון.',scope:'הכיוונים והמרחקים הסופיים ייקבעו לפי תרחיש עקבי; המספרים בתמונה הם פרטי המחשה.',caption:'תחנה 4 · השוואת ראיות במפה ובשטח',alt:'מוקאפ תחנה 4: תצפית של חורשה ורכס, מפה עם שני אזורי מיקום אפשריים ומיקום אחרון, ובחירת ראיות תומכות.'}
+];
+let current=0;const tabs=[...document.querySelectorAll('[role=tab]')];
+function show(i){current=i;const c=concepts[i];tabs.forEach((b,j)=>{b.setAttribute('aria-selected',String(j===i));b.tabIndex=j===i?0:-1});document.getElementById('panel').setAttribute('aria-labelledby','tab-'+i);for(const k of ['heading','action','benefit','scope','caption'])document.getElementById(k).textContent=k==='heading'?c.title:c[k];document.getElementById('mockup').src=c.file;document.getElementById('mockup').alt=c.alt;document.getElementById('full').href=c.file;}
+tabs.forEach((b,i)=>{b.addEventListener('click',()=>show(i));b.addEventListener('keydown',e=>{let next=i;if(e.key==='ArrowLeft')next=(i+1)%4;else if(e.key==='ArrowRight')next=(i+3)%4;else if(e.key==='Home')next=0;else if(e.key==='End')next=3;else return;e.preventDefault();show(next);tabs[next].focus()})});show(0);
+</script></body></html>

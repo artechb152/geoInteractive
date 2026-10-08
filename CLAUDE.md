@@ -5,7 +5,7 @@ This project must match the provided visual mockups as closely as possible ("pix
 ## Source of truth
 
 - Master mockup: @design/mockups/mockup.png (1402 × 1122 px — desktop design frame; measurements map ≈1:1 to CSS px)
-- Written spec with exact values: @design/docs/design-spec.md
+- Written spec with exact values: `design/docs/design-spec.md` — read it before any landing-page/homepage UI work (not auto-loaded).
 - Section crops for close comparison: `design/mockups/mockup-header.png`, `design/mockups/mockup-hero.png`, `design/mockups/mockup-section-1.png`, `design/mockups/mockup-footer.png`
 - Latest implementation screenshot for diffing: `design/screenshots/home-implemented-1440.png` / `design/screenshots/current.png`
 

@@ -7,13 +7,13 @@ import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
-// One generated terrain shown three ways (3D model / aerial photo / map) in a
-// single live canvas — client-only, and nothing loads until it nears the viewport.
+// One generated terrain shown three ways (3D model / aerial photo / map), plus
+// all of them together, in a single live canvas — client-only, and nothing loads until it nears the viewport.
 const TopographyTerrain3D = dynamic(() => import('./TopographyTerrain3D'), {
   ssr: false,
   loading: () => <div className="h-full min-h-[560px] w-full rounded-xl bg-bg-accent/40" />,
 });
-type View = '3d' | 'photo' | 'topo';
+type View = '3d' | 'photo' | 'topo' | 'all';
 const VIEWS: { id: View; label: string; icon: IconName; pros: string[]; cons: string[]; whatItIs: string; whyItMatters: string }[] = [
  {
 id: 'topo',
@@ -63,25 +63,42 @@ cons: [
  ],
 whyItMatters: 'המודל מסייע להכיר את השטח לפני היציאה אליו. בתדרוך אפשר לבחון באמצעותו את מבנה השטח ולהמחיש את המסלול המתוכנן.',
  },
+ {
+id: 'all',
+label: 'כל התצוגות יחד',
+icon: 'layers',
+whatItIs: 'המודל התלת־ממדי מורם מעל המפה הטופוגרפית של אותו שטח, וכל נקודה במודל מתאימה לנקודה במפה. הצביעו על פרט בשטח כדי לראות אותו בשתי השכבות.',
+pros: [
+ 'מקשרת בין קווי הגובה במפה לבין צורת השטח',
+ 'מאפשרת לזהות את אותו פרט בכל אחת מהתצוגות'
+ ],
+cons: [
+ 'ריבוי השכבות עלול להעמיס על התצוגה',
+ 'השילוב מחייב שכל מקורות המידע יהיו מעודכנים ומתואמים'
+ ],
+whyItMatters: 'בתכנון משלבים בין מקורות המידע: המפה למדידה ולניווט, התצלום לזיהוי פרטים והמודל להמחשת התבליט. השילוב ביניהם מספק תמונה שלמה של השטח.',
+ },
 ];
 /** Describe the simulated terrain shown in each view. */
 const ALTS: Record<View, string> = {
   '3d': 'מודל תלת־ממדי הממחיש את צורת פני השטח ואת הפרשי הגובה',
   photo: 'הדמיה של תצלום אוויר המציג את פני השטח במבט מלמעלה',
   topo: 'מפה טופוגרפית של השטח המודגם, ובה קווי גובה וסימנים מוסכמים',
+  all: 'המודל התלת־ממדי של השטח מורם מעל המפה הטופוגרפית שלו',
 };
 export function TopographyScene() {
   const [idx, setIdx] = useState(0); // default: מפה טופוגרפית — הרצף מתקדם מהמפה אל המודל התלת־ממדי
-  const [stacked, setStacked] = useState(false); // "כל התצוגות יחד": the model lifted off its map
+  // The single view last shown — its layer stays highlighted while "all together" is open.
+  const [lastSingle, setLastSingle] = useState<Exclude<View, 'all'>>('topo');
   const reduce = useReducedMotion();
-  // Choosing a view — tab, pager, dot, arrow key or a layer of the stack —
-  // always shows just that view: it leaves "all together".
   const select = (i: number) => {
     setIdx(i);
-    setStacked(false);
+    const id = VIEWS[i].id;
+    if (id !== 'all') setLastSingle(id);
   };
   const total = VIEWS.length;
   const meta = VIEWS[idx];
+  const stacked = meta.id === 'all'; // "כל התצוגות יחד": the model lifted off its map
   const isFirst = idx === 0;
   const isLast = idx === total - 1;
   const uid = useId();
@@ -115,13 +132,13 @@ export function TopographyScene() {
       />
 
       <div className="mb-12" onKeyDown={onKeyDown}>
-        {/* Segmented view switcher — the three views are directly selectable.
+        {/* Segmented view switcher — the four views are directly selectable.
             The running number (formerly an absolute "01" badge that overlapped
             the card's corner) now lives inside each segment. */}
         <div
           role="tablist"
           aria-label="ניווט בין תצוגות"
-          className="mx-auto mb-4 flex max-w-3xl flex-col gap-2 sm:flex-row"
+          className="mx-auto mb-4 flex max-w-4xl flex-col gap-2 sm:flex-row"
         >
           {VIEWS.map((v, i) => {
             const isActive = i === idx;
@@ -165,7 +182,7 @@ export function TopographyScene() {
         >
           <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8">
             <div className="flex min-w-0 flex-col">
-              {/* All three texts share one grid cell, so the column — and the
+              {/* All four texts share one grid cell, so the column — and the
                   viewer beside it — keeps the height of the tallest view:
                   switching never makes the layout jump. */}
               <div className="grid [&>*]:[grid-area:1/1]">
@@ -313,9 +330,8 @@ export function TopographyScene() {
             <div className="relative min-h-[560px]">
               <div className="absolute inset-0">
                 <TopographyTerrain3D
-                  view={meta.id}
+                  view={meta.id === 'all' ? lastSingle : meta.id}
                   stacked={stacked}
-                  onToggleStacked={() => setStacked((s) => !s)}
                   onSelectView={(v) => select(VIEWS.findIndex((x) => x.id === v))}
                   ariaLabel={ALTS[meta.id]}
                 />

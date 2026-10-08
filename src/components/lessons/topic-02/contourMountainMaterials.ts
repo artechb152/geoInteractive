@@ -7,7 +7,7 @@ import * as THREE from 'three';
  * The terrain is shaded like a game terrain rather than with one unique
  * texture: four tiling CC0 photo materials from Poly Haven (grass, dry
  * ground, rock, woodland floor) are blended per pixel by a baked splat map,
- * then modulated by a baked macro map (cavity AO + tree shadows). Every layer
+ * then modulated by a baked macro map (cavity AO). Every layer
  * is sampled triplanar in the slice's OBJECT space, so steep faces don't
  * stretch and textures stay glued to a slice while it is lifted. Detail
  * normals use the UDN triplanar blend and are converted straight to view
@@ -149,7 +149,7 @@ export function createTerrainMaterial(tex: TerrainTextures, halfUnits: number, m
   return mat;
 }
 
-/** Single-texture triplanar material (boulders, diorama walls). */
+/** Single-texture triplanar material (diorama walls). */
 export function createTriplanarMaterial(
   diffuse: THREE.Texture,
   normalMap: THREE.Texture,
@@ -190,53 +190,6 @@ export function createTriplanarMaterial(
       .replace(
         '#include <normal_fragment_maps>',
         /* glsl */ `normal = normalize((viewMatrix * vec4(cmTriNormal(uTN, cmP, cmN, cmBw, 1.2), 0.0)).xyz);`,
-      );
-  };
-  return mat;
-}
-
-/** Alpha-tested leaf cards; per-tree tint arrives as vertex colour. */
-export function createLeavesMaterial(leaves: THREE.Texture) {
-  return new THREE.MeshStandardMaterial({
-    map: leaves,
-    alphaTest: 0.45,
-    alphaToCoverage: true,
-    side: THREE.DoubleSide,
-    vertexColors: true,
-    roughness: 0.82,
-    metalness: 0,
-  });
-}
-
-/**
- * Grass tufts: alpha-tested cards that dissolve with distance, so they add
- * blades when the learner zooms in and cost nothing to the eye from afar.
- */
-export function createGrassMaterial(grass: THREE.Texture, fadeNear: number, fadeFar: number) {
-  const mat = new THREE.MeshStandardMaterial({
-    map: grass,
-    alphaTest: 0.5,
-    alphaToCoverage: true,
-    side: THREE.DoubleSide,
-    vertexColors: true,
-    roughness: 0.9,
-    metalness: 0,
-  });
-  mat.customProgramCacheKey = () => 'contour-mountain-grass';
-  mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uFadeNear = { value: fadeNear };
-    shader.uniforms.uFadeFar = { value: fadeFar };
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying float vCmDist;')
-      .replace(
-        '#include <project_vertex>',
-        '#include <project_vertex>\nvCmDist = length((modelMatrix * vec4(transformed, 1.0)).xyz - cameraPosition);',
-      );
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vCmDist;\nuniform float uFadeNear, uFadeFar;')
-      .replace(
-        '#include <alphatest_fragment>',
-        'diffuseColor.a *= 1.0 - smoothstep(uFadeNear, uFadeFar, vCmDist);\n#include <alphatest_fragment>',
       );
   };
   return mat;

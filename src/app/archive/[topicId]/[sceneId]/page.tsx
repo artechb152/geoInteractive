@@ -6,6 +6,7 @@ import { ArchiveGate } from '@/components/archive/ArchiveGate';
 import { getLesson } from '@/lib/lessons';
 import { archivedScenes } from '@/lib/lesson-scenes';
 import { TacticalTerrainScene } from '@/components/lessons/topic-03/TacticalTerrainScene';
+import { GeologyScene } from '@/components/lessons/topic-02/GeologyScene';
 import { TopographySceneV1 } from '@/components/lessons/topic-02/TopographySceneV1';
 
 /**
@@ -15,6 +16,7 @@ import { TopographySceneV1 } from '@/components/lessons/topic-02/TopographyScene
 const SCENE_COMPONENTS: Record<string, ComponentType> = {
   'topic-03/tacticalterrain': TacticalTerrainScene,
   'topic-02/topography-v1': TopographySceneV1,
+  'topic-02/geology': GeologyScene,
 };
 
 export const dynamicParams = false;

@@ -1,0 +1,5 @@
+# Final revision prompt for 02-linked-map-v2.png
+
+Mode: built-in image_gen; referenced image: 02-linked-map.png.
+
+Use case: ui-mockup, precise-object-edit. This is a TARGET image, not a style reference. Preserve the attached Hebrew desktop UI mockup pixel layout, palette, all text and numbers, sidebar, header, map artwork, compass geometry, fonts, shadows, toggles and controls exactly. Change ONLY the horizontal range slider at lower right, beneath the 047° numeric input: its knob and orange filled section currently erroneously sit ~37 percent across. Move the knob left to EXACTLY 13.06 percent of the existing track (047 / 360), so just a short orange filled segment starts at the leftmost track endpoint and ends at the knob. Keep total track width and its two 0° and 360° endpoint labels unchanged, and keep the right remainder neutral beige. At the displayed image scale track runs approximately x805 to1095, so knob center should be x843. No other changes. Output the full original mockup at the same framing and size.

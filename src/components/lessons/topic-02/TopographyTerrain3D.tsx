@@ -39,7 +39,7 @@ import { MAP } from './topographyTerrainStyle';
  *          map (the sheet's own SVG, rasterized). Dashed guides drop from the
  *          summit and both building groups to the map; hovering either layer
  *          marks the same spot, its elevation and its contour on both.
- *          Choosing a view (tab, pager, a layer) leaves the stack.
+ *          It is the fourth tab in TopographyScene; choosing a layer opens that view.
  *
  * Registration: sheetRect() (topographyLayout) is the only place that decides
  * where the neatline sits in the container; the top-down camera goal and the
@@ -810,13 +810,11 @@ function Fallback() {
 export default function TopographyTerrain3D({
   view,
   stacked,
-  onToggleStacked,
   onSelectView,
   ariaLabel,
 }: {
   view: TopoView;
   stacked: boolean;
-  onToggleStacked: () => void;
   onSelectView: (v: TopoView) => void;
   /** The active view's description (the former image alt), read instead of the canvas. */
   ariaLabel: string;
@@ -984,17 +982,6 @@ export default function TopographyTerrain3D({
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
           {fullscreen ? <path d="M6 1v5H1M10 1v5h5M6 15v-5H1M10 15v-5h5" /> : <path d="M1 6V1h5M15 6V1h-5M1 10v5h5M15 10v5h-5" />}
         </svg>
-      </button>
-      <button
-        type="button"
-        aria-pressed={stacked}
-        onClick={onToggleStacked}
-        className={cn(
-          'absolute top-2 end-2 z-10 rounded-[3px] border bg-bg-elevated/95 px-2.5 py-1 text-xs font-display font-bold transition-colors cursor-pointer',
-          stacked ? 'border-accent text-fg' : 'border-border text-fg-muted hover:border-accent/50 hover:text-fg',
-        )}
-      >
-        כל התצוגות יחד
       </button>
     </div>
   );

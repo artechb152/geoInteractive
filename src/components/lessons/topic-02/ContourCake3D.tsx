@@ -9,21 +9,15 @@ import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
 import { MOUNTAIN } from './contourMountain.data';
 import { ACCENT, CONTOUR_INK, CUT_COLOR, INDEX_LEVEL_M } from './contourMountainStyle';
-import {
-  createGrassMaterial,
-  createLeavesMaterial,
-  createTerrainMaterial,
-  createTriplanarMaterial,
-} from './contourMountainMaterials';
+import { createTerrainMaterial, createTriplanarMaterial } from './contourMountainMaterials';
 
 /**
  * The "mountain as a layer cake" diorama, rendered like a game scene: a
  * realistic mountain sculpted in Blender (scripts/blender/build_contour_mountain.py)
- * — erosion ravines, limestone bands, ~1,150 trees, boulders and grass — pre-cut
- * into five horizontal slices at the contour heights (10–50 m). Terrain uses
- * splat-blended CC0 photo textures (contourMountainMaterials.ts), lit by a CC0
- * HDRI sky and a shadow-casting sun, with ambient occlusion and ACES filmic
- * tone mapping. Everything planted on a slice lifts with it.
+ * — erosion ravines, limestone bands, scree — pre-cut into five horizontal
+ * slices at the contour heights (10–50 m). Terrain uses splat-blended CC0
+ * photo textures (contourMountainMaterials.ts), lit by a CC0 HDRI sky and a
+ * shadow-casting sun, with ambient occlusion and ACES filmic tone mapping.
  *
  * Three views, driven from ContoursScene:
  *   whole  — the assembled mountain with its contour lines on the surface.
@@ -37,7 +31,7 @@ import {
  * contourMountain.data.ts (the same iso-lines the map draws). Hovering or
  * dragging a slice sets `activeRing`, which lights the map band too.
  *
- * ~20 MB of assets, so nothing loads until the diorama scrolls into view, and
+ * ~2 MB of assets, so nothing loads until the diorama scrolls into view, and
  * frames render on demand only. Rendered client-only via `next/dynamic`.
  */
 
@@ -59,8 +53,6 @@ const TEXTURE_URLS = {
   rockN: `${ASSETS}/textures/rock_nor.jpg`,
   forestD: `${ASSETS}/textures/forest_diff.jpg`,
   forestN: `${ASSETS}/textures/forest_nor.jpg`,
-  leaves: `${ASSETS}/textures/leaves.png`,
-  grassCard: `${ASSETS}/textures/grass.png`,
 };
 
 /** Panel colour behind the canvas (the scene card is bg-elevated white). */
@@ -238,7 +230,7 @@ function useMountainParts(): Parts {
 
   return useMemo(() => {
     const aniso = gl.capabilities.getMaxAnisotropy();
-    const color = [tex.grassD, tex.dryD, tex.rockD, tex.forestD, tex.leaves, tex.grassCard];
+    const color = [tex.grassD, tex.dryD, tex.rockD, tex.forestD];
     const data = [tex.grassN, tex.dryN, tex.rockN, tex.forestN, tex.splat, tex.macro];
     for (const t of [...color, ...data]) {
       t.colorSpace = color.includes(t) ? THREE.SRGBColorSpace : THREE.NoColorSpace;
@@ -246,8 +238,6 @@ function useMountainParts(): Parts {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
     }
     for (const t of [tex.splat, tex.macro]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-    // Card textures are addressed by the glTF's own UVs (v points down).
-    for (const t of [tex.leaves, tex.grassCard]) t.flipY = false;
     for (const t of [...color, ...data]) t.needsUpdate = true;
 
     const terrainTextures = {
@@ -274,14 +264,6 @@ function useMountainParts(): Parts {
     const wall = createTriplanarMaterial(tex.dryD, tex.dryN, {
       tileMeters: 5, metersPerUnit: MPU, tint: [0.62, 0.52, 0.42], saturation: 0.8, key: 'wall',
     });
-    const boulder = createTriplanarMaterial(tex.rockD, tex.rockN, {
-      tileMeters: 3, metersPerUnit: MPU, tint: [1.05, 1.03, 1.0], saturation: 0.25, vertexColors: true, key: 'boulder',
-    });
-    const leaves = createLeavesMaterial(tex.leaves);
-    const leafCore = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
-    const bark = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
-    // Tufts appear within ~110 m of the camera and are fully grown by ~45 m.
-    const grass = createGrassMaterial(tex.grassCard, 45 / MPU, 110 / MPU);
 
     const root = scene.clone(true);
     const dress = (obj: THREE.Object3D) => {
@@ -289,10 +271,8 @@ function useMountainParts(): Parts {
       obj.traverse((child) => {
         if (!(child instanceof THREE.Mesh)) return;
         const name = (child.material as THREE.Material).name;
-        child.material =
-          ({ Terrain: terrain, Cut: cut, Wall: wall, Boulder: boulder, Leaves: leaves, LeafCore: leafCore, Bark: bark, Grass: grass } as Record<string, THREE.Material>)[name] ??
-          child.material;
-        child.castShadow = name !== 'Grass';
+        child.material = ({ Terrain: terrain, Cut: cut, Wall: wall } as Record<string, THREE.Material>)[name] ?? child.material;
+        child.castShadow = true;
         child.receiveShadow = true;
       });
       return { obj, terrain };
@@ -576,7 +556,7 @@ export default function ContourCake3D({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    // Nothing (≈20 MB) loads until the diorama nears the viewport, and the
+    // Nothing (≈2 MB) loads until the diorama nears the viewport, and the
     // render loop is paused whenever it is scrolled away.
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -646,8 +626,8 @@ export default function ContourCake3D({
               white shows through untouched by the filmic tone mapping. */}
           <hemisphereLight color="#FFF4E0" groundColor="#6B6A45" intensity={0.25} />
           {/* The sun: high and front-left of the default camera, so the faces
-              the learner sees are lit and every tree and slice casts a
-              shadow onto the ground or the layer below. */}
+              the learner sees are lit and every slice casts a shadow onto
+              the ground or the layer below. */}
           <directionalLight
             position={[-3.4, 6.2, 4.2]}
             intensity={2.0}
@@ -667,7 +647,7 @@ export default function ContourCake3D({
 
           <Suspense fallback={null}>
             <Environment files={HDR_URL} environmentIntensity={0.7} />
-            {/* BVH-accelerated raycasting: hover/drag hit-tests ~600k triangles
+            {/* BVH-accelerated raycasting: hover/drag hit-tests ~230k triangles
                 on every pointer move, which would otherwise stall the frame. */}
             <Bvh firstHitOnly>
               <Mountain

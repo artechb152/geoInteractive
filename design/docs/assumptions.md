@@ -1337,3 +1337,122 @@ Facts for the content owner to verify (they do not affect the drawings):
   - `--only metamorphic` skips the sediment scene's slow precomputed fields.
   - Both scenes write their AUX maps through the shared `put16` / `writeAux` helpers.
   - Re-rendering gives byte-identical `sediment-*` files and byte-identical forces images and `exogenicOverlay.data.ts`.
+
+## 2026-10-08 — Lesson 2 contours (#scene-contours): lighter mountain, the 2D map becomes a printed topographic map
+
+- **Load weight 22.2 MB → 1.8 MB** (+0.25 MB Draco decoder), by request. All of it comes from `build_contour_mountain.py`; re-run the script, don't hand-edit assets.
+  - **Vegetation dropped** (`PLANTS = False`). The trees, boulders and grass tufts were 4.3 MB of the 4.8 MB GLB, plus `leaves.png`/`grass.png`. The tree-shadow term in `macro.jpg` and the leaf litter in the splat go with them. The flag brings it all back.
+  - **GLB without UVs or vertex colours:** every runtime shader works from object-space position. Result: 0.37 MB, ~229k triangles.
+  - **Photo textures at 512²** (from 2048²). One tile is 4–10 m, so even the closest zoom at 1440 px stays sharp. WebP was tested: Blender's encoder saved only ~5% over JPEG, so JPEG was kept.
+  - **Splat at 512²** (0.43 m/px), macro at 1024². PNGs now use Paeth filtering.
+  - **Sky HDR at 256×128.** It only lights matte ground.
+  - **`contourMountain.data.ts` is byte-identical:** the contours come from the same terrain triangles as before.
+  - **3D views are otherwise unchanged,** including "מבט מלמעלה" (the realistic model seen from overhead). An interim version that turned the 3D top view into a flat map was reverted on request.
+- **The 2D map (left column) is a printed topographic map, not a picture of a 3D hill** (request: no illusion of a 2D rendering of something 3D).
+  - **Removed:** the hypsometric band fills and the shaded-relief overlay. The relief made the map read as a lit 3D surface. `hillshade.png`, its generator and `BAND_COLORS` are gone.
+  - **Drawn in the lesson's existing map language** (`topographyTerrainStyle` `MAP`, as on the topography sheet; no new colours):
+    - paper, a faint 50 m grid and an ink neatline;
+    - brown contours, with the 50 m index contour heavier ("קו גובה ראשי", as defined in this scene's glossary);
+    - contour numbers set into their lines on paper plates, in contour brown;
+    - the summit as a spot height (ink triangle + 59);
+    - a 0–50 m scale bar spanning exactly one grid square.
+  - **Kept:** north arrow and the steep/gentle rulers.
+  - **Hover:** still lights the band (accent @30% on paper) and the 3D slice.
+- **Legend:** the band-colour legend (which also hovered slices) became a map key: "קו גובה · כל 10 מ׳", "קו גובה ראשי", "נקודת גובה".
+  - "נקודת גובה" and the interval note are new strings; the terms are standard map vocabulary.
+  - Swatch-hover was dropped with the bands. Hovering the map itself still links to the model.
+
+## 2026-10-08 — Topic 06 principles: proposed interaction mockups
+
+- User requested a comparison with lesson 2 and concepts to choose before developing with Claude. No live lesson components were changed.
+- Review package: `design/mockups/topic-06-principles-2026-10-08/`. Four proposed stations inside the existing principles subsection; this new internal sequence is a proposal, not an approved product change.
+- Built-in Imagegen mockups preserve the existing course palette and desktop frame direction. Generated images are conceptual and do not establish new tokens or exact geometry.
+- Lesson 2's current local implementation is the visual reference. It has pre-existing uncommitted changes; those were preserved.
+- The landscape is fictional. Final implementation must derive every view from one shared dataset; generated terrain arrangements and map rulers are not authoritative.
+- Back-azimuth exercise assumes one horizontal straight segment: outbound 047 degrees / 500 m, return 227 degrees / 450 m leaves 50 m. Corrected return is 500 m.
+- North-reference exercise defines magnetic north 8 degrees east of grid north, giving 047 grid / 039 magnetic. This is hypothetical, not local/current declination. True north must be explicitly defined before implementing the three-arrow diagram.
+- GPS concept's generated 315-degree / 850-m readouts are illustrative only; scenario values must be authored and verified before development. No fabricated certainty score is proposed.
+- Static mockups do not validate interactive behavior, numerical geometry, exact typography, AAA contrast or 3D performance. The review document specifies state behavior, keyboard alternatives and geometry requirements for future work.
+
+### 2026-10-08 — מוקאפים לטכניקות ניווט בשיעור 6
+
+- הבקשה היא להצעות ולמוקאפים בלבד, לפני בחירת פיתוח עם קלוד; קוד השיעורים לא שונה.
+- התבליט, המיקומים והמספרים בחבילה החדשה סינתטיים. המפה והתבליט נגזרים משדה גבהים משותף; נכונות תרגילי האימות עוד דורשת תיקוף בהפקת המוצר.
+- נבדק אזור תוכן ברוחב 1440px. בשילוב עתידי יש להתאים אותו לרוחב הפנוי לצד תוכן העניינים הקיים; לא נעשתה התאמת מובייל.
+- ניווט עיוור ותחקור השגיאות מדגימים מצבים; התחקור כרגע מבוסס על דוגמה קבועה, לא על היסטוריית התנועה האישית במסך הקודם. חישובי המרחק הם במישור אופקי, ללא תיקון לאורך מסלול על מדרונות.
+- שפת הממשק נשענת על הטוקנים הקיימים בלבד. הוחזר שימוש בחומר קרקע קיים, אך נוצר תבליט חדש ולא הועתק מודל או מסך משיעור 2.
+- פירוט: `design/mockups/topic-06-combatnav-2026-10-08/brief.md`.
+
+### 2026-10-08 — עדכון המוקאפים בעקבות משוב: הוראה מודרכת ובהירה
+
+- המשתמש ביקש להפחית את החום ולהחליף בדיקת ידע והחלטות בליווי יד ביד. הגרסה בתיקיית topic-06-combatnav-2026-10-08 עודכנה בהתאם, כולל הבריף.
+- נעשה שימוש בנייר בהיר ובמרווה קיימים; לא נוספו טוקנים. טקסטורת הקרקע משמשת לתבליט עדין ולא לצבע חום.
+- ארבע ההמחשות הן דוגמאות פתורות עם צעדים שניתן לחזור אליהם. הן אינן שואלות תשובות או מעריכות ביצוע. נתוני התנועה סינתטיים.
+- השינוי מוגבל למוקאפים ולמסמך ההנחות; קוד השיעור הקיים לא עודכן.
+
+## 2026-10-08 — Topic 06 principles: location check without GPS (station 4, developed)
+
+Brief: `design/mockups/topic-06-principles-2026-10-08/claude-location-check-prompt.md`; mockup `04-gps-denied.png`. Replaces the body of `GpsDeniedCard` in `PrinciplesScene.tsx`; the rest of the lesson is unchanged.
+
+- **One world, one source.** `locationCheckScenario.ts` (points, polygons, road control points, readings) → `locationCheckTerrain.ts` (5 m height grid of the brief's H(E,N), 281 × 211, every cell split SW–NE; `heightAt` interpolates on those triangles; contours by marching triangles on the same triangles; trees, scrub and road centre-lines). The 3D mesh, the map's contours, tree symbols and roads, every label anchor and the pick test read these. The height field is the brief's, unmodified; contours lie on the mesh to ~1e-13 m (test).
+- **The fork from the observation point.** Seen from P1, F sits on the skyline brow and the slope below it is seen at a ~2° grazing angle. A road arm shows only where it runs roughly toward the observer (its 8 m width then faces the eye); arms that traverse the slope collapse to hairlines (tried: a Y with a stem and two traverses — the traverses vanished). Final shape: the main road arrives at F from the south and the branch leaves west-south-west before turning north round the west shoulder — two tracks meeting at the crest; the main road's continuation crosses the crest and is hidden from P1. F, the end points and all measurements are unchanged; only intermediate control points were chosen. On the map the junction is a clear three-arm Y.
+- **Vegetation is a world-level choice, documented:** grove trees 10.5–14.5 m with crowns 3.4–4.8 m (ellipsoids from ~3 m), so G1's crowns clear the low rise ~150 m in front of P1 that hides G1's ground (all 56 G1 crowns visible — test). Scrub (≤ 1.2 m) and near-field grass tufts (≤ 0.6 m) are ground detail below the map's threshold, deterministic, on `heightAt`; scrub is kept out of the 306°–336° sight corridor to G1 within 340 m so it does not hide those crowns.
+- **Beyond the sheet** the 3D apron samples the same generator out to 7 km, under haze, for a horizon; it is not mapped. No vertical exaggeration (VE = 1); no plinth.
+- **Camera:** fixed at P1, ground + 1.7 m; turn and zoom only (yaw −90°…+90°, pitch ±15°, HFOV 30°–100°); opens at yaw 0, pitch 0, HFOV 100°; vertical FOV from the frame aspect (680 : 264). "הצגת המזלג בתצפית" faces 043° at F's elevation and zooms to 45°.
+- **Heading tape** shows view bearings; the view yaw is labelled "כיוון המבט" (not the reading). The compass reading is a marker "מזלג 043°" whose dashed line ends on F; after a check with a mismatched direction a second marker shows the hypothesis' predicted bearing (e.g. "צפוי מאזור 2 008°") dropping to the horizon.
+- **Evaluation:** missing selections → a list of the missing steps (no verdict); all selections but an inactive evidence item → "חסר מידע להכרעה"; any contradiction (wrong grove pair, direction off by > 5°, distance outside 260–340 m) → "יש סימן שאינו מתאים להשערה"; success only for the G1↔G1 pair with both evidence items consistent. The candidate id is never compared directly. A changed selection voids the snapshot.
+- **Colours (existing tokens only):** matched grove = `accent-cool` (as the mockup's blue, in both views); selected area and selections = `accent`; measured azimuth = `accent-hot` (as the compass above); success = `brand`. Map colours are lesson 2's `MAP` (`topographyTerrainStyle.ts`). Text in the lesson-content system: 16 px black body; map labels ≈ 12–16 px at 1440.
+- **Ground textures:** the four Poly Haven CC0 photo materials of lesson 2's contour mountain (`aerial_grass_rock`, `dry_ground_rocks`, `cliff_side`, `forest_leaves_02`) copied to `public/assets/lessons/topic06/location-check/textures/` (lesson 2's files untouched). Their luminance gives detail; an explicit palette sets the colour (raw, they average to orange at eye-level grazing angles). Sun SSE, 33°; the shadow map is drawn once (static world).
+- **No WebGL:** `observation-north.jpg` is rendered from the live canvas at the opening look by `scripts/qa/shot-location-check.mjs --capture-fallback`; regenerate it whenever the world changes. Lists, map, check and feedback work in full without WebGL.
+- **Departures from the mockup (on purpose):** 315° / 850 m replaced by the scenario's 043° / 300 m; no station tabs (only station 4 is developed); the mockup's three evidence checkboxes became the step lists (grove matching is a selection) plus two evidence toggles; the compass dial in the reading card is replaced by the heading tape in the view; the photo is the live 3D view; the mockup's buildings and orchards are not in the scenario data, so they are not drawn.
+- **GPS reasons:** the brief's three titles; descriptions reuse the lesson's existing approved text (the battery item reworded to "סוללה ריקה"). `GpsDeniedIllustration` in `PrinciplesVisuals.tsx` is now unused and left in place.
+- ESLint is not configured in the repo (`next lint` asks for setup), so no lint gate ran.
+
+### 2026-10-08 — Location check, redesign: one-screen decision task
+
+Supersedes the layout of the entry above (world, map, measurements and thresholds unchanged).
+
+- **Task:** a decision between two hypotheses — "איפה אתם נמצאים — באזור 1 או באזור 2?" with a "GPS לא זמין" tag. Three choices only (grove in the view, grove on the map, area). Both measurements (043° to the fork, ≈ 300 m paced) are always part of the check; the evidence checkboxes and the "insufficient" verdict are gone from the UI and from `locationCheckState`.
+- **Layout (1440 × 1122, card aligned under the site header):** task + measurements on top; observation (right) and map (left) side by side at one height — the grid's column widths follow the two aspects (4:3 and the map frame's ≈ 1.32), so the map is never stretched; each view's choice under it; area choice, check and a fixed 140 px feedback box at the bottom. Measured: card 762 px (84–846), observation 496 × 372, map 492 × 374; no part outside the viewport, no overlaps, body text 16 px.
+- **Opening view:** yaw −10°, pitch 0°, HFOV 78° (vertical FOV from the frame, ≈ 62.5° at 4:3). Both groves need ≈ 72° of width, so a 4:3 frame necessarily shows much sky and foreground; the fork (043°) is off-frame right, reached with "הצג את מזלג הדרך" (turns the camera only). "Left"/"right" name the groves as seen in the opening view and never change with the camera.
+- **Foreground detail added to fill that frame honestly:** denser low garrigue within 140 m of the observer, loose stones within 90 m, denser grass tufts, and cumulus in the sky. All deterministic, on `heightAt`, below the map's threshold (no map symbol). Scrub in the sight corridor to the left grove is kept only where its top stays below the eye line (test).
+- **Map frame:** thin collar (northings west, eastings south); scale bar and north arrow on plates in the SW and NE corners of the sheet; the legend moved to an on-demand popover ("מקרא"), including the check-result lines. Labels re-sized for the smaller sheet (≈ 13–16 px).
+- **Feedback:** a verdict line, at most two lines of explanation, three evidence marks (חורשה / כיוון / מרחק), and "פירוט" on demand. All numbers come from the evaluation. The GPS reasons moved to a modal help dialog ("מדוע GPS לא זמין?").
+- **Fallback:** `observation-north.jpg` regenerated from the live canvas at the new opening look, 992 × 744 (4:3, 2×).
+
+### 2026-10-08 — Location check, simplified to one decision (lesson 6)
+
+- The task is one choice: area 1 or area 2 (on the map, by the halo or the name plate, or with the buttons). The grove matching (picking in the 3D view, the grove buttons, the grove term in the evaluation and the feedback) is removed; the groves stay as landmarks in both views. `evaluate()` = direction fits ∧ distance fits, nothing else; coordinates and thresholds unchanged (both areas 300 m from the last known position; bearings 043° vs 008°, tolerance ±5°, range 260–340 m).
+- Choosing an area draws, before any check and in plain ink only, the arrow from the last known position with its distance and the arrow from the area to the road split with its bearing (the same `directionCheck` / `distanceCheck` values the check uses). The check adds the measured bearing (dashed), the gap and the paced-distance band; changing the area removes them and shows the new area's neutral values with "הבחירה השתנתה — בדקו שוב".
+- Assumed: the map tools (מקרא, מסך מלא) keep their row under the map; nothing replaces the removed grove rows, so the card height is unchanged (762 px at 1440 × 1122). Value plates are offset from their own line by the plate's size; once checked, the captioned "במפה" plate keeps the neutral plate's centre and rests on its line (as before).
+- Wording: "התפצלות הדרך" everywhere; "מזלג" no longer appears in the activity (QA checks the DOM).
+
+### 2026-10-08 — Compass concept mockups for selection (lesson 6)
+
+- Deliverables and behavior brief: `design/mockups/compass-concepts/claude-code-brief.md`; current proposal images after latest user feedback: `01-instrument-realistic.png`, `02-linked-map-realistic.png`, `03-guided-practice-realistic.png`. The user found the flat version too simple and asked for realistic visual richness closer to the other illustrations. Current direction: matte olive instrument body, fine glass, physical material detail and restrained contact shadow, with precise live educational bearing overlays. Supersedes both flat and illustrative gold-bezel proposals; not final selection or desktop pixel-fidelity sign-off.
+- Assumed scope: only the azimuth explorer board. Generated page chrome, breadcrumbs and title variations are contextual framing; keep the existing site shell and lesson header when implementing.
+- Concept 2 map is fictional and north-up. Bearings are calculated from one coordinate system; changing bearing through controls retains target distance. Map scale must be computed from world units if shown; generated map artwork and scale are not geographic data.
+- Concept 3 proposes a ±2° success tolerance, subject to selection-stage confirmation. Its depicted 312° against a 315° target is a hint state, not success. Revealing the 3° correction is tied to the hint action in implementation.
+- No new color tokens. The existing lesson tokens are authoritative over sampled image colors. The compass direction pointer is an azimuth control, distinct from a magnetic north needle. Angle geometry and slider positions must be calculated, not traced from generated raster pixels.
+
+### 2026-10-08 — Location check: the road split reads in 3D (lesson 6)
+
+- Coordinates, road centre-lines, the shared 8 m road width and the height field are unchanged. What changed is how the road is drawn, which scrub stands in front of it, and the framing of "הראו את התפצלות הדרך".
+- **Road material:** the 8 m surface is pale compacted limestone dust (even, little texture, nearly flat shading normal) instead of a dust tone close to the dry grass. Each side has a 2 m band of darker, denser growth (run-off from the track), the 3D counterpart of the map's road casing (8 + 4 m). It is drawn from a third mask channel (B) with the same centre-lines. The mask now gets the renderer's full anisotropic filtering, since the arms are seen obliquely.
+- **Occlusion:** scrub clumps that would hide part of a road surface from the observation eye are left out (`hidesRoadFromEye`, pure sight-line geometry on `heightAt`). That removed 124 of 9443 clumps, all beside the roads.
+- **Framing:** the split is 440 m away, and at the old 45° field of view the south arm was 1.4–1.8 px wide in the 496 px panel. The button now frames it at the narrowest field of view (30°), where both arms are ≥ 2 px for their first 100 m (unit test). In the rendered frame, each arm is 1.28–1.56× brighter than the ground beside it at all sample points (QA, real pixels, normal panel size).
+- **Marker:** the measured-bearing drop line now stops at its ring instead of running into the junction.
+- **Assumed / limit:** seen from the observation point, the main road's continuation beyond F drops behind the crest within about 25 m. The split therefore reads as two arms meeting at the marked point on the crest (Λ); the third arm cannot be shown without changing the geometry.
+- `observation-north.jpg` (no-WebGL picture) regenerated from the same camera, 992 × 744.
+
+### 2026-10-08 — "מצפן ומפה" implemented (lesson 6, AzimuthExplorer)
+
+- Reference: `design/mockups/compass-concepts/02-linked-map-selected.png` + `claude-selected-compass-prompt.md`. One control (the 0–359° slider, LTR, opens at 47°); the compass and the map are passive. Removed: the draggable dial, bezel tags, wedge/±180° sweep, the "when to use" block, all blue (`accent-cool`) and red (`accent-hot`) marks.
+- **Compass body** is a headless Blender render (`scripts/blender/build_compass_body.py` → `public/assets/lessons/topic06/compass/compass-body.webp`, 1024², alpha): knurled rim, domed matte-olive bezel (`fg` #38432E base, knurl `MAP.vegInk` #6E7A4E), metal inner ring, recessed ivory face (`bg-accent`), contact shadow. Every printed or moving mark (graduations every 2°/10°/30°, bezel numbers and N/E/S/W, cross-hair, pointers, glass glint, pivot) is live SVG on the body's ring radii (`COMPASS_RINGS` in `compassMapGeometry.ts` — keep in sync with the script). The render's shadow is feathered to zero by an SVG mask before the image edge. On screen the bezel samples ≈ #495040 (the mockup's image-gen olive is a little yellower, ≈ #4E4D33); the lesson tokens win.
+- **Compass size:** ≈ 279 px in a 340 px column (mockup ≈ 318 px in its wider frame). The live degree labels sit outside the rim at every angle; at 090°/270° they would leave the card or hit the map with a larger dial. Measured: 16 px to the card edge at 090°, 11 px to the map at 270°.
+- **Map:** fictional sheet 618 × 515 units, 10 m per unit, 500 m grid, scale bar 0–1,000 m computed from that (not traced). A fixed at the centre; B on a 188-unit circle; the back ray 150 units. The radius is the largest at which every label clears the sheet edge, the north arrow and the scale bar at every half-degree (unit test). Contours from a small height model in `border-strong` (#C9A56B, the site's topo-line tone); vegetation `MAP.vegFill`; water `terrain-sky` at low opacity. The mockup's full-screen button is not implemented (no extra controls).
+- **Labels:** degree values sit beyond their line end; the A/B names sit beside the line on its clockwise side for every angle (they glide with the line instead of jumping). In the mockup they sit straight below the points (47° only).
+- **Card title** "מהמצפן אל המפה" sits above the map at the inline end (visual left, `lg:text-end`) and the instruction above the compass, as in the mockup. Readouts: azimuth on the left, back azimuth on the right (`flex-row-reverse`), as in the mockup.
+- **Copy (assumed, beyond the mockup):** the bottom explanation keeps the rule the equation follows — "…מתחת ל־180° מוסיפים 180°, ומ־180° ומעלה מפחיתים 180°." — because the equation's sign flips at 180°. Instruction text 18 px, explanation 18 px (mockup ≈ 20 px; lesson body 16 px).
+- **Motion:** one damped spring (`useSmoothedAngle`, shortest way through north); pointers, map line, readouts and the equation all read that one angle. Reduced motion: jumps straight to the value. A polite live region announces the back azimuth after the slider rests 550 ms.
+- QA: `node --experimental-strip-types --test scripts/qa/compass-map.test.mjs` (math + label layout at 720 angles) and `node scripts/qa/shot-compass-map.mjs` (browser, 1440 × 1122).

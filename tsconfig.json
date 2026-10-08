@@ -38,7 +38,8 @@
     ".next-slopes/types/**/*.ts",
     ".next-t11/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    ".next-relief/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

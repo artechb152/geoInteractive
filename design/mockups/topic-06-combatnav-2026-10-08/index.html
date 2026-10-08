@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>שיעור 6 · כיווני עיצוב לניווט</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="review-bar"><strong>שיעור 6 · מעבדת ניווט</strong><span>לומדים יחד · גרסה מודרכת</span><a href="brief.md">הבריף לקלוד ↗</a></header>
+<nav class="concept-nav" aria-label="בחירת מוקאפ">
+<button data-concept="association" aria-pressed="true"><b>01</b> לקרוא את השטח</button>
+<button data-concept="handrail" aria-pressed="false"><b>02</b> מעקה ונקודות אימות</button>
+<button data-concept="blind" aria-pressed="false"><b>03</b> כשהראות נעלמת</button>
+<button data-concept="debrief" aria-pressed="false"><b>04</b> להבין כיוון ומרחק</button>
+</nav>
+<main>
+<header class="scene-heading"><h1 id="title"></h1><p id="intro"></p></header>
+<section class="workspace" aria-label="תצוגה מקדימה של האינטראקציה">
+<div class="visual-column">
+<div class="visual-head"><h2 id="visual-title"></h2><span id="visual-note"></span></div>
+<div id="terrain-stage"><canvas id="terrain" aria-label="מודל שטח חדש שנבנה למוקאפים של שיעור 6"></canvas><div id="hotspots"></div><div id="fog"><div class="fog-sight"></div></div><div class="stage-caption" id="stage-caption"></div><div id="compass-strip"><span>צפון</span><span>030°</span><b>060°</b><span>090°</span><span>מזרח</span></div></div>
+<div id="map-stage" hidden></div>
+<div class="visual-bottom" id="visual-bottom"></div>
+<div id="feedback" class="feedback" aria-live="polite"></div>
+</div>
+<aside class="control-column" id="controls"></aside>
+</section>
+<footer class="learning-note"><h2 id="principle-title"></h2><p id="principle"></p><span id="duration"></span></footer>
+<section class="review-note"><strong>הרעיון ההדרכתי</strong><p id="review-note"></p><span>מודל שטח סינתטי · ארבע המחשות מודרכות</span></section>
+</main>
+<script type="module" src="concepts.js"></script>
+</body></html>
+

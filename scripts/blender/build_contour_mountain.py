@@ -21,27 +21,26 @@ ONE mountain, several outputs, so the 3D view and the 2D map can never drift:
                       (10–20 m, 20–30, 30–40, 40–50, 50 m → summit). Each is a
                       closed solid made by a boolean intersect, so its flat
                       bottom face is EXACTLY the contour polygon at its lower
-                      level. Trees, boulders and grass standing on a slice are
-                      part of it and lift with it.
+                      level.
         - Every node's origin is the world origin; lifting = translate in y.
         - Materials by name (the runtime builds its own shaders per name):
             Terrain  — splat-blended photo textures (runtime shader)
             Cut      — flat cut faces            Wall — diorama sides
-            Leaves   — alpha-tested leaf cards   LeafCore — solid crown cores
-            Bark     — trunks                    Boulder — rocks (triplanar)
-            Grass    — alpha-tested grass tufts
-          Vegetation/rocks carry a per-item COLOR_0 tint and custom normals
-          (crowns use spherical normals for soft, volumetric foliage light).
+        - Positions + normals only: every runtime shader works from
+          object-space position, so no UVs or vertex colours are exported.
+
+      PLANTS = True restores the optional dressing — ~1,150 trees, boulders
+      and ~48k grass tufts merged into the slices they stand on (materials
+      Leaves / LeafCore / Bark / Boulder / Grass, per-item COLOR_0 tint, plus
+      leaves.png / grass.png card textures). It is off: it was ~90 % of the
+      GLB (4.3 of 4.8 MB) and the runtime no longer builds those materials.
 
   .../contour-mountain/textures/
-        {grass,dry,rock,forest}_{diff,nor}.jpg   Poly Haven photo textures
+        {grass,dry,rock,forest}_{diff,nor}.jpg   Poly Haven photo textures (TEX_RES²)
         splat.png   RGBA weights: R grass, G dry ground, B rock, A woodland floor
-        macro.jpg   large-scale shading (cavity AO, tree shadows) ×0.5
-        leaves.png  2×2 atlas of leaf clusters (alpha)   grass.png  2 tufts
-  .../contour-mountain/env/sky.hdr   image-based lighting
-
-  public/assets/lessons/topic02/contour-mountain/hillshade.png
-      Transparent shaded-relief overlay for the 2D map (light from the NW).
+        macro.jpg   large-scale shading (cavity AO) ×0.5
+  .../contour-mountain/env/sky.hdr   image-based lighting (downsampled — it
+        only lights matte ground, so a 256 × 128 sky is indistinguishable)
 
   src/components/lessons/topic-02/contourMountain.data.ts   (GENERATED)
       Contour rings extracted from the very same triangles the slices were
@@ -52,7 +51,6 @@ ONE mountain, several outputs, so the 3D view and the 2D map can never drift:
 import json
 import math
 import os
-import shutil
 import struct
 import subprocess
 import tempfile
@@ -78,6 +76,9 @@ GRID_N = 320                 # cells per side (~0.69 m) → 205k surface triangl
 BASE_DEPTH_U = 0.16          # diorama plinth thickness below z = 0
 LEVELS_M = [10, 20, 30, 40, 50]
 MAP_RES = 2048               # splat / macro raster (0.11 m per pixel)
+TEX_RES = 512                # photo textures, px per side (one tile is 4–10 m)
+SKY_RES = (256, 128)         # IBL equirect
+PLANTS = False               # trees, boulders and grass tufts (see docstring)
 
 SUMMIT_M = (-18.0, 12.0)     # summit sits a little west/north of centre
 PEAK_M = 58.0
@@ -338,9 +339,26 @@ def box_blur(a, radius_px):
 
 # ---------------------------------------------------------------- image IO
 
+def paeth_filter(img):
+    """PNG filter type 4 on every row — smooth rasters (weights, shading)
+    deflate several times smaller than unfiltered."""
+    x = img.astype(np.int16)
+    a = np.zeros_like(x)
+    a[:, 1:] = x[:, :-1]
+    b = np.zeros_like(x)
+    b[1:] = x[:-1]
+    c = np.zeros_like(x)
+    c[1:, 1:] = x[:-1, :-1]
+    p = a + b - c
+    pa, pb, pc = np.abs(p - a), np.abs(p - b), np.abs(p - c)
+    pred = np.where((pa <= pb) & (pa <= pc), a, np.where(pb <= pc, b, c))
+    return ((x - pred) & 0xFF).astype(np.uint8)
+
+
 def write_png(path, rgba_u8):
     h, w, ch = rgba_u8.shape
-    raw = b''.join(b'\x00' + rgba_u8[y].tobytes() for y in range(h))
+    filtered = paeth_filter(rgba_u8)
+    raw = b''.join(b'\x04' + filtered[y].tobytes() for y in range(h))
 
     def chunk(tag, data):
         c = struct.pack('>I', len(data)) + tag + data
@@ -392,6 +410,7 @@ def fetch_polyhaven():
             src = curl(url, os.path.join(CACHE_DIR, os.path.basename(url)))
             img = bpy.data.images.load(src)
             img.colorspace_settings.name = 'Non-Color'   # bytes pass through untouched
+            img.scale(TEX_RES, TEX_RES)
             img.file_format = 'JPEG'
             dst = os.path.join(OUT_TEX_DIR, f'{layer}_{kind}.jpg')
             img.save(filepath=dst, quality=86 if kind == 'diff' else 90)
@@ -400,7 +419,13 @@ def fetch_polyhaven():
     with open(curl(f'https://api.polyhaven.com/files/{POLYHAVEN_HDRI}', os.path.join(CACHE_DIR, 'hdri.json'))) as f:
         meta = json.load(f)
     src = curl(meta['hdri']['1k']['hdr']['url'], os.path.join(CACHE_DIR, 'sky_1k.hdr'))
-    shutil.copyfile(src, os.path.join(OUT_ENV_DIR, 'sky.hdr'))
+    img = bpy.data.images.load(src)
+    img.scale(*SKY_RES)
+    img.file_format = 'HDR'
+    dst = os.path.join(OUT_ENV_DIR, 'sky.hdr')
+    img.save(filepath=dst)
+    bpy.data.images.remove(img)
+    print(f'ENV sky: {os.path.getsize(dst) // 1024} KB')
 
 
 # ---------------------------------------------------------------- generated textures
@@ -582,9 +607,9 @@ def write_surface_maps(fields, trees):
     w = toward(w, (0, 0, 1, 0), fields['rock'])
     w = toward(w, (0, 0.6, 0.4, 0), fields['scree'] * 0.7)
     w = toward(w, (0, 1, 0, 0), fields['trail'] * 0.95)
-    # Half resolution (0.21 m/px) is plenty: the runtime shader height-blends
+    # Quarter resolution (0.43 m/px) is plenty: the runtime shader height-blends
     # the layers, which gives the transitions their crisp, natural edges.
-    w = w.reshape(res // 2, 2, res // 2, 2, 4).mean(axis=(1, 3))
+    w = w.reshape(res // 4, 4, res // 4, 4, 4).mean(axis=(1, 3))
     path = os.path.join(OUT_TEX_DIR, 'splat.png')
     write_png(path, u8(w))
     print(f'TEXTURE splat: {os.path.getsize(path) // 1024} KB')
@@ -593,6 +618,7 @@ def write_surface_maps(fields, trees):
     ao = np.clip(1.0 - 0.09 * fields['cav'], 0.7, 1.1)
     variation = 1.0 + 0.1 * fbm(PN[6], X / 25.0, Y / 25.0, 3)
     macro = ao * variation * (1 - 0.32 * shade)
+    macro = macro.reshape(res // 2, 2, res // 2, 2).mean(axis=(1, 3))   # low-frequency: half res is plenty
     path = os.path.join(OUT_TEX_DIR, 'macro.jpg')
     save_jpeg_from_array(path, np.repeat((macro * 0.5)[..., None], 3, axis=2), 90)
     print(f'TEXTURE macro: {os.path.getsize(path) // 1024} KB')
@@ -1239,35 +1265,6 @@ def ray_hit(rings, origin, angle_rad):
     return x, y, ang
 
 
-# ---------------------------------------------------------------- hillshade
-
-def build_hillshade(path, res=640, z_factor=1.6):
-    (H_m,), cell = eval_raster(res, lambda x, y: terrain(x, y)[0])
-    Hh = H_m * z_factor
-    dz_drow, dz_dx = np.gradient(Hh, cell)
-    dz_dy = -dz_drow
-    n = np.stack([-dz_dx, -dz_dy, np.ones_like(Hh)], axis=-1)
-    n /= np.linalg.norm(n, axis=-1, keepdims=True)
-    alt = math.radians(45.0)
-    az = math.radians(315.0)             # compass azimuth: light from the NW
-    light = np.array([math.cos(alt) * math.sin(az), math.cos(alt) * math.cos(az), math.sin(alt)], dtype=np.float32)
-    hs = np.clip(n @ light, 0.0, 1.0)
-    delta = hs - math.sin(alt)
-    dark = np.clip(-delta * 1.25, 0.0, 0.62)
-    lite = np.clip(delta * 1.05, 0.0, 0.42)
-    is_dark = delta < 0
-    rgb = np.where(is_dark[..., None], np.array([40, 46, 32]), np.array([255, 250, 236]))
-    alpha = np.where(is_dark, dark, lite)
-    # The surrounding ground's undulation stays texture-level; strong relief
-    # belongs to the mountain.
-    alpha *= 0.35 + 0.65 * np.clip((H_m - 3.0) / 9.0, 0.0, 1.0)
-    rgba = np.zeros((res, res, 4), dtype=np.uint8)
-    rgba[..., :3] = rgb.astype(np.uint8)
-    rgba[..., 3] = np.round(alpha * 255).astype(np.uint8)
-    write_png(path, rgba)
-    print(f'WROTE_HILLSHADE:{path} ({os.path.getsize(path) // 1024} KB)')
-
-
 # ---------------------------------------------------------------- data module
 
 def fmt(v):
@@ -1330,8 +1327,9 @@ def main():
     os.makedirs(OUT_TEX_DIR, exist_ok=True)
 
     fetch_polyhaven()
-    leaf_atlas(os.path.join(OUT_TEX_DIR, 'leaves.png'))
-    grass_texture(os.path.join(OUT_TEX_DIR, 'grass.png'))
+    if PLANTS:
+        leaf_atlas(os.path.join(OUT_TEX_DIR, 'leaves.png'))
+        grass_texture(os.path.join(OUT_TEX_DIR, 'grass.png'))
 
     xs = np.linspace(-HALF_M, HALF_M, GRID_N + 1)
     X, Y = np.meshgrid(xs, xs)             # [j, i]: j along y (south→north), i along x
@@ -1341,11 +1339,12 @@ def main():
     print(f'PEAK_M:{peak:.2f}')
 
     fields = base_fields()
-    trees = place_trees(fields)
-    boulders = place_boulders(fields)
-    grass = place_grass(fields)
-    print(f'PLANTS: {len(trees)} trees ({sum(t["species"] == "pine" for t in trees)} pines), '
-          f'{len(boulders)} boulders, {len(grass["x"])} grass tufts')
+    trees = place_trees(fields) if PLANTS else []
+    if PLANTS:
+        boulders = place_boulders(fields)
+        grass = place_grass(fields)
+        print(f'PLANTS: {len(trees)} trees ({sum(t["species"] == "pine" for t in trees)} pines), '
+              f'{len(boulders)} boulders, {len(grass["x"])} grass tufts')
     write_surface_maps(fields, trees)
     del fields
 
@@ -1360,17 +1359,18 @@ def main():
     bpy.data.objects.remove(solid, do_unlink=True)
 
     # Everything planted belongs to the slice its base stands on.
-    grass_part = np.array([part_index(h) for h in grass['h']])
-    for k, obj in enumerate(parts):
-        deco = Deco()
-        for t in trees:
-            if part_index(t['h']) == k:
-                tree_geometry(t, deco)
-        for b in boulders:
-            if part_index(b['h']) == k:
-                boulder_geometry(b, deco)
-        grass_geometry(grass, grass_part == k, deco)
-        merge_decoration(obj, deco)
+    if PLANTS:
+        grass_part = np.array([part_index(h) for h in grass['h']])
+        for k, obj in enumerate(parts):
+            deco = Deco()
+            for t in trees:
+                if part_index(t['h']) == k:
+                    tree_geometry(t, deco)
+            for b in boulders:
+                if part_index(b['h']) == k:
+                    boulder_geometry(b, deco)
+            grass_geometry(grass, grass_part == k, deco)
+            merge_decoration(obj, deco)
 
     # --- contours from the very same triangles
     xy = np.stack([X.ravel() / M_PER_UNIT, Y.ravel() / M_PER_UNIT], axis=1)
@@ -1392,7 +1392,6 @@ def main():
         print(f'CONTOUR {L} m: {len(rings)} ring(s), {[len(r) for r in rings]} pts')
 
     write_data_ts(OUT_DATA_TS, levels, summit_map, int(round(peak)))
-    build_hillshade(os.path.join(OUT_ASSET_DIR, 'hillshade.png'))
 
     # --- export (geometry only — every texture is loaded by the runtime)
     bpy.ops.object.select_all(action='DESELECT')
@@ -1406,7 +1405,7 @@ def main():
         export_apply=True,
         export_yup=True,
         export_normals=True,
-        export_texcoords=True,
+        export_texcoords=PLANTS,     # only the card textures read UVs
         export_materials='EXPORT',
         export_image_format='NONE',
         export_vertex_color='ACTIVE',

@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +25,6 @@ export function CoordinatesScene() {
       />
 
       <IntroColumns />
-      <EarthShapeTimeline />
       <ReferenceBodies />
       <DatumFit />
       <DatumShiftDemo shift={shift} setShift={setShift} />
@@ -68,110 +67,6 @@ function IntroColumns() {
         </p>
       </div>
     </div>
-  );
-}
-
-/* ─────────────────── צורת כדור הארץ בעבר (deck slide 5) ─────────────────── */
-
-type Shape = 'rect' | 'disk' | 'sphere' | 'oblate';
-const STAGES: { when: string; title: string; note?: string; shape: Shape }[] = [
-  { when: 'עד 550 לפנה״ס', title: 'כדור הארץ שטוח ומלבני', shape: 'rect' },
-  { when: '550 לפנה״ס', title: 'כדור הארץ שטוח ועגול', shape: 'disk' },
-  { when: '350 לפנה״ס', title: 'כדור הארץ הוא כדור תלת־ממדי', shape: 'sphere' },
-  { when: '1700 לספירה', title: 'כדור הארץ פחוס בקטבים', note: 'למעשה, אליפסה תלת־ממדית. בהמחשה הפחיסות מוגזמת.', shape: 'oblate' },
-];
-
-function EarthShapeTimeline() {
-  const [i, setI] = useState(STAGES.length - 1);
-  const s = STAGES[i];
-  return (
-    <div className="my-10">
-      <h3 className={H3}>צורת כדור הארץ לאורך ההיסטוריה</h3>
-      <p className={LEAD}>התפיסה של צורת כדור הארץ השתנתה לאורך הדורות. בחרו תקופה ובחנו כיצד תיארו אז את כדור הארץ.</p>
-
-      <div className="surface-elevated p-6 lg:p-8 grid lg:grid-cols-[1fr_1.1fr] gap-6 lg:gap-10 items-center">
-        <div className="min-w-0">
-          <ol className="relative flex flex-col gap-2" aria-label="ציר זמן">
-            {STAGES.map((st, k) => (
-              <li key={st.when}>
-                <button
-                  type="button"
-                  aria-pressed={k === i}
-                  onClick={() => setI(k)}
-                  className={cn(
-                    'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-start cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                    k === i ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  )}
-                >
-                  <span className="font-display text-sm font-bold tabular-nums text-fg-muted">{String(k + 1).padStart(2, '0')}</span>
-                  <span>
-                    <span className="block font-display text-base font-bold text-fg">{st.when}</span>
-                    <span className="block text-sm text-fg-muted">{st.title}</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="min-w-0 text-center">
-          <div className="mx-auto aspect-[4/3] w-full max-w-[360px]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={s.shape}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.25 }}
-                className="size-full"
-              >
-                <EarthShapeArt shape={s.shape} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="mt-3 font-display text-xl font-bold text-fg">{s.title}</div>
-          <div className="text-base text-fg-muted">{s.when}</div>
-          {s.note && <p className="mt-1 text-sm text-fg-muted">{s.note}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EarthShapeArt({ shape }: { shape: Shape }) {
-  const land = 'fill-[#8A9163]';
-  return (
-    <svg viewBox="0 0 240 180" className="size-full" aria-hidden>
-      {shape === 'rect' && (
-        <>
-          <polygon points="30,128 168,128 210,62 72,62" className="fill-[#7FB4C6]/50 stroke-fg" strokeWidth="2" strokeLinejoin="round" />
-          <polygon points="70,112 128,112 150,82 98,80" className={land} />
-          <polygon points="140,120 170,118 182,100 160,98" className={land} />
-        </>
-      )}
-      {shape === 'disk' && (
-        <>
-          <ellipse cx="120" cy="104" rx="96" ry="34" className="fill-[#55613C]" />
-          <ellipse cx="120" cy="96" rx="96" ry="34" className="fill-[#7FB4C6]/50 stroke-fg" strokeWidth="2" />
-          <ellipse cx="112" cy="94" rx="44" ry="14" className={land} />
-        </>
-      )}
-      {(shape === 'sphere' || shape === 'oblate') && (
-        <Globe rx={shape === 'sphere' ? 70 : 86} ry={shape === 'sphere' ? 70 : 60} />
-      )}
-    </svg>
-  );
-}
-
-function Globe({ rx, ry }: { rx: number; ry: number }) {
-  return (
-    <g transform="translate(120 90)">
-      <ellipse rx={rx} ry={ry} className="fill-[#7FB4C6]/50 stroke-fg" strokeWidth="2" />
-      <path d={`M${-rx * 0.55},${-ry * 0.35} q${rx * 0.3},${-ry * 0.25} ${rx * 0.55},${-ry * 0.05} q${rx * 0.1},${ry * 0.3} ${-rx * 0.15},${ry * 0.45} q${-rx * 0.35},${ry * 0.05} ${-rx * 0.4},${-ry * 0.4}z`} className="fill-[#8A9163]" />
-      <ellipse rx={rx} ry={ry * 0.22} fill="none" className="stroke-fg/45" strokeWidth="1.5" />
-      <ellipse rx={rx * 0.42} ry={ry} fill="none" className="stroke-fg/45" strokeWidth="1.5" />
-      <line x1="0" y1={-ry - 12} x2="0" y2={ry + 12} className="stroke-fg/60" strokeWidth="1.5" strokeDasharray="3 3" />
-    </g>
   );
 }
 
