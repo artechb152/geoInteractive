@@ -286,7 +286,7 @@ function FormTabs({ active, onSelect }: { active: Form; onSelect: (id: Form) => 
 // One view with its caption above it. Both views share the row, so the terrain
 // and its map are compared side by side at the same size. The frames stretch to
 // the taller view; the shorter one sits centred on its own paper colour.
-function BoardView({
+export function BoardView({
   caption,
   frameClassName,
   children,
