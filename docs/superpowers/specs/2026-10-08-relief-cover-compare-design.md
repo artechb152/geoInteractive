@@ -1,6 +1,6 @@
 # Topic 02 · Relief vs. land cover (`#scene-relief-cover`, screen 3): "same hill, three landscapes"
 
-**Status:** design, awaiting user review · **Date:** 2026-10-08
+**Status:** approved 2026-10-08 (with the revisions in §12); implementation per `docs/superpowers/plans/2026-10-08-relief-cover-compare.md` · **Date:** 2026-10-08
 **Scope:** screen 3 of `src/components/lessons/topic-02/ReliefCoverIntroScene.tsx` ("השוואה בין תבליט לתכסית"). The engine is extracted out of `LandformsVisuals.tsx`. New files are listed in §8.
 
 ## 1. Problem
@@ -63,7 +63,7 @@ This goes through `hebrew-copy-editor` before shipping. All strings live in the 
 | Map chips | states 2–3: "קווי הגובה: ללא שינוי" · state 4: "קווי הגובה השתנו" |
 | Legend | title "מקרא" · "קו גובה" · "קו גובה ראשי" · "חורש" · "מטע" · "מבנים" · "אזור חציבה" · "קווי הגובה לפני החציבה" |
 | Disclaimer (beside the legend, always visible) | "המחשה סכמטית — הסמלים אינם מקרא רשמי" |
-| Buttons | "המשך" (reveals the next prediction) · "התחילו מחדש" · summary disclosure "הצגת ההשוואה המלאה" / "הסתרת ההשוואה המלאה" |
+| Buttons | "המשך" (reveals the next prediction) · "התחלה מחדש" (as `SortQuiz` on screen 4) · summary disclosure "הצגת ההשוואה המלאה" / "הסתרת ההשוואה המלאה" |
 | Summary heading | "סיכום ההשוואה" |
 
 **Wording rules**
@@ -102,7 +102,7 @@ Each cell is shown with its row label and its layer dot (sand = relief, sage = c
 **Rules**
 - **Gated forward.** The next state is reachable only by answering its prediction. A wrong answer still advances, because the reveal is the point; the feedback then corrects it.
 - **One task at a time.** After feedback, the next prediction is hidden behind "המשך", so the learner reads before answering again.
-- **Revisiting.** Any reached state can be re-opened from the stepper. It shows its board, its cells and the stored prediction result, without a question. After state 4 every state is freely navigable. "התחילו מחדש" resets everything to state 1.
+- **Revisiting.** Any reached state can be re-opened from the stepper. It shows its board, its cells and the stored prediction result, without a question. After state 4 every state is freely navigable. "התחלה מחדש" resets everything to state 1.
 - **Summary.** "סיכום ההשוואה" always sits below the card, so a learner who skips the activity can still open it. It is collapsed behind "הצגת ההשוואה המלאה" and expands automatically when state 4 is reached.
 
 ## 6. Visual design
@@ -167,7 +167,8 @@ Everything in the illustration is derived from these definitions. No hand-drawn 
 | `topic-02/LandformsVisuals.tsx` | Keeps `SPECS`, `FEATURES`, the overlays, map labels and slopes, and imports the engine. Its landform `look` reproduces today's green tint exactly. **Rendered output must be pixel-identical.** |
 | `topic-02/LandformsScene.tsx` | `export` added to `BoardView`. No behaviour change. |
 | `topic-02/reliefCoverCompare.data.ts` **(new, pure TS)** | Hill and quarry height functions, mask `w`, cover placements per state, state ids, correct answers, and a small state reducer for predict/advance/revisit/reset. |
-| `topic-02/ReliefCoverCompare.tsx` **(new)** | The component: stepper, two boards, legend, disclaimer, chips, state card, prediction, and the summary table. Receives all copy as props. |
+| `topic-02/ReliefCoverVisuals.tsx` **(new)** | The two boards: objects on the block, schematic symbols and the previous contours on the map, legend swatches. |
+| `topic-02/ReliefCoverCompare.tsx` **(new)** | The flow: stepper, boards row, legend, disclaimer, chip, state card, prediction, and the summary table. Receives all copy as props. |
 | `topic-02/ReliefCoverIntroScene.tsx` | Screen 3: the table is replaced by `<ReliefCoverCompare … />`. `COMPARE_ROWS` stays unchanged. The §4 strings are added. |
 | `scripts/qa/relief-cover-compare.test.mjs` **(new)** | Geometry and reducer tests (§10). |
 | `scripts/qa/shot-relief-cover.mjs` **(new)** | Screenshots of states 1–4, the summary, and the landforms before/after diff. |
@@ -183,7 +184,8 @@ Everything in the illustration is derived from these definitions. No hand-drawn 
 - **No WebGL:** falls back to the static SVG board, as the engine does today.
 - **Keyboard and screen readers:**
   - The stepper is a list of buttons with `aria-current="step"`, and unreached states are `disabled`.
-  - Prediction options use `aria-pressed`.
+  - Prediction options are plain action buttons (no `aria-pressed`): choosing one advances at once, so no pressed state ever exists. The question group is labelled by the question; focus moves to the state card after a choice and to the first option after "המשך".
+  - The stepper is labelled "שלבי ההמחשה".
   - Feedback is announced in an `aria-live="polite"` region.
   - Each board's `aria-label` names the state, e.g. "חורש טבעי — בשטח".
   - Everything is reachable by keyboard.
@@ -212,6 +214,11 @@ Everything in the illustration is derived from these definitions. No hand-drawn 
 6. **Build:**
    - My own dev server runs on `NEXT_DIST_DIR=.next-relief`.
    - `next build` runs **only in a temporary git worktree**, because concurrent sessions share `.next/`.
+7. **Exit codes are the verdict** (user rule, 2026-10-08):
+   - Every check — `tsc`, `next build`, tests, browser QA, the pixel compare, the RTL audit — reports its tool's **own raw exit code**. A check passes only with exit 0.
+   - No filter (`grep`, `tail`, `|| echo`) may turn a failure into "clean" or "success". Gated commands are logged by `scripts/qa/gate.mjs`, which exits with the command's own code.
+   - Errors in files this work did not touch (pre-existing, or another session's) are recorded separately in `qa-output/gates/foreign-errors.md`. They still make that check a failure, and are reported as such.
+   - A type check is not a substitute for a build: sign-off needs `next build` to exit 0 in the worktree; otherwise the work is reported as **not build-verified**.
 
 ## 11. Risks and notes
 
@@ -219,3 +226,12 @@ Everything in the illustration is derived from these definitions. No hand-drawn 
 - **Extraction size.** The landforms extraction moves about 700 lines. The pixel-diff gate in §10.1 is the safety net. If any diff remains, the extraction is reverted and approached in smaller moves.
 - **Previous contours.** The dashed "before" lines could be misread as extra contour lines. They are labelled in the legend as the previous state, faded, and drawn only in state 4.
 - **Map symbols.** They are schematic, not an official legend. This is said on screen (the §4 disclaimer) and recorded in `assumptions.md`.
+
+## 12. Revisions approved 2026-10-08 (planning)
+
+1. **Restart label** "התחלה מחדש", matching `SortQuiz` on screen 4 of the same scene. This replaces "התחילו מחדש".
+2. **Prediction options** are plain action buttons without `aria-pressed`, with announced feedback and keyboard focus management (§9).
+3. **Visuals split** into `ReliefCoverVisuals.tsx` (§8).
+4. **The new map's faint per-level height tint is light brown/tan** (the existing contour tan), not green, so "green = vegetation" holds inside this illustration. The shared map sheet keeps green as its default, so תבניות נוף is unchanged.
+5. **Stepper accessibility label** "שלבי ההמחשה".
+6. **Verification by raw exit codes** (§10 item 7).

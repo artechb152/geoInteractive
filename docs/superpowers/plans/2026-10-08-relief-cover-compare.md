@@ -53,7 +53,18 @@
 - **No `next build` in the main folder.** Verification builds run only in a temporary git worktree (Task 9).
 
 **Checks**
-- **Type check:** `npx tsc --noEmit -p tsconfig.json 2>&1 | grep -E "terrainBlock|LandformsVisuals|LandformsScene|ReliefCover|reliefCover" || echo CLEAN` must print `CLEAN`. Other sessions' files may have unrelated errors, so ignore those.
+- **Exit codes are the verdict (user rule, 2026-10-08).** Every check reports its tool's **own, raw exit code**.
+  - No pipe, `grep`, `tail`, `|| echo …` or other filter may turn a failure into "CLEAN", "pass" or "success".
+  - Never pipe a gated command; save its output to a log, then read the log.
+- **The gate runner.** `scripts/qa/gate.mjs` (created in Task 1) runs a command, saves the full log to `qa-output/gates/<label>.log`, prints `RAW_EXIT=<n> OURS=<n> FOREIGN=<n>`, and **exits with the command's own exit code**. Its OURS/FOREIGN sort is for triage only and never changes the verdict.
+- **Type check:** `node scripts/qa/gate.mjs tsc-<step> -- npx tsc --noEmit -p tsconfig.json`.
+  - **Passed** only when `RAW_EXIT=0`.
+  - With `RAW_EXIT≠0`, the type check **failed**, and:
+    - (a) every error in a file this plan creates or changes (`OURS>0`) must be fixed before going on;
+    - (b) errors only in other files (`OURS=0`), i.e. pre-existing or another session's work, are recorded separately in `qa-output/gates/foreign-errors.md`: the step label, the raw exit, and each error line. Implementation may go on, but every report for that step says "tsc failed (exit n) — foreign errors only, see foreign-errors.md". It never says "clean" or "passed".
+  - A foreign error that names a module or symbol from this plan counts as OURS.
+- **A type check is not a build.** Sign-off needs `next build` to exit 0 in the temporary worktree (Task 9). If it can't be run or doesn't exit 0, the work is reported as **not build-verified**, with the raw exit and log. Nothing substitutes for it.
+- **RTL audit** (`scripts/qa/rtl-audit.mjs`) is repo-wide, so it goes through the gate runner too. The raw exit is reported; offenders in this plan's files must be zero, and offenders elsewhere are recorded in `foreign-errors.md`.
 - **Unit tests:** `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs`.
 - **Pure TS modules** (`terrainBlockGeometry.ts`, `reliefCoverCompare.data.ts`) are imported by Node directly:
   - no React or framer imports;
@@ -68,11 +79,11 @@
   - The landforms look must not change.
 - **QA artifacts** go to `qa-output/` (gitignored). Never commit PNGs.
 
-## Spec refinements made while planning (flag in the hand-off, not silent)
+## Spec refinements made while planning (all approved by the user 2026-10-08; recorded in spec §12)
 
 1. **Visuals file split.** The boards live in a new `ReliefCoverVisuals.tsx`, following the repo's `LandformsVisuals`/`LandCoverVisuals` pattern. `ReliefCoverCompare.tsx` holds the flow UI, which keeps each file focused.
 2. **`ContourMapSheet` gets a `layerTint` prop.** Landforms keep the green default. The new map passes the tan `C.contour`, so the map obeys "green = vegetation".
-3. **Restart label is "התחלה מחדש".** That is the label `SortQuiz` already uses on screen 4 of the same scene; spec §4 said "התחילו מחדש". Confirm with the user; it is a one-string change.
+3. **Restart label is "התחלה מחדש".** That is the label `SortQuiz` already uses on screen 4 of the same scene; spec §4 said "התחילו מחדש". Approved; spec §4 updated.
 4. **New accessibility string:** the stepper's `aria-label` is "שלבי ההמחשה".
 5. **QA hook:** `ContourMapSheet` puts `data-contour={L}` on contour paths. This changes no pixels.
 6. **Quarry map area = mask ≥ 0.5.** This is the quarry site, including its open yard. It matches exactly the orchard trees that are removed: every removed tree has mask ≥ 0.5, which is tested.
@@ -100,7 +111,7 @@
 ### Task 1: Preflight and landforms baseline
 
 **Files:**
-- Create: `scripts/qa/shot-landforms-baseline.mjs`
+- Create: `scripts/qa/gate.mjs`, `scripts/qa/shot-landforms-baseline.mjs`
 
 **Interfaces:**
 - Produces: `qa-output/landforms-extraction/before/{motion,reduced}-{1..5}.png` (+ `.html` DOM dumps), the reference for Tasks 2, 3 and 9. Also produces the CLI `node scripts/qa/shot-landforms-baseline.mjs <outDir>` | `--compare <dirA> <dirB>` (exit 1 on any pixel difference).
@@ -121,7 +132,70 @@ Expected: `LV-OK`, `SCENES-OK`, and three staged `D` lines under `contour-mounta
 Run (Bash, `run_in_background: true`): `NEXT_DIST_DIR=.next-relief npx next dev -p 3100`
 Then poll until ready: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3100/lessons/topic-02/`. Expected: `200` (the first compile can take about a minute).
 
-- [ ] **Step 3: Write the capture/compare script**
+- [ ] **Step 3: Write the gate runner, and record the type-check and RTL baselines**
+
+`scripts/qa/gate.mjs`:
+```js
+// Gate runner (docs/superpowers/plans/2026-10-08-relief-cover-compare.md, Global Constraints).
+// Runs ONE command, keeps its full output in qa-output/gates/<label>.log and exits with the
+// command's OWN exit code — it never turns a failure into a pass. For triage only, it sorts
+// diagnostic lines by file: OURS = files this plan creates or changes (or lines naming them),
+// FOREIGN = everything else (pre-existing / another session's work; still a failure).
+//
+//   node scripts/qa/gate.mjs <label> [--cwd <dir>] -- <command> [args…]
+//
+// Prints: RAW_EXIT=<n> OURS=<n> FOREIGN=<n>, then the OURS lines and the first FOREIGN lines.
+import { spawnSync } from 'node:child_process';
+import { closeSync, mkdirSync, openSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const argv = process.argv.slice(2);
+const sep = argv.indexOf('--');
+if (sep < 1 || sep === argv.length - 1) {
+  console.error('usage: node scripts/qa/gate.mjs <label> [--cwd <dir>] -- <command> [args…]');
+  process.exit(2);
+}
+const label = argv[0];
+const opts = argv.slice(1, sep);
+const cwdAt = opts.indexOf('--cwd');
+const cwd = cwdAt >= 0 ? resolve(opts[cwdAt + 1]) : process.cwd();
+const [cmd, ...args] = argv.slice(sep + 1);
+
+const OURS = [
+  'terrainBlockGeometry', 'terrainBlock', 'LandformsVisuals', 'LandformsScene',
+  'reliefCoverCompare', 'ReliefCoverVisuals', 'ReliefCoverCompare', 'ReliefCoverIntroScene',
+  'relief-cover-compare', 'shot-relief-cover', 'shot-landforms-baseline', 'gate.mjs',
+];
+const DIAG = /error|Error|Failed|failed| — |offender/;
+
+const dir = resolve('qa-output/gates');
+mkdirSync(dir, { recursive: true });
+const logPath = `${dir}/${label}.log`;
+const fd = openSync(logPath, 'w');
+const r = spawnSync(cmd, args, { cwd, shell: true, stdio: ['ignore', fd, fd] });
+closeSync(fd);
+const raw = r.status ?? 1; // killed by a signal or failed to spawn → failure
+
+const lines = readFileSync(logPath, 'utf8').split(/\r?\n/).filter((l) => DIAG.test(l));
+const ours = lines.filter((l) => OURS.some((n) => l.includes(n)));
+const foreign = lines.filter((l) => !ours.includes(l));
+console.log(`[${label}] RAW_EXIT=${raw} OURS=${ours.length} FOREIGN=${foreign.length} (log: ${logPath})`);
+if (r.error) console.log(`  spawn error: ${r.error.message}`);
+for (const l of ours) console.log(`  OURS     ${l}`);
+for (const l of foreign.slice(0, 15)) console.log(`  FOREIGN  ${l}`);
+if (foreign.length > 15) console.log(`  … ${foreign.length - 15} more foreign line(s) in the log`);
+process.exit(raw);
+```
+Record the baselines before any source change. Their exits may be non-zero because of other sessions; that is what the baseline is for.
+```bash
+node scripts/qa/gate.mjs tsc-baseline -- npx tsc --noEmit -p tsconfig.json; echo "tsc baseline exit $?"
+node scripts/qa/gate.mjs rtl-baseline -- node scripts/qa/rtl-audit.mjs; echo "rtl baseline exit $?"
+```
+Expected: both print `RAW_EXIT=…`, and the shell's `exit` equals it, which shows the runner passes the raw code through.
+- If a baseline exit is non-zero, create `qa-output/gates/foreign-errors.md` with a "Baseline (before Task 2)" section listing the raw exit and every error/offender line.
+- `OURS` must be 0 at baseline. If it isn't, stop and report: an existing error in a file this plan will touch has to be resolved with the user first.
+
+- [ ] **Step 3b: Write the capture/compare script**
 
 ```js
 // Extraction gate for the terrain-block engine (docs/superpowers/plans/2026-10-08-relief-cover-compare.md).
@@ -229,22 +303,22 @@ process.exit(failed ? 1 : 0);
 - [ ] **Step 4: Capture the baseline and prove the gate is stable**
 
 ```bash
-QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/before
-QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/before-again
-node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/before-again
+QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/before; echo "capture exit $?"
+QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/before-again; echo "capture exit $?"
+node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/before-again; echo "compare exit $?"
 ```
 Expected:
-- 10 `same` lines and exit 0. Two captures of unchanged code must be identical; otherwise the gate is meaningless.
+- Both captures and the compare print `exit 0`, with 10 `same` lines. Two captures of unchanged code must be identical; otherwise the gate is meaningless.
 - If a file differs, raise the settle wait in the script (1200 → 2000 ms) and repeat until two runs agree.
 - Then open `before/motion-1.png` and check that it shows the settled hill block and map.
 
-- [ ] **Step 5: Commit the script**
+- [ ] **Step 5: Commit the scripts**
 
 ```bash
-git add -- scripts/qa/shot-landforms-baseline.mjs
-git commit -m "test(topic-02): landforms pixel gate for the terrain-engine extraction
+git add -- scripts/qa/gate.mjs scripts/qa/shot-landforms-baseline.mjs
+git commit -m "test(topic-02): gate runner (raw exit codes) and landforms pixel gate for the engine extraction
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- scripts/qa/shot-landforms-baseline.mjs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- scripts/qa/gate.mjs scripts/qa/shot-landforms-baseline.mjs
 ```
 
 ---
@@ -431,7 +505,8 @@ const getTerrain = (form: LandformId): Terrain => buildTerrain(TERRAIN_SPECS[for
 
 - [ ] **Step 4: Type-check**
 
-Run the Global Constraints type check. Expected: `CLEAN`.
+Run: `node scripts/qa/gate.mjs tsc-task2 -- npx tsc --noEmit -p tsconfig.json`, then `echo "exit $?"`.
+Expected: `RAW_EXIT=0`, `exit 0`. Otherwise apply the Global Constraints type-check rule: fix OURS, record FOREIGN, and report the raw exit.
 
 - [ ] **Step 5: Pixel gate**
 
@@ -880,11 +955,11 @@ In `LandformsScene.tsx` change `function BoardView({` to `export function BoardV
 - [ ] **Step 4: Type-check and pixel gate**
 
 ```bash
-npx tsc --noEmit -p tsconfig.json 2>&1 | grep -E "terrainBlock|LandformsVisuals|LandformsScene|ReliefCover|reliefCover" || echo CLEAN
-QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/after-3
-node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/after-3
+node scripts/qa/gate.mjs tsc-task3 -- npx tsc --noEmit -p tsconfig.json; echo "tsc exit $?"
+QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/after-3; echo "capture exit $?"
+node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/after-3; echo "compare exit $?"
 ```
-Expected: `CLEAN`; 10 `same`, exit 0.
+Expected: `tsc exit 0` (otherwise apply the type-check rule); `capture exit 0`; 10 `same` and `compare exit 0`.
 - The `.html` dumps normalize away `useId` strings and `data-contour`. Any other HTML difference is a regression even if pixels match, so diff them and fix it.
 - Also click through the slope tabs on `#scene-landforms` once. They use `SlopeVisuals.tsx`, which is untouched, but the page must have no console errors.
 
@@ -1380,7 +1455,8 @@ If a geometry test fails, tune the **data**, never the assertion:
 
 - [ ] **Step 5: Type-check and commit**
 
-Run the Global Constraints type check. Expected: `CLEAN`.
+Run: `node scripts/qa/gate.mjs tsc-task4 -- npx tsc --noEmit -p tsconfig.json; echo "exit $?"`.
+Expected: `exit 0`. Otherwise apply the type-check rule.
 ```bash
 git add -- src/components/lessons/topic-02/reliefCoverCompare.data.ts scripts/qa/relief-cover-compare.test.mjs
 git commit -m "feat(topic-02): relief/cover comparison data — hill, quarry cut, cover per state, flow
@@ -1697,7 +1773,11 @@ export function LegendSwatch({ k }: { k: LegendKey }) {
 
 - [ ] **Step 2: Type-check and run the tests**
 
-Run the type check (expected: `CLEAN`) and the unit tests (expected: all pass).
+```bash
+node scripts/qa/gate.mjs tsc-task5 -- npx tsc --noEmit -p tsconfig.json; echo "tsc exit $?"
+node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs; echo "tests exit $?"
+```
+Expected: `tsc exit 0` (otherwise apply the type-check rule) and `tests exit 0`.
 
 - [ ] **Step 3: Commit**
 
@@ -2176,12 +2256,12 @@ const COMPARE_COPY: ReliefCoverCopy = {
 - [ ] **Step 4: Type-check, run the tests and the landforms gate**
 
 ```bash
-npx tsc --noEmit -p tsconfig.json 2>&1 | grep -E "terrainBlock|LandformsVisuals|LandformsScene|ReliefCover|reliefCover" || echo CLEAN
-node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs
-QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/after-6
-node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/after-6
+node scripts/qa/gate.mjs tsc-task6 -- npx tsc --noEmit -p tsconfig.json; echo "tsc exit $?"
+node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs; echo "tests exit $?"
+QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/after-6; echo "capture exit $?"
+node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/after-6; echo "compare exit $?"
 ```
-Expected: `CLEAN`; all 14 tests pass; 10 `same`.
+Expected: `tsc exit 0` (otherwise apply the type-check rule); 14 tests pass with `tests exit 0`; `capture exit 0`; 10 `same` with `compare exit 0`.
 
 - [ ] **Step 5: First look in the browser**
 
@@ -2464,36 +2544,46 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- <the same files>
 
 **Files:**
 - Modify: `design/docs/assumptions.md` (append only)
-- Modify: `docs/superpowers/specs/2026-10-08-relief-cover-compare-design.md` (status line only, plus §4 if the restart label was confirmed)
+- Modify: `docs/superpowers/specs/2026-10-08-relief-cover-compare-design.md` (status line only)
 - Modify: `tsconfig.json` (remove only the `.next-relief` include line that Next added)
 
 - [ ] **Step 1: Every gate, once more**
 
+Run each command on its own and write down every raw exit code. No pipes.
 ```bash
-npx tsc --noEmit -p tsconfig.json 2>&1 | grep -E "terrainBlock|LandformsVisuals|LandformsScene|ReliefCover|reliefCover" || echo CLEAN
-node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs
-QA_PORT=3100 node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-relief-cover.mjs
-QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/final
-node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/final
-node scripts/qa/rtl-audit.mjs 2>&1 | grep -E "ReliefCover|terrainBlock" || echo RTL-CLEAN
+node scripts/qa/gate.mjs tsc-final -- npx tsc --noEmit -p tsconfig.json; echo "tsc exit $?"
+node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs; echo "tests exit $?"
+QA_PORT=3100 node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-relief-cover.mjs; echo "browser QA exit $?"
+QA_PORT=3100 node scripts/qa/shot-landforms-baseline.mjs qa-output/landforms-extraction/final; echo "capture exit $?"
+node scripts/qa/shot-landforms-baseline.mjs --compare qa-output/landforms-extraction/before qa-output/landforms-extraction/final; echo "compare exit $?"
+node scripts/qa/gate.mjs rtl-final -- node scripts/qa/rtl-audit.mjs; echo "rtl exit $?"
 ```
-Expected: `CLEAN`; all tests pass; `all checks passed`; 10 `same`; `RTL-CLEAN`.
+Expected: every exit is 0.
+- **tsc** non-zero: apply the type-check rule. Report `tsc failed (exit n)`, and if `OURS=0`, add "foreign errors only".
+- **rtl** non-zero: `OURS` must be 0. Foreign offenders go into `foreign-errors.md`, and the raw exit is reported as is.
+- **tests, browser QA, capture, compare:** any non-zero exit is a defect in this work. Fix it and re-run.
 
 - [ ] **Step 2: Verification build in a temporary worktree**
 
+The worktree holds committed `HEAD` only (all of this plan's work is committed by now), so other sessions' uncommitted edits can't affect it.
 ```bash
 WT="$TEMP/geo-relief-build"
-git worktree add --detach "$WT" HEAD
-cmd //c mklink /J "$(cygpath -w "$WT")\\node_modules" "$(cygpath -w "$PWD")\\node_modules"
-(cd "$WT" && npx next build) 2>&1 | tail -25
-git worktree remove --force "$WT"
-git worktree prune
+git worktree add --detach "$WT" HEAD; echo "worktree exit $?"
+cmd //c mklink /J "$(cygpath -w "$WT")\\node_modules" "$(cygpath -w "$PWD")\\node_modules"; echo "junction exit $?"
+node scripts/qa/gate.mjs build-worktree --cwd "$WT" -- npx next build; echo "build exit $?"
+node scripts/qa/gate.mjs tsc-worktree --cwd "$WT" -- npx tsc --noEmit -p tsconfig.json; echo "worktree tsc exit $?"
+git worktree remove --force "$WT"; git worktree prune
 ```
 Expected:
-- `next build` exits 0, with the static export of `/lessons/topic-02` included.
-- The main folder's `.next/` is untouched, and so is the shared `:3000` server.
+- `build exit 0`, and `qa-output/gates/build-worktree.log` lists the static export, including `/lessons/topic-02`.
+- `worktree tsc exit 0`.
+- The main folder's `.next/` and the shared `:3000` server are untouched.
 
-If the junction route fails, record the error and run `npx tsc --noEmit` inside the worktree instead. Report it to the user. **Never** fall back to building in the main folder.
+**If the build can't run or exits non-zero:**
+- Try once with real dependencies instead of the junction: in `$WT`, run `pnpm install --frozen-lockfile --prefer-offline`, then the same `gate.mjs build-worktree` command.
+- If it still fails, the work is reported as **not build-verified**, with the raw exit code and the log's error lines. A type check is not a substitute, and the failure is not reworded as a pass.
+- Errors in files this plan didn't touch are recorded in `foreign-errors.md`, but the build verdict is still "failed".
+- **Never** build in the main folder.
 
 - [ ] **Step 3: Stop the dev server and restore `tsconfig.json`**
 
@@ -2523,7 +2613,7 @@ Spec `docs/superpowers/specs/2026-10-08-relief-cover-compare-design.md`; plan `d
   - `TerrainSpec.look` carries the ground ramp and an optional per-quad tint.
   - `TerrainBlockView` gained an `objects` layer that stays visible over the WebGL morph.
 - **Content lock:** `COMPARE_ROWS` is byte-identical to `1984b5f` (test). The cover "דוגמאות" cell is shown in two parts at its own " · ", and the summary shows it whole.
-- **Restart label** "התחלה מחדש" matches screen 4's `SortQuiz`. [State the user's decision.]
+- **Restart label** "התחלה מחדש" matches screen 4's `SortQuiz` (approved by the user 2026-10-08).
 - **Verification build** ran in a temporary git worktree; QA used a private dev server (`NEXT_DIST_DIR=.next-relief`, :3100).
 ```
 Replace the bracketed lines with the actual values and decision before committing.
@@ -2531,8 +2621,9 @@ Replace the bracketed lines with the actual values and decision before committin
 - [ ] **Step 5: Mark the spec implemented**
 
 In the spec, change the status line to:
-`**Status:** implemented (plan docs/superpowers/plans/2026-10-08-relief-cover-compare.md) · **Date:** 2026-10-08`.
-If the user confirmed "התחלה מחדש", update that string in §4 too.
+`**Status:** implemented and build-verified (plan docs/superpowers/plans/2026-10-08-relief-cover-compare.md) · **Date:** 2026-10-08`.
+Use "build-verified" only if `build-worktree` exited 0. Otherwise write `implemented — NOT build-verified (next build exit n; see assumptions entry)`.
+(§4 and §12 were already updated at plan approval.)
 
 - [ ] **Step 6: Final commit and integrity check**
 
@@ -2547,3 +2638,20 @@ git log --oneline -10
 Expected:
 - `git diff --cached` still shows exactly the other session's three staged `D` lines from Task 1 Step 1.
 - The log shows this plan's commits and no foreign files in them. Check with `git show --stat` on each commit.
+
+- [ ] **Step 7: Results for the user**
+
+Report a table with one row per gate. Each row gives:
+- the label;
+- the command;
+- the **raw exit code**;
+- the verdict (passed only if exit 0);
+- for type-check and RTL rows, the OURS and FOREIGN counts.
+
+Rows: `tsc-baseline`, `tsc-final`, `tsc-worktree`, `build-worktree`, unit tests, browser QA, landforms compare, `rtl-baseline`, `rtl-final`.
+
+Then:
+- **Foreign errors** go in their own section, copied from `foreign-errors.md`.
+- **The build verdict** is stated in one line: "build-verified (exit 0)" or "NOT build-verified (exit n): …".
+- **Screenshots:** attach the four state screenshots and the summary screenshot (`qa-output/relief-cover-compare/motion-{1..5}-*.png`).
+- **Limitations:** list every remaining limitation.
