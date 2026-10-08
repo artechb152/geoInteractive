@@ -5,9 +5,9 @@
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 import { SHEETS } from '../../src/components/lessons/topic-02/scale/scaleSheets.data.ts';
-import { EXAMPLE_PAIR, LANDMARKS, SHOWN_AS, ZOOM_SENTENCE } from '../../src/components/lessons/topic-02/scale/scaleContent.data.ts';
+import { EXAMPLE_PAIR, LANDMARKS, LOCATE, SHOWN_AS, ZOOM_SENTENCE } from '../../src/components/lessons/topic-02/scale/scaleContent.data.ts';
 import {
-  formatDistance, formatNumber, groundDistanceM, insideSheet, lonLatToSheet, readCm, readingPrecisionM, sheetCm, sheetToLonLat,
+  formatDistance, formatNumber, groundDistanceM, insideSheet, lonLatToSheet, readCm, readingPrecisionM, sheetCm,
 } from '../../src/components/lessons/topic-02/scale/geo.ts';
 
 const args = process.argv.slice(2);
@@ -69,6 +69,7 @@ const rectOf = async (loc) => {
 const sameRect = (a, b) => a && b && a.every((v, i) => Math.abs(v - b[i]) <= 0.5);
 const centre = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 const isActive = (loc) => loc.evaluate((el) => el === document.activeElement);
+const SHEET_OF = { '1:10,000': '10k', '1:50,000': '50k', '1:250,000': '250k' };
 const SUFFIX = { 'מפה טופוגרפית': ` · מוצג: ${SHOWN_AS.map}`, 'תצ״א': ` · מוצג: ${SHOWN_AS.ortho}`, 'השוואה': ` · מוצג: ${SHOWN_AS.compare}` };
 
 /** Current view transform of the lab map (data-view = "k,x,y"). */
@@ -79,13 +80,6 @@ async function screenOfUnits(page, q) {
   const [k, tx, ty] = await viewOf(page);
   return { x: r.x + tx + (q.x / 1000) * r.width * k, y: r.y + ty + (q.y / 1000) * r.height * k };
 }
-/** Sheet units of a screen point under the current view. */
-async function unitsOfScreen(page, p) {
-  const r = await viewport(page).boundingBox();
-  const [k, tx, ty] = await viewOf(page);
-  return { x: ((p.x - r.x - tx) / (r.width * k)) * 1000, y: ((p.y - r.y - ty) / (r.height * k)) * 1000 };
-}
-
 /**
  * Each curtain chip hangs 8 px off the line on its own side (the left one drops below the north arrow when
  * it would reach under it); a chip is hidden only when its half is narrower than the chip + 16 px.
@@ -231,7 +225,6 @@ async function checkExplore() {
   const d = Math.hypot(centre(ring).x - want.x, centre(ring).y - want.y);
   ok(d <= 1, `locate: ring centred on Shibli (Δ ${d.toFixed(2)} px)`);
   ok((await marker.locator('text').textContent()) === 'שיבלי', 'locate: the name pill reads "שיבלי"');
-  await shot(page, 'locate-shibli');
   for (const name of ['הדרך לפסגה', 'פסגת הר תבור']) {
     await L.getByRole('button', { name, exact: true }).click();
     await page.waitForTimeout(200);
@@ -250,6 +243,30 @@ async function checkExplore() {
   await kinneret.click();
   await page.waitForTimeout(200);
   ok((await marker.count()) === 0 && (await line.innerText()) === '', 'locate: pressing again clears the mark');
+
+  // Every locate pill stays clear of the extent label and inside the map, on every sheet where it shows.
+  const vpBox = await vp.boundingBox();
+  for (const id of ['250k', '50k', '10k']) {
+    await sheetRadio(page, new RegExp(`1:${SHEETS[id].denominator.toLocaleString('en-US')}`)).click();
+    await waitMorph(page);
+    for (const l of LOCATE) {
+      const btn = L.getByRole('button', { name: l.label, exact: true });
+      await btn.click();
+      await page.waitForTimeout(150);
+      if (!insideSheet(lonLatToSheet(SHEETS[id], LANDMARKS[l.id]))) {
+        ok((await marker.count()) === 0, `locate: ${l.label} outside ${id}, no mark`);
+      } else {
+        const pill = await L.locator('[data-qa="locate-label"] rect').boundingBox();
+        const ext = (await L.locator('[data-qa="child-extent-label"] rect').count()) ? await L.locator('[data-qa="child-extent-label"] rect').boundingBox() : null;
+        const clear = !ext || pill.x > ext.x + ext.width || pill.x + pill.width < ext.x || pill.y > ext.y + ext.height || pill.y + pill.height < ext.y;
+        const within = pill.x >= vpBox.x && pill.y >= vpBox.y && pill.x + pill.width <= vpBox.x + vpBox.width && pill.y + pill.height <= vpBox.y + vpBox.height;
+        ok(clear && within, `locate: "${l.label}" pill on ${id} clear of the extent label and inside the map`);
+        if (id === '50k' && l.id === 'shibli') await shot(page, 'locate-shibli');
+      }
+      await btn.click(); // release
+      await page.waitForTimeout(100);
+    }
+  }
 
   await noHScroll(page, 'explore');
   ok(errors.length === 0, `explore: no console errors ${errors.join(' | ')}`);
@@ -319,19 +336,27 @@ async function checkMeasure() {
   };
   const result = async () => ({ ground: (await block(page, 'result-ground').innerText()).replace(/\s*בשטח$/, ''), sheet: await block(page, 'result-sheet').innerText() });
   const dotAt = async (i) => centre(await L.locator(`[data-qa="handle-${i}"] [data-qa="point-dot"]`).boundingBox());
+  /** The lat/lons the lab stores (data-points). */
+  const stored = async () => JSON.parse(await block(page, 'measure-result').getAttribute('data-points'));
+  /** A stored lat/lon lies within 1.5 px of screen point p on the current sheet (clicks land on whole px). */
+  const near = async (ll, p) => {
+    const w = await screenOfUnits(page, lonLatToSheet(SHEETS[SHEET_OF[await checkedSheet(page)]], ll));
+    return Math.hypot(w.x - p.x, w.y - p.y) <= 1.5;
+  };
 
   // Two arbitrary clicks: the distance appears at once and equals the geodesic of the two lat/lons.
-  const pA = at(0.43, 0.46);
-  const pB = at(0.58, 0.55);
+  // Near the centre, so both stay inside the 1:10,000 extent (the middle fifth) after the moves below.
+  const pA = at(0.46, 0.47);
+  const pB = at(0.55, 0.53);
   await page.mouse.click(pA.x, pA.y);
   await page.waitForTimeout(200);
   ok((await block(page, 'result-empty').innerText()) === 'סמנו את נקודה ב.', 'measure: after one click the panel asks for ב');
   const dA = await dotAt(0);
-  ok(Math.hypot(dA.x - pA.x, dA.y - pA.y) <= 1, `measure: point א on the click (Δ ${Math.hypot(dA.x - pA.x, dA.y - pA.y).toFixed(2)} px)`);
+  ok(Math.hypot(dA.x - pA.x, dA.y - pA.y) <= 1.5, `measure: point א on the click (Δ ${Math.hypot(dA.x - pA.x, dA.y - pA.y).toFixed(2)} px)`);
   await page.mouse.click(pB.x, pB.y);
   await page.waitForTimeout(250);
-  let llA = sheetToLonLat(S, await unitsOfScreen(page, pA));
-  let llB = sheetToLonLat(S, await unitsOfScreen(page, pB));
+  let [llA, llB] = await stored();
+  ok(await near(llA, pA) && await near(llB, pB), 'measure: the stored lat/lons are the clicked spots (≤ 1.5 px)');
   let want = expectFor('50k', llA, llB);
   let got = await result();
   ok(got.ground === want.ground && got.sheet === want.cm, `measure: free distance "${got.ground}" / "${got.sheet}" = geodesic ${want.g.toFixed(1)} m → "${want.ground}" / "${want.cm}"`);
@@ -344,24 +369,24 @@ async function checkMeasure() {
   await shot(page, 'measure-two-points');
 
   // A third click moves the nearer point (here א).
-  const pA2 = at(0.35, 0.5); // clear of א's disc (it stands off up-left of א)
+  const pA2 = at(0.43, 0.52); // clear of א's disc (it stands off up-left of א)
   await page.mouse.click(pA2.x, pA2.y);
   await page.waitForTimeout(250);
   const dA2 = await dotAt(0);
   const dB2 = await dotAt(1);
   const fmt = (p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
   ok(
-    Math.hypot(dA2.x - pA2.x, dA2.y - pA2.y) <= 1 && Math.hypot(dB2.x - pB.x, dB2.y - pB.y) <= 1,
+    Math.hypot(dA2.x - pA2.x, dA2.y - pA2.y) <= 1.5 && Math.hypot(dB2.x - pB.x, dB2.y - pB.y) <= 1.5,
     `measure: a third click moves the nearer point (א ${fmt(dA2)} → click ${fmt(pA2)}), ב stays (${fmt(dB2)} vs ${fmt(pB)})`,
   );
-  llA = sheetToLonLat(S, await unitsOfScreen(page, pA2));
+  [llA, llB] = await stored();
 
   // Drag ב: live update during the drag; the announcement waits for the rest.
   const before = await result();
   const disc = centre(await L.locator('[data-qa="handle-1"] [data-qa="handle-disc"]').boundingBox());
   await page.mouse.move(disc.x, disc.y);
   await page.mouse.down();
-  for (let i = 1; i <= 8; i++) await page.mouse.move(disc.x + i * 5, disc.y + i * 3);
+  for (let i = 1; i <= 8; i++) await page.mouse.move(disc.x - i * 2.5, disc.y + i * 1.5);
   await page.waitForTimeout(100);
   const mid = await result();
   ok(mid.ground !== before.ground, `measure: the distance updates live while dragging (${before.ground} → ${mid.ground})`);
@@ -369,8 +394,8 @@ async function checkMeasure() {
   await page.mouse.up();
   await page.waitForTimeout(250);
   const dB3 = await dotAt(1);
-  ok(Math.hypot(dB3.x - (pB.x + 40), dB3.y - (pB.y + 24)) <= 1.5, 'measure: dragging the disc moves ב by the pointer offset');
-  llB = sheetToLonLat(S, await unitsOfScreen(page, dB3));
+  ok(Math.hypot(dB3.x - (pB.x - 20), dB3.y - (pB.y + 12)) <= 1.5, 'measure: dragging the disc moves ב by the pointer offset');
+  [llA, llB] = await stored();
   want = expectFor('50k', llA, llB);
   got = await result();
   ok(got.ground === want.ground && got.sheet === want.cm, `measure: after the drag "${got.ground}" / "${got.sheet}" (want "${want.ground}" / "${want.cm}")`);
@@ -388,7 +413,7 @@ async function checkMeasure() {
   const mm5 = (5 * box.width) / 240;
   ok(Math.abs(k1.x - k0.x - mm5) <= 1 && Math.abs(k1.y - k0.y) <= 0.5, `measure: 5 × → moves ב 5 mm (${(k1.x - k0.x).toFixed(1)} px, want ${mm5.toFixed(1)})`);
   ok((await handle1.getAttribute('aria-label')).startsWith('נקודה ב.') && (await handle1.getAttribute('role')) === 'button', 'measure: the handle is a named, focusable control');
-  llB = sheetToLonLat(S, await unitsOfScreen(page, k1));
+  [llA, llB] = await stored();
   want = expectFor('50k', llA, llB);
   got = await result();
   ok(got.ground === want.ground && got.sheet === want.cm, `measure: after the keys "${got.ground}" / "${got.sheet}" (want "${want.ground}" / "${want.cm}")`);
@@ -405,7 +430,7 @@ async function checkMeasure() {
 
   // Scale switch keeps the geographic position: 1:10,000 (both inside), then 1:250,000.
   for (const id of ['10k', '250k', '50k']) {
-    await sheetRadio(page, new RegExp(SHEETS[id].denominator.toLocaleString('en-US'))).click();
+    await sheetRadio(page, new RegExp(`1:${SHEETS[id].denominator.toLocaleString('en-US')}`)).click();
     await waitMorph(page);
     for (const [i, ll] of [[0, llA], [1, llB]]) {
       const q = lonLatToSheet(SHEETS[id], ll);
@@ -424,7 +449,8 @@ async function checkMeasure() {
   const pFar = at(0.12, 0.85);
   await page.mouse.click(pFar.x, pFar.y); // nearer to א → moves א
   await page.waitForTimeout(250);
-  const llFar = sheetToLonLat(S, await unitsOfScreen(page, pFar));
+  const [llFar] = await stored();
+  ok(await near(llFar, pFar), 'measure: the far click moved א (the nearer point)');
   await sheetRadio(page, /1:10,000/).click();
   await waitMorph(page);
   const eFar = expectFor('10k', llFar, llB);

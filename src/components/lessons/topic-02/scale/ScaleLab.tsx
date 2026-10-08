@@ -12,7 +12,7 @@ import { SheetViewport } from './SheetViewport';
 import { MeasureOverlay } from './MeasureOverlay';
 import { FOCUS_RING, INSET, OPTION_ACTIVE, OPTION_BASE, OPTION_IDLE, SheetPicker, T5, T6, ViewModeToggle, useRovingKeys, type ViewMode } from './controls';
 import { CURTAIN_LABELS, asset, layersFor, preloadFor } from './layers';
-import { INK, Label, Ring, dash, sw } from './overlayParts';
+import { INK, Label, Ring, dash, pillSize, sw } from './overlayParts';
 
 type LabMode = 'explore' | 'measure';
 const MODES: { id: LabMode; label: string }[] = [
@@ -208,15 +208,17 @@ export function ScaleLab() {
                 );
               }
               const { ppu } = ctx;
+              const extentLabel = child ? `תחום ${formatRatio(child.denominator)}` : '';
+              const locateDy = located && locate ? locateLabelDy(located, locateLabel, ppu, child ? (child.groundWidthM / sheet.groundWidthM) * 1000 : null, extentLabel) : 0;
               return (
                 <>
                   {child && (
-                    <ChildExtent ratio={child.groundWidthM / sheet.groundWidthM} ppu={ppu} label={`תחום ${formatRatio(child.denominator)}`} onOpen={() => setSheetId(child.id)} />
+                    <ChildExtent ratio={child.groundWidthM / sheet.groundWidthM} ppu={ppu} label={extentLabel} onOpen={() => setSheetId(child.id)} />
                   )}
                   {located && locate && insideSheet(located) && (
                     <g data-qa="locate-marker">
                       <Ring p={located} ppu={ppu} r={RING_PX} />
-                      <Label p={located} ppu={ppu} text={locateLabel} dy={-(RING_PX + 16)} />
+                      <Label p={located} ppu={ppu} text={locateLabel} dy={locateDy} qa="locate-label" />
                     </g>
                   )}
                 </>
@@ -254,14 +256,11 @@ function ExplorePanel({
       {comparing ? (
         <div data-qa="zoom-compare" className="flex flex-col gap-3">
           <p className="text-base leading-relaxed text-fg">
-            משמאל לקו: מפת {ZOOM_LEFT}. מימין: מפת {ZOOM_RIGHT} של אותו תחום. גררו את הווילון והשוו.
+            משמאל לקו: מפת&nbsp;{ZOOM_LEFT}. מימין: מפת&nbsp;{ZOOM_RIGHT} של אותו תחום. גררו את הווילון והשוו.
           </p>
           <p data-qa="zoom-sentence" className={cn(INSET, 'font-display text-base font-bold leading-relaxed text-fg')}>
             {ZOOM_SENTENCE}
           </p>
-          <button type="button" onClick={back} className="btn-secondary h-10 self-start px-4 text-sm">
-            חזרה למפות
-          </button>
         </div>
       ) : (
         <>
@@ -307,16 +306,24 @@ function ExplorePanel({
           </div>
         </>
       )}
-      <button
-        ref={toggleRef}
-        type="button"
-        aria-pressed={comparing}
-        onClick={() => onCompare(!comparing)}
-        data-qa="zoom-compare-toggle"
-        className={cn(OPTION_BASE, FOCUS_RING, comparing ? OPTION_ACTIVE : OPTION_IDLE, 'self-start px-4 py-2 font-display text-sm font-bold text-fg')}
-      >
-        הגדלה לעומת פירוט
-      </button>
+      {/* The toggle keeps its place in both states (focus survives); "חזרה למפות" is the explicit way back. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          ref={toggleRef}
+          type="button"
+          aria-pressed={comparing}
+          onClick={() => onCompare(!comparing)}
+          data-qa="zoom-compare-toggle"
+          className={cn(OPTION_BASE, FOCUS_RING, comparing ? OPTION_ACTIVE : OPTION_IDLE, 'h-10 px-4 font-display text-sm font-bold text-fg')}
+        >
+          הגדלה לעומת פירוט
+        </button>
+        {comparing && (
+          <button type="button" onClick={back} className="btn-secondary h-10 px-4 text-sm">
+            חזרה למפות
+          </button>
+        )}
+      </div>
     </>
   );
 }
@@ -352,7 +359,7 @@ function MeasurePanel({
   return (
     <>
       <p className={T6} data-qa="measure-hint">
-        לחיצה על המפה מסמנת את א ואחר כך את ב; לחיצה נוספת מזיזה את הנקודה הקרובה אליה. אפשר לגרור נקודה, או לבחור אותה ולהזיז בחיצים.
+        לחיצה על המפה מסמנת את א ואחר כך את ב; לחיצה נוספת מזיזה את הנקודה הקרובה. גררו נקודה או הזיזו אותה בחיצים.
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={onCenter} className="btn-secondary h-10 px-4 text-sm">
@@ -366,7 +373,8 @@ function MeasurePanel({
         </button>
       </div>
 
-      <div className={INSET} data-qa="measure-result">
+      {/* data-points: the stored lat/lons (QA reads them to check the readout). */}
+      <div className={INSET} data-qa="measure-result" data-points={JSON.stringify(pts)}>
         {ground !== null ? (
           <>
             <p data-qa="result-ground" className="font-display text-2xl font-bold leading-tight text-fg tabular-nums">
@@ -413,6 +421,28 @@ function MeasurePanel({
   );
 }
 
+/**
+ * Where the locate name pill goes (screen px below the point; negative = above): above the ring, unless it
+ * would cover the extent frame's label or leave the sheet — then below it.
+ */
+function locateLabelDy(p: SheetPoint, text: string, ppu: number, extentSide: number | null, extentText: string): number {
+  const off = RING_PX + 16;
+  const box = (c: SheetPoint, t: string) => {
+    const { w, h } = pillSize(t, ppu);
+    return { x0: c.x - w / 2, x1: c.x + w / 2, y0: c.y - h / 2, y1: c.y + h / 2 };
+  };
+  const above = box({ x: p.x, y: p.y - off / ppu }, text);
+  const pad = 4 / ppu;
+  let clash = above.y0 < 0;
+  if (extentSide !== null) {
+    const e = box({ x: 500, y: (1000 - extentSide) / 2 - EXTENT_LABEL_DY / ppu }, extentText);
+    clash ||= above.x0 < e.x1 + pad && above.x1 > e.x0 - pad && above.y0 < e.y1 + pad && above.y1 > e.y0 - pad;
+  }
+  return clash ? off : -off;
+}
+
+const EXTENT_LABEL_DY = 14;
+
 /** Extent of the next more detailed sheet: an ink long-dash frame; clicking it opens that sheet. */
 function ChildExtent({ ratio, ppu, label, onOpen }: { ratio: number; ppu: number; label: string; onOpen: () => void }) {
   const side = ratio * 1000;
@@ -433,7 +463,7 @@ function ChildExtent({ ratio, ppu, label, onOpen }: { ratio: number; ppu: number
           onOpen();
         }}
       />
-      <Label p={{ x: 500, y: o }} ppu={ppu} text={label} dy={-14} qa="child-extent-label" />
+      <Label p={{ x: 500, y: o }} ppu={ppu} text={label} dy={-EXTENT_LABEL_DY} qa="child-extent-label" />
     </g>
   );
 }
