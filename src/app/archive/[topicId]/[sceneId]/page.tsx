@@ -9,6 +9,7 @@ import { TacticalTerrainScene } from '@/components/lessons/topic-03/TacticalTerr
 import { GeologyScene } from '@/components/lessons/topic-02/GeologyScene';
 import { TopographySceneV1 } from '@/components/lessons/topic-02/TopographySceneV1';
 import { ReliefCoverIntroSceneV1 } from '@/components/lessons/topic-02/ReliefCoverIntroSceneV1';
+import { LandCoverSceneV1 } from '@/components/lessons/topic-02/LandCoverSceneV1';
 
 /**
  * תת-נושא בארכיון — סצנה שהוצאה מרצף השיעור הציבורי ומוצגת כאן לבדה,
@@ -19,6 +20,7 @@ const SCENE_COMPONENTS: Record<string, ComponentType> = {
   'topic-02/topography-v1': TopographySceneV1,
   'topic-02/geology': GeologyScene,
   'topic-02/relief-cover-v1': ReliefCoverIntroSceneV1,
+  'topic-02/landcover-v1': LandCoverSceneV1,
 };
 
 export const dynamicParams = false;

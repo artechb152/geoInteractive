@@ -1,0 +1,113 @@
+{
+  "800": {
+    "surface": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    }
+  },
+  "900": {
+    "surface": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    }
+  },
+  "1122": {
+    "surface": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    }
+  }
+}

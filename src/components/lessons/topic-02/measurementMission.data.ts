@@ -4,13 +4,14 @@
  * stands on the terrain. Teaching values only, not a survey of a real place.
  *
  *   H (the answer) is never stored: it is always h − N (measurementMission.ts).
- *   scripts/blender/build_measurement_terrain.py reads the JSON block below
- *   and shapes the terrain so the ground at each station stands exactly H m
- *   above the sea; scripts/qa/measurement-mission.test.mjs checks that the
- *   generated terrain data still agrees with it.
+ *   scripts/blender/render_measurement_landscape.py reads the JSON block
+ *   below and corrects the ground locally so each station stands exactly H m
+ *   above the geoid; scripts/qa/measurement-mission.test.mjs checks that the
+ *   generated landscape data still agrees with it.
  *
- * Placement: metres on the diorama, X east, Y north, origin = its centre
- * (X ∈ ±1000, Y ∈ ±650). The sea is in the east.
+ * Placement: metres on the diorama, origin = its centre (x ∈ ±2250 toward
+ * the sea on the right, y ∈ ±1150 away from the viewer). All three stand on
+ * the survey line y = −700, where the cut opens.
  */
 
 export type StationId = 'A' | 'B' | 'C';
@@ -29,9 +30,9 @@ export type Station = {
 // Keep this block valid JSON: the Blender build parses it.
 /* stations:begin */
 const STATION_LIST: readonly Station[] = [
-  { "id": "A", "h": 18, "N": -12, "x": 470, "y": -175 },
-  { "id": "B", "h": 148, "N": 28, "x": -60, "y": 30 },
-  { "id": "C", "h": 220, "N": 0, "x": -500, "y": 255 }
+  { "id": "A", "h": 18, "N": -12, "x": 1450, "y": -700 },
+  { "id": "B", "h": 148, "N": 28, "x": 600, "y": -700 },
+  { "id": "C", "h": 220, "N": 0, "x": -950, "y": -700 }
 ];
 /* stations:end */
 

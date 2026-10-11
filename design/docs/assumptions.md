@@ -1512,6 +1512,429 @@ Supersedes the layout of the entry above (world, map, measurements and threshold
 - **Drawing order:** each item's shadow dims with its item when another item is selected, and all shadows fade when either layer is off, as before. The papercut drop-shadow filter on objects is gone; the render's own shadows replace it.
 - **Re-render:** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_relief_cover.py` (≈ 1.5 min on the RTX A5000), then `node scripts/blender/package_relief_cover.cjs`. Keep the geometry block in the script in sync with `ReliefCoverTerrain.tsx`.
 
+### 2026-10-11 — "שלושה סוגי צפון": reference lab (lesson 6, `north-lab/`)
+
+- **Scope:** `ThreeNorthsCard` and its dedicated helpers were removed from `PrinciplesScene.tsx` and replaced by `<NorthLab />` (`src/components/lessons/topic-06/north-lab/`: `NorthLab.tsx`, `NorthLabMap.tsx`, `northLabGeometry.ts`, `norths.ts`). The scene root, the `my-12` wrapper, `AzimuthExplorer`, the GPS block, the conclusion, the header and the sidebar are unchanged. Reference: `design/mockups/north-concepts/02-reference-lab.png`; prompt: `claude-direction-lab-prompt.md` (same folder).
+- **Open questions answered by default (the user approved without answering; the prompt delegates routine choices to code + reference):** (1) the measuring ring reuses `compass-body.webp` (prompt: "העדף למחזר את הגוף"), its ivory face masked out in SVG so the map and grid show through; no new body was generated. (2) The north choices follow the mockup order, right → left: אמיתי · רשת · מגנטי (the same order as the comparison table). Both are local one-line changes (`RING`/mask in `NorthLabMap.tsx`, `NORTH_IDS` in `norths.ts`).
+- **Copy:** `NORTHS[id].label/english/who/what/why`, the title and the intro moved verbatim into `norths.ts` / `NorthLab.tsx`. Only the second sentence of the "במעבר" note changed, to the wording given in prompt §3. The old diagram's static values 6.2° / 2.3° / "סה״כ 8.5°" are removed (prompt §6). New labels are only the ones the prompt lists, plus TN/GN/MN; the English names stay visible in the info-strip heading, in the scene's existing "אזימוט (Azimuth)" pattern.
+- **Experiment data (fictional, prompt §6):** TN 0°, GN +2°, target true bearing 066°, declination −6° in −10…+10. Azimuth = normalize(66 − reference). Opening 066° / 064° / 072°.
+- **Layout at 1440:** card inner 986 px → controls 304 px (mockup 300 × 1.013) + gap 28 + map 654 px. Map viewBox 654 × 628 = CSS px, equal to the controls column height. A (300, 386) = the mockup's A at 61.5 % of the height; ring rim radius 150 (mockup ≈ 150). B fixed at 330 px, 066°. Reset sits in the controls column (prompt control order), so the boxes are ≈ 50 px tighter than the mockup, which had reset under the map row. The info strip and the note are full width under both columns (prompt §4), so the card (≈ 1,085 px) runs past one 1122 viewport: the note's lines are below the fold when the card is aligned under the header. No font was shrunk to avoid this.
+- **Instrument:** the bezel print is live SVG on the body's ring radii (`COMPASS_RINGS` × 1.5): white ticks every 5° / 10° and the numbers 90 / 180 / 270. "0" is not printed — it lies under the north arrows, and the TN arrow marks it. Arrows and AB cross the dark bezel, so they get a thin `MAP.paper` casing (lines only; no halo on text).
+- **Labels:** TN/GN/MN labels sit in one row above the tips, spread by `spreadRow` (no overlap at any whole degree; unit-tested), with leader lines when a label moves off its tip. Equal angles (MN = TN at 0°, MN = GN at +2°) overlap honestly; both labels stay, MN first. The arc's single number sits just beyond the arc at its mid-angle on a paper plate, three digits ("072°", like the table) rather than the mockup's "72°".
+- **Inset:** "הפרדה מוגדלת להמחשה", deviation from TN × 4 (side and order kept), labels print the source values, no target line and no arc.
+- **Not drawn (prompt §3/§5/§8):** the mockup's page-level heading and subtitle, "נסו בעצמכם", the light-bulb takeaway box, the hand cursor, the scale bar, the "צ" corner north arrow (not in the closed list of new labels; TN is the north arrow), the river and the bronze palette. "הנתונים להמחשה בלבד" sits in the scale bar's place (bottom-left of the map).
+- **Motion:** one spring on the declination (`useSmoothed`) drives MN, the magnetic row, the inset and, with magnetic chosen, the arc and the reading. A short offset sweep moves the arc start between norths on a choice change; at rest the arc starts exactly on the chosen arrow. Reduced motion: values jump. The live region announces the reading after 550 ms of rest, never on load.
+- **Verification:** `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/north-lab.test.mjs` (14 tests) and `node scripts/qa/shot-north-lab.mjs` (behaviour + 8 screenshots in `design/screenshots/north-lab/`). Overlay/diff against the mockup in `design/screenshots/north-lab/compare/`: the map and ring register on A and the rim; the remaining differences are the computed geometry (AB at 66°, the mockup draws ≈ 61°), the palette and the omissions above.
+
+### 2026-10-11 — "אליפסואיד, גיאואיד וגליות": measurement mission (lesson 2, `#scene-coordinates`)
+
+- **Scope:** `ReferenceBodies` in `CoordinatesScene.tsx` keeps its heading, lead paragraph, `BODY_TABS` and the H/h/N definitions and formula. The former profile diagram and its point slider were replaced by the mission. Reference: `design/mockups/topic-02-geodesy/03-measurement-mission-v2.png`, for composition only; prompt: `claude-measurement-mission-prompt.md` in the same folder. A parallel session is rewriting the datum block of the same file (`datum/DatumGuided.tsx`); that work is not part of this entry.
+- **User decisions (2026-10-11):** the terrain is built in the project's Blender pipeline (`scripts/blender/build_measurement_terrain.py`). The undulation view puts "גליות" and its body text above the task in the right column, with the H/h/N definitions as a key under the section. The slider's two strings are removed. Assets go to `public/reference-assets/measurement-mission/`. The mockup's 1/2/3 step row is not drawn. A/B/C stay as static markers in the three explanation views. "Material mismatch" means composition inside the activity card.
+- **Copy:** 32 of the 34 original strings of the block are unchanged (scripted diff). The two removed ones are the slider's "הזיזו את הנקודה לאורך החתך" and its value text "מיקום הנקודה בחתך". The four section descriptions, the line names and "ללא קנה מידה · הגבהים מוגזמים" moved verbatim into `CoordinatesScene`/`MeasurementSection`. New text is operational only:
+  - the station names and the "בחירת תחנה" group
+  - "מהו הגובה מעל פני הים?"
+  - the buttons and the feedback/hints
+  - "בחרו תחנה בשטח והשלימו את המדידה"
+  - "3/3 – כל התחנות נמדדו."
+  - the landscape's accessible description
+- **Typography:** the view title, body and `extra` now follow the lesson-scene tiers the prompt asked for: `font-display font-bold leading-tight text-black text-base md:text-lg` / `text-base leading-relaxed text-black`. Before, they were `text-xl text-fg` and a `text-fg-muted` extra. Control labels in the task use the slider label recipe (`text-sm font-display font-semibold text-fg-muted`).
+- **Data (demo only):** A 18 / −12 → 30, B 148 / +28 → 120, C 220 / 0 → 220. The one data file is `measurementMission.data.ts`. H is never stored; it is always h − N. The terrain is shaped so the ground at each station stands exactly H m above the sea; the build asserts it to within 0.01 m, and the unit tests check it again.
+- **Terrain assumptions:** the diorama is 2 × 1.3 km with VE 1.5, and the range peaks at ≈ 370 m. The sea is the existing #7FB4C6. The ground uses the topography diorama's palette plus `terrain.olive`/`ridge`/`sand` and `MAP.vegInk`. The cut edge is `CUT_COLOR` cream with `WALL_COLOR` soil and `tanline.contour` strata every 20 m. The receiver is cream/ink/`terrain.steel` geometry, oversized so it reads (prompt: "marginal size"), and stands 45 m east of the station so the pin above stays readable.
+- **Camera:** fixed, at 15° east of south, 21° down, FOV 26°, fitted to the cut-edge rim and the summit. No orbit or zoom: the mockup has none, and the prompt only allows them. Pins and the dashed link are DOM/SVG placed by the same projection math (`measurementLayout.ts`).
+- **Section (schematic, labelled "ללא קנה מידה · הגבהים מוגזמים"):**
+  - Heights above the sea are drawn as 54 · ln(1 + H/35) px, so A's 30 m reads next to C's 220 m.
+  - N is drawn at 1 px/m; sea depth at 0.5 px/m.
+  - The horizontal axis is a monotone cubic through the stations' pin x, so the dashed link is vertical as in the mockup. Distances along it are therefore not uniform.
+  - The relations the prompt requires hold, and are tested: h > H at B, H > h at A, the surfaces meet at C, and the sign of N matches the drawing. N between the stations is a smooth interpolation, so the wave is illustrative.
+- **Layout at 1440:**
+  - Card 1052 × 818 px, the site's `max-w-6xl` (mockup ≈ 1109 × 804), aligned at the mockup's card top (288 px).
+  - Text column 308 px, illustration column 616 px (ratio 1 : 1.9, mockup ≈ 1 : 3): the original texts need the width.
+  - Terrain box 616 × 300, section 200 px, then the cue and the key.
+  - The card height is the same in all four views and every task state; this is asserted. Because of that, the three explanation views have empty space under their text.
+  - The task sits ≈ 100 px lower than in the mockup because "גליות" and its body come first, and the data cards are single-row (46 px vs 72 px) to fit the frame.
+- **Verification:** `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/measurement-mission.test.mjs` (8 tests). `node scripts/qa/shot-measurement-mission.mjs` runs behaviour, keyboard, reduced motion and no-WebGL checks, writes the screenshots and the overlay/diff, and puts everything in `design/screenshots/measurement-mission/`.
+
+### 2026-10-11 — "זיהוי סוגי תכסית בשטח": realistic top-down map (lesson 2)
+
+- Request: keep the interaction, copy and layout exactly, and redesign the papercut map in the realistic style of the relief/cover side-section. The papercut version is archived unchanged at `/archive/topic-02/landcover-v1/` (`LandCoverSceneV1.tsx` + `LandCoverMapV1.tsx`).
+- **How it is built:** a Blender Cycles render (`scripts/blender/render_land_cover.py` → `package_land_cover.cjs` → `public/assets/lessons/topic02/land-cover/*.webp`, ≈ 500 KB total). One orthographic camera looks straight down and is locked to the 400 × 250 map tile at 3 px per unit (the script asserts the error is < 0.05 units; measured 0). The hulls, tag positions, outlines and hit areas are the papercut ones, unchanged.
+  - **Passes:** bare land per season; one transparent pass per region (its floor and objects, with their shadows on each other baked in); one cast-shadow pass per raised region (grove, garrigue, planted forest, village, orchard, reservoir, power line, fence). Placement is in `landCoverRenders.data.ts`, generated by the packager.
+  - **Seasons:** land, grove, garrigue, batha, terraces and fields render twice. The summer layer fades over the winter layer in 700 ms (the papercut's colour transition), and the winter layer is dropped only after that. Planted forest and orchard are evergreen, and the rest does not change.
+  - **Textures:** the repo's existing CC0 sets only (`contour-mountain/textures`, the topic-04 trafficability `hard`/`mud`/`sand` maps). Leaf atlases are procedural (oak, scrub, citrus, pine). No network.
+- **Unchanged:** all copy (including the caption "מבט מלמעלה על שטח לדוגמה · המחשה סכמטית…"), the tabs, pills, result card, season buttons, the tile's rounded frame and rim, hover/focus/selected outlines, name tags, the dimming of other categories (38 % + desaturate), and the tab and hit order. The hit areas are the transparent hulls in their original DOM order. The images are never hit targets.
+- **Removed:** the papercut "lift" drop-shadow on regions in the active category, because the render's own cast shadows replace it (as in relief/cover).
+- **Visual assumptions:**
+  - Scale is about 1 unit ≈ 1 m. Sun from the north-west, about 48° up, so shadows fall down-right as the papercut ones did.
+  - Land is terra-rossa soil with limestone and grass patches: green in winter, straw in summer.
+  - Grove: irregular oak crowns over shrubs and litter. Garrigue: shrub clumps among rocks, greying in summer. Batha: low grey-green cushions and grass tufts on stony ground.
+  - Planted forest: 20 identical pines on the papercut grid, needle litter, a dirt firebreak inside the edge. Orchard: 24 identical citrus trees on cultivated strips with a cover crop between them.
+  - Terraces: 1.5 m steps with dry-stone walls, alternate bands slightly darker (the papercut's two tones).
+  - Fields: rows in three directions. Winter: young crops. Summer: stubble, a ploughed middle plot and dry hay.
+  - Village: flat concrete roofs with parapets, solar water heaters on every third house and black water tanks on others, paved lanes, a paved square with a tree.
+  - Reservoir: earth embankment, a dark liner at the waterline, and the pipe to the fields.
+  - Power line: lattice pylons with an east–west cross-arm, two conductors and an earth wire.
+  - Fence: chain-link on posts with a top rail around the orchard, with a gate where the dirt track arrives.
+- **Re-render:** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_land_cover.py` (≈ 4 min on the RTX A5000), then `node scripts/blender/package_land_cover.cjs`. Keep the geometry block in the script in sync with `LandCoverMap.tsx`. QA: `QA_PORT=3001 node scripts/qa/shot-landcover.mjs`.
+
+### 2026-10-11 — Guided 3-D datum implemented (lesson 2, `#scene-coordinates`)
+
+- **What changed:** `DatumFit` in `CoordinatesScene.tsx` was replaced by `<DatumGuided />` (`src/components/lessons/topic-02/datum/`). It has three stations in an Onboarding-style accordion: גוף הייחוס, מיקום וכיוון, עולמי ומקומי. Beside them sit a live R3F globe, the active-surface selector, the demo timeline, a linked gap close-up, the original fit readout across the card, and the two original explanation cards below. `IntroColumns`, `ReferenceBodies`, `DatumShiftDemo` and `Part1Summary` were not touched (`ReferenceBodies` was being rebuilt in parallel by another session).
+- **Copy:** every original sentence is kept verbatim, in order (`node scripts/qa/datum-copy-check.mjs`). The lead paragraph is split by whole sentences:
+  - sentence 1 stays above the card;
+  - "נחשוב על הדאטום…" goes to station 1;
+  - "המטרה…", "בתרשים…" and "הזיזו…" go to station 2;
+  - `DATUM_MODES` goes to station 3.
+  Added labels (approved): station titles, הפעלת ההדגמה / השהיה / המשך / נסו בעצמכם / חזרה להדגמה / החזרת המבט / מסך מלא, the accessible names המשטח הפעיל, התקדמות ההדגמה, and נקודת הבדיקה.
+- **Geometry kept:** `Pose`, `START`, `RANGE`, `GEOID`, `LOCAL_ARC`, `REGION`, `fitError`, `bestFit`, `FIT_TOL`, `FIT_GOOD` moved verbatim to `datum/datumGeometry.ts`. Pinned by `scripts/qa/datum-guided.test.mjs`: best fits (4, −4, −9°, ×1.01) and (38, −28, −36°, ×0.75), and identical errors and scores.
+  - **3-D mapping:** the section is the globe's plane z = 0 (x right, y up, rotation about Z). The ellipsoid radii are 170 : 135 : 170. The 3-D geoid passes through every original GEOID point in that plane, and the posed ellipsoid cuts it in exactly the posed 2-D ellipse (both tested).
+- **Deviation from the reference — the cutaway is on the globe's right, not the left.** The marked local arc is fixed at the section's upper right (`LOCAL_ARC`). The brief requires it to stay clear "in 3-D and in the section", with sliders that never act reversed and the rotation about Z. Together these force the exercise wall to face the camera over the section's right half. With the reference's left-hand opening, that wall is seen almost edge-on (tried and rendered first). The brief's priority order (instructions above the mockup) decided it. Labels and close-up keep the reference's positions: surface label upper left, ellipsoid label right, close-up lower left. The geoid label moved to the right, beside the opening.
+- **Surface vs. geoid:** the exercise's geoid is exaggerated (radius factor 0.91–1.17). A surface built on it would be a lumpy "potato", so the Earth's surface is a smooth oblate globe that encloses the geoid everywhere (≥ 1.2 % clearance, a gentle rise over the local bulge), plus low land relief. The globe is therefore oblate (135 : 170, as the exercise's ellipsoid), not round as in the reference. The cut faces show the geoid line inside the globe with a faint olive band above it, never as a solid layer.
+- **Geography:** continents come from the existing Natural Earth 1:50m `WORLD_LAND` (topic 09), drawn at load (`datumEarth.ts`). East stays to the right (never mirrored). Africa and Europe face the default camera; the cutaway opens over Asia, so the marked arc lies at ≈ 31°–83° N on 150° E. No label names it: the region is schematic, not a real datum.
+- **Palette:**
+  - sea `border.subtle` (#ECE4D2 — the deeper cream token, so the lit globe reads on the white card);
+  - land `brand` / `brand.dark`, relief lines `border.strong`, coast `fg.dim`;
+  - cut faces `bg.accent`, with a `fg.dim` band at 20 %;
+  - geoid `accent.cool`, only on the geoid, its line and its label;
+  - ellipsoid `accent`.
+  The readout's good state uses `brand/10` instead of `status-ok/10`.
+- **Layout choices (user answers, 2026-10-11):**
+  - assets in `public/assets/lessons/topic02/datum-guided/` (manifest inside);
+  - the readout tray spans the card width;
+  - the inspection point is dragged along the section or moved with ←/→ (global: the exposed half; local: the marked arc).
+  In manual mode the sliders make station 2/3 taller than the stage, so at 1440 × 1122 the tray falls below the fold. The 3-D view and the close-up keep showing the gap, and the score is announced after each change.
+- **Mockup elements deliberately not reproduced:**
+  - the concept title "מהכדור אל מערכת הייחוס" and every concept sentence;
+  - the ⓘ icon;
+  - the "הפרש (מוגזם)" label;
+  - the brown rim in the cut and the dense orange grid;
+  - circular station badges and the sage-tinted open header (the site's accordion wins);
+  - the controls row centred under the whole card (kept in the stage column so it never moves).
+- **Fallback:** `datum-fallback.webp` is rendered from the live scene (`scripts/render-datum-fallback.mjs`). It shows under the canvas until the first frame, and beside the live SVG section when WebGL is unavailable. QA: `node scripts/qa/shot-datum.mjs` (all stations, demo, manual, local/global, camera, fullscreen, keyboard, reduced motion, no-WebGL, leave and return). Screenshots and overlay/diff are in `design/screenshots/datum-guided/`.
+
+### 2026-10-11 — "תצורות הצומח וגובהן": realistic side view (lesson 2)
+
+- Request: redesign the papercut vegetation ladder the same way as the land-cover map. The papercut ladder is archived unchanged as `VegetationLadderV1.tsx`. The archived scene `/archive/topic-02/landcover-v1/` now uses it, so the archive shows the whole pre-redesign "תכסית" scene.
+- **How it is built:** a Blender Cycles render (`scripts/blender/render_vegetation_ladder.py` → `package_vegetation_ladder.cjs` → `public/assets/lessons/topic02/vegetation-ladder/*.webp`, ≈ 120 KB). It uses the relief/cover side-section language: an orthographic camera pitched 10°, a cut slab of bare soil over terra-rossa and limestone, the same warm front-left sun, and procedural leaf atlases.
+  - **Alignment:** the camera is locked to the 500 × 206 viewBox. Every formation stands on the ladder's ground line (y = 184) in the middle of its column and reaches its schematic height (16 / 34 / 70 / 112 / 164). The script asserts this (measured error 0.0001 units), so the height lines and the planted frame fit unchanged.
+  - **Passes:** the slab, one transparent pass per formation (the slab is a holdout), and one cast-shadow pass per formation. The shadow grows and dims with its column.
+- **Unchanged:** the heading, labels, heights text, legend, height lines and their labels, the planted dashed frame, the hover columns (40 % dimming, label highlight) and the grow-in animation.
+- **The papercut ground strip is now the rendered slab:** land behind the line rising to y ≈ 176, and the cut face below y = 194. The planted frame sits under the slab, which hides its foot as the papercut strip did.
+- **Visual assumptions:**
+  - Herbaceous: grass tufts with a few low herbs.
+  - Batha: low grey-green cushions with grass tufts.
+  - Garrigue: two multi-stemmed shrubs (≈ 70 and ≈ 46).
+  - Grove: two oaks on the papercut crown layout, with understory shrubs.
+  - Planted forest: three identical conifers with tiered crowns and bare lower trunks. They keep the papercut's conical silhouette, which is the planted cue together with identical spacing, not a claim about the species.
+- **Re-render:** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_vegetation_ladder.py`, then `node scripts/blender/package_vegetation_ladder.cjs`. QA: `QA_PORT=3001 node scripts/qa/shot-landcover.mjs` (now also covers the ladder).
+
+### 2026-10-11 — "תכסית טבעית / תכסית מלאכותית": realistic origin vignettes (lesson 2)
+
+- Request: redesign the two papercut vignettes in the opening origin cards the same way. The originals are archived unchanged as `OriginVignettesV1.tsx`, and the archived scene `/archive/topic-02/landcover-v1/` uses them.
+- **How it is built:** `scripts/blender/render_origin_vignettes.py` imports `render_land_cover.py` for its materials, crowns and sun, so the vignettes are crops of the same aerial world as the map. `package_origin_vignettes.cjs` writes `public/assets/lessons/topic02/origin-vignettes/{natural,planted}.webp` (≈ 28 KB).
+- **Framing:** one straight-down orthographic camera covers the 88 × 60 box at 4 px per unit. The component keeps the same 88 × 60 CSS box and its names and props.
+- **Kept from the papercut:** the crown positions and sizes, the natural patch outline and the planted parcel. Natural: irregular oak crowns of mixed size with a few understory shrubs on a ragged, feathered patch. Planted: 12 identical pines on the papercut grid inside a sharp-edged parcel with needle litter.
+- **Dropped:** the papercut row strips under the planted crowns. The exact grid, the identical crowns and the hard parcel edge carry the cue, as in the map's planted forest.
+- **Re-render:** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_origin_vignettes.py`, then `node scripts/blender/package_origin_vignettes.cjs`. QA: `scripts/qa/shot-landcover.mjs` now also checks that both vignettes load.
+
+### 2026-10-11 — Guided datum: hologram refinement (lesson 2, `#scene-coordinates`)
+
+- **Brief:** `design/mockups/datum-concepts/claude-hologram-refinement-prompt.md`. It lifts the earlier "matte only" and "1 : 1 display of 170 : 135 : 170" limits, and keeps the palette, copy and behaviour binding. "Before" screenshots: `design/screenshots/datum-guided/before-hologram/`. "After" screenshots are in the same folder; side-by-side pairs are in `before-after/`, and the reference overlay is in `compare-hologram/`.
+- **Why the globe looked wide and low:** `bodyPoint`/`poseToWorld` drew the exercise's exaggerated flattening (135 : 170 = 0.79) 1 : 1, and the surface envelope inherited it. It was not CSS or canvas stretching: the camera aspect follows the canvas, and the lens shift does not scale.
+- **Display mapping:** a view-only vertical factor (`DISPLAY_K` = 1.2, `datumGeometry.ts`) is applied once, as the parent transform of every body.
+  - It is used by every anchor projection, both ray-casts (marker, ellipsoid drag), the occlusion test, the close-up and the no-WebGL section.
+  - The displayed globe height/width = 0.95, tested.
+  - `fitError`, `bestFit`, the score, `START`, `RANGE` and the pose are untouched (the pinned results still pass).
+- **Framing:** a shared framing by bounds (`CameraRig`).
+  - Each frame it projects the globe and the posed ellipsoid from the current direction at the default distance, so the learner's dolly is not fought.
+  - It eases `camera.zoom` (≤ 1) and the lens shift to keep both on stage, preferring the reference's right-of-centre globe.
+  - At START the view is wider (the displaced ellipsoid is whole, not cut at the corner). As the demo brings it in, the globe grows back. Reduced motion jumps.
+- **Materials (`datum/datumHolo.ts`):** one small shader for every surface — a calm, low-alpha body, a soft fixed studio key, and a Fresnel rim in the object's own token colour with a little extra alpha at grazing angles. There is no additive blending or bloom, so the white card never washes out.
+  - Earth: land 95–97 %, sea 72–82 % opaque, sage rim; its far side is faint.
+  - Geoid: a whole, gently wavy translucent body with thin contour lines. It is always present (resting opacity 0.15), and choosing it strengthens body, rim and lines. Before, `geoidOpacity` was 0 unless chosen.
+  - Ellipsoid: a smooth translucent body with an even cage (meridians every 30°, parallels 0°/±30°/±60°).
+  - A 4 % glass over the open quarter keeps the globe's round silhouette.
+- **Depth:** all passes run in the transparent queue in a fixed `renderOrder`. Each reference body gets a fresh depth (cleared in `onBeforeRender`, then the cut faces written back), a colour-less front pre-pass, its far-side lines with `depthFunc = Greater` at low alpha, and its near-side lines normally. Near lines read crisp and far lines faint; lines behind a cut face also dim. The Earth's near side is drawn last with a depth test, so a body in front of the globe (the START ellipsoid) stays in front. Nothing is drawn "on top of everything".
+- **Cut faces:** cream glass at 34 % with thinner section lines. They no longer dominate; the curved bodies inside the opening carry the view.
+- **Close-up:** drawn under the same display mapping. Its window always frames BOTH curves (it was capped before, so at START the arrow pointed to an ellipse outside the window).
+- **Fixed on the way:** the surface's rise over the geoid bulge now fades out at the poles (it depended on λ there, which left a small seam at the north pole). This is tested.
+- **Verification:** this round ran on an isolated worktree (HEAD + only the datum files, own dev server on :3005). On the shared server the topic-02 page was broken by another session's in-progress files: a `measurementLayout.ts` runtime error, and `LandCoverVisuals.tsx` importing a missing `vegetationLadderRenders.data`. `QA_BASE=http://localhost:3005 node scripts/qa/shot-datum.mjs` passes 44 checks with no console or page errors. Unit tests: 16/16. Copy check: unchanged. No learning copy changed in this round.
+
+### 2026-10-11 — "שלושה סוגי צפון": map polish (lesson 6, `north-lab/`)
+
+- **Brief:** `design/mockups/north-concepts/claude-map-polish-followup.md` — replace the terrain illustration under the lab; keep the compass, layout, copy, behaviour and geometry.
+- **Asset route:** the brief asks for an image tool first. Both connected image services failed this session (Higgsfield "not connected"; Magnific 404 "server not found"), so the brief's fallback was used: a detailed SVG at `public/assets/lessons/topic06/north-lab/map-paper.svg`. It also guarantees the brief's hard constraints, which a raster could not: contours that never cross (one height field, marching squares with a consistent saddle rule), only `MAP` colours, no baked text/grid, exact 654 × 628 alignment.
+- **Generator:** `scripts/maps/build-north-lab-map.mjs` (deterministic seeds). Landforms are smooth analytic functions — the ridge as a crest line x(y), the saddle as y(x), the valley as x(y), an elliptical hill — under a two-scale domain warp, plus flank-only noise for spurs and gullies, so gentle ground stays calm. Contours: 5 m interval, index every 25 m; 0.7 px at 50 % and 1.1 px at 64 % of `MAP.contour`. Vegetation: a patch field (terrain zones × break-up noise) gives three soft tint steps of `MAP.vegFill` and clusters of fine `MAP.vegInk` dots, a few small tree marks and crowns. Road: one narrow minor road (`MAP.roadCasing` / `MAP.roadFill`); five buildings of varied footprint set back on both sides (`MAP.building` at 68 %). Paper grain: `feTurbulence` in the contour ink at 7 % alpha.
+- **Readable zones (moderate detail, never a hole):** vegetation thins smoothly around the ring face, along AB, around B, under the TN/GN/MN label row and arrow tips and under the bottom-left note; contours stay everywhere.
+- **Component:** `NorthLabMap.tsx` lost the old code-drawn terrain (four Gaussian hills, blob patches, uniform dots, smooth road, identical squares) and its grain filter; the static sheet now draws terrain → grid → compass body and print, with the live layer above. Grid: angle, spacing and anchor unchanged; only opacity 0.8 → 0.66 and width 0.9 → 0.8 so it stays quieter than the arrows over the richer terrain.
+- **Unchanged:** `compass-body.webp`, its mask, size, position, ticks and numbers; `northLabGeometry.ts`; every string; controls, table, slider, reset, keyboard, live region, reduced motion.
+- **Verification:** while other sessions were editing shared lesson files, the shared :3000 dev server reloaded the page mid-run. Final QA therefore ran against a static export of HEAD + only this activity's files (temporary worktree, `next build` passed, served locally): `shot-north-lab.mjs` 51/51 (incl. new checks: terrain asset served and text-free, drawing order terrain → grid → ring, terrain node never re-created through choices and slider moves) and `shot-compass-map.mjs` all passed. Unit tests 23/23 with the repo resolver; the bare `node scripts/qa/north-lab.test.mjs` cannot resolve the extensionless TS import without `--import ./scripts/qa/ts-resolve.mjs` (existing convention, documented in the test header). Screenshots: `design/screenshots/north-lab-map-polish/` (baseline kept in `north-lab/`); comparisons in its `compare/` folder.
+
+### 2026-10-11 (later) — measurement mission: visual pass (layout, terrain, section)
+
+- **Root causes found:**
+  - **Empty space:** all four view texts were stacked in one grid cell, so the text column always kept the task's height. The H/h/N key area was reserved with `invisible` in every view, and the divider stretched to the full height.
+  - **Small, rigid model:** a planar-UV albedo on a non-eroded height field, with a wall of peaks along the back, and a camera fitted only by distance, so its frame was off-centre.
+  - **Section:** a bent horizontal axis and a log vertical scale.
+- **Layout:**
+  - The surface, ellipsoid and geoid views show their text (unchanged) in a compact `max-w-3xl` block under the tabs. Under it is a full-width stage: diorama 986 × 448 and section 220 px. These three share one height because their texts share one cell (≈ 3 lines of difference). The card is 1006 px, which fits under the site header at 1440 × 1122.
+  - The task view has two top-aligned columns (1 : 1.85) and a divider. It is 829 px and fits at the mockup's card top (288 px). Its height is the same through every task state (asserted).
+  - "Next station" and the 3/3 line moved into the success feedback, and reset sits beside the check button. The feedback slot keeps a 92 px minimum.
+- **Terrain (rebuilt, same pipeline):**
+  - Domain-warped massifs and a spur for the large forms.
+  - Stream-power erosion (implicit, D8, priority-flood pit filling, 40 iterations, K = 0.015, diffusion 0.05) for wadis, spurs and saddles; the main valleys are cut up to 45 m.
+  - Micro-relief noise at the small scale.
+  - Diorama 2.0 × 1.15 km at VE 1.4 (the vertical scale is intentional and labelled by the existing "ללא קנה מידה · הגבהים מוגזמים"). Range ≈ 375 m.
+  - Stations run west → east: C (−690, 275) on the spur, B (−80, −40) on the hill, A (470, −150) on the plain. The exact-height corrections are under 9 m.
+  - Ground: the contour scene's CC0 tiling textures (read-only) blended by a new splat map and macro AO, triplanar, with tiles 80–140 m and a two-scale anti-tiling read.
+  - The cut edge is a plain CUT_COLOR base with a thin soil band; the stripes are gone.
+  - The sea is a see-through #7FB4C6 surface on the geoid.
+- **The model stands on the geoid:**
+  - One N field, `undulationAt`: Gaussian RBF, exact at the stations, settling to −6 m away from them. Every vertex is lifted by N (× the model's vertical scale × 1.5), so the sea is the geoid.
+  - The ellipsoid is a flat sheet below; geoid − ellipsoid = N everywhere (unit-tested). The section samples the same field.
+  - In the explanation views the matching sheet appears (tint + 50 m grid + edge line, fading out beyond the footprint). The task view shows both, quieter.
+- **Analytic layer:** shader contour lines every 20 m of H (index every 100 m), computed from the pre-lift height, so they follow true H. There is a soft ring at the selected station and a dashed transect on the ground. Emphasis transitions are short damped changes, and immediate under reduced motion. Colours are `fg`, `accent`, `brand.dark` and `tanline.badge` only.
+- **Camera:** fixed per box aspect. Azimuth 0.12 rad east of south, elevation 0.5 rad, FOV 24°. The target is centred on the projected frame (cut-edge rim + plinth foot + summit), then the distance is fitted. There is no orbit or zoom, as before, so a station choice never moves the camera.
+- **Lighting:** as the contour scene — HDR sky at 0.7, a soft hemisphere and one sun (lowered for raking light on the wadis), N8AO and ACES. A soft shadow sits 0.07 below the plinth, so the model hovers slightly.
+- **Section:**
+  - It is the transect from the west edge through C, B and A to the east edge, in the sea.
+  - One horizontal scale, anchored so B (the station the task opens on) sits exactly under its pin, with the slope least-squares fitted to C and A. Perspective leaves C and A up to ≈ 30 px off their pins, so their links slant slightly.
+  - One linear vertical scale for H, h and N; arrow lengths are proportional to the data (unit-tested). Because of that, A's arrows are short (H ≈ 18 px).
+  - Quiet lines are dashed at 50 %, and their names stay at 55 %.
+- **Not changed:** copy (32 / 34 original strings verbatim; the two removed are the slider's, as approved), the task logic, the data values, keyboard handling and the no-WebGL path.
+- **Verification:** `scripts/qa/measurement-mission.test.mjs` (11 tests) and `scripts/qa/shot-measurement-mission.mjs`, which now checks for no empty band at the card's foot, a stage-to-text gap of 24 px or less, and a full-width stage. Before/after screenshots are in `design/screenshots/measurement-mission/before/`, `…/` and `…/compare/`.
+
+### 2026-10-11 (later) — Guided datum: realism of the globe and the close-up (lesson 2, `#scene-coordinates`)
+
+- **Brief:** `design/mockups/datum-concepts/claude-realism-and-inset-prompt.md`. "Before" is the end of the hologram round, re-rendered from that code in an isolated worktree with the same script and framing as "after". Screenshots: `design/screenshots/datum-guided/realism-refinement/`.
+  - `before-*` / `after-*` show the full viewport at 1440 × 1122 for opening, geoid, ellipsoid, mid-demo and fitted.
+  - `*-globe` and `*-inset` are separate close-ups rendered at 2×.
+  - `compare-<state>-globe|inset.png` set before | after | mockup side by side.
+- **Relief from real data, not noise:** the old canvas map drew procedural noise as "relief"; the brief asks not to present noise as elevation. The globe now uses four textures built by `scripts/build-datum-textures.mjs`:
+  - **Sources:** NASA Earth Observatory / GEBCO land elevation (Blue Marble NG topography, public domain, credited) and Natural Earth 1:50m land + large lakes (public domain).
+  - **Display relief:** a monotonic curve (elevation^0.6) plus a small coastal step, so land reads as a volume.
+  - **Albedo:** tokens only. Tan (border.strong) appears on high ground and on ridges, measured against the land-only neighbourhood (otherwise every coast became a "ridge"); ice sheets are bg.accent.
+  - **Maps:** normal, roughness and valley shading, the last on land only.
+  - **Where they live:** `textures/` sits in the existing `public/assets/lessons/topic02/datum-guided/` folder, not in the brief's suggested `topic-02/…`, to keep the block's assets in one place. The runtime no longer imports the world-map outlines.
+- **One studio light for everything** (`datumHolo.ts` `STUDIO_GLSL`). It is fixed to the view, so a turned globe stays lit, and the close-up uses the same chunk:
+  - a broad key from the upper left with a wrapped, soft terminator;
+  - a weak fill from the right and a warm ambient a little brighter from above;
+  - GGX highlights driven by roughness and a gentle rim.
+- **Earth:**
+  - **Land:** relief comes from the normal map, on land only, so the sea stays one smooth ceramic surface; land is a mineral satin.
+  - **Sea:** the bright ceramic with a soft sheen. It is now 86–93 % opaque (it was 72–82 %), so the sphere reads as a lit solid; the bodies still show faintly through it.
+  - **Geometry:** displaced by the real relief, with its normals taken from the smooth envelope so relief light is not counted twice. Poles ease to one mean height (no spike).
+- **The cut:**
+  - **Lip:** a rounded lit lip runs along both cut meridians — the shell's thickness, legible from any side.
+  - **Band:** the band of the Earth's material above the geoid on the cut faces (data: surface minus geoid) is a sand band with a lit lip and a shaded inner edge.
+  - **Panes:** they get a soft darkening toward the axis where the two faces meet. No geological layers, core or mantle.
+- **Reference bodies:**
+  - **Geoid:** a lit, more present blue body. Opacity is 0.44 at rest and 0.6 when chosen (it was 0.15 / 0.3), and its inner side is darker so it reads as a volume.
+  - **Ellipsoid cage, now in three depth classes:** crisp in front; softer when seen through the geoid (the geoid's front is written to depth with a polygon offset, then the cage is drawn again); faint on its own far side.
+  - **Draw order:** the Earth's near side is now drawn between the ellipsoid's hidden and seen passes. A protruding ellipsoid is therefore drawn over the shell (no hole in the shell behind it), and the parts inside the globe are covered.
+- **Close-up:**
+  - **What it shows:** a small live 3-D scene (`DatumInset3D.tsx`), rendered by the globe's own renderer into the circle (a scissored viewport after the globe, one WebGL context). It is the local section of the wall around the inspection point: two lit tube-bands (blue geoid, orange ellipse), each with a lit crest, a 14 px illustrative depth and a soft shadow, on a cream ground with the Earth's side of the geoid a shade deeper. The camera is tilted 0.36 rad toward the outside of the section; the marked local arc shows as a translucent band.
+  - **Geometry:** the view is pure TS (`datumInset.ts`, unit-tested) and is shared with the SVG arrow. The measured pair is exactly fitError's (geoid point, ellipse point on the ray from the ellipse centre). The window grows with the gap, so both points always stay ≥ 14 px inside the circle; no gap is faked, and none is drawn when they meet (< 3 units).
+  - **Allocation:** buffers are allocated once and rewritten in place.
+  - **Without WebGL** (and until the first 3-D frame), the SVG draws the same section with filled, edged and highlighted bands and a blurred shadow.
+  - **Choices:** band widths and depth are fixed in screen pixels (illustration only). A slightly lighter gain on the bands (×1.14) keeps their small size readable. The bands and the arrow points are new drawing, not new text.
+- **Not changed:** `DISPLAY_K`, the framing, `fitError` / `bestFit` / `START` / `RANGE` / the score, all controls, copy (copy check: every original sentence verbatim, no new strings this round), RTL, the palette (lighting varies tokens only).
+- **Verification (isolated worktree):** this round again ran on an isolated worktree (HEAD + the datum files, :3005). On the shared server the lesson-2 page returned 500 because `MeasurementTerrain3D.tsx` was missing (another session's in-progress rework of the measurement mission).
+  - **Browser QA:** `QA_BASE=http://localhost:3005 node scripts/qa/shot-datum.mjs` passes 51 checks with no console or page errors. New checks: both bands are drawn in the close-up; the arrow's points are inside it; the close-up changes with the pose; zero textures or buffers are created while the demo plays; leaving the lesson client-side releases the context, every buffer and every texture this block creates; the SVG close-up is drawn without WebGL.
+  - **Unit, build, copy:** unit tests 20/20, including 4 new close-up tests. `next build` exit 0. Copy check unchanged.
+- **Left versus the mockup:**
+  - The mockup's opening is an opaque brown crust and a near-solid blue mass. Here the geoid stays translucent so the exercise wall's section stays readable, and the palette has no brown.
+  - Its sea has a crackle pattern, which would be invented detail here.
+  - Its close-up geoid is strongly wavy at the local scale. Here it is as wavy as the exercise's own geoid is at that point.
+  - Its close-up has a "הפרש (מוגזם)" label; no text was added here.
+ 
+### 2026-10-11 — Reference systems design alternatives, lesson 2
+
+- Deliverables: `design/mockups/topic-02-reference-systems-2026-10-11/`; three generated image proposals and a Hebrew interaction brief for Claude Code. No lesson code changed.
+- Scope: replace or redesign only `ReferenceSystemBlock` after UTM. Keep the existing course navigation and approved palette. User explicitly requested three alternative layouts and allowed new interactions.
+- Teaching call: compare geographic WGS84 with WGS84 / UTM, rather than imply geographic coordinates are themselves a flat projection. For a projected reference system, datum + projection also needs axes, units and projection parameters.
+- Cartography in generated proposals is illustrative. Raster grid ticks, scale bars and coordinate labels are not validated data; the implementation must replace these with a consistent coordinate transform or a clearly labelled schematic.
+- Concept 3 requires an explicit source for the missing zone/hemisphere; this source must be added to the actual task. Its tentative ring is an unresolved state, not a plotted coordinate.
+- The generated pictures are visual directions. Exact UI values, editable Hebrew labels, keyboard alternatives and reduced-motion states remain governed by project instructions and the accompanying brief.
+
+
+### 2026-10-11 (third pass) — measurement mission: real landscape, a body per view, one screen
+
+Prompt: user follow-up to `design/mockups/topic-02-geodesy/claude-measurement-mission-prompt.md`; mockup `03-measurement-mission-v2.png`.
+Starting point: the user's screenshot, saved as `design/screenshots/measurement-mission/before-round3/user-start-screenshot.png`, plus the round-2 shots in the same folder.
+
+**Why the asset was replaced, not tuned.** The procedural height field (noise + stream-power erosion) kept producing cones and a wall-like range, and the user ruled out more noise, erosion or shader work on it. The terrain is now **real**:
+- SRTM 1″ heights of the Carmel's west flank around 32.71 N, 34.98 E: graded spurs, the wadis that cut them, a low escarpment, the coastal plain.
+- A 4.5 × 2.3 km window; the crop ships in `scripts/blender/data/`.
+- Heights are scaled ×0.8696, so the spur under B is exactly 120 m. They are drawn 2.5× high (the section's "הגבהים מוגזמים" note covers it).
+- The sea and coastline are shaped in the script: a gentle curve, the sea widening toward the viewer.
+- Stations sit on one straight survey line. Local corrections ≤ 4 m make the ground exactly H = h − N: C −4.0, B −0.8, A +1.8 m.
+- The place is not named on the page: it is a "דגם נוף", and its N values are teaching values, not this place's geoid.
+
+**Rendering choice.** A live R3F model at this quality (thousands of tree crowns, soft sun, contact shadows) was not reachable. The user allowed a high-quality render with live analytic layers:
+- **The render:** Cycles, one fixed camera (55° down, 4° from the sea side, 70 mm), 1400 × 800, AgX Medium High Contrast.
+  - Light: an even sky plus a single warm sun from the left. The repo's `sky.hdr` was dropped because its own sun fought the key light.
+  - Layers: land, land-cut, geoid, geoid-cut, ellipsoid-cut, three tripods with their shadows. ≈ 525 KB WebP in all.
+- **The page:** it projects everything live through the exported world→clip matrix:
+  - pins (HTML buttons), the station ring and the dashed survey line (visible runs only, from ray casts in the render)
+  - the cut face's three lines and their names, the surface view's place names
+  - the section's horizontal registration
+- **No rotation is offered on the landscape:** it does not exist. The ellipsoid does turn: it is SVG.
+
+**Vegetation and ground.**
+- Vegetation: ≈ 94 k instanced crowns (pine darker, oak olive), plus low shrubs in the open batha.
+- Rock: limestone outcrops on steep ground and contour-parallel ledges.
+- Plain: tilted field plots, hedges, orchard blocks and a coastal road.
+- Textures: the contour scene's CC0 textures are used for **light and shade only** (`detail()` in the script). Their own hues — reddish sandstone, orange soil — were wrong for Mediterranean limestone.
+
+**One vertical scale on the model too.** A first try drew N three times higher than H so the geoid's waves would show. The unit test caught that it put the ground at A *below* the ellipsoid (h would read as negative). N is now drawn at the land's own scale, so h = H + N holds on the model, as in the section. The geoid's waves are therefore subtle in 3D (≈ 5 px at B). They read in the section, where N is still 17 px.
+
+**Views.**
+
+| View | Stage | Section | Control |
+| --- | --- | --- | --- |
+| פני השטח | the bare landscape, place names from the view's own sentence (הרים · גיא · ים) | ground only, no reference sheet | station row; A/B/C on the land |
+| אליפסואיד | an SVG 3D ellipsoid: graticule, axis, radius a, f against the sphere of radius a, the local area with a leader | ground + ellipsoid | drag / arrow keys; side and top buttons |
+| גיאואיד | the landscape opened along the survey line (the cut opens by itself on entering) | geoid main, ellipsoid quiet | cut toggle |
+| גליות וגובה | the landscape with the tripod at the picked station | all heights | the task panel |
+
+- **Ellipsoid flattening:** drawn at 0.13, schematic and labelled "המחשה סכמטית · הפחיסות מוגזמת". No a or f value is invented or shown.
+- **Geoid cut:** the slab in front of the line is removed. The face is plain ground tone with no strata, so the geoid is never a "layer". The sheets are a faint grid in the opened strip, the geoid continuing into the sea.
+
+**Fits one screen.** Every view keeps the task view's split. Measured with the card at the mockup's card top (y = 288, the title and lead still above it):
+- explanation views: 763 px, bottom at 1051
+- task view: 829 px, bottom at 1117
+
+The explanation section is 270 px and never drawn steeper than 5 : 1, so its peaks don't spike. The ellipsoid view lends 60 px of it to the stage.
+
+**Text.** No lesson text changed.
+- Added, all operational or naming:
+  - `מהצד`, `מלמעלה`, `פתיחת חתך`, the group label `מבט על האליפסואיד`
+  - the hint `גררו כדי לסובב`, the note `המחשה סכמטית · הפחיסות מוגזמת`
+  - the place names `הרים`, `גיא`, `ים` (words from the surface text)
+  - the ellipsoid's aria description
+- The landscape's aria description (written in round 1) now describes the new model.
+
+**Left as is.**
+- The surface view's text column is short beside a tall stage.
+- A's arrows in the task section stay short (H = 30 m at one linear scale: 15.6 px).
+
+## 2026-10-11 — Topic 02 coordinates 2: "מערכות ייחוס" becomes "אותה נקודה, שתי שפות"
+
+Brief: `design/mockups/topic-02-reference-systems-2026-10-11/claude-linked-comparison-prompt.md` · mockup `02-linked-comparison.png`.
+Code: `ReferenceSystemsLinkedComparison.tsx` + `reference-systems/` (utm.ts, referenceSystems.data.ts, referenceSystemsGeometry.ts), wired in `CoordinatesPart2Scene.tsx` → `ReferenceSystemBlock`.
+
+**Terrain is illustrated, registration is synthetic.** No existing asset fitted (printed labels or grids, no bridge, satellite look, 1254 px). A new base was generated in code: `scripts/maps/build-reference-systems-terrain.mjs` → `public/assets/lessons/topic02/reference-systems/linked-terrain-base.webp` (2000 × 2000, 1 px = 1 m), lossless master `design/assets/reference-systems/linked-terrain-base-master.png`. It is registered in WGS84 / UTM 36N on the extent E 700000–702000, N 3520000–3522000 (≈ 31.80° N, 35.12° E). This is a teaching registration, not a survey of that place, and the data file says so.
+- **Palette:** only the brief's 11 tokens (bg, bg.elevated, bg.accent, border, border.subtle, border.strong, fg, fg.muted, fg.dim, brand, brand.dark), plus their mixes and transparency. The script checks each hex against `tailwind.config.ts` before it writes. The river is pale sage, not blue.
+- **Symbols are larger than life,** as on any map: road 14 m, bridge deck 22 m, houses ≈ 34 × 24 m.
+
+**Maths.** Krüger series to n⁶ (Karney 2011), no dependency. It matches proj4 2.22.0 to ≈ 2 nm across zone 36 (checked in a scratch folder; reference values are pinned in `scripts/qa/reference-systems.test.mjs`).
+- Points store E/N in whole metres; ϕ/λ are always derived.
+- Readings show 0.01″ (≈ 0.3 m) against whole metres, so ϕ/λ are at least as fine as E/N. The displayed DMS converts back to within 0.5 m of the stored E/N. (0.1″ ≈ 3 m was too coarse for the "same point" claim.)
+- The graticule is drawn through toUtm, so it leans ≈ 1.12°. That is the real grid convergence 2.1° east of the central meridian. It is not decoration and not a projection-distortion demo.
+
+**Layout decisions (the mockup is composition only).**
+- Crop: one 5:4 window (VIEW y 150–1750 m of the 2000 m square) for both maps. It was moved 50 m down from centre so pin B clears the top label row.
+- Map titles: the original column names (היטל גיאוגרפי / היטל UTM). Under each: the system code WGS84 / WGS84 / UTM 36N. Not the mockup's "מערכת גיאוגרפית".
+- Readout labels: רוחב ϕ, אורך λ, מזרח E, צפון N (terms already in this scene), units מעלות / מטרים, and "פלח וחצי כדור" = 36N (the phrase "הפלח וחצי הכדור" comes from the original row).
+- The table became three tabs. The two values of the active row sit under the maps' columns, each with its column name, so the table's header pairing survives.
+- The TERMS formula (דאטום + היטל = מערכת ייחוס) moved, unchanged in text, to its own card under the comparison. Its title and body now use the Table 2 tiers (black, text-base/lg).
+- **Not built:** the mockup's yes/no question and closing sentence (new teaching text), its marketing title, and the "הרשת / הדאטום" chips. The tabs are exactly the table's rows.
+- **Scale bar on both maps:** it belongs to the shared base, not to either coordinate system. The geographic reading card itself shows no metres.
+
+**Below the 1440 target only** (no new mobile design): when a map box is narrower than 400 px the pins shrink. Under 420 px every other meridian label steps aside. Under 340 px the edge labels are hidden. Checked clean at 390 / 480 / 640 / 768 / 1024 / 1280 / 1440 (no overlap, no clipped reading, no horizontal scroll).
+
+**QA:** `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/reference-systems.test.mjs` (maths and data) and `… scripts/qa/shot-reference-systems.mjs` (browser: picking, hover, keyboard, modes, reset, registration, overlap, fallback, reduced motion, copy, palette). Screenshots: `design/screenshots/reference-systems/`.
+
+## 2026-10-11 (evening) — Guided datum: material match (ivory, orange cage, blue geoid)
+
+Brief: `design/mockups/datum-concepts/claude-material-match-prompt.md` · mockup `01-guided-3d-site-palette.png`. Code: `datum/DatumGlobe3D.tsx`, `datumHolo.ts`, `DatumInset3D.tsx`, `scripts/build-datum-textures.mjs`. Screenshots: `design/screenshots/datum-guided/material-match/` (before / after / mockup per state, `rounds/` per tuning round).
+
+- **Ivory finish is decoration, not data.** The sea carries a seeded craquelure (a random partition of the sphere drawn as thin light lines) and a soft mottling, in its albedo and roughness only — never in the normals, the height or on the land. It means nothing geographic or geological. The ivory's shade turns toward border.strong in the shader (land excluded), not through a scene filter.
+- **The shell is almost solid now** (land 1 / 0.99, sea 0.985 / 0.965): the earlier see-through sea turned the ivory grey-blue. The bodies inside show only through the opening.
+- **The crust on the cut faces** is tan deepening to a breath of fg at the geoid, under a thin ivory skin at the surface — the reference's brown crust with existing tokens only. The lip tube is thinner (radius 3.3 → 2.1) and matte.
+- **Cage density:** 10°, tuned against the reference's cells at full fit and the same globe size (the brief's 15° start gave cells about twice the reference's). Meridians run to ±60°, every third one to ±80° (the last parallel), so 36 lines never knot at the poles.
+- **The geoid is near-solid** (0.88; 0.94 when chosen; 0.74 while the ellipsoid is chosen, so the body inside stays legible). This updates the earlier "highly transparent" direction, per the brief. Its waviness is shaded from its own data (normals from geoidW3 with the departure × 2.6, crest/trough shade from the same departure); positions, geoidAt, geoidW3 and every gap are unchanged. Blue grid: 3 parallels + 2 meridians at 0.12–0.18.
+- **Seen through the geoid, the cage stays orange:** thinner (×0.75) but kept at 0.74–0.88 alpha. Orange alpha-blended half-way into blue turns grey, so "fainter" is expressed by width, not by transparency. For the same reason the ellipsoid's skin is thin (0.035 / 0.07) and its rim and soft highlights carry the surface; a thicker skin greyed the blue in the fit state (measured: trough (108,120,130) with the skin vs (95,120,143) without).
+- **Far-side cage fix:** the far side of the cage was showing through the cut faces as a faint "ghost sphere" (a GreaterDepth test passes wherever a wall is in front). It is now tested against the walls and its own inner side (pushed back), and drawn under the geoid's surface.
+- **Mockup angle:** the brief asks for a comparison at an angle similar to the reference. The `-angle` states turn the camera with the existing orbit drag (stage px (300, 170) → (230, 185)); opening state and geometry are unchanged. The reference's cutaway (orange half-body in front of the blue) is an illustration that the live geometry does not reproduce — at mid-demo the ellipsoid is inside the geoid.
+- **Integrated page:** it broke mid-round (another session's `EllipsoidModel.tsx` imported a not-yet-written `./StageControls`, then repeated full reloads). The "before" set and rounds 1–3 were shot on the shared :3000; the final "after" set, QA, fallback and build ran in the isolated worktree `.claude/worktrees/datum-material` (HEAD + the datum folder, its own server on :3021 — :3005 and :3007 belong to other sessions).
+
+### 2026-10-11 (fourth pass) — measurement mission: turnable models, a synced section, one screen at 1122 / 900 / 800
+
+Brief: `design/mockups/topic-02-geodesy/claude-interaction-layout-followup.md`. Before / after: `design/screenshots/measurement-mission-interactive/{before,after}/h{1122,900,800}-*.png`, side by side in `compare/h*.png`; QA states in `qa/`.
+
+**The landscape turns, and it is still the renders' landscape.**
+- **Model:** `scripts/blender/export_measurement_model.py` imports the render script's own fields. It writes:
+  - the ground H on a 10 m grid (`model-height.bin`)
+  - the diorama rendered straight down with the same sun, sky and AgX look (`model-albedo.webp`)
+- **Drawing:** `MeasurementLandscape3D.tsx` meshes the grid and drapes the image on it unlit. Light on diffuse ground does not depend on the viewing angle, so every angle shows the render's colours, rock, fields and tree shadows.
+- **Trees are flat in the image.** At ≈ 6 m per screen pixel a crown is under a pixel; their volume is not modelled.
+- **Walls:** the colours are sampled from `land-cut.png`, shaded once per side for the renders' sun.
+- **One view state, `LandView {az, elev}`,** shared by the three landscape views.
+  - `measurementView.landCamera()` re-runs the renders' camera solve for any angle and box. So the model stays centred and as large as the box allows, with square pixels. At the opening view in a 1400 × 800 box it is the renders' camera (unit-tested to 0.5 px). The renders stay as the loading view and the no-WebGL fallback.
+  - The R3F camera and every HTML anchor (pins, names, the arrows' letters, the links to the section) are computed from that one camera.
+- **Limits:**
+  - **Round:** ±62°. Past side-on the model would be seen from behind, and the section below runs C → A left to right.
+  - **Tilt:** 16°–84°, never under the ground.
+  - **No wheel zoom,** so page scrolling is never captured.
+  - **Drag:** becomes a drag only after 5 px. Only then is the pointer captured, so a drag that starts on a pin never picks it.
+  - **Keys:** arrows turn the focused stage.
+- **Hidden points:** `hiddenBy()` marches over the height grid toward the eye. A hidden station keeps its pin, dashed and faded and still pickable, and its link to the section turns quiet. A hidden place name fades out.
+
+**Task view framing.** At the whole model's framing the arrows on the cut face are ≈ 20 px at B. The task view therefore glides (650 ms; at once under reduced motion) to a frame on the survey line, x −2.45 … 3.55 world units: the whole depth is kept, and the model's sides fade out.
+- It also looks along the face more directly: `framedView()` maps 55° → 35°, keeping every angle in order.
+- The camera moves only when entering or leaving that view, never when a station is picked.
+- B's h is ≈ 60 px there.
+- A's arrows stay small in 3D (h = 18 m at true scale); they read in the section.
+
+**The cut and the heights are in the model.**
+- **The slab:** opening the cut drops the slab in front of the survey line away below the table (clipped there), and its share of the contact shadow goes with it.
+- **The sheets:** the geoid sheet (wavy, the land's scale) and the flat ellipsoid in the open strip are depth-tested surfaces with a world-space grid, so the land hides them.
+- **The arrows:** h, N and H stand on the face. N and H are stacked on one upright, from the ellipsoid and then from the geoid; h is beside them. Each has a tick on the surface it starts from. Their lengths are the station data (unit-tested).
+- **The receiver** stands beside the station, behind the cut edge.
+- **Where the face's lines are named:** in the task view, over the wadi between C and B, clear of every station's arrows.
+
+**The section does not turn.** It is data along the survey line. It answers the turning in three ways:
+- the link from the picked station's pin, which follows the camera
+- the picked station, which is the same everywhere (pin, station buttons, and now a click on the station's point in the section, pointer only)
+- in the ellipsoid view, its focus
+
+It registers with the opening view of the current framing (B under its pin). To keep A's H arrow ≥ 14 px at 800, C may now sit 16 px (was 28) from the plot's edge, and the task section is at least 184 px tall.
+
+**The ellipsoid: one view state (`EllView`).**
+- **Controls:** a drag, the arrow keys, "מהצד", "מלמעלה" and "מבט התחלתי" all move it.
+  - The two buttons change the tilt only and keep the turn. A sideways drag after "מהצד" stays side-on, and the button stays pressed until the body tilts.
+- **Marked area:** moved to longitude 52°, so the opening view is not already in focus. It carries the survey line and its three stations.
+- **Callout:** `ellipsoidView.patchView()` places the area and the callout from its line's ends to the section's plot with the same transform as the body.
+- **Focus:** a smoothstep of how squarely the area faces the reader, 0.55 → 0.93.
+  - It sets the section's strength (40 % → 100 %) and the callout (dashed → solid).
+  - From above, the area is seen at a slant and the section dims. From the side it is partly in focus.
+
+**One screen.** The card fits under the site's fixed header (80 px) with 12 px above and below.
+- **Shared height:** the illustration column takes what is left, between 520 and 695 px, and every view shares it.
+  - Only the active view's text takes room, so inactive tabs no longer reserve space.
+- **Text column:** widens on short screens (346 → 440 px). There the model is framed by the stage's height, so the width costs nothing.
+  - From 420 px the answer field and both buttons share one row.
+  - h and N sit side by side in every case.
+- **Measured** (card top at header + 12):
+
+| Screen | Card height | Card bottom | Fits |
+| --- | --- | --- | --- |
+| 1440 × 1122 | 831 | 923 | all four views and the completed task |
+| 1440 × 900 | 796 | 888 | all four views and the completed task |
+| 1440 × 800 | 696 | 788 | all four views and the completed task |
+
+  No inner scroll anywhere.
+
+**Text.** No lesson text changed.
+- **Added:** "מבט התחלתי", the name the brief suggested.
+- **Extended:** the turnable landscape's accessible description, with the ellipsoid's existing sentence "גררו או השתמשו בחצים כדי לסובב.". The renders, which do not turn, keep the plain description.
+
+**Left as is.**
+- **A in 3D:** its arrows are a few pixels long at true scale.
+- **Label overlaps:** at some angles a place name or a face label sits near a pin; the pins stay on top.
+- **QA renderer:** the browser QA drives WebGL through SwiftShader.
+
 ## 2026-10-11 — Topic 02 coordinates 1: the datum slider becomes a find-and-fix task ("הדמיה: מה קורה כשהדאטום לא תואם?")
 
 Brief: `design/docs/datum-field-challenge-claude-prompt-2026-10-11.txt` · mockup (composition only): `design/mockups/topic-02-datum-shift-2026-10-11/mockup-field-challenge.png`.

@@ -28,3 +28,17 @@ export function panView(v: View, dx: number, dy: number, size: number, min: numb
 export function screenToUnits(v: View, sx: number, sy: number, size: number): { x: number; y: number } {
   return { x: ((sx - v.x) / (size * v.k)) * 1000, y: ((sy - v.y) / (size * v.k)) * 1000 };
 }
+
+/**
+ * Pan (k unchanged) so the visible square and `rect` (sheet units [x0, y0, x1, y1]) nest: while the view
+ * is the larger it keeps the rect whole in sight, once it is the smaller it lies inside the rect.
+ */
+export function nestIn(v: View, rect: [number, number, number, number], size: number): View {
+  const w = 1000 / v.k;
+  const axis = (off: number, r0: number, r1: number) => {
+    const u0 = (-off / (size * v.k)) * 1000;
+    const [lo, hi] = w >= r1 - r0 ? [r1 - w, r0] : [r0, r1 - w];
+    return (-Math.min(hi, Math.max(lo, u0)) / 1000) * size * v.k;
+  };
+  return { k: v.k, x: axis(v.x, rect[0], rect[2]), y: axis(v.y, rect[1], rect[3]) };
+}

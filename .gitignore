@@ -49,3 +49,6 @@ qa-*.png
 
 # Machine-local Blender MCP runtime
 .blender-mcp-runtime/
+
+.pnpm-store/
+__pycache__/

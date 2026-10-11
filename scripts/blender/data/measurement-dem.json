@@ -1,0 +1,9 @@
+{
+  "source": "SRTM 1 arc-second (NASA/USGS, public domain), via the AWS Terrain Tiles skadi set (s3://elevation-tiles-prod/skadi/N32/N32E034.hgt.gz, N32E035.hgt.gz)",
+  "format": "little-endian int16 metres, row-major, row 0 = north",
+  "rows": 145,
+  "cols": 253,
+  "lat_north": 32.73,
+  "lon_west": 34.95,
+  "step_deg": 0.0002777777777777778
+}

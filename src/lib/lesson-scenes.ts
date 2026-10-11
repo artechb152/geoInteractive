@@ -126,6 +126,8 @@ export const archivedScenes: ArchivedScene[] = [
   { topicId: 'topic-02', id: 'topography-v1', label: 'טופוגרפיה · גרסה קודמת' },
   // Papercut version of #scene-relief-cover („זיהוי תבליט ותכסית בשטח”), before the realistic redesign.
   { topicId: 'topic-02', id: 'relief-cover-v1', label: 'תבליט ותכסית · גרסה קודמת' },
+  // Papercut map of #scene-landcover („זיהוי סוגי תכסית בשטח”), before the realistic redesign.
+  { topicId: 'topic-02', id: 'landcover-v1', label: 'תכסית · גרסה קודמת' },
 ];
 
 export function isArchivedScene(topicId: string, sceneId: string): boolean {

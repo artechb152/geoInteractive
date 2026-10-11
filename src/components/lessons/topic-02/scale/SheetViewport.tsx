@@ -73,7 +73,7 @@ export function SheetViewport({
   const ref = useRef<HTMLDivElement>(null);
   const hintId = useId();
   const reduce = !!useReducedMotion();
-  const map = useMapView(ref, initialView, { maxK, onZoomOutPast });
+  const map = useMapView(ref, initialView, { maxK, onZoomOutPast, zoomInRect: zoomInto && { rect: zoomInto.rect, minK: zoomInto.minK } });
   const { view, size } = map;
   const inView = useInView(ref, { margin: '300px', once: true });
   const preloadKey = (preload ?? []).join('|');

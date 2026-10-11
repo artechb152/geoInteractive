@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import type { SheetPoint } from './geo';
-import { IDENTITY, clampView, panView, screenToUnits, zoomAt, type View } from './viewMath';
+import { IDENTITY, clampView, nestIn, panView, screenToUnits, zoomAt, type View } from './viewMath';
 
 export const MIN_K = 1;
 export const MAX_K = 3;
@@ -23,6 +23,12 @@ export type MapViewOptions = {
   maxK?: number;
   /** Called instead of zooming out at k = 1: `step` for − and the zoom-out button, false for the wheel. */
   onZoomOutPast?: (step: boolean) => void;
+  /**
+   * A smaller sheet's extent (sheet units [x0, y0, x1, y1]), handed over to from k > minK. Wheeling in with
+   * the cursor inside it steers the view toward it and, from minK, settles the view inside it — so the
+   * hand-over happens even when the zoom did not start lined up with the frame.
+   */
+  zoomInRect?: { rect: [number, number, number, number]; minK: number };
 };
 
 /**
@@ -43,6 +49,8 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
   maxKRef.current = maxK;
   const outPastRef = useRef(opts.onZoomOutPast);
   outPastRef.current = opts.onZoomOutPast;
+  const inRectRef = useRef(opts.zoomInRect);
+  inRectRef.current = opts.zoomInRect;
 
   const sizeRef = useRef(1);
   useLayoutEffect(() => {
@@ -166,14 +174,36 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
       if (e.deltaY === 0) return;
       // Over the map the wheel only zooms: at a limit it does nothing (the page does not scroll).
       e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const sx = e.clientX - r.left;
+      const sy = e.clientY - r.top;
+      const s = el.clientWidth || 1;
+      const zr = inRectRef.current;
+      if (zr && e.deltaY < 0) {
+        const p = screenToUnits(viewRef.current, sx, sy, s);
+        const [x0, y0, x1, y1] = zr.rect;
+        if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1) {
+          const next = zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.0016), sx, sy, s, MIN_K, maxKRef.current);
+          if (next.k > zr.minK) {
+            // Small enough to fit: settle inside the frame (the hand-over follows).
+            animateTo(nestIn(next, zr.rect, s));
+            return;
+          }
+          // Still larger than the frame: pull part of the way toward keeping it whole in sight.
+          cancelAnimationFrame(raf.current);
+          const goal = nestIn(next, zr.rect, s);
+          const a = Math.min(1, Math.abs(e.deltaY) * 0.005);
+          setView({ k: next.k, x: next.x + (goal.x - next.x) * a, y: next.y + (goal.y - next.y) * a });
+          return;
+        }
+      }
       if ((e.deltaY < 0 && k >= maxKRef.current) || (e.deltaY > 0 && k <= MIN_K)) return;
       cancelAnimationFrame(raf.current);
-      const r = el.getBoundingClientRect();
-      setView(zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.0016), e.clientX - r.left, e.clientY - r.top, el.clientWidth || 1, MIN_K, maxKRef.current));
+      setView(zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.0016), sx, sy, s, MIN_K, maxKRef.current));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [ref]);
+  }, [ref, animateTo]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {

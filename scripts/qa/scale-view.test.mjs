@@ -31,3 +31,20 @@ test('panning at k=1 is a no-op; at k=2 it moves and clamps', () => {
 test('screenToUnits maps the centre to 500,500 at identity', () => {
   assert.deepEqual(screenToUnits(IDENTITY, 300, 300, S), { x: 500, y: 500 });
 });
+
+test('nestIn keeps a smaller rect in sight, then holds the view inside it', async () => {
+  const { nestIn } = await import('../../src/components/lessons/topic-02/scale/viewMath.ts');
+  const R = [400, 400, 600, 600];
+  const units = (v) => ({ ...screenToUnits(v, 0, 0, S), w: 1000 / v.k });
+  // k = 4 (250-unit view) showing 450..700 on both axes: the rect's left/top edge is cut off.
+  const a = units(nestIn({ k: 4, x: (-450 / 1000) * S * 4, y: (-450 / 1000) * S * 4 }, R, S));
+  close(a.x, 400);
+  close(a.y, 400);
+  // k = 6 (167-unit view) at x 300 (outside) and y 420 (inside): only x moves.
+  const b = units(nestIn({ k: 6, x: (-300 / 1000) * S * 6, y: (-420 / 1000) * S * 6 }, R, S));
+  close(b.x, 400);
+  close(b.y, 420);
+  // Already nested: untouched.
+  const v = { k: 2, x: (-300 / 1000) * S * 2, y: (-300 / 1000) * S * 2 };
+  assert.deepEqual(nestIn(v, R, S), v);
+});

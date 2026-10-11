@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { SceneHeader } from './SceneHeader';
+import { ReferenceSystemsLinkedComparison, type ProjectionRow } from './ReferenceSystemsLinkedComparison';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -871,10 +872,22 @@ const TERMS: { glyph: React.ReactNode; title: string; body: string }[] = [
   },
 ];
 
-const MAIN_PROJ_ROWS: { label: string; geo: React.ReactNode; utm: React.ReactNode }[] = [
-  { label: 'היקף', geo: 'גלובלית', utm: 'רשת עולמית של 60 פלחים, 6° כל אחד' },
-  { label: 'יחידות', geo: 'זוויתיות (מעלות, דקות, שניות)', utm: 'מטריות' },
-  { label: 'מה מציינים', geo: 'רוחב ואורך', utm: 'הקואורדינטות, הפלח וחצי הכדור' },
+/* The original two-column table, kept whole: each row is one exploration tab
+   of ReferenceSystemsLinkedComparison (the `id` only says which part of the
+   two readings that row is about). */
+const MAIN_PROJ_ROWS: ProjectionRow[] = [
+  {
+    id: 'scope',
+    label: 'היקף',
+    geo: 'גלובלית',
+    utm: (
+      <>
+        רשת עולמית של 60 פלחים, <L>6°</L> כל אחד
+      </>
+    ),
+  },
+  { id: 'units', label: 'יחידות', geo: 'זוויתיות (מעלות, דקות, שניות)', utm: 'מטריות' },
+  { id: 'what', label: 'מה מציינים', geo: 'רוחב ואורך', utm: 'הקואורדינטות, הפלח וחצי הכדור' },
 ];
 
 function ReferenceSystemBlock() {
@@ -886,42 +899,23 @@ function ReferenceSystemBlock() {
         ״מערכת ייחוס״.
       </p>
 
-      <div className="surface-elevated p-6 lg:p-8">
+      <ReferenceSystemsLinkedComparison
+        heading="שני ההיטלים המרכזיים"
+        geoTitle="היטל גיאוגרפי"
+        utmTitle={
+          <>
+            היטל <L>UTM</L>
+          </>
+        }
+        rows={MAIN_PROJ_ROWS}
+      />
+
+      <div className="mt-6 surface-elevated p-6 lg:p-8">
         {/* DOM order = reading order: דאטום (right) + היטל = מערכת ייחוס (left). */}
         <div className="grid gap-6 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:gap-4 items-stretch">
           {TERMS.map((t, i) => (
             <TermWithOperator key={t.title} term={t} operator={i === 0 ? '+' : i === 1 ? '=' : null} />
           ))}
-        </div>
-
-        <div className="mt-8 border-t border-border/70 pt-6">
-          <h4 className="font-display text-lg font-bold leading-snug text-fg mb-3">שני ההיטלים המרכזיים</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] border-collapse text-base">
-              <thead>
-                <tr className="border-b border-border">
-                  <th scope="col" className="w-[22%] py-2" />
-                  <th scope="col" className="py-2 pe-4 text-start font-display text-lg font-bold text-fg">
-                    היטל גיאוגרפי
-                  </th>
-                  <th scope="col" className="py-2 text-start font-display text-lg font-bold text-fg">
-                    היטל <L>UTM</L>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {MAIN_PROJ_ROWS.map((r) => (
-                  <tr key={r.label} className="border-b border-border/60 last:border-b-0">
-                    <th scope="row" className="py-2.5 pe-4 text-start align-top font-display text-sm font-semibold text-fg-muted">
-                      {r.label}
-                    </th>
-                    <td className="py-2.5 pe-4 align-top leading-snug text-fg">{r.geo}</td>
-                    <td className="py-2.5 align-top leading-snug text-fg">{r.utm}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>
@@ -934,9 +928,9 @@ function TermWithOperator({ term: t, operator }: { term: (typeof TERMS)[number];
       <div className="rounded-xl bg-bg-accent/60 p-5 h-full">
         <div className="mb-3 flex items-center gap-3">
           {t.glyph}
-          <div className="font-display text-xl font-bold leading-tight text-fg">{t.title}</div>
+          <h4 className="font-display font-bold leading-tight text-black text-base md:text-lg">{t.title}</h4>
         </div>
-        <p className="text-base leading-relaxed text-fg text-pretty">{t.body}</p>
+        <p className="text-base leading-relaxed text-black text-pretty">{t.body}</p>
       </div>
       {operator && (
         <div aria-hidden className="hidden lg:flex self-center font-display text-4xl font-bold text-fg-muted">
