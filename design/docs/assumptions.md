@@ -1511,3 +1511,39 @@ Supersedes the layout of the entry above (world, map, measurements and threshold
   - The pylons' cross-arms are turned 35° so they read as pylons in a side view. On a real line they would be perpendicular to the conductors.
 - **Drawing order:** each item's shadow dims with its item when another item is selected, and all shadows fade when either layer is off, as before. The papercut drop-shadow filter on objects is gone; the render's own shadows replace it.
 - **Re-render:** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_relief_cover.py` (≈ 1.5 min on the RTX A5000), then `node scripts/blender/package_relief_cover.cjs`. Keep the geometry block in the script in sync with `ReliefCoverTerrain.tsx`.
+
+## 2026-10-11 — Topic 02 coordinates 1: the datum slider becomes a find-and-fix task ("הדמיה: מה קורה כשהדאטום לא תואם?")
+
+Brief: `design/docs/datum-field-challenge-claude-prompt-2026-10-11.txt` · mockup (composition only): `design/mockups/topic-02-datum-shift-2026-10-11/mockup-field-challenge.png`.
+Code: `src/components/lessons/topic-02/datum-field/` — `DatumFieldChallenge.tsx` (UI), `datumField.ts` (model + task reducer), `datumField.data.ts` (landmarks, shift, footprint), `datumFieldProjection.ts` (the one projection), generated `datumFieldTerrain.data.ts`. Wired in `CoordinatesScene.tsx` in place of `DatumShiftDemo` (removed with `ImpactMap`).
+
+**Terrain: a new Cycles render.** No existing asset has a bridge, a crossroads and a summit in one terrain. `scripts/blender/render_datum_field.py` builds a procedural diorama around the three landmarks, in the reference-bodies landscape's render language (Cycles, the repo's CC0 textures for light and shade only, one fixed camera, pale cut base, contact shadow). Palette: the illustration colours of design-spec §3 / `referenceBodiesStyle.ts` and their mixes; contours #8A6F4D every 10 m, computed from the ground itself. `scripts/blender/package_datum_field.cjs` → `public/assets/lessons/topic02/datum-field-challenge/` (manifest there).
+
+**Assumption — compact landmark coordinates.** The brief's suggested points (junction 1000/600, summit 1400/1000) spread 400 m. In the 668 × 374 px picture at 1440 the 60 m gap would then draw at ≈ 45 px. The bridge keeps 1200/800 (→ B 1164/752). The junction is 1090/760 (→ 1054/712) and the summit 1310/825 (→ 1274/777). The diorama is E 985–1425 × N 718–913 m, with the camera at 55° elevation and 4° azimuth (as the reference-bodies landscape). The gap draws 88 px (bridge), 79 px (junction) and 62 px (summit). The summit heads a ridge that runs north-east, so its displaced point stays on the crest and in view. The render asserts the summit is the model's highest point.
+
+**Model.** B = A − (36, 48) for every point. The map reads numbers as B, so A's numbers land at P + (36, 48) and converted numbers land at P.
+- The gap is metres of the plane, derived from the marker's position — never pixels.
+- The source numbers are immutable; a conversion is applied once.
+- A run id guards against stale arrivals: a landmark switch or reset mid-motion drops the motion.
+
+**Layout decisions (the mockup is composition only).**
+- Panel : picture stays 1 : 2.4 (`lg:grid-cols-[1fr_2.4fr]`, `p-6 lg:p-8`, `gap-6 lg:gap-10`). The card is 1052 × 759 px at 1440 and keeps that height in every state, hint included.
+- Data rows: label and numbers on one line (the mockup stacks them; at 278 px only one of the two rows fit stacked consistently).
+- The "דאטום במפה: B" row shows the numbers the map uses: A's numbers before the fix, the converted pair (with a check) after. That puts the converted pair beside the source.
+- The gap readout keeps the old block's wording and thresholds (`readGap`), marked by shape (diamond / check), never by status colours. The number counts down with the marker; the wording switches when it arrives.
+- The bottom band's neutral state is "משמעות הסטייה בהדמיה" with the consequence. After a check it carries the wrong feedback (bg-accent, x) or the success (brand tint, check); the success band appears only after the marker arrives.
+- The hint shows in a one-line slot under the buttons and frames the A/B rows with `border-accent`.
+- The thumbnails are 16:9 crops of the same render, shown 21:9 (`object-cover`) so the picker row stays short.
+- Not built from the mockup: its panel title, row subtitles and icons, the pink map row, the success band's sentence and mini-diagram, the scale bar (in this perspective a bar is true along one line only), the card icons.
+
+**Text.** The title, the first sentence, "(על ההיטל – בחלק הבא)." and the schematic note are unchanged. Only the slider instruction changed, to the brief's sentence. Added, all from the brief's operational list: the steps, the data labels, the question and the two answers, "בדיקת הבחירה" / "רמז" / "איפוס", the point names, the two feedback lines and the hint. Also added, not in the list:
+- the steps list's label "שלבי המשימה" and the sr-only "(הושלם)";
+- the picker's legend "בחירת נקודה";
+- the picture's description;
+- the failure line "לא ניתן לטעון את תמונת השטח." and its button "נסו שוב".
+
+**Left as is.**
+- The old backdrop `public/assets/lessons/topic02/scene-coordinates/TOPIC02-COORDINATES-DATUM-MAP.webp` is no longer used by this block. It stays in place.
+- No mobile design (below `lg` the card stacks: panel, picture, picker, band).
+
+**QA:** unit `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/datum-field-challenge.test.mjs` (model, task transitions, projection ↔ render data, assets, copy); browser `QA_BASE=<dev url> node scripts/qa/shot-datum-field-challenge.mjs` (states, motion sync, no double conversion, mid-motion switch, reset, keyboard, reduced motion, failed image + retry, no layout jump). Screenshots: `design/screenshots/datum-field-challenge/`.
