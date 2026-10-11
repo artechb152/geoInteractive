@@ -201,7 +201,8 @@ export function SheetViewport({
 
       {display === 'curtain' && curtain && <CurtainSlider {...curtain} />}
       <p id={hintId} data-qa="map-hint" className="mt-2 text-sm leading-snug text-fg-muted">
-        להתקרבות: גלגלת העכבר או מקשי + ו־−. חיצים להזזה כשהמפה מוגדלת, 0 לאיפוס.
+        לתקריב: גלגלת העכבר או המקשים <kbd className="font-sans">+</kbd> ו־<kbd className="font-sans">−</kbd>. להזזה (כשהמפה מוגדלת): חיצים. לאיפוס:{' '}
+        <kbd className="font-sans">0</kbd>.
       </p>
       {note && <p className="mt-1 text-sm leading-snug text-fg-muted">{note}</p>}
       <p className="mt-1 text-[13px] leading-snug text-fg-muted">{attribution}</p>
@@ -376,7 +377,7 @@ function CurtainSlider({ value, onChange, leftLabel, rightLabel }: CurtainProps)
   return (
     <div className="mt-3">
       <label htmlFor={inputId} className="block text-sm font-display font-semibold text-fg-muted">
-        מיקום הווילון
+        מיקום הקו
       </label>
       <input
         id={inputId}

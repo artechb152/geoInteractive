@@ -34,16 +34,16 @@ type Pair = [LatLon | null, LatLon | null];
 const S50 = SHEETS['50k'];
 const S250 = SHEETS['250k'];
 const MAGNIFY = S250.groundWidthM / S50.groundWidthM; // 5
-const ZOOM_LEFT = `${formatRatio(S250.denominator)} מוגדלת פי ${MAGNIFY}`;
-const ZOOM_RIGHT = formatRatio(S50.denominator);
+const ZOOM_LEFT = `מפת\u00a0${formatRatio(S250.denominator)} מוגדלת פי ${MAGNIFY}`;
+const ZOOM_RIGHT = `מפת\u00a0${formatRatio(S50.denominator)}`;
 // Opens at ×1.6 on Tavor, where the ×5 blur and the missing details read at a glance; 0 shows the whole 12 km.
 const ZOOM_VIEW = { k: 1.6 };
 // The curtain handle sits at mid-height, i.e. on Tavor: at 0.5 it hid the summit.
 const INITIAL_CURTAIN = 0.65;
 
 const RING_PX = 14;
-const HORIZONTAL_NOTE = 'זהו מרחק אופקי בקו ישר. אורך דרך מתפתלת, או הליכה במעלה מדרון, ארוכים ממנו.';
-const RULER_NOTE = 'הסרגל מודד ס״מ על דף המפה המודפס (24 ס״מ), לא על המסך.';
+const HORIZONTAL_NOTE = 'זהו המרחק האופקי בקו ישר. בדרך מתפתלת או במעלה מדרון המרחק בפועל ארוך יותר.';
+const RULER_NOTE = 'הסרגל מראה ס״מ של דף מודפס ברוחב 24 ס״מ, לא של המסך.';
 /** Quiet time after the last change before the new distance is announced (drags and key repeats settle first). */
 const ANNOUNCE_MS = 700;
 
@@ -97,7 +97,7 @@ export function ScaleLab() {
 
   let label: string;
   if (comparing) {
-    label = `השוואה: מפת ${formatRatio(S250.denominator)} מוגדלת פי ${MAGNIFY} מול מפת ${formatRatio(S50.denominator)} של אותו תחום${shownSuffix('compare')}`;
+    label = `השוואה: מפת ${formatRatio(S250.denominator)} מוגדלת פי ${MAGNIFY} מול מפת ${formatRatio(S50.denominator)} של אותו תחום`;
   } else if (mode === 'measure') {
     label = `מדידה במפה ${formatRatio(D)} סביב הר תבור, ${km} על ${km} ק״מ. לחיצה מסמנת נקודה${shownSuffix(view)}`;
   } else {
@@ -106,11 +106,13 @@ export function ScaleLab() {
 
   const located = locate ? lonLatToSheet(sheet, LANDMARKS[locate]) : null;
   const locateLabel = locate ? (LOCATE.find((l) => l.id === locate)?.label ?? LANDMARKS[locate].name) : '';
+  // The first coarser sheet that shows the located place (named in the outside line).
+  const cover = locate ? SHEET_IDS.slice(idx + 1).map((id) => SHEETS[id]).find((s) => insideSheet(lonLatToSheet(s, LANDMARKS[locate]))) : undefined;
 
   return (
     <section data-qa="scale-lab" aria-label="מעבדת קנה מידה">
       <div className={cn('surface-elevated p-5 sm:p-6', WORKSPACE_GRID)}>
-        <div role="tablist" aria-label="מצב העבודה" onKeyDown={keys.onKeyDown} className="flex gap-2 lg:col-start-1 lg:row-start-1">
+        <div role="tablist" aria-label="מצב עבודה" onKeyDown={keys.onKeyDown} className="flex gap-2 lg:col-start-1 lg:row-start-1">
           {MODES.map((m) => {
             const on = m.id === mode;
             return (
@@ -147,6 +149,7 @@ export function ScaleLab() {
               locate={locate}
               locateLabel={locateLabel}
               locatedInside={located !== null && insideSheet(located)}
+              coverDenominator={cover?.denominator ?? null}
               onLocate={setLocate}
             />
           ) : (
@@ -166,7 +169,7 @@ export function ScaleLab() {
             {comparing ? (
               // Same height as the representation toggle, so the map does not jump.
               <div data-qa="zoom-compare-caption" className={cn(T5, 'flex h-[46px] items-center')}>
-                {`השוואה: ${ZOOM_LEFT} מול ${ZOOM_RIGHT}`}
+                הגדלה לעומת פירוט
               </div>
             ) : (
               <ViewModeToggle value={view} onChange={setView} />
@@ -187,7 +190,7 @@ export function ScaleLab() {
             }
             attribution={comparing ? ATTRIBUTION.map : layers.attribution}
             preload={preload}
-            note={mode === 'explore' && !comparing ? `סרגל המרחק מתעדכן כשמתקרבים; קנה המידה של הדף נשאר ${formatRatio(D)}.` : undefined}
+            note={mode === 'explore' && !comparing ? `סרגל קנה המידה שעל המפה מתעדכן בתקריב; קנה המידה של הדף נשאר ${formatRatio(D)}.` : undefined}
             onPick={mode === 'measure' ? place : undefined}
             overlay={(ctx) => {
               centerRef.current = ctx.center;
@@ -203,7 +206,7 @@ export function ScaleLab() {
                     ctx={ctx}
                     letters={LETTERS}
                     onMove={move}
-                    names={[0, 1].map((i) => `נקודה ${LETTERS[i]}. חיצים להזזה במילימטר על הדף, Shift לסנטימטר`) as [string, string]}
+                    names={[0, 1].map((i) => `נקודה ${LETTERS[i]}. החיצים מזיזים מילימטר אחד על הדף; עם Shift – סנטימטר.`) as [string, string]}
                   />
                 );
               }
@@ -232,7 +235,7 @@ export function ScaleLab() {
 }
 
 function ExplorePanel({
-  sheet, comparing, onCompare, locate, locateLabel, locatedInside, onLocate,
+  sheet, comparing, onCompare, locate, locateLabel, locatedInside, coverDenominator, onLocate,
 }: {
   sheet: SheetMeta;
   comparing: boolean;
@@ -240,6 +243,7 @@ function ExplorePanel({
   locate: LandmarkId | null;
   locateLabel: string;
   locatedInside: boolean;
+  coverDenominator: number | null;
   onLocate: (id: LandmarkId | null) => void;
 }) {
   const D = sheet.denominator;
@@ -256,7 +260,7 @@ function ExplorePanel({
       {comparing ? (
         <div data-qa="zoom-compare" className="flex flex-col gap-3">
           <p className="text-base leading-relaxed text-fg">
-            משמאל לקו: מפת&nbsp;{ZOOM_LEFT}. מימין: מפת&nbsp;{ZOOM_RIGHT} של אותו תחום. גררו את הווילון והשוו.
+            משמאל לקו: {ZOOM_LEFT}. מימין לקו: {ZOOM_RIGHT} של אותו תחום. גררו את הקו והשוו.
           </p>
           <p data-qa="zoom-sentence" className={cn(INSET, 'font-display text-base font-bold leading-relaxed text-fg')}>
             {ZOOM_SENTENCE}
@@ -266,7 +270,7 @@ function ExplorePanel({
         <>
           <dl className={cn(INSET, 'grid gap-2.5')} data-qa="explore-readouts">
             <ReadoutRow
-              term="שטח הדף"
+              term="הדף מכסה"
               value={
                 <>
                   {/* The product is an LTR isolate (a × b never reverses); the unit stays in the RTL run. */}
@@ -278,7 +282,7 @@ function ExplorePanel({
           </dl>
           {/* One concise announcement per sheet switch (the list above is not live). */}
           <p className="sr-only" aria-live="polite" data-qa="explore-live">
-            {`מפה ${formatRatio(D)}: ${km} × ${km} ק״מ, 1 ס״מ על הדף = ${groundPerCm}`}
+            {`מפה ${formatRatio(D)}: הדף מכסה ${km} על ${km} ק״מ, וכל ס״מ עליו הוא ${groundPerCm}.`}
           </p>
 
           <div>
@@ -301,7 +305,7 @@ function ExplorePanel({
             </div>
             {/* Live region stays mounted; empty it takes no space. */}
             <p className={cn(T6, 'mt-2 empty:mt-0')} aria-live="polite" data-qa="locate-line">
-              {locate ? (locatedInside ? `${locateLabel}: סומן על המפה.` : `${locateLabel} מחוץ לקטע הזה. עברו לקנה מידה קטן יותר.`) : ''}
+              {locate ? (locatedInside ? `${locateLabel}: סומן על המפה.` : outsideLine(locateLabel, coverDenominator)) : ''}
             </p>
           </div>
         </>
@@ -345,11 +349,11 @@ function MeasurePanel({
   const reading = groundM !== null && both ? readCm(sheetCm(groundM, D)) : null;
   const ground = groundM !== null ? formatDistance(groundM, precision) : null;
   const out = [0, 1].filter((i) => pts[i] !== null && !inside[i]).map((i) => LETTERS[i]);
-  const outsideNote = out.length === 2 ? 'נקודות א ו־ב מחוץ לקטע הזה.' : out.length === 1 ? `נקודה ${out[0]} מחוץ לקטע הזה.` : '';
-  const relation = `ב־${formatRatio(D)}, כל ס״מ על הדף הוא ${formatDistance(metersPerSheetCm(D))} בשטח.`;
+  const outsideNote = out.length === 2 ? 'נקודה א ונקודה ב מחוץ לתחום המפה.' : out.length === 1 ? `נקודה ${out[0]} מחוץ לתחום המפה.` : '';
+  const relation = `במפה ${formatRatio(D)}, כל ס״מ על הדף שווה ל־${formatDistance(metersPerSheetCm(D))} בשטח.`;
 
   // Announced once the points rest (not on every drag frame or key repeat).
-  const summary = ground !== null ? `המרחק בין א ל־ב: ${ground} בשטח${reading !== null ? `, ${formatNumber(reading, 1)} ס״מ על הדף` : ''}.` : '';
+  const summary = ground !== null ? `המרחק בין נקודה א לנקודה ב: ${ground} בשטח${reading !== null ? `, ${formatNumber(reading, 1)} ס״מ על הדף` : ''}.` : '';
   const [live, setLive] = useState('');
   useEffect(() => {
     const t = window.setTimeout(() => setLive(summary), ANNOUNCE_MS);
@@ -359,7 +363,7 @@ function MeasurePanel({
   return (
     <>
       <p className={T6} data-qa="measure-hint">
-        לחיצה על המפה מסמנת את א ואחר כך את ב; לחיצה נוספת מזיזה את הנקודה הקרובה. גררו נקודה או הזיזו אותה בחיצים.
+        לחצו על המפה לסימון נקודה א ואז נקודה ב. לחיצה נוספת מזיזה את הנקודה הקרובה. אפשר גם לגרור נקודה או להזיז אותה בחיצים.
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={onCenter} className="btn-secondary h-10 px-4 text-sm">
@@ -369,7 +373,7 @@ function MeasurePanel({
           הצג דוגמה
         </button>
         <button type="button" onClick={onClear} disabled={!pts[0] && !pts[1]} className="btn-secondary h-10 px-4 text-sm disabled:opacity-50">
-          ניקוי
+          ניקוי נקודות
         </button>
       </div>
 
@@ -381,7 +385,7 @@ function MeasurePanel({
               {ground} <span className="text-base font-semibold text-fg-muted">בשטח</span>
             </p>
             <p data-qa="result-sheet" className={cn('mt-1', reading !== null ? 'font-display text-lg font-bold text-fg tabular-nums' : 'text-sm text-fg')}>
-              {reading !== null ? `${formatNumber(reading, 1)} ס״מ על הדף` : 'על הדף הזה אי אפשר למדוד את הקטע.'}
+              {reading !== null ? `${formatNumber(reading, 1)} ס״מ על הדף` : 'על הדף הזה אי אפשר למדוד את המרחק.'}
             </p>
           </>
         ) : (
@@ -405,14 +409,21 @@ function MeasurePanel({
         <div className="mt-2 grid gap-2 text-sm leading-relaxed text-fg">
           {reading !== null && ground !== null ? (
             <ol className="grid gap-1" data-qa="calc-chain">
-              <ChainRow term="על הדף" value={<Ltr>{`${formatNumber(reading, 1)} ס״מ`}</Ltr>} />
-              <ChainRow term="כפול המכנה" value={<Ltr>{`${formatNumber(reading, 1)} × ${formatNumber(D)} = ${formatNumber(reading * D)} ס״מ`}</Ltr>} />
-              <ChainRow term="בשטח" value={<Ltr>{`${ground} (±${formatDistance(precision)})`}</Ltr>} />
+              <ChainRow term="על הדף" value={`${formatNumber(reading, 1)} ס״מ`} />
+              <ChainRow
+                term="כפול מכנה קנה המידה"
+                value={
+                  <>
+                    <Ltr>{`${formatNumber(reading, 1)} × ${formatNumber(D)} = ${formatNumber(reading * D)}`}</Ltr> ס״מ
+                  </>
+                }
+              />
+              <ChainRow term="בשטח" value={`${ground} (±${formatDistance(precision)})`} />
             </ol>
           ) : (
-            <p>החישוב יופיע כששתי הנקודות בתוך הקטע.</p>
+            <p>החישוב יופיע אחרי שתסמנו שתי נקודות בתוך המפה.</p>
           )}
-          <p className="text-fg-muted">{`מילימטר אחד על הדף הוא ${formatDistance(precision)} בשטח, ולכן המרחק מעוגל ל־${formatDistance(precision)}.`}</p>
+          <p className="text-fg-muted">{`מילימטר אחד על הדף הוא ${formatDistance(precision)} בשטח, לכן המרחק מעוגל ל־${formatDistance(precision)}.`}</p>
           <p className="text-fg-muted">{HORIZONTAL_NOTE}</p>
           <p className="text-fg-muted">{RULER_NOTE}</p>
         </div>
@@ -442,6 +453,13 @@ function locateLabelDy(p: SheetPoint, text: string, ppu: number, extentSide: num
 }
 
 const EXTENT_LABEL_DY = 14;
+
+/** Names the covering scale rather than saying "a smaller scale" (learners read the bigger number as bigger). */
+function outsideLine(name: string, coverDenominator: number | null): string {
+  return coverDenominator !== null
+    ? `${name} מחוץ לתחום המפה. עברו ל־${formatRatio(coverDenominator)}, שמכסה שטח רחב יותר.`
+    : `${name} מחוץ לתחום של כל שלוש המפות.`;
+}
 
 /** Extent of the next more detailed sheet: an ink long-dash frame; clicking it opens that sheet. */
 function ChildExtent({ ratio, ppu, label, onOpen }: { ratio: number; ppu: number; label: string; onOpen: () => void }) {

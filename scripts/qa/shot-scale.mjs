@@ -159,11 +159,11 @@ async function checkExplore() {
     els.map((r) => ({ term: r.querySelector('dt').textContent, value: r.querySelector('dd').textContent, iso: r.querySelector('dd bdi[dir="ltr"]')?.textContent ?? null })),
   );
   ok(
-    rows.length === 2 && rows[0].term === 'שטח הדף' && rows[0].iso === '12 × 12' && rows[0].value === '12 × 12 ק״מ' && rows[1].term === '1 ס״מ על הדף מייצג' && rows[1].value === '500 מ׳ בשטח',
+    rows.length === 2 && rows[0].term === 'הדף מכסה' && rows[0].iso === '12 × 12' && rows[0].value === '12 × 12 ק״מ' && rows[1].term === '1 ס״מ על הדף מייצג' && rows[1].value === '500 מ׳ בשטח',
     `explore: readouts ${JSON.stringify(rows)}`,
   );
   ok((await L.getByText('קמ״ר').count()) === 0 && (await L.locator('[data-qa="km-bar"]').count()) === 0, 'explore: no km² and no 1 km bar');
-  ok((await block(page, 'explore-live').textContent()) === 'מפה 1:50,000: 12 × 12 ק״מ, 1 ס״מ על הדף = 500 מ׳ בשטח', 'explore: live summary of the sheet');
+  ok((await block(page, 'explore-live').textContent()) === 'מפה 1:50,000: הדף מכסה 12 על 12 ק״מ, וכל ס״מ עליו הוא 500 מ׳ בשטח.', 'explore: live summary of the sheet');
 
   // Child extent: ink long-dash frame "תחום 1:10,000".
   const extent = L.locator('[data-qa="child-extent-frame"]');
@@ -207,7 +207,7 @@ async function checkExplore() {
   ok((await page.locator('[data-qa="morph-ghost"]').count()) === 1, 'explore: morph ghost mid-transition');
   await waitMorph(page);
   ok((await vp.getAttribute('data-view')) === '1.000,0.0,0.0', 'explore: scale switch resets the view');
-  ok((await block(page, 'explore-live').textContent()) === 'מפה 1:10,000: 2.4 × 2.4 ק״מ, 1 ס״מ על הדף = 100 מ׳ בשטח', 'explore: readouts follow the sheet');
+  ok((await block(page, 'explore-live').textContent()) === 'מפה 1:10,000: הדף מכסה 2.4 על 2.4 ק״מ, וכל ס״מ עליו הוא 100 מ׳ בשטח.', 'explore: readouts follow the sheet');
   await shot(page, 'explore-10k');
 
   // Locate: Shibli inside → ring on the spot; the Kinneret outside → message.
@@ -234,7 +234,7 @@ async function checkExplore() {
   const kinneret = L.getByRole('button', { name: 'הכנרת', exact: true });
   await kinneret.click();
   await page.waitForTimeout(250);
-  ok((await line.innerText()) === 'הכנרת מחוץ לקטע הזה. עברו לקנה מידה קטן יותר.' && (await marker.count()) === 0, `locate: outside message "${await line.innerText()}"`);
+  ok((await line.innerText()) === 'הכנרת מחוץ לתחום המפה. עברו ל־1:250,000, שמכסה שטח רחב יותר.' && (await marker.count()) === 0, `locate: outside message "${await line.innerText()}"`);
   await shot(page, 'locate-outside');
   await sheetRadio(page, /1:250,000/).click();
   await waitMorph(page);
@@ -361,9 +361,9 @@ async function checkMeasure() {
   let got = await result();
   ok(got.ground === want.ground && got.sheet === want.cm, `measure: free distance "${got.ground}" / "${got.sheet}" = geodesic ${want.g.toFixed(1)} m → "${want.ground}" / "${want.cm}"`);
   ok((await L.locator('[data-qa="ruler"]').count()) === 1 && (await L.locator('[data-qa="reading-chip"] text').textContent()) === got.sheet.replace(' על הדף', ''), 'measure: ruler and reading chip on the map');
-  ok((await block(page, 'result-relation').innerText()) === 'ב־1:50,000, כל ס״מ על הדף הוא 500 מ׳ בשטח.', 'measure: relation line');
+  ok((await block(page, 'result-relation').innerText()) === 'במפה 1:50,000, כל ס״מ על הדף שווה ל־500 מ׳ בשטח.', 'measure: relation line');
   await page.waitForTimeout(800);
-  ok((await block(page, 'measure-live').textContent()) === `המרחק בין א ל־ב: ${want.ground} בשטח, ${want.cm.replace(' על הדף', '')} על הדף.`, `measure: live region "${await block(page, 'measure-live').textContent()}"`);
+  ok((await block(page, 'measure-live').textContent()) === `המרחק בין נקודה א לנקודה ב: ${want.ground} בשטח, ${want.cm.replace(' על הדף', '')} על הדף.`, `measure: live region "${await block(page, 'measure-live').textContent()}"`);
   ok(await block(page, 'measure-live').evaluate((el) => el.getAttribute('aria-live') === 'polite' && el.closest('[data-qa="measure-result"]') === null), 'measure: one polite live region, the visible result is not live');
   await page.mouse.move(box.x - 40, box.y);
   await shot(page, 'measure-two-points');
@@ -390,7 +390,7 @@ async function checkMeasure() {
   await page.waitForTimeout(100);
   const mid = await result();
   ok(mid.ground !== before.ground, `measure: the distance updates live while dragging (${before.ground} → ${mid.ground})`);
-  ok((await block(page, 'measure-live').textContent()) !== `המרחק בין א ל־ב: ${mid.ground} בשטח, ${mid.sheet.replace(' על הדף', '')} על הדף.`, 'measure: not announced mid-drag');
+  ok((await block(page, 'measure-live').textContent()) !== `המרחק בין נקודה א לנקודה ב: ${mid.ground} בשטח, ${mid.sheet.replace(' על הדף', '')} על הדף.`, 'measure: not announced mid-drag');
   await page.mouse.up();
   await page.waitForTimeout(250);
   const dB3 = await dotAt(1);
@@ -400,7 +400,7 @@ async function checkMeasure() {
   got = await result();
   ok(got.ground === want.ground && got.sheet === want.cm, `measure: after the drag "${got.ground}" / "${got.sheet}" (want "${want.ground}" / "${want.cm}")`);
   await page.waitForTimeout(800);
-  ok((await block(page, 'measure-live').textContent()).startsWith(`המרחק בין א ל־ב: ${want.ground} בשטח`), 'measure: announced once the drag rests');
+  ok((await block(page, 'measure-live').textContent()).startsWith(`המרחק בין נקודה א לנקודה ב: ${want.ground} בשטח`), 'measure: announced once the drag rests');
   await shot(page, 'measure-dragged');
 
   // Keyboard: ב moves 5 mm with five → presses.
@@ -454,9 +454,9 @@ async function checkMeasure() {
   await sheetRadio(page, /1:10,000/).click();
   await waitMorph(page);
   const eFar = expectFor('10k', llFar, llB);
-  ok((await block(page, 'outside-note').innerText()) === 'נקודה א מחוץ לקטע הזה.', `measure: outside note "${await block(page, 'outside-note').innerText()}"`);
+  ok((await block(page, 'outside-note').innerText()) === 'נקודה א מחוץ לתחום המפה.', `measure: outside note "${await block(page, 'outside-note').innerText()}"`);
   const rFar = await result();
-  ok(rFar.ground === eFar.ground && rFar.sheet === 'על הדף הזה אי אפשר למדוד את הקטע.', `measure: outside → ground "${rFar.ground}" (want ${eFar.ground}), sheet line "${rFar.sheet}"`);
+  ok(rFar.ground === eFar.ground && rFar.sheet === 'על הדף הזה אי אפשר למדוד את המרחק.', `measure: outside → ground "${rFar.ground}" (want ${eFar.ground}), sheet line "${rFar.sheet}"`);
   ok((await L.locator('[data-qa="handle-0"]').count()) === 0 && (await L.locator('[data-qa="handle-1"]').count()) === 1 && (await L.locator('[data-qa="ruler"]').count()) === 0, 'measure: the outside point is not drawn; no ruler');
   await shot(page, 'measure-outside');
   await sheetRadio(page, /1:50,000/).click();
@@ -484,18 +484,18 @@ async function checkMeasure() {
   const chain = await details.locator('[data-qa="calc-chain"] li').evaluateAll((els) => els.map((li) => li.textContent));
   const ltr = await details.locator('[data-qa="calc-chain"] bdi[dir="ltr"]').count();
   ok(
-    chain.length === 3 && chain[1].includes('8.9 × 10,000 = 89,000') && chain[2].includes('890 מ׳ (±10 מ׳)') && ltr === 3,
+    chain.length === 3 && chain[1].includes('8.9 × 10,000 = 89,000') && chain[2].includes('890 מ׳ (±10 מ׳)') && ltr === 1,
     `measure: calculation chain ${chain.join(' | ')}`,
   );
   const dText = await details.innerText();
-  ok(dText.includes('מרחק אופקי בקו ישר') && dText.includes('24 ס״מ') && dText.includes('מילימטר אחד על הדף הוא 10 מ׳'), 'measure: details hold the precision, horizontal and ruler notes');
+  ok(dText.includes('המרחק האופקי בקו ישר') && dText.includes('24 ס״מ') && dText.includes('מילימטר אחד על הדף הוא 10 מ׳'), 'measure: details hold the precision, horizontal and ruler notes');
   await shot(page, 'measure-example');
 
   // Clear, then the keyboard alternative: points at the centre of the visible map.
-  await L.getByRole('button', { name: 'ניקוי', exact: true }).click();
+  await L.getByRole('button', { name: 'ניקוי נקודות', exact: true }).click();
   await page.waitForTimeout(200);
   ok((await L.locator('[data-qa^="handle-"]').count()) === 0 && (await block(page, 'result-empty').innerText()) === 'סמנו שתי נקודות על המפה.', 'measure: "ניקוי" clears both points');
-  ok(await L.getByRole('button', { name: 'ניקוי', exact: true }).isDisabled(), 'measure: "ניקוי" disabled with nothing to clear');
+  ok(await L.getByRole('button', { name: 'ניקוי נקודות', exact: true }).isDisabled(), 'measure: "ניקוי" disabled with nothing to clear');
   const centreBtn = L.getByRole('button', { name: 'הוספת נקודה במרכז המפה', exact: true });
   await centreBtn.focus();
   await page.keyboard.press('Enter');
@@ -514,7 +514,7 @@ async function checkMeasure() {
   await page.waitForTimeout(450);
   await page.keyboard.press('ArrowLeft');
   await page.waitForTimeout(150);
-  await L.getByRole('button', { name: 'ניקוי', exact: true }).click();
+  await L.getByRole('button', { name: 'ניקוי נקודות', exact: true }).click();
   await centreBtn.click();
   await page.waitForTimeout(200);
   const cz = await dotAt(0);
@@ -561,12 +561,12 @@ async function checkCompare() {
   const size = (await vp.boundingBox()).width;
   ok(k === 1.6 && Math.abs(x - (size / 2 - size * 0.8)) < 1 && Math.abs(y - (size / 2 - size * 0.8)) < 1, `compare: opens at ×1.6 on Tavor (${k}, ${x}, ${y})`);
   const chips = [await vp.locator('[data-qa="curtain-chip-left"]').textContent(), await vp.locator('[data-qa="curtain-chip-right"]').textContent()];
-  ok(chips[0] === '1:250,000 מוגדלת פי 5' && chips[1] === '1:50,000', `compare: chips ${chips.join(' | ')}`);
+  ok(chips[0] === 'מפת 1:250,000 מוגדלת פי 5' && chips[1] === 'מפת 1:50,000', `compare: chips ${chips.join(' | ')}`);
   const anchor = await vp.evaluate(chipAnchorProblems);
   ok(anchor.length === 0, `compare: chips anchored ${anchor.join(', ')}`);
   ok(Math.abs((await curtainX(page)) - size * 0.65) < 1, 'compare: curtain at 0.65');
-  ok((await vp.getAttribute('aria-label')).includes('מוגדלת פי 5') && (await vp.getAttribute('aria-label')).endsWith(SUFFIX['השוואה']), 'compare: map label');
-  ok((await block(page, 'zoom-compare-caption').innerText()) === 'השוואה: 1:250,000 מוגדלת פי 5 מול 1:50,000', 'compare: caption above the map');
+  ok((await vp.getAttribute('aria-label')).includes('מוגדלת פי 5') && (await vp.getAttribute('aria-label')).endsWith('של אותו תחום'), 'compare: map label');
+  ok((await block(page, 'zoom-compare-caption').innerText()) === 'הגדלה לעומת פירוט', 'compare: caption above the map');
   const imgs = await vp.locator('img').evaluateAll((els) => els.map((e) => e.getAttribute('src')));
   ok(imgs.some((s) => s.includes('250k-map')) && imgs.some((s) => s.includes('50k-map')) && !imgs.some((s) => s.includes('ortho')), 'compare: the ×5 1:250,000 map vs the 1:50,000 map');
   await fits(page, 'compare');
