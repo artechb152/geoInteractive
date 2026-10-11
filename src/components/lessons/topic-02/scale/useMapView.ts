@@ -10,20 +10,27 @@ export const MAX_K = 3;
 const ZOOM_MS = 320;
 
 /** A view to open with: zoom `k` about `center` (sheet units, default the sheet centre 500,500). */
-export type InitialView = { k: number; center?: SheetPoint };
+export type InitialView = { k: number; center?: SheetPoint; /** On a sheet switch: zoom by this factor right after opening. */ thenZoom?: number };
 
 /** The view that shows `center` in the middle of a `size` px square at zoom k, clamped like any view. */
-export function viewAround({ k, center = { x: 500, y: 500 } }: InitialView, size: number): View {
-  const kk = Math.min(MAX_K, Math.max(MIN_K, k));
-  return clampView({ k: kk, x: size / 2 - (center.x / 1000) * size * kk, y: size / 2 - (center.y / 1000) * size * kk }, size, MIN_K, MAX_K);
+export function viewAround({ k, center = { x: 500, y: 500 } }: InitialView, size: number, maxK = MAX_K): View {
+  const kk = Math.min(maxK, Math.max(MIN_K, k));
+  return clampView({ k: kk, x: size / 2 - (center.x / 1000) * size * kk, y: size / 2 - (center.y / 1000) * size * kk }, size, MIN_K, maxK);
 }
+
+export type MapViewOptions = {
+  /** Deepest zoom (default MAX_K). */
+  maxK?: number;
+  /** Called instead of zooming out at k = 1: `step` for − and the zoom-out button, false for the wheel. */
+  onZoomOutPast?: (step: boolean) => void;
+};
 
 /**
  * Zoom/pan state for one square viewport. Changes of layer never touch it (spec §8); the owner calls
- * `resetNow()` (or `resetNow(view)`) when the sheet changes. Wheel zoom passes through at the limits so the page still scrolls.
+ * `resetNow()` (or `resetNow(view)`) when the sheet changes. Over the map the wheel never scrolls the page, even at the zoom limits.
  * `initial` is applied once, right after the first size measurement.
  */
-export function useMapView(ref: RefObject<HTMLElement | null>, initial?: InitialView) {
+export function useMapView(ref: RefObject<HTMLElement | null>, initial?: InitialView, opts: MapViewOptions = {}) {
   const reduce = !!useReducedMotion();
   const [view, setView] = useState<View>(IDENTITY);
   const [size, setSize] = useState(1);
@@ -31,6 +38,11 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
   viewRef.current = view;
   const raf = useRef(0);
   const initialRef = useRef(initial);
+  const maxK = opts.maxK ?? MAX_K;
+  const maxKRef = useRef(maxK);
+  maxKRef.current = maxK;
+  const outPastRef = useRef(opts.onZoomOutPast);
+  outPastRef.current = opts.onZoomOutPast;
 
   const sizeRef = useRef(1);
   useLayoutEffect(() => {
@@ -45,11 +57,11 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
       const first = initialRef.current;
       if (old === 1 && s > 1 && first) {
         initialRef.current = undefined;
-        setView(viewAround(first, s));
+        setView(viewAround(first, s, maxKRef.current));
         return;
       }
       const r = s / old;
-      setView((v) => clampView({ k: v.k, x: v.x * r, y: v.y * r }, s, MIN_K, MAX_K));
+      setView((v) => clampView({ k: v.k, x: v.x * r, y: v.y * r }, s, MIN_K, maxKRef.current));
     };
     apply();
     const ro = new ResizeObserver(apply);
@@ -79,13 +91,19 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
   const zoomBy = useCallback(
-    (factor: number) => animateTo(zoomAt(viewRef.current, factor, size / 2, size / 2, size, MIN_K, MAX_K)),
+    (factor: number) => {
+      if (factor < 1 && viewRef.current.k <= MIN_K + 1e-3 && outPastRef.current) {
+        outPastRef.current(true);
+        return;
+      }
+      animateTo(zoomAt(viewRef.current, factor, size / 2, size / 2, size, MIN_K, maxKRef.current));
+    },
     [animateTo, size],
   );
   const panBy = useCallback(
     (dx: number, dy: number) => {
       cancelAnimationFrame(raf.current);
-      setView((v) => panView(v, dx, dy, size, MIN_K, MAX_K));
+      setView((v) => panView(v, dx, dy, size, MIN_K, maxKRef.current));
     },
     [size],
   );
@@ -93,8 +111,13 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
   /** Jump (no animation) to the full sheet, or to `to` once the size is known. */
   const resetNow = useCallback((to?: InitialView) => {
     cancelAnimationFrame(raf.current);
-    setView(to && sizeRef.current > 1 ? viewAround(to, sizeRef.current) : IDENTITY);
+    const next = to && sizeRef.current > 1 ? viewAround(to, sizeRef.current, maxKRef.current) : IDENTITY;
+    // Synchronously, so a zoom started right after the jump animates from it.
+    viewRef.current = next;
+    setView(next);
   }, []);
+
+  const getView = useCallback(() => viewRef.current, []);
 
   const drag = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
   const dragged = useRef(false);
@@ -134,11 +157,19 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       const k = viewRef.current.k;
-      if (e.deltaY === 0 || (e.deltaY < 0 && k >= MAX_K) || (e.deltaY > 0 && k <= MIN_K)) return;
+      if (e.deltaY > 0 && k <= MIN_K + 1e-3 && outPastRef.current) {
+        e.preventDefault();
+        cancelAnimationFrame(raf.current);
+        outPastRef.current(false);
+        return;
+      }
+      if (e.deltaY === 0) return;
+      // Over the map the wheel only zooms: at a limit it does nothing (the page does not scroll).
       e.preventDefault();
+      if ((e.deltaY < 0 && k >= maxKRef.current) || (e.deltaY > 0 && k <= MIN_K)) return;
       cancelAnimationFrame(raf.current);
       const r = el.getBoundingClientRect();
-      setView(zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.0016), e.clientX - r.left, e.clientY - r.top, el.clientWidth || 1, MIN_K, MAX_K));
+      setView(zoomAt(viewRef.current, Math.exp(-e.deltaY * 0.0016), e.clientX - r.left, e.clientY - r.top, el.clientWidth || 1, MIN_K, maxKRef.current));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -198,11 +229,14 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
   return {
     view,
     size,
+    maxK,
     zoomBy,
     panBy,
     reset,
     resetNow,
     toUnits,
+    /** The current view, including a jump made by resetNow that has not rendered yet. */
+    getView,
     wasDragged: () => dragged.current,
     handlers: { onPointerDown, onPointerMove, onPointerUp: endPointer, onPointerCancel: endPointer, onKeyDown },
   };

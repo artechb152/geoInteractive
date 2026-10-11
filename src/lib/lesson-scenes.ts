@@ -124,6 +124,8 @@ export const archivedScenes: ArchivedScene[] = [
   // Its own id, so the live 'topography' scene stays in the lesson.
   { topicId: 'topic-02', id: 'geology', label: 'מסלע' },
   { topicId: 'topic-02', id: 'topography-v1', label: 'טופוגרפיה · גרסה קודמת' },
+  // Papercut version of #scene-relief-cover („זיהוי תבליט ותכסית בשטח”), before the realistic redesign.
+  { topicId: 'topic-02', id: 'relief-cover-v1', label: 'תבליט ותכסית · גרסה קודמת' },
 ];
 
 export function isArchivedScene(topicId: string, sceneId: string): boolean {

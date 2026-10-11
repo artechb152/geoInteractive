@@ -70,7 +70,7 @@ const sameRect = (a, b) => a && b && a.every((v, i) => Math.abs(v - b[i]) <= 0.5
 const centre = (b) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
 const isActive = (loc) => loc.evaluate((el) => el === document.activeElement);
 const SHEET_OF = { '1:10,000': '10k', '1:50,000': '50k', '1:250,000': '250k' };
-const SUFFIX = { 'מפה טופוגרפית': ` · מוצג: ${SHOWN_AS.map}`, 'תצ״א': ` · מוצג: ${SHOWN_AS.ortho}`, 'השוואה': ` · מוצג: ${SHOWN_AS.compare}` };
+const SUFFIX = ` · מוצג: ${SHOWN_AS.compare}`;
 
 /** Current view transform of the lab map (data-view = "k,x,y"). */
 const viewOf = async (page) => (await viewport(page).getAttribute('data-view')).split(',').map(Number);
@@ -116,11 +116,9 @@ const curtainX = (page) => viewport(page).evaluate((v) => {
   return (r.left + r.right) / 2 - v.getBoundingClientRect().left;
 });
 
-const radio = (page, name) => block(page, LAB).getByRole('radio', { name, exact: true });
 const sheetRadio = (page, re) => block(page, LAB).getByRole('radio', { name: re });
 const tab = (page, name) => block(page, LAB).getByRole('tab', { name, exact: true });
 const checkedSheet = async (page) => (await block(page, LAB).getByRole('radiogroup', { name: 'קנה מידה של המפה' }).locator('[aria-checked="true"]').innerText()).split('\n')[0].trim();
-const checkedView = async (page) => (await block(page, LAB).getByRole('radiogroup', { name: 'סוג הייצוג' }).locator('[aria-checked="true"]').innerText()).trim();
 
 async function waitMorph(page) {
   await page.waitForTimeout(900);
@@ -150,9 +148,9 @@ async function checkExplore() {
   // No question, prediction, table or answer input on the first screen.
   ok((await L.locator('fieldset, table, input:not([type="range"])').count()) === 0, 'explore: no prediction question, status table or answer field');
   ok((await L.getByRole('button', { name: 'בדיקה' }).count()) === 0, 'explore: no check button');
-  // Label "מפה טופוגרפית".
-  ok((await radio(page, 'מפה טופוגרפית').getAttribute('aria-checked')) === 'true', 'explore: representation "מפה טופוגרפית" selected at mount');
-  ok((await vp.getAttribute('aria-label')).endsWith(SUFFIX['מפה טופוגרפית']), 'explore: map label names the representation');
+  // The curtain is the only representation: no toggle.
+  ok((await L.getByRole('radiogroup', { name: 'סוג הייצוג' }).count()) === 0 && (await vp.locator('[data-qa="curtain-line"]').count()) === 1, 'explore: no representation toggle, the curtain shows at mount');
+  ok((await vp.getAttribute('aria-label')).endsWith(SUFFIX), 'explore: map label names the curtain');
 
   // Readouts: only the page area and 1 cm.
   const rows = await L.locator('[data-qa="explore-readouts"] > div').evaluateAll((els) =>
@@ -169,17 +167,6 @@ async function checkExplore() {
   const extent = L.locator('[data-qa="child-extent-frame"]');
   ok((await extent.getAttribute('stroke')) === '#38432E' && (await L.locator('[data-qa="child-extent-label"] text').textContent()) === 'תחום 1:10,000', 'explore: ink extent frame "תחום 1:10,000"');
 
-  // Layer switch keeps the view and the overlay pixel-identical.
-  const r0 = await rectOf(extent);
-  const v0 = await vp.getAttribute('data-view');
-  for (const name of ['תצ״א', 'השוואה', 'מפה טופוגרפית']) {
-    await radio(page, name).click();
-    await page.waitForTimeout(350);
-    ok(sameRect(r0, await rectOf(extent)) && v0 === (await vp.getAttribute('data-view')), `explore: view and overlay unchanged after "${name}"`);
-    ok((await vp.getAttribute('aria-label')).endsWith(SUFFIX[name]), `explore: map label follows the representation (${name})`);
-  }
-  await radio(page, 'השוואה').click();
-  await page.waitForTimeout(350);
   const chipR = await vp.locator('[data-qa="curtain-chip-right"]').textContent();
   ok(chipR === 'מפה טופוגרפית' && (await vp.locator('[data-qa="curtain-chip-left"]').textContent()) === 'תצ״א', `explore: curtain chips "תצ״א" | "${chipR}"`);
   const anchor = await vp.evaluate(chipAnchorProblems);
@@ -187,7 +174,7 @@ async function checkExplore() {
   ok((await L.locator('input[type="range"]').getAttribute('aria-valuetext')).includes('מפה טופוגרפית מימין לקו'), 'explore: curtain slider names "מפה טופוגרפית"');
   await shot(page, 'explore-compare');
 
-  // Zoom + pan, then switch layers again.
+  // Zoom + pan.
   await vp.focus();
   await page.keyboard.press('+');
   await page.waitForTimeout(450);
@@ -195,11 +182,71 @@ async function checkExplore() {
   await page.waitForTimeout(150);
   const vz = await vp.getAttribute('data-view');
   ok(Number(vz.split(',')[0]) > 1.4, `explore: keyboard zoom (${vz})`);
-  const rz = await rectOf(extent);
-  await radio(page, 'מפה טופוגרפית').click();
-  await page.waitForTimeout(350);
-  ok(vz === (await vp.getAttribute('data-view')) && sameRect(rz, await rectOf(extent)), 'explore: zoomed view and overlay survive a layer switch');
   await shot(page, 'explore-zoomed');
+
+  // Zoom hand-over: zooming into the 1:10,000 extent opens 1:10,000 at the same ground view (no morph);
+  // − at the whole sheet opens 1:50,000 again, zoomed on the same place.
+  await page.keyboard.press('0');
+  await page.waitForTimeout(450);
+  let presses = 0;
+  while ((await checkedSheet(page)) === '1:50,000' && presses < 8) {
+    await page.keyboard.press('+');
+    presses++;
+    await page.waitForTimeout(80);
+    if ((await page.locator('[data-qa="morph-ghost"]').count()) > 0) break;
+    await page.waitForTimeout(370);
+  }
+  const [hk, hx, hy] = await viewOf(page);
+  const hs = (await vp.boundingBox()).width;
+  // The visible square's centre is still the sheet centre (Tavor).
+  const hc = { x: ((hs / 2 - hx) / (hs * hk)) * 1000, y: ((hs / 2 - hy) / (hs * hk)) * 1000 };
+  ok((await checkedSheet(page)) === '1:10,000' && (await page.locator('[data-qa="morph-ghost"]').count()) === 0, `hand-over: "+" ×${presses} on 1:50,000 opens 1:10,000 without a morph`);
+  ok(hk >= 1 && hk < 1.25 && Math.hypot(hc.x - 500, hc.y - 500) < 2, `hand-over: 1:10,000 opens at the same ground view (k ${hk.toFixed(3)}, centre ${hc.x.toFixed(1)},${hc.y.toFixed(1)})`);
+  await shot(page, 'handover-10k');
+  await page.keyboard.press('0');
+  await page.waitForTimeout(450);
+  await page.keyboard.press('-');
+  await page.waitForTimeout(600);
+  const [ok50] = await viewOf(page);
+  ok((await checkedSheet(page)) === '1:50,000' && Math.abs(ok50 - 5 / 1.5) < 0.01, `hand-over: "−" on the whole 1:10,000 opens 1:50,000 zoomed out one step (k ${ok50.toFixed(3)})`);
+  ok((await vp.locator('[aria-label="התרחקות"]').getAttribute('aria-disabled')) === 'false', 'hand-over: zoom-out stays enabled at the whole sheet when a wider one exists');
+  // The wheel past the whole 1:50,000 opens 1:250,000 at the same ground view (k = 5), with no morph.
+  const wc = centre(await vp.boundingBox());
+  await page.mouse.move(wc.x, wc.y);
+  let wheels = 0;
+  while ((await checkedSheet(page)) === '1:50,000' && wheels < 40) {
+    await page.mouse.wheel(0, 100);
+    wheels++;
+    await page.waitForTimeout(40);
+  }
+  await page.waitForTimeout(100);
+  const [wk] = await viewOf(page);
+  ok((await checkedSheet(page)) === '1:250,000' && wk > 4.2 && wk <= 5 && (await page.locator('[data-qa="morph-ghost"]').count()) === 0, `hand-over: wheel out past the whole 1:50,000 opens 1:250,000 at the same view (k ${wk.toFixed(3)})`);
+  await page.mouse.move(0, 0);
+  await vp.focus();
+  await page.keyboard.press('0');
+  await page.waitForTimeout(450);
+  ok((await vp.locator('[aria-label="התרחקות"]').getAttribute('aria-disabled')) === 'true', 'hand-over: zoom-out disabled at the whole 1:250,000');
+  // At a zoom limit the wheel over the map does nothing: the page does not scroll.
+  const wheelScrolls = async (dy) => {
+    const y0 = await page.evaluate(() => window.scrollY);
+    for (let i = 0; i < 5; i++) await page.mouse.wheel(0, dy);
+    await page.waitForTimeout(300);
+    return (await page.evaluate(() => window.scrollY)) - y0;
+  };
+  await page.mouse.move(wc.x, wc.y);
+  const dOut = await wheelScrolls(200);
+  ok(dOut === 0 && (await checkedSheet(page)) === '1:250,000' && (await viewOf(page))[0] === 1, `wheel: at the whole 1:250,000 the wheel out neither zooms nor scrolls the page (Δ ${dOut})`);
+  await sheetRadio(page, /1:10,000/).click();
+  await waitMorph(page);
+  await page.mouse.move(wc.x, wc.y);
+  for (let i = 0; i < 30; i++) await page.mouse.wheel(0, -200);
+  await page.waitForTimeout(300);
+  const dIn = await wheelScrolls(-200);
+  ok(dIn === 0 && (await viewOf(page))[0] === 3, `wheel: at max zoom on 1:10,000 the wheel in neither zooms nor scrolls the page (Δ ${dIn})`);
+  await page.mouse.move(0, 0);
+  await sheetRadio(page, /1:50,000/).click();
+  await waitMorph(page);
 
   // Scale switch: morph, then the full sheet.
   await sheetRadio(page, /1:10,000/).click();
@@ -291,18 +338,16 @@ async function checkMeasure() {
   const vp = viewport(page);
   await scrollTo(page, LAB);
 
-  // Mode switching keeps the sheet, the representation and the curtain.
+  // Mode switching keeps the sheet and the curtain.
   await sheetRadio(page, /1:10,000/).click();
   await waitMorph(page);
-  await radio(page, 'השוואה').click();
-  await page.waitForTimeout(300);
   await L.locator('input[type="range"]').fill('40');
   await page.waitForTimeout(200);
   const cx0 = await curtainX(page);
   await tab(page, 'מדידה').click();
   await page.waitForTimeout(400);
   ok((await tab(page, 'מדידה').getAttribute('aria-selected')) === 'true', 'measure: tab selected');
-  ok((await checkedSheet(page)) === '1:10,000' && (await checkedView(page)) === 'השוואה', `measure: sheet and representation kept (${await checkedSheet(page)}, ${await checkedView(page)})`);
+  ok((await checkedSheet(page)) === '1:10,000', `measure: sheet kept (${await checkedSheet(page)})`);
   const cx1 = await curtainX(page);
   ok(cx0 !== null && Math.abs(cx0 - cx1) < 0.5 && (await L.locator('input[type="range"]').inputValue()) === '40', `measure: curtain kept (${cx0?.toFixed(1)} → ${cx1?.toFixed(1)})`);
   await fits(page, 'measure');
@@ -311,7 +356,7 @@ async function checkMeasure() {
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(250);
   ok((await tab(page, 'חקירה').getAttribute('aria-selected')) === 'true' && (await isActive(tab(page, 'חקירה'))), 'mode tabs: arrow keys move selection and focus');
-  ok((await checkedSheet(page)) === '1:10,000' && (await checkedView(page)) === 'השוואה' && Math.abs((await curtainX(page)) - cx0) < 0.5, 'mode tabs: back in explore, sheet/representation/curtain unchanged');
+  ok((await checkedSheet(page)) === '1:10,000' && Math.abs((await curtainX(page)) - cx0) < 0.5, 'mode tabs: back in explore, sheet/curtain unchanged');
   await page.keyboard.press('ArrowLeft');
   await page.waitForTimeout(250);
   ok((await tab(page, 'מדידה').getAttribute('aria-selected')) === 'true', 'mode tabs: ← selects "מדידה"');
@@ -322,8 +367,6 @@ async function checkMeasure() {
 
   await sheetRadio(page, /1:50,000/).click();
   await waitMorph(page);
-  await radio(page, 'מפה טופוגרפית').click();
-  await page.waitForTimeout(300);
   const box = await vp.boundingBox();
   const at = (fx, fy) => ({ x: box.x + fx * box.width, y: box.y + fy * box.height });
   const S = SHEETS['50k'];
@@ -417,16 +460,6 @@ async function checkMeasure() {
   want = expectFor('50k', llA, llB);
   got = await result();
   ok(got.ground === want.ground && got.sheet === want.cm, `measure: after the keys "${got.ground}" / "${got.sheet}" (want "${want.ground}" / "${want.cm}")`);
-
-  // Layer switch keeps the points pixel-identical.
-  const dots0 = [await rectOf(L.locator('[data-qa="handle-0"] [data-qa="point-dot"]')), await rectOf(L.locator('[data-qa="handle-1"] [data-qa="point-dot"]'))];
-  for (const name of ['תצ״א', 'השוואה', 'מפה טופוגרפית']) {
-    await radio(page, name).click();
-    await page.waitForTimeout(300);
-    const dots = [await rectOf(L.locator('[data-qa="handle-0"] [data-qa="point-dot"]')), await rectOf(L.locator('[data-qa="handle-1"] [data-qa="point-dot"]'))];
-    ok(sameRect(dots0[0], dots[0]) && sameRect(dots0[1], dots[1]) && (await result()).ground === got.ground, `measure: points and result unchanged after "${name}"`);
-    if (name === 'תצ״א') await shot(page, 'measure-ortho');
-  }
 
   // Scale switch keeps the geographic position: 1:10,000 (both inside), then 1:250,000.
   for (const id of ['10k', '250k', '50k']) {
@@ -541,7 +574,6 @@ async function checkCompare() {
   const L = block(page, LAB);
   const vp = viewport(page);
   await scrollTo(page, LAB);
-  await radio(page, 'תצ״א').click();
   await sheetRadio(page, /1:10,000/).click();
   await waitMorph(page);
 
@@ -554,7 +586,7 @@ async function checkCompare() {
   ok((await block(page, 'zoom-sentence').innerText()) === ZOOM_SENTENCE, `compare: the sentence verbatim "${await block(page, 'zoom-sentence').innerText()}"`);
   ok(
     (await L.locator('fieldset, input:not([type="range"]), [role="radiogroup"]').count()) === 0 && (await L.getByRole('button', { name: /בדיקה|כן|לא/ }).count()) === 0,
-    'compare: no question, no options, no check button (scale picker and representation toggle hidden)',
+    'compare: no question, no options, no check button (scale picker hidden)',
   );
   ok((await panel.locator('p').count()) === 2, 'compare: one instruction line + the sentence');
   const [k, x, y] = await viewOf(page);
@@ -566,7 +598,6 @@ async function checkCompare() {
   ok(anchor.length === 0, `compare: chips anchored ${anchor.join(', ')}`);
   ok(Math.abs((await curtainX(page)) - size * 0.65) < 1, 'compare: curtain at 0.65');
   ok((await vp.getAttribute('aria-label')).includes('מוגדלת פי 5') && (await vp.getAttribute('aria-label')).endsWith('של אותו תחום'), 'compare: map label');
-  ok((await block(page, 'zoom-compare-caption').innerText()) === 'הגדלה לעומת פירוט', 'compare: caption above the map');
   const imgs = await vp.locator('img').evaluateAll((els) => els.map((e) => e.getAttribute('src')));
   ok(imgs.some((s) => s.includes('250k-map')) && imgs.some((s) => s.includes('50k-map')) && !imgs.some((s) => s.includes('ortho')), 'compare: the ×5 1:250,000 map vs the 1:50,000 map');
   await fits(page, 'compare');
@@ -581,7 +612,7 @@ async function checkCompare() {
   await L.getByRole('button', { name: 'חזרה למפות', exact: true }).click();
   await page.waitForTimeout(1000);
   ok((await toggle.getAttribute('aria-pressed')) === 'false' && (await isActive(toggle)) && (await panel.count()) === 0, 'compare: "חזרה למפות" closes it and focuses the toggle');
-  ok((await checkedSheet(page)) === '1:10,000' && (await checkedView(page)) === 'תצ״א' && (await vp.getAttribute('data-view')) === '1.000,0.0,0.0', 'compare: back on 1:10,000 תצ״א, full sheet');
+  ok((await checkedSheet(page)) === '1:10,000' && (await vp.getAttribute('data-view')) === '1.000,0.0,0.0', 'compare: back on 1:10,000, full sheet');
   await shot(page, 'compare-closed');
   // The toggle itself also closes it; switching to measure closes it.
   await toggle.click();

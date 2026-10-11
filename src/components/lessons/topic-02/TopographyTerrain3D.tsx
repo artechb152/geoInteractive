@@ -825,7 +825,9 @@ export default function TopographyTerrain3D({
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   const [inView, setInView] = useState(false);
   const [activated, setActivated] = useState(false);
-  const [nearTop, setNearTop] = useState(false);
+  // True from the start: the scene opens on the map, and the camera starts at
+  // its top-down goal — so the sheet shows at once instead of fading in over the photo.
+  const [nearTop, setNearTop] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [feature, setFeature] = useState<FeatureId | null>(null);
   const reduce = !!useReducedMotion();

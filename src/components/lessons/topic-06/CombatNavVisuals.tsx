@@ -267,7 +267,7 @@ export function Chevron({ at, rot, className = 'fill-accent', scale = 1 }: { at:
   return <polygon points={ARROW} className={className} transform={`translate(${at.x} ${at.y}) rotate(${rot}) scale(${scale})`} />;
 }
 
-/** Checkpoint (נקודת אימות): orange ring → pops to a filled ✓ once confirmed. */
+/** Checkpoint (קיטוע): orange ring → pops to a filled ✓ once confirmed. */
 export function Checkpoint({ x, y, confirmed, animated }: Pt & { confirmed: boolean; animated: boolean }) {
   return (
     <g>

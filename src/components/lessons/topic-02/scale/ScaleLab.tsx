@@ -10,7 +10,8 @@ import { ATTRIBUTION, SHEETS, SHEET_IDS, type SheetId, type SheetMeta } from './
 import { EXAMPLE_PAIR, LANDMARKS, LOCATE, ZOOM_SENTENCE, shownSuffix, type LandmarkId } from './scaleContent.data';
 import { SheetViewport } from './SheetViewport';
 import { MeasureOverlay } from './MeasureOverlay';
-import { FOCUS_RING, INSET, OPTION_ACTIVE, OPTION_BASE, OPTION_IDLE, SheetPicker, T5, T6, ViewModeToggle, useRovingKeys, type ViewMode } from './controls';
+import { FOCUS_RING, INSET, OPTION_ACTIVE, OPTION_BASE, OPTION_IDLE, SheetPicker, T5, T6, useRovingKeys } from './controls';
+import type { InitialView } from './useMapView';
 import { CURTAIN_LABELS, asset, layersFor, preloadFor } from './layers';
 import { INK, Label, Ring, dash, pillSize, sw } from './overlayParts';
 
@@ -41,6 +42,13 @@ const ZOOM_VIEW = { k: 1.6 };
 // The curtain handle sits at mid-height, i.e. on Tavor: at 0.5 it hid the summit.
 const INITIAL_CURTAIN = 0.65;
 
+// The map always shows the orthophoto/map curtain (the lab has no representation toggle).
+const VIEW = 'compare' as const;
+// Zoom on a sheet that holds a more detailed one goes a little past that sheet's extent (k = 1/ratio), so
+// the visible square can come to lie inside it — that hands over to the detailed sheet.
+const PAST_CHILD = 1.2;
+const OUT_STEP = 1.5;
+
 const RING_PX = 14;
 const HORIZONTAL_NOTE = 'זהו המרחק האופקי בקו ישר. בדרך מתפתלת או במעלה מדרון המרחק בפועל ארוך יותר.';
 const RULER_NOTE = 'הסרגל מראה ס״מ של דף מודפס ברוחב 24 ס״מ, לא של המסך.';
@@ -51,7 +59,8 @@ const ANNOUNCE_MS = 700;
 export function ScaleLab() {
   const [mode, setMode] = useState<LabMode>('explore');
   const [sheetId, setSheetId] = useState<SheetId>('50k');
-  const [view, setView] = useState<ViewMode>('map');
+  // The view a zoom hand-over opens the new sheet at (null: a picked sheet opens whole, with the scale morph).
+  const [entry, setEntry] = useState<InitialView | null>(null);
   const [curtain, setCurtain] = useState(INITIAL_CURTAIN);
   const [zoomCompare, setZoomCompare] = useState(false);
   const [zoomCurtain, setZoomCurtain] = useState(INITIAL_CURTAIN);
@@ -67,11 +76,45 @@ export function ScaleLab() {
   const km = formatNumber(sheet.groundWidthM / 1000, 1);
   const idx = SHEET_IDS.indexOf(sheetId);
   const child = idx > 0 ? SHEETS[SHEET_IDS[idx - 1]] : null;
-  const layers = layersFor(sheet, view);
+  const parent = idx < SHEET_IDS.length - 1 ? SHEETS[SHEET_IDS[idx + 1]] : null;
+  const layers = layersFor(sheet, VIEW);
   const comparing = mode === 'explore' && zoomCompare;
+
+  function pickSheet(id: SheetId) {
+    setEntry(null);
+    setSheetId(id);
+  }
+
+  // Zooming into the detailed sheet's extent opens it at the same ground view (no morph: nothing jumps).
+  const childRatio = child ? child.groundWidthM / sheet.groundWidthM : 0;
+  const childO = (1000 - childRatio * 1000) / 2;
+  const zoomInto =
+    child && !comparing
+      ? {
+          rect: [childO, childO, 1000 - childO, 1000 - childO] as [number, number, number, number],
+          minK: 1 / childRatio,
+          onEnter: ({ k, center }: { k: number; center: SheetPoint }) => {
+            setEntry({ k: k * childRatio, center: { x: (center.x - childO) / childRatio, y: (center.y - childO) / childRatio } });
+            setSheetId(child.id);
+          },
+        }
+      : undefined;
+  // Zooming out of a whole sheet opens the wider one at the same ground view; a − / button step then zooms
+  // out one step (the wheel just keeps zooming from there).
+  const zoomOutPast =
+    parent && !comparing
+      ? (step: boolean) => {
+          const r = sheet.groundWidthM / parent.groundWidthM;
+          const o = (1000 - r * 1000) / 2;
+          const c = centerRef.current;
+          setEntry({ k: 1 / r, center: { x: o + c.x * r, y: o + c.y * r }, thenZoom: step ? 1 / OUT_STEP : undefined });
+          setSheetId(parent.id);
+        }
+      : undefined;
 
   function switchMode(m: LabMode) {
     setMode(m);
+    setEntry(null);
     // The comparison belongs to explore; measuring needs one of the three sheets.
     if (m !== 'explore') setZoomCompare(false);
   }
@@ -99,9 +142,9 @@ export function ScaleLab() {
   if (comparing) {
     label = `השוואה: מפת ${formatRatio(S250.denominator)} מוגדלת פי ${MAGNIFY} מול מפת ${formatRatio(S50.denominator)} של אותו תחום`;
   } else if (mode === 'measure') {
-    label = `מדידה במפה ${formatRatio(D)} סביב הר תבור, ${km} על ${km} ק״מ. לחיצה מסמנת נקודה${shownSuffix(view)}`;
+    label = `מדידה במפה ${formatRatio(D)} סביב הר תבור, ${km} על ${km} ק״מ. לחיצה מסמנת נקודה${shownSuffix(VIEW)}`;
   } else {
-    label = `קטע מפה בקנה מידה ${formatRatio(D)} סביב הר תבור, ${km} על ${km} ק״מ${shownSuffix(view)}`;
+    label = `קטע מפה בקנה מידה ${formatRatio(D)} סביב הר תבור, ${km} על ${km} ק״מ${shownSuffix(VIEW)}`;
   }
 
   const located = locate ? lonLatToSheet(sheet, LANDMARKS[locate]) : null;
@@ -138,14 +181,17 @@ export function ScaleLab() {
           {!comparing && (
             <div>
               <div className={cn(T5, 'mb-2')}>קנה מידה</div>
-              <SheetPicker value={sheetId} onChange={setSheetId} label="קנה מידה של המפה" />
+              <SheetPicker value={sheetId} onChange={pickSheet} label="קנה מידה של המפה" />
             </div>
           )}
           {mode === 'explore' ? (
             <ExplorePanel
               sheet={sheet}
               comparing={comparing}
-              onCompare={setZoomCompare}
+              onCompare={(on) => {
+                setEntry(null);
+                setZoomCompare(on);
+              }}
               locate={locate}
               locateLabel={locateLabel}
               locatedInside={located !== null && insideSheet(located)}
@@ -165,20 +211,14 @@ export function ScaleLab() {
         </div>
 
         <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <div className="mb-2">
-            {comparing ? (
-              // Same height as the representation toggle, so the map does not jump.
-              <div data-qa="zoom-compare-caption" className={cn(T5, 'flex h-[46px] items-center')}>
-                הגדלה לעומת פירוט
-              </div>
-            ) : (
-              <ViewModeToggle value={view} onChange={setView} />
-            )}
-          </div>
           <SheetViewport
             label={label}
             sheetKey={comparing ? 'zoom-compare' : sheetId}
-            initialView={comparing ? ZOOM_VIEW : undefined}
+            initialView={comparing ? ZOOM_VIEW : (entry ?? undefined)}
+            morph={!entry || comparing}
+            maxK={zoomInto ? zoomInto.minK * PAST_CHILD : undefined}
+            zoomInto={zoomInto}
+            onZoomOutPast={zoomOutPast}
             groundWidthM={comparing ? S50.groundWidthM : sheet.groundWidthM}
             base={comparing ? { key: '250k-map-x5', src: asset(S250.map.src), magnify: MAGNIFY } : layers.base}
             top={comparing ? { key: '50k-map', src: asset(S50.map.src) } : layers.top}
@@ -216,7 +256,7 @@ export function ScaleLab() {
               return (
                 <>
                   {child && (
-                    <ChildExtent ratio={child.groundWidthM / sheet.groundWidthM} ppu={ppu} label={extentLabel} onOpen={() => setSheetId(child.id)} />
+                    <ChildExtent ratio={child.groundWidthM / sheet.groundWidthM} ppu={ppu} label={extentLabel} onOpen={() => pickSheet(child.id)} />
                   )}
                   {located && locate && insideSheet(located) && (
                     <g data-qa="locate-marker">

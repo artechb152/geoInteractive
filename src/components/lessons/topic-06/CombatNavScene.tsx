@@ -3,7 +3,6 @@ import { useRef, useState } from 'react';
 import {
   motion,
   AnimatePresence,
-  easeInOut,
   useInView,
   useMotionValueEvent,
   useReducedMotion,
@@ -20,15 +19,11 @@ import {
   Chevron,
   ContourTexture,
   LegendGlyph,
-  PaperBush,
   PaperHill,
   PaperHouse,
-  PaperPine,
-  PaperRock,
   PaperTile,
   StartDot,
   TargetMark,
-  TrackedPuck,
   UnitPuck,
   angleDeg,
   dist,
@@ -38,12 +33,11 @@ import {
   useStep,
   useSvgId,
   useTrack,
-  type Ease,
   type GlyphKind,
   type Key,
   type Pt,
 } from './CombatNavVisuals';
-type Method = 'handrail' | 'dead' | 'pace';
+type Method = 'handrail' | 'dead';
 type MethodData = {
 id: Method;
 label: string;
@@ -57,12 +51,12 @@ example: string;
 const METHODS: MethodData[] = [
  {
 id: 'handrail',
-label: 'ניווט לפי טופוגרפיה',
+label: 'ניווט לפי השטח',
 english: 'Terrain Association',
 icon: 'route' as never, // Not used
 oneLiner: 'מתקדמים בעזרת סימנים מזוהים בשטח ומשווים אותם למפה לאורך הדרך.',
 detail: 'בוחרים במפה סימנים שניתן לזהות בשטח ובודקים את המיקום ביחס אליהם. הסימנים יכולים להיות תבליט, כגון כיפה, רכס או ערוץ, ותכסית, כגון כפר, כביש או חורשה. משלבים את הזיהוי עם בדיקת כיוון ומרחק. כאשר נעזרים בתוואי רציף, כמו דרך או ערוץ המקבילים למסלול, הוא משמש כ״מעקה״ לניווט.',
-whenToUse: ['כשיש צורות קרקע בולטות שניתן לזהות במפה ובשטח.', 'כשיש עצמים מזוהים לאורך המסלול שיכולים לשמש נקודות אימות.', 'כשהראות מאפשרת להשוות בין הסימנים בשטח לבין המפה.'],
+whenToUse: ['כשיש צורות קרקע בולטות שניתן לזהות במפה ובשטח.', 'כשיש עצמים מזוהים לאורך המסלול שיכולים לשמש קיטועים.', 'כשהראות מאפשרת להשוות בין הסימנים בשטח לבין המפה.'],
 example: 'בהמחשה, המסלול עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר. בכל כיפה בודקים את מיקומה ביחס לכיפות האחרות ולכפר, ומשווים לכיוון ולמרחק המתוכננים. כך מצמצמים את הסיכון לטעות בין סימנים דומים.',
  },
  {
@@ -74,16 +68,6 @@ oneLiner: 'מעריכים את המיקום מתוך נקודת מוצא ידו�
 detail: 'ניווט עיוור מתבסס על נקודת מוצא ידועה ועל אזימוט ומרחק שנקבעו מראש. בהליכה אפשר להעריך את המרחק באמצעות ספירת צעדים כפולים, לפי מדידה אישית. שגיאות בכיוון ובספירה מצטברות לאורך הדרך, ולכן בודקים את המיקום בעזרת סימני שטח בכל הזדמנות. השלמת הספירה אינה כשלעצמה אישור להגעה ליעד.',
 whenToUse: ['כשקשה לזהות סימני שטח בגלל ראות מוגבלת.', 'כשיש מעט סימנים מובחנים לאורך קטע מהמסלול.', 'כשנקודת המוצא ידועה וניתן לעקוב אחר הכיוון והמרחק.'],
 example: 'בהמחשה, היעד נמצא באזימוט 62° ובמרחק 1.2 ק״מ. בהנחה של 1.5 מטר לצעד כפול, מתקבל אומדן של 800 צעדים כפולים. התרשים מציג תנועה ללא סטייה; בשטח נדרש לאמת את המיקום גם לאחר השלמת הספירה.',
- },
- {
-id: 'pace',
-label: 'שליטה בקצב',
-english: 'Pace & Path Control',
-icon: 'spark',
-oneLiner: 'מתאימים את קצב התנועה לתנאי השטח, ליכולת ההתמצאות ולמשימה.',
-detail: 'קצב התנועה מושפע מהשיפוע, מהצמחייה, מהראות וממידת החשיפה. מתאימים אותו גם לצורך לבדוק כיוון ומיקום. הסתרה יכולה לצמצם חשיפה, אך אינה מבטיחה תנועה מהירה: יער צפוף עשוי להקשות על ההתקדמות ועל זיהוי סימני הדרך.',
-whenToUse: ['כשעוברים בין שטח פתוח לשטח מיוער או בנוי.', 'כשהראות, השיפוע או המכשולים משפיעים על התנועה.', 'כשנדרש להאט או לעצור כדי לבדוק את המיקום.'],
-example: 'בהמחשה, הכוח מתקדם בקטעים בשטח הפתוח ועובר לתנועה רציפה לאורך נתיב ביער. זהו תרחיש אפשרי, ולא כלל שלפיו תמיד מאיצים ביער. הקצב בפועל תלוי בתנאים, במשימה וביכולת לשמור על ההתמצאות.',
  },
 ];
 
@@ -104,7 +88,7 @@ legend: [
  { kind: 'hill', label: 'כיפה — צורת קרקע בולטת (תבליט)' },
  { kind: 'village', label: 'כפר — מבנים על הקרקע (תכסית)' },
  { kind: 'route', label: 'הציר — מסימן לסימן' },
- { kind: 'checkpoint', label: 'נקודת אימות — בדיקת מיקום' },
+ { kind: 'checkpoint', label: 'קיטוע — בדיקת מיקום' },
  { kind: 'start', label: 'נקודת מוצא (A)' },
  { kind: 'target', label: 'היעד — הכיכר המרכזית בכפר (B)' },
 ],
@@ -119,15 +103,6 @@ legend: [
  { kind: 'storm', label: 'סופת חול — ראות מוגבלת' },
  { kind: 'start', label: 'נקודת מוצא (A)' },
  { kind: 'target', label: 'נקודת יעד (B)' },
-],
-},
-pace: {
-badge: 'מתאימים קצב לסביבה',
-caption: 'בתרחיש המוצג התנועה בשטח הפתוח נעשית בקטעים, וביער היא רציפה. דפוס התנועה משתנה לפי התנאים והמשימה.',
-legend: [
- { kind: 'open', label: 'בהמחשה: שטח פתוח — תנועה בקטעים' },
- { kind: 'forest', label: 'בהמחשה: יער — תנועה רציפה' },
- { kind: 'unit', label: 'תנועת הכוח לאורך המסלול' },
 ],
 },
 };
@@ -168,7 +143,7 @@ return (
 step="03.3"
 eyebrow="טכניקות ניווט"
 title="התאמת הניווט לתנאי השטח"
-intro="סימני השטח, הראות והמשימה משפיעים על אופן הניווט ועל קצב התנועה. נבחן ניווט לפי טופוגרפיה, ניווט לפי כיוון ומרחק ושליטה בקצב. בחרו בכל נושא כדי לעיין בהסבר ובהמחשה."
+intro="סימני השטח, הראות והמשימה משפיעים על אופן הניווט ועל קצב התנועה. נבחן ניווט לפי טופוגרפיה וניווט לפי כיוון ומרחק. בחרו בכל נושא כדי לעיין בהסבר ובהמחשה."
  />
 
  {/* Text column 1fr (reads at ~50 chars/line) · board 1.35fr. */}
@@ -334,7 +309,6 @@ className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border 
  <motion.div key={active} {...swap} className="absolute inset-0 px-2">
  {active === 'handrail' && <HandrailVisual play={boardSeen} run={run} label={support.caption} />}
  {active === 'dead' && <DeadReckoningVisual play={boardSeen} run={run} label={support.caption} />}
- {active === 'pace' && <PaceControlVisual play={boardSeen} run={run} label={support.caption} />}
  </motion.div>
  </AnimatePresence>
  </div>
@@ -653,155 +627,6 @@ return (
  <tspan className="fill-accent" fontSize="4.2">{String(n).padStart(3, '0')}</tspan>
  <tspan className="fill-fg-dim" fontSize="2.8" dx="0.8">/ {DR_PAIRS}</tspan>
  </text>
- );
-}
-
-/* ═══ Technique 3 — שליטה בקצב ═══════════════════════════════════════
-   Open, exposed ground → slow bounds from cover to cover, one team moving
-   while the other covers. Concealing forest → one fast, continuous column.
-   Demo: the whole move plays through; the label of the regime the force is
-   in lights up, so the pace change reads as caused by the terrain. */
-const PC_COVER = [
- { x: 12, y: 51, kind: 'rock' },
- { x: 22, y: 47.5, kind: 'bush' },
- { x: 32, y: 44, kind: 'rock' },
- { x: 42, y: 40.5, kind: 'bush' },
-] as const;
-const PC_E: Pt = { x: 54, y: 39 }; // trail enters the forest
-const PC_X: Pt = { x: 90, y: 37.5 }; // …and leaves it
-const PC_T = 7.9;
-const PC_TIMES = [0, 0.6, 1.4, 2.3, 3.1, 4.0, 4.6, 5.2, 7.2];
-const PC_EASE: Ease[] = [easeInOut, easeInOut, easeInOut, easeInOut, easeInOut, easeInOut, easeInOut, linear];
-const PC_MEMBER: Pt[] = [{ x: -1.8, y: -2.9 }, { x: 1.8, y: -2.9 }];
-const pcAt = (c: Pt, m: Pt): Pt => ({ x: c.x + m.x, y: c.y + m.y });
-const pcCentre = (c: Pt): Pt => ({ x: c.x, y: c.y - 2.9 });
-const PC_LEN = dist(PC_E, PC_X);
-const PC_DIR: Pt = { x: (PC_X.x - PC_E.x) / PC_LEN, y: (PC_X.y - PC_E.y) / PC_LEN };
-const pcSlot = (k: number): Pt => ({ x: PC_E.x - PC_DIR.x * 3.5 * k, y: PC_E.y - PC_DIR.y * 3.5 * k });
-const pcShift = (p: Pt): Pt => ({ x: p.x + PC_X.x - PC_E.x, y: p.y + PC_X.y - PC_E.y });
-const [R0, R1, R2, R3] = PC_COVER;
-// Waypoints per unit at PC_TIMES. Team β (0,1) bounds first; team α (2,3) covers, then swaps.
-const PC_UNITS: Pt[][] = [
- [pcAt(R0, PC_MEMBER[0]), pcAt(R0, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcAt(R2, PC_MEMBER[0]), pcSlot(0), pcSlot(0), pcShift(pcSlot(0))],
- [pcAt(R0, PC_MEMBER[1]), pcAt(R0, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcAt(R2, PC_MEMBER[1]), pcSlot(1), pcSlot(1), pcShift(pcSlot(1))],
- [pcAt(R1, PC_MEMBER[0]), pcAt(R1, PC_MEMBER[0]), pcAt(R1, PC_MEMBER[0]), pcAt(R1, PC_MEMBER[0]), pcAt(R3, PC_MEMBER[0]), pcAt(R3, PC_MEMBER[0]), pcAt(R3, PC_MEMBER[0]), pcSlot(2), pcShift(pcSlot(2))],
- [pcAt(R1, PC_MEMBER[1]), pcAt(R1, PC_MEMBER[1]), pcAt(R1, PC_MEMBER[1]), pcAt(R1, PC_MEMBER[1]), pcAt(R3, PC_MEMBER[1]), pcAt(R3, PC_MEMBER[1]), pcAt(R3, PC_MEMBER[1]), pcSlot(3), pcShift(pcSlot(3))],
-];
-const pcKeys = (pts: Pt[], pick: (p: Pt) => number): Key[] => pts.map((p, i) => [PC_TIMES[i], pick(p)]);
-// Bounds in the open (dashed, exposed): [from, to, start, end].
-const PC_RUSHES: [Pt, Pt, number, number][] = [
- [pcCentre(R0), pcCentre(R2), 0.6, 1.4],
- [pcCentre(R1), pcCentre(R3), 2.3, 3.1],
- [pcCentre(R2), lerpPt(pcSlot(0), pcSlot(1), 0.5), 4.0, 4.6],
-];
-// The team that holds still covers the bound: [position, from, to].
-const PC_WATCH: [Pt, number, number][] = [
- [pcCentre(R1), 0.35, 1.65],
- [pcCentre(R2), 2.05, 3.35],
- [pcCentre(R3), 3.75, 4.8],
-];
-const PC_FOREST_RUN = [5.2, 7.2] as const;
-const PC_PINES: [number, number, number][] = [
- [56.5, 25.5, 0.95], [62.5, 20, 1.05], [69.5, 25.5, 0.9], [78, 20.5, 1.1], [85.5, 25.5, 0.95], [92, 20, 0.85],
- [56, 50.5, 1.0], [63.5, 48.5, 1.1], [71.5, 51, 0.95], [79.5, 48.5, 1.1], [87.5, 51, 1.0], [93, 47, 0.8],
- [59.5, 57.5, 0.9], [67.5, 56.5, 0.85], [83.5, 57, 0.9], [91.5, 56.5, 0.85],
-];
-const PC_TUFTS: [number, number][] = [[8, 58], [26, 57], [38, 52.5], [46, 58], [11, 32], [31, 27], [19, 21]];
-// Cover "fan" pointing ahead of the covering team.
-const pcFan = (p: Pt) => {
-const a = polarFrom(p, -17 - 16, 11);
-const b = polarFrom(p, -17 + 16, 11);
-const c = polarFrom(p, -17, 12.4);
-return `M${p.x} ${p.y} L${a.x} ${a.y} Q${c.x} ${c.y} ${b.x} ${b.y} Z`;
-};
-function polarFrom(p: Pt, deg: number, r: number): Pt {
-const a = (deg * Math.PI) / 180;
-return { x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r };
-}
-
-function PaceControlVisual({ play, run, label }: VisualProps) {
-const { t } = useSequence(PC_T, play, run);
-// 0 = in the open · 1 = in the forest · 2 = done (neutral, also reduced motion)
-const phase = useStep(t, [5.1, PC_T - 0.05]);
-const forestDrawn = useTrack(t, [[0, 0], [PC_FOREST_RUN[0], 0], [PC_FOREST_RUN[1], 1]], linear);
-const forestVis = useTrack(t, [[0, 0], [PC_FOREST_RUN[0] - 0.02, 0], [PC_FOREST_RUN[0], 1]], linear);
-const forestChevrons = useStep(t, [0.35, 0.75].map((s) => PC_FOREST_RUN[0] + s * (PC_FOREST_RUN[1] - PC_FOREST_RUN[0])));
-return (
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label={label}>
- <PaperTile>
- {/* Forest floor (right) with a soft, irregular tree line */}
- <path d="M50 0 C 46 14, 54 26, 49 38 S 47 56, 51 75 L 100 75 L 100 0 Z" fill={PAPER.g1} />
- {/* Sparse exposure cues in the open — dry tufts */}
- {PC_TUFTS.map(([x, y], i) => (
- <g key={i} stroke={PAPER.g2} strokeOpacity={0.7} strokeWidth="0.35" strokeLinecap="round">
- <line x1={x} y1={y} x2={x - 1} y2={y - 2.2} />
- <line x1={x} y1={y} x2={x} y2={y - 2.7} />
- <line x1={x} y1={y} x2={x + 1} y2={y - 2.2} />
- </g>
- ))}
- </PaperTile>
-
- {/* Region + regime labels — the active regime lights up */}
- <text x="27" y="11.8" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="3.5" {...HALO}>שטח פתוח</text>
- <text x="27" y="62.6" textAnchor="middle" className={cn('font-display font-bold transition-colors duration-300', phase === 0 ? 'fill-accent' : 'fill-fg-muted')} fontSize="2.8" {...HALO}>בהמחשה: תנועה בקטעים</text>
- <text x="73" y="11.8" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="3.5" {...HALO}>יער עבות</text>
- <text x="73" y="62.6" textAnchor="middle" className={cn('font-display font-bold transition-colors duration-300', phase === 1 ? 'fill-accent' : 'fill-fg-muted')} fontSize="2.8" {...HALO}>בהמחשה: תנועה רציפה</text>
-
- {/* Cover in the open — rocks and bushes to bound between */}
- {PC_COVER.map((c, i) => (c.kind === 'rock' ? <PaperRock key={i} x={c.x} y={c.y} /> : <PaperBush key={i} x={c.x} y={c.y} />))}
-
- {/* The forest */}
- {PC_PINES.map(([x, y, s], i) => (
- <PaperPine key={i} x={x} y={y} s={s} />
- ))}
-
- {/* OPEN — overwatch fans + short dashed bounds */}
- {PC_WATCH.map(([p, a, b], i) => (
- <CoverFan key={i} t={t} at={p} from={a} to={b} />
- ))}
- {PC_RUSHES.map(([from, to, a, b], i) => (
- <RushTrace key={i} t={t} from={from} to={to} start={a} end={b} />
- ))}
- <text x="22" y="37.6" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8" {...HALO}>תנועה וחיפוי</text>
-
- {/* FOREST — one fast, continuous column */}
- <motion.path d={`M${PC_E.x} ${PC_E.y} L${PC_X.x} ${PC_X.y}`} fill="none" className="stroke-accent" strokeWidth="0.9" strokeLinecap="round" style={{ pathLength: forestDrawn, opacity: forestVis }} />
- {[0.35, 0.75].map((s, i) => (
- <g key={s} className={cn('transition-opacity duration-200', forestChevrons > i ? 'opacity-100' : 'opacity-0')}>
- <Chevron at={lerpPt(PC_E, PC_X, s)} rot={angleDeg(PC_E, PC_X)} />
- </g>
- ))}
- <text x="72" y="33.2" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8" {...HALO}>תנועה בטור</text>
-
- {/* The force — four units */}
- {PC_UNITS.map((pts, i) => (
- <TrackedPuck key={i} t={t} xs={pcKeys(pts, (p) => p.x)} ys={pcKeys(pts, (p) => p.y)} ease={PC_EASE} r={1.6} />
- ))}
- </svg>
- );
-}
-
-/** A bound across open ground: a dashed trace that grows with the rushing team. */
-function RushTrace({ t, from, to, start, end }: { t: MotionValue<number>; from: Pt; to: Pt; start: number; end: number }) {
-const x2 = useTrack(t, [[start, from.x], [end, to.x]]);
-const y2 = useTrack(t, [[start, from.y], [end, to.y]]);
-const shown = useTrack(t, [[start - 0.02, 0], [start, 1]], linear);
-const arrived = useTrack(t, [[end - 0.1, 0], [end, 1]], linear);
-return (
- <g>
- <motion.line x1={from.x} y1={from.y} x2={x2} y2={y2} className="stroke-accent" strokeWidth="0.6" strokeDasharray="1.2 1" strokeLinecap="round" style={{ opacity: shown }} />
- <motion.g style={{ opacity: arrived }}>
- <Chevron at={lerpPt(from, to, 0.62)} rot={angleDeg(from, to)} scale={0.8} />
- </motion.g>
- </g>
- );
-}
-
-/** Overwatch: the team holding still covers the ground ahead of the bound. */
-function CoverFan({ t, at, from, to }: { t: MotionValue<number>; at: Pt; from: number; to: number }) {
-const opacity = useTrack(t, [[from, 0], [from + 0.2, 1], [to - 0.2, 1], [to, 0]], linear);
-return (
- <motion.path d={pcFan(at)} className="fill-accent-cool stroke-accent-cool" fillOpacity={0.2} strokeOpacity={0.55} strokeWidth="0.3" strokeLinejoin="round" style={{ opacity }} />
  );
 }
 

@@ -3,7 +3,7 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { ContoursShapeMap, ContourMapThumbnail, type DensityKind } from './ContoursShapeMap';
+import { ContoursShapeMap, type DensityKind } from './ContoursShapeMap';
 
 /**
  * "זיהוי תנאי שטח לפי צפיפות" — the density half of the contours scene
@@ -106,9 +106,6 @@ export function ContoursDensitySection() {
                   : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
               )}
             >
-              <span className="flex shrink-0 text-fg-muted">
-                <ContourMapThumbnail kind={s.id} />
-              </span>
               <span className="flex-1 min-w-0">
                 <span className="block font-display font-bold text-base text-fg leading-tight">{s.label}</span>
                 <span className="block text-sm text-fg-muted mt-0.5">{subtitle}</span>

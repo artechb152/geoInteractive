@@ -9,6 +9,7 @@ import {
   LandformReality,
   type LandformId,
   type LandformMapLabels,
+  type TerrainId,
 } from './LandformsVisuals';
 import { SlopeContours, SlopeGlyph, SlopeProfile } from './SlopeVisuals';
 
@@ -17,41 +18,68 @@ type Form = LandformId;
 type FormData = {
   id: Form;
   label: string;
+  /** the bare name and the name with its article — used when one tab holds two forms */
+  short: string;
+  def: string;
   description: string;
   contourHint: string;
 };
 
-const FORMS: FormData[] = [
-  {
+const FORMS: Record<Form, FormData> = {
+  hill: {
     id: 'hill',
     label: 'כיפה',
+    short: 'כיפה',
+    def: 'הכיפה',
     description: 'התרוממות בולטת של פני הקרקע מעל סביבתה.',
     contourHint: 'קווי גובה סגורים המקיפים זה את זה, כאשר הגובה עולה לכיוון המרכז. הפסגה נמצאת בתוך קו הגובה הפנימי ביותר.',
   },
-  {
+  spur: {
     id: 'spur',
     label: 'שלוחה',
+    short: 'שלוחה',
+    def: 'השלוחה',
     description: 'רצועת קרקע גבוהה וצרה היורדת בהדרגה מההר או מהרכס לכיוון השטח הנמוך.',
     contourHint: 'קווי גובה בצורת V או U, שהבליטה שלהם פונה לכיוון השטח הנמוך.',
   },
-  {
+  valley: {
     id: 'valley',
     label: 'גיא / ואדי',
+    short: 'גיא',
+    def: 'הגיא',
     description: 'שטח נמוך בין שתי שלוחות, שאליו מתנקזים מי הגשם.',
     contourHint: 'קווי גובה בצורת V, שקודקודיהם פונים לכיוון השטח הגבוה, במעלה הגיא. הקו המחבר את הקודקודים מציין את נתיב ניקוז המים.',
   },
-  {
+  saddle: {
     id: 'saddle',
     label: 'אוכף',
+    short: 'אוכף',
+    def: 'האוכף',
     description: 'קטע נמוך בקו הרכס, בין שתי כיפות סמוכות.',
     contourHint: 'האוכף נמצא בין שתי קבוצות של קווי גובה סגורים, המייצגות כיפות סמוכות. באזור האוכף נוצר מעבר נמוך בין הכיפות.',
   },
-  {
+  depression: {
     id: 'depression',
     label: 'מכתש',
+    short: 'מכתש',
+    def: 'המכתש',
     description: 'שקע סגור בפני הקרקע, הנמוך מסביבתו הקרובה.',
     contourHint: 'קווי גובה סגורים עם סימנים קצרים הפונים פנימה ומציינים ירידה בגובה אל תוך השקע.',
   },
+};
+
+// The forms' bare names, labelled on a shared terrain block.
+const NAMES = Object.fromEntries(Object.values(FORMS).map((f) => [f.id, f.short])) as Record<Form, string>;
+
+// One tab per terrain block: the valley and the saddle share one (a valley
+// falling from a saddle), with a switch between their two maps.
+type Tab = { id: TerrainId; label: string; forms: Form[]; realWorld: string };
+
+const TABS: Tab[] = [
+  { id: 'hill', label: 'כיפה', forms: ['hill'], realWorld: 'התרוממות מעל פני השטח שסביבה' },
+  { id: 'spur', label: 'שלוחה', forms: ['spur'], realWorld: 'רצועת קרקע גבוהה היורדת מהרכס' },
+  { id: 'valley-saddle', label: 'גיא ואוכף', forms: ['valley', 'saddle'], realWorld: 'אוכף בין שתי כיפות, וממנו יורד גיא' },
+  { id: 'depression', label: 'מכתש', forms: ['depression'], realWorld: 'שקע סגור הנמוך מסביבתו' },
 ];
 
 type Slope = {
@@ -68,13 +96,13 @@ const SLOPES: Slope[] = [
   { id: 'shoulder', label: 'כתף', description: 'קטע כמעט מישורי הקוטע את רצף המדרון ויוצר בו מעין מדרגה.', contourHint: 'באזור הכתף המרווחים בין קווי הגובה גדולים יותר מאשר בקטעים שמעליו ומתחתיו.' },
 ];
 
-// Short cues shown under each board — bind "reality" to "map" per form.
-const REALITY_META: Record<Form, { realWorld: string; mapCue: string }> = {
-  hill: { realWorld: 'התרוממות מעל פני השטח שסביבה', mapCue: 'קווי גובה סגורים סביב הפסגה' },
-  spur: { realWorld: 'רצועת קרקע גבוהה היורדת מהרכס', mapCue: 'בליטת הקווים פונה אל השטח הנמוך' },
-  valley: { realWorld: 'שטח נמוך בין שתי שלוחות', mapCue: 'קודקודי הקווים פונים אל השטח הגבוה' },
-  saddle: { realWorld: 'מעבר נמוך בין שתי כיפות', mapCue: 'אזור נמוך בין שתי קבוצות קווים סגורים' },
-  depression: { realWorld: 'שקע סגור הנמוך מסביבתו', mapCue: 'קווים סגורים עם סימנים הפונים פנימה' },
+// Short cues shown over each map — bind "reality" (the tab's realWorld) to "map" per form.
+const MAP_CUE: Record<Form, string> = {
+  hill: 'קווי גובה סגורים סביב הפסגה',
+  spur: 'בליטת הקווים פונה אל השטח הנמוך',
+  valley: 'קודקודי הקווים פונים אל השטח הגבוה',
+  saddle: 'אזור נמוך בין שתי קבוצות קווים סגורים',
+  depression: 'קווים סגורים עם סימנים הפונים פנימה',
 };
 
 // Labels drawn inside the illustrations — kept here with the rest of the scene copy.
@@ -137,7 +165,7 @@ function useViewsFit(row: RefObject<HTMLDivElement | null>) {
 }
 
 export function LandformsScene() {
-  const [active, setActive] = useState<Form>('hill');
+  const [active, setActive] = useState<TerrainId>('hill');
   const [slope, setSlope] = useState(SLOPES[0].id);
 
   return (
@@ -165,12 +193,16 @@ function InfoLabel({ children }: { children: ReactNode }) {
 
 /* ── Landforms — tabs + terrain beside its map ───────────────────────────── */
 
-// One workspace that fits the first screen at any size: the five forms as tabs
+// One workspace that fits the first screen at any size: the landforms as tabs
 // on top, the terrain and its map side by side (terrain → RIGHT in RTL, read
-// first), and the form's description beneath them.
-function FormBoard({ active, onSelect }: { active: Form; onSelect: (id: Form) => void }) {
-  const form = FORMS.find((f) => f.id === active)!;
-  const meta = REALITY_META[active];
+// first), and the form's description beneath them. A tab with two forms (valley
+// and saddle) keeps the same board: a switch over the map picks which form the
+// map and the text show, and the terrain brings that form forward.
+function FormBoard({ active, onSelect }: { active: TerrainId; onSelect: (id: TerrainId) => void }) {
+  const tab = TABS.find((t) => t.id === active)!;
+  const pair = tab.forms.length > 1;
+  const [pick, setPick] = useState<Form>('valley');
+  const form = FORMS[pair && tab.forms.includes(pick) ? pick : tab.forms[0]];
   const reduce = useReducedMotion();
   const rowRef = useRef<HTMLDivElement>(null);
   const rowW = useViewsFit(rowRef);
@@ -187,21 +219,35 @@ function FormBoard({ active, onSelect }: { active: Form; onSelect: (id: Form) =>
           className="mx-auto grid gap-4 md:grid-cols-2"
           style={rowW ? { maxWidth: rowW } : undefined}
         >
-          <BoardView caption={{ kind: 'real', sub: meta.realWorld }}>
-            <LandformReality form={active} ariaLabel={`${form.label} — בשטח: ${meta.realWorld}`} />
+          <BoardView caption={{ kind: 'real', sub: tab.realWorld }}>
+            <LandformReality
+              terrain={active}
+              focus={pair ? form.id : undefined}
+              names={pair ? NAMES : undefined}
+              ariaLabel={`${tab.label} — בשטח: ${tab.realWorld}`}
+            />
           </BoardView>
-          <BoardView caption={{ kind: 'map', sub: meta.mapCue }} frameClassName="bg-paper-bright">
-            <LandformMap form={active} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${meta.mapCue}`} />
+          <BoardView
+            caption={{
+              kind: 'map',
+              sub: MAP_CUE[form.id],
+              aside: pair && <FormSwitch forms={tab.forms} value={form.id} onChange={setPick} />,
+            }}
+            frameClassName="bg-paper-bright"
+          >
+            <LandformMap form={form.id} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${MAP_CUE[form.id]}`} />
           </BoardView>
         </div>
         <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
-          ההמחשה מציגה את אותה תבנית נוף בשטח ובמפה באמצעות קווי גובה.
+          {pair
+            ? 'ההמחשה מציגה גיא ואוכף באותו שטח. בחרו מעל המפה איזו מהתבניות להציג.'
+            : 'ההמחשה מציגה את אותה תבנית נוף בשטח ובמפה באמצעות קווי גובה.'}
         </p>
 
         <div aria-live="polite" className="mt-4 rounded-xl bg-bg-accent/60 p-4 sm:p-5">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={`text-${active}`}
+              key={`text-${form.id}`}
               initial={reduce ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
@@ -209,11 +255,11 @@ function FormBoard({ active, onSelect }: { active: Form; onSelect: (id: Form) =>
               className="grid sm:grid-cols-2 gap-4 sm:gap-6"
             >
               <div>
-                <InfoLabel>תיאור התבנית</InfoLabel>
+                <InfoLabel>{pair ? `תיאור ${form.def}` : 'תיאור התבנית'}</InfoLabel>
                 <p className="text-base leading-relaxed text-fg">{form.description}</p>
               </div>
               <div>
-                <InfoLabel>זיהוי במפה</InfoLabel>
+                <InfoLabel>{pair ? `זיהוי ${form.def} במפה` : 'זיהוי במפה'}</InfoLabel>
                 <p className="text-base leading-relaxed text-fg">{form.contourHint}</p>
               </div>
             </motion.div>
@@ -224,12 +270,39 @@ function FormBoard({ active, onSelect }: { active: Form; onSelect: (id: Form) =>
   );
 }
 
-function FormTabs({ active, onSelect }: { active: Form; onSelect: (id: Form) => void }) {
+// Picks which of a tab's two forms the map shows. One text line tall, so the
+// map's caption keeps the height it has on every other tab.
+function FormSwitch({ forms, value, onChange }: { forms: Form[]; value: Form; onChange: (f: Form) => void }) {
+  return (
+    <div role="group" aria-label="תבנית במפה" className="ms-auto flex shrink-0 rounded-full bg-bg-accent">
+      {forms.map((f) => {
+        const on = f === value;
+        return (
+          <button
+            key={f}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onChange(f)}
+            className={cn(
+              'rounded-full px-3 text-sm font-display font-bold leading-5 transition-colors duration-200 ease-snap',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-bg-elevated',
+              on ? 'bg-accent text-white' : 'text-fg-muted hover:text-fg',
+            )}
+          >
+            {FORMS[f].short}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FormTabs({ active, onSelect }: { active: TerrainId; onSelect: (id: TerrainId) => void }) {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Arrow keys follow the visual order in RTL: ArrowLeft → next tab.
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
-    const n = FORMS.length;
+    const n = TABS.length;
     let next = -1;
     if (e.key === 'ArrowLeft') next = (i + 1) % n;
     else if (e.key === 'ArrowRight') next = (i - 1 + n) % n;
@@ -237,13 +310,13 @@ function FormTabs({ active, onSelect }: { active: Form; onSelect: (id: Form) => 
     else if (e.key === 'End') next = n - 1;
     if (next < 0) return;
     e.preventDefault();
-    onSelect(FORMS[next].id);
+    onSelect(TABS[next].id);
     tabRefs.current[next]?.focus();
   };
 
   return (
-    <div role="tablist" aria-label="תבניות נוף" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
-      {FORMS.map((f, i) => {
+    <div role="tablist" aria-label="תבניות נוף" className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
+      {TABS.map((f, i) => {
         const isActive = active === f.id;
         return (
           <button
@@ -311,9 +384,11 @@ type BoardCaptionProps = {
   kind: 'real' | 'map';
   sub: string;
   labelText?: string;
+  /** a control at the caption's far end (one text line tall) */
+  aside?: ReactNode;
 };
 
-function BoardCaption({ kind, sub, labelText }: BoardCaptionProps) {
+function BoardCaption({ kind, sub, labelText, aside }: BoardCaptionProps) {
   const reduce = useReducedMotion();
   const label = labelText ?? (kind === 'real' ? 'בשטח' : 'במפה');
   return (
@@ -331,6 +406,7 @@ function BoardCaption({ kind, sub, labelText }: BoardCaptionProps) {
           · {sub}
         </motion.span>
       </AnimatePresence>
+      {aside}
     </div>
   );
 }

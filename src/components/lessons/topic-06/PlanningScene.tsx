@@ -173,7 +173,7 @@ isActive
  <div className="lg:sticky lg:top-24 surface-elevated p-5 sm:p-6">
  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
  <span className="text-sm font-display font-semibold text-fg-muted">
- סיפור דרך · 5 נקודות אימות
+ סיפור דרך · 5 קיטועים
  </span>
  <div className="flex items-center gap-2.5">
  <button

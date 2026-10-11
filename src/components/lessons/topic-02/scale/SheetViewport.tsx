@@ -5,7 +5,7 @@ import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistance, formatNumber, niceScaleBar, SHEET_UNITS, type SheetPoint } from './geo';
-import { MAX_K, MIN_K, useMapView, type InitialView } from './useMapView';
+import { MIN_K, useMapView, type InitialView } from './useMapView';
 import { screenToUnits } from './viewMath';
 import { FOCUS_RING } from './controls';
 
@@ -47,6 +47,17 @@ type Props = {
   initialView?: InitialView;
   /** The measured side of the square in CSS px, reported after layout and on every resize (1 sheet cm = px / 24). */
   onSize?: (px: number) => void;
+  /** Deepest zoom (default MAX_K). */
+  maxK?: number;
+  /**
+   * Zooming into a smaller sheet: once k > minK and the visible square lies inside `rect` (sheet units
+   * [x0, y0, x1, y1]), onEnter gets the current zoom and centre.
+   */
+  zoomInto?: { rect: [number, number, number, number]; minK: number; onEnter: (v: { k: number; center: SheetPoint }) => void };
+  /** Zooming out at k = 1 calls this (`step`: − or the button; false: the wheel) instead of doing nothing. */
+  onZoomOutPast?: (step: boolean) => void;
+  /** false: the next sheetKey change jumps without the scale morph (the caller hands over a matching view). */
+  morph?: boolean;
 };
 
 /**
@@ -57,11 +68,12 @@ type Props = {
  */
 export function SheetViewport({
   id, label, sheetKey, groundWidthM, base, top, display, curtain, attribution, preload, onPick, overlay, note, initialView, onSize,
+  maxK, zoomInto, onZoomOutPast, morph = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const hintId = useId();
   const reduce = !!useReducedMotion();
-  const map = useMapView(ref, initialView);
+  const map = useMapView(ref, initialView, { maxK, onZoomOutPast });
   const { view, size } = map;
   const inView = useInView(ref, { margin: '300px', once: true });
   const preloadKey = (preload ?? []).join('|');
@@ -95,24 +107,49 @@ export function SheetViewport({
     return () => window.clearTimeout(t);
   }, [view.k, size]);
 
+  // Zoomed into the smaller sheet's extent: hand over once per sheet.
+  const zoomIntoRef = useRef(zoomInto);
+  zoomIntoRef.current = zoomInto;
+  const entered = useRef<string | null>(null);
+  const { getView } = map;
+  useEffect(() => {
+    const z = zoomIntoRef.current;
+    // The live view, not this render's: right after a sheet switch this render still holds the old sheet's zoom.
+    const v = getView();
+    if (!z || size <= 1 || entered.current === sheetKey || v.k <= z.minK) return;
+    const u = (px: number) => (px / (size * v.k)) * 1000;
+    const x0 = u(-v.x);
+    const y0 = u(-v.y);
+    const w = 1000 / v.k;
+    const [rx0, ry0, rx1, ry1] = z.rect;
+    const tol = 0.5;
+    if (x0 < rx0 - tol || y0 < ry0 - tol || x0 + w > rx1 + tol || y0 + w > ry1 + tol) return;
+    entered.current = sheetKey;
+    z.onEnter({ k: v.k, center: { x: x0 + w / 2, y: y0 + w / 2 } });
+  }, [view, size, sheetKey, getView]);
+
   // Scale morph (spec §6.1): the outgoing picture scales by the width ratio and fades while the incoming
   // one grows from 1/ratio to 1 — both about the shared centre, so the ground lines up throughout.
   const shownSrc = display === 'base' ? base.src : top.src;
   const last = useRef({ key: sheetKey, w: groundWidthM, src: shownSrc });
   const changed = last.current.key !== sheetKey;
+  const morphing = changed && morph && !reduce;
   const enterRatio = changed ? last.current.w / groundWidthM : 1;
   const [ghost, setGhost] = useState<{ id: string; src: string; ratio: number } | null>(null);
-  const { resetNow } = map;
+  const { resetNow, zoomBy } = map;
   const initialViewRef = useRef(initialView);
   initialViewRef.current = initialView;
   useLayoutEffect(() => {
     const prev = last.current;
     if (prev.key !== sheetKey) {
+      entered.current = null;
       resetNow(initialViewRef.current);
-      setGhost(reduce ? null : { id: `${prev.key}->${sheetKey}`, src: prev.src, ratio: prev.w / groundWidthM });
+      const then = initialViewRef.current?.thenZoom;
+      if (then) zoomBy(then);
+      setGhost(!morph || reduce ? null : { id: `${prev.key}->${sheetKey}`, src: prev.src, ratio: prev.w / groundWidthM });
     }
     last.current = { key: sheetKey, w: groundWidthM, src: shownSrc };
-  }, [sheetKey, groundWidthM, shownSrc, reduce, resetNow]);
+  }, [sheetKey, groundWidthM, shownSrc, reduce, morph, resetNow, zoomBy]);
 
   const world = { transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})`, transformOrigin: '0 0' };
   const ppu = (size * view.k) / SHEET_UNITS;
@@ -154,7 +191,7 @@ export function SheetViewport({
           key={sheetKey}
           className="absolute inset-0"
           style={{ transformOrigin: '50% 50%' }}
-          initial={changed && !reduce ? { scale: 1 / enterRatio } : false}
+          initial={morphing ? { scale: 1 / enterRatio } : false}
           animate={{ scale: 1 }}
           transition={{ duration: MORPH_S, ease: EASE }}
         >
@@ -196,7 +233,7 @@ export function SheetViewport({
         <NorthArrow />
         {/* The bar describes the sheet on screen; mid-morph two sheets are visible, so it waits for the morph to end. */}
         {size > 1 && !ghost && <ScaleBar meters={bar.meters} px={bar.px} />}
-        <ZoomButtons k={view.k} onIn={() => map.zoomBy(1.5)} onOut={() => map.zoomBy(1 / 1.5)} onReset={map.reset} />
+        <ZoomButtons k={view.k} maxK={map.maxK} outPast={!!onZoomOutPast} onIn={() => map.zoomBy(1.5)} onOut={() => map.zoomBy(1 / 1.5)} onReset={map.reset} />
       </div>
 
       {display === 'curtain' && curtain && <CurtainSlider {...curtain} />}
@@ -261,7 +298,9 @@ function NorthArrow() {
   );
 }
 
-function ZoomButtons({ k, onIn, onOut, onReset }: { k: number; onIn: () => void; onOut: () => void; onReset: () => void }) {
+function ZoomButtons({
+  k, maxK, outPast, onIn, onOut, onReset,
+}: { k: number; maxK: number; outPast: boolean; onIn: () => void; onOut: () => void; onReset: () => void }) {
   // At a limit the button stays opaque (it sits on the map) and only its icon and cursor dim.
   const btn = cn(
     'flex size-9 items-center justify-center rounded-lg border border-border bg-bg-elevated text-fg shadow-sm transition-colors duration-200 ease-snap hover:border-brand/30',
@@ -269,14 +308,16 @@ function ZoomButtons({ k, onIn, onOut, onReset }: { k: number; onIn: () => void;
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
   );
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
-  const atMax = k >= MAX_K - 1e-3;
+  const atMax = k >= maxK - 1e-3;
   const atMin = k <= MIN_K + 1e-3;
+  // At k = 1 zoom-out can still open the wider sheet.
+  const outOff = atMin && !outPast;
   return (
     <div className="absolute bottom-3 right-3 flex flex-col gap-1.5" onPointerDown={stop} onClick={stop} onKeyDown={stop}>
       <button type="button" className={btn} aria-label="התקרבות" aria-disabled={atMax} onClick={atMax ? undefined : onIn}>
         <Plus size={18} aria-hidden />
       </button>
-      <button type="button" className={btn} aria-label="התרחקות" aria-disabled={atMin} onClick={atMin ? undefined : onOut}>
+      <button type="button" className={btn} aria-label="התרחקות" aria-disabled={outOff} onClick={outOff ? undefined : onOut}>
         <Minus size={18} aria-hidden />
       </button>
       <button type="button" className={btn} aria-label="איפוס התצוגה" aria-disabled={atMin} onClick={atMin ? undefined : onReset}>

@@ -13,6 +13,9 @@
  *   - "במפה": the same surface traced as contour lines (marching squares) with
  *     a constant 10 m interval and a heavier index contour at 150.
  *
+ * The valley and the saddle share one block (a valley falling from a saddle);
+ * each keeps its own map of that block, carrying only its own marks.
+ *
  * The landform's key feature (summit ring / spur axis / drainage line / saddle
  * point / depression rim) is marked the same way in both views. Copy strings
  * are passed in from the scene (single source of copy).
@@ -29,7 +32,18 @@ import { ContourMapSheet, MapLabel, TerrainBlockView, useContourMorph, useIdlePr
 
 /* ── Shared geometry ─────────────────────────────────────────────────────── */
 
+/** The five landforms — each has its own map and key feature. */
 export type LandformId = 'hill' | 'spur' | 'valley' | 'saddle' | 'depression';
+/** The terrain blocks — the valley and the saddle share one: a valley falling from a saddle. */
+export type TerrainId = 'hill' | 'spur' | 'valley-saddle' | 'depression';
+
+export const TERRAIN_OF: Record<LandformId, TerrainId> = {
+  hill: 'hill',
+  spur: 'spur',
+  valley: 'valley-saddle',
+  saddle: 'valley-saddle',
+  depression: 'depression',
+};
 
 const E = Math.exp;
 
@@ -60,11 +74,19 @@ type Spec = {
   h: HeightFn;
   kz: number; // oblique: screen-y per metre of elevation (vertical exaggeration)
   ky?: number; // camera: foreshortening of the ground plane (default KY)
-  highlight?: number; // level whose closed contour is the key feature
-  numbers: { level: number; at: Pt }[]; // elevation labels on the map
 };
 
-const SPECS: Record<LandformId, Spec> = {
+// Valley-and-saddle block: two summits on a ridge (back), the saddle between
+// them, and a valley that falls from the saddle toward the viewer between the
+// summits' long front slopes.
+const VS_RIDGE_Y = 16; // the ridge line (plan y)
+const VS_SADDLE: Pt = [50, VS_RIDGE_Y];
+const smooth = (a: number, b: number, t: number) => {
+  const k = Math.min(1, Math.max(0, (t - a) / (b - a)));
+  return k * k * (3 - 2 * k);
+};
+
+const SPECS: Record<TerrainId, Spec> = {
   hill: {
     h: (x, y) => {
       const dx = (x - 50) / 23;
@@ -74,11 +96,6 @@ const SPECS: Record<LandformId, Spec> = {
       return BASE + 68 * E(-0.9 * r2);
     },
     kz: 0.28,
-    highlight: 160,
-    numbers: [
-      { level: 150, at: [66, 25] },
-      { level: 110, at: [84, 25] },
-    ],
   },
   spur: {
     h: (x, y) => {
@@ -86,37 +103,19 @@ const SPECS: Record<LandformId, Spec> = {
       return 170 - 1.8 * (y + 3 - b) + 0.8 * Math.sin(x * 0.19);
     },
     kz: 0.23,
-    numbers: [
-      { level: 150, at: [16, 12] },
-      { level: 120, at: [16, 29] },
-    ],
   },
-  valley: {
+  'valley-saddle': {
     h: (x, y) => {
-      const v = 18 * Math.max(0, 1 - Math.abs(x - 50) / 17) ** 1.5;
-      const s = 5 * (E(-(((x - 16) / 10) ** 2)) + E(-(((x - 84) / 10) ** 2)));
-      return 160 - 1.8 * (y - 20 + v - s);
-    },
-    kz: 0.23,
-    numbers: [
-      { level: 150, at: [86, 27] },
-      { level: 120, at: [86, 44] },
-    ],
-  },
-  saddle: {
-    h: (x, y) => {
-      const q = (cx: number) => ((x - cx) / 11) ** 2 + ((y - 25) / 11.5) ** 2;
-      return (
-        BASE +
-        42.6 * (E(-q(26)) + E(-q(74))) +
-        35.3 * E(-(((y - 25) / 10.5) ** 2)) * E(-(((x - 50) / 30) ** 4))
-      );
+      // height along the ridge: summits at x = 24 / 76, the saddle low between them
+      const crest =
+        120 + 45 * (E(-(((x - 24) / 13) ** 2)) + E(-(((x - 76) / 13) ** 2))) + 22 * E(-(((x - 50) / 20) ** 2));
+      // short back slope, long front slope
+      const across = E(-(((y - VS_RIDGE_Y) / (y < VS_RIDGE_Y ? 9 : 26)) ** 2));
+      // the valley deepens from just below the saddle toward the viewer
+      const v = 20 * smooth(VS_RIDGE_Y + 2, VS_RIDGE_Y + 16, y) * Math.max(0, 1 - Math.abs(x - 50) / 22) ** 1.5;
+      return BASE + (crest - BASE) * across - v;
     },
     kz: 0.24,
-    numbers: [
-      { level: 150, at: [26, 17] },
-      { level: 130, at: [50, 13] },
-    ],
   },
   depression: {
     h: (x, y) => {
@@ -132,7 +131,74 @@ const SPECS: Record<LandformId, Spec> = {
     kz: 0.3,
     // looked at from a little higher than the rest, so the eye sees INTO the pit
     ky: 0.52,
+  },
+};
+
+/* ── Feature overlays (the key feature of each landform) ─────────────────── */
+
+type Line = { from: Pt; to: Pt };
+
+// Plan-view geometry of each landform's key feature, shared by both boards, and
+// its map labels.
+type Feature = {
+  highlight?: number; // level whose closed contour is the key feature
+  numbers: { level: number; at: Pt }[]; // elevation labels on the map
+  axis?: Line;
+  ridge?: Line;
+  drain?: Line;
+  point?: Pt;
+  floor?: Pt[]; // plan outline of a valley floor (washed on the block)
+  vBends?: { x: number; y: number; w: number; h: number }; // map window whose contour bends are the key feature
+  nameAt?: { at: Pt; dx?: number; dy?: number }; // where the block names the form (plan point + screen offset)
+};
+
+// The valley floor: narrow at the valley head, widening toward the viewer.
+const VS_FLOOR: Pt[] = (() => {
+  const ys = Array.from({ length: 28 }, (_, i) => VS_RIDGE_Y + 7 + i); // 23 → 50
+  const w = (y: number) => 1.6 + 5 * smooth(VS_RIDGE_Y + 7, 50, y);
+  return [...ys.map((y) => [50 - w(y), y] as Pt), ...[...ys].reverse().map((y) => [50 + w(y), y] as Pt)];
+})();
+
+const FEATURES: Record<LandformId, Feature> = {
+  hill: {
+    highlight: 160,
+    numbers: [
+      { level: 150, at: [66, 25] },
+      { level: 110, at: [84, 25] },
+    ],
+  },
+  spur: {
+    axis: { from: [50, 9], to: [50, 41] },
+    numbers: [
+      { level: 150, at: [16, 12] },
+      { level: 120, at: [16, 29] },
+    ],
+  },
+  valley: {
+    // from the valley head, just below the saddle
+    drain: { from: [50, VS_RIDGE_Y + 7.5], to: [50, 49.5] },
+    floor: VS_FLOOR,
+    vBends: { x: 37, y: VS_RIDGE_Y + 7, w: 26, h: 26.8 }, // under the arrow's label, short of the tile's lower edge
+    nameAt: { at: [50, 38], dx: 7 },
+    numbers: [
+      { level: 130, at: [92, 34] },
+      { level: 110, at: [92, 47] },
+    ],
+  },
+  saddle: {
+    // the two summits' closed contours, with the saddle between them
     highlight: 150,
+    ridge: { from: [24, VS_RIDGE_Y], to: [76, VS_RIDGE_Y] },
+    point: VS_SADDLE,
+    nameAt: { at: VS_SADDLE, dy: -4.2 },
+    numbers: [
+      { level: 160, at: [24, 8] },
+      { level: 140, at: [50, 9] },
+    ],
+  },
+  depression: {
+    highlight: 150,
+    point: [50, 24],
     numbers: [
       { level: 150, at: [82, 24] },
       { level: 130, at: [64, 24] },
@@ -140,46 +206,29 @@ const SPECS: Record<LandformId, Spec> = {
   },
 };
 
+const FORMS_ON: Record<TerrainId, LandformId[]> = {
+  hill: ['hill'],
+  spur: ['spur'],
+  'valley-saddle': ['valley', 'saddle'],
+  depression: ['depression'],
+};
+
 // The landforms' look: the elevation ramp above, and on the hill its key summit
 // ring tinted toward the accent (the same ring is highlighted on the map).
 const LANDFORM_LOOK: TerrainLook = { ramp: GROUND_RAMP };
 const HILL_LOOK: TerrainLook = {
   ramp: GROUND_RAMP,
-  tint: (col, q) => (q.raw >= (SPECS.hill.highlight as number) ? mix(col, C.accent, 0.32) : col),
+  tint: (col, q) => (q.raw >= (FEATURES.hill.highlight as number) ? mix(col, C.accent, 0.32) : col),
 };
 const TERRAIN_SPECS = Object.fromEntries(
-  (Object.keys(SPECS) as LandformId[]).map((f) => {
-    const { h, kz, ky } = SPECS[f];
-    return [f, { h, kz, ky, look: f === 'hill' ? HILL_LOOK : LANDFORM_LOOK } satisfies TerrainSpec];
+  (Object.keys(SPECS) as TerrainId[]).map((t) => {
+    const { h, kz, ky } = SPECS[t];
+    return [t, { h, kz, ky, look: t === 'hill' ? HILL_LOOK : LANDFORM_LOOK } satisfies TerrainSpec];
   }),
-) as Record<LandformId, TerrainSpec>;
+) as Record<TerrainId, TerrainSpec>;
 
-const getTerrain = (form: LandformId): Terrain => buildTerrain(TERRAIN_SPECS[form]);
-
-type Landform = Contours & { spec: Spec };
-
-const cache = new Map<LandformId, Landform>();
-
-function getLandform(id: LandformId): Landform {
-  const hit = cache.get(id);
-  if (hit) return hit;
-  const lf: Landform = { spec: SPECS[id], ...buildContours(SPECS[id].h) };
-  cache.set(id, lf);
-  return lf;
-}
-
-/* ── Feature overlays (the key feature of each landform) ─────────────────── */
-
-type Line = { from: Pt; to: Pt };
-
-// Plan-view geometry of each key feature, shared by both boards.
-const FEATURES: Record<LandformId, { axis?: Line; ridge?: Line; drain?: Line; point?: Pt }> = {
-  hill: {},
-  spur: { axis: { from: [50, 9], to: [50, 41] } },
-  valley: { drain: { from: [50, 1], to: [50, 49.5] } },
-  saddle: { ridge: { from: [26, 25], to: [74, 25] }, point: [50, 25] },
-  depression: { point: [50, 24] },
-};
+const getTerrain = (id: TerrainId): Terrain => buildTerrain(TERRAIN_SPECS[id]);
+const getContours = (id: TerrainId): Contours => buildContours(SPECS[id].h);
 
 function sampleLine(l: Line, step = 0.25): Pt[] {
   const [x1, y1] = l.from;
@@ -218,24 +267,56 @@ function Summit({ at, fill, size = 2.4 }: { at: Pt; fill: string; size?: number 
 
 /* ── "במציאות" — terrain block ───────────────────────────────────────────── */
 
-const PREFETCH = (Object.keys(SPECS) as LandformId[]).map((f) => () => {
-  getMorphMesh(getTerrain(f));
-  getLandform(f);
+const PREFETCH = (Object.keys(SPECS) as TerrainId[]).map((id) => () => {
+  getMorphMesh(getTerrain(id));
+  getContours(id);
 });
 
-export function LandformReality({ form, ariaLabel }: { form: LandformId; ariaLabel: string }) {
-  const terrain = getTerrain(form);
-  // key feature, draped on the ground once the block is in place
-  const marks = useMemo(() => realityOverlays(form, getLandform(form), terrain), [form, terrain]);
+export function LandformReality({
+  terrain: id,
+  focus,
+  names,
+  ariaLabel,
+}: {
+  terrain: TerrainId;
+  /** on a block with two forms: the one brought forward (the other fades back) */
+  focus?: LandformId;
+  /** on a block with two forms: each form's name, labelled on the ground */
+  names?: Partial<Record<LandformId, string>>;
+  ariaLabel: string;
+}) {
+  const reduce = useReducedMotion();
+  const terrain = getTerrain(id);
+  // key features, draped on the ground once the block is in place
+  const overlays = useMemo(
+    () => FORMS_ON[id].map((f) => [f, realityOverlays(f, getContours(id), terrain, names?.[f])] as const),
+    [id, terrain, names],
+  );
+  const marks = overlays.map(([f, nodes]) => (
+    <motion.g
+      key={f}
+      initial={false}
+      animate={{ opacity: focus && f !== focus ? 0.3 : 1 }}
+      transition={{ duration: reduce ? 0 : 0.25 }}
+    >
+      {nodes}
+    </motion.g>
+  ));
   // Prepare the other landforms while the reader is idle, so switching is quick.
   useIdlePrefetch(PREFETCH);
   return <TerrainBlockView terrain={terrain} ariaLabel={ariaLabel} marks={marks} />;
 }
 
-function realityOverlays(form: LandformId, lf: Landform, t: Terrain): ReactNode[] {
-  const { highlight } = lf.spec;
+function realityOverlays(form: LandformId, lf: Contours, t: Terrain, name?: string): ReactNode[] {
   const feat = FEATURES[form];
+  const { highlight } = feat;
   const out: ReactNode[] = [];
+
+  // the valley floor, washed in the drainage colour
+  if (feat.floor) {
+    const d = drape(t, feat.floor, true);
+    if (d) out.push(<path key="fl" d={d} fill={C.river} fillOpacity={0.28} stroke="none" />);
+  }
 
   // the same closed contour that is highlighted on the map (hill top, depression rim)
   if (highlight !== undefined) {
@@ -292,6 +373,14 @@ function realityOverlays(form: LandformId, lf: Landform, t: Terrain): ReactNode[
     const [sx, sy] = t.at(feat.point[0], feat.point[1]);
     out.push(<circle key="sp" cx={sx} cy={sy} r={1.3} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.45} />);
   }
+  // the form's name, on the ground beside its mark
+  if (name && feat.nameAt) {
+    const { at, dx = 0, dy = 0 } = feat.nameAt;
+    const [x, y] = t.at(at[0], at[1]);
+    out.push(
+      <MapLabel key="nm" at={[x + dx, y + dy]} text={name} fill={feat.drain ? C.riverDeep : C.accent} size={3.2} />,
+    );
+  }
   return out;
 }
 
@@ -306,9 +395,8 @@ export type LandformMapLabels = {
 };
 
 // Short ticks on each depression contour, pointing downhill (into the pit).
-function hachures(lf: Landform, level: number): string {
+function hachures(lf: Contours, h: HeightFn, level: number): string {
   const out: string[] = [];
-  const h = lf.spec.h;
   for (const ring of (lf.rings.get(level) ?? []).filter(isInterior)) {
     let acc = 0;
     for (let i = 1; i <= ring.length; i++) {
@@ -337,9 +425,12 @@ export function LandformMap({
   ariaLabel: string;
 }) {
   const reduce = useReducedMotion();
-  const lf = getLandform(form);
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  // the map traces the whole block the landform sits on (the valley and the saddle share one)
+  const terrain = TERRAIN_OF[form];
+  const lf = getContours(terrain);
   const feat = FEATURES[form];
-  const highlightRings = lf.spec.highlight ? (lf.rings.get(lf.spec.highlight) ?? []).filter(isInterior) : [];
+  const highlightRings = feat.highlight ? (lf.rings.get(feat.highlight) ?? []).filter(isInterior) : [];
 
   // Switching landforms: the contours reshape with the ground (useContourMorph).
   // The labels and key-feature marks wait until the new form has settled.
@@ -360,7 +451,7 @@ export function LandformMap({
             initial={switched ? marksIn : false}
             animate={{ opacity: 1 }}
             transition={marks}
-            d={lf.levels.map((L) => hachures(lf, L)).join('')}
+            d={lf.levels.map((L) => hachures(lf, SPECS[terrain].h, L)).join('')}
             fill="none"
             stroke={C.contourIndex}
             strokeWidth={0.28}
@@ -377,7 +468,7 @@ export function LandformMap({
           animate={{ opacity: 1 }}
           transition={marks}
           d={ringsPath(highlightRings, identity)}
-          fill={form === 'hill' ? C.accent : 'none'}
+          fill={form === 'depression' ? 'none' : C.accent}
           fillOpacity={0.14}
           stroke={C.accent}
           strokeWidth={0.6}
@@ -385,10 +476,29 @@ export function LandformMap({
         />
       )}
 
+      {/* the contours' V-bends across the valley, in the drainage colour */}
+      {still && feat.vBends && (
+        <motion.g key={`vb-${form}`} initial={marksIn} animate={{ opacity: 1 }} transition={marks}>
+          <defs>
+            <clipPath id={`${uid}-vb`}>
+              <rect x={feat.vBends.x} y={feat.vBends.y} width={feat.vBends.w} height={feat.vBends.h} />
+            </clipPath>
+          </defs>
+          <path
+            clipPath={`url(#${uid}-vb)`}
+            d={lf.levels.map((L) => ringsPath(lf.rings.get(L) ?? [], identity)).join('')}
+            fill="none"
+            stroke={C.riverDeep}
+            strokeWidth={0.6}
+            strokeLinejoin="round"
+          />
+        </motion.g>
+      )}
+
       {/* elevation numbers on the lines (metres) */}
       {still && (
         <motion.g key={`num-${form}`} initial={switched ? marksIn : false} animate={{ opacity: 1 }} transition={marks}>
-          {lf.spec.numbers.map(({ level, at }) => {
+          {feat.numbers.map(({ level, at }) => {
             const p = nearestOnLevel(lf, level, at);
             return p ? (
               <MapLabel key={level} at={p} text={String(level)} fill={C.contourIndex} size={2.3} charW={0.62} />
@@ -429,9 +539,9 @@ export function LandformMap({
                 strokeLinecap="round"
               />
               {/* reading cue: the V's apex points up-valley, toward the high ground */}
-              <line x1={59} y1={38} x2={59} y2={12} stroke={C.accent} strokeWidth={0.55} strokeLinecap="round" />
-              <Arrowhead tip={[59, 9.4]} dir={[0, -1]} fill={C.accent} />
-              <MapLabel at={[59, 5.6]} text={labels.toPeak} fill={C.accent} />
+              <line x1={58} y1={46} x2={58} y2={27} stroke={C.accent} strokeWidth={0.55} strokeLinecap="round" />
+              <Arrowhead tip={[58, 24.4]} dir={[0, -1]} fill={C.accent} />
+              <MapLabel at={[58, 20.6]} text={labels.toPeak} fill={C.accent} />
               <MapLabel at={[50, 45.5]} text={labels.drainage} fill={C.riverDeep} />
             </>
           )}
@@ -449,7 +559,7 @@ export function LandformMap({
                 strokeLinecap="round"
               />
               <circle cx={feat.point[0]} cy={feat.point[1]} r={1.2} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.4} />
-              <MapLabel at={[50, 31]} text={labels.saddle} fill={C.accent} />
+              <MapLabel at={[feat.point[0], feat.point[1] + 6]} text={labels.saddle} fill={C.accent} />
             </>
           )}
 

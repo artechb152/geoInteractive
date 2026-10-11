@@ -1,5 +1,12 @@
 # Design Assumptions
 
+## 2026-10-11 — Topic-02 geodesy mockup alternatives
+
+- Three static image concepts were requested for selection and later development with Claude Code. Only images and a handoff brief were created in `design/mockups/topic-02-geodesy/`; no lesson code was changed. Final deliverables use `-v2.png` filenames.
+- The existing lesson shell, palette, typography and 1440px desktop target are the design reference. Alternative interactions within the reference-body block are authorized by the user's request. Sidebar omissions and generated typography/color deviations in the images are concept artifacts, not proposed changes to the shared shell or approved tokens.
+- Measurements are invented pedagogical examples, not real location data. Surface separation is exaggerated. The globe cutaway represents virtual reference surfaces, not geological interior layers. The README defines correct h/H/N meanings and rendering rules; generated arrows were removed from concepts 1 and 3 to avoid misleading measurement endpoints.
+
+
 ## 2026-09-23 — Flow prompt package for topic-03/topic-04 onboarding
 
 - The user requested production prompts, so the deliverable is `design/storyboards/2026-09-23-flow-onboarding-topics-03-04.md`; no lesson implementation or copy is changed. The four existing accordion topics per lesson define four endpoint images and three adjacent transitions.
@@ -1464,3 +1471,43 @@ Supersedes the layout of the entry above (world, map, measurements and threshold
 - **Measure (assumed rule):** the first click places א, the second ב, every later click moves the nearer of the two. Points are stored in WGS84, so a scale switch keeps them on the ground; a point outside the current sheet is not drawn and not moved, a one-line note names it, the ground distance still shows and the sheet length says it cannot be measured on this sheet. Keyboard: "הוספת נקודה במרכז המפה" places a point at the centre of the visible map (same rule); arrows move a focused point 1 mm on the sheet, Shift 1 cm. The ruler shows in every representation (on the photo too). The result: ground distance rounded to 1 mm on the sheet (= reading × denominator), "X ס״מ על הדף", one relation line; the conversion chain and notes are in a collapsed "פרטי החישוב". The distance is announced 700 ms after the points rest.
 - **Representation label:** "מפה" → "מפה טופוגרפית" in the toggle and on the curtain chip (it fits beside the line at the default 0.65 at 1440 px; the chip-hiding rule covers narrow halves).
 - **Still in force from the scale redesign (Tasks 1–9):** the "מפה" sheets are Israel Hiking Map renders (Hebrew tiles, © OpenStreetMap contributors, CC BY-NC-SA 3.0), mosaicked and cut to the same EPSG:3857 box as the photo; the "תצ״א" layer is Esri World Imagery (attribution `תצ״א: Esri, Vantor, Earthstar Geographics, GIS User Community`; Vantor/TerraColor imagery). Registration was checked on landmark crops (scripts/maps/check-scale-sheets.mjs). Sheet centimetres are true scale (ground distance on the ellipsoid ÷ denominator on a 24 cm sheet), never Web-Mercator screen lengths; the topographic rasters are native at ~1×, so they look slightly soft on 2× (retina) screens, and zooming within a sheet (k ≤ 3) only enlarges the same content — consistent with the enlargement-vs-detail message. The map is blank east of the Jordan (IHM coverage). The summit label on the 1:10,000 IHM render is garbled (source rendering, not ours). The Kinneret position is the Wikipedia coordinate (32°50′N 35°35′E). Map furniture inside the viewport (north arrow, scale bar, zoom buttons, curtain chips) uses physical left/right because maps are never mirrored.
+
+### 2026-10-11 — Datum: three visual interaction concepts
+
+- Scope: concept images only; no lesson code changed. Live desktop review covered onboarding, landforms, topography, contours and DatumFit at 1440 × 1122.
+- Three designer proposals: guided 3D discovery; direct manipulation in a 2D cross-section; linked global/local comparison and prediction. These are alternatives for selection, not approved implementation choices.
+- Images and handoff brief: design/mockups/datum-concepts/README.md. Image-generator output dimensions and typography are conceptual; existing tokens/components and a rendered 1440 × 1122 implementation govern exact values.
+- Generated diagrams exaggerate differences. The cutaway reveals reference surfaces, not material layers. Geoid is not terrain; ellipsoid is not datum; residual differences remain. Qualitative feedback replaces claims of physical 100% fit. All new interaction behavior is specified in the handoff brief.
+### 2026-10-11 — Three norths: concept mockups only
+
+- Three alternative screen compositions are proposed in `design/mockups/north-concepts/README.md`. The user selected concept 2 (reference-angle lab); implementation is delegated to Claude Code through `design/mockups/north-concepts/claude-direction-lab-prompt.md`, with existing palette/layout and original learning copy preserved. No lesson implementation was changed in this task.
+- Lesson 2's live scenes are the visual reference. Existing lesson semantic tokens remain authoritative; generated image colors and tiny text artifacts do not define new tokens.
+- The reference-angle lab uses fictional teaching data: TN = 0°, GN = +2°, MN = −6°, target true bearing = 66°. These are not current geographic or magnetic measurements. The detailed geometry and copy in the brief override any approximate rendering in the images.
+
+
+### 2026-10-11 — Selected guided 3D datum handoff
+
+- User selected guided 3D and required the existing site palette/layout plus preservation of learning content and wording. Updated primary mockup: design/mockups/datum-concepts/01-guided-3d-site-palette.png. Original retained.
+- Implementation prompt: design/mockups/datum-concepts/claude-guided-3d-prompt.md. It supersedes the preliminary README proposals: original educational copy and fit readout are retained; only necessary operational wording can change and must be reported.
+- Palette mapping: cream/sage/olive/tan globe; existing accent.cool (#5B9DD9) confined to the geoid and its linked legend, consistent with the existing datum block; existing accent orange for action/manipulation. Generated material shading is illustrative; exact base-color values come from existing code tokens.
+- No lesson implementation was performed in this handoff task.
+
+### 2026-10-11 — "זיהוי תבליט ותכסית בשטח": realistic side-section (lesson 2)
+
+- Request: keep the interaction exactly; redesign the papercut illustration in the more realistic style of the rest of lesson 2. The papercut version is archived unchanged at `/archive/topic-02/relief-cover-v1/` (`ReliefCoverIntroSceneV1.tsx` + `ReliefCoverTerrainV1.tsx`).
+- **Style reference (assumed):** lesson 2's slope side-cuts ("ארבעה סוגי מדרונות"), not AI photography. They are the same subject (a terrain cut seen from the side), and a layered render is the only way to keep the layer toggles, per-object selection outlines and the exact overlay positions.
+- **How it is built:** a Blender Cycles render (`scripts/blender/render_relief_cover.py` → `package_relief_cover.cjs` → `public/assets/lessons/topic02/relief-cover/*.webp`, ≈ 180 KB total). One orthographic camera is locked to the 640 × 390 viewBox, so the slab's cut edge is exactly `groundY(x)` (the script asserts < 0.05 units; measured 0.0002).
+  - **Passes:** far ridge, bare relief slab, one pass per land-cover item, and one cast-shadow pass per item. The ground is a holdout in the item passes.
+  - **Placement:** `reliefCoverRenders.data.ts` is generated by the packager.
+  - **Textures:** the repo's existing CC0 sets only (`contour-mountain/textures`, `limestone-section.webp`). Leaf atlases are procedural. No network.
+- **Unchanged:** all copy, the controls column, layer toggles, list ↔ illustration selection, relief pins and highlighted stretches, callouts, stage tags, the ghost line, motion and reduced motion. The hit areas are the papercut ones; houses get one box per house, because the images themselves are never hit targets.
+- **Visual assumptions:**
+  - The bare relief has no grass, because grass is land cover.
+  - The cut face shows terra-rossa topsoil over limestone beds that bow gently (15 %) under the hills.
+  - The far ridge keeps the papercut silhouette, at 55 % opacity for haze.
+  - The grove reads as oak/terebinth. The orchard is four identical olive trees in one row. The shrubs are low garrigue clumps.
+  - Houses: two stone-clad houses with tiled gable roofs, and a two-storey plastered house with a solar water heater, turned 12° to show depth.
+  - The road leaves the slab through the cut face at x ≈ 506, where the papercut road started, and the car is in the right-hand lane.
+  - The pylons' cross-arms are turned 35° so they read as pylons in a side view. On a real line they would be perpendicular to the conductors.
+- **Drawing order:** each item's shadow dims with its item when another item is selected, and all shadows fade when either layer is off, as before. The papercut drop-shadow filter on objects is gone; the render's own shadows replace it.
+- **Re-render:** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_relief_cover.py` (≈ 1.5 min on the RTX A5000), then `node scripts/blender/package_relief_cover.cjs`. Keep the geometry block in the script in sync with `ReliefCoverTerrain.tsx`.
