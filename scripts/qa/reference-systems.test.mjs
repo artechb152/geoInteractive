@@ -8,7 +8,7 @@ import {
   EXTENT, VIEW, ZONE, POINTS, TERRAIN, UTM_STEP_M, GRATICULE_STEP_SEC, START_POINT, localX, localY, eastOf, northOf,
 } from '../../src/components/lessons/topic-02/reference-systems/referenceSystems.data.ts';
 import {
-  READINGS, SEC_DECIMALS, utmGrid, graticule, graticuleLabel, fx, fy, topLabelFits, rightLabelFits,
+  READINGS, SEC_DECIMALS, TRUE_NORTH_DEG, trueNorthDeg, NBSP, dmsParts, readingLines, utmGrid, graticule, graticuleLabel, fx, fy, topLabelFits, rightLabelFits,
 } from '../../src/components/lessons/topic-02/reference-systems/referenceSystemsGeometry.ts';
 
 const close = (a, b, eps, msg = '') => assert.ok(Math.abs(a - b) <= eps, `${msg} ${a} ≉ ${b} (±${eps})`);
@@ -49,7 +49,7 @@ test('round trip E/N → lat/lon → E/N returns the same point (≤ 1 µm)', ()
   }
 });
 
-test('the displayed φ/λ (0.01″) and the displayed E/N describe the same point (≤ 0.5 m)', () => {
+test('the displayed ϕ/λ (0.01″) and the displayed E/N describe the same point (≤ 0.5 m)', () => {
   for (const p of POINTS) {
     const r = READINGS[p.id];
     const lat = dmsToDecimal(r.latDms);
@@ -135,13 +135,13 @@ test('graticule: lines every 15″, drawn through toUtm, tilted by the real grid
   assert.ok(lean > 1 && lean < 1.25, `lean ${lean}`);
 });
 
-test('edge labels: whole seconds, no clash with the corner furniture', () => {
-  assert.equal(graticuleLabel(126450, 'lon'), '35°07′30″');
-  assert.equal(graticuleLabel(114510, 'lat'), '31°48′30″');
+test('edge labels: whole seconds, three per edge at most, no clash with the corner furniture', () => {
+  assert.equal(graticuleLabel(126450, 'lon'), ['35°', '07′', '30″'].join(NBSP));
+  assert.equal(graticuleLabel(114510, 'lat'), ['31°', '48′', '30″'].join(NBSP));
   const { meridians, parallels } = graticule();
   const { eastings, northings } = utmGrid();
-  assert.ok(meridians.filter((l) => topLabelFits(l.edge)).length >= 3);
-  assert.ok(parallels.filter((l) => rightLabelFits(l.edge)).length >= 2);
+  assert.equal(meridians.filter((l) => topLabelFits(l.edge)).length, 3);
+  assert.equal(parallels.filter((l) => rightLabelFits(l.edge)).length, 3);
   assert.equal(eastings.filter((l) => topLabelFits(l.at)).length, 3);
   assert.equal(northings.filter((l) => rightLabelFits(l.at)).length, 3);
 });
@@ -151,4 +151,87 @@ test('degree / metre sanity: 15″ of latitude ≈ 462 m here', () => {
   const a = toUtm({ lat: 31.8, lon: 35.12 }, ZONE);
   const b = toUtm({ lat: 31.8 + 15 / 3600, lon: 35.12 }, ZONE);
   close(Math.hypot(b.e - a.e, b.n - a.n), p, 3);
+});
+
+test('north arrow: plain "N" points to true north (the local meridian), not to grid north', () => {
+  // 1. independent check: the textbook convergence γ = atan(tan Δλ · sin φ) at the view centre;
+  //    true north is γ anticlockwise of grid north east of the central meridian (northern hemisphere)
+  const cx = VIEW.x + VIEW.w / 2;
+  const cy = VIEW.y + VIEW.h / 2;
+  const { lat, lon } = fromUtm({ e: eastOf(cx), n: northOf(cy) }, ZONE);
+  const gamma = (Math.atan(Math.tan(((lon - centralMeridian(ZONE.zone)) * Math.PI) / 180) * Math.sin((lat * Math.PI) / 180)) * 180) / Math.PI;
+  close(TRUE_NORTH_DEG, -gamma, 0.01, 'arrow vs γ (deg)');
+  assert.ok(TRUE_NORTH_DEG < -1 && TRUE_NORTH_DEG > -1.25, `arrow ${TRUE_NORTH_DEG}`);
+  // 2. it is parallel to the meridian the map actually draws nearest the centre
+  const { meridians } = graticule();
+  const m = meridians.reduce((a, b) => (Math.abs(a.points[12][0] - cx) < Math.abs(b.points[12][0] - cx) ? a : b));
+  const [s, n] = [m.points[0], m.points.at(-1)];
+  close(TRUE_NORTH_DEG, (Math.atan2(n[0] - s[0], s[1] - n[1]) * 180) / Math.PI, 0.01, 'arrow vs drawn meridian (deg)');
+  // 3. one arrow fits the whole view: the corners differ by < 0.01°
+  for (const [x, y] of [[VIEW.x, VIEW.y], [VIEW.x + VIEW.w, VIEW.y + VIEW.h]]) close(trueNorthDeg(x, y), TRUE_NORTH_DEG, 0.01, 'corner');
+});
+
+test('display DMS: groups split by no-break spaces, same numbers as the compact form', () => {
+  const a = READINGS.A;
+  assert.deepEqual(dmsParts(a.latDms), ['31°', '48′', '27.98″', 'N']);
+  assert.deepEqual(dmsParts(a.lonDms), ['35°', '07′', '28.83″', 'E']);
+  for (const r of Object.values(READINGS)) {
+    assert.equal(r.latShown.replaceAll(NBSP, ''), r.latText);
+    assert.equal(r.lonShown.replaceAll(NBSP, ''), r.lonText);
+    assert.ok(!/ /.test(r.latShown + r.lonShown), 'no breakable space inside a value');
+  }
+});
+
+test('reading lines: through the exact point, on its own meridian / parallel (geo) or easting / northing (UTM)', () => {
+  for (const p of POINTS) {
+    const r = READINGS[p.id];
+    // UTM: straight, constant x and constant y, through the point
+    const u = readingLines(p.id, 'utm');
+    assert.ok(u.along.every(([x]) => x === r.x) && u.across.every(([, y]) => y === r.y));
+    assert.ok(u.along.some(([x, y]) => x === r.x && y === r.y) && u.across.some(([x, y]) => x === r.x && y === r.y));
+    assert.equal(u.top, r.x);
+    assert.equal(u.right, r.y);
+    // geo: every vertex on the point's meridian / parallel; the point is a vertex (≤ 1 mm)
+    const g = readingLines(p.id, 'geo');
+    for (const [x, y] of g.along) close(fromUtm({ e: eastOf(x), n: northOf(y) }, ZONE).lon, r.lon, 1e-9, 'meridian vertex');
+    for (const [x, y] of g.across) close(fromUtm({ e: eastOf(x), n: northOf(y) }, ZONE).lat, r.lat, 1e-9, 'parallel vertex');
+    for (const line of [g.along, g.across]) assert.ok(line.some(([x, y]) => Math.hypot(x - r.x, y - r.y) < 0.001), 'point on line');
+    // both lines reach past the view on both sides, and meet the frame inside it
+    assert.ok(Math.min(...g.along.map(([, y]) => y)) < VIEW.y && Math.max(...g.along.map(([, y]) => y)) > VIEW.y + VIEW.h);
+    assert.ok(Math.min(...g.across.map(([x]) => x)) < VIEW.x && Math.max(...g.across.map(([x]) => x)) > VIEW.x + VIEW.w);
+    assert.ok(g.top > VIEW.x && g.top < VIEW.x + VIEW.w && g.right > VIEW.y && g.right < VIEW.y + VIEW.h);
+    // the meridian leans west going north by the convergence: its top end is west of the point
+    assert.ok(g.top < r.x && r.x - g.top < (r.y - VIEW.y) * Math.tan((1.25 * Math.PI) / 180));
+  }
+});
+
+test('explanation data: shared degrees / minutes, grid offsets from the bridge, grouped UTM values', async () => {
+  const { gridOffset, groupThousands, secondsFraction, featureOutline } = await import('../../src/components/lessons/topic-02/reference-systems/referenceSystemsGeometry.ts');
+  // the three points differ only in the seconds — what the 0″–60″ bars and the panel say
+  for (const id of ['B', 'C']) {
+    for (const k of ['latDms', 'lonDms']) {
+      assert.equal(READINGS[id][k].deg, READINGS.A[k].deg);
+      assert.equal(READINGS[id][k].min, READINGS.A[k].min);
+      assert.ok(secondsFraction(READINGS[id][k]) >= 0 && secondsFraction(READINGS[id][k]) < 1);
+    }
+  }
+  // offsets from the stored E/N (the brief's 695 W / 385 N and 555 W / 380 S)
+  assert.deepEqual(gridOffset('A'), { dE: 0, dN: 0 });
+  assert.deepEqual(gridOffset('B'), { dE: -695, dN: 385 });
+  assert.deepEqual(gridOffset('C'), { dE: -555, dN: -380 });
+  // B north-west of A: latitude up, longitude down; C south-west: both down (these points only)
+  assert.ok(READINGS.B.lat > READINGS.A.lat && READINGS.B.lon < READINGS.A.lon);
+  assert.ok(READINGS.C.lat < READINGS.A.lat && READINGS.C.lon < READINGS.A.lon);
+  // full values, never shortened; grouped by no-break spaces
+  assert.equal(groupThousands(701125), ['701', '125'].join(NBSP));
+  assert.equal(groupThousands(3521095), ['3', '521', '095'].join(NBSP));
+  for (const p of POINTS) assert.equal(Number(groupThousands(p.e).replaceAll(NBSP, '')), p.e);
+  // each feature outline is drawn round its own point
+  const a = featureOutline('A');
+  const xs = a.points.map(([x]) => x);
+  const ys = a.points.map(([, y]) => y);
+  assert.ok(Math.min(...xs) < READINGS.A.x && Math.max(...xs) > READINGS.A.x && Math.min(...ys) < READINGS.A.y && Math.max(...ys) > READINGS.A.y);
+  assert.ok(featureOutline('B').points.some(([x, y]) => x === READINGS.B.x && y === READINGS.B.y), 'ridge crest passes the summit');
+  const c = featureOutline('C');
+  assert.ok(c.cx === READINGS.C.x && c.cy === READINGS.C.y && c.r > 0);
 });

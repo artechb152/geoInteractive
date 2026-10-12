@@ -49,7 +49,7 @@
 - ⬜ hook · ⬜ onboarding · ⬜ los · ⬜ viewshed · ⬜ killchain · ⬜ recap
 
 ### topic-06 — `/lessons/topic-06`
-- ⬜ hook · ⬜ onboarding · ⬜ principles · ⬜ planning · ⬜ combatnav · ⬜ recap
+- ⬜ hook · ⬜ onboarding · ⬜ tips · ⬜ combatnav · ⬜ principles · ⬜ planning · ⬜ recap
 
 ### topic-07 — `/lessons/topic-07`
 - ⬜ hook · ⬜ onboarding · ⬜ climate · ⬜ sensors · ⬜ platforms · ⬜ recap

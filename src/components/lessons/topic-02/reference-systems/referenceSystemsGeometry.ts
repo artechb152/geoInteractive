@@ -10,13 +10,25 @@
 
 import { fromUtm, toUtm, toDms, formatDms, type Dms } from './utm';
 import {
-  EXTENT, VIEW, ZONE, POINTS, UTM_STEP_M, GRATICULE_STEP_SEC, localX, localY,
+  EXTENT, VIEW, ZONE, POINTS, TERRAIN, START_POINT, UTM_STEP_M, GRATICULE_STEP_SEC, localX, localY,
   type PointId, type TeachingPoint,
 } from './referenceSystems.data';
 
 /** Seconds of arc shown on readings: 0.01″ ≈ 0.3 m, so ϕ/λ describe the point at least as
     finely as the whole-metre E/N beside them (0.1″ would be ≈ 3 m). */
 export const SEC_DECIMALS = 2;
+
+/** DMS split into its groups — "31°", "48′", "27.98″", "N" — with formatDms()'s padding. Shown
+    joined by no-break spaces, so each group reads on its own and the value never wraps. */
+export function dmsParts(d: Dms, secDecimals = SEC_DECIMALS, withHemi = true) {
+  const sec = d.sec.toFixed(secDecimals).padStart(secDecimals ? 3 + secDecimals : 2, '0');
+  const parts = [`${d.deg}°`, `${String(d.min).padStart(2, '0')}′`, `${sec}″`];
+  if (withHemi) parts.push(d.hemi);
+  return parts;
+}
+
+export const NBSP = ' ';
+export const spacedDms = (d: Dms, secDecimals = SEC_DECIMALS, withHemi = true) => dmsParts(d, secDecimals, withHemi).join(NBSP);
 
 export type Reading = {
   point: TeachingPoint;
@@ -28,6 +40,9 @@ export type Reading = {
   lonDms: Dms;
   latText: string;
   lonText: string;
+  /** Display form: "31° 48′ 27.98″ N" (no-break spaces between the groups). */
+  latShown: string;
+  lonShown: string;
   eText: string;
   nText: string;
   zoneText: string;
@@ -49,6 +64,8 @@ export function reading(point: TeachingPoint): Reading {
     lonDms,
     latText: formatDms(latDms, SEC_DECIMALS),
     lonText: formatDms(lonDms, SEC_DECIMALS),
+    latShown: spacedDms(latDms),
+    lonShown: spacedDms(lonDms),
     eText: String(point.e),
     nText: String(point.n),
     zoneText,
@@ -152,18 +169,105 @@ export function graticule(stepSec = GRATICULE_STEP_SEC, samples = 24) {
   return { meridians, parallels };
 }
 
+/* ── North arrow ──────────────────────────────────────────────────────────
+   Both maps sit on the same UTM-registered base, where "up" is grid north. The
+   arrow is marked plain "N", so it shows TRUE north: the on-screen direction of
+   a short step north along the local meridian, i.e. the same lean as the
+   graticule (≈ −1.1° here, east of the 33°E central meridian). Measured at the
+   view centre; across the 2 × 1.6 km view it changes by < 0.01°. */
+export function trueNorthDeg(x = VIEW.x + VIEW.w / 2, y = VIEW.y + VIEW.h / 2) {
+  const { lat, lon } = fromUtm({ e: EXTENT.eMin + x, n: EXTENT.nMax - y }, ZONE);
+  const [nx, ny] = toLocal(lat + 1 / 3600, lon); // 1″ north ≈ 31 m
+  // clockwise from screen-up (CSS rotate); y grows downward
+  return (Math.atan2(nx - x, y - ny) * 180) / Math.PI;
+}
+
+export const TRUE_NORTH_DEG = trueNorthDeg();
+
 /** Graticule label: whole seconds, no hemisphere letter (the readings carry it). */
-export const graticuleLabel = (sec: number, axis: 'lat' | 'lon') => formatDms(toDms(sec / 3600, axis, 0), 0, false);
+export const graticuleLabel = (sec: number, axis: 'lat' | 'lon') => spacedDms(toDms(sec / 3600, axis, 0), 0, false);
 
 export const polylinePoints = (pts: [number, number][]) => pts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(' ');
 
+/* ── Reading lines ───────────────────────────────────────────────────────
+   The two coordinate lines through the chosen point, in the map's local metres:
+   UTM — the constant-easting and constant-northing lines (straight: the base is
+   registered in UTM); geographic — the meridian and the parallel of the point,
+   pushed through toUtm() like the graticule, so they lean exactly as it does.
+   The point itself is a vertex of both. `top` / `right` are where the first
+   line leaves the top edge and the second the right edge — where the frame
+   carries the chosen value. */
+
+export type ReadingLines = {
+  /** Constant longitude (geo) / constant easting (UTM): runs top → bottom. */
+  along: [number, number][];
+  /** Constant latitude (geo) / constant northing (UTM): runs left → right. */
+  across: [number, number][];
+  top: number;
+  right: number;
+};
+
+export function readingLines(id: PointId, kind: 'geo' | 'utm', half = 24): ReadingLines {
+  const r = READINGS[id];
+  if (kind === 'utm') {
+    const along: [number, number][] = [[r.x, VIEW.y - 50], [r.x, r.y], [r.x, VIEW.y + VIEW.h + 50]];
+    const across: [number, number][] = [[VIEW.x - 50, r.y], [r.x, r.y], [VIEW.x + VIEW.w + 50, r.y]];
+    return { along, across, top: r.x, right: r.y };
+  }
+  // samples symmetric about the point (k = 0 is the point), reaching 1.2 view spans each way
+  const span = viewLatLonRange();
+  const dLat = (span.latMax - span.latMin) / 20;
+  const dLon = (span.lonMax - span.lonMin) / 20;
+  const ks = Array.from({ length: 2 * half + 1 }, (_, i) => i - half);
+  const along = ks.map((k) => toLocal(r.lat + k * dLat, r.lon));
+  const across = ks.map((k) => toLocal(r.lat, r.lon + k * dLon));
+  return { along, across, top: crossing(along, 1, VIEW.y) ?? r.x, right: crossing(across, 0, VIEW.x + VIEW.w) ?? r.y };
+}
+
+/* ── What the explanation panel shows ──────────────────────────────────── */
+
+/** Full UTM values, grouped by thousands with no-break spaces: 3521095 → "3 521 095". */
+export const groupThousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+
+/** Grid difference of a point from the reference point (the bridge), from the stored E/N. */
+export function gridOffset(id: PointId, from: PointId = START_POINT) {
+  const a = READINGS[from].point;
+  const b = READINGS[id].point;
+  return { dE: b.e - a.e, dN: b.n - a.n };
+}
+
+/** Seconds as a fraction of the 0″–60″ bar. */
+export const secondsFraction = (d: Dms) => d.sec / 60;
+
+/** A light outline of the feature a point marks, drawn from the terrain's own geometry
+    (local metres): the bridge deck, the ridge crest around the summit, the village. */
+export type FeatureOutline = { kind: 'line'; points: [number, number][]; closed: boolean } | { kind: 'ring'; cx: number; cy: number; r: number };
+
+export function featureOutline(id: PointId): FeatureOutline {
+  if (id === 'A') {
+    const [[x1, y1], [x2, y2]] = [TERRAIN.bridge.from, TERRAIN.bridge.to];
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    const u = [(x2 - x1) / len, (y2 - y1) / len];
+    const n = [-u[1], u[0]];
+    const [cx, cy] = [(x1 + x2) / 2, (y1 + y2) / 2];
+    const L = len / 2 + 22;
+    const W = TERRAIN.bridge.width / 2 + 20;
+    const corner = (a: number, b: number): [number, number] => [cx + u[0] * L * a + n[0] * W * b, cy + u[1] * L * a + n[1] * W * b];
+    return { kind: 'line', points: [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)], closed: true };
+  }
+  if (id === 'B') return { kind: 'line', points: TERRAIN.ridge.crest.slice(1, 4) as [number, number][], closed: false };
+  const [cx, cy] = TERRAIN.village.center;
+  return { kind: 'ring', cx, cy, r: 150 };
+}
+
 /* ── Edge labels: which ones fit ──────────────────────────────────────────
    Labels sit on the top edge (eastings / meridians) and the right edge
-   (northings / parallels). The north arrow owns the top-left corner, the
-   scale bar the bottom-left and the zone tag the bottom-right, so labels
-   whose centre falls in those bands are dropped rather than overlapped. */
+   (northings / parallels). The north arrow owns the top-left corner and the
+   scale bar the bottom-left, so labels whose centre falls in those bands are
+   dropped rather than overlapped. The top band starts at 0.2 so each edge
+   carries three labels at most — the exact values are in the readings. */
 export const LABEL_BANDS = {
-  top: { from: 0.14, to: 0.9 },
+  top: { from: 0.2, to: 0.9 },
   right: { from: 0.1, to: 0.86 },
 } as const;
 

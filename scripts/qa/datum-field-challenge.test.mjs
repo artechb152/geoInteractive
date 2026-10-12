@@ -1,298 +1,428 @@
-// Unit tests for the datum field challenge (topic-02 #scene-coordinates → "הדמיה: מה קורה כשהדאטום
-// לא תואם?", design/docs/datum-field-challenge-claude-prompt-2026-10-11.txt §8–§11): the schematic
-// shift, the task's state machine, the one projection shared by the picture and the overlay, the
-// rendered terrain's agreement with the landmark data, the delivered assets, and the lesson copy.
+// Unit tests for the datum field activity (topic-02 #scene-coordinates → "הדמיה: מה קורה כשהדאטום
+// לא תואם?", design/docs/datum-field-challenge-followup-claude-2026-10-12.txt §4–§7, §11): the
+// schematic model, the three stages' logic, the one world → picture transform, the base map and the
+// activity's copy.
 // Run: node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/datum-field-challenge.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { CASES, GRID_STEP, MAP, PLACES, SHIFT, TERRAIN } from '../../src/components/lessons/topic-02/datum-field/datumField.data.ts';
 import {
-  DATUM_SHIFT, FIELD_FRAME, FIRST_LANDMARK, LANDMARKS, LANDMARK_IDS,
-} from '../../src/components/lessons/topic-02/datum-field/datumField.data.ts';
-import {
-  toDatumB, groundOfMapNumbers, distanceM, mapNumbers, requestedAt, displayedAt, gapAt, formatEN, readGap,
-  initialField, fieldReducer, isConverted, isOpen, restingT, stepStatuses, CORRECT_ANSWER,
+  convert, interpret, distance, formatEN, numbersOf, gapOf, gridOf, gridLines,
+  ERROR_SOURCE, ERROR_MAP, ERROR_BEFORE, sentCopy, errorResult,
+  caseSource, caseTarget, optionKind, optionGap, isRight, feedbackFor, checkedResult,
+  initialActivity, activityReducer,
 } from '../../src/components/lessons/topic-02/datum-field/datumField.ts';
-import {
-  project, pathZ, displayedPx, requestedPx, gapLine, northAt, TERRAIN_ASPECT,
-} from '../../src/components/lessons/topic-02/datum-field/datumFieldProjection.ts';
-import { DATUM_FIELD_TERRAIN as T } from '../../src/components/lessons/topic-02/datum-field/datumFieldTerrain.data.ts';
+import { MAP_ASPECT, MAP_PX, toPicture, insideMap } from '../../src/components/lessons/topic-02/datum-field/datumFieldProjection.ts';
 
-const run = (s, ...actions) => actions.reduce(fieldReducer, s);
-const close = (a, b, eps, msg = '') => assert.ok(Math.abs(a - b) <= eps, `${msg} ${a} ≉ ${b} (±${eps})`);
+const run = (s, ...actions) => actions.reduce(activityReducer, s);
+const at = (mode) => run(initialActivity(), { type: 'setMode', mode });
+const EN = (e, n) => ({ e, n });
 
-// ---------------------------------------------------------------- the schematic model
+// ---------------------------------------------------------------- the schematic model (§4)
 
-test('one shift for every landmark: B = A − (36, 48), a 60 m gap unconverted', () => {
-  assert.deepEqual(DATUM_SHIFT, { e: 36, n: 48 });
-  assert.equal(Math.hypot(DATUM_SHIFT.e, DATUM_SHIFT.n), 60);
-  assert.deepEqual(toDatumB(LANDMARKS.bridge.a), { e: 1164, n: 752 });
-  assert.deepEqual(LANDMARKS.bridge.a, { e: 1200, n: 800 }, 'the bridge keeps the brief’s numbers');
-  for (const id of LANDMARK_IDS) {
-    const a = LANDMARKS[id].a;
-    const b = toDatumB(a);
-    assert.deepEqual({ e: a.e - b.e, n: a.n - b.n }, DATUM_SHIFT, id);
-    // the map reads numbers as B: A's numbers land at P + shift, B's numbers land at P
-    assert.deepEqual(groundOfMapNumbers(a), { e: a.e + 36, n: a.n + 48 }, id);
-    assert.deepEqual(groundOfMapNumbers(b), a, id);
-    assert.equal(gapAt(id, 0), 60, id);
-    assert.equal(gapAt(id, 1), 0, id);
-    assert.deepEqual(displayedAt(id, 1), requestedAt(id), id);
-    assert.deepEqual(mapNumbers(id, false), a, id);
-    assert.deepEqual(mapNumbers(id, true), b, id);
-  }
-  assert.equal(FIRST_LANDMARK, 'bridge');
-  assert.deepEqual(LANDMARK_IDS, ['bridge', 'junction', 'summit']);
-  assert.deepEqual(LANDMARK_IDS.map((id) => LANDMARKS[id].name), ['גשר', 'צומת', 'פסגה']);
+test('the brief’s numbers: A→B subtracts (36, 48), B→A adds it, 60 m apart', () => {
+  assert.deepEqual(SHIFT, EN(36, 48));
+  assert.equal(Math.hypot(SHIFT.e, SHIFT.n), 60);
+  assert.deepEqual(numbersOf('bridge', 'A'), EN(1200, 800));
+  assert.deepEqual(numbersOf('bridge', 'B'), EN(1164, 752));
+  assert.deepEqual(numbersOf('junction', 'A'), EN(1090, 760));
+  assert.deepEqual(numbersOf('junction', 'B'), EN(1054, 712));
+  assert.deepEqual(convert(EN(1200, 800), 'A', 'B'), EN(1164, 752));
+  assert.deepEqual(convert(EN(1054, 712), 'B', 'A'), EN(1090, 760));
+  assert.deepEqual(convert(EN(1200, 800), 'A', 'A'), EN(1200, 800));
+  assert.deepEqual(convert(EN(1200, 800), 'B', 'B'), EN(1200, 800));
 });
 
-test('the gap is derived from the marker and shrinks linearly in metres', () => {
-  for (const id of LANDMARK_IDS) {
-    for (const t of [0, 0.25, 0.5, 0.75, 1]) close(gapAt(id, t), 60 * (1 - t), 1e-9, `${id} t=${t}`);
-    close(distanceM(displayedAt(id, 0.5), requestedAt(id)), 30, 1e-9, id);
+test('one rule places every pair: read as A it stays, read as B it moves by (36, 48)', () => {
+  assert.deepEqual(interpret(EN(1200, 800), 'A'), EN(1200, 800));
+  // the brief’s example: (1200, 800) read as B → (1236, 848), 60 m from the bridge
+  assert.deepEqual(interpret(EN(1200, 800), 'B'), EN(1236, 848));
+  assert.equal(gapOf(EN(1200, 800), 'B', PLACES.bridge.ground), 60);
+  // (1164, 752) read as B stands on the bridge
+  assert.deepEqual(interpret(EN(1164, 752), 'B'), PLACES.bridge.ground);
+  // converting changes the numbers and keeps the place, in both directions, for every place
+  for (const id of Object.keys(PLACES)) {
+    for (const d of ['A', 'B']) {
+      assert.deepEqual(interpret(numbersOf(id, d), d), PLACES[id].ground, `${id} in ${d}`);
+      for (const to of ['A', 'B']) assert.deepEqual(interpret(convert(numbersOf(id, d), d, to), to), PLACES[id].ground, `${id} ${d}→${to}`);
+    }
   }
-});
-
-test('the source numbers never change', () => {
-  const before = JSON.stringify(LANDMARKS);
-  for (const id of LANDMARK_IDS) {
-    toDatumB(LANDMARKS[id].a);
-    mapNumbers(id, true);
-    displayedAt(id, 0.4);
-  }
-  let s = initialField();
-  s = run(s, { type: 'selectAnswer', answer: 'convert' }, { type: 'check' }, { type: 'arrive', run: s.run + 1 });
-  assert.equal(JSON.stringify(LANDMARKS), before);
+  assert.equal(distance(EN(0, 0), EN(36, 48)), 60);
 });
 
 test('numbers read left to right', () => {
-  assert.equal(formatEN(LANDMARKS.bridge.a), 'E 1200 · N 800');
-  assert.equal(formatEN(toDatumB(LANDMARKS.bridge.a)), 'E 1164 · N 752');
+  assert.equal(formatEN(EN(1200, 800)), 'E 1200 · N 800');
 });
 
-test('the gap keeps the block’s original wording and thresholds', () => {
-  assert.deepEqual(readGap(60), { status: 'סטייה גדולה בהדמיה', consequence: 'המיקום המוצג נמצא באזור אחר של המפה ביחס לנקודה המבוקשת.' });
-  assert.deepEqual(readGap(0), { status: 'ללא סטייה', consequence: 'שתי הנקודות קרובות זו לזו. בערך אפס הן חופפות.' });
-  assert.deepEqual(readGap(10), { status: 'סטייה קטנה בהדמיה', consequence: 'שתי הנקודות קרובות זו לזו. בערך אפס הן חופפות.' });
-  assert.deepEqual(readGap(30), { status: 'סטייה בינונית בהדמיה', consequence: 'המרחק בין המיקום המבוקש למיקום המוצג גדל.' });
-  assert.deepEqual(readGap(80), { status: 'סטייה גדולה בהדמיה', consequence: 'הפער בין הנקודות בהדמיה גדול.' });
+// ---------------------------------------------------------------- stage 1: the same bridge, two descriptions
+
+test('1) switching A/B changes the numbers and the grid, never the bridge', () => {
+  let s = initialActivity();
+  assert.equal(s.mode, 'compare');
+  assert.equal(s.compare.datum, 'A');
+  const ground = { ...PLACES.bridge.ground };
+  s = run(s, { type: 'setDatum', datum: 'B' });
+  assert.equal(s.compare.datum, 'B');
+  assert.ok(s.compare.switched);
+  assert.deepEqual(numbersOf('bridge', s.compare.datum), EN(1164, 752));
+  assert.deepEqual(PLACES.bridge.ground, ground, 'the bridge stays where it is');
+  // the grid: same values and spacing, B's lines stand (36, 48) east and north of A's
+  const A = gridOf('A');
+  const B = gridOf('B');
+  for (const l of [...A.e, ...A.n]) assert.equal(l.ground, l.value);
+  for (const l of B.e) assert.equal(l.ground - l.value, SHIFT.e);
+  for (const l of B.n) assert.equal(l.ground - l.value, SHIFT.n);
+  for (const g of [A, B]) {
+    for (const ax of ['e', 'n']) {
+      assert.ok(g[ax].length >= 2 && g[ax].length <= 4, `few lines: ${g[ax].length}`);
+      g[ax].forEach((l, i) => i && assert.equal(l.value - g[ax][i - 1].value, GRID_STEP));
+    }
+    for (const l of g.e) assert.ok(l.ground >= MAP.e0 && l.ground <= MAP.e1);
+    for (const l of g.n) assert.ok(l.ground >= MAP.n0 && l.ground <= MAP.n1);
+  }
+  // reading the bridge off either grid gives that datum's numbers
+  const readOff = (g, p) => ({ e: g.e[0].value + (p.e - g.e[0].ground), n: g.n[0].value + (p.n - g.n[0].ground) });
+  assert.deepEqual(readOff(A, PLACES.bridge.ground), EN(1200, 800));
+  assert.deepEqual(readOff(B, PLACES.bridge.ground), EN(1164, 752));
+  // a demonstration, not a score: switching back is a switch too, nothing is "solved"
+  s = run(s, { type: 'setDatum', datum: 'A' });
+  assert.deepEqual(numbersOf('bridge', s.compare.datum), EN(1200, 800));
+  assert.ok(s.practice.solved.every((v) => !v));
 });
 
-// ---------------------------------------------------------------- the task
+// ---------------------------------------------------------------- stage 2: the error and what fixes it
 
-test('opening: the bridge, A read as B, 60 m, no answer, no success', () => {
-  const s = initialField();
-  assert.deepEqual(s, { landmark: 'bridge', answer: null, phase: 'inspect', hint: false, run: 0 });
-  assert.equal(isConverted(s), false);
-  assert.equal(isOpen(s), true);
-  assert.equal(restingT(s), 0);
-  assert.deepEqual(stepStatuses(s), ['done', 'active', 'upcoming']);
-  assert.equal(run(s, { type: 'check' }), s, 'nothing to check without an answer');
+test('2) copying A’s numbers to the B map unconverted puts the marker 60 m from the bridge', () => {
+  let s = at('error');
+  assert.equal(s.error.phase, 'ready');
+  assert.equal(sentCopy(s.error.phase), null, 'nothing sent: only the bridge');
+  assert.equal(errorResult(s.error.phase), null);
+  assert.deepEqual(ERROR_SOURCE, { datum: 'A', numbers: EN(1200, 800) });
+  assert.equal(ERROR_MAP, 'B');
+  s = run(s, { type: 'copyRaw' });
+  assert.equal(s.error.phase, 'raw');
+  assert.deepEqual(sentCopy(s.error.phase), { label: 'A', numbers: EN(1200, 800), converted: false });
+  assert.deepEqual(errorResult(s.error.phase), EN(1236, 848));
+  assert.equal(distance(errorResult(s.error.phase), PLACES.bridge.ground), 60);
 });
 
-test('picking an answer judges nothing and moves nothing', () => {
-  const s = run(initialField(), { type: 'selectAnswer', answer: 'label' });
-  assert.equal(s.phase, 'inspect');
-  assert.equal(restingT(s), 0);
-  assert.equal(isConverted(s), false);
-  assert.deepEqual(stepStatuses(s), ['done', 'done', 'active']);
-  const t = run(s, { type: 'selectAnswer', answer: CORRECT_ANSWER });
-  assert.equal(t.phase, 'inspect');
-  assert.equal(restingT(t), 0);
+test('3) changing only the label changes the label: same numbers, place and gap; it can be undone', () => {
+  let s = run(at('error'), { type: 'copyRaw' });
+  const before = { sent: sentCopy(s.error.phase), at: errorResult(s.error.phase) };
+  s = run(s, { type: 'toggleLabel' });
+  assert.equal(s.error.phase, 'relabeled');
+  const after = sentCopy(s.error.phase);
+  assert.equal(before.sent.label, 'A');
+  assert.equal(after.label, 'B', 'the copy’s label changed');
+  assert.deepEqual(after.numbers, before.sent.numbers, 'the numbers did not');
+  assert.deepEqual(errorResult(s.error.phase), before.at, 'the marker did not move');
+  assert.equal(distance(errorResult(s.error.phase), PLACES.bridge.ground), 60);
+  assert.deepEqual(ERROR_SOURCE.numbers, EN(1200, 800), 'the source is kept, still in A');
+  // back to the state before the experiment, without resetting the activity
+  s = run(s, { type: 'toggleLabel' });
+  assert.equal(s.error.phase, 'raw');
+  assert.deepEqual(sentCopy(s.error.phase), before.sent);
 });
 
-test('label only: feedback, and no change to the numbers, the place or the gap; try again', () => {
-  const s = run(initialField(), { type: 'selectAnswer', answer: 'label' }, { type: 'check' });
-  assert.equal(s.phase, 'wrong');
-  assert.equal(isConverted(s), false);
-  assert.equal(restingT(s), 0);
-  assert.deepEqual(mapNumbers(s.landmark, isConverted(s)), LANDMARKS.bridge.a);
-  assert.equal(gapAt(s.landmark, restingT(s)), 60);
-  assert.deepEqual(stepStatuses(s), ['done', 'done', 'active']);
-  // checking it again changes nothing; picking the other answer clears the feedback without judging it
-  assert.equal(run(s, { type: 'check' }).phase, 'wrong');
-  const t = run(s, { type: 'selectAnswer', answer: 'convert' });
-  assert.equal(t.phase, 'inspect');
-  assert.equal(t.answer, 'convert');
+test('4) converting A→B brings the marker to the bridge — from the true source, also after the label experiment', () => {
+  for (const path of [[{ type: 'copyRaw' }], [{ type: 'copyRaw' }, { type: 'toggleLabel' }]]) {
+    let s = run(at('error'), ...path);
+    const r0 = s.run;
+    s = run(s, { type: 'convert' });
+    assert.equal(s.error.phase, 'converting', 'the motion first');
+    assert.ok(s.run > r0);
+    // a motion end from an older run is ignored
+    assert.equal(run(s, { type: 'arrive', run: r0 }).error.phase, 'converting');
+    s = run(s, { type: 'arrive', run: s.run });
+    assert.equal(s.error.phase, 'converted');
+    assert.deepEqual(sentCopy(s.error.phase), { label: 'B', numbers: EN(1164, 752), converted: true });
+    assert.deepEqual(errorResult(s.error.phase), PLACES.bridge.ground);
+    assert.equal(distance(errorResult(s.error.phase), PLACES.bridge.ground), 0);
+    // again (a replay of before → after): still 1164 · 752, never converted twice
+    s = run(s, { type: 'convert' });
+    assert.equal(s.error.phase, 'converting');
+    s = run(s, { type: 'arrive', run: s.run });
+    assert.deepEqual(sentCopy(s.error.phase).numbers, EN(1164, 752));
+  }
+  // the motion always starts where the unconverted numbers land
+  assert.deepEqual(ERROR_BEFORE, EN(1236, 848));
 });
 
-test('convert: the numbers become B, the marker arrives on the landmark, gap 0; no double conversion', () => {
-  let s = run(initialField(), { type: 'selectAnswer', answer: 'label' }, { type: 'check' }, { type: 'selectAnswer', answer: 'convert' }, { type: 'check' });
-  assert.equal(s.phase, 'converting');
-  assert.equal(isConverted(s), true);
-  assert.deepEqual(mapNumbers(s.landmark, true), { e: 1164, n: 752 });
-  assert.deepEqual(stepStatuses(s), ['done', 'done', 'active'], 'not complete before the marker arrives');
-  // a second check while converting, or once done, converts nothing again
-  assert.equal(run(s, { type: 'check' }), s);
-  assert.equal(run(s, { type: 'selectAnswer', answer: 'label' }), s);
-  assert.equal(run(s, { type: 'arrive', run: s.run - 1 }), s, 'a stale arrival is ignored');
+test('the label experiment stays open after the fix, and a reset starts the stage clean', () => {
+  let s = run(at('error'), { type: 'copyRaw' }, { type: 'convert' });
   s = run(s, { type: 'arrive', run: s.run });
-  assert.equal(s.phase, 'done');
-  assert.equal(restingT(s), 1);
-  assert.equal(gapAt(s.landmark, restingT(s)), 0);
-  assert.deepEqual(stepStatuses(s), ['done', 'done', 'done']);
-  assert.equal(run(s, { type: 'check' }), s);
-  assert.equal(run(s, { type: 'arrive', run: s.run }), s);
-  assert.equal(run(s, { type: 'toggleHint' }), s);
-  // the conversion is applied once, to the source numbers: B is still A − shift, never A − 2·shift
-  assert.deepEqual(mapNumbers(s.landmark, isConverted(s)), toDatumB(LANDMARKS.bridge.a));
+  s = run(s, { type: 'toggleLabel' });
+  assert.equal(s.error.phase, 'relabeled');
+  assert.deepEqual(sentCopy(s.error.phase), { label: 'B', numbers: EN(1200, 800), converted: false }, 'the raw numbers with only the label changed');
+  assert.equal(distance(errorResult(s.error.phase), PLACES.bridge.ground), 60);
+  // undoing the experiment returns to the state it started from: the fix, not the raw copy
+  s = run(s, { type: 'toggleLabel' });
+  assert.equal(s.error.phase, 'converted');
+  assert.deepEqual(errorResult(s.error.phase), PLACES.bridge.ground);
+  s = run(s, { type: 'resetError' });
+  assert.equal(s.error.phase, 'ready');
+  // nothing to relabel or convert before the numbers are sent
+  assert.equal(run(s, { type: 'toggleLabel' }).error.phase, 'ready');
+  assert.equal(run(s, { type: 'convert' }).error.phase, 'ready');
 });
 
-test('the hint shows and hides; it never answers, converts or reveals success', () => {
-  let s = run(initialField(), { type: 'toggleHint' });
-  assert.equal(s.hint, true);
-  assert.equal(s.answer, null);
-  assert.equal(s.phase, 'inspect');
-  assert.equal(isConverted(s), false);
-  s = run(s, { type: 'toggleHint' });
-  assert.equal(s.hint, false);
-  s = run(s, { type: 'toggleHint' }, { type: 'selectAnswer', answer: 'convert' }, { type: 'check' });
-  assert.equal(s.hint, false, 'the hint closes once the conversion runs');
+test('leaving a stage mid-motion cancels it; the late end cannot overwrite the new state', () => {
+  let s = run(at('error'), { type: 'copyRaw' }, { type: 'convert' });
+  const motion = s.run;
+  s = run(s, { type: 'setMode', mode: 'practice' });
+  assert.equal(s.mode, 'practice');
+  assert.equal(s.error.phase, 'converted', 'the conversion settles where it was going');
+  assert.ok(s.run > motion);
+  const after = run(s, { type: 'arrive', run: motion });
+  assert.deepEqual(after, s);
+  // the same through the label: a toggle during the motion cancels it
+  let t = run(at('error'), { type: 'copyRaw' }, { type: 'convert' });
+  const m2 = t.run;
+  t = run(t, { type: 'toggleLabel' });
+  assert.equal(t.error.phase, 'relabeled');
+  assert.equal(run(t, { type: 'arrive', run: m2 }).error.phase, 'relabeled');
 });
 
-test('another landmark: its own numbers, back to checking, no stale answer, hint or feedback', () => {
-  let s = run(initialField(), { type: 'toggleHint' }, { type: 'selectAnswer', answer: 'label' }, { type: 'check' });
-  s = run(s, { type: 'selectLandmark', id: 'junction' });
-  assert.deepEqual({ ...s, run: 0 }, { landmark: 'junction', answer: null, phase: 'inspect', hint: false, run: 0 });
-  assert.deepEqual(mapNumbers(s.landmark, isConverted(s)), LANDMARKS.junction.a);
-  assert.equal(run(s, { type: 'selectLandmark', id: 'junction' }), s, 'the selected landmark again changes nothing');
-  // switching during the motion drops it: its arrival no longer counts
-  let m = run(s, { type: 'selectAnswer', answer: 'convert' }, { type: 'check' });
-  const runInFlight = m.run;
-  m = run(m, { type: 'selectLandmark', id: 'summit' });
-  assert.equal(m.phase, 'inspect');
-  assert.equal(run(m, { type: 'arrive', run: runInFlight }), m);
-  m = run(m, { type: 'selectAnswer', answer: 'convert' }, { type: 'check' });
-  assert.equal(run(m, { type: 'arrive', run: runInFlight }).phase, 'converting', 'an old run cannot finish the new one');
-  assert.equal(run(m, { type: 'arrive', run: m.run }).phase, 'done');
+// ---------------------------------------------------------------- stage 3: practice
+
+test('5) when the datums already match, the original numbers are right and any change makes a gap', () => {
+  const c = CASES.find((x) => x.id === 'same');
+  assert.equal(c.place, 'bridge');
+  assert.equal(c.source, 'A');
+  assert.equal(c.target, 'A');
+  assert.deepEqual(caseSource(c), EN(1200, 800));
+  assert.deepEqual(c.options, [EN(1164, 752), EN(1200, 800), EN(1236, 848)]);
+  assert.deepEqual(c.options.map((p) => optionGap(c, p)), [60, 0, 60]);
+  assert.deepEqual(c.options.map((p) => isRight(c, p)), [false, true, false]);
+  assert.deepEqual(c.options.map((p) => optionKind(c, p)), ['minus', 'kept', 'plus']);
+  assert.equal(feedbackFor(c, c.options[1]), c.feedback.right);
+  assert.equal(feedbackFor(c, c.options[0]), c.feedback.wrong);
+  assert.equal(feedbackFor(c, c.options[2]), c.feedback.wrong);
+  assert.match(c.feedback.wrong, /60 מטר/);
 });
 
-test('reset: back to the bridge, the source numbers, 60 m, checking, nothing chosen', () => {
-  for (const s of [
-    run(initialField(), { type: 'selectLandmark', id: 'summit' }, { type: 'toggleHint' }, { type: 'selectAnswer', answer: 'label' }, { type: 'check' }),
-    run(initialField(), { type: 'selectAnswer', answer: 'convert' }, { type: 'check' }),
-    run(initialField(), { type: 'selectAnswer', answer: 'convert' }, { type: 'check' }, { type: 'arrive', run: 1 }),
-  ]) {
-    const r = run(s, { type: 'reset' });
-    assert.deepEqual({ ...r, run: 0 }, initialField());
-    assert.ok(r.run > s.run, 'a motion under way cannot finish after a reset');
-    assert.equal(gapAt(r.landmark, restingT(r)), 60);
-    assert.deepEqual(stepStatuses(r), ['done', 'active', 'upcoming']);
-  }
+test('6) the junction, B → A: gaps 0 / 60 / 120 m, and each mistake gets its own explanation', () => {
+  const c = CASES.find((x) => x.id === 'reverse');
+  assert.equal(c.place, 'junction');
+  assert.equal(c.source, 'B');
+  assert.equal(c.target, 'A');
+  assert.deepEqual(caseSource(c), EN(1054, 712));
+  assert.deepEqual(caseTarget(c), EN(1090, 760));
+  assert.deepEqual(c.options, [EN(1090, 760), EN(1054, 712), EN(1018, 664)]);
+  assert.deepEqual(c.options.map((p) => optionGap(c, p)), [0, 60, 120]);
+  assert.deepEqual(c.options.map((p) => optionKind(c, p)), ['plus', 'kept', 'minus']);
+  assert.deepEqual(c.options[0], convert(caseSource(c), 'B', 'A'), 'the right pair is the B→A conversion');
+  const texts = c.options.map((p) => feedbackFor(c, p));
+  assert.equal(texts[0], c.feedback.right);
+  assert.equal(texts[1], c.feedback.kept);
+  assert.equal(texts[2], c.feedback.minus);
+  assert.notEqual(texts[1], texts[2]);
+  assert.match(texts[1], /60 מטר/);
+  assert.match(texts[2], /120 מטר/);
 });
 
-// ---------------------------------------------------------------- the picture and its projection
-
-test('the rendered terrain was built from this data', () => {
-  assert.deepEqual(T.shift, DATUM_SHIFT, 're-render after changing the shift');
-  assert.equal(T.image.w / T.image.h, 25 / 14);
-  close(TERRAIN_ASPECT, 25 / 14, 1e-12);
-  for (const id of LANDMARK_IDS) {
-    const p = T.paths[id];
-    assert.equal(p.z.length, 25, id);
-    assert.equal(p.visible.length, 25, id);
-    assert.equal(p.visible[0], '1', `${id}: the camera sees the displayed point`);
-    assert.equal(p.visible[24], '1', `${id}: the camera sees the landmark`);
-  }
-});
-
-test('landmarks and their displaced points stand inside the diorama, clear of its edges', () => {
-  for (const id of LANDMARK_IDS) {
-    for (const p of [requestedAt(id), displayedAt(id, 0)]) {
-      assert.ok(p.e - FIELD_FRAME.e0 >= 30 && FIELD_FRAME.e1 - p.e >= 30, `${id} e ${p.e}`);
-      assert.ok(p.n - FIELD_FRAME.n0 >= 30 && FIELD_FRAME.n1 - p.n >= 30, `${id} n ${p.n}`);
+test('right comes from the data, not from a slot; every option has an explanation and stays on the map', () => {
+  const slots = CASES.map((c) => c.options.findIndex((p) => isRight(c, p)));
+  assert.equal(new Set(slots).size, CASES.length, `the right pair moves between cases: ${slots}`);
+  for (const c of CASES) {
+    assert.equal(c.options.filter((p) => isRight(c, p)).length, 1, c.id);
+    for (const p of c.options) {
+      assert.ok(typeof feedbackFor(c, p) === 'string' && feedbackFor(c, p).length > 10, `${c.id} ${formatEN(p)}`);
+      assert.ok(insideMap(interpret(p, c.target), 25), `${c.id} ${formatEN(p)} lands inside the map`);
     }
   }
+  assert.ok(insideMap(ERROR_BEFORE, 25));
+  for (const id of Object.keys(PLACES)) assert.ok(insideMap(PLACES[id].ground, 60), id);
 });
 
-test('one projection: the converted marker lands exactly on the landmark, inside the picture', () => {
-  for (const id of LANDMARK_IDS) {
-    const req = requestedPx(id);
-    const at1 = displayedPx(id, 1);
-    close(at1.x, req.x, 1e-12, id);
-    close(at1.y, req.y, 1e-12, id);
-    for (const q of [req, displayedPx(id, 0)]) {
-      assert.ok(q.x > 0.03 && q.x < 0.97 && q.y > 0.08 && q.y < 0.92, `${id} ${JSON.stringify(q)}`);
-    }
-    // the draped line runs from the marker to the landmark through the sampled ground
-    const line = gapLine(id, 0);
-    assert.equal(line.length, 25);
-    assert.deepEqual(line[0], displayedPx(id, 0));
-    close(line.at(-1).x, req.x, 1e-12);
-    assert.equal(gapLine(id, 1).length, 1, 'no line once the gap is closed');
-    assert.equal(gapLine(id, 0.5).length, 13);
-  }
+test('choosing previews, checking judges; a wrong answer stays open to correction', () => {
+  let s = at('practice');
+  const c = CASES[0];
+  const wrong = c.options.findIndex((p) => !isRight(c, p));
+  const right = c.options.findIndex((p) => isRight(c, p));
+  s = run(s, { type: 'check' });
+  assert.equal(s.practice.checked, null, 'nothing to check before a choice');
+  s = run(s, { type: 'choose', option: wrong });
+  assert.equal(s.practice.choice, wrong);
+  assert.equal(s.practice.checked, null, 'a choice is only a preview');
+  assert.ok(!s.practice.solved[0]);
+  s = run(s, { type: 'check' });
+  assert.deepEqual(checkedResult(s.practice), { option: wrong, right: false });
+  assert.ok(!s.practice.solved[0]);
+  s = run(s, { type: 'choose', option: right });
+  assert.equal(s.practice.checked, null, 'a new choice clears the old verdict');
+  s = run(s, { type: 'check' });
+  assert.deepEqual(checkedResult(s.practice), { option: right, right: true });
+  assert.ok(s.practice.solved[0]);
+  // after success: compare another option, and come back
+  s = run(s, { type: 'choose', option: wrong }, { type: 'check' });
+  assert.equal(checkedResult(s.practice).right, false);
+  assert.ok(s.practice.solved[0], 'solving once is kept');
 });
 
-test('pixels never feed the distance: the same 60 m, a different length on screen', () => {
-  const box = { w: 668, h: 374 };   // the picture at 1440 px
-  const onScreen = LANDMARK_IDS.map((id) => {
-    const a = displayedPx(id, 0);
-    const b = requestedPx(id);
-    return Math.hypot((a.x - b.x) * box.w, (a.y - b.y) * box.h);
-  });
-  for (const [i, id] of LANDMARK_IDS.entries()) {
-    assert.ok(onScreen[i] >= 60, `${id}: the 60 m gap must read on screen (${onScreen[i].toFixed(1)} px)`);
-    assert.equal(gapAt(id, 0), 60);
-  }
-  assert.ok(new Set(onScreen.map((v) => v.toFixed(0))).size === 3, 'perspective draws each gap at its own length');
-  // a larger box scales every point alike — the fractions do not change
-  const id = 'summit';
-  assert.deepEqual(displayedPx(id, 0.3), displayedPx(id, 0.3));
-  close(pathZ(id, 0.5), (T.paths[id].z[12]), 1e-12);
+test('7) cases start clean; summary only after both; practise again and back to the demonstration', () => {
+  let s = run(at('practice'), { type: 'choose', option: 2 });
+  s = run(s, { type: 'goCase', index: 1 });
+  assert.equal(s.practice.index, 1);
+  assert.equal(s.practice.choice, null);
+  assert.equal(s.practice.checked, null);
+  assert.deepEqual(run(s, { type: 'showSummary' }).practice.summary, false, 'no summary before both are right');
+  const solve = (st) => {
+    const c = CASES[st.practice.index];
+    return run(st, { type: 'choose', option: c.options.findIndex((p) => isRight(c, p)) }, { type: 'check' });
+  };
+  s = solve(s);
+  s = solve(run(s, { type: 'goCase', index: 0 }));
+  s = run(s, { type: 'showSummary' });
+  assert.ok(s.practice.summary);
+  assert.equal(run(s, { type: 'choose', option: 0 }).practice.choice, s.practice.choice, 'the summary takes no answers');
+  const again = run(s, { type: 'restartPractice' });
+  assert.deepEqual(again.practice, initialActivity().practice);
+  const demo = run(s, { type: 'setDatum', datum: 'B' }, { type: 'backToDemo' });
+  assert.equal(demo.mode, 'compare');
+  assert.deepEqual(demo.compare, { datum: 'A', switched: false });
+  assert.deepEqual(demo.practice, initialActivity().practice, 'practice starts clean again');
+  assert.equal(demo.error.phase, 'ready', 'so does the error stage');
 });
 
-test('north points up the picture (the camera looks north)', () => {
-  const n = northAt('bridge');
-  assert.ok(n.y < -0.95, JSON.stringify(n));
-  assert.ok(Math.abs(n.x) < 0.3, JSON.stringify(n));
+test('every stage keeps its own state when the learner moves between stages', () => {
+  let s = run(initialActivity(), { type: 'setDatum', datum: 'B' }, { type: 'setMode', mode: 'error' }, { type: 'copyRaw' });
+  s = run(s, { type: 'setMode', mode: 'compare' });
+  assert.equal(s.compare.datum, 'B');
+  s = run(s, { type: 'setMode', mode: 'error' });
+  assert.equal(s.error.phase, 'raw');
+  // actions of another stage do nothing
+  assert.deepEqual(run(s, { type: 'setDatum', datum: 'A' }), s);
+  assert.deepEqual(run(s, { type: 'choose', option: 1 }), s);
 });
 
-test('the delivered assets: the 25:14 terrain and three 16:9 crops of it', async () => {
+// ---------------------------------------------------------------- the world → picture transform
+
+test('one transform, uniform scale, north up and east right', () => {
+  assert.deepEqual(toPicture(EN(MAP.e0, MAP.n1)), { x: 0, y: 0 });
+  assert.deepEqual(toPicture(EN(MAP.e1, MAP.n0)), { x: 1, y: 1 });
+  assert.equal(MAP_PX.w / MAP_PX.h, MAP_ASPECT);
+  assert.equal(MAP_PX.w, (MAP.e1 - MAP.e0) * MAP.ppm);
+  assert.equal(MAP_PX.h, (MAP.n1 - MAP.n0) * MAP.ppm);
+  // 60 m east and 60 m north are the same length in the picture
+  const o = toPicture(EN(1100, 700));
+  const e = toPicture(EN(1160, 700));
+  const n = toPicture(EN(1100, 760));
+  const px = (a, b) => Math.hypot((b.x - a.x) * MAP_PX.w, (b.y - a.y) * MAP_PX.h);
+  assert.ok(Math.abs(px(o, e) - px(o, n)) < 1e-9);
+  assert.ok(e.x > o.x && n.y < o.y);
+  // the converted marker lands exactly on the bridge in the picture
+  assert.deepEqual(toPicture(interpret(numbersOf('bridge', 'B'), 'B')), toPicture(PLACES.bridge.ground));
+});
+
+test('the terrain is laid out from the exercise: the bridge on the stream and the road, the junction on the roads', () => {
+  const near = (poly, p) => Math.min(...poly.slice(1).map((q, i) => {
+    const [ax, ay] = poly[i];
+    const [bx, by] = q;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((p.e - ax) * dx + (p.n - ay) * dy) / (dx * dx + dy * dy)));
+    return Math.hypot(p.e - ax - t * dx, p.n - ay - t * dy);
+  }));
+  assert.deepEqual(TERRAIN.bridge.at, [PLACES.bridge.ground.e, PLACES.bridge.ground.n]);
+  assert.ok(near(TERRAIN.stream, PLACES.bridge.ground) < 0.5, 'the stream passes under the bridge');
+  const main = TERRAIN.roads.find((r) => r.id === 'main').path;
+  assert.ok(near(main, PLACES.bridge.ground) < 0.5, 'the road crosses the bridge');
+  for (const r of TERRAIN.roads) assert.ok(near(r.path, PLACES.junction.ground) < 0.5, `${r.id} meets at the junction`);
+});
+
+test('the base map: one picture at the extent’s size; the diorama and its thumbnails are gone', async () => {
   const require = createRequire(import.meta.url);
   const sharp = require(require.resolve('sharp', { paths: [path.dirname(require.resolve('next/package.json'))] }));
   const dir = 'public/assets/lessons/topic02/datum-field-challenge';
-  const base = await sharp(`${dir}/terrain-base.webp`).metadata();
-  assert.ok(base.width >= 2000 && base.height >= 1120, `${base.width}×${base.height}`);
-  assert.equal(base.width * 14, base.height * 25);
-  for (const name of ['thumb-bridge', 'thumb-junction', 'thumb-summit']) {
-    const m = await sharp(`${dir}/${name}.webp`).metadata();
-    assert.ok(m.width >= 480 && m.height >= 270, `${name} ${m.width}×${m.height}`);
-    assert.equal(m.width * 9, m.height * 16, name);
+  const m = await sharp(`${dir}/field-map.webp`).metadata();
+  assert.equal(m.width, MAP_PX.w);
+  assert.equal(m.height, MAP_PX.h);
+  for (const old of ['terrain-base.webp', 'thumb-bridge.webp', 'thumb-junction.webp', 'thumb-summit.webp']) {
+    assert.ok(!existsSync(`${dir}/${old}`), `${old} removed`);
   }
 });
 
-// ---------------------------------------------------------------- the lesson copy
+// ---------------------------------------------------------------- the copy (§5–§7, §10)
 
-test('the lesson copy is kept word for word; only the slider instruction changed', () => {
-  const file = 'src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx';
-  assert.ok(existsSync(file), file);
-  const src = readFileSync(file, 'utf8');
-  const kept = [
+test('the activity’s copy: source wording kept, datums and physical locations distinguished', () => {
+  const src = readFileSync('src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx', 'utf8');
+  const required = [
+    // kept
     'הדמיה: מה קורה כשהדאטום לא תואם?',
     'לא ניתן לדבר על קואורדינטות של נקודה בלי שנדע מהו הדאטום ומהו ההיטל שלה',
     '(על ההיטל – בחלק הבא).',
-    'זוהי המחשה סכמטית: ערכי הסטייה נבחרים לצורך ההדגמה בלבד.',
-    'ההדמיה ממחישה זאת: בחרו נקודה, בחנו את הפער בין המיקום המבוקש למיקום המוצג ובחרו כיצד לתקן אותו.',
-    'מיקום מבוקש',
-    'מיקום מוצג',
-    'מ׳ סטייה',
-    'משמעות הסטייה בהדמיה',
-    'קבלו נקודה', 'בדקו את המיקום', 'תקנו את הטעות',
-    'דאטום מקור:', 'דאטום במפה:',
-    'איך מתקנים את המיקום המוצג?',
-    'שינוי התווית בלבד', 'המרת הקואורדינטות',
-    'בדיקת הבחירה', 'רמז', 'איפוס',
-    'שינוי התווית בלבד אינו ממיר את הקואורדינטות.',
-    'ההמרה משנה את הקואורדינטות ושומרת על המיקום המבוקש.',
-    'השוו בין דאטום המקור לדאטום במפה.',
+    // §10 and §4
+    'מפות ממקורות שונים עשויות להשתמש בדאטומים שונים.',
+    'A ו־B הם דאטומים בדיוניים; ההבדל ביניהם מוצג כאן כהזזה קבועה לצורך ההמחשה בלבד.',
+    // stages
+    'משווים', 'בודקים את הטעות', 'מתרגלים',
+    // §5
+    'גשר אחד, קואורדינטות בשני דאטומים',
+    'שתי מערכות ייחוס לחישוב קואורדינטות, ולא שתי נקודות בשטח.',
+    'דאטום A', 'דאטום B', 'בחרו באיזה דאטום להציג את קואורדינטות הגשר',
+    'הגשר נשאר באותו מקום. בהמרה לדאטום B המספרים שמייצגים אותו משתנים.',
+    'מה קורה בלי המרה?',
+    // §6
+    'למה מופיע סימון נוסף, הרחק מהגשר?',
+    'נתוני המקור · דאטום',
+    'המפה מפרשת את הנתונים בדאטום B',
+    'קיבלנו את קואורדינטות הגשר בדאטום A, והמפה שלנו משתמשת בדאטום B.',
+    'העתקת המספרים ללא המרה',
+    'המספרים שנשלחו למפה',
+    'הגשר בשטח', 'המיקום לפי המספרים',
+    'העיגול מסמן את הגשר האמיתי. המעוין מסמן לאן מפנים המספרים כשהמפה קוראת אותם בדאטום B.',
+    'שינוי הכיתוב בלבד',
+    'מחליפים את האות בכותרת של עותק הנתונים; המספרים אינם משתנים.',
+    'הכיתוב השתנה, אבל המספרים עדיין נלקחו מדאטום A. המפה ממשיכה לקרוא אותם כ־B, ולכן הפער נשאר 60 מטר.',
+    'המרת הנתונים מ־A ל־B',
+    'המספרים הומרו לייצוג המתאים לדאטום B. כשהמפה קוראת אותם, הסימון חוזר לאותו גשר. השתנה הייצוג — המקום בשטח נשאר קבוע.',
+    'הסימון תואם למיקום הגשר',
+    'המחשת המעבר',
+    'נסו על נתונים נוספים',
+    // §7
+    'איזה צמד מספרים צריך לשלוח למפת היעד כדי לשמור על אותו מקום?',
+    'תצוגה מקדימה',
+    'בדיקת הנתונים',
+    'בהמחשה הזאת: A→B מחסיר (36,48); B→A מוסיף (36,48).',
+    'לפני שימוש בקואורדינטות בודקים באיזה דאטום נמסרו הנתונים ובאיזה דאטום משתמשת המפה. כשנדרשת המרה, משנים את המספרים באופן ששומר על אותו מקום בשטח.',
+    'תרגול חוזר', 'חזרה להדגמה',
   ];
-  for (const s of kept) assert.ok(src.includes(s), `missing: ${s}`);
-  assert.ok(!src.includes('הזיזו את המחוון'), 'the slider instruction is replaced');
+  for (const s of required) assert.ok(src.includes(s), `missing: ${s}`);
+  // §1, §9: gone — the north glyph, the hint, the picker and its thumbnails, the old diorama and wording
+  for (const s of ['רמז', 'בחירת נקודה', 'thumb-', 'terrain-base', 'פסגה', 'מיקום מבוקש', 'זוהי המחשה סכמטית', 'ההדמיה ממחישה זאת']) {
+    assert.ok(!src.includes(s), `still there: ${s}`);
+  }
+  assert.ok(!/>\s*N\s*</.test(src), 'no N glyph');
+  // §4, §10: phrasing to avoid
+  for (const s of ['הנקודה זזה בשטח', 'תמיד גורם לסטייה', 'בטוח', 'מסוכן']) assert.ok(!src.includes(s), `avoid: ${s}`);
+  // the cases’ texts are the brief’s
+  const all = CASES.flatMap((c) => Object.values(c.feedback));
+  for (const s of [
+    'המקור והמפה משתמשים כאן באותו דאטום. אין צורך בהמרה; המספרים המקוריים כבר מצביעים על הגשר.',
+    'שיניתם מספרים אף שהדאטום כבר תואם. בהדגמה הזאת השינוי מזיז את הסימון 60 מטר מהגשר.',
+    'כאן המקור הוא B והיעד הוא A, ולכן כיוון ההמרה הפוך מהדוגמה הקודמת. המספרים השתנו והסימון נשאר בצומת.',
+    'הועתקו מספרי B למפה שקוראת אותם כ־A. הפער נשאר 60 מטר.',
+    'הופעלה המרה בכיוון A→B אף שהנתונים כבר ב־B. בהמחשה הזאת הפער גדל ל־120 מטר.',
+  ]) assert.ok(all.includes(s), `case feedback: ${s}`);
+});
+
+test('the rule shown to the learner is the model’s shift, and the map draws the tested grid', () => {
+  const src = readFileSync('src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx', 'utf8');
+  const rule = src.match(/A→B מחסיר \((\d+),(\d+)\); B→A מוסיף \((\d+),(\d+)\)/);
+  assert.ok(rule, 'the rule sentence is there');
+  assert.deepEqual(rule.slice(1).map(Number), [SHIFT.e, SHIFT.n, SHIFT.e, SHIFT.n]);
+  assert.ok(/gridLines\(/.test(src), 'the map draws gridLines(), the function tested above');
+  // the slide in stage 1 moves every line by the same fraction of the shift
+  const half = gridLines(0.5);
+  for (const l of half.e) assert.equal(l.ground - l.value, SHIFT.e / 2);
+  for (const l of half.n) assert.equal(l.ground - l.value, SHIFT.n / 2);
+});
+
+test('the lesson around it is untouched: same place in the scene, before the part summary', () => {
   const scene = readFileSync('src/components/lessons/topic-02/CoordinatesScene.tsx', 'utf8');
-  assert.ok(!scene.includes('function DatumShiftDemo'), 'the slider demo is gone from the scene');
-  assert.ok(/<DatumGuided \/>\s*<DatumFieldChallenge \/>\s*<Part1Summary \/>/.test(scene) || /<DatumFit \/>\s*<DatumFieldChallenge \/>\s*<Part1Summary \/>/.test(scene),
-    'the challenge sits where the slider demo was, before the part summary');
+  assert.ok(/<DatumGuided \/>\s*<DatumFieldChallenge \/>\s*<Part1Summary \/>/.test(scene), 'DatumGuided → the activity → the part summary');
 });

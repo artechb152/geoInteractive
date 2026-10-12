@@ -34,9 +34,10 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
   'topic-06': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
+    { id: 'tips', label: 'דגשים לתכנון ולניווט' },
+    { id: 'combatnav', label: 'טכניקות ניווט' },
     { id: 'principles', label: 'עקרונות הניווט' },
     { id: 'planning', label: 'תכנון ציר' },
-    { id: 'combatnav', label: 'טכניקות ניווט' },
     { id: 'recap', label: 'סיכום' },
   ],
   'topic-03': [

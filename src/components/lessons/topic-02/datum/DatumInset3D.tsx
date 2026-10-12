@@ -12,7 +12,7 @@
    Everything comes from datumInset.ts — the same view the SVG arrow uses —
    so the arrow lands on the two band crests. Buffers are allocated once and
    rewritten in place when the pose, the inspection point, the mode or the
-   chosen surface change; nothing is allocated per frame, everything is
+   body in focus change; nothing is allocated per frame, everything is
    disposed when the view unmounts. */
 
 import { useEffect, useMemo } from 'react';
@@ -270,7 +270,7 @@ function buildInset() {
   return {
     scene,
     camera,
-    update(pose: Pose, inspect: number, mode: DatumMode, surface: Surface) {
+    update(pose: Pose, inspect: number, mode: DatumMode, emph: Surface | null) {
       const v = insetView(pose, inspect, INSET.size);
       place(v);
       const px = (p: number) => p / v.ppu; // screen pixels → plane units
@@ -279,8 +279,8 @@ function buildInset() {
 
       const gRun = curveRun(geoidPlane, inspect, { x: 0, y: 0 }, v, N, tubes.geoid.run);
       const eRun = curveRun((s) => ellipsePlane(pose, s), ellipsePhiAt(pose, inspect), ellipseCentrePlane(pose), v, N, tubes.ellipsoid.run);
-      const gHalf = px(INSET_BAND.half.geoid * (surface === 'geoid' ? 1.12 : 1));
-      const eHalf = px(INSET_BAND.half.ellipsoid * (surface === 'ellipsoid' ? 1.12 : 1));
+      const gHalf = px(INSET_BAND.half.geoid * (emph === 'geoid' ? 1.12 : 1));
+      const eHalf = px(INSET_BAND.half.ellipsoid * (emph === 'ellipsoid' ? 1.12 : 1));
       tubeFill(gRun, N, RING, gHalf, depth, tubes.geoid.pos.array as Float32Array, tubes.geoid.nrm.array as Float32Array);
       tubeFill(eRun, N, RING, eHalf, depth, tubes.ellipsoid.pos.array as Float32Array, tubes.ellipsoid.nrm.array as Float32Array);
       ribbonFill(gRun, N, gHalf + px(sh.spread), -depth, px(sh.dx), px(sh.dy), shadows.geoid.pos.array as Float32Array);
@@ -319,8 +319,8 @@ function buildInset() {
         ribbonFill(run, ARC_N, px(INSET_BAND.arc), -depth * 0.5, 0, 0, arc.pos.array as Float32Array);
         arc.pos.needsUpdate = true;
       }
-      mats.tube.geoid.uniforms.uRim.value = surface === 'geoid' ? 0.62 : 0.45;
-      mats.tube.ellipsoid.uniforms.uRim.value = surface === 'ellipsoid' ? 0.62 : 0.45;
+      mats.tube.geoid.uniforms.uRim.value = emph === 'geoid' ? 0.62 : 0.45;
+      mats.tube.ellipsoid.uniforms.uRim.value = emph === 'ellipsoid' ? 0.62 : 0.45;
     },
     setClip(x: number, y: number, r: number) {
       clip.value.set(x, y, r);
@@ -340,14 +340,14 @@ function buildInset() {
 }
 
 /** Renders the globe, then the close-up into its circle. Takes over the frame (useFrame priority 1). */
-export function InsetPass({ pose, inspect, mode, surface, enabled }: { pose: Pose; inspect: number; mode: DatumMode; surface: Surface; enabled: boolean }) {
+export function InsetPass({ pose, inspect, mode, emph, enabled }: { pose: Pose; inspect: number; mode: DatumMode; emph: Surface | null; enabled: boolean }) {
   const invalidate = useThree((s) => s.invalidate);
   const inset = useMemo(() => buildInset(), []);
   useEffect(() => () => inset.dispose(), [inset]);
   useEffect(() => {
-    inset.update(pose, inspect, mode, surface);
+    inset.update(pose, inspect, mode, emph);
     invalidate();
-  }, [inset, pose, inspect, mode, surface, invalidate]);
+  }, [inset, pose, inspect, mode, emph, invalidate]);
 
   useFrame(({ gl, scene, camera, size }) => {
     gl.render(scene, camera);

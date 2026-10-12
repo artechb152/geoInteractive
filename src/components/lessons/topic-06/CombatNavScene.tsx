@@ -1,8 +1,7 @@
 'use client';
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import {
   motion,
-  AnimatePresence,
   useInView,
   useMotionValueEvent,
   useReducedMotion,
@@ -11,22 +10,16 @@ import {
 } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
-import { cn } from '@/lib/utils';
 import {
   HALO,
   PAPER,
-  Checkpoint,
   Chevron,
-  ContourTexture,
   LegendGlyph,
-  PaperHill,
-  PaperHouse,
   PaperTile,
   StartDot,
   TargetMark,
   UnitPuck,
   angleDeg,
-  dist,
   lerpPt,
   linear,
   useSequence,
@@ -34,9 +27,9 @@ import {
   useSvgId,
   useTrack,
   type GlyphKind,
-  type Key,
   type Pt,
 } from './CombatNavVisuals';
+import { TerrainAssociationActivity } from './terrain-nav/TerrainAssociationActivity';
 type Method = 'handrail' | 'dead';
 type MethodData = {
 id: Method;
@@ -56,7 +49,7 @@ english: 'Terrain Association',
 icon: 'route' as never, // Not used
 oneLiner: 'מתקדמים בעזרת סימנים מזוהים בשטח ומשווים אותם למפה לאורך הדרך.',
 detail: 'בוחרים במפה סימנים שניתן לזהות בשטח ובודקים את המיקום ביחס אליהם. הסימנים יכולים להיות תבליט, כגון כיפה, רכס או ערוץ, ותכסית, כגון כפר, כביש או חורשה. משלבים את הזיהוי עם בדיקת כיוון ומרחק. כאשר נעזרים בתוואי רציף, כמו דרך או ערוץ המקבילים למסלול, הוא משמש כ״מעקה״ לניווט.',
-whenToUse: ['כשיש צורות קרקע בולטות שניתן לזהות במפה ובשטח.', 'כשיש עצמים מזוהים לאורך המסלול שיכולים לשמש קיטועים.', 'כשהראות מאפשרת להשוות בין הסימנים בשטח לבין המפה.'],
+whenToUse: ['כשיש צורות קרקע בולטות שניתן לזהות במפה ובשטח.', 'כשיש עצמים מזוהים לאורך המסלול שיכולים לשמש נקודות לבדיקת המיקום.', 'כשהראות מאפשרת להשוות בין הסימנים בשטח לבין המפה.'],
 example: 'בהמחשה, המסלול עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר. בכל כיפה בודקים את מיקומה ביחס לכיפות האחרות ולכפר, ומשווים לכיוון ולמרחק המתוכננים. כך מצמצמים את הסיכון לטעות בין סימנים דומים.',
  },
  {
@@ -75,7 +68,7 @@ example: 'בהמחשה, היעד נמצא באזימוט 62° ובמרחק 1.2 �
 // the quiz both use "Dead Reckoning"); it sits inline beside the Hebrew name.
 const INLINE_TERM: ReadonlySet<Method> = new Set<Method>(['dead']);
 
-// — Per-technique supporting content for the left "explanation board" —
+// — Per-technique supporting content: the lab's caption and legend (technique 1), the explanation board (technique 2) —
 // `kind` picks the legend glyph, which mirrors the diagram mark 1:1.
 type LegendItem = { kind: GlyphKind; label: string };
 type SupportData = { badge: string; caption: string; legend: LegendItem[] };
@@ -88,7 +81,7 @@ legend: [
  { kind: 'hill', label: 'כיפה — צורת קרקע בולטת (תבליט)' },
  { kind: 'village', label: 'כפר — מבנים על הקרקע (תכסית)' },
  { kind: 'route', label: 'הציר — מסימן לסימן' },
- { kind: 'checkpoint', label: 'קיטוע — בדיקת מיקום' },
+ { kind: 'checkpoint', label: 'נקודה לבדיקת המיקום' },
  { kind: 'start', label: 'נקודת מוצא (A)' },
  { kind: 'target', label: 'היעד — הכיכר המרכזית בכפר (B)' },
 ],
@@ -107,9 +100,6 @@ legend: [
 },
 };
 
-/** Motion language (INTERACTION_DNA): snap ease, ~0.3s diagram swaps. */
-const EASE = [0.22, 1, 0.36, 1] as const;
-
 /** Props every board diagram receives. */
 type VisualProps = {
   /** Start the demo (board has entered the viewport). */
@@ -121,177 +111,184 @@ type VisualProps = {
 };
 
 export function CombatNavScene() {
-const [active, setActive] = useState<Method>('handrail');
-const [run, setRun] = useState(0);
 const reduce = !!useReducedMotion();
-const boardRef = useRef<HTMLDivElement>(null);
-// The demo waits until the learner can actually see the board, then plays
-// once per selection (replay control re-runs it).
-const boardSeen = useInView(boardRef, { once: true, amount: 0.3 });
-const activeIndex = METHODS.findIndex((m) => m.id === active);
-const activeData = METHODS[activeIndex];
-const support = SUPPORT[active];
-const swap = {
-  initial: reduce ? false : ({ opacity: 0, y: 8 } as const),
-  animate: { opacity: 1, y: 0 },
-  exit: reduce ? undefined : { opacity: 0, y: -6 },
-  transition: { duration: 0.3, ease: EASE },
-};
+// Quiet anchors to the two parts of the page — both stay in the scroll; nothing is hidden.
+const scrollToPart = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
 return (
  <section id="scene-combat" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  <SceneHeader
 step="03.3"
 eyebrow="טכניקות ניווט"
 title="התאמת הניווט לתנאי השטח"
-intro="סימני השטח, הראות והמשימה משפיעים על אופן הניווט ועל קצב התנועה. נבחן ניווט לפי טופוגרפיה וניווט לפי כיוון ומרחק. בחרו בכל נושא כדי לעיין בהסבר ובהמחשה."
+intro="סימני השטח, הראות והמשימה משפיעים על אופן הניווט ועל קצב התנועה. נבחן ניווט לפי טופוגרפיה וניווט לפי כיוון ומרחק. כל שיטה מוצגת בהמשך עם הסבר והמחשה."
  />
 
- {/* Text column 1fr (reads at ~50 chars/line) · board 1.35fr. */}
- <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
- {/* Accordion list — first child → RIGHT in RTL (text on right). One open at a time. */}
- <div className="space-y-3">
- {METHODS.map((m, i) => {
-const isActive = active === m.id;
-const btnId = `combatnav-btn-${m.id}`;
-const panelId = `combatnav-panel-${m.id}`;
-return (
- <div
-key={m.id}
-className={cn(
- // Items sit on the textured page (not inside a workspace), so the hover
- // tint rides on the opaque white base via ::before instead of replacing it.
- 'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
- 'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-isActive
- ? 'border-brand/45'
- : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
- )}
- >
+ {/* Two terms the techniques rely on — this sub-topic comes before azimuth and route
+     planning are taught, so they are introduced briefly here (plain info text, no cards,
+     the same opening as the principles and planning sub-topics). */}
+ <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-10">
+ <div>
+ <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
+ אזימוט <span className="text-fg-muted font-medium text-base sm:text-lg">(Azimuth)</span>
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ זווית הנמדדת במעלות <strong className="text-fg">מכיוון הצפון, עם כיוון השעון</strong>, ומתארת את כיוון התנועה. בחלק זה האזימוט ניתן כנתון מוכן. את מדידתו ואת הערכת המרחק בספירת צעדים כפולים (זוגות צעדים) נתרגל בהמשך השיעור.
+ </p>
+ </div>
+
+ <div>
+ <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
+ קטע דרך
+ </h3>
+ <p className="text-base text-fg leading-relaxed text-pretty">
+ חלק מהמסלול בין שתי נקודות מזוהות. בסוף כל קטע דרך נמצאת <strong className="text-fg">נקודה לבדיקת המיקום</strong>: בודקים בה את המיקום לפני שממשיכים לקטע הדרך הבא.
+ </p>
+ </div>
+ </div>
+
+ <nav aria-label="חלקי תת־הנושא" className="-mt-4 mb-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-black">
+ <span>בחלק זה:</span>
+ {METHODS.map((m, i) => (
+ <Fragment key={m.id}>
+ {i > 0 && <span aria-hidden className="text-fg-dim">·</span>}
  <button
 type="button"
-id={btnId}
-onClick={() => setActive(m.id)}
-aria-expanded={isActive}
-aria-controls={isActive ? panelId : undefined}
-className="w-full p-4 text-start flex items-center gap-3 rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
+onClick={() => scrollToPart(`combatnav-${m.id}`)}
+className="rounded font-display font-semibold underline decoration-border-strong decoration-2 underline-offset-4 hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
  >
- <span className="size-9 rounded-xl flex items-center justify-center shrink-0 bg-bg-accent text-fg-muted">
- <span className="font-display font-bold text-sm">{i + 1}</span>
- </span>
- <div className="flex-1 min-w-0 text-start">
- <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
  {m.label}
- {INLINE_TERM.has(m.id) && (
- <>
- {' '}
- <span className="text-base font-medium text-fg-muted md:text-lg">({m.english})</span>
- </>
- )}
- </div>
- </div>
- <motion.span
-animate={{ rotate: isActive ? 180 : 0 }}
-transition={{ duration: reduce ? 0 : 0.25 }}
-className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
- >
- <svg
-width="18"
-height="18"
-viewBox="0 0 24 24"
-fill="none"
-stroke="currentColor"
-strokeWidth="1.8"
-strokeLinecap="round"
-strokeLinejoin="round"
-aria-hidden
- >
- <path d="m6 9 6 6 6-6" />
- </svg>
- </motion.span>
+ {INLINE_TERM.has(m.id) && ` (${m.english})`}
  </button>
+ </Fragment>
+ ))}
+ </nav>
 
- <AnimatePresence initial={false}>
- {isActive && (
- <motion.div
-key={`panel-${m.id}`}
-id={panelId}
-role="region"
-aria-labelledby={btnId}
-initial={{ height: 0, opacity: 0 }}
-animate={{ height: 'auto', opacity: 1 }}
-exit={{ height: 0, opacity: 0 }}
-transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
-className="overflow-hidden"
- >
- <div className="px-4 pb-5 pt-1 space-y-5">
- <div>
- <div className="text-base font-display font-bold text-fg mb-1.5">
- עקרון הפעולה
- </div>
- <p className="text-base leading-relaxed text-fg">{m.detail}</p>
- </div>
+ <TerrainSection data={METHODS[0]} support={SUPPORT.handrail} onContinue={() => scrollToPart('combatnav-dead')} />
+ <DeadReckoningSection data={METHODS[1]} support={SUPPORT.dead} />
 
- <div>
- <div className="text-base font-display font-bold text-fg mb-1.5">
- מתי משתמשים בשיטה
- </div>
+ <ConclusionCard />
+ </section>
+ );
+}
+
+/** The technique's copy in three tiers: sub-heading → body / list (Table 2 of checking-design-fidelity). */
+function SubHeading({ children }: { children: React.ReactNode }) {
+return <div className="text-base font-display font-bold text-black mb-1.5">{children}</div>;
+}
+
+function WhenToUse({ items }: { items: string[] }) {
+return (
  <ul className="list-disc ps-5 space-y-1.5 text-base marker:text-fg-dim">
- {m.whenToUse.map((u) => (
- <li key={u} className="leading-relaxed text-fg">
+ {items.map((u) => (
+ <li key={u} className="leading-relaxed text-black">
  {u}
  </li>
  ))}
  </ul>
+);
+}
+
+/* ═══ Technique 1 — ניווט לפי השטח ═════════════════════════════════════
+   The principle in a visible paragraph above the lab; the lab itself — a
+   live terrain model and the topographic map drawn from the same data, with
+   learn and practice modes (terrain-nav/TerrainAssociationActivity); when to
+   use the method and the example in cards after it. */
+function TerrainSection({ data, support, onContinue }: { data: MethodData; support: SupportData; onContinue: () => void }) {
+return (
+ <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
+ <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+ {data.label}
+ </h3>
+ <div className="mt-4 max-w-4xl">
+ <SubHeading>עקרון הפעולה</SubHeading>
+ <p className="text-base leading-relaxed text-black">{data.detail}</p>
  </div>
 
+ <div className="mt-6">
+ <TerrainAssociationActivity copy={{ badge: support.badge, caption: support.caption, legend: support.legend }} onContinue={onContinue} />
+ </div>
+
+ <div className="mt-6 grid gap-6 md:grid-cols-2">
+ <div className="surface p-5 sm:p-6">
+ <SubHeading>מתי משתמשים בשיטה</SubHeading>
+ <WhenToUse items={data.whenToUse} />
+ </div>
  {/* "דוגמה" label removed (2026-09-28 user decision, same as PrinciplesScene) — the scenario reads as an example on its own */}
- <p className="text-base leading-relaxed text-fg">{m.example}</p>
+ <div className="surface p-5 sm:p-6">
+ <p className="text-base leading-relaxed text-black">{data.example}</p>
  </div>
- </motion.div>
+ </div>
+ </section>
+);
+}
+
+/* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════
+   The approved text and the existing demonstration board, unchanged except
+   that the text is no longer folded into an accordion.
+   Integration point: when a dead-reckoning alternative is chosen
+   (design/mockups/dead-reckoning-concepts-2026-10-12), its separate
+   DeadReckoningActivity replaces the board below; the text stays. */
+function DeadReckoningSection({ data, support }: { data: MethodData; support: SupportData }) {
+const [run, setRun] = useState(0);
+const boardRef = useRef<HTMLDivElement>(null);
+// The demo waits until the learner can actually see the board, then plays
+// once (the replay control re-runs it).
+const boardSeen = useInView(boardRef, { once: true, amount: 0.3 });
+return (
+ <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="mt-12 scroll-mt-24">
+ <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+ {data.label}
+ {INLINE_TERM.has(data.id) && (
+ <>
+ {' '}
+ <span className="text-xl font-medium text-fg-muted sm:text-2xl">({data.english})</span>
+ </>
  )}
- </AnimatePresence>
+ </h3>
+
+ {/* Text column 1fr (reads at ~50 chars/line) · board 1.35fr. */}
+ <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
+ <div className="surface p-5 sm:p-6 space-y-5">
+ <div>
+ <SubHeading>עקרון הפעולה</SubHeading>
+ <p className="text-base leading-relaxed text-black">{data.detail}</p>
  </div>
- );
- })}
+ <div>
+ <SubHeading>מתי משתמשים בשיטה</SubHeading>
+ <WhenToUse items={data.whenToUse} />
+ </div>
+ {/* "דוגמה" label removed (2026-09-28 user decision, same as PrinciplesScene) — the scenario reads as an example on its own */}
+ <p className="text-base leading-relaxed text-black">{data.example}</p>
  </div>
 
- {/* Explanation board — second child → LEFT in RTL.
-     The screen's one workspace: a clean elevated surface holding the
-     header, diagram and legend (no background texture). Sticky below
-     the fixed site header (h-20) and capped to the viewport on desktop,
-     so the whole module stays in view while the long accordion is read;
-     the diagram is the only part that flexes when height is short. */}
+ {/* Explanation board — second child → LEFT in RTL. A clean elevated surface
+     holding the header, diagram and legend; sticky below the fixed site
+     header (h-20) and capped to the viewport on desktop. */}
  <div className="lg:sticky lg:top-24 self-start">
  <div
 ref={boardRef}
 role="group"
-aria-label={`הסבר חזותי · ${activeData.label}`}
+aria-label={`הסבר חזותי · ${data.label}`}
 className="surface-elevated overflow-hidden flex flex-col lg:max-h-[calc(100vh-7rem)]"
  >
- {/* Board header — updates with the active technique */}
  <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-5 pb-2">
  <div className="min-w-0">
  <div className="text-base font-display font-bold text-fg leading-tight">הסבר חזותי</div>
  <div className="mt-0.5 text-sm text-fg-muted truncate">
- {activeData.label}
- {INLINE_TERM.has(active) && (
+ {data.label}
+ {INLINE_TERM.has(data.id) && (
  <>
  {' '}
- <span className="font-medium">({activeData.english})</span>
+ <span className="font-medium">({data.english})</span>
  </>
  )}
  </div>
  </div>
- <span className="text-sm font-display font-semibold text-fg-muted shrink-0">טכניקה {activeIndex + 1}</span>
+ <span className="text-sm font-display font-semibold text-fg-muted shrink-0">טכניקה 2</span>
  </div>
 
- {/* Diagram toolbar — what this diagram shows · replay the demo */}
  <div className="shrink-0 flex items-center justify-between gap-3 px-5">
- <AnimatePresence mode="wait" initial={false}>
- <motion.span key={active} {...swap} className="text-sm font-display font-semibold text-fg-muted">
- {support.badge}
- </motion.span>
- </AnimatePresence>
+ <span className="text-sm font-display font-semibold text-fg-muted">{support.badge}</span>
  <button
 type="button"
 onClick={() => setRun((r) => r + 1)}
@@ -302,24 +299,15 @@ className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border 
  </button>
  </div>
 
- {/* Diagram — a papercut terrain slab drawn on the board.
-     Keeps 4:3 by default; shrinks (never crops) on short screens. */}
  <div className="relative w-full aspect-[4/3] min-h-[230px] lg:min-h-0 shrink">
- <AnimatePresence mode="wait" initial={false}>
- <motion.div key={active} {...swap} className="absolute inset-0 px-2">
- {active === 'handrail' && <HandrailVisual play={boardSeen} run={run} label={support.caption} />}
- {active === 'dead' && <DeadReckoningVisual play={boardSeen} run={run} label={support.caption} />}
- </motion.div>
- </AnimatePresence>
+ <div className="absolute inset-0 px-2">
+ <DeadReckoningVisual play={boardSeen} run={run} label={support.caption} />
+ </div>
  </div>
 
- {/* Caption + legend — part of the same surface, swaps with the diagram */}
- <div className="shrink-0 px-5 pb-5 pt-2">
- <AnimatePresence mode="wait" initial={false}>
- <motion.div key={active} {...swap} className="space-y-4">
+ <div className="shrink-0 px-5 pb-5 pt-2 space-y-4">
  <p className="text-sm text-fg-muted leading-relaxed">{support.caption}</p>
  {/* "מקרא" heading removed (2026-09-28 user decision, pattern 4) — the swatch list reads as a legend on its own, like every other legend in lessons 2 & 6 */}
- <div>
  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2">
  {support.legend.map((it) => (
  <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
@@ -329,130 +317,11 @@ className="motion-reduce:hidden size-8 shrink-0 rounded-xl border border-border 
  ))}
  </ul>
  </div>
- </motion.div>
- </AnimatePresence>
  </div>
  </div>
  </div>
- </div>
-
- <ConclusionCard />
  </section>
- );
-}
-
-/* ═══ Technique 1 — ניווט לפי טופוגרפיה ═══════════════════════════════
-   Terrain association: the route is a chain of recognizable features —
-   three hilltops (relief) and then a village's central square (land cover).
-   Schematic, not a real map; progresses right → left.
-   Demo: the force walks leg by leg; on every hilltop it stops, the
-   checkpoint ticks ✓ ("אני כאן"), then it moves on to the next feature. */
-const HR_A: Pt = { x: 88, y: 57 };
-const HR_HILLS = [
- { x: 73, y: 47, label: 'כיפה 1' },
- { x: 55.5, y: 37.5, label: 'כיפה 2' },
- { x: 38, y: 28.5, label: 'כיפה 3' },
-];
-const HR_B: Pt = { x: 17, y: 19.5 };
-const HR_PTS: Pt[] = [HR_A, ...HR_HILLS, HR_B];
-const HR_ROUTE = HR_PTS.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' ');
-const HR_LEGS = HR_PTS.slice(1).map((p, i) => dist(HR_PTS[i], p));
-const HR_FRAC = HR_LEGS.map((_, i) => HR_LEGS.slice(0, i + 1).reduce((a, b) => a + b, 0) / HR_LEGS.reduce((a, b) => a + b, 0));
-// Timeline (seconds): leave each point at DEPART[i], reach the next at ARRIVE[i].
-const HR_DEPART = [0.5, 2.6, 4.7, 6.8];
-const HR_ARRIVE = [1.8, 3.9, 6.0, 8.3];
-const HR_T = 9;
-const hrTrack = (pick: (p: Pt) => number): Key[] => [
- [0, pick(HR_A)],
- ...HR_DEPART.flatMap((d, i): Key[] => [[d, pick(HR_PTS[i])], [HR_ARRIVE[i], pick(HR_PTS[i + 1])]]),
-];
-const HR_X = hrTrack((p) => p.x);
-const HR_Y = hrTrack((p) => p.y);
-const HR_DRAW: Key[] = [[0, 0], ...HR_DEPART.flatMap((d, i): Key[] => [[d, i ? HR_FRAC[i - 1] : 0], [HR_ARRIVE[i], HR_FRAC[i]]])];
-// "אני כאן" callout: shown while the force stands on a hilltop.
-const HR_CALLOUT: Key[] = [
- [0, 0],
- ...HR_ARRIVE.slice(0, 3).flatMap((a, i): Key[] => [[a, 0], [a + 0.15, 1], [HR_DEPART[i + 1] - 0.15, 1], [HR_DEPART[i + 1], 0]]),
-];
-// Village houses around the central square (top-left corners); the SE
-// sector stays open as the street the route enters by.
-const HR_HOUSES: [number, number][] = [
- [9, 12], [13.2, 12], [17.4, 12], [21.6, 12.7],
- [6.6, 16.5], [6.6, 20.9], [25.2, 15.9],
- [9.6, 25.9], [13.8, 25.9], [18, 25.9],
-];
-const HR_CONTOURS = [
- 'M4 44 C 18 38, 30 52, 48 50 S 78 36, 96 42',
- 'M4 54 C 20 48, 34 64, 58 60 S 84 50, 96 55',
- 'M30 5 C 34 12, 46 13, 52 5',
- 'M62 66 C 68 60, 84 60, 96 63',
- 'M58 5 C 62 16, 82 18, 96 12',
-];
-
-function HandrailVisual({ play, run, label }: VisualProps) {
-const { t, reduce } = useSequence(HR_T, play, run);
-const ux = useTrack(t, HR_X);
-const uy = useTrack(t, HR_Y);
-const drawn = useTrack(t, HR_DRAW);
-const callout = useTrack(t, HR_CALLOUT, linear);
-const step = useStep(t, HR_ARRIVE); // hilltops confirmed (0–3), 4 = at the square
-const chevrons = HR_PTS.slice(1).map((p, i) => ({ at: lerpPt(HR_PTS[i], p, 0.5), rot: angleDeg(HR_PTS[i], p) }));
-return (
- <svg viewBox="0 0 100 75" className="w-full h-full" preserveAspectRatio="xMidYMid meet" role="img" aria-label={label}>
- <PaperTile>
- <ContourTexture paths={HR_CONTOURS} />
- </PaperTile>
-
- {/* Relief — three papercut hilltops */}
- {HR_HILLS.map((h) => (
- <PaperHill key={h.label} x={h.x} y={h.y} />
- ))}
-
- {/* Land cover — a village: houses around an open central square */}
- <rect x="12.4" y="16.1" width="9.2" height="6.8" rx="1.4" className="fill-paper-bright" stroke={PAPER.rim} strokeWidth="0.35" strokeDasharray="1 0.7" />
- {HR_HOUSES.map(([x, y], i) => (
- <PaperHouse key={i} x={x} y={y} />
- ))}
-
- {/* The planned route (dashed) → the part already walked (solid) */}
- <path d={HR_ROUTE} fill="none" className="stroke-accent" strokeOpacity={0.6} strokeWidth="0.7" strokeDasharray="1.6 1.2" strokeLinecap="round" strokeLinejoin="round" />
- <motion.path d={HR_ROUTE} fill="none" className="stroke-accent" strokeOpacity={0.22} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ pathLength: drawn }} />
- <motion.path d={HR_ROUTE} fill="none" className="stroke-accent" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ pathLength: drawn }} />
- {chevrons.map((c, i) => (
- <Chevron key={i} at={c.at} rot={c.rot} />
- ))}
-
- {/* Checkpoints on each hilltop — "I am here" */}
- {HR_HILLS.map((h, i) => (
- <Checkpoint key={h.label} x={h.x} y={h.y} confirmed={step > i} animated={!reduce} />
- ))}
-
- {/* Labels — below each feature, clear of the route */}
- {HR_HILLS.map((h) => (
- <text key={h.label} x={h.x} y={h.y + 11} textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8" {...HALO}>{h.label}</text>
- ))}
- <text x="44" y="59" textAnchor="middle" fill={PAPER.g3} className="font-display font-bold" fontSize="3.1" {...HALO}>תבליט: שלוש כיפות</text>
- <text x={HR_B.x} y="9.7" textAnchor="middle" className="fill-tanline-badge font-display font-bold" fontSize="3" {...HALO}>תכסית: כפר</text>
- <text x="16" y="33.3" textAnchor="middle" className="fill-accent-hot font-display font-bold" fontSize="2.8" {...HALO}>כיכר מרכזית (B)</text>
-
- {/* Start (A) */}
- <StartDot {...HR_A} />
- <text x={HR_A.x} y={HR_A.y + 6} textAnchor="middle" className="fill-accent-cool font-display font-bold" fontSize="3.2" {...HALO}>A</text>
-
- {/* Destination (B) — the village's central square */}
- <TargetMark {...HR_B} pulse={step === 4 && !reduce} />
-
- {/* The force */}
- <UnitPuck x={ux} y={uy} />
- {!reduce && (
- <motion.g style={{ x: ux, y: uy, opacity: callout }} aria-hidden>
- <path d="M2.4 -3.1 L4 -4.6 L5.6 -4.6 Z" fill="#ffffff" className="stroke-accent" strokeWidth="0.3" strokeLinejoin="round" />
- <rect x="2.4" y="-9.4" width="12.8" height="4.8" rx="2.4" fill="#ffffff" className="stroke-accent" strokeWidth="0.35" />
- <text x="8.8" y="-5.9" textAnchor="middle" className="fill-fg font-display font-bold" fontSize="2.8">אני כאן</text>
- </motion.g>
- )}
- </svg>
- );
+);
 }
 
 /* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════

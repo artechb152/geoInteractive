@@ -1,27 +1,23 @@
-# Asset manifest — datum field challenge
+# Asset manifest — datum field activity
 
-Screen: topic-02 `#scene-coordinates` → "הדמיה: מה קורה כשהדאטום לא תואם?" (the find-and-fix task).
-Brief: `design/docs/datum-field-challenge-claude-prompt-2026-10-11.txt` · mockup (composition only): `design/mockups/topic-02-datum-shift-2026-10-11/mockup-field-challenge.png`.
-Code: `src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx` loads these files from `${NEXT_PUBLIC_BASE_PATH}/assets/lessons/topic02/datum-field-challenge/`.
-
-One Cycles render, one fixed camera (55° elevation, 4° azimuth), 25:14. Nothing is burnt in: every marker, line, label and selection is live HTML/SVG, placed through `datumFieldProjection.ts` with the camera matrix the render wrote to `datumFieldTerrain.data.ts`.
+Screen: topic-02 `#scene-coordinates` → "הדמיה: מה קורה כשהדאטום לא תואם?" (three stages on one map).
+Brief: `design/docs/datum-field-challenge-followup-claude-2026-10-12.txt` (replaces the diorama task of 2026-10-11) · screen card: `design/docs/datum-field-challenge-screen-card-2026-10-12.md`.
+Code: `src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx` loads `field-map.webp` from `${NEXT_PUBLIC_BASE_PATH}/assets/lessons/topic02/datum-field-challenge/`.
 
 | File | What it depicts | Size (px) | Format | Shown in |
 | --- | --- | --- | --- | --- |
-| `terrain-base.webp` | The whole diorama: pale limestone hills under sparse garrigue, a wadi with a narrow stream, a small stone bridge over it (centre), a dirt-road crossroads on a terrace (left), a rocky summit at the head of a ridge (right), thin brown contours every 10 m that follow the ground, a pale cut base and a contact shadow | 2000 × 1120 | webp (alpha) | the picture box (scaled uniformly) |
-| `thumb-bridge.webp` | Crop of the same render: the bridge, its stretch of stream and the road across it | 640 × 360 | webp | the "גשר" card |
-| `thumb-junction.webp` | Crop: the crossroads and its four arms | 640 × 360 | webp | the "צומת" card |
-| `thumb-summit.webp` | Crop: the summit, its slope and contours | 640 × 360 | webp | the "פסגה" card |
+| `field-map.webp` | A straight-down illustrated map of E 960–1300 × N 552–962 m (ground metres = datum A), 3.5 px per metre on both axes, north up: a low valley with a stream meandering north → south and its pale gravel bed, bushes along the banks, garrigue on gentle slopes, pale stone on the hill tops, a soft hillshade lit from the north-west; the main dirt road west → east over a bridge at E 1200 · N 800 and through a crossroads at E 1090 · N 760 (tracks to the north and the south) | 1190 × 1435 | webp | the map box, scaled uniformly |
 
-Total ≈ 350 KB. The thumbnails are 520 × 293 windows of the frame around each landmark's projected anchor (from the 2× master), never separate renders; there is no "after the fix" image, because the ground does not change.
+Nothing is burnt in: the grid, its margin values, the markers, the distance line, every label and number are live HTML/SVG, placed by `datumFieldProjection.ts` (x = (E − 960) / 340, y = (962 − N) / 410 of the box).
 
-Palette (illustration only, `design/docs/design-spec.md` §3 / `referenceBodiesStyle.ts`): olive #6E7A4E / #55613C / #8A9163, water #7FB4C6 (the stream only), base #E8DCC4 / #C9B892, contours #8A6F4D — and natural mixes of them. Textures from `public/assets/lessons/topic02/contour-mountain/textures/` (light and shade only, read-only).
+Palette: the site's tokens (`tailwind.config.ts`) and the approved illustration palette (`design/docs/design-spec.md` §3): olive #8A9163 / #6E7A4E / #55613C, papercut cream #E8DCC4, base rim #C9B892, and the lessons' water #7FB4C6 only (with deeper and paler steps at the same hue and saturation), plus mixes. The build checks every colour against those two files.
 
-Produced by:
+Produced by (deterministic, a 2D height grid shaded like a map's relief — no 3D model):
 
 ```
-"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" --background --python scripts/blender/render_datum_field.py   # DF_SS=2 for the 2× master
-node scripts/blender/package_datum_field.cjs
+node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/maps/build-datum-field-map.mjs
 ```
 
-The render script reads the JSON block in `datumField.data.ts` (landmarks, shift, footprint) and builds the ground so each landmark stands exactly at its datum-A coordinates. It also writes `datumFieldTerrain.data.ts`: the camera matrix and, per landmark, the ground (or deck) height along the path from its displaced point to the landmark, with what the camera sees of it. It fails if the summit is not the model's highest point or if the camera cannot see a landmark or its displaced point. Any change to the landmarks or the shift needs a re-render; `scripts/qa/datum-field-challenge.test.mjs` fails when the render's data and the landmark data disagree.
+The script reads `MAP`, `TERRAIN` and `PLACES` from `datumField.data.ts`, so the bridge and the crossroads are drawn on the exercise's own numbers. Any change to `MAP` or `TERRAIN` needs a rebuild; `scripts/qa/datum-field-challenge.test.mjs` checks the picture's size against `MAP` and that the stream and the road pass through the bridge and the roads through the junction.
+
+Removed with this version (in git history, `e7f2e42`): the Cycles diorama `terrain-base.webp`, its three thumbnails, `datumFieldTerrain.data.ts`, `scripts/blender/render_datum_field.py` and `scripts/blender/package_datum_field.cjs`.

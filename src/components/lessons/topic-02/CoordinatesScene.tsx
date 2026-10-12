@@ -5,9 +5,10 @@ import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
 import { L } from './Ltr';
 import { ELL_SIDE, ELL_START, ELL_TOP, clampElev, sameEll, wrap, type EllView } from './ellipsoidView';
-import { MeasurementIllustration, type IllustrationLabels } from './MeasurementIllustration';
-import { illustrationSplit } from './measurementLayout';
-import { LAND_START, clampLand, sameView, type LandView } from './measurementView';
+import { MeasurementIllustration, type IllustrationLabels, type ZoomPhase } from './MeasurementIllustration';
+import { useLandscapeSource } from './MeasurementLandscape';
+import { LAND_STARTS, MODEL_ZOOM, clampLand, nearView, sameView, type LandTab, type LandView } from './measurementView';
+import { ResetViewButton, ViewButton } from './StageControls';
 import { useTween } from './viewControls';
 import { MeasurementPanel, StationRow } from './MeasurementPanel';
 import type { BodyTab } from './MeasurementSection';
@@ -16,6 +17,7 @@ import { initialMission, missionReducer, solvedSet } from './measurementMission'
 import { C_ELL, C_GEO, C_H } from './referenceBodiesStyle';
 import { DatumGuided } from './datum/DatumGuided';
 import { DatumFieldChallenge } from './datum-field/DatumFieldChallenge';
+import { CoordinatesDefinitions } from './CoordinatesDefinitions';
 
 /* ─────────── קואורדינטות 1 — גיאודזיה, גופי ייחוס ודאטום ───────────
    Content source: ONLY the deck "מבוא לגיאודזיה חלק א׳" (project root) —
@@ -23,7 +25,7 @@ import { DatumFieldChallenge } from './datum-field/DatumFieldChallenge';
    ellipsoid · 10–12 geoid · 13–14 undulation (H = h − N is printed in the
    slide-14 figure) · 15–20 datum (7 parameters, global vs local, the
    "cork must fit its bottle" note). The datum-shift simulation further down
-   (datum-field/DatumFieldChallenge) keeps the previous version's wording.
+   (datum-field/DatumFieldChallenge) is a three-stage map activity (brief 2026-10-12).
    Part ב׳ of the deck lives in CoordinatesPart2Scene. */
 
 export function CoordinatesScene() {
@@ -36,7 +38,7 @@ export function CoordinatesScene() {
         intro="לפני שמגדירים קואורדינטות, צריך להגדיר את הגוף שעליו מודדים. בחלק זה נכיר את הגיאודזיה, את גופי הייחוס – אליפסואיד וגיאואיד – ואת הדאטום."
       />
 
-      <IntroColumns />
+      <CoordinatesDefinitions />
       <ReferenceBodies />
       <DatumGuided />
       <DatumFieldChallenge />
@@ -47,30 +49,6 @@ export function CoordinatesScene() {
 
 const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
 const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
-
-/* ─────────────────── גיאודזיה · גופי ייחוס (deck slides 3–4) ─────────────────── */
-
-function IntroColumns() {
-  return (
-    <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-12">
-      <div>
-        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">גיאודזיה – תורת המיפוי</h3>
-        <p className="text-base text-fg leading-relaxed text-pretty">
-          <strong className="text-fg">גיאו</strong> – אדמה, <strong className="text-fg">דזיה</strong> – חלוקה. הגיאודזיה היא תחום מדעי העוסק
-          במיפוי ובקביעת מיקום של נקודות ועצמים על פני כדור הארץ.
-        </p>
-      </div>
-      <div>
-        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">גופי ייחוס מרחביים</h3>
-        <p className="text-base text-fg leading-relaxed text-pretty">
-          גופי ייחוס מרחביים הם דרך לתאר את מבנה כדור הארץ באופן גרפי. צורת כדור הארץ מורכבת מאוד – הרים, שקעים וגבעות – ולכן אי אפשר
-          לחלק אותה ולבצע עליה חישובים, כמו מציאת נ״צ. לכן מגדירים <strong className="text-fg">גוף ייחוס מרחבי</strong>: צורה מתמטית
-          קרובה לצורת כדור הארץ, שעליה מגדירים את מערכת הצירים ועל בסיסה עורכים מדידות לצרכים שונים.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────── אליפסואיד · גיאואיד · גליות (deck slides 6–14) ─────────────────── */
 
@@ -85,10 +63,11 @@ const BODY_TABS: { id: BodyTab; label: string; title: string; body: React.ReactN
     id: 'ellipsoid',
     label: 'אליפסואיד',
     title: 'אליפסואיד: גוף ייחוס מתמטי',
-    body: 'אליפסואיד הוא גוף ייחוס מתמטי המתאר בקירוב את צורת כדור הארץ. את צורתו אפשר להבין באמצעות סיבוב אליפסה סביב צירה. גררו את המודל או בחרו מבט מהצד ומלמעלה, ובחנו את הפחיסות בקטבים.',
+    body: 'אליפסואיד הוא גוף ייחוס מתמטי המתאר בקירוב את צורת כדור הארץ. את צורתו אפשר להבין באמצעות סיבוב אליפסה סביב צירה. סובבו את המודל והשוו בין מבט מהצד למבט מלמעלה כדי לבחון את הפחיסות בקטבים.',
     extra: (
       <>
         צורת האליפסואיד נקבעת באמצעות שני פרמטרים: <strong className="text-fg">רדיוס קו המשווה</strong> (<L>a</L>) ו<strong className="text-fg">פחיסות</strong> (<L>f</L>).
+        {' '}הסימון הכתום מציין את האזור שהחתך מתאר.
       </>
     ),
   },
@@ -96,14 +75,14 @@ const BODY_TABS: { id: BodyTab; label: string; title: string; body: React.ReactN
     id: 'geoid',
     label: 'גיאואיד',
     title: 'גיאואיד: משטח הייחוס לגובה',
-    body: 'הגיאואיד הוא משטח שווה פוטנציאל של שדה הכבידה. הוא מתאר בקירוב את פני הים הממוצעים במצב שיווי משקל, ללא השפעת זרמים, גאות ושפל, ואת המשכם מתחת ליבשות.',
-    extra: 'בשונה מהאליפסואיד, צורת הגיאואיד אינה צורה גאומטרית פשוטה. האליפסואיד משמש לחישובי מיקום, מרחק וזווית; הגיאואיד משמש ייחוס לגובה מעל פני הים. פתחו וסגרו את החתך כדי לראות כיצד הגיאואיד ממשיך מתחת ליבשה.',
+    body: 'הגיאואיד הוא משטח ייחוס לגובה, הקרוב לפני הים הממוצעים וממשיך מתחת ליבשות. הוא נקבע לפי שדה הכבידה.',
+    extra: 'בניסוח מדויק יותר, הגיאואיד הוא משטח שווה־פוטנציאל של שדה הכבידה. בשונה מהאליפסואיד, צורתו אינה צורה גאומטרית פשוטה: האליפסואיד משמש לחישובי מיקום, מרחק וזווית, והגיאואיד – ייחוס לגובה מעל פני הים. חשפו את משטחי הייחוס ובחרו תחנה כדי לראות מאיזה משטח נמדד הגובה H.',
   },
   {
     id: 'undulation',
     label: 'גליות וגובה',
     title: 'גליות וגובה: מאיזה משטח מודדים?',
-    body: 'גליות (N) היא הפרש הגובה בין הגיאואיד לאליפסואיד. בחרו תחנה, קראו את הגובה האליפסואידלי (h) ואת הגליות (N), וחשבו את הגובה מעל פני הים (H).',
+    body: 'גליות (N) היא הפרש הגובה בין הגיאואיד לאליפסואיד. בחרו תחנה וחשבו את הגובה מעל פני הים (H) לפי נתוני הגובה האליפסואידלי (h) והגליות (N).',
   },
 ];
 
@@ -111,7 +90,7 @@ const BODY_TABS: { id: BodyTab; label: string; title: string; body: React.ReactN
 const SECTION_LABELS: Record<BodyTab, string> = {
   surface: 'חתך: יבשה עם הרים ואוקיינוס. פני השטח אינם חלקים.',
   ellipsoid: 'חתך: האליפסואיד מסומן כקשת חלקה ירוקה מתחת לפני השטח.',
-  geoid: 'חתך: הגיאואיד מסומן כקו גלי חום, החופף לפני הים באוקיינוס.',
+  geoid: 'חתך: הגיאואיד מסומן כקו גלי חום, החופף לפני הים באוקיינוס וממשיך מתחת ליבשה. בתחנה הנבחרת חץ כחול – הגובה H, הנמדד מהגיאואיד.',
   undulation: 'חתך: נקודה על פני השטח. חץ כחול – גובה אורתומטרי H מעל הגיאואיד; חץ ירוק – גובה אליפסואידלי h מעל האליפסואיד; חץ חום – גליות N בין הגיאואיד לאליפסואיד.',
 };
 const LABELS: IllustrationLabels = {
@@ -120,85 +99,95 @@ const LABELS: IllustrationLabels = {
   section: '',
   ellipsoid: 'אליפסואיד: גוף חלק ופחוס מעט בקטבים, עם קווי אורך ורוחב, הרדיוס a והפחיסות f. גררו או השתמשו בחצים כדי לסובב.',
   turn: 'גררו או השתמשו בחצים כדי לסובב.',
-  hint: 'גררו כדי לסובב',
   ellipsoidNote: 'הפחיסות הוגדלה לצורך ההמחשה',
+  clearNote: 'הקרקע שקופה כדי להציג את משטחי הייחוס שמתחתיה.',
+  geoidName: 'גיאואיד — משטח הייחוס לגובה',
+  modelLoading: 'המודל התלת־ממדי נטען. בינתיים מוצגת תמונה של הדגם.',
+  modelLost: 'התצוגה התלת־ממדית נקטעה. מוצגת תמונה קבועה של הדגם.',
+  modelFailed: 'לא ניתן לטעון את המודל התלת־ממדי. מוצגת תמונה קבועה של הדגם.',
+  noWebgl: 'הדפדפן אינו מציג תלת־ממד. מוצגת תמונה קבועה של הדגם.',
+  retry: 'ניסיון נוסף',
 };
 
 /* ── One screen ──
-   The activity card fits the screen under the site's fixed header: the
-   illustration column takes the height that is left (between a readable floor
-   and the task view's design height at 1440 × 1122), and every view shares it,
-   so switching views never changes the card's height. The text column widens
-   on shorter screens — there the model is framed by the stage's height, so the
-   width it gives up costs nothing — and the task form then fits one row. */
+   The activity card fits the screen under the site's fixed header: the two
+   figures take the height that is left once the active view's own text, the
+   captions and (in the task) the answer strip are counted — between a readable
+   floor and a ceiling past which the models would only gain empty paper. Only
+   the active view's text takes room, so no view carries another's height. */
 const SCREEN_GAP = 12;
-const ILL_H = { min: 520, max: 695 } as const;
-const TEXT_W = { min: 346, max: 440 } as const;
-/** From this text-column width the task form fits on one row. */
-const COMPACT_FROM = 420;
+const VIEW_H = { min: 200, max: 290, stacked: 290 } as const;
 const clampTo = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-function useScreenFit(cardRef: React.RefObject<HTMLDivElement | null>, panelRef: React.RefObject<HTMLDivElement | null>) {
-  const [fit, setFit] = useState({ on: false, ill: ILL_H.max as number, textW: TEXT_W.min as number });
+function useScreenFit(cardRef: React.RefObject<HTMLDivElement | null>) {
+  const [views, setViews] = useState<number>(VIEW_H.max);
+  const cur = useRef(views);
+  cur.current = views;
   useEffect(() => {
     const card = cardRef.current;
-    const panel = panelRef.current;
-    if (!card || !panel) return;
+    if (!card) return;
     const measure = () => {
       if (window.innerWidth < 1024) {
-        setFit((f) => (f.on ? { ...f, on: false } : f));
+        setViews(VIEW_H.stacked);
         return;
       }
       const header = document.querySelector('header.fixed')?.getBoundingClientRect().height ?? 0;
-      const chrome = card.getBoundingClientRect().height - panel.getBoundingClientRect().height;
-      const ill = clampTo(Math.floor(window.innerHeight - header - 2 * SCREEN_GAP - chrome), ILL_H.min, ILL_H.max);
-      // the width that frames the model at the task view's stage height (its legend ≈ 104 px), ps-7 included
-      const { stage } = illustrationSplit(ill, true, 104);
-      const textW = clampTo(Math.round(panel.getBoundingClientRect().width - (stage * 1.85 + 28)), TEXT_W.min, TEXT_W.max);
-      setFit((f) => (f.on && f.ill === ill && f.textW === textW ? f : { on: true, ill, textW }));
+      const chrome = card.getBoundingClientRect().height - cur.current;
+      const next = clampTo(Math.floor(window.innerHeight - header - 2 * SCREEN_GAP - chrome), VIEW_H.min, VIEW_H.max);
+      if (next !== cur.current) setViews(next);
     };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(panel);
+    ro.observe(card);
     window.addEventListener('resize', measure);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [cardRef, panelRef]);
-  return fit;
+  }, [cardRef]);
+  return views;
 }
 
+const isLandTab = (t: BodyTab): t is LandTab => t !== 'ellipsoid';
 const lerpLand = (a: LandView, b: LandView, t: number): LandView => ({ az: a.az + (b.az - a.az) * t, elev: a.elev + (b.elev - a.elev) * t });
 const lerpEll = (a: EllView, b: EllView, t: number): EllView => ({ az: a.az + wrap(b.az - a.az) * t, elev: a.elev + (b.elev - a.elev) * t });
+/** How long the enlargement takes to grow out of the body before the section is linked to it (ms). */
+const ZOOM_MS = 950;
 
-/* The four layer views around one measurement mission (mockup
-   design/mockups/topic-02-geodesy/03-measurement-mission-v2.png). Every view
-   splits the same way: text and its controls first in DOM (visual right),
-   the illustration beside it — a stage and the section below. Each view puts
-   a different body on the stage: the landscape, the ellipsoid, the landscape
-   opened along the survey line to show the geoid, the landscape opened with
-   the receiver and the heights at the station. The illustration is one element
-   throughout, so nothing reloads.
-   Shared state: the task, the picked station, the cut, and one view per body
-   (LandView, EllView). A drag, the arrow keys, the ellipsoid's two view
-   buttons and "מבט התחלתי" all move those views; nothing that moves a view
+/* The four layer views around one measurement mission. Every view has the
+   same parts: its title and text across the card, then two figures side by
+   side — the model at inline-start (visual right), the section at inline-end —
+   each under a plain caption with its own controls beside it; the task adds
+   one strip under both. Each view puts a different body on the model: the
+   landscape, the ellipsoid, the landscape with its ground see-through on
+   request, the landscape with the receiver at the station. The model is one
+   element throughout, so nothing reloads.
+   Shared state: the task, the picked station, the reveal, the ellipsoid's
+   enlargement, and the views — the landscape's per view (each opens at its own
+   angle, keeps the reader's angle when they come back, and glides between
+   them the short way round), the ellipsoid's one. A drag, the arrow keys, the
+   view buttons and "מבט התחלתי" move only the views; nothing that moves a view
    touches the task. */
 function ReferenceBodies() {
   const [tab, setTab] = useState<BodyTab>('surface');
   const [mission, dispatch] = useReducer(missionReducer, FIRST_STATION, initialMission);
-  const [cutOpen, setCutOpen] = useState(false);
-  const [land, setLand] = useState<LandView>(LAND_START);
+  const [clear, setClear] = useState(false);
+  const [phase, setPhase] = useState<ZoomPhase>('identify');
+  const [land, setLand] = useState<LandView>(LAND_STARTS.surface);
   const [ell, setEll] = useState<EllView>(ELL_START);
   const landRef = useRef(land);
   landRef.current = land;
   const ellRef = useRef(ell);
   ellRef.current = ell;
+  const saved = useRef<Record<LandTab, LandView>>({ ...LAND_STARTS });
+  const shownLand = useRef<LandTab>('surface');
+  const zoomTimer = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const reduce = !!useReducedMotion();
-  const fit = useScreenFit(cardRef, panelRef);
+  const viewsH = useScreenFit(cardRef);
+  const source = useLandscapeSource();
+  const live = source.mode === '3d' && source.ready;
   const uid = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const tabId = (i: number) => `${uid}-tab-${i}`;
@@ -208,10 +197,10 @@ function ReferenceBodies() {
   const active = BODY_TABS[idx];
   const select = (id: StationId) => dispatch({ type: 'select', id });
 
-  const landTween = useTween(useCallback(() => landRef.current, []), setLand, lerpLand, reduce);
+  const { to: landTo, stop: landStop } = useTween(useCallback(() => landRef.current, []), setLand, lerpLand, reduce);
   const ellTween = useTween(useCallback(() => ellRef.current, []), setEll, lerpEll, reduce);
   const turnLand = (round: number, tilt: number) => {
-    landTween.stop();
+    landStop();
     setLand((v) => clampLand({ az: v.az - round, elev: v.elev + tilt }));
   };
   const turnEll = (round: number, tilt: number) => {
@@ -220,20 +209,49 @@ function ReferenceBodies() {
   };
   const ellTo = (elev: number) => ellTween.to({ elev, az: ellRef.current.az });
 
-  // Entering the geoid view opens the slab once the swap has settled — the reveal is the
-  // transition (at once under reduced motion); the button closes and reopens it.
+  // The wheel over a model zooms it, each body on its own; "מבט התחלתי" takes it back to 1.
+  const [zoom, setZoom] = useState<Record<'land' | 'ell', number>>({ land: 1, ell: 1 });
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const wheelZoom = useCallback((body: 'land' | 'ell', factor: number) => {
+    const from = zoomRef.current[body];
+    const to = Math.min(MODEL_ZOOM[1], Math.max(MODEL_ZOOM[0], from * factor));
+    if (Math.abs(to - from) < 1e-4) return;
+    zoomRef.current = { ...zoomRef.current, [body]: to };
+    setZoom(zoomRef.current);
+  }, []);
+  const unzoom = (body: 'land' | 'ell') => setZoom((z) => ({ ...z, [body]: 1 }));
+
+  // Each landscape view keeps its own angle: leaving one stores where the reader left it,
+  // entering one glides there (its opening angle the first time) the short way round.
   useEffect(() => {
-    if (tab !== 'geoid') {
-      setCutOpen(false);
-      return;
-    }
+    if (!isLandTab(tab) || shownLand.current === tab) return;
+    saved.current[shownLand.current] = landRef.current;
+    shownLand.current = tab;
+    landTo(nearView(landRef.current, saved.current[tab]));
+  }, [tab, landTo]);
+
+  // The geoid view always opens on the solid ground; the reveal is the reader's own step.
+  useEffect(() => {
+    if (tab !== 'geoid') setClear(false);
+  }, [tab]);
+
+  // The enlargement: one click grows it out of the body and then links the section to it;
+  // "back" from anywhere in between returns to the plain section at once.
+  const zoomIn = () => {
+    window.clearTimeout(zoomTimer.current);
     if (reduce) {
-      setCutOpen(true);
+      setPhase('linked');
       return;
     }
-    const t = window.setTimeout(() => setCutOpen(true), 450);
-    return () => window.clearTimeout(t);
-  }, [tab, reduce]);
+    setPhase('zooming');
+    zoomTimer.current = window.setTimeout(() => setPhase('linked'), ZOOM_MS);
+  };
+  const zoomOut = () => {
+    window.clearTimeout(zoomTimer.current);
+    setPhase('identify');
+  };
+  useEffect(() => () => window.clearTimeout(zoomTimer.current), []);
 
   // Tabs: ←/→ step through the views (RTL: ← = next), Home/End jump; focus follows.
   const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -258,55 +276,69 @@ function ReferenceBodies() {
     </div>
   );
 
-  // Each explanation view's own control, under its text.
-  const controls: Partial<Record<BodyTab, React.ReactNode>> = {
-    surface: <StationRow id={mission.station} solved={NONE_SOLVED} onSelect={select} />,
+  const landStart = isLandTab(tab) ? LAND_STARTS[tab] : LAND_STARTS.surface;
+  const resetLand = live && (
+    <ResetViewButton
+      atStart={sameView(land, landStart) && zoom.land === 1}
+      onReset={() => {
+        unzoom('land');
+        landTo(nearView(landRef.current, landStart));
+      }}
+    />
+  );
+  // Each view's controls, beside the figure they work on.
+  const modelControls: Record<BodyTab, React.ReactNode> = {
+    surface: (
+      <>
+        <StationRow id={mission.station} solved={NONE_SOLVED} onSelect={select} />
+        {resetLand}
+      </>
+    ),
     ellipsoid: (
-      <div role="group" aria-label="מבט על האליפסואיד" className="flex gap-2">
-        {(
-          [
-            [ELL_SIDE, 'מהצד'],
-            [ELL_TOP, 'מלמעלה'],
-          ] as const
-        ).map(([elev, text]) => (
-          <ToggleButton key={elev} pressed={Math.abs(ell.elev - elev) < 0.5} onClick={() => ellTo(elev)}>
-            {text}
-          </ToggleButton>
-        ))}
-      </div>
+      <>
+        <div role="group" aria-label="מבט על האליפסואיד" className="flex gap-2">
+          {(
+            [
+              [ELL_SIDE, 'מהצד'],
+              [ELL_TOP, 'מלמעלה'],
+            ] as const
+          ).map(([elev, text]) => (
+            <ViewButton key={elev} pressed={Math.abs(ell.elev - elev) < 0.5} onClick={() => ellTo(elev)}>
+              {text}
+            </ViewButton>
+          ))}
+        </div>
+        <ResetViewButton
+          atStart={sameEll(ell, ELL_START) && zoom.ell === 1}
+          onReset={() => {
+            unzoom('ell');
+            ellTween.to({ elev: ELL_START.elev, az: ell.az + wrap(ELL_START.az - ell.az) });
+          }}
+        />
+      </>
     ),
     geoid: (
-      <ToggleButton pressed={cutOpen} onClick={() => setCutOpen((o) => !o)}>
-        פתיחת חתך
-      </ToggleButton>
+      <>
+        <ViewButton onClick={() => setClear((c) => !c)}>{clear ? 'החזרת פני השטח' : 'חשיפת משטחי הייחוס'}</ViewButton>
+        <StationRow id={mission.station} solved={NONE_SOLVED} onSelect={select} compact />
+        {resetLand}
+      </>
+    ),
+    undulation: (
+      <>
+        <StationRow id={mission.station} solved={solvedSet(mission)} onSelect={select} />
+        {resetLand}
+      </>
     ),
   };
-
-  const legend = (
-    <div>
-      <p className="text-center text-sm text-fg-muted">השוו בין חצי הגובה בחתך לבין נתוני התחנה שנבחרה.</p>
-      <ul className="mt-2 space-y-1 text-base leading-relaxed text-black">
-        <li className="flex gap-2">
-          <span aria-hidden className="mt-2 inline-block size-2.5 shrink-0 rounded-full" style={{ background: C_H }} />
-          <span>
-            <strong>גובה אורתומטרי (<L>H</L>)</strong> – הגובה מעל פני הים (הגיאואיד).
-          </span>
-        </li>
-        <li className="flex gap-2">
-          <span aria-hidden className="mt-2 inline-block size-2.5 shrink-0 rounded-full" style={{ background: C_ELL }} />
-          <span>
-            <strong>גובה אליפסואידלי (<L>h</L>)</strong> – הגובה מעל האליפסואיד.
-          </span>
-        </li>
-        <li className="flex gap-2">
-          <span aria-hidden className="mt-2 inline-block size-2.5 shrink-0 rounded-full" style={{ background: C_GEO }} />
-          <span>
-            <strong>גליות (<L>N</L>)</strong> – הפרש הגובה בין הגיאואיד לאליפסואיד.
-          </span>
-        </li>
-      </ul>
-    </div>
-  );
+  const sectionControls =
+    tab === 'ellipsoid' ? (
+      phase === 'identify' ? (
+        <ViewButton onClick={zoomIn}>הגדלת האזור</ViewButton>
+      ) : (
+        <ViewButton onClick={zoomOut}>חזרה למבט הכללי</ViewButton>
+      )
+    ) : undefined;
 
   return (
     <div className="my-10">
@@ -318,7 +350,7 @@ function ReferenceBodies() {
       </p>
 
       <div ref={cardRef} className="surface-elevated p-6 lg:p-8">
-        <div role="tablist" aria-label="שכבות החתך" onKeyDown={onTabKey} className="mb-6 flex gap-2">
+        <div role="tablist" aria-label="שכבות החתך" onKeyDown={onTabKey} className="mb-4 flex gap-2">
           {BODY_TABS.map((b, i) => (
             <button
               key={b.id}
@@ -342,55 +374,48 @@ function ReferenceBodies() {
           ))}
         </div>
 
-        <div
-          ref={panelRef}
-          role="tabpanel"
-          id={panelId}
-          aria-labelledby={tabId(idx)}
-          className="grid items-start gap-6 lg:grid-cols-[var(--mm-text)_minmax(0,1fr)] lg:gap-0"
-          style={{ ['--mm-text' as string]: `${fit.textW}px` }}
-        >
-          {/* text and its controls — inline-start (visual right); only the view's own text takes room */}
+        <div role="tabpanel" id={panelId} aria-labelledby={tabId(idx)}>
+          {/* the view's own text, across the card */}
           <motion.div
             key={tab}
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: reduce ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="min-w-0 lg:pe-7"
+            className="mb-4"
           >
-            <h4 className="font-display font-bold leading-tight text-black text-base md:text-lg mb-2">{active.title}</h4>
+            <h4 className="font-display font-bold leading-tight text-black text-base md:text-lg mb-1">{active.title}</h4>
             <p className="text-base leading-relaxed text-black text-pretty">{active.body}</p>
-            {active.extra && <p className="mt-2 text-base leading-relaxed text-black text-pretty">{active.extra}</p>}
-            {isMission ? (
-              <div className="mt-4 border-t border-border-subtle pt-4">
-                <MeasurementPanel state={mission} dispatch={dispatch} formula={formula} inputRef={inputRef} compact={fit.on && fit.textW >= COMPACT_FROM} />
-              </div>
-            ) : (
-              controls[tab] && <div className="mt-4 border-t border-border-subtle pt-4">{controls[tab]}</div>
-            )}
+            {active.extra && <p className="mt-1.5 text-base leading-relaxed text-black text-pretty">{active.extra}</p>}
           </motion.div>
 
-          {/* illustration — inline-end (visual left) */}
-          <div className="min-w-0 lg:border-s lg:border-border-subtle lg:ps-7">
-            <MeasurementIllustration
-              tab={tab}
-              station={mission.station}
-              solved={solvedSet(mission)}
-              onSelect={select}
-              cutOpen={cutOpen}
-              land={land}
-              onLandTurn={turnLand}
-              onLandReset={() => landTween.to(LAND_START)}
-              landAtStart={sameView(land, LAND_START)}
-              ell={ell}
-              onEllTurn={turnEll}
-              onEllReset={() => ellTween.to({ elev: ELL_START.elev, az: ell.az + wrap(ELL_START.az - ell.az) })}
-              ellAtStart={sameEll(ell, ELL_START)}
-              height={fit.ill}
-              footer={isMission ? legend : undefined}
-              labels={{ ...LABELS, section: SECTION_LABELS[tab] }}
-            />
-          </div>
+          <MeasurementIllustration
+            tab={tab}
+            station={mission.station}
+            solved={solvedSet(mission)}
+            onSelect={select}
+            clear={clear}
+            source={source}
+            land={land}
+            onLandTurn={turnLand}
+            ell={ell}
+            onEllTurn={turnEll}
+            landZoom={zoom.land}
+            ellZoom={zoom.ell}
+            onWheelZoom={wheelZoom}
+            phase={phase}
+            onZoom={zoomIn}
+            height={viewsH}
+            modelControls={modelControls[tab]}
+            sectionControls={sectionControls}
+            reduce={reduce}
+            labels={{ ...LABELS, section: SECTION_LABELS[tab] }}
+          />
+
+          {isMission && (
+            <div className="mt-4 border-t border-border-subtle pt-3">
+              <MeasurementPanel state={mission} dispatch={dispatch} formula={formula} inputRef={inputRef} />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -398,23 +423,6 @@ function ReferenceBodies() {
 }
 
 const NONE_SOLVED: ReadonlySet<StationId> = new Set();
-
-/** A view control: the tabs' own button style, pressed while its state is on. */
-function ToggleButton({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={onClick}
-      className={cn(
-        'rounded-xl border px-4 py-2 font-display text-sm font-bold text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-        pressed ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-      )}
-    >
-      {children}
-    </button>
-  );
-}
 
 /* ─────────────────── סיכום (deck slides 3–20 + deck ב׳ slide 21) ─────────────────── */
 

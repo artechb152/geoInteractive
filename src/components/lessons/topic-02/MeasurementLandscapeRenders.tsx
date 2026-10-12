@@ -1,141 +1,102 @@
 'use client';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { LANDSCAPE_LAYERS } from './measurementLandscapeLayers.data';
+import { MEASUREMENT_FALLBACK as FB } from './measurementFallback.data';
 import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
-import { LANDSCAPE_ASPECT, STATION_IDS, cutFaceLines, project, stationPins, stationRing, surveyLinePath, type Vec3 } from './measurementLayout';
-import type { StationId } from './measurementMission.data';
-import { DiagramChip, type BodyTab } from './MeasurementSection';
-import { C_ACCENT, C_ELL, C_GEO, C_INK } from './referenceBodiesStyle';
+import { STATION_IDS, SURVEY_SPAN, displayed, geoidZ, groundZ, stationWorld, undulationAt, type Pt, type Vec3 } from './measurementLayout';
+import { C_GEO, C_H } from './referenceBodiesStyle';
+import { STATIONS, type StationId } from './measurementMission.data';
+import type { BodyTab } from './MeasurementSection';
+import { LAND_START, hiddenBy, landCamera, livePins, projectWith, type HeightGrid } from './measurementView';
 
 const BASE = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/reference-assets/measurement-mission`;
-type LayerId = keyof typeof LANDSCAPE_LAYERS;
-/** Overlay drawing space = the render frame; strokes keep their CSS width at any size. */
-const FRAME = { w: L.image.w, h: L.image.h };
-const SURVEY_LINE = surveyLinePath(FRAME);
-const FACE = cutFaceLines(FRAME);
-const RINGS = Object.fromEntries(STATION_IDS.map((id) => [id, stationRing(id, FRAME)])) as Record<StationId, string>;
 /** The surface view names what the text names: mountains, a wadi, the sea (words from its own sentence). */
 const PLACES: { at: Vec3; name: string }[] = [
-  { at: L.features.ridge, name: 'הרים' },
-  { at: L.features.valley, name: 'גיא' },
-  { at: L.features.sea, name: 'ים' },
+  { at: displayed(L.features.ridge), name: 'הרים' },
+  { at: displayed(L.features.valley), name: 'גיא' },
+  { at: displayed(L.features.sea), name: 'ים' },
 ];
+const SPAN_ENDS: Vec3[] = [SURVEY_SPAN.s0, SURVEY_SPAN.s1].map((s) => {
+  const i = Math.round(s / L.line.step);
+  return [(s - (L.width / 2) * L.mPerUnit) / L.mPerUnit, L.lineY, Math.max(groundZ(L.line.H[i], L.line.N[i]), geoidZ(L.line.N[i])) + 0.006] as Vec3;
+});
+type Still = keyof typeof FB.files;
 
 /**
- * The landscape as the renders show it: real terrain (SRTM) rendered in Cycles
- * as a stack of layers from one fixed camera — the opening view of the
- * turnable model (MeasurementLandscape3D) — with the analytic layer drawn over
- * it from the same camera: survey line, station rings, the lines on the cut
- * face, A/B/C pins. Shown while the model loads, and instead of it where there
- * is no WebGL: then nothing turns, and no turning is offered. Layers
- * cross-fade; the sheets are wiped in when the slab opens.
+ * The landscape without WebGL (and while the model loads): stills of the turnable
+ * model itself in the surface view's profile (scripts/qa/capture-measurement-fallback.mjs
+ * draws them from the same height grid and image), so the fallback is the model's
+ * opening view. Over them, from the same camera solve (landCamera(LAND_START)):
+ * the A/B/C pins, the place names and the survey line's ends. Nothing turns here
+ * and no turning is offered; the geoid view's reveal and the task view's receiver
+ * are stills of their own, cross-faded.
  */
 export function MeasurementLandscapeRenders({
   width,
   tab,
   station,
   solved,
-  cutOpen,
+  clear,
   reduce,
+  grid,
   onSelect,
   label,
+  geoidLabel,
 }: {
   width: number;
   tab: BodyTab;
   station: StationId;
   solved: ReadonlySet<StationId>;
-  cutOpen: boolean;
+  /** The geoid view's reveal: the see-through ground. */
+  clear: boolean;
   reduce: boolean;
+  /** The height grid, when it has loaded: what the ground hides from the profile. */
+  grid: HeightGrid | null;
   onSelect: (id: StationId) => void;
   label: string;
+  /** The geoid's name on the see-through still. */
+  geoidLabel: string;
 }) {
-  const height = Math.round(width / LANDSCAPE_ASPECT);
-  const k = width / L.image.w;
-  const cut = tab === 'geoid' && cutOpen;
+  const height = Math.round((width * FB.frame.h) / FB.frame.w);
+  const size = useMemo(() => ({ w: width, h: height }), [width, height]);
+  // the stills' own camera: the profile, registered with the section as it was when they were taken
+  const cam = useMemo(() => landCamera(LAND_START, size, FB.span ? (FB.span * size.w) / FB.frame.w : undefined), [size]);
   const mission = tab === 'undulation';
-  const picking = tab === 'surface' || mission;
-  const pins = stationPins({ w: width, h: height });
-
-  const shown: Record<LayerId, boolean> = {
-    land: !cut,
-    'land-cut': cut,
-    geoid: tab === 'geoid' && !cut,
-    'geoid-cut': cut,
-    'ellipsoid-cut': cut,
-    'tripod-A': mission && station === 'A',
-    'tripod-B': mission && station === 'B',
-    'tripod-C': mission && station === 'C',
-  };
-  const ease = reduce ? 'none' : undefined;
+  // where a station is picked: the bare surface, the geoid view (from which surface H is measured), the task
+  const picking = tab !== 'ellipsoid';
+  const pins = livePins(cam, size, grid);
+  const seen = (p: Vec3) => !grid || !hiddenBy(grid, p, cam.eye);
+  const shown: Still = mission ? (`task-${station}` as Still) : tab === 'geoid' && clear ? 'clear' : 'land';
 
   return (
     <div className="relative w-full" style={{ height }}>
       <div role="img" aria-label={label} className="absolute inset-0">
-        {(Object.keys(LANDSCAPE_LAYERS) as LayerId[]).map((id) => {
-          const r = LANDSCAPE_LAYERS[id];
-          const sheet = id === 'geoid-cut' || id === 'ellipsoid-cut' || id === 'geoid';
-          const on = shown[id];
-          return (
-            // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
-            <img
-              key={id}
-              src={`${BASE}/${r.file}`}
-              alt=""
-              aria-hidden
-              draggable={false}
-              decoding="async"
-              className="pointer-events-none absolute select-none"
-              style={{
-                left: r.x * k,
-                top: r.y * k,
-                width: r.w * k,
-                height: r.h * k,
-                maxWidth: 'none',
-                opacity: on ? 1 : 0,
-                // the sheets sweep in across the open slab; the land cross-fades under them
-                clipPath: sheet ? (on ? 'inset(0 0 0 0)' : 'inset(0 100% 0 0)') : undefined,
-                transition:
-                  ease ??
-                  (sheet
-                    ? `opacity 380ms ease ${on ? 160 : 0}ms, clip-path 620ms cubic-bezier(0.22,1,0.36,1) ${on ? 160 : 0}ms`
-                    : 'opacity 420ms ease'),
-              }}
-            />
-          );
-        })}
+        {(Object.keys(FB.files) as Still[]).map((id) => (
+          // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
+          <img
+            key={id}
+            src={`${BASE}/${FB.files[id]}`}
+            alt=""
+            aria-hidden
+            draggable={false}
+            decoding="async"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none"
+            style={{ opacity: id === shown ? 1 : 0, transition: reduce ? 'none' : 'opacity 420ms ease' }}
+          />
+        ))}
       </div>
-
-      {/* live analytic layer, in render-frame units */}
-      <svg aria-hidden viewBox={`0 0 ${FRAME.w} ${FRAME.h}`} className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
-        <g className={cn('transition-opacity duration-300 motion-reduce:transition-none', picking ? 'opacity-100' : 'opacity-0')}>
-          <path d={SURVEY_LINE} fill="none" stroke={C_ACCENT} strokeWidth={1.75} strokeDasharray="7 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.9} />
-          {STATION_IDS.map((id) => (
-            <path
-              key={id}
-              d={RINGS[id]}
-              fill={C_ACCENT}
-              fillOpacity={0.16}
-              stroke={C_ACCENT}
-              strokeWidth={2}
-              vectorEffect="non-scaling-stroke"
-              className={cn('transition-opacity duration-200 motion-reduce:transition-none', id === station ? 'opacity-100' : 'opacity-0')}
-            />
-          ))}
-        </g>
-        {/* the cut face is the section along the survey line: the same three lines as below */}
-        <g className={cn('transition-opacity motion-reduce:transition-none', cut ? 'opacity-100 delay-300 duration-500' : 'opacity-0 duration-150')}>
-          <path d={FACE.ellipsoid} fill="none" stroke={C_ELL} strokeWidth={2.5} strokeDasharray="8 5" vectorEffect="non-scaling-stroke" />
-          <path d={FACE.geoid} fill="none" stroke={C_GEO} strokeWidth={4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          <path d={FACE.ground} fill="none" stroke={C_INK} strokeWidth={2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.85} />
-        </g>
-      </svg>
 
       {/* place names on the bare surface */}
       <div aria-hidden className={cn('transition-opacity duration-300 motion-reduce:transition-none', tab === 'surface' ? 'opacity-100' : 'opacity-0')}>
         {PLACES.map(({ at, name }) => {
-          const p = project(at, FRAME);
+          const p = projectWith(cam.matrix, at, size);
           return (
-            <span key={name} className="absolute flex flex-col items-center" style={{ left: p.x * k, top: p.y * k, transform: 'translate(-50%, calc(-100% + 2px))' }}>
+            <span
+              key={name}
+              className="absolute flex flex-col items-center"
+              style={{ left: p.x, top: p.y, transform: 'translate(-50%, calc(-100% + 2px))', opacity: seen(at) ? 1 : 0 }}
+            >
               <span className="rounded-md bg-paper-card/90 px-1.5 py-0.5 font-display text-[13px] font-bold leading-tight text-fg shadow-[0_1px_3px_rgba(40,50,35,0.25)]">{name}</span>
               <span className="h-2.5 w-px bg-fg/70" />
               <span className="-mt-px size-1 rounded-full bg-fg/70" />
@@ -144,17 +105,33 @@ export function MeasurementLandscapeRenders({
         })}
       </div>
 
-      {/* the face's two reference lines, named where they leave the model's left edge */}
-      <div aria-hidden className={cn('transition-opacity motion-reduce:transition-none', cut ? 'opacity-100 delay-300 duration-500' : 'opacity-0 duration-150')}>
-        <DiagramChip color={C_GEO} wide style={{ left: FACE.geoidLeft.x * k + 6, top: FACE.geoidLeft.y * k, transform: 'translate(0, calc(-100% - 3px))' }}>
-          גיאואיד · פני הים
-        </DiagramChip>
-        <DiagramChip color={C_ELL} wide style={{ left: FACE.ellipsoidLeft.x * k + 6, top: FACE.ellipsoidLeft.y * k, transform: 'translate(0, 4px)' }}>
-          אליפסואיד
-        </DiagramChip>
+      {/* the survey line's two ends (the line itself is in the stills) */}
+      <div aria-hidden className="pointer-events-none">
+        {SPAN_ENDS.map((w, i) => {
+          const p = projectWith(cam.matrix, w, size);
+          return (
+            <span
+              key={i}
+              className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-paper-bright bg-accent"
+              style={{ left: p.x, top: p.y, opacity: seen(w) ? 1 : 0 }}
+            />
+          );
+        })}
       </div>
 
-      {/* A/B/C — buttons where a station can be picked, quiet markers on the cut view */}
+      {/* the see-through still: H measured from the geoid at the picked station, and the geoid named, as on the live model */}
+      <GeoidHeight
+        foot={projectWith(cam.matrix, [stationWorld(station)[0], stationWorld(station)[1], geoidZ(STATIONS[station].N)], size)}
+        top={projectWith(cam.matrix, stationWorld(station), size)}
+        shown={tab === 'geoid' && clear}
+        reduce={reduce}
+      />
+      {(() => {
+        const g = projectWith(cam.matrix, GEOID_ANCHOR, size);
+        return <GeoidLabel x={g.x} y={g.y} shown={tab === 'geoid' && clear} text={geoidLabel} />;
+      })()}
+
+      {/* A/B/C — buttons where a station can be picked */}
       <div className="pointer-events-none absolute inset-0">
         {STATION_IDS.map((id) => (
           <StationPin
@@ -162,6 +139,7 @@ export function MeasurementLandscapeRenders({
             id={id}
             x={pins[id].x}
             y={pins[id].y}
+            hidden={pins[id].hidden}
             active={picking && id === station}
             solved={mission && solved.has(id)}
             interactive={picking}
@@ -170,6 +148,67 @@ export function MeasurementLandscapeRenders({
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * Where the geoid's name is anchored: its edge on the model's front face, under the land (between
+ * C and B) — below the ground, where the see-through block holds nothing else.
+ */
+const GEOID_LABEL_X = -2.1;
+export const GEOID_ANCHOR: Vec3 = [GEOID_LABEL_X, -L.depth / 2, geoidZ(undulationAt(GEOID_LABEL_X * L.mPerUnit, (-L.depth / 2) * L.mPerUnit))];
+
+/** The geoid named on the see-through model: a short leader down from its edge under the land to the name. */
+export function GeoidLabel({ x, y, shown, text }: { x: number; y: number; shown: boolean; text: string }) {
+  return (
+    <span
+      aria-hidden
+      data-geoid-label
+      className="pointer-events-none absolute flex flex-col items-center transition-opacity duration-300 motion-reduce:transition-none"
+      style={{ left: x, top: y, transform: 'translate(-50%, -3px)', opacity: shown ? 1 : 0 }}
+    >
+      <span className="size-1.5 rounded-full" style={{ background: C_GEO }} />
+      <span className="h-4 w-px" style={{ background: C_GEO }} />
+      <span
+        className="whitespace-nowrap rounded-md border-[1.5px] bg-paper-card/95 px-1.5 py-0.5 font-display text-[13px] font-bold leading-tight shadow-[0_1px_3px_rgba(40,50,35,0.2)]"
+        style={{ borderColor: C_GEO, color: C_GEO }}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * The geoid view, see-through, with a station picked: H measured from the geoid — a line from the
+ * geoid right under the station up to its ground point, a dot where it leaves the geoid, and its
+ * letter. Projected with the model's (or the stills') camera; it comes in once the geoid has swept
+ * in under the land. Shared by the turnable model's overlay and the stills.
+ */
+export function GeoidHeight({ foot, top, shown, reduce }: { foot: Pt; top: Pt; shown: boolean; reduce: boolean }) {
+  // only on the page while it is shown: no stray letter over the model in the other views
+  if (!shown) return null;
+  return (
+    <motion.div
+      aria-hidden
+      data-geoid-height
+      className="pointer-events-none absolute inset-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: reduce ? 0 : 0.3, delay: reduce ? 0 : 1 }}
+    >
+      <svg className="absolute inset-0 h-full w-full overflow-visible">
+        <line x1={foot.x} y1={foot.y} x2={top.x} y2={top.y} stroke="#FDFBF3" strokeWidth={6} strokeLinecap="round" opacity={0.7} />
+        <line x1={foot.x} y1={foot.y} x2={top.x} y2={top.y} stroke={C_H} strokeWidth={3} strokeLinecap="round" />
+        <circle cx={foot.x} cy={foot.y} r={4} fill={C_H} stroke="#FDFBF3" strokeWidth={1.5} />
+      </svg>
+      <span
+        className="absolute font-display text-base font-bold leading-none"
+        style={{ left: (foot.x + top.x) / 2 + 8, top: (foot.y + top.y) / 2, transform: 'translate(0, -50%)', color: C_H, textShadow: '0 0 3px #FDFBF3, 0 0 3px #FDFBF3' }}
+      >
+        H
+      </span>
+    </motion.div>
   );
 }
 

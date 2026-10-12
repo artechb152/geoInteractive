@@ -1,86 +1,177 @@
 'use client';
-import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
-import { MeasurementLandscapeRenders, StationPin } from './MeasurementLandscapeRenders';
+import { GEOID_ANCHOR, GeoidHeight, GeoidLabel, MeasurementLandscapeRenders, StationPin } from './MeasurementLandscapeRenders';
+import { MEASUREMENT_FALLBACK as FB } from './measurementFallback.data';
 import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
-import { STATION_IDS, geoidZ, undulationAt, type Pt, type Vec3 } from './measurementLayout';
-import { STATIONS, type StationId } from './measurementMission.data';
-import { DiagramChip, type BodyTab } from './MeasurementSection';
-import { FACE_FRONT, MODEL_URLS, faceLabelX, faceSeen, heightGrid, hiddenBy, projectWith, stationArrows, type HeightGrid, type LandCamera, type LivePin, type ModelState } from './measurementView';
-import { C_ELL, C_GEO, C_H } from './referenceBodiesStyle';
-import { StageControls } from './StageControls';
+import { STATION_IDS, SURVEY_SPAN, displayed, geoidZ, groundZ, stationWorld, type Vec3 } from './measurementLayout';
+import { STATIONS } from './measurementMission.data';
+import type { StationId } from './measurementMission.data';
+import type { BodyTab } from './MeasurementSection';
+import { MODEL_URLS, heightGrid, hiddenBy, projectWith, type HeightGrid, type LandCamera, type LivePin, type ModelState } from './measurementView';
 import { arrowTurn, useDragTurn } from './viewControls';
 
-const MeasurementLandscape3D = dynamic(() => import('./MeasurementLandscape3D'), { ssr: false, loading: () => null });
+/**
+ * Where the turnable model stands:
+ *   pending   before the first effect (server render, first paint)
+ *   loading   WebGL is there; the heights, the code, the ground image or the first frame are on their way
+ *   live      the model has drawn a frame with its ground image on it
+ *   lost      the browser took the model's WebGL context away (it may give it back)
+ *   failed    a file or the code did not arrive, or nothing was drawn in time
+ *   no-webgl  this browser cannot draw it
+ * In every state but `live` the stage shows the stills, and nothing offers to turn.
+ */
+export type LandscapeStatus = 'pending' | 'loading' | 'live' | 'lost' | 'failed' | 'no-webgl';
+/** What went wrong, for the QA scripts and the console — the reader sees one plain sentence. */
+export type LandscapeFailure = 'heights' | 'code' | 'image' | 'webgl' | 'timeout';
 
 export type LandscapeSource = {
+  status: LandscapeStatus;
+  failure: LandscapeFailure | null;
   /** 'pending' until WebGL is known; 'renders' without it (or when the model fails). */
   mode: 'pending' | '3d' | 'renders';
   grid: HeightGrid | null;
   /** The model is up and drawn: the overlay moves onto it. */
   ready: boolean;
+  /** Bumped by retry(): the model is built again from scratch (a fresh WebGL context). */
+  attempt: number;
   onReady: () => void;
-  onFail: () => void;
+  onFail: (why: LandscapeFailure) => void;
+  onLost: () => void;
+  retry: () => void;
 };
 
-/** WebGL or not, and the height grid the model and the overlay's hiding test share. */
+/** The heights file has this long to arrive (ms) before the model gives up and the stills stay. */
+const HEIGHTS_TIMEOUT_MS = 15000;
+
+/**
+ * Whether this browser draws WebGL 2 — asked once per page. The probe's context is
+ * given back at once: it would otherwise count against the browser's limit of live
+ * contexts until garbage collection, a few more on every visit to this sub-topic.
+ */
+let webglProbe: boolean | null = null;
+function canDrawWebGL(): boolean {
+  if (webglProbe !== null) return webglProbe;
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    webglProbe = !!gl;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch {
+    webglProbe = false;
+  }
+  return webglProbe;
+}
+
+/**
+ * WebGL or not, the model's status, and the height grid the model and the
+ * overlay's hiding test share (loaded either way: without WebGL it still says
+ * what the ground hides). Every request is aborted when the scene unmounts, and
+ * nothing that answers after that touches the state.
+ */
 export function useLandscapeSource(): LandscapeSource {
-  const [mode, setMode] = useState<LandscapeSource['mode']>('pending');
+  const [status, setStatus] = useState<LandscapeStatus>('pending');
+  const [failure, setFailure] = useState<LandscapeFailure | null>(null);
   const [grid, setGrid] = useState<HeightGrid | null>(null);
-  const [ready, setReady] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
-    let ok = false;
-    try {
-      const c = document.createElement('canvas');
-      ok = !!c.getContext('webgl2');
-    } catch {
-      ok = false;
-    }
-    if (!ok) {
-      setMode('renders');
-      return;
-    }
-    setMode('3d');
+    const webgl = canDrawWebGL();
+    if (webgl) setStatus((s) => (s === 'live' ? s : 'loading'));
+    else setStatus('no-webgl');
+    if (grid) return;
     let live = true;
-    fetch(MODEL_URLS.heights)
-      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => ac.abort(), HEIGHTS_TIMEOUT_MS);
+    fetch(MODEL_URLS.heights, { signal: ac.signal })
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((buf) => live && setGrid(heightGrid(buf)))
-      .catch(() => live && setMode('renders'));
+      .catch((e) => {
+        if (!live) return;
+        console.warn('[measurement] heights did not load:', e?.message ?? e);
+        // without WebGL the stills need nothing more; with it, the model cannot be built
+        if (webgl) {
+          setFailure('heights');
+          setStatus('failed');
+        }
+      })
+      .finally(() => window.clearTimeout(timer));
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+      ac.abort();
+    };
+    // a retry asks again only for what has not arrived
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt]);
+
+  const onReady = useCallback(() => {
+    setFailure(null);
+    setStatus((s) => (s === 'loading' || s === 'lost' ? 'live' : s));
+  }, []);
+  const onFail = useCallback((why: LandscapeFailure) => {
+    console.warn('[measurement] the 3-D model is not shown:', why);
+    setFailure(why);
+    setStatus((s) => (s === 'no-webgl' ? s : 'failed'));
+  }, []);
+  const onLost = useCallback(() => setStatus((s) => (s === 'live' || s === 'loading' ? 'lost' : s)), []);
+  const retry = useCallback(() => {
+    setFailure(null);
+    setStatus('loading');
+    setAttempt((n) => n + 1);
+  }, []);
+
+  const mode: LandscapeSource['mode'] = status === 'pending' ? 'pending' : status === 'loading' || status === 'live' || status === 'lost' ? '3d' : 'renders';
+  return { status, failure, mode, grid, ready: status === 'live', attempt, onReady, onFail, onLost, retry };
+}
+
+type Model3D = (typeof import('./MeasurementLandscape3D'))['default'];
+/** How long the model may take, while its view is on screen, to draw its first frame (ms). */
+const DRAW_TIMEOUT_MS = 20000;
+
+/**
+ * The model's code, fetched on first need and again on a retry (a chunk that failed
+ * to load is requested afresh). A failure is reported, never thrown: the stills stay.
+ */
+function useModel3D(wanted: boolean, attempt: number, onFail: (why: LandscapeFailure) => void) {
+  const [Comp, setComp] = useState<Model3D | null>(null);
+  useEffect(() => {
+    if (!wanted || Comp) return;
+    let live = true;
+    import('./MeasurementLandscape3D')
+      .then((m) => live && setComp(() => m.default))
+      .catch((e) => {
+        console.warn('[measurement] the model code did not load:', e?.message ?? e);
+        if (live) onFail('code');
+      });
     return () => {
       live = false;
     };
-  }, []);
-  const onReady = useCallback(() => setReady(true), []);
-  const onFail = useCallback(() => {
-    setReady(false);
-    setMode('renders');
-  }, []);
-  return { mode, grid, ready, onReady, onFail };
+  }, [wanted, attempt, Comp, onFail]);
+  return Comp;
 }
 
 /** The surface view names what its text names: mountains, a wadi, the sea. */
 const PLACES: { at: Vec3; name: string }[] = [
-  { at: L.features.ridge, name: 'הרים' },
-  { at: L.features.valley, name: 'גיא' },
-  { at: L.features.sea, name: 'ים' },
+  { at: displayed(L.features.ridge), name: 'הרים' },
+  { at: displayed(L.features.valley), name: 'גיא' },
+  { at: displayed(L.features.sea), name: 'ים' },
 ];
-const sideFade = (f: number) => `linear-gradient(to right, transparent 0, #000 ${Math.round(36 * f)}px, #000 calc(100% - ${Math.round(36 * f)}px), transparent 100%)`;
 
-/** The cut face's two reference lines at x (world): where their names go. */
-const faceEnds = (x: number): [Vec3, Vec3] => [
-  [x, L.lineY - FACE_FRONT, geoidZ(undulationAt(x * L.mPerUnit, L.lineY * L.mPerUnit))],
-  [x, L.lineY - FACE_FRONT, 0],
-];
+/** The survey line's two ends over SURVEY_SPAN, on the ground (or the water) — the same anchors as the section's. */
+const SPAN_ENDS: Vec3[] = [SURVEY_SPAN.s0, SURVEY_SPAN.s1].map((s) => {
+  const i = Math.round(s / L.line.step);
+  const H = L.line.H[i];
+  const N = L.line.N[i];
+  return [(s - (L.width / 2) * L.mPerUnit) / L.mPerUnit, L.lineY, Math.max(groundZ(H, N), geoidZ(N)) + 0.006] as Vec3;
+});
 
 /**
  * The landscape stage of the three landscape views. With WebGL it is the
- * turnable model (drag, or the arrow keys once it has focus; "מבט התחלתי"
- * returns to the opening view) with its HTML layer over it — pins, place
- * names, the names on the cut face and the height labels — all placed by the
- * model's own camera. Until the model is up, and wherever there is no WebGL,
- * it is the renders (the same landscape from the opening view), and nothing
- * offers to turn.
+ * turnable model (drag, or the arrow keys once it has focus) with its HTML layer
+ * over it — the station pins, the place names and the survey line's ends — all
+ * placed by the model's own camera. Until the model is up, and wherever there
+ * is no WebGL, it is the renders (the same landscape from the surface view's
+ * profile), and nothing offers to turn.
  */
 export function MeasurementLandscape({
   width,
@@ -88,61 +179,63 @@ export function MeasurementLandscape({
   source,
   cam,
   pins,
-  framing,
   model,
   tab,
   station,
   solved,
-  cutOpen,
   reduce,
   active,
-  atStart,
   onSelect,
   onTurn,
-  onReset,
   label,
   turnLabel,
-  hint,
+  geoidLabel,
 }: {
   width: number;
   height: number;
   source: LandscapeSource;
   cam: LandCamera;
   pins: Record<StationId, LivePin>;
-  /** 0 the whole model … 1 the survey line (the task view). */
-  framing: number;
   model: ModelState;
   tab: BodyTab;
   station: StationId;
   solved: ReadonlySet<StationId>;
-  /** The renders' cut state (the geoid view's toggle). */
-  cutOpen: boolean;
   reduce: boolean;
   /** The landscape is on the stage (not the ellipsoid view). */
   active: boolean;
-  atStart: boolean;
   onSelect: (id: StationId) => void;
   /** Turn by (round, tilt) degrees of the model — round + brings its right side forward. */
   onTurn: (round: number, tilt: number) => void;
-  onReset: () => void;
   /** The landscape's description; and with how to turn it, for the turnable model. */
   label: string;
   turnLabel: string;
-  hint: string;
+  /** The geoid's name on the see-through model. */
+  geoidLabel: string;
 }) {
-  const live = source.mode === '3d' && source.ready;
+  const live = source.status === 'live';
   const size = { w: width, h: height };
+  const building = source.status === 'loading' || source.status === 'live' || source.status === 'lost';
+  const Model3D = useModel3D(building && !!source.grid, source.attempt, source.onFail);
+  // Nothing drawn in time while the landscape is on screen (a file that never answers, a context
+  // that never comes): give up and say so. The clock stops while another view holds the stage,
+  // since no frame can be drawn then.
+  const { status, attempt, onFail } = source;
+  useEffect(() => {
+    if (!active || status !== 'loading') return;
+    const t = window.setTimeout(() => onFail('timeout'), DRAW_TIMEOUT_MS);
+    return () => window.clearTimeout(t);
+  }, [active, status, attempt, onFail]);
   const { dragging, handlers } = useDragTurn((dx, dy) => onTurn(dx * 0.32, dy * 0.28));
   const mission = tab === 'undulation';
-  const picking = tab === 'surface' || mission;
+  // where a station is picked: the bare surface, the geoid view (from which surface H is measured), the task
+  const picking = tab !== 'ellipsoid';
   const at = (p: Vec3) => projectWith(cam.matrix, p, size);
-  const seen = (p: Vec3) => !source.grid || !hiddenBy(source.grid, p, cam.eye, model.open);
-  const face = model.face && faceSeen(cam);
+  const seen = (p: Vec3) => model.clear || !source.grid || !hiddenBy(source.grid, p, cam.eye);
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => arrowTurn(e, onTurn);
 
-  // the renders keep their own proportions, centred in the stage
-  const rw = Math.min(width, Math.round(height * (L.image.w / L.image.h)));
-  const rh = Math.round(rw / (L.image.w / L.image.h));
+  // the stills keep their own proportions, centred in the stage
+  const rw = Math.min(width, Math.round((height * FB.frame.w) / FB.frame.h));
+  const rh = Math.round((rw * FB.frame.h) / FB.frame.w);
 
   return (
     <div
@@ -150,21 +243,23 @@ export function MeasurementLandscape({
       style={{ touchAction: live ? 'pan-y' : undefined }}
       // the state the page shows, for the QA scripts (scripts/qa/shot-measurement-mission.mjs)
       data-landscape={live ? 'live' : source.mode === 'renders' ? 'renders' : 'loading'}
-      data-open={model.open}
-      data-framing={framing.toFixed(2)}
-      data-arrows={model.arrows ?? ''}
+      data-landscape-status={source.status}
+      data-landscape-failure={source.failure ?? ''}
+      data-clear={model.clear}
       data-tripod={model.tripod ?? ''}
       {...(live ? handlers : {})}
     >
       {/* the renders: until the model is drawn, and instead of it without WebGL */}
       {!live && (
         <div className="absolute" style={{ left: (width - rw) / 2, top: (height - rh) / 2, width: rw, height: rh }}>
-          <MeasurementLandscapeRenders width={rw} tab={tab} station={station} solved={solved} cutOpen={cutOpen} reduce={reduce} onSelect={onSelect} label={label} />
+          <MeasurementLandscapeRenders width={rw} tab={tab} station={station} solved={solved} clear={model.clear} reduce={reduce} grid={source.grid} onSelect={onSelect} label={label} geoidLabel={geoidLabel} />
         </div>
       )}
 
-      {source.mode === '3d' && source.grid && (
+      {building && source.grid && Model3D && (
         <div
+          // a retry builds the model again on a fresh canvas
+          key={source.attempt}
           role="img"
           aria-label={turnLabel}
           aria-hidden={!live}
@@ -175,22 +270,16 @@ export function MeasurementLandscape({
             live ? 'opacity-100' : 'opacity-0',
           )}
         >
-          {/* the task view leaves the model's sides out of frame: they fade instead of ending on a cut */}
-          <div
-            className="absolute inset-0"
-            style={framing > 0.01 ? { maskImage: sideFade(framing), WebkitMaskImage: sideFade(framing) } : undefined}
-          >
-          <MeasurementLandscape3D
+          <Model3D
             grid={source.grid}
             cam={cam}
-            height={height}
             state={model}
             reduce={reduce}
             active={active}
             onReady={source.onReady}
             onFail={source.onFail}
+            onLost={source.onLost}
           />
-          </div>
         </div>
       )}
 
@@ -204,7 +293,7 @@ export function MeasurementLandscape({
                 <span
                   key={name}
                   className="pointer-events-none absolute flex flex-col items-center transition-opacity duration-150"
-                  style={{ left: p.x, top: p.y, transform: 'translate(-50%, calc(-100% + 2px))', opacity: seen(w) ? 1 : 0 }}
+                  style={{ left: p.x, top: p.y, transform: 'translate(-50%, calc(-100% + 2px))', opacity: seen(w) && p.ahead ? 1 : 0 }}
                 >
                   <span className="rounded-md bg-paper-card/90 px-1.5 py-0.5 font-display text-[13px] font-bold leading-tight text-fg shadow-[0_1px_3px_rgba(40,50,35,0.25)]">
                     {name}
@@ -216,29 +305,37 @@ export function MeasurementLandscape({
             })}
           </div>
 
-          {/* the cut face's two reference lines, named where they leave the model's left side */}
-          <div aria-hidden className={cn('pointer-events-none transition-opacity motion-reduce:transition-none', face ? 'opacity-100 delay-300 duration-500' : 'opacity-0 duration-150')}>
-            {(() => {
-              const [gw, ew] = faceEnds(faceLabelX(framing));
-              const g = at(gw);
-              const e = at(ew);
-              return (
-                <>
-                  <DiagramChip color={C_GEO} wide style={{ left: g.x + 6, top: g.y, transform: 'translate(0, calc(-100% - 3px))' }}>
-                    גיאואיד · פני הים
-                  </DiagramChip>
-                  <DiagramChip color={C_ELL} wide style={{ left: e.x + 6, top: e.y, transform: 'translate(0, 4px)' }}>
-                    אליפסואיד
-                  </DiagramChip>
-                </>
-              );
-            })()}
-          </div>
+          {/* the survey line's two ends: the same anchors as the section's ends */}
+          {model.survey && (
+            <div aria-hidden className="pointer-events-none">
+              {SPAN_ENDS.map((w, i) => {
+                const p = at(w);
+                return (
+                  <span
+                    key={i}
+                    className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-paper-bright bg-accent transition-opacity duration-150"
+                    style={{ left: p.x, top: p.y, opacity: seen(w) && p.ahead ? 1 : 0 }}
+                  />
+                );
+              })}
+            </div>
+          )}
 
-          {/* the picked station's heights on the cut face */}
-          {mission && model.arrows && <ArrowLabels id={model.arrows} at={at} />}
+          {/* the see-through model names the geoid, at its edge under the land */}
+          {(() => {
+            const g = at(GEOID_ANCHOR);
+            return <GeoidLabel x={g.x} y={g.y} shown={model.clear && g.ahead} text={geoidLabel} />;
+          })()}
 
-          {/* A/B/C — pickable where the view picks stations, quiet markers on the cut view */}
+          {/* H at the picked station, measured from the geoid (the geoid view, see-through) */}
+          <GeoidHeight
+            foot={at([stationWorld(station)[0], stationWorld(station)[1], geoidZ(STATIONS[station].N)])}
+            top={at(stationWorld(station))}
+            shown={!!model.plumb}
+            reduce={reduce}
+          />
+
+          {/* A/B/C — pickable where the view picks stations */}
           <div className="pointer-events-none absolute inset-0">
             {STATION_IDS.map((id) => (
               <StationPin
@@ -254,35 +351,7 @@ export function MeasurementLandscape({
               />
             ))}
           </div>
-
-          <StageControls atStart={atStart} onReset={onReset} hint={hint} />
         </>
-      )}
-    </div>
-  );
-}
-
-/** H, h and N beside their arrows on the cut face (the arrows are in the model). */
-function ArrowLabels({ id, at }: { id: StationId; at: (p: Vec3) => Pt }) {
-  const a = stationArrows(id);
-  const mid = (s: [Vec3, Vec3]) => at([(s[0][0] + s[1][0]) / 2, s[0][1], (s[0][2] + s[1][2]) / 2]);
-  const H = mid(a.H);
-  const h = mid(a.h);
-  const N = mid(a.N);
-  // N is short at true scale: its label sits below H's, never on top of it
-  const nY = Math.max(N.y, H.y + 22);
-  return (
-    <div aria-hidden className="pointer-events-none">
-      <DiagramChip color={C_H} style={{ left: H.x - 6, top: H.y, transform: 'translate(-100%, -50%)' }}>
-        H
-      </DiagramChip>
-      <DiagramChip color={C_ELL} style={{ left: h.x + 6, top: h.y, transform: 'translate(0, -50%)' }}>
-        h
-      </DiagramChip>
-      {STATIONS[id].N !== 0 && (
-        <DiagramChip color={C_GEO} style={{ left: N.x - 6, top: nY, transform: 'translate(-100%, -50%)' }}>
-          N
-        </DiagramChip>
       )}
     </div>
   );

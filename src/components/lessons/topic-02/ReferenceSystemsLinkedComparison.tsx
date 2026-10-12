@@ -1,45 +1,81 @@
 'use client';
-import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { Layers, Link2, MousePointerClick, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { DATUM, EXTENT_H, EXTENT_W, POINTS, SCALE_BAR_M, START_POINT, VIEW, type PointId } from './reference-systems/referenceSystems.data';
+import { EXTENT_H, EXTENT_W, POINTS, SCALE_BAR_M, START_POINT, VIEW, ZONE, type PointId } from './reference-systems/referenceSystems.data';
 import {
-  READINGS, fx, fy, graticule, graticuleLabel, pct, polylinePoints, rightLabelFits, topLabelFits, utmGrid, zoneText,
+  NBSP, READINGS, TRUE_NORTH_DEG, dmsParts, featureOutline, fx, fy, graticule, graticuleLabel, gridOffset, groupThousands, polylinePoints, readingLines,
+  rightLabelFits, secondsFraction, topLabelFits, utmGrid, type ReadingLines,
 } from './reference-systems/referenceSystemsGeometry';
+import type { Dms } from './reference-systems/utm';
 
-/* ─────────── מערכות ייחוס — "אותה נקודה, שתי שפות" ───────────
-   Brief: design/mockups/topic-02-reference-systems-2026-10-11/claude-linked-comparison-prompt.md
-   Mockup: design/mockups/topic-02-reference-systems-2026-10-11/02-linked-comparison.png
+/* ─────────── מערכות ייחוס — screen 1: one map, two ways to state a place ───────────
+   Brief: design/mockups/topic-02-reference-systems-2026-10-11/claude-reference-systems-single-map.md
+          (supersedes the two-map structure of claude-linked-comparison-toggle-and-split.md)
 
-   Two readings of ONE base map on ONE datum (WGS84): geographic ϕ/λ on the
-   right (inline-start), UTM 36N E/N on the left. Picking a point on either
-   map — or with the A/B/C buttons — selects it on both, and both reading
-   cards update in the same render from the same stored E/N. The exploration
-   tabs are the rows of the scene's original table; switching them moves the
-   emphasis, never the point or its numbers.
+   One map of the illustrated terrain. One method switch above it (גיאוגרפית /
+   UTM), the three point buttons under it, and beside it a panel that says what
+   the reading means: in the geographic method, what degrees / minutes / seconds
+   and N / E are, with a 0″–60″ bar per reading so the change between points is
+   visible; in UTM, why the numbers are large, and how far the chosen feature
+   lies from the bridge on the grid. Switching keeps the point and the terrain;
+   picking keeps the method. The datum (WGS84) is not shown here — the
+   conversions still use it, and screen 2 defines it.
 
-   All copy (title, column names, rows) is passed in by CoordinatesPart2Scene;
-   this file adds only the operating labels the brief allows. */
-
-export type ProjectionRowId = 'scope' | 'units' | 'what';
-export type ProjectionRow = { id: ProjectionRowId; label: string; geo: ReactNode; utm: ReactNode };
-
-const START_MODE: ProjectionRowId = 'units';
+   The table, conclusion and definitions are screen 2 ("כיצד מפרשים קואורדינטות?",
+   CoordinatesPart2Scene) — static, outside this card. */
 
 const BASE_SRC = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic02/reference-systems/linked-terrain-base.webp`;
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+type Method = 'geo' | 'utm';
+
+/** The feature each point marks (A on the bridge, B on the ridge summit, C in the village). */
+const FEATURE: Record<PointId, { name: string; definite: string }> = {
+  A: { name: 'גשר', definite: 'הגשר' },
+  B: { name: 'רכס', definite: 'הרכס' },
+  C: { name: 'יישוב', definite: 'היישוב' },
+};
+const METHOD_LABEL: Record<Method, string> = { geo: 'גיאוגרפית', utm: 'UTM' };
+
+/* ── What changes, said in words — derived from the stored E/N and the converted
+   readings (never from display strings). The relations hold for these three nearby
+   points in the northern / eastern hemisphere; they are not a rule for the globe. */
+
+const REF = START_POINT;
+
+/** "מצפון־מערב" etc., from the grid difference. */
+function quarter(dE: number, dN: number) {
+  return `מ${dN > 0 ? 'צפון' : 'דרום'}־${dE < 0 ? 'מערב' : 'מזרח'}`;
+}
+
+/** The two readings share degrees and minutes, so the change is in the seconds. */
+const sameDegMin = (a: Dms, b: Dms) => a.deg === b.deg && a.min === b.min;
+
+function geoFeedback(id: PointId) {
+  if (id === REF) return `${FEATURE[id].definite} הוא נקודת ההשוואה. בחרו ברכס או ביישוב כדי לראות כיצד הקריאה משתנה.`;
+  const a = READINGS[REF];
+  const b = READINGS[id];
+  const { dE, dN } = gridOffset(id);
+  const latUp = b.lat > a.lat;
+  const lonUp = b.lon > a.lon;
+  const change =
+    latUp === lonUp ? `הרוחב והאורך ${latUp ? 'גדולים' : 'קטנים'} יותר` : `הרוחב ${latUp ? 'גדל' : 'קטן'} והאורך ${lonUp ? 'גדל' : 'קטן'}`;
+  const where = sameDegMin(a.latDms, b.latDms) && sameDegMin(a.lonDms, b.lonDms) ? ' כאן השינוי מופיע ברכיב השניות.' : '';
+  return `${FEATURE[id].definite} נמצא ${quarter(dE, dN)} לגשר: ${change}.${where}`;
+}
+
+function gridFeedback(id: PointId) {
+  if (id === REF) return 'הגשר הוא נקודת ההשוואה: אין שינוי במזרח או בצפון.';
+  const { dE, dN } = gridOffset(id);
+  return `${FEATURE[id].definite} נמצא ${quarter(dE, dN)} לגשר: ${Math.abs(dE)} מטרים ${dE < 0 ? 'מערבה' : 'מזרחה'} ו־${Math.abs(dN)} מטרים ${dN > 0 ? 'צפונה' : 'דרומה'} ברשת.`;
+}
 
 // Same choice language as the rest of the scene (CoordinatesPart2Scene CHOICE / choiceTone),
 // plus ring-1 on the chosen one so "selected" never rests on colour alone.
 const CHOICE =
-  'rounded-xl border cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+  'rounded-xl border cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated';
 const choiceTone = (on: boolean) => (on ? 'border-accent bg-accent/10 ring-1 ring-accent' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]');
-const FADE = 'transition-opacity duration-200 ease-snap motion-reduce:transition-none';
-/** Emphasis of whatever the active tab is about. */
-const EMPH = 'bg-accent/10 ring-1 ring-inset ring-accent/50';
-/** Hairline between reading fields, centred in the gap on the inline-start side. */
-const DIVIDER =
-  "[&+&]:before:absolute [&+&]:before:inset-y-3 [&+&]:before:-start-[4px] [&+&]:before:w-px [&+&]:before:bg-border/70 [&+&]:before:content-['']";
 
 function L({ children }: { children: ReactNode }) {
   return <bdi dir="ltr">{children}</bdi>;
@@ -47,340 +83,378 @@ function L({ children }: { children: ReactNode }) {
 
 const UTM_GRID = utmGrid();
 const GRATICULE = graticule();
-/* Meridian labels are ≈ 75 px wide and 15″ ≈ 87 px apart at 1440. In a narrower map every
-   other one steps aside — the half that keeps clear of the north arrow. */
-const MERIDIAN_LABELS = (() => {
-  const fit = GRATICULE.meridians.filter((l) => topLabelFits(l.edge));
-  const dropEven = fit.length > 0 && fx(fit[0].edge) < 0.25;
-  return fit.map((l, i) => ({ ...l, thin: (i % 2 === 0) === dropEven }));
-})();
+/** Reading lines and frame values for every point on either method — computed once. */
+const LINES = Object.fromEntries(
+  (['geo', 'utm'] as const).map((k) => [k, Object.fromEntries(POINTS.map((p) => [p.id, readingLines(p.id, k)]))]),
+) as Record<Method, Record<PointId, ReadingLines>>;
 
-export function ReferenceSystemsLinkedComparison({
-  heading,
-  geoTitle,
-  utmTitle,
-  rows,
-}: {
-  heading: ReactNode;
-  geoTitle: ReactNode;
-  utmTitle: ReactNode;
-  rows: ProjectionRow[];
-}) {
+export function ReferenceSystemsLinkedComparison() {
   const [selected, setSelected] = useState<PointId>(START_POINT);
   const [preview, setPreview] = useState<PointId | null>(null);
-  const [mode, setMode] = useState<ProjectionRowId>(START_MODE);
-  const uid = useId();
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const ids = {
-    instr: `${uid}-instr`,
-    geo: `${uid}-geo`,
-    utm: `${uid}-utm`,
-    heading: `${uid}-heading`,
-    tab: (m: ProjectionRowId) => `${uid}-tab-${m}`,
-    panel: (m: ProjectionRowId) => `${uid}-panel-${m}`,
-  };
+  const [method, setMethod] = useState<Method>('geo');
+  const [announce, setAnnounce] = useState('');
+  const reduce = useReducedMotion() ?? false;
 
   const pick = (id: PointId) => {
     setSelected(id);
     setPreview(null);
+    if (id !== selected) setAnnounce(`נבחרה נקודה ${id}, ${FEATURE[id].name}`);
   };
-  const reset = () => {
-    setSelected(START_POINT);
-    setPreview(null);
-    setMode(START_MODE);
-  };
-
-  const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const idx = rows.findIndex((r) => r.id === mode);
-    let next = -1;
-    // RTL: the next tab is to the left
-    if (e.key === 'ArrowLeft') next = Math.min(rows.length - 1, idx + 1);
-    else if (e.key === 'ArrowRight') next = Math.max(0, idx - 1);
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = rows.length - 1;
-    if (next < 0) return;
-    e.preventDefault();
-    setMode(rows[next].id);
-    tabRefs.current[next]?.focus();
-  };
-
-  const r = READINGS[selected];
   const hover = preview && preview !== selected ? preview : null;
-  const mapProps = { selected, hover, mode, onPick: pick, onPreview: setPreview };
 
   return (
     <div className="surface-elevated p-6 lg:p-8" data-activity="reference-systems">
-      {/* info row: what to do (DOM-first → right), the shared datum and reset (left) */}
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <p id={ids.instr} className="flex items-center gap-2 text-base font-display font-bold text-black">
-            <MousePointerClick size={20} strokeWidth={2} aria-hidden className="shrink-0 text-fg-muted" />
-            בחרו נקודה באחת המפות
-          </p>
-          <div role="group" aria-labelledby={ids.instr} className="flex gap-1.5">
-            {POINTS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                aria-pressed={selected === p.id}
-                aria-label={`נקודה ${p.id}`}
-                data-point-button={p.id}
-                onClick={() => pick(p.id)}
-                onPointerEnter={() => setPreview(p.id)}
-                onPointerLeave={() => setPreview(null)}
-                onFocus={() => setPreview(p.id)}
-                onBlur={() => setPreview(null)}
-                className={cn(CHOICE, choiceTone(selected === p.id), 'grid size-9 place-items-center font-display text-sm font-bold text-fg')}
-              >
-                {p.id}
-              </button>
-            ))}
+      {/* the map (DOM-first → right) with its switch above and its points below; the panel beside it */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex items-center justify-center gap-3">
+            <span aria-hidden className="text-base text-fg-muted">
+              שיטה:
+            </span>
+            <div role="group" aria-label="שיטת הקואורדינטות במפה" className="flex gap-2" data-method-switch>
+              {(['geo', 'utm'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={method === m}
+                  data-method-button={m}
+                  onClick={() => setMethod(m)}
+                  className={cn(CHOICE, choiceTone(method === m), 'h-10 min-w-[6.5rem] px-4 font-display text-base font-bold text-black')}
+                >
+                  {m === 'utm' ? <L>UTM</L> : METHOD_LABEL[m]}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* pill classes as LandCoverScene's tags */}
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-bg-elevated px-3.5 py-1.5 text-sm font-display font-semibold text-fg">
-            <Layers size={16} strokeWidth={2} aria-hidden className="shrink-0 text-fg-muted" />
-            דאטום משותף: <L>{DATUM}</L>
-          </span>
-          <Button variant="secondary" size="sm" onClick={reset}>
-            <RotateCcw size={16} strokeWidth={2} aria-hidden />
-            איפוס
-          </Button>
-        </div>
-      </div>
 
-      {/* the two readings: geographic at inline-start (right), UTM at inline-end (left).
-          On desktop the panels share rows (subgrid) so title / map / card line up,
-          and the link glyph sits centred on the map row. */}
-      <div className="relative mt-6 grid gap-6 lg:grid-cols-2 lg:grid-rows-[auto_auto_auto] lg:gap-x-10 lg:gap-y-0">
-        <ReadingPanel kind="geo" titleId={ids.geo} title={geoTitle} className="lg:col-start-1 lg:row-start-1" {...mapProps} />
-        <ReadingPanel kind="utm" titleId={ids.utm} title={utmTitle} className="lg:col-start-2 lg:row-start-1" {...mapProps} />
-        <div
-          aria-hidden
-          className="pointer-events-none z-10 hidden place-items-center lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:grid lg:self-center lg:justify-self-center"
-        >
-          <span className="grid size-9 place-items-center rounded-full border border-border bg-bg-elevated text-fg-muted shadow-elevated">
-            <Link2 size={18} strokeWidth={2} />
-          </span>
-        </div>
-      </div>
+          <TerrainMap kind={method} selected={selected} hover={hover} reduce={reduce} onPick={pick} onPreview={setPreview} />
 
-      {/* one short announcement per selection — not on hover */}
-      <p aria-live="polite" className="sr-only">
-        {`נקודה ${selected}: רוחב ${r.latText}, אורך ${r.lonText}; מזרח ${r.eText}, צפון ${r.nText}, ${zoneText}.`}
-      </p>
-
-      {/* exploration: the original table, one row at a time */}
-      <div className="mt-6 rounded-xl bg-bg-accent/60 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h4 id={ids.heading} className="font-display font-bold leading-tight text-black text-base md:text-lg">
-            {heading}
-          </h4>
-          <div role="tablist" aria-labelledby={ids.heading} onKeyDown={onTabKey} className="flex flex-wrap gap-2">
-            {rows.map((row, i) => {
-              const on = row.id === mode;
+          <div role="group" aria-label="בחירת נקודה" className="flex flex-wrap justify-center gap-2">
+            {POINTS.map((p) => {
+              const on = selected === p.id;
               return (
                 <button
-                  key={row.id}
-                  ref={(el) => {
-                    tabRefs.current[i] = el;
-                  }}
+                  key={p.id}
                   type="button"
-                  role="tab"
-                  id={ids.tab(row.id)}
-                  aria-selected={on}
-                  aria-controls={ids.panel(row.id)}
-                  tabIndex={on ? 0 : -1}
-                  data-mode={row.id}
-                  onClick={() => setMode(row.id)}
-                  className={cn(CHOICE, choiceTone(on), 'px-4 py-2 font-display text-base font-bold text-black')}
+                  aria-pressed={on}
+                  aria-label={`${p.id} ${FEATURE[p.id].name}`}
+                  data-point-button={p.id}
+                  onClick={() => pick(p.id)}
+                  onPointerEnter={() => setPreview(p.id)}
+                  onPointerLeave={() => setPreview(null)}
+                  onFocus={() => setPreview(p.id)}
+                  onBlur={() => setPreview(null)}
+                  className={cn(CHOICE, choiceTone(on), 'h-11 px-4 font-display text-base font-bold text-black')}
                 >
-                  {row.label}
+                  <PointName id={p.id} />
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* all panels share one cell, so the band keeps one height in every state */}
-        <div className="mt-4 grid [&>*]:[grid-area:1/1]">
-          {rows.map((row) => {
-            const on = row.id === mode;
-            return (
-              <div
-                key={row.id}
-                role="tabpanel"
-                id={ids.panel(row.id)}
-                aria-labelledby={ids.tab(row.id)}
-                aria-hidden={!on}
-                tabIndex={on ? 0 : -1}
-                data-mode-panel={row.id}
-                className={cn('transition-[opacity,visibility] duration-200 ease-snap motion-reduce:transition-none', on ? 'visible opacity-100' : 'invisible opacity-0')}
-              >
-                <dl className="grid gap-4 lg:grid-cols-2 lg:gap-10">
-                  <div>
-                    <dt className="text-base font-display font-bold text-black">{geoTitle}</dt>
-                    <dd className="mt-0.5 text-base leading-relaxed text-black">{row.geo}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-base font-display font-bold text-black">{utmTitle}</dt>
-                    <dd className="mt-0.5 text-base leading-relaxed text-black">{row.utm}</dd>
-                  </div>
-                </dl>
+        <ExplainPanel method={method} selected={selected} reduce={reduce} />
+      </div>
+
+      {/* one short announcement per new point; the panel is not live */}
+      <p className="sr-only" aria-live="polite" data-announce>
+        {announce}
+      </p>
+    </div>
+  );
+}
+
+/** "A · גשר" — the dot is visual only (accessible names read "A גשר"). */
+function PointName({ id }: { id: PointId }) {
+  return (
+    <>
+      <L>{id}</L>
+      <span aria-hidden> · </span>
+      {FEATURE[id].name}
+    </>
+  );
+}
+
+/* ── The panel beside the map ─────────────────────────────────────────── */
+
+function ExplainPanel({ method, selected, reduce }: { method: Method; selected: PointId; reduce: boolean }) {
+  const r = READINGS[selected];
+  const titleId = useId();
+  const fade = { initial: reduce ? false : { opacity: 0.25 }, animate: { opacity: 1 }, transition: { duration: reduce ? 0 : 0.25, ease: EASE } } as const;
+  return (
+    <section aria-labelledby={titleId} data-explain={method} className="flex min-w-0 flex-col gap-4 rounded-xl border border-border/60 bg-bg-accent/40 p-5">
+      <header>
+        <h4 id={titleId} data-feature={selected} className="font-display text-base font-bold leading-tight text-black md:text-lg">
+          <PointName id={selected} />
+        </h4>
+        {method === 'geo' && (
+          <motion.p key={`f-${selected}`} data-feedback className="mt-1 text-base leading-relaxed text-black text-pretty" {...fade}>
+            {geoFeedback(selected)}
+          </motion.p>
+        )}
+      </header>
+
+      {method === 'geo' ? (
+        <>
+          <AngleReading
+            field="lat"
+            label="רוחב"
+            axis="ϕ"
+            meaning={
+              <>
+                זווית צפונה או דרומה מקו המשווה. <L>N</L> מציין צפון.
+              </>
+            }
+            dms={r.latDms}
+            refDms={READINGS[REF].latDms}
+            selected={selected}
+            reduce={reduce}
+          />
+          <AngleReading
+            field="lon"
+            label="אורך"
+            axis="λ"
+            meaning={
+              <>
+                זווית מזרחה או מערבה מקו האורך של גריניץ׳. <L>E</L> מציין מזרח.
+              </>
+            }
+            dms={r.lonDms}
+            refDms={READINGS[REF].lonDms}
+            selected={selected}
+            reduce={reduce}
+          />
+          <div data-geo-notes className="space-y-2 border-t border-border/60 pt-3 text-base leading-relaxed text-black text-pretty">
+            <p>
+              דקות ושניות הן חלקים של מעלה, לא יחידות זמן: מעלה אחת מחולקת ל־<L>60</L> דקות, ודקה אחת ל־<L>60</L> שניות.
+            </p>
+            <p>הנקודות קרובות זו לזו. לכן כאן המעלות והדקות נשארות זהות, והשינוי מופיע בשניות.</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <dl data-utm-reading className="divide-y divide-border/60 rounded-lg border border-border/60 bg-bg-elevated px-4">
+            {[
+              { field: 'e', label: 'מזרח', axis: 'E', value: r.point.e },
+              { field: 'n', label: 'צפון', axis: 'N', value: r.point.n },
+            ].map((row) => (
+              <div key={row.field} data-field={row.field} className="flex items-baseline justify-between gap-4 py-2">
+                <dt className="font-display text-base font-bold leading-tight text-black">
+                  {row.label} <L>{row.axis}</L>
+                </dt>
+                <dd className="flex items-baseline gap-2 whitespace-nowrap">
+                  <span data-value={row.field} className="font-display text-xl font-bold leading-tight tabular-nums text-black">
+                    <L>
+                      <motion.span key={selected} className="inline-block" {...fade}>
+                        {groupThousands(row.value)}
+                      </motion.span>
+                    </L>
+                  </span>
+                  <span className="text-base text-fg-muted">מטרים</span>
+                </dd>
               </div>
-            );
-          })}
+            ))}
+            <p data-zone-meaning className="py-2 text-base leading-6 text-fg-muted">
+              פלח {ZONE.zone} · חצי הכדור הצפוני <L>({ZONE.hemisphere})</L>
+            </p>
+          </dl>
+          <p data-utm-why className="text-base leading-relaxed text-black text-pretty">
+            אלה ערכי מיקום ברשת רחבה, לא מרחקים משפת המפה. בפלח הצפוני, ערך הצפון נמדד ברשת מקו המשווה; לקו האורך המרכזי של הפלח ניתן ערך מזרח של{' '}
+            <L>500,000</L> מטרים. לכן גם אזור קטן במפה יכול לקבל מספרי קואורדינטות גדולים.
+          </p>
+          <div data-grid-offset={selected} className="rounded-lg bg-bg-elevated px-4 py-3">
+            <h5 className="font-display text-base font-bold leading-tight text-black">השינוי ברשת ביחס לגשר</h5>
+            <motion.p key={`g-${selected}`} data-feedback className="mt-1 text-base leading-relaxed text-black text-pretty" {...fade}>
+              {gridFeedback(selected)}
+            </motion.p>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+const DMS_CAPTIONS = ['מעלות', 'דקות', 'שניות', 'כיוון'];
+
+/** One geographic reading: what it measures, the value in captioned groups, and its seconds on a fixed 0″–60″ bar. */
+function AngleReading({
+  field,
+  label,
+  axis,
+  meaning,
+  dms,
+  refDms,
+  selected,
+  reduce,
+}: {
+  field: 'lat' | 'lon';
+  label: string;
+  axis: string;
+  meaning: ReactNode;
+  dms: Dms;
+  refDms: Dms;
+  selected: PointId;
+  reduce: boolean;
+}) {
+  const parts = dmsParts(dms);
+  const at = secondsFraction(dms);
+  const refAt = secondsFraction(refDms);
+  const context = parts.slice(0, 2).join(NBSP);
+  return (
+    <div data-reading={field}>
+      <h5 className="font-display text-base font-bold leading-tight text-black">
+        {label} <L>{axis}</L>
+      </h5>
+      <p data-meaning={field} className="mt-0.5 text-base leading-snug text-fg-muted text-balance">
+        {meaning}
+      </p>
+
+      {/* the value in its four groups, each named under it — read left → right */}
+      <dl dir="ltr" data-value={field} className="mt-2 inline-grid grid-flow-col gap-x-4 text-center">
+        {parts.map((p, i) => (
+          <div key={i} className="flex flex-col-reverse items-center">
+            <dt className="text-base leading-6 text-fg-muted" dir="rtl">
+              {DMS_CAPTIONS[i]}
+            </dt>
+            <dd data-group={DMS_CAPTIONS[i]} className="whitespace-nowrap font-display text-xl font-bold leading-tight tabular-nums text-black">
+              <motion.span
+                key={`${selected}-${i}`}
+                className="inline-block"
+                initial={reduce || i < 2 ? false : { opacity: 0.25 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: reduce ? 0 : 0.25, ease: EASE }}
+              >
+                {p}
+              </motion.span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {/* the seconds of this reading on a fixed 0″–60″ bar (the same for all three points); the
+          bridge stays marked as the reference once another point is chosen */}
+      <div dir="ltr" data-seconds-bar={field} className="mt-2 flex items-end gap-3">
+        <span className="shrink-0 pb-6 font-display text-base font-bold leading-6 tabular-nums text-black">{context}</span>
+        <div className="relative min-w-0 flex-1 pt-7">
+          <div className="relative h-1.5 rounded-full bg-border">
+            {[0.25, 0.5, 0.75].map((t) => (
+              <span key={t} className="absolute top-0 h-1.5 w-px bg-fg-muted/50" style={{ left: `${t * 100}%` }} />
+            ))}
+          </div>
+          {selected !== REF && <BarMark id={REF} at={refAt} muted reduce={reduce} />}
+          <BarMark id={selected} at={at} reduce={reduce} />
+          <div className="relative mt-1 h-6 text-base leading-6 tabular-nums text-fg-muted">
+            <span className="absolute left-0">0″</span>
+            <span className="absolute left-1/2 -translate-x-1/2">30″</span>
+            <span className="absolute right-0">60″</span>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ── One column: title + system, the map, the reading card ─────────────── */
-
-type MapState = {
-  selected: PointId;
-  hover: PointId | null;
-  mode: ProjectionRowId;
-  onPick: (id: PointId) => void;
-  onPreview: (id: PointId | null) => void;
-};
-
-function ReadingPanel({
-  kind,
-  title,
-  titleId,
-  className,
-  ...state
-}: { kind: 'geo' | 'utm'; title: ReactNode; titleId: string; className: string } & MapState) {
-  const r = READINGS[state.selected];
-  const geo = kind === 'geo';
-  const { mode } = state;
+/** The point's letter above the bar, its stem on the value (the map pin's look: filled = chosen). */
+function BarMark({ id, at, muted, reduce }: { id: PointId; at: number; muted?: boolean; reduce: boolean }) {
   return (
-    <section
-      aria-labelledby={titleId}
-      data-system={kind}
-      className={cn('flex min-w-0 flex-col gap-3 rounded-xl border border-border/60 bg-bg-accent/40 p-4 lg:row-span-3 lg:grid lg:grid-rows-subgrid', className)}
-    >
-      <header className="text-center">
-        <h4 id={titleId} className="font-display font-bold leading-tight text-black text-base md:text-lg">
-          {title}
-        </h4>
-        <p className="mt-1.5 flex justify-center">
-          <span
-            data-meta={kind}
-            className={cn(
-              'rounded-md px-2 py-0.5 font-display text-sm font-semibold transition-colors duration-200 ease-snap motion-reduce:transition-none',
-              mode === 'scope' ? cn(EMPH, 'text-black') : 'text-fg-muted',
-            )}
-          >
-            <L>{geo ? DATUM : `${DATUM} / UTM ${zoneText}`}</L>
-          </span>
-        </p>
-      </header>
-
-      <TerrainMap kind={kind} {...state} />
-
-      <dl
-        data-readout={kind}
-        className={cn('grid gap-2 rounded-xl border border-border/60 bg-bg-elevated p-1.5', geo ? 'grid-cols-2' : 'grid-cols-[1fr_1fr_auto]')}
-      >
-        {geo ? (
-          <>
-            <ReadingField label="רוחב" axis="ϕ" value={r.latText} unit="מעלות" field="lat" mode={mode} />
-            <ReadingField label="אורך" axis="λ" value={r.lonText} unit="מעלות" field="lon" mode={mode} />
-          </>
-        ) : (
-          <>
-            <ReadingField label="מזרח" axis="E" value={r.eText} unit="מטרים" field="e" mode={mode} />
-            <ReadingField label="צפון" axis="N" value={r.nText} unit="מטרים" field="n" mode={mode} />
-            <ReadingField label="פלח וחצי כדור" value={zoneText} field="zone" mode={mode} />
-          </>
-        )}
-      </dl>
-    </section>
-  );
-}
-
-function ReadingField({
-  label,
-  axis,
-  value,
-  unit,
-  field,
-  mode,
-}: {
-  label: string;
-  axis?: string;
-  value: string;
-  unit?: string;
-  field: 'lat' | 'lon' | 'e' | 'n' | 'zone';
-  mode: ProjectionRowId;
-}) {
-  const what = mode === 'what';
-  const units = mode === 'units';
-  return (
-    <div
-      data-field={field}
+    <span
+      data-bar-mark={id}
+      data-bar-at={at.toFixed(4)}
       className={cn(
-        'relative flex flex-col items-center gap-1.5 rounded-lg px-2 py-2.5 text-center transition-colors duration-200 ease-snap motion-reduce:transition-none',
-        DIVIDER,
-        what && EMPH,
+        'absolute top-0 flex -translate-x-1/2 flex-col items-center',
+        !reduce && 'transition-[left] duration-[250ms] ease-snap motion-reduce:transition-none',
       )}
+      style={{ left: `${(at * 100).toFixed(3)}%` }}
     >
-      <dt className="text-base font-display font-bold leading-tight text-black sm:whitespace-nowrap">
-        {label}
-        {axis && (
-          <>
-            {' '}
-            <L>{axis}</L>
-          </>
+      <span
+        className={cn(
+          'grid size-6 place-items-center rounded-full border-2 font-display text-sm font-bold leading-none',
+          muted ? 'border-brand-dark/60 bg-bg-elevated text-brand-dark' : 'border-bg-elevated bg-accent text-bg-elevated ring-1 ring-accent',
         )}
-      </dt>
-      <dd className="font-display text-base font-bold leading-none tabular-nums text-black sm:text-xl">
-        <L>{value}</L>
-      </dd>
-      {unit ? (
-        <dd
-          data-unit={field}
-          className={cn(
-            'min-h-6 rounded-md px-1.5 text-base leading-6 transition-colors duration-200 ease-snap motion-reduce:transition-none',
-            units ? cn(EMPH, 'font-bold text-black') : 'text-fg-muted',
-          )}
-        >
-          {unit}
-        </dd>
-      ) : (
-        // reserved line: keeps the three UTM fields level with each other
-        <div aria-hidden className="min-h-6" />
-      )}
-    </div>
+      >
+        {id}
+      </span>
+      <span className={cn('h-2.5 w-0.5', muted ? 'bg-brand-dark/60' : 'bg-accent')} />
+    </span>
   );
 }
 
 /* ── The map ──────────────────────────────────────────────────────────────
    One SVG in the base image's own metres (viewBox = VIEW): the image, its
-   paper/grid fallback, the grid of this reading and the feature rings all
-   share it, so nothing can drift off the terrain. HTML overlays (labels,
-   pins) are placed by the same VIEW fractions; the box keeps VIEW's 5:4
-   ratio, so a fraction is the same spot of terrain on both maps. Physical
-   left/top on purpose: a map is never mirrored for RTL. */
+   paper/grid fallback, the grid of this method, the outline of the chosen
+   feature, the reading lines and the anchor all share it, so nothing can drift
+   off the terrain. HTML overlays (labels, pins) are placed by the same VIEW
+   fractions of the measured box (5:4). Physical left/top on purpose: a map is
+   never mirrored for RTL. */
 
-const RING_KEYS = POINTS.map((p) => p.id);
+type MapState = {
+  selected: PointId;
+  hover: PointId | null;
+  reduce: boolean;
+  onPick: (id: PointId) => void;
+  onPreview: (id: PointId | null) => void;
+};
 
-function TerrainMap({ kind, selected, hover, mode, onPick, onPreview }: { kind: 'geo' | 'utm' } & MapState) {
+/** Frame-label sizes at the 1440 target (px), used to keep labels apart. */
+const LABEL = { h: 20, gap: 6, gridW: { geo: 78, utm: 62 }, chosenW: { geo: 112, utm: 84 }, northRight: 34 };
+const DEFAULT_W = 540;
+
+function useBoxWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w] as const;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+
+function TerrainMap({ kind, selected, hover, reduce, onPick, onPreview }: { kind: Method } & MapState) {
   const uid = useId();
+  const [box, measured] = useBoxWidth<HTMLDivElement>();
   const [failed, setFailed] = useState(false);
   const geo = kind === 'geo';
   const r = READINGS[selected];
-  const units = mode === 'units';
+  const lines = LINES[kind][selected];
+  const outline = featureOutline(selected);
+  const what = `${selected}, ${FEATURE[selected].name}`;
   const desc = geo
-    ? `מפה עם רשת קווי רוחב ואורך. מסומנת נקודה ${selected}: רוחב ${r.latText}, אורך ${r.lonText}.`
-    : `אותה מפה עם רשת UTM במטרים, פלח ${zoneText}. מסומנת נקודה ${selected}: מזרח ${r.eText}, צפון ${r.nText}.`;
+    ? `מפה עם רשת קווי רוחב ואורך. מסומן ${what}, וקווי הרוחב והאורך שלו מסומנים עד המסגרת: רוחב ${r.latShown}, אורך ${r.lonShown}.`
+    : `מפה עם רשת UTM במטרים, פלח ${ZONE.zone} בחצי הכדור הצפוני. מסומן ${what}, וקווי המזרח והצפון שלו מסומנים עד המסגרת: מזרח ${r.eText}, צפון ${r.nText}.`;
+
+  /* Frame labels. The chosen values sit where the reading lines meet the top and
+     right edges and REPLACE ordinary labels: every one too close to them, or at
+     least the nearest one — so an edge never carries more than three. */
+  const W = measured || DEFAULT_W;
+  const H = (W * VIEW.h) / VIEW.w;
+  const chosenW = LABEL.chosenW[kind];
+  const gridW = LABEL.gridW[kind];
+  const topX = clamp(fx(lines.top) * W, LABEL.northRight + LABEL.gap + chosenW / 2, W - LABEL.gap - chosenW / 2);
+  const rightY = clamp(fy(lines.right) * H, LABEL.gap + LABEL.h + LABEL.gap + LABEL.h / 2, H - LABEL.gap - LABEL.h / 2);
+  const topGrid = geo
+    ? GRATICULE.meridians.filter((l) => topLabelFits(l.edge)).map((l) => ({ key: `m${l.sec}`, at: l.edge, text: graticuleLabel(l.sec, 'lon') }))
+    : UTM_GRID.eastings.filter((l) => topLabelFits(l.at)).map((l) => ({ key: `e${l.value}`, at: l.at, text: groupThousands(l.value) }));
+  const rightGrid = geo
+    ? GRATICULE.parallels.filter((l) => rightLabelFits(l.edge)).map((l) => ({ key: `p${l.sec}`, at: l.edge, text: graticuleLabel(l.sec, 'lat') }))
+    : UTM_GRID.northings.filter((l) => rightLabelFits(l.at)).map((l) => ({ key: `n${l.value}`, at: l.at, text: groupThousands(l.value) }));
+  const topShown = replaceNearest(topGrid, (l) => Math.abs(fx(l.at) * W - topX), (chosenW + gridW) / 2 + LABEL.gap);
+  const rightShown = replaceNearest(rightGrid, (l) => Math.abs(fy(l.at) * H - rightY), LABEL.h + LABEL.gap);
+  const chosenTop = geo ? dmsParts(r.lonDms, undefined, false).join(NBSP) : groupThousands(r.point.e);
+  const chosenRight = geo ? dmsParts(r.latDms, undefined, false).join(NBSP) : groupThousands(r.point.n);
+  const fade = { initial: reduce ? false : { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: reduce ? 0 : 0.25, ease: EASE } } as const;
 
   return (
-    <div dir="ltr" data-map={kind} className="relative aspect-[5/4] select-none overflow-hidden rounded-xl border border-border/70 bg-bg-accent [container-type:inline-size]">
+    <div
+      ref={box}
+      dir="ltr"
+      data-map={kind}
+      className="relative aspect-[5/4] select-none overflow-hidden rounded-xl border border-border/70 bg-bg-accent [container-type:inline-size]"
+    >
       <div role="img" aria-label={desc} className="absolute inset-0">
         <svg viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} className="absolute inset-0 size-full" aria-hidden>
           <defs>
@@ -404,14 +478,15 @@ function TerrainMap({ kind, selected, hover, mode, onPick, onPreview }: { kind: 
             />
           )}
 
+          {/* the grid is background information: thin and faint, under everything chosen */}
           {geo ? (
-            <g fill="none" className="stroke-fg/55" strokeWidth="1.25" data-grid="graticule">
+            <g fill="none" className="stroke-fg/30" strokeWidth="1" data-grid="graticule">
               {[...GRATICULE.meridians, ...GRATICULE.parallels].map((l, i) => (
-                <polyline key={i} points={polylinePoints(l.points)} vectorEffect="non-scaling-stroke" />
+                <polyline key={i} points={polylinePoints(l.points)} data-meridian={i < GRATICULE.meridians.length || undefined} vectorEffect="non-scaling-stroke" />
               ))}
             </g>
           ) : (
-            <g className="stroke-fg/55" strokeWidth="1.25" data-grid="utm">
+            <g className="stroke-fg/30" strokeWidth="1" data-grid="utm">
               {UTM_GRID.eastings.map((l) => (
                 <line key={`e${l.value}`} x1={l.at} y1={0} x2={l.at} y2={EXTENT_H} vectorEffect="non-scaling-stroke" />
               ))}
@@ -421,94 +496,84 @@ function TerrainMap({ kind, selected, hover, mode, onPick, onPreview }: { kind: 
             </g>
           )}
 
-          {/* the marked feature: chosen point solid, hover preview dashed */}
-          {RING_KEYS.map((id) => {
-            const p = READINGS[id];
-            const { rx, ry, rot } = p.point.ring;
-            const on = id === selected;
-            const pre = id === hover;
-            return (
-              <ellipse
-                key={id}
-                data-ring={id}
-                data-ring-state={on ? (hover ? 'dimmed' : 'selected') : pre ? 'preview' : 'off'}
-                cx={p.x}
-                cy={p.y}
-                rx={rx}
-                ry={ry}
-                transform={`rotate(${rot} ${p.x} ${p.y})`}
-                vectorEffect="non-scaling-stroke"
-                strokeWidth={on ? 2.5 : 2}
-                strokeDasharray={pre ? '6 5' : undefined}
-                className={cn(
-                  FADE,
-                  on ? 'fill-accent/10 stroke-accent' : 'fill-transparent stroke-fg',
-                  on ? (hover ? 'opacity-40' : 'opacity-100') : pre ? 'opacity-90' : 'opacity-0',
-                )}
-              />
-            );
-          })}
+          {/* the chosen feature itself — the bridge deck, the ridge crest, the village — a light
+              dashed outline from the terrain's own geometry, never a halo over it */}
+          <motion.g key={`o-${selected}`} data-feature-outline={selected} fill="none" {...fade}>
+            {outline.kind === 'ring' ? (
+              <>
+                <circle cx={outline.cx} cy={outline.cy} r={outline.r} className="stroke-bg-elevated/80" strokeWidth="4" vectorEffect="non-scaling-stroke" />
+                <circle cx={outline.cx} cy={outline.cy} r={outline.r} className="stroke-fg/70" strokeWidth="1.5" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
+              </>
+            ) : (
+              (['stroke-bg-elevated/80', 'stroke-fg/70'] as const).map((c, i) => {
+                const Shape = outline.closed ? 'polygon' : 'polyline';
+                return (
+                  <Shape
+                    key={c}
+                    points={polylinePoints(outline.points)}
+                    className={c}
+                    strokeWidth={i ? 1.5 : 4}
+                    strokeDasharray={i ? '6 4' : undefined}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                );
+              })
+            )}
+          </motion.g>
+
+          {/* the chosen point's two coordinate lines, heavier than the grid, on a light casing */}
+          <motion.g key={`${kind}-${selected}`} data-reading-lines={selected} fill="none" {...fade}>
+            {(['along', 'across'] as const).map((k) => (
+              <g key={k} data-reading-line={k}>
+                <polyline points={polylinePoints(lines[k])} className="stroke-bg-elevated/80" strokeWidth="4" vectorEffect="non-scaling-stroke" />
+                <polyline points={polylinePoints(lines[k])} className="stroke-accent" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              </g>
+            ))}
+          </motion.g>
+
+          {/* the anchor: a small ring round the pin's tip, where the two lines cross */}
+          <g data-anchor={selected} fill="none">
+            <circle cx={r.x} cy={r.y} r={30} className="stroke-bg-elevated" strokeWidth="4.5" vectorEffect="non-scaling-stroke" />
+            <circle cx={r.x} cy={r.y} r={30} className="stroke-accent" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+          </g>
         </svg>
 
-        {/* edge labels: top = eastings / meridians, right = northings / parallels */}
+        {/* frame labels: top = eastings / meridians, right = northings / parallels */}
         <div aria-hidden>
-          {geo
-            ? MERIDIAN_LABELS.map((l) => (
-                  <MapLabel key={`m${l.sec}`} emph={units} thin={l.thin} style={{ left: pct(fx(l.edge)), top: 6, transform: 'translateX(-50%)' }}>
-                    {graticuleLabel(l.sec, 'lon')}
-                  </MapLabel>
-              ))
-            : UTM_GRID.eastings
-                .filter((l) => topLabelFits(l.at))
-                .map((l) => (
-                  <MapLabel key={`e${l.value}`} emph={units} style={{ left: pct(fx(l.at)), top: 6, transform: 'translateX(-50%)' }}>
-                    {l.value}
-                  </MapLabel>
-                ))}
-          {geo
-            ? GRATICULE.parallels
-                .filter((l) => rightLabelFits(l.edge))
-                .map((l) => (
-                  <MapLabel key={`p${l.sec}`} emph={units} style={{ right: 6, top: pct(fy(l.edge)), transform: 'translateY(-50%)' }}>
-                    {graticuleLabel(l.sec, 'lat')}
-                  </MapLabel>
-                ))
-            : UTM_GRID.northings
-                .filter((l) => rightLabelFits(l.at))
-                .map((l) => (
-                  <MapLabel key={`n${l.value}`} emph={units} style={{ right: 6, top: pct(fy(l.at)), transform: 'translateY(-50%)' }}>
-                    {l.value}
-                  </MapLabel>
-                ))}
+          {topShown.map((l) => (
+            <MapLabel key={l.key} style={{ left: fx(l.at) * W, top: LABEL.gap, transform: 'translateX(-50%)' }}>
+              {l.text}
+            </MapLabel>
+          ))}
+          {rightShown.map((l) => (
+            <MapLabel key={l.key} style={{ right: LABEL.gap, top: fy(l.at) * H, transform: 'translateY(-50%)' }}>
+              {l.text}
+            </MapLabel>
+          ))}
+          <MapLabel chosen="top" motionKey={`${kind}-${selected}-t`} fade={fade} style={{ left: topX, top: LABEL.gap, transform: 'translateX(-50%)' }}>
+            {chosenTop}
+          </MapLabel>
+          <MapLabel chosen="right" motionKey={`${kind}-${selected}-r`} fade={fade} style={{ right: LABEL.gap, top: rightY, transform: 'translateY(-50%)' }}>
+            {chosenRight}
+          </MapLabel>
         </div>
 
         <NorthArrow />
         <ScaleBar />
-        {!geo && (
-          <span
-            aria-hidden
-            data-zone-chip
-            className={cn(
-              'absolute whitespace-nowrap rounded-md border px-2 py-0.5 font-display text-sm font-bold leading-snug text-black transition-colors duration-200 ease-snap motion-reduce:transition-none',
-              mode === 'scope' ? 'border-accent bg-bg-elevated ring-1 ring-accent' : 'border-border/70 bg-bg-elevated/90',
-            )}
-            style={{ right: 8, bottom: 8 }}
-          >
-            UTM {zoneText}
-          </span>
-        )}
       </div>
 
-      {/* pointer targets only — the A/B/C group above is the accessible, keyboard path, so the
-          pins stay out of the accessibility tree (no name heard three times) */}
+      {/* pointer targets only — the point buttons under the map are the accessible, keyboard path */}
       {POINTS.map((p) => (
         <MapPin
           key={p.id}
           id={p.id}
-          x={READINGS[p.id].x}
-          y={READINGS[p.id].y}
+          left={fx(READINGS[p.id].x) * 100}
+          top={fy(READINGS[p.id].y) * 100}
           active={p.id === selected}
           preview={p.id === hover}
+          reduce={reduce}
           onPick={onPick}
           onPreview={onPreview}
         />
@@ -517,29 +582,57 @@ function TerrainMap({ kind, selected, hover, mode, onPick, onPreview }: { kind: 
   );
 }
 
-function MapLabel({ emph, thin, style, children }: { emph: boolean; thin?: boolean; style: React.CSSProperties; children: ReactNode }) {
+/** Drops every label closer than `min` to the chosen value, and at least the nearest one. */
+function replaceNearest<T>(labels: T[], dist: (l: T) => number, min: number) {
+  if (!labels.length) return labels;
+  const nearest = labels.reduce((a, b) => (dist(b) < dist(a) ? b : a));
+  return labels.filter((l) => l !== nearest && dist(l) >= min);
+}
+
+function MapLabel({
+  chosen,
+  motionKey,
+  fade,
+  style,
+  children,
+}: {
+  chosen?: 'top' | 'right';
+  motionKey?: string;
+  fade?: object;
+  style: React.CSSProperties;
+  children: ReactNode;
+}) {
+  const cls = chosen
+    ? // the chosen values, at the reading lines' ends: solid paper, heavier type, a quiet edge
+      'absolute z-[1] whitespace-nowrap rounded border border-brand-dark/40 bg-bg-elevated px-1.5 font-display text-sm font-semibold leading-[18px] tabular-nums text-black'
+    : 'absolute whitespace-nowrap rounded bg-bg-elevated/75 px-1 font-display text-[13px] font-medium leading-5 tabular-nums text-fg [@container(max-width:340px)]:hidden';
+  if (!chosen) {
+    return (
+      <span data-map-label className={cls} style={style}>
+        {children}
+      </span>
+    );
+  }
   return (
-    <span
-      data-map-label
-      className={cn(
-        'absolute whitespace-nowrap rounded px-1 font-display text-[13px] leading-snug tabular-nums transition-colors duration-200 ease-snap motion-reduce:transition-none',
-        // below the 1440 target only: a map box under 340 px (phones) drops its edge labels; under 400 px the pins shrink
-        '[@container(max-width:340px)]:hidden',
-        thin && '[@container(max-width:420px)]:hidden',
-        emph ? 'bg-bg-elevated font-bold text-black ring-1 ring-accent/60' : 'bg-bg-elevated/85 font-semibold text-fg',
-      )}
-      style={style}
-    >
+    <motion.span key={motionKey} data-map-label data-chosen-label={chosen} className={cls} style={style} {...fade}>
       {children}
-    </span>
+    </motion.span>
   );
 }
 
+/** True north (see trueNorthDeg): the arrow turns with the local meridian, the letter stays upright. */
 function NorthArrow() {
   return (
-    <div aria-hidden data-north className="absolute flex flex-col items-center rounded-md bg-bg-elevated/85 px-1.5 pb-1 pt-0.5 text-fg" style={{ left: 8, top: 8 }}>
+    <div aria-hidden data-north className="absolute flex flex-col items-center rounded-md bg-bg-elevated/80 px-1.5 pb-1 pt-0.5 text-fg" style={{ left: 8, top: 8 }}>
       <span className="font-display text-sm font-bold leading-none">N</span>
-      <svg width="12" height="15" viewBox="0 0 10 12" className="mt-0.5 fill-fg">
+      <svg
+        width="12"
+        height="15"
+        viewBox="0 0 10 12"
+        data-north-arrow={TRUE_NORTH_DEG.toFixed(3)}
+        className="mt-0.5 fill-fg"
+        style={{ transform: `rotate(${TRUE_NORTH_DEG.toFixed(3)}deg)` }}
+      >
         <path d="M5 0 L10 12 L5 9 L0 12 Z" />
       </svg>
     </div>
@@ -553,7 +646,7 @@ function ScaleBar() {
     <div
       aria-hidden
       data-scale-bar
-      className="absolute flex items-start gap-2 rounded-md bg-bg-elevated/85 px-2.5 pb-1.5 pt-1 font-display text-xs font-semibold leading-none tabular-nums text-fg"
+      className="absolute flex items-start gap-2 rounded-md bg-bg-elevated/80 px-2.5 pb-1.5 pt-1 font-display text-xs font-semibold leading-none tabular-nums text-fg"
       style={{ left: 8, bottom: 8 }}
     >
       {/* the bar's own width is the fraction of the MAP, hence the map-relative calc */}
@@ -582,21 +675,25 @@ function ScaleBar() {
   );
 }
 
-/** Pin with its tip on the point (StationPin language, MeasurementLandscape.tsx). */
+/** Pin with its tip on the point (StationPin language, MeasurementLandscape.tsx). The chosen
+    one is orange, larger and filled; the others stay small, outlined and quiet — told apart by
+    size and fill, not by colour alone. */
 function MapPin({
   id,
-  x,
-  y,
+  left,
+  top,
   active,
   preview,
+  reduce,
   onPick,
   onPreview,
 }: {
   id: PointId;
-  x: number;
-  y: number;
+  left: number;
+  top: number;
   active: boolean;
   preview: boolean;
+  reduce: boolean;
   onPick: (id: PointId) => void;
   onPreview: (id: PointId | null) => void;
 }) {
@@ -607,24 +704,33 @@ function MapPin({
       aria-hidden
       data-pin={id}
       data-active={active || undefined}
+      data-preview={preview || undefined}
       onClick={() => onPick(id)}
       onPointerEnter={() => onPreview(id)}
       onPointerLeave={() => onPreview(null)}
-      className="group absolute flex cursor-pointer flex-col items-center focus-visible:outline-none"
-      style={{ left: pct(fx(x)), top: pct(fy(y)), transform: 'translate(-50%, calc(-100% + 3px))' }}
+      className={cn('group absolute z-[2] flex cursor-pointer flex-col items-center focus-visible:outline-none', active && 'z-[3]')}
+      style={{ left: `${left.toFixed(3)}%`, top: `${top.toFixed(3)}%`, transform: 'translate(-50%, calc(-100% + 3px))' }}
     >
-      <span
+      <motion.span
+        key={active ? 'on' : 'off'}
+        initial={active && !reduce ? { scale: 0.75, opacity: 0.4 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: reduce ? 0 : 0.25, ease: EASE }}
+        style={{ transformOrigin: '50% 100%' }}
         className={cn(
-          'grid place-items-center rounded-full border-2 font-display font-bold leading-none shadow-[0_2px_6px_rgba(40,50,35,0.35)] transition-colors duration-200 ease-snap motion-reduce:transition-none',
+          'grid place-items-center rounded-full border-2 font-display font-bold leading-none transition-colors duration-200 ease-snap motion-reduce:transition-none',
           active
-            ? 'size-9 border-bg-elevated bg-accent text-base text-bg-elevated ring-2 ring-accent [@container(max-width:400px)]:size-7 [@container(max-width:400px)]:text-sm'
-            : cn('size-8 bg-bg-elevated text-sm text-brand-dark [@container(max-width:400px)]:size-6 [@container(max-width:400px)]:text-xs', preview ? 'border-accent' : 'border-brand-dark group-hover:border-accent'),
+            ? 'size-9 border-bg-elevated bg-accent text-base text-bg-elevated shadow-[0_2px_6px_rgba(40,50,35,0.35)] ring-2 ring-accent [@container(max-width:400px)]:size-7 [@container(max-width:400px)]:text-sm'
+            : cn(
+                'size-7 bg-bg-elevated/90 text-sm text-brand-dark [@container(max-width:400px)]:size-6 [@container(max-width:400px)]:text-xs',
+                preview ? 'border-accent' : 'border-brand-dark/80 group-hover:border-accent',
+              ),
         )}
       >
         {id}
-      </span>
-      <span className={cn('h-3 w-0.5 [@container(max-width:400px)]:h-2', active ? 'bg-accent' : 'bg-brand-dark')} />
-      <span className={cn('-mt-px size-1.5 rounded-full', active ? 'bg-accent' : 'bg-brand-dark')} />
+      </motion.span>
+      <span className={cn('w-0.5', active ? 'h-3 bg-accent [@container(max-width:400px)]:h-2' : 'h-2 bg-brand-dark/80 [@container(max-width:400px)]:h-1.5')} />
+      <span className={cn('-mt-px size-1.5 rounded-full', active ? 'bg-accent' : 'bg-brand-dark/80')} />
     </button>
   );
 }

@@ -7,8 +7,8 @@ import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
 import { MEASUREMENT_MODEL as M } from './measurementModel.data';
 import { N_Z_PER_M, Z_PER_M, geoidZ, undulationAt, type Vec3 } from './measurementLayout';
 import type { StationId } from './measurementMission.data';
-import { MODEL_URLS, faceLines, stationArrows, surveyLine3D, topZ, worldPerPixel, type HeightGrid, type LandCamera, type ModelState } from './measurementView';
-import { C_ACCENT, C_ELL, C_GEO, C_H, C_INK } from './referenceBodiesStyle';
+import { MODEL_URLS, surveyLine3D, surveyPlaneLines, topZ, type HeightGrid, type LandCamera, type ModelState } from './measurementView';
+import { C_ACCENT, C_ELL, C_GEO, C_INK, C_SEA } from './referenceBodiesStyle';
 
 /**
  * The turnable landscape (WebGL): the renders' own ground, live.
@@ -17,37 +17,47 @@ import { C_ACCENT, C_ELL, C_GEO, C_H, C_INK } from './referenceBodiesStyle';
  *            straight-down Cycles image (model-albedo.webp) unlit — the renders'
  *            sun, trees and shadows are in it, and light on diffuse ground does
  *            not change with the viewing angle, so every angle shows the same
- *            landscape as the renders. Built in two parts: behind the survey
- *            line, and the slab in front of it, which drops away to open the cut.
- *   walls    the cut base in the renders' ground tone with its thin topsoil
- *            band, and the sea's own face where the ground is under water;
- *            shaded once per side for the renders' sun (from the left).
+ *            landscape as the renders. One block, all the way round.
+ *   sides    the same image carried down each side from the strip along its
+ *            top edge: forest over forest, fields over fields, water under the
+ *            sea. The strip is folded down at the top's own density — no row is
+ *            stretched — and back again past its width, its detail softening
+ *            with depth; a shade darker per side and toward the base — the
+ *            model's volume, not a claim about what is underground.
+ *   clear    the geoid view's reveal: the whole ground turns see-through. A
+ *            depth pre-pass keeps only its nearest layer, so the ground reads as
+ *            one thin envelope (never a milky stack), and the reference sheets
+ *            drawn before it show inside it.
  *   sheets   the geoid (wavy, N exaggerated like the land) and the flat
- *            ellipsoid: a faint fill and a thin analytic grid, depth-tested, so
- *            they are part of the model and the land hides them.
- *   lines    the dashed survey line, the three lines on the cut face, the
- *            heights at the picked station, the station's ring — in 3-D, so
- *            the ground hides them where it should.
+ *            ellipsoid, only while clear: the geoid firm (the height reference),
+ *            coming in from the sea and on under the land; the ellipsoid a quiet
+ *            second reference.
+ *   lines    the dashed survey line over the section's span, and while clear
+ *            the two reference lines in the survey line's plane — the section's
+ *            own lines, in the model.
  *   tripod   the GNSS receiver beside the picked station (the only lit object).
  *
  * The camera is given (landCamera(): the same numbers the HTML overlay projects
  * with), so nothing here decides where anything lands on screen. Frames render
- * on demand. Loaded client-only (next/dynamic) by MeasurementLandscape.
+ * on demand. Imported on first need (and again on a retry) by MeasurementLandscape.
  */
-
 
 const MPU = L.mPerUnit;
 const HALF_W = L.width / 2;
 const HALF_D = L.depth / 2;
 const CELL = M.heights.cell / MPU;
-/** Grid row of the survey line (the cut plane). */
-const J_CUT = Math.round((L.lineY + HALF_D) / CELL);
-const SLAB_AWAY = { y: -0.35, z: -2.1 };
-
-/** The renders' cut face, as seen there (sampled from land-cut.png): pale ground, a thin dark topsoil band. */
-const WALL = { low: '#BCB3A4', high: '#B7AC9A', soil: '#57493A', shallow: '#6FAAB8', deep: '#3A7590' };
+/** How see-through the clear ground is: thin enough for the geoid inside it to read as a surface. */
+const CLEAR_OPACITY = 0.22;
+/** The geoid's reveal: it comes in from the sea's edge and runs inland under the whole block (ms). */
+const SWEEP_MS = 1100;
+/** Render order: everything the ground can cover is drawn before its depth pre-pass. */
+const ORDER = { sheetEll: 1, sheetGeo: 2, sea: 3, planeLines: 4, lines: 5, outline: 6, groundDepth: 10, ground: 11 } as const;
 /** Each side's light from the renders' sun (from the left, high): left lit, right in shade. */
-const SHADE = { front: 1, back: 0.8, left: 1.07, right: 0.84 };
+const SHADE = { front: 0.88, back: 0.8, left: 0.94, right: 0.76 };
+/** The strip of image (world units ≈ 175 m) a side folds down from its top edge, back and forth. */
+const SIDE_BAND = 0.35;
+/** Start the strip this far inside the edge (≈ 1.5 texels): the image's outermost row is never sampled alone. */
+const SIDE_INSET = 0.006;
 
 type Grids = { zTop: Float32Array; zGround: Float32Array };
 
@@ -69,22 +79,21 @@ function grids(g: HeightGrid): Grids {
   return { zTop, zGround };
 }
 
-/** The top surface between grid rows j0 … j1, draped with the straight-down image. */
-function topGeometry(g: HeightGrid, G: Grids, j0: number, j1: number) {
+/** The top surface, draped with the straight-down image. */
+function topGeometry(g: HeightGrid, G: Grids) {
   const { cols, rows } = g;
-  const n = cols * (j1 - j0 + 1);
-  const pos = new Float32Array(n * 3);
-  const uv = new Float32Array(n * 2);
-  for (let j = j0; j <= j1; j++) {
+  const pos = new Float32Array(cols * rows * 3);
+  const uv = new Float32Array(cols * rows * 2);
+  for (let j = 0; j < rows; j++) {
     for (let i = 0; i < cols; i++) {
-      const k = (j - j0) * cols + i;
-      pos.set([-HALF_W + i * CELL, -HALF_D + j * CELL, G.zTop[j * cols + i]], k * 3);
+      const k = j * cols + i;
+      pos.set([-HALF_W + i * CELL, -HALF_D + j * CELL, G.zTop[k]], k * 3);
       uv.set([i / (cols - 1), j / (rows - 1)], k * 2);
     }
   }
-  const idx = new Uint32Array((cols - 1) * (j1 - j0) * 6);
+  const idx = new Uint32Array((cols - 1) * (rows - 1) * 6);
   let o = 0;
-  for (let j = 0; j < j1 - j0; j++) {
+  for (let j = 0; j < rows - 1; j++) {
     for (let i = 0; i < cols - 1; i++) {
       const a = j * cols + i;
       const b = a + 1;
@@ -102,64 +111,163 @@ function topGeometry(g: HeightGrid, G: Grids, j0: number, j1: number) {
   return geo;
 }
 
-/** The four upright sides of the block between rows j0 … j1, vertex-coloured. */
-function wallGeometry(g: HeightGrid, G: Grids, j0: number, j1: number) {
-  const { cols } = g;
-  const col = (hex: string, s: number) => new THREE.Color(hex).multiplyScalar(s);
-  const pos: number[] = [];
-  const clr: number[] = [];
+/**
+ * The sea's surface (the cells below sea level, at the water's level — the geoid there), for the
+ * see-through view: the geoid is seen to be the sea's surface before it carries on under the land.
+ */
+function seaGeometry(g: HeightGrid, G: Grids) {
+  const { cols, rows } = g;
+  const pos = new Float32Array(cols * rows * 3);
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) pos.set([-HALF_W + i * CELL, -HALF_D + j * CELL, G.zTop[j * cols + i] + 0.006], (j * cols + i) * 3);
   const idx: number[] = [];
-  const side = (samples: [number, number, number][], shade: number) => {
-    // per sample: base, under the band, band, ground (earth) · seabed, sea surface (water)
+  for (let j = 0; j < rows - 1; j++) {
+    for (let i = 0; i < cols - 1; i++) {
+      const a = j * cols + i;
+      const b = a + 1;
+      const c = a + cols;
+      const d = c + 1;
+      if (g.h[a] < 0 || g.h[b] < 0 || g.h[c] < 0 || g.h[d] < 0) idx.push(a, b, d, a, d, c);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  return geo;
+}
+
+/**
+ * The four upright sides. Per vertex: the image coordinate of the top edge right
+ * above it, the directions into the image and along the edge (per world unit),
+ * how far below the top it is, and the side's shade — the shader carries the
+ * edge's strip down from there.
+ */
+function sideGeometry(g: HeightGrid, G: Grids) {
+  const { cols, rows } = g;
+  const pos: number[] = [];
+  const edge: number[] = [];
+  const inward: number[] = [];
+  const along: number[] = [];
+  const depth: number[] = [];
+  const shade: number[] = [];
+  const idx: number[] = [];
+  const side = (samples: { x: number; y: number; k: number; u: number; v: number }[], into: [number, number], by: [number, number], s: number) => {
     const start = pos.length / 3;
-    const low = col(WALL.low, shade);
-    const high = col(WALL.high, shade);
-    const soil = col(WALL.soil, shade);
-    for (const [x, y, k] of samples) {
-      const zt = G.zTop[k];
-      const zg = G.zGround[k];
-      const depth = zt - zg;
-      const water = col(WALL.shallow, shade).lerp(col(WALL.deep, shade), Math.min(1, depth / 0.22));
-      const rows: [number, THREE.Color][] = [
-        [M.baseZ, low],
-        [zg - 0.03, high],
-        [zg - 0.018, soil],
-        [zg, soil],
-        [zg, water],
-        [zt, col(WALL.shallow, shade)],
-      ];
-      for (const [z, c] of rows) {
-        pos.push(x, y, z);
-        clr.push(c.r, c.g, c.b);
+    for (const p of samples) {
+      const zt = G.zTop[p.k];
+      for (const z of [zt, M.baseZ]) {
+        pos.push(p.x, p.y, z);
+        edge.push(p.u, p.v);
+        inward.push(into[0], into[1]);
+        along.push(by[0], by[1]);
+        depth.push(zt - z);
+        shade.push(s);
       }
     }
-    for (let s = 0; s < samples.length - 1; s++) {
-      const a = start + s * 6;
-      const b = a + 6;
-      for (const r of [0, 1, 2, 4]) idx.push(a + r, b + r, b + r + 1, a + r, b + r + 1, a + r + 1);
+    for (let t = 0; t < samples.length - 1; t++) {
+      const a = start + t * 2;
+      idx.push(a, a + 2, a + 3, a, a + 3, a + 1);
     }
   };
-  const row = (j: number) => Array.from({ length: cols }, (_, i) => [-HALF_W + i * CELL, -HALF_D + j * CELL, j * cols + i] as [number, number, number]);
-  const column = (i: number) => Array.from({ length: j1 - j0 + 1 }, (_, t) => [-HALF_W + i * CELL, -HALF_D + (j0 + t) * CELL, (j0 + t) * cols + i] as [number, number, number]);
-  side(row(j0), SHADE.front);
-  side(row(j1), SHADE.back);
-  side(column(0), SHADE.left);
-  side(column(cols - 1), SHADE.right);
+  const row = (j: number) => Array.from({ length: cols }, (_, i) => ({ x: -HALF_W + i * CELL, y: -HALF_D + j * CELL, k: j * cols + i, u: i / (cols - 1), v: j / (rows - 1) }));
+  const column = (i: number) => Array.from({ length: rows }, (_, j) => ({ x: -HALF_W + i * CELL, y: -HALF_D + j * CELL, k: j * cols + i, u: i / (cols - 1), v: j / (rows - 1) }));
+  const du = 1 / (2 * HALF_W);
+  const dv = 1 / (2 * HALF_D);
+  side(row(0), [0, dv], [du, 0], SHADE.front);
+  side(row(rows - 1), [0, -dv], [-du, 0], SHADE.back);
+  side(column(0), [du, 0], [0, -dv], SHADE.left);
+  side(column(cols - 1), [-du, 0], [0, dv], SHADE.right);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(clr, 3));
+  geo.setAttribute('edgeUv', new THREE.Float32BufferAttribute(edge, 2));
+  geo.setAttribute('inward', new THREE.Float32BufferAttribute(inward, 2));
+  geo.setAttribute('along', new THREE.Float32BufferAttribute(along, 2));
+  geo.setAttribute('depth', new THREE.Float32BufferAttribute(depth, 1));
+  geo.setAttribute('shade', new THREE.Float32BufferAttribute(shade, 1));
   geo.setIndex(idx);
   geo.computeBoundingSphere();
   return geo;
 }
 
-/** A reference sheet over the footprint between y0 and y1 (world units). */
-function sheetGeometry(y0: number, y1: number, zOf: (x: number, y: number) => number, step = 0.05) {
+const SIDE_VERT = /* glsl */ `
+attribute vec2 edgeUv;
+attribute vec2 inward;
+attribute vec2 along;
+attribute float depth;
+attribute float shade;
+varying vec2 vEdge;
+varying vec2 vIn;
+varying vec2 vAlong;
+varying float vDepth;
+varying float vShade;
+varying vec3 vWorld;
+void main() {
+  vEdge = edgeUv;
+  vIn = inward;
+  vAlong = along;
+  vDepth = depth;
+  vShade = shade;
+  vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+// The edge's strip at the top's own density, folded down and back inside the band (continuous at
+// the edge and at every fold, nothing stretched); the same spot's coarser image takes over a little
+// with depth, so the folds read as texture, not as a pattern; a little darker toward the base.
+const SIDE_FRAG = /* glsl */ `
+uniform sampler2D map;
+uniform float uOpacity;
+uniform float uBand;
+uniform float uInset;
+varying vec2 vEdge;
+varying vec2 vIn;
+varying vec2 vAlong;
+varying float vDepth;
+varying float vShade;
+varying vec3 vWorld;
+void main() {
+  float fold = uBand - abs(mod(vDepth, 2.0 * uBand) - uBand);
+  // each fold also drifts a little along the edge, so no fold mirrors the one above it
+  vec2 uv = vEdge + vIn * (uInset + fold) + vAlong * (0.45 * vDepth);
+  vec3 crisp = texture2D(map, uv).rgb;
+  vec3 soft = texture2D(map, uv, 2.5).rgb;
+  vec3 c = mix(crisp, soft, 0.55 * smoothstep(0.05, 0.9, vDepth));
+  // seen nearly edge-on a side is a sliver: its rows would average into bands, so it settles into
+  // the soft colour of its own edge (the side's outward normal is the in-image direction, reversed)
+  vec3 view = normalize(cameraPosition - vWorld);
+  float facing = abs(dot(normalize(vec3(-vIn, 0.0)), view));
+  vec3 wide = texture2D(map, vEdge + vIn * uBand * 0.5, 5.0).rgb;
+  c = mix(c, wide, 0.9 * (1.0 - smoothstep(0.12, 0.42, facing)));
+  c *= vShade * (1.0 - 0.2 * smoothstep(0.0, 1.4, vDepth));
+  gl_FragColor = vec4(c, uOpacity);
+  #include <colorspace_fragment>
+}`;
+// Depth only, with the colour pass's own vertex shader: the two land on exactly the same depth.
+const DEPTH_FRAG = /* glsl */ `
+void main() {
+  gl_FragColor = vec4(0.0);
+}`;
+
+function sideMaterial() {
+  return new THREE.ShaderMaterial({
+    vertexShader: SIDE_VERT,
+    fragmentShader: SIDE_FRAG,
+    uniforms: { map: { value: null }, uOpacity: { value: 1 }, uBand: { value: SIDE_BAND }, uInset: { value: SIDE_INSET } },
+    transparent: true,
+    depthWrite: false,
+    depthFunc: THREE.LessEqualDepth,
+    side: THREE.DoubleSide,
+  });
+}
+function sideDepthMaterial() {
+  return new THREE.ShaderMaterial({ vertexShader: SIDE_VERT, fragmentShader: DEPTH_FRAG, colorWrite: false, transparent: true, side: THREE.DoubleSide });
+}
+
+/** A reference sheet over the footprint (world units). */
+function sheetGeometry(zOf: (x: number, y: number) => number, step = 0.05) {
   const nx = Math.round((2 * HALF_W) / step) + 1;
-  const ny = Math.max(2, Math.round((y1 - y0) / step) + 1);
+  const ny = Math.round((2 * HALF_D) / step) + 1;
   const pos = new Float32Array(nx * ny * 3);
   for (let j = 0; j < ny; j++) {
-    const y = y0 + ((y1 - y0) * j) / (ny - 1);
+    const y = -HALF_D + (2 * HALF_D * j) / (ny - 1);
     for (let i = 0; i < nx; i++) {
       const x = -HALF_W + (2 * HALF_W * i) / (nx - 1);
       pos.set([x, y, zOf(x, y)], (j * nx + i) * 3);
@@ -185,21 +293,25 @@ void main() {
   vW = w.xyz;
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
-// A faint fill, an anti-aliased grid in world units (≈ 1.3 px lines), the front edge drawn firmer.
+// A faint fill, an anti-aliased grid in world units (≈ 1.3 px lines), the outer edge drawn firmer.
+// uSweep: the world x the sheet has come in to, from the sea's edge (x = +half) inland; the geoid's
+// reveal runs it once across, so the sheet is seen to carry on from the sea under the land.
 const SHEET_FRAG = /* glsl */ `
 uniform vec3 uColor;
 uniform float uFill;
 uniform float uLine;
 uniform float uGrid;
-uniform float uEdgeY;
+uniform vec2 uHalf;
 uniform float uOpacity;
+uniform float uSweep;
 varying vec3 vW;
 void main() {
   vec2 c = vW.xy / uGrid;
   vec2 d = abs(fract(c - 0.5) - 0.5) / max(fwidth(c), vec2(1e-5));
   float grid = 1.0 - clamp(min(d.x, d.y) - 0.35, 0.0, 1.0);
-  float edge = 1.0 - clamp(abs(vW.y - uEdgeY) / max(fwidth(vW.y), 1e-5) - 0.9, 0.0, 1.0);
-  float a = mix(uFill, uLine, max(grid, edge)) * uOpacity;
+  vec2 e = (uHalf - abs(vW.xy)) / max(fwidth(vW.xy), vec2(1e-5));
+  float edge = 1.0 - clamp(min(e.x, e.y) - 0.9, 0.0, 1.0);
+  float a = mix(uFill, uLine, max(grid, edge)) * uOpacity * smoothstep(uSweep - 0.35, uSweep, vW.x);
   if (a < 0.003) discard;
   gl_FragColor = vec4(uColor, a);
   #include <colorspace_fragment>
@@ -214,8 +326,9 @@ function sheetMaterial(hex: string, fill: number, line: number, grid: number) {
       uFill: { value: fill },
       uLine: { value: line },
       uGrid: { value: grid },
-      uEdgeY: { value: -HALF_D },
+      uHalf: { value: new THREE.Vector2(HALF_W, HALF_D) },
       uOpacity: { value: 0 },
+      uSweep: { value: -HALF_W - 1 },
     },
     transparent: true,
     depthWrite: false,
@@ -223,12 +336,8 @@ function sheetMaterial(hex: string, fill: number, line: number, grid: number) {
   });
 }
 
-/**
- * The soft contact shadow on the table: a block's footprint (world y0 … y1),
- * blurred, thrown a little to the right (sun from the left). The part behind
- * the survey line and the slab each have their own, so the slab's leaves with it.
- */
-function shadowTexture(y0: number, y1: number) {
+/** The soft contact shadow on the table: the footprint, blurred, thrown a little to the right (sun from the left). */
+function shadowTexture() {
   const c = document.createElement('canvas');
   c.width = 512;
   c.height = 320;
@@ -239,7 +348,7 @@ function shadowTexture(y0: number, y1: number) {
   // on a 12 × 7.5 plane centred on the model (image top = the back)
   const sx = 512 / 12;
   const sy = 320 / 7.5;
-  ctx.fillRect(-4000 + (6 - HALF_W + 0.12) * sx, (3.75 - y1 - 0.06) * sy, 2 * HALF_W * sx, (y1 - y0) * sy);
+  ctx.fillRect(-4000 + (6 - HALF_W + 0.12) * sx, (3.75 - HALF_D - 0.06) * sy, 2 * HALF_W * sx, 2 * HALF_D * sy);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
@@ -292,68 +401,102 @@ function CameraRig({ cam }: { cam: LandCamera }) {
   return null;
 }
 
-function Model({ grid, state, reduce, wpp, onReady }: { grid: HeightGrid; state: ModelState; reduce: boolean; wpp: number; onReady: () => void }) {
+function Model({
+  grid,
+  state,
+  cam,
+  reduce,
+  active,
+  onReady,
+  onFail,
+}: {
+  grid: HeightGrid;
+  state: ModelState;
+  cam: LandCamera;
+  reduce: boolean;
+  active: boolean;
+  onReady: () => void;
+  onFail: (why: 'image') => void;
+}) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const [albedo, setAlbedo] = useState<THREE.Texture | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
+  // The ground image. An image that fails is reported (the stills stay, with a retry); one that
+  // arrives after the model is gone is given straight back.
   useEffect(() => {
     let live = true;
-    new THREE.TextureLoader().load(MODEL_URLS.albedo, (t) => {
-      if (!live) return;
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = gl.capabilities.getMaxAnisotropy();
-      t.generateMipmaps = true;
-      t.minFilter = THREE.LinearMipmapLinearFilter;
-      setAlbedo(t);
-      invalidate();
-    });
+    new THREE.TextureLoader().load(
+      MODEL_URLS.albedo,
+      (t) => {
+        if (!live) {
+          t.dispose();
+          return;
+        }
+        t.colorSpace = THREE.SRGBColorSpace;
+        // the sides' folds may reach past the image's border: it mirrors back instead of repeating one row
+        t.wrapS = THREE.MirroredRepeatWrapping;
+        t.wrapT = THREE.MirroredRepeatWrapping;
+        t.anisotropy = gl.capabilities.getMaxAnisotropy();
+        t.generateMipmaps = true;
+        t.minFilter = THREE.LinearMipmapLinearFilter;
+        setAlbedo(t);
+        invalidate();
+      },
+      undefined,
+      () => {
+        if (live) onFail('image');
+      },
+    );
     return () => {
       live = false;
     };
-  }, [gl, invalidate]);
+  }, [gl, invalidate, onFail]);
+
+  // Back on the stage after another view held it (no frames were drawn meanwhile): draw one now.
+  useEffect(() => {
+    if (active) invalidate();
+  }, [active, invalidate]);
 
   const parts = useMemo(() => {
     const G = grids(grid);
-    const last = grid.rows - 1;
     return {
-      backTop: topGeometry(grid, G, J_CUT, last),
-      backWalls: wallGeometry(grid, G, J_CUT, last),
-      slabTop: topGeometry(grid, G, 0, J_CUT),
-      slabWalls: wallGeometry(grid, G, 0, J_CUT),
-      geoid: sheetGeometry(-HALF_D, HALF_D, (x, y) => geoidZ(undulationAt(x * MPU, y * MPU)) + 0.004),
-      ellipsoid: sheetGeometry(-HALF_D, L.lineY, () => 0),
+      top: topGeometry(grid, G),
+      sides: sideGeometry(grid, G),
+      sea: seaGeometry(grid, G),
+      geoid: sheetGeometry((x, y) => geoidZ(undulationAt(x * MPU, y * MPU)) + 0.004),
+      ellipsoid: sheetGeometry(() => 0),
     };
   }, [grid]);
   useEffect(() => () => Object.values(parts).forEach((g) => g.dispose()), [parts]);
 
-  // the slab's own materials: it is clipped at the table while it drops away
   const mats = useMemo(() => {
-    const table = new THREE.Plane(new THREE.Vector3(0, 0, 1), -M.baseZ + 0.0005);
-    const top = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false });
-    const walls = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, side: THREE.DoubleSide });
-    const slabTop = top.clone();
-    slabTop.clippingPlanes = [table];
-    const slabWalls = walls.clone();
-    slabWalls.clippingPlanes = [table];
-    const shadow = new THREE.MeshBasicMaterial({ map: shadowTexture(L.lineY, HALF_D), transparent: true, opacity: 0.42, depthWrite: false, toneMapped: false });
-    const slabShadow = new THREE.MeshBasicMaterial({ map: shadowTexture(-HALF_D, L.lineY), transparent: true, opacity: 0.42, depthWrite: false, toneMapped: false });
+    // the ground's nearest layer only: depth first, then colour where it is that layer. Both passes are
+    // 'transparent' so they take their turn by render order, after everything the ground may cover.
+    const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, transparent: true });
+    const top = new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false, transparent: true, depthWrite: false, depthFunc: THREE.LessEqualDepth });
     return {
+      depthOnly,
       top,
-      walls,
-      slabTop,
-      slabWalls,
-      shadow,
-      slabShadow,
-      geoid: sheetMaterial(C_GEO, 0.12, 0.6, 0.5),
-      ellipsoid: sheetMaterial(C_ELL, 0.08, 0.45, 1),
+      sidesDepth: sideDepthMaterial(),
+      sides: sideMaterial(),
+      shadow: new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, opacity: 0.42, depthWrite: false, toneMapped: false }),
+      geoid: sheetMaterial(C_GEO, 0.32, 0.95, 0.75),
+      sea: new THREE.MeshBasicMaterial({ color: C_SEA, transparent: true, opacity: 0, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }),
+      ellipsoid: sheetMaterial(C_ELL, 0.07, 0.34, 1.5),
     };
   }, []);
   useEffect(() => {
-    for (const m of [mats.top, mats.slabTop]) {
-      m.map = albedo;
-      m.needsUpdate = true;
-    }
+    mats.top.map = albedo;
+    mats.top.needsUpdate = true;
+    mats.sides.uniforms.map.value = albedo;
     invalidate();
   }, [albedo, mats, invalidate]);
   useEffect(
@@ -366,145 +509,139 @@ function Model({ grid, state, reduce, wpp, onReady }: { grid: HeightGrid; state:
     [mats],
   );
 
-  // slab out / in; then the sheets
-  const away = useEased(state.open ? 1 : 0, 620, reduce);
-  const geoidA = useEased(state.geoidSheet ? 1 : 0, 380, reduce, state.open ? 260 : 0);
-  const ellA = useEased(state.ellipsoidSheet ? 1 : 0, 380, reduce, 320);
-  const slab = useRef<THREE.Group>(null);
+  // clear: the ground thins, then the sheets come up inside it
+  const groundA = useEased(state.clear ? CLEAR_OPACITY : 1, 560, reduce);
+  const sheetsA = useEased(state.clear ? 1 : 0, 420, reduce, state.clear ? 220 : 0);
+  // the geoid sheet sweeps in from the sea (x = +half) inland; its line in the survey plane follows it
+  const sweep = useEased(state.clear ? -HALF_W - 0.5 : HALF_W + 0.5, SWEEP_MS, reduce, state.clear ? 220 : 0);
+  const geoidLineA = useEased(state.clear ? 1 : 0, 380, reduce, state.clear ? 220 + SWEEP_MS * 0.8 : 0);
+  const sheets = useRef<THREE.Group>(null);
+  // the contact shadow on the table: seen almost edge-on from low angles, it would read as a grey band
+  const d = [cam.eye[0] - cam.target[0], cam.eye[1] - cam.target[1], cam.eye[2] - cam.target[2]];
+  const elev = (Math.asin(d[2] / Math.hypot(d[0], d[1], d[2])) * 180) / Math.PI;
+  const lowFade = Math.min(1, Math.max(0.12, (elev - 4) / 22));
   useFrame(() => {
-    const t = away.current;
-    if (slab.current) {
-      slab.current.position.set(0, SLAB_AWAY.y * t, SLAB_AWAY.z * t);
-      slab.current.visible = t < 0.999;
-    }
-    mats.slabShadow.opacity = 0.42 * (1 - Math.min(1, t * 1.6));
-    mats.geoid.uniforms.uOpacity.value = geoidA.current;
-    mats.ellipsoid.uniforms.uOpacity.value = ellA.current;
+    const g = groundA.current;
+    mats.top.opacity = g;
+    mats.sides.uniforms.uOpacity.value = g;
+    mats.shadow.opacity = 0.42 * lowFade * (0.45 + 0.55 * g);
+    mats.geoid.uniforms.uOpacity.value = sheetsA.current;
+    mats.geoid.uniforms.uSweep.value = sweep.current;
+    mats.sea.opacity = 0.5 * sheetsA.current;
+    mats.ellipsoid.uniforms.uOpacity.value = sheetsA.current;
+    if (sheets.current) sheets.current.visible = sheetsA.current > 0.003;
   });
 
-  // ready once the ground image is on it and a frame has been drawn
+  // Ready once a frame has been drawn with the ground image on the ground: this callback runs just
+  // before that frame is rendered, so the page is told on the next animation frame, after it.
   const told = useRef(false);
   useFrame(() => {
-    if (albedo && !told.current) {
-      told.current = true;
-      requestAnimationFrame(onReady);
-    }
+    if (told.current || !albedo || mats.top.map !== albedo) return;
+    told.current = true;
+    requestAnimationFrame(() => mounted.current && onReady());
   });
 
   return (
     <group>
-      <mesh geometry={parts.backTop} material={mats.top} />
-      <mesh geometry={parts.backWalls} material={mats.walls} />
-      <group ref={slab}>
-        <mesh geometry={parts.slabTop} material={mats.slabTop} />
-        <mesh geometry={parts.slabWalls} material={mats.slabWalls} />
-      </group>
       <mesh position={[0, 0, M.baseZ - 0.002]} material={mats.shadow} renderOrder={-1}>
         <planeGeometry args={[12, 7.5]} />
       </mesh>
-      <mesh position={[0, 0, M.baseZ - 0.0025]} material={mats.slabShadow} renderOrder={-1}>
-        <planeGeometry args={[12, 7.5]} />
-      </mesh>
-      <mesh geometry={parts.geoid} material={mats.geoid} renderOrder={2} />
-      <mesh geometry={parts.ellipsoid} material={mats.ellipsoid} renderOrder={1} />
-      <Analytic grid={grid} state={state} reduce={reduce} wpp={wpp} />
+      <group ref={sheets}>
+        <mesh geometry={parts.ellipsoid} material={mats.ellipsoid} renderOrder={ORDER.sheetEll} />
+        <mesh geometry={parts.geoid} material={mats.geoid} renderOrder={ORDER.sheetGeo} />
+        <mesh geometry={parts.sea} material={mats.sea} renderOrder={ORDER.sea} />
+        <PlaneLines opacity={sheetsA} geoidOpacity={geoidLineA} />
+        <Outline grid={grid} opacity={sheetsA} />
+      </group>
+      <mesh geometry={parts.top} material={mats.depthOnly} renderOrder={ORDER.groundDepth} />
+      <mesh geometry={parts.sides} material={mats.sidesDepth} renderOrder={ORDER.groundDepth} />
+      <mesh geometry={parts.top} material={mats.top} renderOrder={ORDER.ground} />
+      <mesh geometry={parts.sides} material={mats.sides} renderOrder={ORDER.ground} />
+      <Analytic grid={grid} state={state} />
     </group>
   );
 }
 
-/** Lines and arrows: what the page draws on the model, in the model. */
-function Analytic({ grid, state, reduce, wpp }: { grid: HeightGrid; state: ModelState; reduce: boolean; wpp: number }) {
-  const survey = useMemo(() => surveyLine3D(), []);
-  const face = useMemo(() => faceLines(), []);
-  const faceA = useEased(state.face ? 1 : 0, 420, reduce, state.face ? 380 : 0);
-  const [faceOn, setFaceOn] = useState(state.face);
-  const lines = useRef<THREE.Group>(null);
+type Eased = { current: number };
+
+/** Lines whose opacity follows a value that eases (the clear ground's sheets). */
+function useFollow(opacity: Eased, base = 1) {
+  const group = useRef<THREE.Group>(null);
   useFrame(() => {
-    const a = faceA.current;
-    lines.current?.traverse((o) => {
-      const m = (o as THREE.Mesh).material as THREE.Material & { opacity: number };
-      if (m && 'opacity' in m && o.userData.face) m.opacity = a * (o.userData.alpha ?? 1);
+    group.current?.traverse((o) => {
+      const m = (o as THREE.Mesh).material as (THREE.Material & { opacity: number }) | undefined;
+      if (m && 'opacity' in m) m.opacity = opacity.current * (o.userData.alpha ?? base);
     });
-    if ((a > 0) !== faceOn) setFaceOn(a > 0);
   });
-  const ring = useMemo(() => {
-    if (!state.ring) return null;
-    const s = L.stations[state.ring];
-    const r = 60 / MPU;
-    return Array.from({ length: 49 }, (_, i) => {
-      const a = (i / 48) * Math.PI * 2;
-      const x = s.x + Math.cos(a) * r;
-      const y = s.y + Math.sin(a) * r;
-      return [x, y, topZ(grid, x * MPU, y * MPU) + 0.006] as Vec3;
-    });
-  }, [state.ring, grid]);
+  return group;
+}
 
+/** The geoid and the ellipsoid in the survey line's plane: the section's reference lines, inside the clear ground. */
+function PlaneLines({ opacity, geoidOpacity }: { opacity: Eased; geoidOpacity: Eased }) {
+  const lines = useMemo(() => surveyPlaneLines(), []);
+  const ell = useFollow(opacity, 0.7);
+  const geo = useFollow(geoidOpacity);
   return (
-    <group ref={lines}>
-      {state.survey && <Line points={survey} color={C_ACCENT} lineWidth={1.75} dashed dashSize={0.07} gapSize={0.05} transparent opacity={0.9} />}
-      {ring && <Line points={ring} color={C_ACCENT} lineWidth={2.25} />}
-      {faceOn && (
-        <>
-          <Line points={face.ellipsoid} color={C_ELL} lineWidth={2.5} dashed dashSize={0.08} gapSize={0.05} transparent userData={{ face: true }} />
-          <Line points={face.geoid} color={C_GEO} lineWidth={4} transparent userData={{ face: true }} />
-          {face.ground.map((run, i) => (
-            <Line key={i} points={run} color={C_INK} lineWidth={2} transparent userData={{ face: true, alpha: 0.85 }} />
-          ))}
-        </>
-      )}
-      {state.arrows && <Arrows id={state.arrows} wpp={wpp} />}
-      {state.tripod && <Tripod id={state.tripod} grid={grid} />}
-    </group>
+    <>
+      <group ref={ell}>
+        <Line points={lines.ellipsoid} color={C_ELL} lineWidth={2.25} transparent renderOrder={ORDER.planeLines} />
+      </group>
+      <group ref={geo}>
+        <Line points={lines.geoid} color={C_GEO} lineWidth={4} transparent renderOrder={ORDER.planeLines} />
+      </group>
+    </>
   );
 }
 
-/** h, N and H at a station, upright on the cut face; a head where the arrow is long enough to carry one. */
-function Arrows({ id, wpp }: { id: StationId; wpp: number }) {
-  const segs = stationArrows(id);
-  const head = 7 * wpp;
-  const items = (
-    [
-      ['N', C_GEO],
-      ['H', C_H],
-      ['h', C_ELL],
-    ] as const
-  ).map(([k, color]) => {
-    const [a, b] = segs[k];
-    const len = b[2] - a[2];
-    const dir = Math.sign(len) || 1;
-    const withHead = Math.abs(len) > head * 1.7;
-    const shaftEnd: Vec3 = withHead ? [b[0], b[1], b[2] - dir * head] : b;
-    const tick = 3.5 * wpp;
-    return { k, color, a, b, dir, withHead, shaftEnd, tick };
-  });
+/** The clear ground's envelope: its top edges, its base and its corners, drawn quietly so its shape stays readable. */
+function Outline({ grid, opacity }: { grid: HeightGrid; opacity: Eased }) {
+  const runs = useMemo(() => {
+    const z = (x: number, y: number) => topZ(grid, x * MPU, y * MPU);
+    const n = 90;
+    const along = (a: [number, number], b: [number, number]) =>
+      Array.from({ length: n + 1 }, (_, t) => {
+        const x = a[0] + ((b[0] - a[0]) * t) / n;
+        const y = a[1] + ((b[1] - a[1]) * t) / n;
+        return [x, y, z(x, y)] as Vec3;
+      });
+    const c: [number, number][] = [
+      [-HALF_W, -HALF_D],
+      [HALF_W, -HALF_D],
+      [HALF_W, HALF_D],
+      [-HALF_W, HALF_D],
+    ];
+    const top = c.map((p, i) => along(p, c[(i + 1) % 4]));
+    const base = [...c, c[0]].map(([x, y]) => [x, y, M.baseZ] as Vec3);
+    const corners = c.map(([x, y]) => [[x, y, M.baseZ] as Vec3, [x, y, z(x, y)] as Vec3]);
+    return [...top, base, ...corners];
+  }, [grid]);
+  const group = useFollow(opacity, 0.45);
   return (
-    <group>
-      {items.map(({ k, color, a, b, dir, withHead, shaftEnd, tick }) => (
-        <group key={k}>
-          <Line points={[a, shaftEnd]} color={color} lineWidth={3} />
-          {/* the surface it starts on */}
-          <Line points={[[a[0] - tick, a[1], a[2]], [a[0] + tick, a[1], a[2]]]} color={color} lineWidth={2} />
-          {withHead && (
-            <mesh>
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  args={[new Float32Array([b[0] - head * 0.42, b[1], b[2] - dir * head, b[0] + head * 0.42, b[1], b[2] - dir * head, b[0], b[1], b[2]]), 3]}
-                />
-              </bufferGeometry>
-              <meshBasicMaterial color={color} side={THREE.DoubleSide} toneMapped={false} />
-            </mesh>
-          )}
-        </group>
+    <group ref={group}>
+      {runs.map((pts, i) => (
+        <Line key={i} points={pts} color={C_INK} lineWidth={1.25} transparent renderOrder={ORDER.outline} />
       ))}
     </group>
   );
 }
 
-/** The GNSS receiver on its tripod, just right of the station on the ground behind the cut. */
+/** What the page draws on the model, in the model: the survey line and the receiver. */
+function Analytic({ grid, state }: { grid: HeightGrid; state: ModelState }) {
+  const survey = useMemo(() => surveyLine3D(), []);
+  return (
+    <group>
+      {state.survey && <Line points={survey} color={C_ACCENT} lineWidth={2} dashed dashSize={0.07} gapSize={0.05} transparent opacity={0.95} renderOrder={ORDER.lines} />}
+      {state.tripod && <Tripod id={state.tripod} grid={grid} />}
+    </group>
+  );
+}
+
+
+
+/** The GNSS receiver on its tripod, right of the station (clear of its pin) on the ground just behind the survey line. */
 function Tripod({ id, grid }: { id: StationId; grid: HeightGrid }) {
   const s = L.stations[id];
-  const x = s.x + 0.24;
+  const x = s.x + 0.44;
   const y = L.lineY + 0.07;
   const z = topZ(grid, x * MPU, y * MPU);
   const h = 0.46;
@@ -521,7 +658,7 @@ function Tripod({ id, grid }: { id: StationId; grid: HeightGrid }) {
     [],
   );
   return (
-    <group position={[x, y, z]}>
+    <group position={[x, y, z]} scale={1.4}>
       {legs.map((l, i) => (
         <mesh key={i} position={l.mid} quaternion={l.q}>
           <cylinderGeometry args={[0.009, 0.011, l.len, 8]} />
@@ -541,7 +678,7 @@ function Tripod({ id, grid }: { id: StationId; grid: HeightGrid }) {
         <meshLambertMaterial color="#F4F2EC" />
       </mesh>
       {/* a soft shadow on the ground, thrown right like the renders' */}
-      <mesh position={[0.07, 0.01, 0.004]}>
+      <mesh position={[0.07, 0.01, 0.004]} renderOrder={ORDER.lines}>
         <circleGeometry args={[0.1, 24]} />
         <meshBasicMaterial color="#1E1C14" transparent opacity={0.22} depthWrite={false} toneMapped={false} />
       </mesh>
@@ -549,13 +686,50 @@ function Tripod({ id, grid }: { id: StationId; grid: HeightGrid }) {
   );
 }
 
-class GLBoundary extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
+/**
+ * The model's WebGL context, while the model is on the page. The browser may take a context away
+ * (a GPU reset, too many contexts) and give it back: the page shows the stills meanwhile and
+ * returns to the model once a frame is drawn again. The listeners leave with the model — so the
+ * context loss three.js forces on purpose when a canvas is torn down (r3f does so 500 ms after
+ * unmounting it, e.g. on a remount) is never read as the model failing.
+ */
+function ContextWatch({ onLost, onReady }: { onLost: () => void; onReady: () => void }) {
+  const gl = useThree((s) => s.gl);
+  const invalidate = useThree((s) => s.invalidate);
+  const back = useRef(false);
+  useEffect(() => {
+    const el = gl.domElement;
+    const lost = (e: Event) => {
+      e.preventDefault(); // lets the browser restore it
+      onLost();
+    };
+    const restored = () => {
+      back.current = true;
+      invalidate();
+    };
+    el.addEventListener('webglcontextlost', lost);
+    el.addEventListener('webglcontextrestored', restored);
+    return () => {
+      el.removeEventListener('webglcontextlost', lost);
+      el.removeEventListener('webglcontextrestored', restored);
+    };
+  }, [gl, invalidate, onLost]);
+  useFrame(() => {
+    if (!back.current) return;
+    back.current = false;
+    requestAnimationFrame(onReady);
+  });
+  return null;
+}
+
+class GLBoundary extends Component<{ onFail: (why: 'webgl') => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
-  componentDidCatch() {
-    this.props.onFail();
+  componentDidCatch(error: unknown) {
+    console.warn('[measurement] the 3-D model stopped:', error);
+    this.props.onFail('webgl');
   }
   render() {
     return this.state.failed ? null : this.props.children;
@@ -565,27 +739,24 @@ class GLBoundary extends Component<{ onFail: () => void; children: ReactNode }, 
 export default function MeasurementLandscape3D({
   grid,
   cam,
-  height,
   state,
   reduce,
   active,
   onReady,
   onFail,
+  onLost,
 }: {
   grid: HeightGrid;
   cam: LandCamera;
-  /** Box height (px), for the size of a pixel on the model. */
-  height: number;
   state: ModelState;
   reduce: boolean;
   /** Off while the stage shows another body: no frames are drawn. */
   active: boolean;
+  /** A frame has been drawn with the ground on it (again, after a lost context came back). */
   onReady: () => void;
-  onFail: () => void;
+  onFail: (why: 'image' | 'webgl') => void;
+  onLost: () => void;
 }) {
-  // world size of a screen pixel at the picked station: the arrowheads keep their pixel size
-  const at = L.stations[state.arrows ?? 'B'];
-  const wpp = worldPerPixel(cam, [at.x, at.y, at.z], height);
   return (
     <GLBoundary onFail={onFail}>
       <Canvas
@@ -595,19 +766,13 @@ export default function MeasurementLandscape3D({
         frameloop={active ? 'demand' : 'never'}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         camera={{ manual: true, fov: cam.fovY, near: cam.near, far: cam.far, position: cam.eye, up: [0, 0, 1] }}
-        onCreated={({ gl }) => {
-          gl.localClippingEnabled = true;
-          gl.domElement.addEventListener('webglcontextlost', (e) => {
-            e.preventDefault();
-            onFail();
-          });
-        }}
         style={{ position: 'absolute', inset: 0 }}
       >
         <hemisphereLight args={['#FFF4E0', '#6B6A45', 1.1]} />
         <directionalLight position={[-8, 0.3, 6]} intensity={2.2} color="#FFF1DC" />
+        <ContextWatch onLost={onLost} onReady={onReady} />
         <CameraRig cam={cam} />
-        <Model grid={grid} state={state} reduce={reduce} wpp={wpp} onReady={onReady} />
+        <Model grid={grid} state={state} cam={cam} reduce={reduce} active={active} onReady={onReady} onFail={onFail} />
       </Canvas>
     </GLBoundary>
   );

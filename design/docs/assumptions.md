@@ -1,5 +1,25 @@
 # Design Assumptions
 
+## 2026-10-12 — Selected definitions layout: option 1, realistic assets and fuller copy
+
+- The user explicitly selected option 1 (two always-visible definition cards). Two final images plus PNG masters are in `public/assets/lessons/topic02/scene-coordinates/definitions/`; runtime WebP files are 1536×1024. The implementation prompt with exact expanded Hebrew copy is `design/docs/2026-10-12-coordinates-definitions-claude-prompt.txt`. Application code was not changed.
+- The photographic field scene is synthetic and its paper map is illustrative. The Earth pair uses the site's NASA-based texture as reference; the result is a generated conceptual image, not a data-rendered map or a numerical demonstration of flattening. Labels stay in HTML; no crop/stretch/mirror. Fuller copy was checked against the source deck and official NOAA educational material; its mathematical ellipsoid is one reference-body example, distinct from the geoid.
+
+
+## 2026-10-12 — Simplified presentation of the two coordinate definitions (revised brief)
+
+- The user clarified that this opening is for definitions, with practice later. This supersedes the exploration/task/stepper alternatives below. New concepts in `design/mockups/coordinates-definitions-simple-2026-10-12/` present both definitions continuously: two illustrated cards, one annotated shared image, or two glossary rows with one optional visibility button. No definition tabs, quizzes, feedback, or required interaction.
+- The mathematical body is an illustrative example, not a definition of every reference body. Exaggerated globe/ellipsoid separation and flattening in generated art are schematic; the README specifies the precise source copy, existing tokens, static/SVG implementation option and unchanged downstream lesson. No application code was modified.
+
+
+## 2026-10-12 — Coordinates 1 opening definitions: three mockup alternatives
+
+- Requested scope is the two opening definitions in `CoordinatesScene.tsx` / `IntroColumns`: geodesy and spatial reference bodies. Three alternative images and a Hebrew interaction handoff are saved in `design/mockups/coordinates-intro-2026-10-12/`. No application code was edited for this request.
+- The lesson shell, existing tokens and 1440px desktop review are the references. Generated PNGs are concept art (actual raster size is recorded in the accompanying README), not exact CSS measurements. Generated sidebar deviations and typography differences are not proposed shared-shell changes.
+- The three concepts show two exploration cards, a guided local-to-global representation, and a two-step mapping task. Each includes both definitions; they are alternatives rather than three consecutive lessons. Terrain points are schematic, and no coordinate values or precision claims are introduced before the reference system is defined.
+- Mathematical reference surfaces are virtual models, not geological layers or a physical smoothing/flattening of terrain. Any globe wire mesh is illustrative geometry; the axes step introduces the coordinate framework. Detailed ellipsoid/geoid/heights and datum activities remain later in the lesson.
+
+
 ## 2026-10-11 — Topic-02 geodesy mockup alternatives
 
 - Three static image concepts were requested for selection and later development with Claude Code. Only images and a handoff brief were created in `design/mockups/topic-02-geodesy/`; no lesson code was changed. Final deliverables use `-v2.png` filenames.
@@ -1970,3 +1990,403 @@ Code: `src/components/lessons/topic-02/datum-field/` — `DatumFieldChallenge.ts
 - No mobile design (below `lg` the card stacks: panel, picture, picker, band).
 
 **QA:** unit `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/datum-field-challenge.test.mjs` (model, task transitions, projection ↔ render data, assets, copy); browser `QA_BASE=<dev url> node scripts/qa/shot-datum-field-challenge.mjs` (states, motion sync, no double conversion, mid-motion switch, reset, keyboard, reduced motion, failed image + retry, no layout jump). Screenshots: `design/screenshots/datum-field-challenge/`.
+
+## 2026-10-12 — Topic 02 coordinates 2: "מערכות ייחוס" follow-up (no tabs, explicit message)
+
+Brief: `design/mockups/topic-02-reference-systems-2026-10-11/claude-linked-comparison-followup.md`. It supersedes the first brief's tab and verbatim-copy rules for this block only. Code: `ReferenceSystemBlock` in `CoordinatesPart2Scene.tsx` and `ReferenceSystemsLinkedComparison.tsx`.
+
+**What changed**
+- The three exploration tabs and "איפוס" are gone. The brief allows dropping the reset ("אם נשאר כפתור איפוס"), and the "A גשר" choice already returns to the opening state.
+- The copy is the brief's wording: key sentence, lead, instruction, map titles and axis lines, units, zone meaning, feedback, fixed sentence, comparison table, conclusion and definitions. The "+ / =" formula was removed.
+- Choices show the letter as a pin-style badge (filled orange = chosen, outlined = not) plus the feature name. The accessible name is "A גשר", without the middle dot so screen readers don't read "dot".
+- The system code moved from the map header into a supporting line under the readings: `WGS84` and `WGS84 / UTM 36N`. On the UTM side, "פלח 36 · חצי הכדור הצפוני (N)" follows it. The "UTM 36N" chip on the map was removed, so there is one tag fewer over the terrain.
+- φ (U+03C6) is used in the reading labels, as the brief writes it. The rest of the scene still uses ϕ (U+03D5); both are the same letter.
+
+**Map hierarchy**
+- Grid lines are `stroke-fg/40`, 1 px. Edge labels are medium weight on `bg-bg-elevated/75`, three per edge: the top band starts at 0.2, which drops the 35°07′00″ label next to the north arrow.
+- Unselected pins are size-7 and outlined. The chosen pin is size-9, orange and filled. The feature ellipses (`ring` in the data) were replaced by a small anchor ring of about 13 px around the pin tip, so the bridge, ridge and village stay visible.
+- The base image, crop, scale and coordinates are unchanged.
+
+**Motion.** On a selection the new values and the feedback line fade in once from 0.25 opacity over 250 ms, and the chosen pin scales from 0.75. There is no loop. With reduced motion the update is instant.
+
+**Fit at 1440 × 1122.** With the section heading 16 px under the site header:
+| Element | Ends at |
+| --- | --- |
+| Maps | 831 px |
+| Readings | 990 px |
+| Feedback line | 1087 px |
+| Fixed sentence | 1121 px |
+
+The comparison, conclusion and definitions follow below the fold, which the brief allows.
+
+**Out of scope, left as is (terminology conflicts with this block):**
+- `SceneHeader` intro: "בשני ההיטלים המרכזיים: היטל גיאוגרפי והיטל UTM".
+- The `ProjectionsBlock` closing line: "קיימים שני היטלים מרכזיים: היטל גיאוגרפי והיטל UTM".
+- The `LatLonExplorer` section heading: "מערכת קואורדינטות גיאוגרפית – היטל GEO".
+- `Part2Summary` items 2 ("היטל גיאוגרפי") and 4 ("מערכת ייחוס – השילוב בין הדאטום להיטל").
+
+**QA:**
+- Unit tests: `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/reference-systems.test.mjs`.
+- Browser QA: `QA_BASE=… node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-reference-systems.mjs`.
+- Shots are in `design/screenshots/reference-systems-2026-10-12/`; the `00-before-*` files show the version this replaced.
+
+## 2026-10-12 — Guided datum: interaction and learning refinement
+
+Brief: the user's message, with the detailed version in `design/mockups/datum-concepts/claude-interaction-and-learning-refinement-prompt.md`. Files: `topic-02/datum/` (DatumGuided, datumDemo, DatumGlobe3D, DatumInset3D, DatumSection, datumOverlays, `gapAt` added to datumGeometry). Nothing outside the datum block changed. `fitError`, `bestFit`, `START`, `RANGE`, `scoreFor` and `DISPLAY_K` are unchanged; the unit tests still pin them.
+
+**What each station does now**
+- **1 "גוף הייחוס":** the surface choice ("פני השטח" / "גיאואיד" / "אליפסואיד") appears only here. The bodies sit in one nested composition (`OVERVIEW`: the ellipsoid centred, at the geoid's mean size). A choice changes only the look (`LOOKS` in DatumGlobe3D):
+  - surface: the shell solid, its relief raised (bump 1.4), the cut outlined; the bodies inside quiet;
+  - geoid: the shell becomes a veil (sea 0.26, land 0.48), the blue body whole, with stronger waves and contour lines; the cage barely there;
+  - ellipsoid: the shell a veil, the geoid opened to a quiet reference (0.58), the skin and cage in front.
+
+  A choice never touches the pose, the fit, the check point or the camera. Choosing the active surface again does nothing; it no longer resets the view.
+- **2 "מיקום וכיוון":**
+  - **The demo button:** one button under the globe, in place of the round play button: "הפעלת ההדגמה" → "עצירת ההדגמה" → "המשך ההדגמה" → "הדגמה חוזרת". Beside it, a stepper of the phases "הזזה › סיבוב › קנה מידה".
+  - **The demo:** from `DEMO_START` = (72, −52, 26°, ×0.80) to the computed global fit. Each phase changes only its own parameter (unit-tested).
+  - **Temporary marks:** the dashed start outline and its track (shift); the body's axes against a fixed dashed vertical/horizontal (rotation); the outline at the size before the phase (scale).
+  - **The experiment:** "נסו בעצמכם" opens it, closed by default, with "הזזה אופקית (X)", "הזזה אנכית (Y)", "סיבוב" and "קנה מידה", plus the schematic note. A focused parameter shows its own mark (an axis arrow, the axes, or the earlier outline) and names itself in the feedback. "איפוס" returns to `DEMO_START` without touching the camera. "הצגת התאמה" eases to the fit, with no score. "חזרה להדגמה" closes the sliders.
+- **3 "עולמי ומקומי":** global / local only, applied at once (a 700 ms ease, instant under reduced motion). Two fixed check points ("באזור המסומן" / "מחוץ לאזור"), chosen under the globe or by clicking the quieter ring on the wall:
+  - **inside:** t = −1.0, the middle of `LOCAL_ARC`;
+  - **outside:** t = +1.0, its mirror below the equator.
+
+  Measured gaps (section units), at the inside / outside point:
+  - global fit: 10.3 / 3.9;
+  - local fit: 0.4 / 40.6.
+
+  The feedback words come from these numbers: < 3 "כמעט חופפים", < 8 "פער קטן", < 20 "פער", otherwise "פער גדול". The second sentence compares with the other fit at the same point. Nothing is hard-coded to favour local. The marked region is now also a 3-D band on the geoid with two end caps, since the whole blue body covers the wall drawing. The wall drawing gained the same caps.
+- **Feedback:** a short strip in the globe's column, under its control, in normal flow. QA measures 10–110 px below the stage in every state, including the experiment, the tallest station. Announcements fire once things settle.
+- **Removed:** the round play button, the scrubber, the 0–100 % meter, its "good" feedback, the score in every accessible text, "החזרת המבט", fullscreen, the demo copies inside stations 2 and 3, and the experiment in station 3. Camera turning is now limited to azimuth CAM.az ± 0.95 rad, so the opening stays toward the viewer; the polar and distance limits are unchanged. Wheel zoom still needs the stage to be engaged. Keyboard: stations, surface and check-point radios (←/→ in RTL), the four sliders, and the inspection marker (stations 1–2). There is no keyboard orbit, as before.
+- **State:** stations keep separate state; leaving station 2 pauses its demo; coming back plays nothing.
+- **Reduced motion:** the same button, one phase per click, labelled "לשלב הבא".
+- **No WebGL:** the live SVG section now draws the surface (the smooth envelope — the relief needs the 3-D maps), the emphasis of the body in focus, the marked region's caps, the station-2 marks and both check points. Its `aria-label` is the stage description, with no score.
+
+**Copy, before → after (only the brief's approved changes; `scripts/qa/datum-copy-check.mjs` enforces the list)**
+| Where | Before | After |
+| --- | --- | --- |
+| Station 1 | "נחשוב על הדאטום כעל הגוף המתמטי שמתאר בצורה הטובה ביותר את כדור הארץ כולו, או חלק ממנו – ונזכיר כי בלתי אפשרי לתאר את כדור הארץ בצורה מתמטית, רק פיזיקלית." | "האליפסואיד הוא גוף ייחוס מתמטי. הדאטום מגדיר כיצד גוף הייחוס מעוגן ביחס לכדור הארץ." + the instruction "בחרו משטח כדי להבחין בינו לבין יתר הגופים." |
+| Station 2 | "המטרה: שהדאטום יהיה כמה שיותר דומה וקרוב לפני השטח. בתרשים – כדור הארץ כפי שהוא מוגדר על ידי שילוב של גיאואיד (בכחול) ואליפסואיד (בכתום). הזיזו, סובבו ושנו…" | "בהמחשה נבחן כיצד הזזה, סיבוב וקנה מידה משנים את מיקום גוף הייחוס ביחס לכדור הארץ." The original "הזיזו, סובבו ושנו את קנה המידה של האליפסואיד כדי להלביש אותו על הגיאואיד." moved, verbatim, into the experiment. |
+| Readout | "בהמחשה הדו־ממדית יש ארבעה פרמטרים בלבד: הזזה בשני צירים, סיבוב וקנה מידה." | In the experiment: "זהו ניסוי סכמטי בחתך דו־ממדי: שתי הזזות, סיבוב וקנה מידה. השינויים מוגזמים לצורך ההמחשה." |
+| Sliders | "הזזה – ציר X" / "הזזה – ציר Y" | "הזזה אופקית (X)" / "הזזה אנכית (Y)" |
+| Meter | "התאמה לכל כדור הארץ" / "התאמה לאזור המסומן", N %, and at ≥ 80 % "האליפסואיד מותאם מרחבית לכלל כדור הארץ – זהו דאטום עולמי." (and the local version) | removed; the feedback strip says "תחום ההתאמה: כלל כדור הארץ." / "תחום ההתאמה: האזור המסומן." plus the check-point sentence |
+| Accessible text | "…התאמה: N אחוז." | removed |
+
+New short feedback sentences (one per state, listed in the copy check's "added" list):
+- **Surface notes:**
+  - "המעטפת של כדור הארץ, עם התבליט של היבשות…"
+  - "משטח גלי, המתאר בקירוב את פני הים הממוצעים…" (as the lesson's own BODY_TABS words it)
+  - "גוף גאומטרי חלק, המתאר בקירוב את צורת כדור הארץ…"
+- **The phase notes**, e.g. "רק המיקום של האליפסואיד משתנה; הכיוון והגודל נשמרים."
+- **The parameter notes.**
+- **The check-point sentences.**
+
+These additions are mine, within the brief's "short, station-dependent feedback". The wording of the station 2 explanation comes from the detailed brief file; the pasted message did not repeat it.
+
+**For a separate review (not changed here):** seven parameters are the common Helmert model for a transformation between reference frames, not a universal definition of creating a datum (PROJ, https://proj.org/en/stable/operations/transformations/helmert.html; NOAA NGS, https://www.ngs.noaa.gov/datums/index.shtml). The card below the block, "תהליך המעבר מאליפסואיד לדאטום נעשה בשבעה פרמטרים", may deserve a precision pass. The brief forbade rewriting the adjacent cards.
+
+**Environment:** the shared :3000 server answered 500 (`__webpack_modules__[moduleId] is not a function`). Another session's `next dev` on :3001 runs from the main checkout and shares its `.next`; I did not stop it. "Before" shots were taken on :3000 before any edit. Everything else ran on an isolated worktree (`.claude/worktrees/datum-interaction`, HEAD + the datum files, `NEXT_DIST_DIR=.next-interaction`, :3041): the QA (117 checks, including leaving and re-entering the lesson), the "after" shots, the fallback re-render and `next build`. The worktree's `CoordinatesScene.tsx` is HEAD's; the main checkout's copy carries another session's uncommitted BODY_TABS wording, which is outside this block.
+
+## 2026-10-12 — Topic 02 coordinates 2: terminology + true north (round 2)
+
+- **Approved terminology fixes outside "מערכות ייחוס", inside CoordinatesPart2Scene only:** scene intro and the ProjectionsBlock closing line now compare "מערכת קואורדינטות גיאוגרפית" and "מערכת UTM" (the closing line adds that UTM uses a cylindrical projection and metres, so the sentence still connects to the projection choices above it); LatLonExplorer heading drops "– היטל GEO"; summary item 2 is "מערכת קואורדינטות גיאוגרפית"; summary item 4 uses the approved definition, and its old tail "בלעדיה אי אפשר לפרש…" was removed because the new definition already says it. "היטל" stays wherever it means a cartographic projection.
+- **Left as is (not in the approved list, flagged for a decision):** the UtmBlock heading and summary item 3 still say "היטל UTM". Not contradictory (UTM does use a projection), but it differs from "מערכת UTM" used in the comparison above it.
+- **ϕ:** the new readings use ϕ (U+03D5), as in the rest of the scene.
+- **North arrow:** both maps share a UTM-registered base, so screen-up is grid north. The plain "N" arrow is now rotated to true north, computed by `trueNorthDeg()` (referenceSystemsGeometry.ts) from fromUtm/toUtm: the screen direction of a 1″ step north along the local meridian at the view centre = −1.120° (anticlockwise). Checks: matches γ = atan(tan Δλ · sin φ) within 0.01°, parallel to the drawn graticule meridian, varies < 0.01° across the view; the browser QA reads both rendered arrows (−1.12°) against the on-screen meridian. Only the arrow glyph turns; the letter, the base image and the grids are unchanged.
+- **Dev servers:** :3000 (`next dev -p 3000`, since 2026-10-11) and :3001 (`npm run dev`, since 2026-10-12 09:52, bumped to 3001 because 3000 was taken) both run from the repo root without `NEXT_DIST_DIR`, so they share `.next/`. The .next trace shows the 3001 server cleaned and rebuilt `.next/` at 09:52; since then :3000 answers 500 `__webpack_modules__[moduleId] is not a function` (stale chunk map) and either server can break briefly when the other recompiles. Neither server was stopped. Fix when convenient: run only one dev server per `.next/`, or give the second one its own `NEXT_DIST_DIR` (next.config.mjs already supports it).
+
+## 2026-10-12 — Topic 02 coordinates 1: the datum task becomes one map with three stages ("הדמיה: מה קורה כשהדאטום לא תואם?")
+
+Brief: `design/docs/datum-field-challenge-followup-claude-2026-10-12.txt` (replaces the structure of the 2026-10-11 task above). Screen card: `design/docs/datum-field-challenge-screen-card-2026-10-12.md`.
+Code: `src/components/lessons/topic-02/datum-field/` — `DatumFieldChallenge.tsx` (UI), `datumField.ts` (model + stages reducer), `datumField.data.ts` (world, places, cases, terrain), `datumFieldProjection.ts` (world → picture). The scene wiring is unchanged.
+
+**The map.** One straight-down picture (`field-map.webp`, 1190 × 1435), built by `scripts/maps/build-datum-field-map.mjs` from the same world data as the live layers: a height grid shaded in 2D like a map's relief (no 3D model), sand and stone, garrigue, a stream in the lessons' water #7FB4C6, a bridge at E 1200 · N 800 and a crossroads at E 1090 · N 760. Manifest beside the picture.
+- **Assumption — a portrait extent.** E 960–1300 × N 552–962 m (340 × 410 m) at 3.5 px/m. At 1440 the map box is 528 × 637 px (1.55 px/m: 60 m ≈ 93 px, 120 m ≈ 186 px). The extra north–south ground lets the map fill the row beside the panel. The card is 1052 × 821 px in every state and the way-on button never moves. With the title just under the site header the card ends at y ≈ 1105, so instruction, map, action and feedback are on screen together.
+- Every position the activity can show is at least 25 m inside the frame. Labels lean inward near a side edge.
+- The grid is every 100 m of the active datum. B's lines stand 36 m east and 48 m north of A's lines with the same values. With A on, E 1200 and N 800 cross on the bridge; on the B map, A's numbers land where the B grid reads E 1200 · N 800.
+- Margin values sit outside the frame: N on the west, E on the south, 13 px bold (the spec's floor for dense instruments). Map labels are 14 px bold.
+- The grid slides between the datums only in stage 1. Stage 2 shows the B grid, stage 3 the A grid.
+
+**Layout.** Panel : map = 2fr : 3fr (≈ 40 : 60 of the card's 954 px after the gap), `p-6 lg:p-8`, `gap-6 lg:gap-8`.
+- Surfaces follow `design/docs/lessons-02-06-ui-cleanup-spec.md`: one workspace (the card); data rows, the rule and feedback are borderless insets (the active datum's row tinted `bg-accent/15`); the experiments and options use the option recipe; no shadows on map labels; the legend is T6. Text tiers stay those of the scene's neighbours (DatumGuided, MeasurementPanel: Table 2, `text-black`).
+- The stage row reuses the lesson's tab pattern (landforms tabs), at 44 px. It is free to move between: a demonstration is not a score, so no stage shows a completion check.
+- The panel order is the brief's: question → source/target rows → action → feedback, with the way on in a fixed footer.
+- In stage 2 the rows form the data's way: source (A, kept) → "מספרים ללא שינוי" / "המרה A→B" → the copy sent, with its label tag → "פירוש כ־B" → the map.
+
+**Decisions inside the brief.**
+- "שינוי הכיתוב בלבד" is a toggle; pressed again it reads "ביטול שינוי הכיתוב" and returns to the state the experiment started from — the raw copy, or the conversion if it was tried after the fix.
+- "המרת הנתונים מ־A ל־B" stays available after the fix. It replays before → after from the true source (the re-runnable comparison) and never converts twice. The label experiment also stays open after the fix.
+- The label experiment's helper is one line under both buttons, prefixed with the button's name, and is its `aria-describedby`.
+- The rule ("בהמחשה הזאת: A→B מחסיר (36,48); B→A מוסיף (36,48).") and its left-to-right formula are shown in both practice cases, not only the second. Both cases keep the same layout, and case 1 gets no hint by omission.
+- The brief's case names ("הדאטום כבר תואם", "כיוון ההמרה הפוך") are not shown: they would give the answer. The case line is "מקרה N מתוך 2 · <the place>".
+- While the converted marker is on its way, the panel shows "המחשת המעבר" in place of the output numbers and the map shows no distance number; both appear when it arrives.
+- Keyboard: the stage tabs and the A/B switch use the lesson's `useRovingKeys` (`scale/controls.tsx`): RTL arrows, Home/End, modified keys left to the browser. Focus never drops to the page: the copy hands it to the first experiment, a reset back to the copy, the way-on buttons to the new stage's heading; "בדיקת הנתונים" and the convert button use `aria-disabled` and keep focus.
+- The next case opens after a right check. The summary ("סיכום התרגול", so it is not mistaken for the part's summary block right below) opens after both. "תרגול חוזר" restarts case 1; "חזרה להדגמה" restarts the whole activity from stage 1 in A, every stage clean.
+- A failed map keeps the grid and markers (the activity still works) and shows a notice with "נסו שוב".
+
+**Text.**
+- Kept: the title and the first sentence with "(על ההיטל – בחלק הבא).".
+- Replaced as the brief asks: the demonstration instruction after it (§10), and the schematic note, now the §4 wording, once, in the lead.
+- All stage texts are the brief's.
+- Added, not in the brief: the stage-1 line after switching back to A ("הגשר נשאר באותו מקום. בהמרה חזרה לדאטום A המספרים שמייצגים אותו חוזרים לערכים הקודמים."); the row names "מספרי הגשר בדאטום A/B"; the flow words "מספרים ללא שינוי", "המרה A→B", "פירוש כ־B"; "החזרת הכיתוב ל־A"; the case line; "נתוני המקור · דאטום B" and "מפת היעד · דאטום A" (the brief's pattern applied to the cases); the preview line "תצוגה מקדימה: הסימון מופיע N מטר מ…" / "…מופיע על …"; "למקרה הבא", "למקרה הקודם", "לסיכום התרגול" and the heading "סיכום התרגול"; the comparison cell names "כיתוב", "מספרים", "פער", "ללא שינוי"; the legend items "רשת דאטום A/B", "מרחק", "הגשר והצומת בשטח"; "איפוס"; the map's description; "לא ניתן לטעון את מפת השטח." and "נסו שוב"; the screen-reader names "שלבי הפעילות", "בחרו צמד מספרים", "כיתוב: דאטום A/B"; "ביטול שינוי הכיתוב". A Hebrew copy review checked these against the brief's terms (all fixed strings match the brief character for character).
+
+**Removed:** the Cycles diorama, its three thumbnails, the point picker, the hint, the corner north glyph, `datumFieldTerrain.data.ts`, `scripts/blender/render_datum_field.py` and `package_datum_field.cjs` (all in git history at `e7f2e42`).
+
+**QA:**
+- Reviews: a Hebrew copy review (all fixed strings match the brief; its wording fixes to the added strings applied) and a code review (a randomized reducer run found no state violations; its keyboard, focus, grid-function, reset and undo findings fixed).
+- Unit (model, the three stages, transform, terrain layout, picture, copy): `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/datum-field-challenge.test.mjs`.
+- Browser, at 1440 × 1122: `QA_BASE=<dev url> node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-datum-field-challenge.mjs`. It covers every state, positions against the transform, constant card height, labels inside the map and apart, text sizes, motion and live region, keyboard, reduced motion, and a failed map with retry.
+- Screenshots: `design/screenshots/datum-field-challenge/`.
+
+## 2026-10-12 — UTM concept mockups
+
+- Three image concepts only, with an interaction brief in design/mockups/utm-concepts-2026-10-12/README.md. No lesson implementation changes.
+- Desktop target remains 1440 x 1122. Generated images express composition and states; existing design tokens, Hebrew text and geographic calculations govern implementation.
+- The first two Coordinates 1 reference interactions were interpreted as ReferenceBodies and DatumGuided. The next reference-system comparison remains outside the proposed UTM block.
+- Audience assumed to be beginners in map reading. Option 1 emphasizes projection, option 2 linked zone exploration, option 3 complete coordinate addressing. Further assumptions are recorded in the scoped brief.
+
+
+## 2026-10-12 — Geographic coordinates mockup alternatives
+
+- Requested scope: three image mockups for LatLonExplorer in CoordinatesPart2Scene, reviewed against Onboarding, Landforms, Topography, Contours, ReferenceBodies and DatumGuided at 1440 x 1122. No application code changes.
+- Interpret the first two Coordinates 1 interactions as ReferenceBodies and DatumGuided. Audience assumed to be beginners in map reading.
+- Three proposed interaction directions: globe exploration, synchronized angle lab, and atlas location task. These are alternative proposals for selection, not approved implementation changes.
+- Keep existing palette and shell. Image-generated geography, labels and coordinate geometry are illustrative; implementation must use existing tokens, exact Hebrew copy and computed geographic positions.
+- A paired side/polar view is a proposed explanatory aid. Geodetic latitude on an ellipsoid uses the surface normal; any spherical simplification must be explicitly labelled.
+- Handoff and complete generation prompts: design/mockups/geographic-coordinates-2026-10-12/.
+
+## 2026-10-12 — Base-60 format mockup alternatives
+
+- Requested scope: three image alternatives for DmsFormats in CoordinatesPart2Scene. Reviewed the rendered Onboarding, Landforms, Topography, Contours, reference-body measurement and DatumGuided interactions at 1440 x 1122. No application code changes.
+- Audience assumed to be beginners. The first two Coordinates 1 interactions were interpreted as reference-body measurement and DatumGuided. The three proposed directions are magnifying angular rulers, guided numerical decomposition and coordinate matching; implementation choice remains with the user.
+- The images are 1421 x 1107 concept renders; browser implementation target remains 1440 x 1122. Keep the existing design tokens and compute ruler subdivisions, plot positions and conversions. Generated microcopy and tick geometry are not implementation source of truth.
+- Preserve D/DM/DMS/S and both source axes via a controlled axis selector. Height is outside this angular conversion. Formatting changes preserve the source value and measurement accuracy.
+- Source values, exact arithmetic, interaction states and generation prompts are saved in design/mockups/base60-concepts-2026-10-12/.
+
+## 2026-10-12 — measurement mission, fifth pass: sides, reveal, profile, enlargement, two figures side by side
+
+Brief: `design/mockups/topic-02-geodesy/claude-visual-clarity-followup-2026-10-12.md` (the "אליפסואיד, גיאואיד וגליות" block only). Its decisions override the earlier passes (stacked figures, arrows in the model, limited turning, the physically opened ground).
+
+**Layout.** Tabs → the view's title and text across the card → two figures side by side (model at inline-start, section / enlargement at inline-end, about 1.08 : 1), each under a plain caption with its controls beside it → in the task, one strip under both. The figures' height is the window's height under the fixed header minus the active view's own chrome, clamped to 200–312 px (312: past it the profile only gains empty paper; 200: the section's shortest arrows stay readable). One caption line always sits under the model (empty where there is nothing to add), so the model keeps one size through the four views.
+
+**The landscape.**
+- Turning is free: az is never limited or folded (it is compared modulo 360; "מבט התחלתי" and the glides between views take the short way). Tilt 2°–84°.
+- Opening angles per view: surface `{az 0, elev 5}` (the profile: square to the survey line), geoid `{−20, 21}` (the sheets read as surfaces), task `{0, 13}` (the receiver clear of the ground). Each view keeps the reader's angle when they come back. Each opening is a whole number of arrow-key steps from the profile; the fallback capture relies on that.
+- The task view's zoom onto the survey line (and its side fade) is gone: without arrows in the model it is no longer needed, and one framing keeps the fallback simple.
+- Sides: each side carries its top edge's strip of the same image down at the top's density (a 175 m strip folded back and forth, mirror-wrapped at the image border, drifting along the edge so no fold mirrors the one above), softened with depth and fully when seen edge-on (where any texture would average into horizontal bands), shaded per side (front 0.88, back 0.8, left 0.94, right 0.76) and a little darker toward the base. A visual treatment of the model's sides, not a claim about the subsurface.
+- The table's contact shadow fades at low tilts (seen edge-on it read as a grey band).
+- The see-through reveal: ground opacity 0.28 (the brief suggested 0.2–0.3; at 0.24 it read milky over the white card), nearest-surface only (depth pre-pass), the geoid sheet (fill 0.2, grid 0.7 every 375 m) and ellipsoid sheet (0.14 / 0.62, every 750 m), the two reference lines in the survey line's plane, and the block's outline. The view always opens on solid ground; leaving it puts the ground back.
+- The station ring and the tripod's old place: the ring is gone (the orange pin marks the picked station in both figures); the tripod stands 0.44 units right of its station, scaled 1.4×, clear of the pin.
+
+**The section.** It now runs over one fixed stretch of the survey line, `SURVEY_SPAN` = 900–4400 m (from the ridge's flank short of C into the sea), end to end in the plot, and no longer registers with the pins: side by side there is no shared x-axis to keep. The vertical cap went from 5× to 8× the horizontal scale, so A's arrows read as arrows (H 30 m, h 18 m, N −12 m); the caption already says the heights are exaggerated. Arrowheads are a fixed 7.5 px. One marker per station (a lettered pin on its ground point); line names as plain coloured text; the stretch's two ends as orange dots, the same as on the model and the ellipsoid.
+
+**The ellipsoid.** The marked area is that same stretch at full depth, laid on the body in its own proportions (3500 × 2300 m) with the survey line where it crosses the landscape (`ellipsoidView.ts`). Opening view `{elev 16, az −28}` so the area is in sight. "הגדלת האזור": a frame flies from the area to the enlargement (620 ms), the enlargement grows in, and at 950 ms the section is linked (stations shown, the line firm, dashed orange drops from the line's ends to the section's ends). "חזרה למבט הכללי" cancels at any point. The enlargement is the area's own top-down image on a thin layer lifted over a curved, gridded piece of the ellipsoid, the two named apart. Reduced motion: straight to the linked state. The station dots on the body were dropped (too small to carry a role); the line's two end dots stay as its anchors.
+
+**The task.** No arrows, numbers or legend on the model. The legend's three definitions now stand beside their own values (h, N) and beside the question (H); the legend's line "השוו בין חצי הגובה בחתך לבין נתוני התחנה שנבחרה." shows in the feedback slot until the first check. The station picker (with its "תחנת מדידה X" label) moved to the model's caption.
+
+**Without WebGL.** Stills of the live model itself in the profile (`scripts/qa/capture-measurement-fallback.mjs`, headless Chrome / SwiftShader at 2×, frame 500 × 286): the ground, the see-through reveal, the receiver at A / B / C. Pins, place names and the line's ends are projected over them with `landCamera(LAND_START)`; the height grid still loads, so what the ground hides is known. No "מבט התחלתי" there. The 55° Cycles layers, their tripods and `measurementLandscapeLayers.data.ts` were deleted (they are in git history at `a5053ef`); `package_measurement_landscape.cjs` now only packages the ground image. `measurementLandscape.data.ts` still carries the old renders' camera matrix and visibility samples, unused by the page.
+
+**Copy.** Added only the brief's labels and sentence ("חשיפת משטחי הייחוס", "החזרת פני השטח", "הקרקע שקופה כדי להציג את משטחי הייחוס שמתחתיה.", "הגדלת האזור", "חזרה למבט הכללי", "מודל תלת־ממדי", "חתך השטח"). Removed "גררו כדי לסובב" (the brief) and "פתיחת חתך" (replaced). The screen-reader descriptions keep "גררו או השתמשו בחצים כדי לסובב.".
+
+**Environment.** The shared dev servers on :3000 / :3001 both served 500s (two servers on one `.next`), and another session's datum edits broke the shared page meanwhile. Verification ran in an isolated worktree (`.claude/worktrees/clarity`, HEAD + this block's files, `node_modules` / `public` as junctions, `NEXT_DIST_DIR=.next-clarity`, :3021).
+
+## 2026-10-12 — Topic 02 "מערכות ייחוס": two screens, a method switch per map, reading lines (round 3)
+
+Brief: `design/mockups/topic-02-reference-systems-2026-10-11/claude-linked-comparison-toggle-and-split.md`.
+
+- **Split.** Screen 1 (`ReferenceSystemBlock`) = H3, the brief's lead, the activity card. Screen 2 (`ReadingCoordinatesBlock`, `data-screen="reading-coordinates"`) = H3 "כיצד מפרשים קואורדינטות?", the brief's sentence, the comparison table + conclusion in one card, the definitions in a second card (existing surfaces). Boundary = the same H3 + `my-10` rhythm every block in the scene uses; no extra divider or spacer. Screen 2 has no controls.
+- **Switch per map.** Text buttons in the scene's existing CHOICE / choiceTone language with `aria-pressed` (as the DMS format choice), a muted "שיטה:" label (aria-hidden), group names "שיטת הקואורדינטות במפה הימנית / השמאלית"; side identity is the side, not the method. Opening: right geographic, left UTM, A.
+- **Removed:** MousePointerClick, Layers, both Link2, the three concept glyphs (functions deleted — no other users), letter circles in the point buttons, the instruction line, the "אותה נקודה, שתי שפות" line, the old lead, the per-readout WGS84 / UTM 36N chips, the per-value unit lines, the feedback band and fixed sentence. WGS84 is stated once: "דאטום בשתי המפות: WGS84" (plain muted text, end of the point row).
+- **Readout.** Header: "A · גשר" (feature name above the readings) + the unit once; two rows label ↔ value; UTM adds "פלח 36 · חצי הכדור הצפוני (N)" under its rows. DMS groups are joined by U+00A0 so they read apart and never wrap. Each row label carries a small orange key in the direction of its reading line (across = parallel / northing, up-down = meridian / easting) — a legend, not decoration; assumption: acceptable under "use the existing orange to tie values to lines".
+- **Reading lines** (`readingLines()` in referenceSystemsGeometry.ts): UTM = constant-E / constant-N straight lines; geographic = the point's meridian and parallel sampled through toUtm (point is a vertex), so they lean −1.12° with the graticule. 2 px accent on a light casing; the grid dropped to `stroke-fg/30`. Fade 250 ms on a new point; reduced motion instant.
+- **Frame labels.** The chosen values sit where the lines meet the top / right edges (orange border, semibold 14 px; the top one clamps clear of the north arrow). Each REPLACES every ordinary label it would touch, and at least the nearest one, so no edge carries more than three. Widths for that test are estimates at the 1440 target (`LABEL` in the component); the browser QA measures real boxes for overlap.
+- **Projections line:** "…ומערכת UTM, המבוססת על היטל מרקטור רוחבי ומציינת מיקום במטרים." (brief §6).
+- **Fit @1440×1122** (heading 16 px under the header): lead ends 200, switches 361, maps 751 (473 × 378, were 439 × 351), readouts 929, summary 994, card 1027.
+- **Open (visual):** the geographic readout has ≈ 40 px of empty space under its rows, because the UTM readout carries the zone line and the two boxes share a row height; meridian labels are ≈ 93 px apart, so at A the chosen longitude replaces both neighbours and the geographic top edge shows one value only.
+
+### 2026-10-12 — Datum activity: clarify A/B and remove dead space
+
+- User requested direct copy/layout edits after the 2D implementation. A/B are explicitly described as two reference systems, not two physical points. The error feedback identifies the fixed circle (real bridge) and the diamond (location calculated from the copied numbers).
+- The previous 40/60 split and fixed-height/fixed-footer goal are superseded: equal desktop columns, top alignment, content-sized feedback, and navigation directly after the explanation (16px gap). This uses existing spacing, surfaces and button variants; no palette or map geometry changes.
+- Removed the visible reset button. Reversible label/conversion experiments, stage navigation and end-of-practice replay remain available.
+- Verification captures: `design/screenshots/datum-field-clarity-2026-10-12/`. The existing full TypeScript check includes unrelated `qa-output/task8-scratch/data.orig.ts`, which has missing imports/implicit-any errors; verify app code separately without altering that scratch work.
+
+### 2026-10-12 — Base-60: alternative 2 ("פירוק המספר, צעד אחר צעד") replaces DmsFormats
+
+- Implemented: `src/components/lessons/topic-02/base60/` (`base60.ts` logic, `Base60Workbench.tsx` view), mounted in `CoordinatesPart2Scene` in place of `DmsFormats`. Brief: `design/mockups/base60-concepts-2026-10-12/claude-code-handoff.txt` (alternative 2) + `02-number-workbench.png`. Checks: `scripts/qa/base60-workbench.test.mjs` (unit), `scripts/qa/shot-base60-workbench.mjs` (browser, screenshots in `design/screenshots/base60-workbench/`).
+- Arithmetic: values are integer counts of 1e-4 units (the deck's four decimals), so every writing is exact; no rounding, and no minute/second can carry to 60. Answers are accepted within half a unit of the answer's last digit; point or comma.
+- Flow (assumed from the handoff): guided example on the longitude ("הצעד הבא", one step per click) → the learner completes the same longitude → "משימה נוספת: קו רוחב" (transfer) → closing question "איזה חלק היה לכם קשה לפרק?". Each axis keeps its own progress; the latitude opens as practice. A correct check moves to the next step (its card shows the explanation); a wrong one keeps the step and explains.
+- In step 3 the split of the minutes (7′ kept | 0.404′) is shown when the step opens, as in the mockup; the learner converts only the minute's fraction.
+- Deviations from the image, by the handoff's "use the existing patterns": the selected ×60/÷60 and writing buttons use the scene's selection tint (`border-accent bg-accent/10`), not a filled orange; the active step badge is filled `bg-accent` (datum activity's stage tabs); "× 60" on the track is black (content), only its arrow is orange. The mockup's inaccurate "בשבר דקה" caption is "דקות"; its converging bracket over the result row is replaced by each part's own dashed lane (35° and 7′ come down from where they were kept).
+- Added beyond the image (requested): "איפוס" next to "חזור צעד"; a hint ladder (highlight → ×60 rule → worked calculation that leaves the sum to the learner); a mode line above the steps ("דוגמה מונחית…" / "תרגול…"). Writings open as the steps produce them (D at the start, DM after the minutes, DMS and S after the seconds); once decomposed, the note under the track explains the chosen writing (D shows the inverse 35 + 7/60 + 24.24/3600, S the total in seconds) and its nodes are marked.
+- Removed with DmsFormats: the time/angle units table and the clock comparison in the lead (the handoff treats the clock as an analogy only); the lead is the mockup's line.
+- Height is not shown (outside this conversion, per the handoff). The block's card grows slightly in the longest states (a feedback message in step 3, the latitude's closing question); the band moves down with it.
+
+## 2026-10-12 — Topic 02 "מערכות ייחוס": one map, what the numbers mean (round 4)
+
+Brief: `design/mockups/topic-02-reference-systems-2026-10-11/claude-reference-systems-single-map.md`.
+
+- **Layout.** One map (538 × 430 at 1440) with the method switch above it and the three point buttons under it, on the right (DOM-first); a 26rem explanation panel beside it on the left. Lead as given in the brief. The datum line is gone from the activity (screen 2 still defines WGS84). Opening: geographic, A.
+- **Geographic panel:** "A · גשר", the per-point sentence (derived from the stored E/N and the converted lat/lon, matching the brief's wording for A/B/C), then per reading: name, what it measures (brief's text), the value as four groups with captions מעלות / דקות / שניות / כיוון (16 px), and a fixed 0″–60″ bar headed by its shared "31° 48′" / "35° 07′" with the chosen point's letter on its seconds; once B or C is chosen, the bridge stays on the bar as a muted "A" reference (assumption: helps the comparison the brief asks for; no new colour). Then the minutes/seconds note and the "points are close" note.
+- **UTM panel:** full values grouped by no-break spaces ("701 125", "3 521 095") + מטרים, the zone meaning, the brief's "why the numbers are large" text (it writes 500,000 with a comma — kept verbatim, though the values use spaces), and "השינוי ברשת ביחס לגשר" with the offset sentence computed from E/N (−695 / +385, −555 / −380).
+- **Feature on the map:** a light dashed outline from the terrain's own geometry — a box round the bridge deck, the ridge crest around the summit, a ring round the village (r 150 m) — not a halo. Fades in with the lines (250 ms); reduced motion instant.
+- **Less orange:** the small line keys are gone; the chosen frame labels lost their orange border (quiet dark edge). Orange = pin, anchor, reading lines, bar marker.
+- **Fit @1440×1122:** geographic card ends 953, UTM 829 — the card is shorter in UTM, so screen 2 moves up ≈ 125 px on switching (open: equalise or accept).
+- **Concurrency:** another session is adding `Base60Workbench` to the same `CoordinatesPart2Scene.tsx` (import + usage, untracked `topic-02/base60/`). The isolated build was run with their folder copied in read-only; both sessions' hunks are now in one file — commit with care.
+
+## 2026-10-12 — Topic 02 "היטל UTM": אטלס הפלחים (חלופה 2)
+
+Brief: `design/mockups/utm-concepts-2026-10-12/README.md` + mockup `02-zone-atlas.png`. Code: `src/components/lessons/topic-02/utm-atlas/` (new), wired by replacing only `UtmBlock` in `CoordinatesPart2Scene.tsx` (old task, slider and 200–800 km zone card removed). QA: `scripts/qa/utm-atlas.test.mjs` (logic + geometry vs PROJ), `scripts/qa/shot-utm-atlas.mjs` (browser, 1440 × 1122), screenshots `design/screenshots/utm-atlas-2026-10-12/`.
+
+- **Shell.** The mockup's centred page title is the site shell; the block keeps the scene's own H3 + lead ("היטל UTM"), then two cards: the projection explainer, then the atlas. No extra header or sidebar.
+- **One state.** One point `{lat, lon}` (WGS84). Zone, hemisphere, range, E/N, highlight, both pins and the explanation are derived from it (`readUtm`). E/N use the existing `reference-systems/utm.ts` (Karney/Krüger n⁶); tests match PROJ (proj4 2.22.0, computed in a scratch folder) to ≤ 1 mm for every offered point. Display: whole metres, no thousands separators — as in "מערכות ייחוס".
+- **Free selection, whole world.** Exceptions handled: 56–64°N 3–12°E = zone 32; 72–84°N 0–42°E = 31/33/35/37 (32/34/36 absent). Coverage 80°S–84°N: a click outside is rejected (point stays, explanation names the limits; "מחוץ לתחום UTM" on the veil); a drag clamps to the limit. Hemisphere N for lat ≥ 0. MGRS band letters are not used anywhere.
+- **Maps.** Both are lon/lat (equirectangular) windows, north up, `dir="ltr"`: the world locator stretched to a 3:2 frame (effective standard parallel ≈ 41°), the enlargement with its standard parallel at the window's centre latitude. Straight meridians keep zone boundaries vertical, as in the mockup. Captioned "מפת איתור, לא מפת UTM". Basemap: Natural Earth 1:50m (public domain) baked by `scripts/maps/build-utm-atlas-basemap.mjs` into a lazily imported module (~220 KB raw); without it everything but the land still works.
+- **Enlargement window.** "פלחים": the zone ±1 neighbour (+1.5° margins); "מודדים במטרים": the same area zoomed to the zone ±1° with the zone's real grid (lines of constant E/N traced through `fromUtm`, every 100 km; 50/20 km where the zone is narrower than 380/190 km). A window crossing the equator draws both grids (N restarts at 10 000 000 m). The window stays put while the point is well inside it; it recentres (≈ 320 ms tween, none under reduced motion) after a zone change or near its edge, and only on release when dragging inside it.
+- **Neighbour buttons** carry the point to the same latitude and the same offset from the new zone's central meridian, so E/N repeat — explained as "same numbers, another place". Where an exception makes that spot belong elsewhere: the middle of the target zone's range (32/34/36 above 72°N → 71.5°N). The row shows five zones, pages by five, and does not shift under the cursor.
+- **Hemisphere switch** mirrors the latitude (same longitude), clamped to coverage; from the equator, S goes to 1°S.
+- **"נסו נקודה אחרת"** walks seven checked places (ירושלים, איסטנבול, קייפטאון, מדריד, ריו דה ז׳ניירו, סינגפור, ברגן) and back to the opening; each ≥ 0.25° from a zone boundary and ≥ 1° from the equator. London was dropped (0.13° from Greenwich).
+- **Opening point** is the brief's 33°E 32°N (Mediterranean, on zone 36's central meridian → E 500000, N 3540436), not the mockup's position over land.
+- **Fourth cell** of the first data row (empty in the mockup) shows the point's lat/lon, to carry "a different notation is not a different place"; the grid view says so in its explanation.
+- **Feedback tone.** Exploration explanations use the lesson's info inset (no glyph); ✓ / ✕ only on practice verdicts (DatumFieldChallenge convention) — the mockup's ✓ on exploration was not copied.
+- **Selected zone** uses the lesson's choice style (accent border + tint) plus a dark underline, not the mockup's solid orange fill (orange is for action).
+- **Explainer.** Tangent transverse cylinder (UTM's secant cylinder, k0 = 0.9996, is a deliberate simplification for beginners); the copy says the cylinder is only an illustration and the projection is a calculation. Step 3 is a real TM of zone 36's cylinder over ±40° — wider than a zone on purpose — with 400 km ground circles at 24°N labelled by measured relative map size (×1.04, ×1.18) and dashed reference circles.
+- **Practice.** "מצאו את גריניץ׳" (answer 31; 30 → "ends at 0°", others → their range), then three transfer points (טוקיו 54N, בואנוס איירס 21S, ניירובי 37S) with coordinates given; zone numbers are hidden in the enlargement until solved; picks by the zone row or a map click. Practice keeps its own state; "חזרה לחקירה" returns to the exploration as it was. Leaving the sub-topic unmounts the block (opening state on return).
+- **Accessibility kept as the lesson has it (flag for a project-wide decision):** orange focus rings and white-on-orange pins/step badges (≈ 3:1). New in this block: black top-label text over an orange bar, a shape mark on the selected zone, debounced announcements, a short `role="status"` verdict, focus moved to the next action when a check is solved.
+- **Not run:** ESLint — the repo has no ESLint config (`next lint` opens its setup prompt).
+
+## 2026-10-12 — measurement mission, sixth pass: a model that always resolves, one height mapping, the ellipsoid's turn, the geoid's surface, the task in two columns
+
+Brief: the user's pasted message of 2026-10-12 (the "אליפסואיד, גיאואיד וגליות" block only; the datum untouched).
+
+**Why the model "sometimes did not load" (reproduced, then fixed).** `MeasurementLandscape3D` registered a `webglcontextlost` listener in `onCreated` that called `onFail()`, which set the scene-level source to `renders` for good. r3f tears a canvas down by calling `gl.forceContextLoss()` 500 ms after unmounting it — so any remount of the canvas while the scene stayed mounted reported the old canvas's deliberate loss as a failure, and the model never came back until a full reload. Reproduced on the user's :3001 (the canvas remounted, the old context was lost with its canvas already detached, `live → renders` 49 ms later) and deterministically on an isolated server by appending a comment line to `MeasurementLandscape3D.tsx` (Fast Refresh remounts it). In this repo other sessions edit these files all day, and the reviewed page is a dev server watching the main checkout — hence "sometimes". Further holes, each reproduced with forced failures: an albedo error or stall and a heights stall left the stage in `loading` forever; the heights failure was silent; a failed model chunk (`ChunkLoadError`) had no boundary (dev reloaded the page; a build would hit the app's error screen); a real context loss was permanent, with no message and no retry; the WebGL probe leaked one context per visit (two under StrictMode). Not causes: tab switching during the load (it recovered), leaving and re-entering the sub-topic or the lesson (live every time on a healthy server).
+
+**Fix.** One status (`pending · loading · live · lost · failed · no-webgl`, on the stage as `data-landscape-status` / `-failure`); every path ends in one of them. The context listeners live in a component inside the canvas and leave with it (a teardown is never a failure; a real loss shows the stills until the context returns). The image load has an error path; a late image is disposed. The heights fetch aborts on unmount and after 15 s. The model code is imported per attempt, and a failed chunk is reported, not thrown. A 20 s watchdog runs only while the landscape is on screen. "Ready" means a frame was drawn with the ground image on the ground. Coming back from the ellipsoid view draws a frame at once. The probe gives its context back and runs once per page. Under the stills: "המודל התלת־ממדי נטען…" (after 1.2 s), "התצוגה התלת־ממדית נקטעה…", "לא ניתן לטעון…", "הדפדפן אינו מציג תלת־ממד…", each ending with "מוצגת תמונה (קבועה) של הדגם."; "ניסיון נוסף" (the model again, on a fresh canvas) where a retry can help — not without WebGL. Nothing offers turning over a still.
+
+**Dev servers (documented, not changed).** :3000 (`next dev -p 3000`, since 2026-10-11) and :3001 (`npm run dev`, since 2026-10-12 09:52) run from the main checkout on one `.next/`; :3000 has answered 500 `__webpack_modules__[moduleId] is not a function` since :3001 rebuilt `.next/` (also logged in the "terminology + true north" entry above). Neither was stopped. The lazily loaded model chunk is the part of this block most exposed to that kind of corruption; it now falls back to the stills with a retry instead of breaking the page. Verification ran on my own servers: the main checkout with `NEXT_DIST_DIR=.next-geoid` on :3051 (the integrated page), a worktree on :3052, the static export on :3053. Fix when convenient: one dev server per `.next/`, or `NEXT_DIST_DIR` for the second.
+
+**One height mapping (`DISPLAY_VE` = 6, `measurementLayout.ts`).** The model drew heights 2.5× and the section up to 8×, so the relief stood about half as high in the model. Now both draw H, h and N at 6× their own horizontal scale, and the model's camera is registered with the section: the survey line's stretch (SURVEY_SPAN) is never longer on screen than the section's plot (`landCamera(view, size, spanPx)`); a box too small just fits the model. Measured at 1440 × 1122 (drawn extent of each figure): opening view model 192 / section 158 px (before 112 / 202); task view 195 / 157; C over A along the line within 8 % (unit test). Why 6: 4.5 matched exactly but shrank A's arrows to ≈ 13 / 8 / 5 px; 8 made the model's walls spiky and streaked (the top-down image stretches on steep slopes) and still gave A only ≈ 23 / 14 / 9 px against ≈ 17 / 10 / 7 px at 6. **Open:** A's arrows are short at any mapping the model can carry; a local magnifier at A could be a follow-up. The section draws flatter than 6× only if its frame is too short (not at the sizes checked). The geoid view's oblique opening (−20°, 25°) shows the top's depth and stands taller (237 / 152 px) — on purpose, so the sheets read as surfaces; not forced to match.
+
+**Opening angles.** Surface 9° (was 5°): at 6× the dashed survey line hid behind the ridges at 5°. The other views keep a whole number of arrow steps from it: geoid {−20, 25}, task {0, 17}. The no-WebGL stills were taken again at 9° with the new mapping (`span` added to `measurementFallback.data.ts`). `shot-measurement-mission.mjs` and the unit tests were updated to the new contract.
+
+**The ellipsoid.** Drag, arrows and "מהצד" / "מלמעלה" were already one state (`data-ell`); checked again: a level drag after "מהצד" stays side-on and turns in steady steps. Added: the gaps between the sphere of radius a and the body shaded at the poles; the polar radius drawn against a (side-ish views); the names "קו המשווה" and "ציר הקטבים" (it becomes "הקוטב" from above). The pressed view button: the station buttons' selected ring and a check. A click on the marked area enlarges it (the same handler as "הגדלת האזור", which stays as the keyboard way; a wider invisible edge makes it easy to hit; nothing to click while it is on the far side or already enlarged). The enlargement's terrain layer now has the area's orange frame. "חזרה למבט הכללי" keeps the reader's angle (checked). The flattening note stays.
+
+**The geoid.** Text: the user's definition; the equipotential definition kept as "בניסוח מדויק יותר" (checked against NOAA NGS: "the equipotential surface of the Earth's gravity field which best fits, in a least squares sense, global mean sea level"); no "equal gravity" wording. The reveal: ground 0.22 (was 0.28); the geoid sheet firmer (fill 0.32, grid 0.95), the ellipsoid quieter (0.07 / 0.34); the geoid sweeps in once from the sea's edge inland (1.1 s; at once under reduced motion), and its line in the survey plane follows; the sea stays as a translucent blue surface, so the geoid is first seen as the sea's surface. Label on the model: "גיאואיד — משטח הייחוס לגובה" (at its edge on the front face, under the land). Stations are pickable in this view too (pins, section, compact buttons); the picked one shows H from the geoid — a blue line from the geoid up to the station, with its letter, in the model (see-through only; an HTML overlay, so it is on the stills too) and an H arrow in the section. No numbers, no new exercise.
+
+**The task.** Two grid cells under the two figures: the readings (h and N with their meanings) at inline-start; the question, H's meaning, the formula, the field, its two actions and the feedback right under the field at inline-end. Reading and focus order follow. The feedback slot holds the tallest feedback (C right: the sum and N = 0), so no check moves the field or the card; to keep that at 1440 × 800, "3/3 – כל הגבהים חושבו." moved into the feedback's title row, where "לתחנה הבאה" stands until all three are done. Data, formula and answer checks unchanged.
+
+**Verified** (1440 × 1122 unless noted): `scripts/qa/measurement-mission.test.mjs` 28/28; `scripts/qa/shot-measurement-mission.mjs` PASS and the new `scripts/qa/measurement-round6.mjs` PASS on the integrated page (:3051), the latter also on the static export; `shot-measurement-heights.mjs`: the card fits at 1122, 900, 800 and 1920 × 855 in every state; `next build` in the worktree. Before / after shots: `design/screenshots/measurement-mission-round6-2026-10-12/`.
+**Not verified:** a real GPU (headless Chrome renders with SwiftShader); a browser's own "too many contexts" eviction (simulated with `WEBGL_lose_context`); the Fast Refresh remount check on the integrated page (it edits a shared file — run on my worktree server only); ESLint (no config in the repo; `tsc --noUnusedLocals` is clean for these files apart from an existing unused `useRef` in `MeasurementPanel.tsx`).
+
+## 2026-10-12 — Topic 02 "מערכת קואורדינטות גיאוגרפית": גלובוס חוקר (alternative 1)
+
+Reference: `design/mockups/geographic-coordinates-2026-10-12/01-globe-explorer.png` (brief: alternative 1 in `claude-handoff.txt`). Code: `src/components/lessons/topic-02/geo-globe/` (replaces `LatLonExplorer`, `Graticule`, `AxisCaption` and the now-unused `MapChip` in `CoordinatesPart2Scene.tsx`). Assets: `public/assets/lessons/topic02/geo-globe/ASSET-MANIFEST.md`. Tests: `scripts/qa/geo-globe.test.mjs`; screenshots / functional run: `scripts/qa/shot-geo-globe.mjs` → `design/screenshots/geo-globe/`.
+
+- **The Earth.** WGS84 at true flattening (≈ 1 px on the screen globe — not exaggerated), placed by geodetic latitude. NASA Blue Marble NG (July 2004, 21600 px master → 4096 px) for colour; GEBCO relief as light only (no displacement). The existing datum textures were not reused: their albedo is the lesson palette (ivory sea), not a natural Earth. Only the water is re-toned toward the mockup's restrained steel blue (manifest).
+- **One mapping.** Mesh uv = the plate carrée texture parameter; the 30° graticule, the equator / Greenwich and the selected parallel / meridian are drawn in the globe's shader from that same lat / lon (screen-pixel widths, hidden by the body on its far side). Marker and labels are HTML overlays projected per frame and hidden by the exact occlusion test (convex-surface normal test; ray–ellipsoid for the pole's "N").
+- **Value labels.** The mockup's single "30°S · 90°E" chip became two chips, latitude on the parallel and longitude on the meridian, beside the point (brief: separate, clear labels; never silently reorder the deck's longitude-first pair). The deck's own notation (`(90E,30S)`, `(75E,15N)`) is kept in `LATLON_ITEMS` and not displayed. At 0° a value chip is hidden: the equator / Greenwich chip already names that line.
+- **Opening view** `{lat −3°, lon 72°}`: the Indian Ocean centred (India top-centre, the example below centre, Australia right). The mockup's own geometry cannot hold Greenwich where it is drawn while 90°E is central, so Greenwich and its label sit nearer the left limb rather than being moved. Zoom is limited (distance 4.0–6.4, opening 5.25); no auto-rotation.
+- **Practice start** 0°, 0° with the directions carried over from the example (S, E): reaching 15°N asks for a deliberate N. At 0° the direction choice shows outlined (the direction the number will grow toward), not filled — 0° claims no direction. 180° of longitude shows "180°" with no letter; ±180 normalise to one meridian; a pole matches any longitude.
+- **Layout.** Mockup proportions at the real 1052 px card: panel : globe column 1 : 2 (`gap-5`, panel `pe-5` + hairline), card `p-6`, stage 660 px, globe ≈ 576 px across. The mode switch is first in the DOM and set in the globe column's upper corner as in the mockup. The panel title follows lesson Table 2's heading row (`text-base md:text-lg`, black), smaller than the mockup's ≈ 24 px — per the brief ("לפי כישור העיצוב"). Card height is the same in both modes (826 px; asserted by the QA script). The 30° grid follows the brief (the mockup draws a denser one).
+- **Colours.** Tokens only: orange (`accent`) for the selected lines, the marker and the CTA; the equator / Greenwich in `brand` with a light core (the mockup's pale green); toggles / slider in `brand-dark`. The success strip takes a `brand` tint and green check; wrong answers use ink and an alert icon (no red); the explore strip is neutral, as in the mockup. The globe's limb rim and the sea's sheen are part of the natural rendering, not UI colours.
+- **Copy.** Lead: the existing definitions kept, with "זוויתיים, במעלות" added (angular values) and the mockup's instruction ("שנו את הרוחב ואת האורך ובדקו היכן הקווים נפגשים."). The swap message is "הערכים הוחלפו ביניהם. בדקו איזה מספר מתאר את הרוחב ואיזה את האורך: …". "איפוס תצוגה" became "מבט התחלתי" (brief); "הצגת הנקודה" was added; a quiet note appears when the point is on the far side.
+- **Fallback.** Without WebGL, or if the images fail, the same grid flat (plate carrée, Blue Marble underneath when it loads) with a one-line message; every control, the check and the feedback keep working.
+- **RTL detail.** `tailwindcss-rtl` emits ancestor `[dir="rtl"] .x` / `[dir="ltr"] .x` rules, so inside a nested `dir="ltr"` box both sides apply (`start-0` became `left: 0; right: 0`). Inside the LTR overlay, number and slider rows positions are inline physical styles and the toggle divider is `border-r`.
+- **Open.** The mockup's land reads a touch more saturated than Blue Marble July; left as the source's own colour. No loading still: a quiet disc of the globe's size shows until the first frame.
+
+## 2026-10-12 — Ellipsoid / datum: three concept mockups for selection
+
+- Scope: review of the requested Topic 02 scenes and three image concepts; no site code edits. Files: `design/mockups/ellipsoid-datum-options-2026-10-12/`.
+- The live site was reviewed at 1440 × 1122. Built-in ImageGen returned each concept at 1421 × 1107, approximately the same aspect ratio; implementation must be checked at the project's actual 1440 × 1122 target.
+- Each image depicts one state of a proposed interaction. The complete states, actions and feedback are described in the folder's README.md. The user has not yet selected a concept.
+- The existing cream canvas, white card, tan borders, olive/sage illustration and orange action palette are the visual reference. Globe material colours are conceptual illustration details, not new approved UI tokens.
+- Geometry is amplified for teaching. Centre labels must be projected from actual model centres; in concept 2 the generated B-centre arrow visually lands too far toward the shell and must not be copied literally. No mockup supplies real geodetic transformation parameters.
+- The existing seven-parameter passage is interpreted as a reference-frame transformation method rather than a general definition of datum. The handoff separates this from ellipsoid shape and datum anchoring, with an Esri primary-source link.
+
+## 2026-10-12 — Topic 02 "מערכת קואורדינטות גיאוגרפית": one flow, random practice checked on the globe
+
+User request (same day): remove "הצגת הנקודה", "מבט התחלתי", "גררו לסיבוב" and the bottom feedback strip; give the practice feedback another way; the target must stop spelling out the answer; practice must not be fixed in advance and must check the point found on the map; no "חוקרים / מתרגלים" tabs. Code: `geo-globe/geoCoords.ts` (makeTask / judge / reducer), `GlobeExplorer.tsx`, `Globe3D.tsx`, `GlobeFlatMap.tsx`, `CoordinateControl.tsx` (`compact`). Tests: `scripts/qa/geo-globe.test.mjs`; run: `scripts/qa/shot-geo-globe.mjs`.
+
+- **Flow.** The explorer opens as before; "לתרגול" turns the same panel into practice and "לחקירה" returns (an unfinished task resumes). No mode switch.
+- **Two task kinds, random.** *find* — the coordinates are given and the learner marks the point on the globe (a click that is not a drag; keyboard: turn with the arrows, Space/Enter marks the middle of the view, shown by a crosshair while the globe has focus). *read* — a point is marked (ink ring) and the learner sets its coordinates with compact controls. Kind is random (≈60 % find), never "read" twice running. "Less obvious target" was read as: the answer is a place to find, not numbers to copy into the controls; and the target's parallel / meridian are never drawn before the task ends.
+- **Adaptive levels (assumption).** 1: on the 30° grid lines (|lat| ≤ 60) · 2: every 15°, off the 30° lines · 3: every 5° (|lat| ≤ 70), off the 15° lines. Up after two first-try hits in a row; down when the answer had to be shown. Points never repeat the previous one and change quadrant when possible.
+- **Check by place (assumption).** Per-axis tolerance in degrees: 6° / 5° / 4° by level; longitude compared the short way round; a pole matches any longitude. Three tries, then the answer is shown.
+- **Feedback.** A short note beside the learner's point on the globe ("צפונה מדי", "דרומה ומזרחה מדי", "בחצי הכדור הלא נכון", "הרוחב והאורך התחלפו") plus one line in the panel under the question (aria-live), naming where the point lies relative to the target's own lines. Moving the mark hides the note and marks the line "בדיקה קודמת". Success: the target's lines in orange with the meeting-point emphasis.
+- **Camera without buttons.** The explorer's point is kept in view as it moves (the camera turns only when the point nears the limb); a read task turns to its point, and after a miss to show the learner's point with it; a finished task turns to its answer. A find task never moves the camera before it ends.
+- Card height is 710 px in every state (the bottom strip is gone).
+
+## 2026-10-12 — Topic 02 projections: three selection mockups
+
+- Scope: three new design/interaction alternatives for ProjectionsBlock only, explicitly requested by the user; no lesson code changes. Deliverables: design/mockups/projections-concepts-2026-10-12/.
+- Reference review: live 1440×1122 browser views of onboarding, landforms, topography, contours, ReferenceBodies and DatumGuided. The projections route hit a runtime error in GlobeExplorer (activeCoord is not a function), so ProjectionsBlock was reviewed from its current source and the local part-B deck slides 3–5.
+- The images crop the learning section and omit site navigation to make the alternatives easier to compare. Existing navigation remains part of any later implementation. Generated image dimensions are a design illustration, not an exact viewport screenshot.
+- Cylinder/cone/plane examples use normal/polar aspects to teach surface ↔ map form. Illustrations are schematic and must not imply universal physical light-ray construction, universal whole-world coverage, or exact cartographic positions from generated pixels. The plane stays flat; its reveal is a change of view rather than unrolling.
+- ImageGen colours and Hebrew typography are approximate visual references. Future implementation must use the existing exact semantic tokens and lesson typography; no new colour tokens are approved or introduced. The selected solid orange tab in mockup 1 should follow existing tab styling during implementation.
+- Proposed learner actions: unfold/inspect (1), trace one shared point across maps (2), predict and match a surface (3). These are alternatives awaiting the user's selection, not approved implementation work.
+
+## 2026-10-12 — Combat navigation mockup alternatives
+
+- Request interpreted as three concepts for topic-06/#scene-combatnav, with the named topic-02 scenes as visual/interaction references. This interpretation was asked asynchronously and stated in commentary; not treated as confirmed.
+- Concepts cover the two techniques currently in CombatNavScene.tsx, not the older third technique in content/topic-06.md or archived screenshots.
+- Generated concept images illustrate proposed compositions and interaction states, not implemented UI or exact cartographic data. Existing site header/sidebar remain authoritative when developing; do not copy invented chrome, progress, or numeric/geometry inconsistencies from generated pixels.
+- The local page temporarily showed a build error during inspection. Review combines live page observations, source files and saved screenshots; it does not certify all current interactions as working.
+- Files: design/mockups/combatnav-concepts-2026-10-12/ (three mockups, original generation prompts, and a review/implementation handoff brief).
+
+## 2026-10-12 — Ellipsoid / datum follow-up: six clearer concept screens
+
+- User requested three alternatives for EACH of two distinct interactions: ellipsoid versus datum, and differences between datums. Six final PNGs, a teaching/interaction brief and complete built-in ImageGen prompts are in `design/mockups/ellipsoid-datum-six-2026-10-12/`. No site code was edited for these mockups.
+- Each image depicts one activity state. The two activities may be selected from different concept families. All six PNGs are 1421 × 1107; live implementation target remains 1440 × 1122.
+- The first family uses an explicitly fictional planar-grid example to show a fixed place receiving different numerical descriptions. It is a teaching analogy, not a complete datum definition or real coordinate transformation. Grid positions and values must be derived from one consistent model when implemented.
+- The laboratory separates shape changes from anchoring changes, then compares same-ellipsoid/different-anchoring and different-ellipsoid examples. Centres and axes must be geometry-derived. The second comparison mockup received two targeted image corrections to reduce misleading centre labels.
+- Local/global contrast is schematic and does not imply fitting a datum to individual mountains, or that a global datum is always more accurate. Copy corrections and interaction states are authoritative in the accompanying README, rather than generated image text.
+- Existing site chrome, design tokens and live text remain authoritative. No new UI colour tokens are approved by these previews.
+- **Update (same day): no free marking.** The user found clicking the exact spot on a turning globe nearly impossible and chose a pick among points instead. A *find* task now marks four lettered points (א–ד) on the globe: the answer plus up to two typical mistakes (north / south flipped, east / west flipped, both, latitude and longitude swapped) and points one grid step off (≥ 15°, so marks never crowd). The learner picks by clicking a letter on the globe or in the panel's letter row (radio group; arrows move and turn the globe to the letter). Two tries, since a third out of four would be elimination; a wrong letter is struck out with its note beside it on the globe. The task opens with the camera on the four points' mean direction, never on the answer. *Read* tasks unchanged. A new point never repeats any of the last 8.
+
+## 2026-10-12 — Topic 06: new sub-topic „דגשים לתכנון ולניווט” (#scene-tips)
+
+- Sequence is now hook → onboarding → **tips** → combatnav → principles → planning → recap (`Topic06Lesson.tsx` SCENES and `src/lib/lesson-scenes.ts`). Existing ids and hash links are unchanged; the new id is `tips` (`#scene-tips`, DOM root `scene-tips`). Scene: `PlanningTipsScene.tsx` — two screens (before leaving / while navigating) on one learning map, an application question, a closing transition.
+- **Learning map:** `NavTipsMap.tsx` is a dedicated fictional map drawn in the route-story map's visual language (PlanningRouteMap's terrain primitives and palette, now exported for reuse — the planning map is pixel-identical apart from its looping pulse ring). It is not the route-story geometry: there, the straight line also crosses the ridge near the saddle, so it cannot show that the short line is not the suitable one. The landmark sequence (נ.ה → עיקול הנחל → אוכף → חציית דרך עפר → נ.ס, pines on rocky ground) matches the route story for continuity; leg distances (500/550/600/500 מ׳) differ from PlanningScene's (500/700/500/600). The board header on both screens says so: „דוגמה לימודית נפרדת מסיפור הדרך שבהמשך השיעור”. Leg bearings stay internal; no azimuth numbers are shown in this part (azimuth is taught later).
+- Map highlights are discrete states (≈0.25 s fade; the position puck glides once, 0.45 s); nothing loops. Every highlight is described in the caption under the map, which is also the map's accessible name.
+- Mismatch vignette (screen 2, tip 4): the navigator drifts north of leg 3, and after the leg's distance the dirt road has not appeared. Chosen so it does not pre-answer the closing junction question.
+- **Terminology (revised same day):** „קיטוע” is not used until its professional definition is verified. A part of the route is „קטע דרך” and a point is „נקודה לבדיקת המיקום”. CombatNav's definition block now defines „קטע דרך” (ending in a „נקודה לבדיקת המיקום”), its legend reads „נקודה לבדיקת המיקום”, and its „מתי משתמשים” line speaks of objects that can serve as points for checking the position. Also replaced: PlanningScene „סיפור דרך · 5 נקודות · 4 קטעי דרך”, the topic-06 quiz rationale („כשרשרת סימני שטח”) and the lesson-6 objective in `src/lib/lessons.ts` („עם קטעי דרך”). The short map labels stay „קטע 1–4” and „הכיוון לקטע הבא” (a longer pill would cover checkpoint 2); the caption under the map says „לקטע הדרך הבא”. Only a code comment in `CombatNavVisuals.tsx` still says קיטוע (not shown to learners).
+- Recap glossary reordered to the new sequence (techniques first); wording unchanged. Onboarding's closing sentence now leads to the new sub-topic.
+- Tip titles use the lesson-content heading size `text-base md:text-lg` (checking-design-fidelity, Table 2).
+- Copy restates OnboardingScene / PlanningScene / `content/topic-06.md`; checked by military-geo-editor and hebrew-copy-editor passes. Tip titles, the question stem and the closing transition are the client's wording.
+
+## 2026-10-12 — Navigation lab selected; separate dead reckoning below
+
+- User selected concept 1 for terrain navigation, requested a detailed Claude implementation prompt and three new dead-reckoning concepts. Terrain first and dead reckoning below in normal page flow override the original mockup's mutually exclusive method selectors.
+- Live, high-quality, slightly stylized realistic 3D terrain with a large adjacent map is mandatory; the inset map and sparse text in the selected mockup are not implementation constraints. Existing approved teaching copy must remain visible.
+- Prompts specify one shared terrain/landmark data source, metric registration, contours derived from geometry, and a distinction between learning aids and hidden-answer practice. Existing location-check activity is an architectural reference only.
+- New dead-reckoning images are conceptual compositions; their pixels do not certify exact map/model geometry or approved transcription. Runtime terrain, map, bearings and copy must come from the reviewed sources/data.
+- Dead-reckoning option 3 adds an explicitly separate bearing-deviation experiment; the approved original no-deviation demonstration is preserved. At equal 1200 m distances, a 62°/64° pair has 41.8858 m endpoint separation; the 64° endpoint is east and south of the 62° endpoint.
+- Detailed prompts and assets are in design/mockups/combatnav-concepts-2026-10-12/ and design/mockups/dead-reckoning-concepts-2026-10-12/. No application source was changed for this request.
+- **Update (same day):** "איפוס" now sets 0°, 0° (the equator meets Greenwich) instead of restoring the example; the direction toggles keep their last choice, shown outlined since 0° claims no direction. The page still opens on the deck's example (30°S 90°E). "לתרגול" has no arrow; its label is centred.
+
+## 2026-10-12 — Coordinates 1 opening: two illustrated definition cards (option 1)
+
+- `IntroColumns` in `CoordinatesScene.tsx` was replaced by `topic-02/CoordinatesDefinitions.tsx`. Copy, alt text, labels and captions are verbatim from `design/docs/2026-10-12-coordinates-definitions-claude-prompt.txt`; nothing to click.
+- Text is start-aligned (RTL right), not centred as in `design/mockups/coordinates-definitions-simple-2026-10-12/01-illustrated-definitions.png`. The prompt and AGENTS.md require start alignment; the mockup is a composition reference only.
+- At ≥md each card is a CSS subgrid with the same five rows: heading, text, image, labels, caption. Headings, the 3:2 image frames and the caption hairlines line up across both cards. The geodesy card has no labels, so a band the height of the bodies card's label row stays empty under its photo. This is accepted in exchange for aligned captions, as in the mockup.
+- The two body labels ("כדור הארץ" / "אליפסואיד — …") use the lesson sub-heading tier (`text-base font-display font-bold text-black`, Table 2). Each is centred under its object in its half of the artwork: Earth in the right half, the model in the left half. The image is not mirrored.
+- The bodies image background is 254,254,254 against the white card (255), so no frame is drawn around it. The geodesy photo has `rounded-xl` corners and no border.
+
+
+## 2026-10-12 — Topic 02 "היטלים: מכדור למפה": unfolding lab (alternative 1)
+
+Brief: `design/mockups/projections-concepts-2026-10-12/claude-implementation-option-1.txt`; reference `01-unfolding-lab.png`. Code: `src/components/lessons/topic-02/projections/` (`projectionsModel.ts` — projections, sheets, camera, practice, copy; `earthRaster.ts`; `ProjectionMap.tsx`; `ProjectionStage3D.tsx`; `ProjectionStageFlat.tsx`; `SurfaceIcon.tsx`; `ProjectionsLab.tsx`), wired into `CoordinatesPart2Scene.tsx` in place of ProjectionsBlock / ProjectionArt. Tests: `scripts/qa/projections-lab.test.mjs`; run: `scripts/qa/shot-projections-lab.mjs` (env QA_REDUCED / QA_NOGL / QA_NOIMG); screenshots `design/screenshots/projections-lab/`.
+
+- **One concrete projection per family** (flat x east, y north, R = 1). Cylindrical: equidistant cylindrical (Plate Carrée), tangent along the equator, central meridian 0°, shown 80°S–80°N (the poles, lines in this projection, are left out). Conic: equidistant conic with one standard parallel, the cone tangent along 45°N, n = sin 45°, ρ = cot φ0 + (φ0 − φ), θ = nλ; shown 10°N–80°N over all 360° of longitude, so the map is an annular sector of 2πn ≈ 254.6°; the pole (an arc in this projection) is not shown, and the paper between the apex and 80°N is drawn blank (the sheet's own development). Azimuthal: polar azimuthal equidistant, the plane tangent at the north pole, ρ = π/2 − φ, Greenwich at the bottom and east to the right (seen from above the north pole); shown 10°N–90°N.
+- **Spherical equations on a WGS84 globe.** The equations use a sphere of radius a, fed the globe's geodetic latitude; the globe is the explorer's WGS84 mesh. A teaching approximation — no geodetic accuracy is claimed for the equations. Every surface stands 0.4 % outside the sphere of radius a (the WGS84 body lies inside it): no cut into the globe, no z-fighting at the line of contact; the sheet is a 1.004× copy of the map.
+- **Unrolling.** Cylinder: the Greenwich line stays, curvature falls linearly to 0, the seam at 180° opens behind the globe, and the sheet ends as the plane tangent along Greenwich. Cone: the Greenwich generator and the apex stay, the half-angle opens linearly from 45° to 90°, ending in the plane tangent at 45°N on Greenwich. Plane: not unrolled; the view rises to straight above the pole and turns Greenwich to the bottom (label "מעבר למבט על"). Tested: contact at 0 %, no sheet point inside the unit sphere at any of 41 stages, distances on the sheet kept, no jumps.
+- **The flat sheet ends in front of the globe** (assumption). A sheet flattened behind the globe would show its inner face — a mirrored map. In front, translucent, its outer face is the map the right way round and the globe stays visible behind it; the sheet grows a little more opaque as it flattens.
+- **Camera.** Base view per method and progress (cylinder 13° above the equator facing 8°E; cone 13° → 32°; plane 22° → 90°), fitted every frame (perspective-exact, re-centred) so the globe and the whole sheet are never clipped. The globe is ≈ 265 px across at the opening and ≈ 120 px when the cylinder lies flat (2πR wide). Drag or arrow keys turn within ±70° / ±35°; "מבט התחלתי" resets the turn only, never the progress or answers.
+- **Sample point and lines.** 31.8°N 35.2°E (Middle East, not named on screen) and its parallel in orange on globe, sheet and map; the line / point of contact in sage, dashed — never the sample parallel (≥ 13° apart in every method). A legend under the stage (DatumFieldChallenge's legend recipe, T6) names them. The sheet's own copy of the point appears from 72 % (before that it sat as a second dot beside the globe's).
+- **Colour (illustration materials, no new UI tokens).** The sea is re-toned locally — globe shader and map raster — by the relief image's water weight and the shared colour image's own bathymetric brightness: globe albedo #2F6EA6 → #6FA9D2 (lit ≈ the reference's #2B679D, limb ≈ #224F75), maps #569AC9 → #8BC2E2 (reference map ≈ #67A9D2). Land is untouched, as the brief requires; the reference's land is lighter and more sage than NASA BMNG (July), so exposure was raised slightly instead of recolouring — deserts read close to the reference sand, forests stay darker than the reference. Shared assets and Globe3D are unchanged.
+- **Proportions vs the reference.** Real content width is 1052 px (sidebar) against the reference's ~1340 px crop; lesson spacing (p-8, gap-6) is used. The stage is taller in proportion: a Plate Carrée cylinder to ±80° is 1.4× the globe's height, and the reference's cylinder (barely taller than its globe) together with its 1.8 : 1 map cannot both hold for one cylindrical projection. The map column keeps the reference's ≈ 54 %. The card is 926 px high in every state.
+- **Selected tab** follows the lesson (border-accent + accent/10, aria-selected), not the reference's solid orange.
+- **Slider.** Native range in an RTL box: 0 at the right ("עטיפה"), 1 at the left ("מפה שטוחה"); the done part fills from the right to the thumb (the reference's green runs from the left — read as an inconsistency of the generated image). Keys: ← / ↑ +5 %, → / ↓ −5 %, PageUp / PageDown ±25 %, Home 0, End 100 — tested in the browser.
+- **Demonstration.** 5 s for the whole way, eased, from the current state; any hand on the slider stops it. Reduced motion: discrete key states (0 → 50 → 100 %, 0.75 s apart) with no tweening; camera moves are instant.
+- **Practice.** First order cone → plane → cylinder; repeats cycle through orders that are never the tabs' order. The target map shows grid and outline only. Check only after a choice; the check shows the chosen surface on the globe and unrolls it with the same mechanism (3.4 s; reduced motion: at once); choosing again hides it until the next check. Each wrong pair has its own line: what the chosen surface makes, what the target grid shows — never the answer's name. One hint; "חזרה להדגמה" keeps the task and the attempt; three right answers (after corrections) open the summary manually; the summary replaces the stage with the three maps; "תרגול חוזר" resets the practice only.
+- **Fallbacks.** No WebGL: the same model drawn flat (the Earth seen from the same view on a canvas, the sheet's lines through the same camera, hidden where the globe is in front), linked to the slider; the view does not turn. Images fail: Natural Earth 1:50m land (utm-atlas basemap) rasterised in plate carrée feeds both the 3-D globe and the maps, with a status line.
+- **Not built:** dragging the seam as a shortcut for the slider (optional in the brief). The slider is the full control.
+- **GlobeExplorer "activeCoord is not a function"** (earlier review): not reproduced — the identifier no longer exists in `src/`, and `scripts/qa/shot-geo-globe.mjs` ran its full flow on the same page without page errors.

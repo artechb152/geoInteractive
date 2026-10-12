@@ -1,7 +1,9 @@
 // Web delivery for the measurement-mission landscape (render_measurement_landscape.py).
-// Every pass shares one camera and one 1400 × 800 frame. Each layer is cropped to its own
-// alpha box and its placement (image px) is written to measurementLandscapeLayers.data.ts,
-// so the page stacks the crops back exactly. Never resize the renders.
+// Since the 2026-10-12 pass the page ships only the live model's ground image (model-albedo.webp,
+// from export_measurement_model.py); its no-WebGL stills are taken from the live model itself
+// (scripts/qa/capture-measurement-fallback.mjs). The layered 55° renders are no longer shipped:
+// list a pass in LAYERS to package it again — each layer is cropped to its own alpha box and its
+// placement (image px) is written to measurementLandscapeLayers.data.ts. Never resize the renders.
 // A tripod ships with its cast shadow under it: the shadow-catcher pass also carries faint
 // light (white, low alpha), so only its darkening is kept — black at alpha·(1 − luminance).
 const fs = require('node:fs');
@@ -14,7 +16,7 @@ const out = path.join(root, 'public/reference-assets/measurement-mission');
 const dataFile = path.join(root, 'src/components/lessons/topic-02/measurementLandscapeLayers.data.ts');
 const W = 1400;
 const H = 800;
-const LAYERS = ['land', 'land-cut', 'geoid', 'geoid-cut', 'ellipsoid-cut', 'tripod-A', 'tripod-B', 'tripod-C'];
+const LAYERS = [];
 const PAD = 2;
 
 async function rgba(file) {
@@ -104,6 +106,7 @@ function alphaBox(data) {
     await sharp(albedo).removeAlpha().webp({ quality: 82, effort: 6 }).toFile(file);
     console.log('model-albedo'.padEnd(16), Math.round(fs.statSync(file).size / 1024) + ' KB');
   }
+  if (!LAYERS.length) return;
   const lines = Object.entries(placed).map(([k, v]) => `  '${k}': ${JSON.stringify(v).replace(/"(\w+)":/g, '$1: ')},`);
   fs.writeFileSync(
     dataFile,

@@ -1,20 +1,29 @@
 /**
- * Measurement mission — pure layout math (no React), shared by the layered
- * landscape renders, the live overlay drawn over them and the SVG section
- * below, so all three register exactly.
+ * Measurement mission — pure layout math (no React), shared by the turnable
+ * landscape (measurementView), the ellipsoid's marked area (ellipsoidView) and
+ * the SVG section, so all three describe one landscape and one line.
  *
- *   The landscape is a stack of Cycles renders from ONE fixed camera
- *   (scripts/blender/render_measurement_landscape.py). Its matrix is in
- *   measurementLandscape.data.ts; project() places any world point on the
- *   rendered pixels, at any display size.
+ *   The landscape is scripts/blender/render_measurement_landscape.py's: its
+ *   scale, stations, N field and survey-line samples are in
+ *   measurementLandscape.data.ts.
  *   undulationAt()  ONE smooth N field (exact at the stations). The model
  *                   stands on the geoid it describes: land is lifted by its N,
- *                   the smooth ellipsoid is the flat level z = 0, and the cut
- *                   face and the section sample the same field along the
- *                   survey line.
- *   sectionGeometry()  the section along the survey line: one horizontal
- *                   scale (B exactly below its pin, C and A as close to theirs
- *                   as one scale allows) and one vertical scale for H, h and N.
+ *                   the smooth ellipsoid is the flat level z = 0, and the
+ *                   survey line's plane in the model and the section sample
+ *                   the same field along the line.
+ *   SURVEY_SPAN     the stretch of the survey line the section draws — ONE
+ *                   definition shared by the line on the landscape, the marked
+ *                   area on the ellipsoid and its enlargement.
+ *   sectionGeometry()  the section along that stretch: one horizontal scale
+ *                   and one vertical scale for H, h and N.
+ *   DISPLAY_VE      ONE display mapping of height for both representations:
+ *                   the model and the section draw every height (H, h and N
+ *                   alike) DISPLAY_VE times their own horizontal scale. Only
+ *                   the drawing is exaggerated — the data (H, h, N in metres)
+ *                   never change. With the model framed so the survey line's
+ *                   stretch is as long on screen as in the section
+ *                   (measurementView.landCamera), the line's relief stands
+ *                   equally high in both.
  *
  * Unit-tested in scripts/qa/measurement-mission.test.mjs.
  */
@@ -27,12 +36,18 @@ export type Pt = { x: number; y: number };
 
 export const STATION_IDS: readonly StationId[] = ['C', 'B', 'A'];
 
-/** The renders' proportions; every landscape box keeps them, so the overlay only scales. */
-export const LANDSCAPE_ASPECT = L.image.w / L.image.h;
-
-/** World units per metre: of H (drawn ve× high) and of N (another nx× on top). */
-export const Z_PER_M = L.ve / L.mPerUnit;
+/**
+ * Heights are drawn this many times their horizontal scale, in the model and in the section
+ * (the section's caption says "הגבהים מוגזמים"). The landscape data were rendered at L.ve.
+ */
+export const DISPLAY_VE = 6;
+/** The source data's world z (rendered at L.ve) → the displayed z. */
+export const Z_SCALE = DISPLAY_VE / L.ve;
+/** World units per metre: of H, and of N (another nx× on top). */
+export const Z_PER_M = DISPLAY_VE / L.mPerUnit;
 export const N_Z_PER_M = Z_PER_M * L.nx;
+/** A world point from the landscape data (stations, place names), at the displayed height. */
+export const displayed = (p: readonly [number, number, number]): Vec3 => [p[0], p[1], p[2] * Z_SCALE];
 
 // ---------------------------------------------------------------- the undulation field
 
@@ -53,109 +68,29 @@ export const groundZ = (H: number, N: number) => H * Z_PER_M + N * N_Z_PER_M;
 export const geoidZ = (N: number) => N * N_Z_PER_M;
 export const ELLIPSOID_Z = 0;
 
+/** A station's ground point in the model: its ellipsoidal height h, drawn. */
 export const stationWorld = (id: StationId): Vec3 => {
   const s = L.stations[id];
-  return [s.x, s.y, s.z];
+  return [s.x, s.y, STATIONS[id].h * Z_PER_M];
 };
 
-// ---------------------------------------------------------------- the camera
-
-/** Pixel position of a world point in a landscape box of `size` (origin top-left). */
-export function project(p: Vec3, size: Size): Pt {
-  const m = L.camera;
-  const [x, y, z] = p;
-  const cx = m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3];
-  const cy = m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3];
-  const cw = m[3][0] * x + m[3][1] * y + m[3][2] * z + m[3][3];
-  return { x: ((cx / cw + 1) / 2) * size.w, y: ((1 - cy / cw) / 2) * size.h };
-}
-
-/** Where each station's ground point lands in the box. */
-export function stationPins(size: Size): Record<StationId, Pt> {
-  return Object.fromEntries(STATION_IDS.map((id) => [id, project(stationWorld(id), size)])) as Record<StationId, Pt>;
-}
-
-/** Closed ring of `r` metres around a station, lying on its ground (SVG path). */
-export function stationRing(id: StationId, size: Size, r = 60): string {
-  const [x, y, z] = stationWorld(id);
-  const pts = Array.from({ length: 33 }, (_, i) => {
-    const a = (i / 32) * Math.PI * 2;
-    return project([x + (Math.cos(a) * r) / L.mPerUnit, y + (Math.sin(a) * r) / L.mPerUnit, z], size);
-  });
-  return pts.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
-}
-
-// ---------------------------------------------------------------- the survey line
-
 const LINE = L.line;
-const N_SAMPLES = LINE.H.length;
-/** x (m) of sample i: the line runs from the model's left edge to its right edge. */
-const xOfSample = (i: number) => -L.width / 2 * L.mPerUnit + i * LINE.step;
-const worldX = (i: number) => xOfSample(i) / L.mPerUnit;
-const fmt = (p: Pt[]) => p.map((q, i) => `${i ? 'L' : 'M'}${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(' ');
-
-/**
- * The dashed survey line draped on the closed model, as SVG path runs: only
- * where the camera sees it (the render recorded what ridges hide), riding the
- * water over the sea.
- */
-export function surveyLinePath(size: Size): string {
-  const runs: Pt[][] = [];
-  let run: Pt[] = [];
-  for (let i = 0; i < N_SAMPLES; i++) {
-    if (LINE.visible[i] !== '1') {
-      if (run.length > 1) runs.push(run);
-      run = [];
-      continue;
-    }
-    const z = Math.max(groundZ(LINE.H[i], LINE.N[i]), geoidZ(LINE.N[i])) + 0.004;
-    run.push(project([worldX(i), L.lineY, z], size));
-  }
-  if (run.length > 1) runs.push(run);
-  return runs.map(fmt).join(' ');
-}
-
-/**
- * The three lines on the cut face (the plane of the survey line), projected:
- * the ground's edge over the land, the geoid and the ellipsoid. Nothing stands
- * in front of the face once the slab is open, so these are never hidden.
- */
-export function cutFaceLines(size: Size): { ground: string; geoid: string; ellipsoid: string; geoidLeft: Pt; ellipsoidLeft: Pt } {
-  const ground: Pt[] = [];
-  const geoid: Pt[] = [];
-  const ell: Pt[] = [];
-  for (let i = 0; i < N_SAMPLES; i += 2) {
-    const x = worldX(i);
-    const N = LINE.N[i];
-    if (LINE.H[i] >= 0) ground.push(project([x, L.lineY, groundZ(LINE.H[i], N)], size));
-    geoid.push(project([x, L.lineY, geoidZ(N)], size));
-    ell.push(project([x, L.lineY, ELLIPSOID_Z], size));
-  }
-  return { ground: fmt(ground), geoid: fmt(geoid), ellipsoid: fmt(ell), geoidLeft: geoid[0], ellipsoidLeft: ell[0] };
-}
-
-// ---------------------------------------------------------------- the illustration's column
-
-/** Gap between the stage and the section, and above the task view's legend (px). */
-export const GAP = 8;
-/** The ellipsoid view lends the stage this much of the section's height (px): a bigger body, a smaller local section. */
-export const ELLIPSOID_EXTRA = 60;
-/** The section's share of what is left under the stage, and its limits (px): readable at the shortest screen, never steeper than SECTION_MAX_VE at the tallest. */
-const SECTION_SHARE = 0.4;
-export const SECTION_H = { explain: [200, 276], mission: [184, 214] } as const;
-
-/** How a column of `height` px splits between the stage, the section and the task view's legend (`footer` px). */
-export function illustrationSplit(height: number, mission: boolean, footer: number) {
-  const room = height - GAP - (mission ? footer + GAP : 0);
-  const [lo, hi] = mission ? SECTION_H.mission : SECTION_H.explain;
-  const section = Math.round(Math.min(hi, Math.max(lo, room * SECTION_SHARE)));
-  return { stage: room - section, section };
-}
 
 // ---------------------------------------------------------------- the local section
 
-/** Section frame (px): line names live left of the plot, as in the mockup. */
-export const SECTION = { plotLeft: 136, padRight: 12, padTop: 34, padBottom: 30, bulge: 10 } as const;
+/**
+ * The stretch of the survey line the section draws (m along the line from the
+ * model's left edge): from the ridge's flank short of C, past A, into the sea.
+ * The dashed line on the landscape, the line across the ellipsoid's marked
+ * area and the line across its enlargement all run over exactly this stretch,
+ * C at the left end and A toward the right, as in the section.
+ */
+export const SURVEY_SPAN = { s0: 900, s1: 4400 } as const;
+/** Where a point along the span lies, as a fraction of it (0 … 1). */
+export const spanAt = (s: number) => (s - SURVEY_SPAN.s0) / (SURVEY_SPAN.s1 - SURVEY_SPAN.s0);
+
+/** Section frame (px): line names live left of the plot, room above for the station pins. */
+export const SECTION = { plotLeft: 118, padRight: 10, padTop: 36, padBottom: 6, bulge: 10 } as const;
 
 export type SectionGeometry = {
   width: number;
@@ -172,47 +107,42 @@ export type SectionGeometry = {
   ellipsoidPath: string;
   /** Line ends at the plot's left edge, for the line-name labels. */
   leftEnds: { x: number; ground: number; geoid: number; ellipsoid: number };
+  /** The span's two ends on the ground line (the marked line's anchors). */
+  spanEnds: [Pt, Pt];
 };
 
 /**
- * @param width   section width (px) — the illustration's width
- * @param height  section height (px)
- * @param pinX    each station's pin x in the same box (px), from stationPins(); without a
- *                landscape above (the ellipsoid view) the stations spread over the plot instead
+ * The section draws heights DISPLAY_VE times its horizontal scale — the model's own exaggeration,
+ * so the two stand equally high. Only a frame too short for that (a very low window) draws them
+ * flatter. At 6× A's arrows still read as arrows (H 30 m ≈ 20 px, h 18 m ≈ 12 px, N −12 m ≈ 8 px
+ * at 1440 px); its caption says the heights are exaggerated.
  */
-/** The section is never drawn steeper than this many times its horizontal scale. */
-export const SECTION_MAX_VE = 5;
+export const SECTION_MAX_VE = DISPLAY_VE;
 
-export function sectionGeometry(width: number, height: number, pinX?: Record<StationId, number>): SectionGeometry {
+/**
+ * @param width   section width (px)
+ * @param height  section height (px)
+ * The plot runs over SURVEY_SPAN exactly, C → A from left to right; it does not
+ * register with any camera, so turning the model never changes it.
+ */
+export function sectionGeometry(width: number, height: number): SectionGeometry {
   const left = SECTION.plotLeft;
   const right = width - SECTION.padRight;
   const sOf = (id: StationId) => L.stations[id].s;
-  const sB = sOf('B');
-  const dC = sOf('C') - sB;
-  const dA = sOf('A') - sB;
-  let xB: number;
-  let kH: number;
-  if (pinX) {
-    // One horizontal scale: B straight below its pin, the slope fitted to C's and A's pins
-    // (least squares) and kept inside the plot.
-    xB = pinX.B;
-    kH = (dC * (pinX.C - xB) + dA * (pinX.A - xB)) / (dC * dC + dA * dA);
-  } else {
-    kH = (right - 70 - (left + 40)) / (dA - dC);
-    xB = left + 40 - dC * kH;
-  }
-  kH = Math.min(kH, (xB - (left + 16)) / -dC, (right - 60 - xB) / dA);
-  const xOfS = (s: number) => xB + (s - sB) * kH;
+  const kH = (right - left) / (SURVEY_SPAN.s1 - SURVEY_SPAN.s0);
+  const xOfS = (s: number) => left + (s - SURVEY_SPAN.s0) * kH;
 
   const samples = LINE.H.map((H, i) => ({ H, N: LINE.N[i], x: xOfS(i * LINE.step) })).filter(
-    (p) => p.x >= left - 1 && p.x <= right + 1,
+    (p) => p.x >= left - 0.5 && p.x <= right + 0.5,
   );
-  // One vertical scale for everything, fitted to the tallest stack above the ellipsoid in the plot —
-  // but never steeper than SECTION_MAX_VE; a tall frame keeps the rest as room above and below.
+  // One vertical scale for everything: the model's DISPLAY_VE — flatter only if the tallest stack above
+  // the ellipsoid would not fit; a tall frame keeps the rest as room above and below.
   const tallest = Math.max(...samples.map((p) => Math.max(0, p.N) + Math.max(0, p.H)));
   const room = height - SECTION.padBottom - SECTION.bulge - SECTION.padTop;
   const kV = Math.min(room / tallest, kH * SECTION_MAX_VE);
-  const base = height - SECTION.padBottom - (room - kV * tallest) * 0.6;
+  // spare height goes mostly above the ground: the section sits low, like the model beside it (which
+  // stands on its frame's floor), so neither leaves empty paper under it
+  const base = height - SECTION.padBottom - (room - kV * tallest) * 0.15;
   const mid = (left + right) / 2;
   const half = (right - left) / 2;
   const yE = (x: number) => base - SECTION.bulge * (1 - ((x - mid) / half) ** 2);
@@ -257,5 +187,9 @@ export function sectionGeometry(width: number, height: number, pinX?: Record<Sta
     geoidPath: line('g'),
     ellipsoidPath: line('e'),
     leftEnds: { x: first.x, ground: first.t, geoid: first.g, ellipsoid: first.e },
+    spanEnds: [
+      { x: first.x, y: first.t },
+      { x: last.x, y: Math.min(last.t, last.g) },
+    ],
   };
 }

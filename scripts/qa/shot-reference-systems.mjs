@@ -1,32 +1,28 @@
-// Browser QA for the topic-02 "מערכות ייחוס — אותה נקודה, שתי שפות" comparison
-// (CoordinatesPart2Scene → ReferenceSystemsLinkedComparison).
+// Browser QA for the topic-02 "מערכות ייחוס" activity (screen 1: one map, one method switch,
+// an explanation panel) and the static "כיצד מפרשים קואורדינטות?" summary (screen 2), after
+// design/mockups/topic-02-reference-systems-2026-10-11/claude-reference-systems-single-map.md.
 //
-// Usage (dev server running; default http://localhost:3000, or QA_BASE=...):
+// Usage (dev server running; default http://localhost:3001, or QA_BASE=...):
 //   node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-reference-systems.mjs [outDir]
 //
-// Checks (exit code 1 on any failure):
-//   opening     A selected on both maps + the A/B/C group, mode "יחידות", full readings (no dashes)
-//   pick        A/B/C from the geographic map, the UTM map and the buttons: both maps and both
-//               cards change together, the mode stays
-//   hover       previews the feature on both maps, never changes the reading; leaving restores
-//   keyboard    focus previews, Enter / Space select; tabs: ← next, → previous, Home / End
-//   modes       each tab shows the original row text; emphasis moves, the point does not;
-//               36N is on screen in every mode
-//   reset       back to A + "יחידות"
-//   register    same viewBox / image box on both maps; each pin tip = its data point = its ring centre
-//   overlap     no two map overlays overlap, all inside the map, at A, B and C; no clipped reading
-//   fallback    with the base image blocked: same box, paper + grid, readings and picking still work
-//   reduced     prefers-reduced-motion: no transition on rings / fields
-//   copy        every original heading, paragraph, definition and table value is in the block
-//   palette     every computed colour in the block is a token colour (or a shared component's)
-//   shell       scene id, neighbour blocks and order unchanged; no console / page errors
-// Screenshots (1440 × 1122): see SHOTS below.
+// What it verifies (exit code 1 on any failure):
+//   structure   one map; one switch above it; the three point buttons under it; no datum line in
+//               the activity; screen 2 separate, static, after it (and still defining WGS84)
+//   fit         at 1440 × 1122, heading under the fixed header: the whole activity and its panel
+//   six states  A / B / C × geographic / UTM: pin, anchor, feature outline, reading lines through
+//               the exact pin tip, frame values at the lines' ends, the panel's name and reading;
+//               geographic: captioned DMS groups, what ϕ / λ mean, both 0″–60″ bars (fixed range,
+//               bridge kept as reference), the per-point sentence; UTM: full grouped values, metres,
+//               zone meaning, why the numbers are large, the offset from the bridge
+//   keeps       switching keeps the point, the terrain and the crop; picking keeps the method
+//   carried     overlap, RTL order, motion / reduced motion, keyboard + focus, hover, icons,
+//               registration, true-north arrow, palette, image fallback, scene terminology, errors
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
-import { READINGS, fx, fy } from '../../src/components/lessons/topic-02/reference-systems/referenceSystemsGeometry.ts';
+import { READINGS, NBSP, fx, fy } from '../../src/components/lessons/topic-02/reference-systems/referenceSystemsGeometry.ts';
 
-const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'design/screenshots/reference-systems';
-const BASE = process.env.QA_BASE || 'http://localhost:3000';
+const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'design/screenshots/reference-systems-2026-10-12';
+const BASE = process.env.QA_BASE || 'http://localhost:3001';
 const URL = `${BASE}/lessons/topic-02/#scene-coordinates-2`;
 await mkdir(outDir, { recursive: true });
 
@@ -39,30 +35,56 @@ const ok = (m) => console.log('ok  ', m);
 const check = (cond, m) => (cond ? ok(m) : fail(m));
 
 const ROOT = '[data-activity="reference-systems"]';
-const MAPS = ['geo', 'utm'];
+const SCREEN2 = '[data-screen="reading-coordinates"]';
+const IDS = ['A', 'B', 'C'];
+const METHODS = ['geo', 'utm'];
 
-// The block's original copy (snapshot taken before the redesign) — must all still be there.
-const ORIGINAL = {
+// The brief's wording, verbatim.
+const COPY = {
   heading: 'מערכות ייחוס',
-  lead: 'לא ניתן לדבר על קואורדינטות של נקודה בלי שנדע מהו הדאטום ומהו ההיטל שלה. השילוב ביניהם נקרא ״מערכת ייחוס״.',
-  terms: [
-    ['דאטום', 'מכלול הפרמטרים המגדירים ומעגנים את האליפסואיד ביחס לפני כדור הארץ (ראו קואורדינטות 1).'],
-    ['היטל', 'מעבר מעולם תלת־ממדי לדו־ממדי: גיאוגרפי, UTM ועוד.'],
-    ['מערכת ייחוס', 'השילוב בין הדאטום להיטל.'],
-  ],
-  tableHeading: 'שני ההיטלים המרכזיים',
-  columns: ['היטל גיאוגרפי', 'היטל UTM'],
-  rows: {
-    scope: ['היקף', 'גלובלית', 'רשת עולמית של 60 פלחים, 6° כל אחד'],
-    units: ['יחידות', 'זוויתיות (מעלות, דקות, שניות)', 'מטריות'],
-    what: ['מה מציינים', 'רוחב ואורך', 'הקואורדינטות, הפלח וחצי הכדור'],
+  lead: 'אותו מקום יכול להיכתב בשיטות קואורדינטות שונות. בחרו שיטה מעל המפה, ובחרו נקודה במפה או בכפתורים שמתחתיה.',
+  names: { A: 'A · גשר', B: 'B · רכס', C: 'C · יישוב' },
+  meaning: { lat: 'זווית צפונה או דרומה מקו המשווה. N מציין צפון.', lon: 'זווית מזרחה או מערבה מקו האורך של גריניץ׳. E מציין מזרח.' },
+  captions: ['מעלות', 'דקות', 'שניות', 'כיוון'],
+  minutes: 'דקות ושניות הן חלקים של מעלה, לא יחידות זמן: מעלה אחת מחולקת ל־60 דקות, ודקה אחת ל־60 שניות.',
+  close: 'הנקודות קרובות זו לזו. לכן כאן המעלות והדקות נשארות זהות, והשינוי מופיע בשניות.',
+  geoFeedback: {
+    A: 'הגשר הוא נקודת ההשוואה. בחרו ברכס או ביישוב כדי לראות כיצד הקריאה משתנה.',
+    B: 'הרכס נמצא מצפון־מערב לגשר: הרוחב גדל והאורך קטן. כאן השינוי מופיע ברכיב השניות.',
+    C: 'היישוב נמצא מדרום־מערב לגשר: הרוחב והאורך קטנים יותר. כאן השינוי מופיע ברכיב השניות.',
   },
+  utmWhy: 'אלה ערכי מיקום ברשת רחבה, לא מרחקים משפת המפה. בפלח הצפוני, ערך הצפון נמדד ברשת מקו המשווה; לקו האורך המרכזי של הפלח ניתן ערך מזרח של 500,000 מטרים. לכן גם אזור קטן במפה יכול לקבל מספרי קואורדינטות גדולים.',
+  offsetTitle: 'השינוי ברשת ביחס לגשר',
+  offset: {
+    A: 'הגשר הוא נקודת ההשוואה: אין שינוי במזרח או בצפון.',
+    B: 'הרכס נמצא מצפון־מערב לגשר: 695 מטרים מערבה ו־385 מטרים צפונה ברשת.',
+    C: 'היישוב נמצא מדרום־מערב לגשר: 555 מטרים מערבה ו־380 מטרים דרומה ברשת.',
+  },
+  zone: 'פלח 36 · חצי הכדור הצפוני (N)',
+  announce: { A: 'נבחרה נקודה A, גשר', B: 'נבחרה נקודה B, רכס', C: 'נבחרה נקודה C, יישוב' },
+};
+const SCREEN2_HEADING = 'כיצד מפרשים קואורדינטות?';
+// Earlier rounds' structure that must not come back into screen 1.
+const RETIRED_SCREEN1 = ['דאטום', 'WGS84', 'המפה הימנית', 'המפה השמאלית', 'מימין', 'משמאל', 'שתי המפות'];
+const SCENE_COPY = {
+  present: [
+    'וכיצד מציינים מיקום בשתי מערכות קואורדינטות מרכזיות: מערכת קואורדינטות גיאוגרפית ומערכת UTM.',
+    'בהמשך נכיר שתי מערכות קואורדינטות מרכזיות: מערכת קואורדינטות גיאוגרפית, שמציינת מיקום ברוחב ובאורך, ומערכת UTM, המבוססת על היטל מרקטור רוחבי ומציינת מיקום במטרים.',
+  ],
+  retired: ['היטל גיאוגרפי', 'היטל GEO', 'שני ההיטלים המרכזיים', 'השילוב בין הדאטום להיטל', 'בלעדיה אי אפשר לפרש', 'שמשתמשת בהיטל גלילי'],
+  summaryRef: 'מערכת ייחוס מגדירה כיצד לפרש קואורדינטות: הדאטום, הצירים והיחידות, ובמערכת מישורית גם ההיטל והפרמטרים שלו.',
 };
 
-// Token colours (tailwind.config.ts) allowed inside the block. paper.bright is the shared
-// Button's secondary fill (used as-is, per the brief); #000 is text-black.
+// Token colours (tailwind.config.ts); #000 is text-black, #FDFBF3 is paper.bright.
 const TOKENS = ['#F3E9DC', '#FFFFFF', '#F6EFE6', '#DCCDB2', '#ECE4D2', '#C9A56B', '#38432E', '#4A5240', '#8A8873', '#749C75', '#5B7C5C', '#D97E2B', '#E08A38', '#D69051', '#000000', '#FDFBF3'];
 const tokenRgb = TOKENS.map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(','));
+
+const group = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+const dmsGroups = (d) => [`${d.deg}°`, `${String(d.min).padStart(2, '0')}′`, `${d.sec.toFixed(2).padStart(5, '0')}″`, d.hemi];
+const expectedChosen = (m, id) => {
+  const r = READINGS[id];
+  return m === 'geo' ? { top: dmsGroups(r.lonDms).slice(0, 3).join(NBSP), right: dmsGroups(r.latDms).slice(0, 3).join(NBSP) } : { top: group(r.point.e), right: group(r.point.n) };
+};
 
 const browser = await chromium.launch({ channel: 'chrome' });
 
@@ -72,327 +94,465 @@ async function open(opts = {}, { blockImage = false } = {}) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && errors.push(m.text()));
-  // failed requests are reported with their URL (the console line has none)
   page.on('response', (r) => r.status() >= 400 && errors.push(`HTTP ${r.status()} ${r.url()}`));
   if (blockImage) await page.route('**/linked-terrain-base.webp', (r) => r.abort());
   await page.goto(URL, { waitUntil: 'networkidle', timeout: 240000 });
-  await page.waitForSelector(ROOT, { timeout: 60000 });
-  if (!blockImage) {
-    await page.waitForFunction(() => {
-      const imgs = [...document.querySelectorAll('[data-base-image]')];
-      return imgs.length === 2 && imgs.every((i) => i.getBBox().width > 0);
-    });
-  }
-  await align(page);
+  await page.waitForSelector(ROOT, { timeout: 90000 });
+  if (!blockImage) await page.waitForFunction(() => document.querySelector('[data-base-image]')?.getBBox().width > 0);
+  await align(page, COPY.heading);
   return { ctx, page, errors };
 }
 
-/** Section heading "מערכות ייחוס" just under the site header (the card follows it). */
-async function align(page, offset = 0) {
-  await page.evaluate(
-    ({ root, offset }) => {
-      const header = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
-      const block = document.querySelector(root).parentElement;
-      // instant: the page has scroll-behavior: smooth
-      window.scrollTo({ top: block.getBoundingClientRect().top + window.scrollY - header - 16 + offset, behavior: 'instant' });
-    },
-    { root: ROOT, offset },
-  );
-  await page.waitForTimeout(700);
+async function align(page, heading) {
+  await page.evaluate((heading) => {
+    const header = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
+    const h3 = [...document.querySelectorAll('#scene-coordinates-2 h3')].find((h) => h.textContent.trim() === heading);
+    window.scrollTo({ top: h3.getBoundingClientRect().top + window.scrollY - header - 16, behavior: 'instant' });
+  }, heading);
+  await page.waitForTimeout(600);
 }
 
+/** Everything screen 1 shows, measured on the rendered page. */
 const state = (page) =>
-  page.evaluate((root) => {
-    const r = document.querySelector(root);
-    const text = (sel) => r.querySelector(sel)?.textContent.trim();
-    const fields = Object.fromEntries([...r.querySelectorAll('[data-field]')].map((f) => [f.dataset.field, f.querySelector('dd').textContent.trim()]));
-    const pressed = [...r.querySelectorAll('[data-point-button]')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.pointButton);
-    const pins = Object.fromEntries(
-      ['geo', 'utm'].map((m) => [m, [...r.querySelectorAll(`[data-map="${m}"] [data-pin]`)].filter((b) => b.dataset.active === 'true').map((b) => b.dataset.pin)]),
-    );
-    const rings = Object.fromEntries(
-      ['geo', 'utm'].map((m) => [m, Object.fromEntries([...r.querySelectorAll(`[data-map="${m}"] [data-ring]`)].map((e) => [e.dataset.ring, e.dataset.ringState]))]),
-    );
-    const tab = r.querySelector('[role="tab"][aria-selected="true"]')?.dataset.mode;
-    const tabIndexes = [...r.querySelectorAll('[role="tab"]')].map((t) => t.tabIndex);
-    const visiblePanel = [...r.querySelectorAll('[data-mode-panel]')].filter((p) => getComputedStyle(p).visibility === 'visible').map((p) => p.dataset.modePanel);
-    const panelText = Object.fromEntries([...r.querySelectorAll('[data-mode-panel]')].map((p) => [p.dataset.modePanel, [...p.querySelectorAll('dd')].map((d) => d.textContent.trim())]));
-    const live = r.querySelector('[aria-live="polite"]')?.textContent.trim();
-    const emph = (el) => !!el && el.className.includes('bg-accent/10');
-    return {
-      fields,
-      pressed,
-      pins,
-      rings,
-      tab,
-      tabIndexes,
-      visiblePanel,
-      panelText,
-      live,
-      unitsEmph: [...r.querySelectorAll('[data-unit]')].map(emph),
-      fieldEmph: [...r.querySelectorAll('[data-field]')].map(emph),
-      metaEmph: [...r.querySelectorAll('[data-meta]')].map(emph),
-      zoneChipEmph: r.querySelector('[data-zone-chip]')?.className.includes('ring-accent') ?? false,
-      labelEmph: [...r.querySelectorAll('[data-map-label]')].every((l) => l.className.includes('ring-accent')),
-      zoneVisible: (() => {
-        const z = r.querySelector('[data-field="zone"]');
-        const b = z.getBoundingClientRect();
-        return b.width > 0 && b.height > 0 && getComputedStyle(z).visibility === 'visible' && z.textContent.includes('36N');
-      })(),
-    };
-  }, ROOT);
-
-const expectReading = (s, id, label) => {
-  const r = READINGS[id];
-  check(
-    s.fields.lat === r.latText && s.fields.lon === r.lonText && s.fields.e === r.eText && s.fields.n === r.nText && s.fields.zone === '36N',
-    `${label}: both cards read ${id} (${r.latText} ${r.lonText} | ${r.eText} ${r.nText} 36N) — got ${JSON.stringify(s.fields)}`,
+  page.evaluate(
+    ({ root }) => {
+      const r = document.querySelector(root);
+      const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+      const keep = (t) => (t ?? '').replace(/[ \t\n]+/g, ' ').trim(); // keeps NBSP
+      const onScreen = (el, x, y) => {
+        const p = el.ownerSVGElement.createSVGPoint();
+        p.x = x;
+        p.y = y;
+        return p.matrixTransform(el.getScreenCTM());
+      };
+      const screenLine = (poly) => [...poly.points].map((pt) => onScreen(poly, pt.x, pt.y));
+      const distToLine = (pts, q) => {
+        let best = Infinity;
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const t = Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / (dx * dx + dy * dy)));
+          best = Math.min(best, Math.hypot(a.x + t * dx - q.x, a.y + t * dy - q.y));
+        }
+        return best;
+      };
+      const cross = (pts, axis, c) => {
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          if ((a[axis] - c) * (b[axis] - c) <= 0 && a[axis] !== b[axis]) {
+            const t = (c - a[axis]) / (b[axis] - a[axis]);
+            const o = axis === 'x' ? 'y' : 'x';
+            return a[o] + t * (b[o] - a[o]);
+          }
+        }
+        return null;
+      };
+      const map = r.querySelector('[data-map]');
+      const mb = map.getBoundingClientRect();
+      const dot = map.querySelector('[data-pin][data-active]')?.lastElementChild.getBoundingClientRect();
+      const tip = dot && { x: dot.left + dot.width / 2, y: dot.top + dot.height / 2 };
+      const lines = Object.fromEntries([...map.querySelectorAll('[data-reading-line]')].map((g) => [g.dataset.readingLine, screenLine(g.querySelector('polyline.stroke-accent'))]));
+      const chosen = Object.fromEntries(
+        [...map.querySelectorAll('[data-chosen-label]')].map((l) => {
+          const b = l.getBoundingClientRect();
+          return [l.dataset.chosenLabel, { text: keep(l.textContent), cx: b.left + b.width / 2, cy: b.top + b.height / 2, w: b.width, h: b.height }];
+        }),
+      );
+      const panel = r.querySelector('[data-explain]');
+      const reading = (f) => {
+        const el = panel.querySelector(`[data-reading="${f}"]`);
+        if (!el) return null;
+        const groups = [...el.querySelectorAll('[data-value] dd')].map((d) => ({ text: keep(d.textContent), x: d.getBoundingClientRect().left, caption: n(d.parentElement.querySelector('dt').textContent) }));
+        const bar = el.querySelector('[data-seconds-bar]');
+        const tb = bar.querySelector('.rounded-full.bg-border').getBoundingClientRect();
+        const marks = Object.fromEntries(
+          [...bar.querySelectorAll('[data-bar-mark]')].map((m) => {
+            const stem = m.lastElementChild.getBoundingClientRect();
+            return [m.dataset.barMark, { at: +m.dataset.barAt, drawn: (stem.left + stem.width / 2 - tb.left) / tb.width }];
+          }),
+        );
+        return {
+          title: n(el.querySelector('h5').textContent),
+          meaning: n(el.querySelector('[data-meaning]').textContent),
+          groups,
+          context: keep(bar.firstElementChild.textContent),
+          ticks: [...bar.querySelectorAll('.text-fg-muted > span')].map((s) => ({ t: n(s.textContent), x: s.getBoundingClientRect().left })),
+          marks,
+        };
+      };
+      return {
+        method: map.dataset.map,
+        grid: map.querySelector('[data-grid]')?.dataset.grid,
+        mapBox: [mb.left, mb.top + window.scrollY, mb.width, mb.height].map((v) => Math.round(v * 10) / 10),
+        viewBox: map.querySelector('svg').getAttribute('viewBox'),
+        pressedMethod: [...r.querySelectorAll('[data-method-button]')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.methodButton),
+        pressed: [...r.querySelectorAll('[data-point-button]')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.pointButton),
+        pins: [...map.querySelectorAll('[data-pin][data-active]')].map((p) => p.dataset.pin),
+        previews: [...map.querySelectorAll('[data-pin][data-preview]')].map((p) => p.dataset.pin),
+        anchor: map.querySelector('[data-anchor]')?.dataset.anchor,
+        outline: map.querySelector('[data-feature-outline]')?.dataset.featureOutline,
+        linesFor: map.querySelector('[data-reading-lines]')?.dataset.readingLines,
+        tipToLine: tip ? Object.fromEntries(Object.entries(lines).map(([k, pts]) => [k, distToLine(pts, tip)])) : {},
+        lineEnds: { top: lines.along && cross(lines.along, 'y', mb.top), right: lines.across && cross(lines.across, 'x', mb.right) },
+        chosen,
+        panelKind: panel.dataset.explain,
+        feature: n(panel.querySelector('[data-feature]')?.textContent),
+        feedback: n(panel.querySelector('[data-feedback]')?.textContent),
+        lat: reading('lat'),
+        lon: reading('lon'),
+        notes: [...panel.querySelectorAll('[data-geo-notes] p')].map((p) => n(p.textContent)),
+        utm: Object.fromEntries(
+          [...panel.querySelectorAll('[data-utm-reading] [data-field]')].map((f) => [
+            f.dataset.field,
+            { label: n(f.querySelector('dt').textContent), value: keep(f.querySelector('[data-value]').textContent), unit: n(f.querySelector('[data-value]').nextElementSibling?.textContent) },
+          ]),
+        ),
+        zone: n(panel.querySelector('[data-zone-meaning]')?.textContent),
+        why: n(panel.querySelector('[data-utm-why]')?.textContent),
+        offsetTitle: n(panel.querySelector('[data-grid-offset] h5')?.textContent),
+        announce: n(r.querySelector('[data-announce]')?.textContent),
+      };
+    },
+    { root: ROOT },
   );
-  check(s.pressed.join() === id && s.pins.geo.join() === id && s.pins.utm.join() === id, `${label}: ${id} pressed in the group and on both maps`);
-  check(MAPS.every((m) => s.rings[m][id] === 'selected' && Object.entries(s.rings[m]).every(([k, v]) => k === id || v === 'off')), `${label}: ${id}'s feature outlined on both maps`);
-  check(s.live?.startsWith(`נקודה ${id}:`), `${label}: announced "${s.live}"`);
-};
 
-/** Overlay boxes inside each map: labels, north arrow, scale bar, zone tag, pin heads. */
+function expectState(s, id, m, label) {
+  const tag = `${label} [${m} · ${id}]`;
+  check(s.method === m && s.grid === (m === 'geo' ? 'graticule' : 'utm') && s.pressedMethod.join() === m && s.panelKind === m, `${tag}: switch, grid and panel agree`);
+  check(s.pressed.join() === id && s.pins.join() === id && s.anchor === id && s.outline === id && s.linesFor === id, `${tag}: button, pin, anchor, feature outline and reading lines on ${id}`);
+  check(s.tipToLine.along < 1.5 && s.tipToLine.across < 1.5, `${tag}: both reading lines through the pin tip (${s.tipToLine.along?.toFixed(2)} / ${s.tipToLine.across?.toFixed(2)} px)`);
+  const want = expectedChosen(m, id);
+  check(
+    s.chosen.top?.text === want.top && s.chosen.right?.text === want.right && Math.abs(s.chosen.top.cx - s.lineEnds.top) <= s.chosen.top.w / 2 - 2 && Math.abs(s.chosen.right.cy - s.lineEnds.right) <= s.chosen.right.h / 2,
+    `${tag}: frame values "${want.top}" / "${want.right}" at the lines' ends`,
+  );
+  check(s.feature === COPY.names[id], `${tag}: panel names "${s.feature}"`);
+  const r = READINGS[id];
+  if (m === 'geo') {
+    for (const [f, dms, title] of [['lat', r.latDms, 'רוחב ϕ'], ['lon', r.lonDms, 'אורך λ']]) {
+      const x = s[f];
+      const groups = dmsGroups(dms);
+      check(x && x.title === title && x.meaning === COPY.meaning[f], `${tag}: ${title} — what it measures`);
+      check(
+        x.groups.map((g) => g.text).join('|') === groups.join('|') && x.groups.map((g) => g.caption).join('|') === COPY.captions.join('|') && x.groups.every((g, i) => i === 0 || g.x > x.groups[i - 1].x),
+        `${tag}: ${title} ${groups.join(' ')} — each group captioned, left → right`,
+      );
+      const refAt = (f === 'lat' ? READINGS.A.latDms : READINGS.A.lonDms).sec / 60;
+      const marks = x.marks;
+      check(
+        x.context === groups.slice(0, 2).join(NBSP) &&
+          x.ticks.map((t) => t.t).join('|') === '0″|30″|60″' &&
+          x.ticks[0].x < x.ticks[2].x &&
+          Math.abs(marks[id].at - dms.sec / 60) < 1e-4 &&
+          Math.abs(marks[id].drawn - dms.sec / 60) < 0.01 &&
+          (id === 'A' ? Object.keys(marks).length === 1 : Math.abs(marks.A.drawn - refAt) < 0.01),
+        `${tag}: ${title} bar — "${x.context.replaceAll(NBSP, ' ')}" + ${dms.sec.toFixed(2)}″ on a fixed 0″–60″${id === 'A' ? '' : ', the bridge kept as reference'}`,
+      );
+    }
+    check(s.feedback === COPY.geoFeedback[id], `${tag}: sentence "${s.feedback.slice(0, 40)}…"`);
+    check(s.notes.join('|') === `${COPY.minutes}|${COPY.close}`, `${tag}: minutes / seconds are parts of a degree; why only the seconds change`);
+  } else {
+    check(
+      s.utm.e?.label === 'מזרח E' && s.utm.n?.label === 'צפון N' && s.utm.e.value === group(r.point.e) && s.utm.n.value === group(r.point.n) && s.utm.e.unit === 'מטרים' && s.utm.n.unit === 'מטרים',
+      `${tag}: full values ${group(r.point.e).replaceAll(NBSP, ' ')} / ${group(r.point.n).replaceAll(NBSP, ' ')} m, grouped, nothing removed`,
+    );
+    check(s.zone === COPY.zone && s.why === COPY.utmWhy, `${tag}: zone meaning and why the numbers are large`);
+    check(s.offsetTitle === COPY.offsetTitle && s.feedback === COPY.offset[id], `${tag}: "${COPY.offsetTitle}" — "${s.feedback.slice(0, 40)}…"`);
+  }
+}
+
 const overlapReport = (page) =>
   page.evaluate((root) => {
     const out = [];
-    for (const map of document.querySelectorAll(`${root} [data-map]`)) {
-      const mb = map.getBoundingClientRect();
-      const items = [
-        ...[...map.querySelectorAll('[data-map-label]')].map((e) => ({ name: `label ${e.textContent}`, b: e.getBoundingClientRect() })),
-        ...['[data-north]', '[data-scale-bar]', '[data-zone-chip]'].flatMap((s) => [...map.querySelectorAll(s)].map((e) => ({ name: s, b: e.getBoundingClientRect() }))),
-        ...[...map.querySelectorAll('[data-pin]')].map((e) => ({ name: `pin ${e.dataset.pin}`, b: e.firstElementChild.getBoundingClientRect() })),
-      ];
-      for (const it of items) {
-        const b = it.b;
-        if (b.left < mb.left - 0.5 || b.top < mb.top - 0.5 || b.right > mb.right + 0.5 || b.bottom > mb.bottom + 0.5) out.push(`${map.dataset.map}: ${it.name} leaves the map`);
+    const map = document.querySelector(`${root} [data-map]`);
+    const mb = map.getBoundingClientRect();
+    const items = [
+      ...[...map.querySelectorAll('[data-map-label]')].map((e) => ({ name: `label ${e.textContent}`, b: e.getBoundingClientRect() })),
+      ...['[data-north]', '[data-scale-bar]'].map((s) => ({ name: s, b: map.querySelector(s).getBoundingClientRect() })),
+      ...[...map.querySelectorAll('[data-pin]')].map((e) => ({ name: `pin ${e.dataset.pin}`, b: e.firstElementChild.getBoundingClientRect() })),
+    ];
+    for (const it of items) if (it.b.left < mb.left - 0.5 || it.b.top < mb.top - 0.5 || it.b.right > mb.right + 0.5 || it.b.bottom > mb.bottom + 0.5) out.push(`${it.name} leaves the map`);
+    for (let i = 0; i < items.length; i++)
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i].b;
+        const b = items[j].b;
+        if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) out.push(`${items[i].name} × ${items[j].name}`);
       }
-      for (let i = 0; i < items.length; i++) {
-        for (let j = i + 1; j < items.length; j++) {
-          const a = items[i].b;
-          const b = items[j].b;
-          if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) out.push(`${map.dataset.map}: ${items[i].name} × ${items[j].name}`);
-        }
-      }
+    const edge = { top: 0, right: 0 };
+    for (const l of map.querySelectorAll('[data-map-label]')) edge[Math.abs(l.getBoundingClientRect().top - mb.top) < 12 ? 'top' : 'right']++;
+    if (edge.top > 3 || edge.right > 3) out.push(`${edge.top} top / ${edge.right} right labels (max 3)`);
+    // the bar marks: inside their bar, not on each other
+    for (const bar of document.querySelectorAll(`${root} [data-seconds-bar]`)) {
+      const bb = bar.getBoundingClientRect();
+      const ms = [...bar.querySelectorAll('[data-bar-mark] > span:first-child')].map((e) => e.getBoundingClientRect());
+      for (const b of ms) if (b.left < bb.left - 14 || b.right > bb.right + 14) out.push(`bar mark outside ${bar.dataset.secondsBar}`);
+      if (ms.length === 2 && ms[0].left < ms[1].right && ms[1].left < ms[0].right) out.push(`bar marks overlap on ${bar.dataset.secondsBar}`);
     }
-    for (const f of document.querySelectorAll(`${root} [data-field] dd, ${root} [data-field] dt`)) {
-      if (f.scrollWidth > f.clientWidth + 1) out.push(`clipped reading "${f.textContent}"`);
+    for (const f of document.querySelectorAll(`${root} [data-explain] dd, ${root} [data-explain] dt, ${root} [data-explain] h4, ${root} [data-explain] h5`)) {
+      if (f.scrollWidth > f.clientWidth + 1) out.push(`clipped "${f.textContent}"`);
     }
     return out;
   }, ROOT);
 
+const opacities = (page, ms) =>
+  page.evaluate(
+    ({ root, ms }) =>
+      new Promise((res) =>
+        setTimeout(() => {
+          const r = document.querySelector(root);
+          const op = (sel) => +getComputedStyle(r.querySelector(sel)).opacity;
+          res({ lines: op('[data-reading-lines]'), outline: op('[data-feature-outline]'), label: op('[data-chosen-label]'), sentence: op('[data-feedback]') });
+        }, ms),
+      ),
+    { root: ROOT, ms },
+  );
+const runningAnimations = (page) =>
+  page.evaluate((root) => document.getAnimations().filter((a) => a.playState === 'running' && document.querySelector(root).contains(a.effect?.target)).length, ROOT);
+const shot = async (page, name) => {
+  await page.mouse.move(5, 600);
+  await page.waitForTimeout(450);
+  await page.screenshot({ path: `${outDir}/${name}` });
+};
+
 // ── main run ───────────────────────────────────────────────────────────────
 {
   const { ctx, page, errors } = await open();
-  const pin = (map, id) => page.locator(`${ROOT} [data-map="${map}"] [data-pin="${id}"]`);
   const btn = (id) => page.locator(`${ROOT} [data-point-button="${id}"]`);
-  const tab = (m) => page.locator(`${ROOT} [role="tab"][data-mode="${m}"]`);
+  const pin = (id) => page.locator(`${ROOT} [data-pin="${id}"]`);
+  const sw = (m) => page.locator(`${ROOT} [data-method-button="${m}"]`);
 
   // opening
   let s = await state(page);
-  expectReading(s, 'A', 'opening');
-  check(s.tab === 'units' && s.visiblePanel.join() === 'units', 'opening: mode "יחידות"');
-  check(s.unitsEmph.length === 4 && s.unitsEmph.every(Boolean), 'opening: units lines emphasised');
-  check(!Object.values(s.fields).some((v) => /^[-–—]+$/.test(v) || v === ''), 'opening: no placeholder dashes');
-  await page.screenshot({ path: `${outDir}/01-opening-A-units.png` });
+  expectState(s, 'A', 'geo', 'opening');
 
-  // registration: same viewBox / image box; pin tip = data point = ring centre, on both maps
+  // structure + fit
+  const layout = await page.evaluate(
+    ({ root, screen2 }) => {
+      const r = document.querySelector(root);
+      const s2 = document.querySelector(screen2);
+      const b = (el) => el.getBoundingClientRect();
+      const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+      const map = r.querySelector('[data-map]');
+      const switches = r.querySelectorAll('[data-method-switch]');
+      const points = r.querySelector('[data-point-button]').parentElement;
+      const header = document.querySelector('header').getBoundingClientRect().bottom;
+      const h3 = r.parentElement.querySelector('h3');
+      return {
+        maps: r.querySelectorAll('[data-map]').length,
+        switches: switches.length,
+        switchAbove: b(switches[0]).bottom <= b(map).top,
+        pointsBelow: b(points).top >= b(map).bottom,
+        header,
+        heading: b(h3).top,
+        lead: n(h3.nextElementSibling.textContent),
+        card: b(r).bottom,
+        panel: b(r.querySelector('[data-explain]')).bottom,
+        map: [b(map).width, b(map).height, b(map).bottom],
+        vh: innerHeight,
+        text: n(r.parentElement.textContent),
+        inCard: r.querySelectorAll('table, [data-differences], [data-conclusion], [data-definitions]').length,
+        s2After: !!s2 && !!(r.compareDocumentPosition(s2) & Node.DOCUMENT_POSITION_FOLLOWING) && !r.contains(s2),
+        s2Controls: s2.querySelectorAll('button, input, select, [tabindex]').length,
+        s2Datum: n(s2.textContent).includes('WGS84') && n(s2.textContent).includes('דאטום'),
+        icons: [...r.parentElement.querySelectorAll('svg.lucide'), ...s2.querySelectorAll('svg')].length,
+        stray: [...r.querySelectorAll('svg')].filter((v) => !v.closest('[data-map]')).length,
+        ids: [...document.querySelectorAll('#scene-coordinates-2 [id]')].map((e) => e.id),
+        h3: [...document.querySelectorAll('#scene-coordinates-2 h3')].map((h) => n(h.textContent)),
+        live: [...r.querySelectorAll('[aria-live]')].map((e) => e.dataset.announce !== undefined),
+      };
+    },
+    { root: ROOT, screen2: SCREEN2 },
+  );
+  console.log('     fit @1440×1122:', JSON.stringify({ heading: layout.heading, map: layout.map, panel: layout.panel, card: layout.card }));
+  check(layout.maps === 1 && layout.switches === 1 && layout.switchAbove && layout.pointsBelow, 'structure: one map, one switch above it, the point buttons under it');
+  check(layout.lead === COPY.lead && layout.heading >= layout.header, "structure: heading under the header, the brief's lead");
+  check(layout.card <= layout.vh, `fit: the whole activity and its panel on one screen (card ends ${Math.round(layout.card)} / ${layout.vh}); map ${Math.round(layout.map[0])}×${Math.round(layout.map[1])}`);
+  const back = RETIRED_SCREEN1.filter((t) => layout.text.includes(t));
+  check(back.length === 0, `structure: no datum line, no two-map wording on screen 1${back.length ? ' — still there: ' + back.join(' / ') : ''}`);
+  check(layout.inCard === 0 && layout.s2After && layout.s2Controls === 0 && layout.s2Datum, 'screen 2: separate, static, after the card, still defines the datum (WGS84)');
+  const iUtm = layout.h3.indexOf('היטל UTM');
+  check(layout.h3[iUtm + 1] === COPY.heading && layout.h3[iUtm + 2] === SCREEN2_HEADING && layout.h3.length === iUtm + 3, `shell: order ${layout.h3.join(' → ')}`);
+  check(layout.icons === 0 && layout.stray === 0, 'icons: none outside the map; no glyphs on screen 2');
+  check(new Set(layout.ids).size === layout.ids.length, `a11y: ${layout.ids.length} ids in the scene, all unique`);
+  check(layout.live.length === 1 && layout.live[0], 'a11y: one live region (the short pick announcement); the panel is not live');
+
+  // registration + north (geographic opening)
   const reg = await page.evaluate((root) => {
-    const maps = [...document.querySelectorAll(`${root} [data-map]`)];
-    return maps.map((m) => {
-      const svg = m.querySelector('svg');
-      const img = m.querySelector('[data-base-image]');
-      const mb = m.getBoundingClientRect();
-      const pins = Object.fromEntries(
-        [...m.querySelectorAll('[data-pin]')].map((p) => {
-          const dot = p.lastElementChild.getBoundingClientRect();
-          return [p.dataset.pin, { fx: (dot.left + dot.width / 2 - mb.left) / mb.width, fy: (dot.top + dot.height / 2 - mb.top) / mb.height }];
-        }),
-      );
-      const rings = Object.fromEntries([...m.querySelectorAll('[data-ring]')].map((r) => [r.dataset.ring, { cx: +r.getAttribute('cx'), cy: +r.getAttribute('cy') }]));
-      return { map: m.dataset.map, viewBox: svg.getAttribute('viewBox'), img: ['x', 'y', 'width', 'height', 'href'].map((a) => img.getAttribute(a)).join(' '), ratio: mb.width / mb.height, w: mb.width, pins, rings };
-    });
+    const m = document.querySelector(`${root} [data-map]`);
+    const mb = m.getBoundingClientRect();
+    return Object.fromEntries(
+      [...m.querySelectorAll('[data-pin]')].map((p) => {
+        const d = p.lastElementChild.getBoundingClientRect();
+        return [p.dataset.pin, { fx: (d.left + d.width / 2 - mb.left) / mb.width, fy: (d.top + d.height / 2 - mb.top) / mb.height, w: mb.width }];
+      }),
+    );
   }, ROOT);
-  check(reg[0].viewBox === reg[1].viewBox && reg[0].img === reg[1].img, `register: same viewBox (${reg[0].viewBox}) and image box on both maps`);
-  check(Math.abs(reg[0].ratio - 1.25) < 0.01 && Math.abs(reg[1].ratio - 1.25) < 0.01 && Math.abs(reg[0].w - reg[1].w) < 0.5, `register: both maps 5:4 and equal size (${reg[0].w.toFixed(1)} px)`);
-  for (const id of ['A', 'B', 'C']) {
-    const r = READINGS[id];
-    const tol = 1.5 / reg[0].w; // 1.5 px
-    const okPins = reg.every((m) => Math.abs(m.pins[id].fx - fx(r.x)) < tol && Math.abs(m.pins[id].fy - fy(r.y)) < (tol * 5) / 4);
-    const okRings = reg.every((m) => m.rings[id].cx === r.x && m.rings[id].cy === r.y);
-    check(okPins && okRings, `register: ${id} pin tip and ring centre on (${r.x}, ${r.y}) m on both maps`);
+  for (const id of IDS) {
+    const tol = 1.5 / reg[id].w;
+    check(Math.abs(reg[id].fx - fx(READINGS[id].x)) < tol && Math.abs(reg[id].fy - fy(READINGS[id].y)) < (tol * 5) / 4, `register: ${id} pin tip on (${READINGS[id].x}, ${READINGS[id].y}) m`);
   }
-
-  let ov = await overlapReport(page);
-  check(ov.length === 0, `overlap at A: ${ov.join('; ') || 'none'}`);
-
-  // pick from the geographic map, from the UTM map, from the buttons
-  await pin('geo', 'B').click();
-  await page.waitForTimeout(300);
-  s = await state(page);
-  expectReading(s, 'B', 'geo map → B');
-  check(s.tab === 'units', 'geo map → B: mode unchanged');
-  ov = await overlapReport(page);
-  check(ov.length === 0, `overlap at B: ${ov.join('; ') || 'none'}`);
-  await page.mouse.move(5, 600);
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: `${outDir}/02-point-B.png` });
-
-  await pin('utm', 'C').click();
-  await page.waitForTimeout(300);
-  s = await state(page);
-  expectReading(s, 'C', 'UTM map → C');
-  ov = await overlapReport(page);
-  check(ov.length === 0, `overlap at C: ${ov.join('; ') || 'none'}`);
-  await page.mouse.move(5, 600);
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: `${outDir}/03-point-C.png` });
-
-  await pin('utm', 'A').click();
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'A', 'UTM map → A');
-  await btn('B').click();
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'B', 'button → B');
-  await pin('geo', 'C').click();
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'C', 'geo map → C');
-  await btn('A').click();
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'A', 'button → A');
-
-  // hover: preview on both maps, reading unchanged; leaving restores
-  await pin('utm', 'C').hover();
-  await page.waitForTimeout(300);
-  s = await state(page);
-  check(MAPS.every((m) => s.rings[m].C === 'preview' && s.rings[m].A === 'dimmed'), 'hover C (UTM map): C previewed on both maps, A dimmed');
-  check(s.fields.e === READINGS.A.eText && s.fields.lat === READINGS.A.latText && s.live.startsWith('נקודה A:'), 'hover C: readings and announcement still A');
-  await page.screenshot({ path: `${outDir}/04-hover-preview-C.png` });
-  await page.mouse.move(5, 600);
-  await page.waitForTimeout(300);
-  s = await state(page);
-  check(MAPS.every((m) => s.rings[m].A === 'selected' && s.rings[m].C === 'off'), 'hover out: A outlined again');
-
-  // keyboard: focus previews; Enter / Space select
-  check((await btn('B').evaluate((b) => b.tabIndex)) === 0, 'keyboard: point buttons are in the tab order');
-  await btn('A').focus();
-  await page.keyboard.press('Tab');
-  check((await page.evaluate(() => document.activeElement?.dataset.pointButton)) === 'B', 'keyboard: Tab moves A → B');
-  s = await state(page);
-  check(MAPS.every((m) => s.rings[m].B === 'preview') && s.fields.e === READINGS.A.eText, 'keyboard: focus on B previews it on both maps, reading still A');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'B', 'keyboard Enter → B');
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Space');
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'C', 'keyboard Space → C');
-
-  // modes: original text, emphasis moves, point stays
-  const pointBefore = (await state(page)).fields;
-  for (const [m, file] of [
-    ['scope', '05-mode-scope'],
-    ['what', '06-mode-what'],
-    ['units', null],
-  ]) {
-    await tab(m).click();
-    await page.waitForTimeout(300);
-    s = await state(page);
-    const [label, geo, utm] = ORIGINAL.rows[m];
-    check(s.tab === m && s.visiblePanel.join() === m, `mode ${label}: selected and the only visible panel`);
-    check(s.panelText[m].join('|') === `${geo}|${utm}`, `mode ${label}: shows "${geo}" | "${utm}"`);
-    check(JSON.stringify(s.fields) === JSON.stringify(pointBefore), `mode ${label}: point and readings unchanged`);
-    check(s.zoneVisible, `mode ${label}: 36N on screen`);
-    if (m === 'scope') check(s.metaEmph.every(Boolean) && s.zoneChipEmph && !s.unitsEmph.some(Boolean), 'mode היקף: system meta + 36N tag emphasised');
-    if (m === 'what') check(s.fieldEmph.every(Boolean) && !s.unitsEmph.some(Boolean), 'mode מה מציינים: ϕ/λ and E/N/36N emphasised');
-    if (m === 'units') check(s.unitsEmph.every(Boolean) && s.labelEmph && !s.fieldEmph.some(Boolean), 'mode יחידות: units and grid labels emphasised');
-    if (file) {
-      await page.mouse.move(5, 600);
-      await page.screenshot({ path: `${outDir}/${file}.png` });
-    }
-  }
-  // tabs keyboard (RTL: ← next, → previous)
-  await tab('units').focus();
-  await page.keyboard.press('ArrowLeft');
-  s = await state(page);
-  check(s.tab === 'what' && (await page.evaluate(() => document.activeElement?.dataset.mode)) === 'what', 'tabs: ← moves to the next tab (מה מציינים) with focus');
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('ArrowRight');
-  s = await state(page);
-  check(s.tab === 'scope', 'tabs: → → back to היקף');
-  await page.keyboard.press('End');
-  check((await state(page)).tab === 'what', 'tabs: End');
-  await page.keyboard.press('Home');
-  s = await state(page);
-  check(s.tab === 'scope' && s.tabIndexes.filter((t) => t === 0).length === 1, 'tabs: Home; one tab stop (roving tabindex)');
-
-  // reset
-  const reset = page.getByRole('button', { name: 'איפוס' });
-  await reset.click();
-  await page.waitForTimeout(300);
-  s = await state(page);
-  expectReading(s, 'A', 'reset');
-  check(s.tab === 'units', 'reset: mode back to יחידות');
-  check((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'איפוס', 'reset: focus stays on the button');
-
-  // copy
-  const copy = await page.evaluate((root) => {
-    const block = document.querySelector(root).parentElement;
-    const norm = (t) => t.replace(/\s+/g, ' ').trim();
-    return { text: norm(block.textContent), h3: norm(block.querySelector('h3').textContent), lead: norm(block.querySelector('h3 + p').textContent) };
-  }, ROOT);
-  check(copy.h3 === ORIGINAL.heading, 'copy: heading "מערכות ייחוס"');
-  check(copy.lead === ORIGINAL.lead, 'copy: lead paragraph verbatim');
-  const needles = [ORIGINAL.tableHeading, ...ORIGINAL.columns, ...ORIGINAL.terms.flat(), ...Object.values(ORIGINAL.rows).flat()];
-  const missing = needles.filter((n) => !copy.text.includes(n));
-  check(missing.length === 0, `copy: all ${needles.length} original strings present${missing.length ? ' — missing: ' + missing.join(' / ') : ''}`);
-
-  // shell: scene, neighbour blocks, order
-  const shell = await page.evaluate(() => {
-    const scene = document.getElementById('scene-coordinates-2');
-    return { scene: !!scene, h3: [...(scene?.querySelectorAll('h3') ?? [])].map((h) => h.textContent.replace(/\s+/g, ' ').trim()) };
-  });
-  check(shell.scene, 'shell: #scene-coordinates-2 present');
-  const iUtm = shell.h3.findIndex((h) => h === 'היטל UTM');
-  const iRef = shell.h3.indexOf('מערכות ייחוס');
-  check(iUtm >= 0 && iRef === iUtm + 1 && iRef === shell.h3.length - 1, `shell: order ${shell.h3.join(' → ')}`);
-  check(await page.evaluate((root) => !!document.querySelector(root).parentElement.nextElementSibling?.textContent.includes('סיכום: היטלים ומערכות קואורדינטות'), ROOT), 'shell: the summary follows the block');
-
-  // palette: computed colours in the block
-  const colours = await page.evaluate((root) => {
-    const block = document.querySelector(root).parentElement;
-    const seen = new Map();
-    const parse = (v) => {
-      const m = v.match(/rgba?\(([^)]+)\)/);
-      if (!m) return null;
-      const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
-      if (p.length === 4 && p[3] === 0) return null;
-      return p.slice(0, 3).join(',');
+  const northGeo = await page.evaluate((root) => {
+    const m = document.querySelector(`${root} [data-map]`);
+    const onScreen = (el, x, y) => {
+      const p = el.ownerSVGElement.createSVGPoint();
+      p.x = x;
+      p.y = y;
+      return p.matrixTransform(el.getScreenCTM());
     };
-    for (const el of [block, ...block.querySelectorAll('*')]) {
-      const cs = getComputedStyle(el);
-      const props = ['color', 'backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor', 'fill', 'stroke', 'outlineColor'];
-      for (const p of props) {
-        if (p.startsWith('border') && parseFloat(cs[p.replace('Color', 'Width')]) === 0) continue;
-        if (p === 'outlineColor' && cs.outlineStyle === 'none') continue;
-        if ((p === 'fill' || p === 'stroke') && !(el instanceof SVGElement)) continue;
-        const c = parse(cs[p]);
-        if (c) seen.set(c, `${el.tagName.toLowerCase()}.${p}`);
-      }
-    }
-    return [...seen.entries()];
+    const box = m.getBoundingClientRect();
+    const mer = [...m.querySelectorAll('polyline[data-meridian]')]
+      .map((el) => [onScreen(el, el.points[0].x, el.points[0].y), onScreen(el, el.points[el.points.length - 1].x, el.points[el.points.length - 1].y)])
+      .sort((a, b) => Math.abs((a[0].x + a[1].x) / 2 - box.x - box.width / 2) - Math.abs((b[0].x + b[1].x) / 2 - box.x - box.width / 2))[0];
+    const [lo, hi] = [mer[0], mer[1]].sort((p, q) => q.y - p.y);
+    const t = new DOMMatrix(getComputedStyle(m.querySelector('[data-north-arrow]')).transform);
+    return { meridian: (Math.atan2(hi.x - lo.x, lo.y - hi.y) * 180) / Math.PI, arrow: (Math.atan2(t.b, t.a) * 180) / Math.PI };
   }, ROOT);
-  const foreign = colours.filter(([c]) => !tokenRgb.includes(c));
-  check(foreign.length === 0, `palette: ${colours.length} distinct colours, all tokens${foreign.length ? ' — foreign: ' + foreign.map(([c, w]) => `rgb(${c}) @ ${w}`).join('; ') : ''}`);
+  check(Math.abs(northGeo.arrow - northGeo.meridian) < 0.05 && northGeo.arrow < -1, `north: arrow ${northGeo.arrow.toFixed(2)}° = drawn meridian ${northGeo.meridian.toFixed(2)}° (true north, not grid north)`);
 
-  // remaining shots
-  await align(page, 0);
-  await page.locator(`${ROOT}`).screenshot({ path: `${outDir}/07-card-after-reset.png` });
-  await page.evaluate((root) => document.querySelector(root).parentElement.lastElementChild.scrollIntoView({ block: 'center', behavior: 'instant' }), ROOT);
+  // RTL: every number / letter isolated LTR and drawn left → right
+  const rtl = await page.evaluate((root) => {
+    const r = document.querySelector(root);
+    const order = (el) => {
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (w.nextNode()) if (w.currentNode.textContent.trim()) nodes.push(w.currentNode);
+      const range = document.createRange();
+      range.setStart(nodes[0], 0);
+      range.setEnd(nodes[0], 1);
+      const a = range.getBoundingClientRect();
+      const last = nodes.at(-1);
+      range.setStart(last, last.length - 1);
+      range.setEnd(last, last.length);
+      return a.left < range.getBoundingClientRect().left;
+    };
+    return [...r.querySelectorAll('[data-explain] bdi[dir="ltr"], [data-seconds-bar] > span')].map((el) => ({ name: el.textContent, ok: getComputedStyle(el).direction === 'ltr' && (el.textContent.trim().length < 2 || order(el)) }));
+  }, ROOT);
+  const badRtl = rtl.filter((x) => !x.ok).map((x) => x.name);
+  check(rtl.length >= 4 && badRtl.length === 0, `rtl: ${rtl.length} numbers / letters isolated LTR, in order${badRtl.length ? ' — bad: ' + badRtl.join(', ') : ''}`);
+
+  // motion: a short fade on a new point; the final state stays
+  await btn('B').click();
+  const early = await opacities(page, 40);
+  const late = await opacities(page, 450);
+  check(early.lines < 0.9 && early.outline < 0.9 && early.sentence < 0.95, `motion: lines, outline and sentence fade in (${early.lines.toFixed(2)} / ${early.outline.toFixed(2)} / ${early.sentence.toFixed(2)} at 40 ms)`);
+  check(Object.values(late).every((v) => v === 1), 'motion: final state fully shown by 450 ms and kept');
+  await page.waitForTimeout(800);
+  check((await runningAnimations(page)) === 0, 'motion: nothing still animating (no loop)');
+  check((await state(page)).announce === COPY.announce.B, 'a11y: one short announcement per pick');
+
+  // the six states, picking from the map pins and from the buttons; switching keeps the point
+  const before = await state(page);
+  for (const m of METHODS) {
+    const kept = (await state(page)).pressed.join();
+    await sw(m).click();
+    await page.waitForTimeout(400);
+    s = await state(page);
+    check(s.pressed.join() === kept && s.viewBox === before.viewBox && s.mapBox.join() === before.mapBox.join(), `switch → ${m}: point ${kept}, terrain crop and map box unchanged`);
+    for (const [id, how] of [['A', 'pin'], ['B', 'button'], ['C', 'pin']]) {
+      await (how === 'pin' ? pin(id) : btn(id)).click();
+      await page.waitForTimeout(450);
+      s = await state(page);
+      expectState(s, id, m, `${how} → ${id}`);
+      check(s.method === m, `${m} · ${id}: picking keeps the method`);
+      const ov = await overlapReport(page);
+      check(ov.length === 0, `overlap, ${m} · ${id}: ${ov.join('; ') || 'none'}`);
+      await align(page, COPY.heading);
+      await shot(page, `r4-0${IDS.indexOf(id) + (m === 'geo' ? 1 : 4)}-${m === 'geo' ? 'geographic' : 'utm'}-${id}.png`);
+    }
+  }
+  // UTM north: the arrow still true north on the straight grid
+  const northUtm = await page.evaluate((root) => {
+    const t = new DOMMatrix(getComputedStyle(document.querySelector(`${root} [data-north-arrow]`)).transform);
+    return (Math.atan2(t.b, t.a) * 180) / Math.PI;
+  }, ROOT);
+  check(Math.abs(northUtm - northGeo.meridian) < 0.05, `north: UTM map arrow ${northUtm.toFixed(2)}° — true north, not the grid's 0°`);
+
+  // hover highlights only
+  await sw('geo').click();
+  await btn('A').click();
   await page.waitForTimeout(400);
-  await page.screenshot({ path: `${outDir}/10-definitions.png` });
+  const hb = await state(page);
+  await pin('C').hover();
+  await page.waitForTimeout(300);
+  s = await state(page);
+  check(
+    s.previews.join() === 'C' && s.pins.join() === 'A' && s.linesFor === 'A' && s.feedback === hb.feedback && JSON.stringify(s.lat.marks) === JSON.stringify(hb.lat.marks),
+    'hover C: highlighted only; lines, readings, bars and sentence stay on A',
+  );
+  await page.mouse.move(5, 600);
+  await page.waitForTimeout(300);
+  check((await state(page)).previews.length === 0, 'hover out: no highlight left');
 
+  // keyboard: switch then points in the tab order, visible focus, Enter / Space
+  await sw('geo').focus();
+  await page.keyboard.press('Tab');
+  let f = await page.evaluate(() => ({ m: document.activeElement?.dataset.methodButton, ring: getComputedStyle(document.activeElement).boxShadow, visible: document.activeElement?.matches(':focus-visible') }));
+  check(f.m === 'utm' && f.visible && /217, 126, 43/.test(f.ring), 'keyboard: Tab geographic → UTM, visible accent focus ring');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(350);
+  s = await state(page);
+  check(s.method === 'utm' && s.pressed.join() === 'A', 'keyboard: Enter switches to UTM, A kept');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  f = await page.evaluate(() => ({ id: document.activeElement?.dataset.pointButton, visible: document.activeElement?.matches(':focus-visible') }));
+  check(f.id === 'B' && f.visible, 'keyboard: then the point buttons under the map (A → B)');
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(350);
+  s = await state(page);
+  check(s.pressed.join() === 'B' && s.method === 'utm', 'keyboard: Space selects B, UTM kept');
+  await page.screenshot({ path: `${outDir}/r4-08-keyboard-focus-B-utm.png` });
+
+  // scene terminology (round 2)
+  const scene = await page.evaluate(() => {
+    const el = document.getElementById('scene-coordinates-2');
+    const n = (t) => (t ?? '').replace(/\s+/g, ' ').trim();
+    const sum = [...el.querySelectorAll('div')].find((d) => d.textContent.trim() === 'סיכום: היטלים ומערכות קואורדינטות');
+    return { text: n(el.textContent), summary: [...(sum?.nextElementSibling?.querySelectorAll('li') ?? [])].map((li) => n(li.lastElementChild.textContent)) };
+  });
+  for (const t of SCENE_COPY.present) check(scene.text.includes(t), `scene copy: "${t.slice(0, 52)}…"`);
+  const sceneBack = SCENE_COPY.retired.filter((t) => scene.text.includes(t));
+  check(sceneBack.length === 0 && scene.summary[3] === SCENE_COPY.summaryRef, `scene copy: retired terminology gone; summary item 4 kept${sceneBack.length ? ' — ' + sceneBack.join(' / ') : ''}`);
+
+  // palette, both screens, in both methods
+  const coloursIn = () =>
+    page.evaluate(
+      ({ root, screen2 }) => {
+        const seen = new Map();
+        const parse = (v) => {
+          const m = v.match(/rgba?\(([^)]+)\)/);
+          if (!m) return null;
+          const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+          if (p.length === 4 && p[3] === 0) return null;
+          return p.slice(0, 3).join(',');
+        };
+        for (const scope of [document.querySelector(root).parentElement, document.querySelector(screen2)])
+          for (const el of [scope, ...scope.querySelectorAll('*')]) {
+            const cs = getComputedStyle(el);
+            for (const p of ['color', 'backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor', 'fill', 'stroke', 'outlineColor']) {
+              if (p.startsWith('border') && parseFloat(cs[p.replace('Color', 'Width')]) === 0) continue;
+              if (p === 'outlineColor' && cs.outlineStyle === 'none') continue;
+              if ((p === 'fill' || p === 'stroke') && !(el instanceof SVGElement)) continue;
+              const c = parse(cs[p]);
+              if (c) seen.set(c, `${el.tagName.toLowerCase()}.${p}`);
+            }
+          }
+        return [...seen.entries()];
+      },
+      { root: ROOT, screen2: SCREEN2 },
+    );
+  const utmColours = await coloursIn();
+  await sw('geo').click();
+  await btn('C').click();
+  await page.waitForTimeout(400);
+  const colours = [...utmColours, ...(await coloursIn())];
+  const foreign = colours.filter(([c]) => !tokenRgb.includes(c));
+  check(foreign.length === 0, `palette: all tokens in both methods${foreign.length ? ' — foreign: ' + foreign.map(([c, w]) => `rgb(${c}) @ ${w}`).join('; ') : ''}`);
+
+  await align(page, SCREEN2_HEADING);
+  await shot(page, 'r4-07-screen2-static-summary.png');
   check(errors.length === 0, `console/page errors: ${errors.join(' | ') || 'none'}`);
   await ctx.close();
 }
@@ -402,21 +562,16 @@ const overlapReport = (page) =>
   const { ctx, page, errors } = await open({}, { blockImage: true });
   await page.waitForTimeout(800);
   const fb = await page.evaluate((root) => {
-    const maps = [...document.querySelectorAll(`${root} [data-map]`)];
-    return maps.map((m) => {
-      const b = m.getBoundingClientRect();
-      return { ratio: b.width / b.height, image: !!m.querySelector('[data-base-image]'), paper: !!m.querySelector('pattern') };
-    });
+    const m = document.querySelector(`${root} [data-map]`);
+    const b = m.getBoundingClientRect();
+    return { ratio: b.width / b.height, image: !!m.querySelector('[data-base-image]'), paper: !!m.querySelector('pattern') };
   }, ROOT);
-  check(fb.every((m) => Math.abs(m.ratio - 1.25) < 0.01 && m.paper), 'fallback: both maps keep 5:4 with the paper grid');
-  check(fb.every((m) => !m.image), 'fallback: the failed image is dropped');
-  let s = await state(page);
-  expectReading(s, 'A', 'fallback opening');
-  await page.locator(`${ROOT} [data-map="utm"] [data-pin="B"]`).click();
-  await page.waitForTimeout(250);
-  expectReading(await state(page), 'B', 'fallback pick');
-  await page.mouse.move(5, 600);
-  await page.screenshot({ path: `${outDir}/08-image-fallback.png` });
+  check(Math.abs(fb.ratio - 1.25) < 0.01 && fb.paper && !fb.image, 'fallback: 5:4 with the paper grid, the failed image dropped');
+  await page.locator(`${ROOT} [data-method-button="utm"]`).click();
+  await page.locator(`${ROOT} [data-pin="B"]`).click();
+  await page.waitForTimeout(450);
+  expectState(await state(page), 'B', 'utm', 'fallback');
+  await shot(page, 'r4-09-image-fallback-utm-B.png');
   const other = errors.filter((e) => !e.includes('linked-terrain-base'));
   check(other.length === 0, `fallback: no errors besides the blocked image${other.length ? ' — ' + other.join(' | ') : ''}`);
   await ctx.close();
@@ -425,26 +580,18 @@ const overlapReport = (page) =>
 // ── reduced motion ──────────────────────────────────────────────────────────
 {
   const { ctx, page, errors } = await open({ reducedMotion: 'reduce' });
-  const durations = await page.evaluate(
-    (root) =>
-      [...document.querySelectorAll(`${root} [data-ring], ${root} [data-field], ${root} [data-unit], ${root} [data-mode-panel]`)].map(
-        (e) => {
-          const cs = getComputedStyle(e);
-          return cs.transitionProperty === 'none' || cs.transitionDuration.split(',').every((x) => parseFloat(x) === 0) ? 'off' : `${cs.transitionProperty} ${cs.transitionDuration}`;
-        },
-      ),
-    ROOT,
-  );
-  check(durations.every((d) => d === 'off'), `reduced motion: no transitions (${[...new Set(durations)].join(' / ')})`);
   await page.locator(`${ROOT} [data-point-button="C"]`).click();
-  const s = await state(page);
-  expectReading(s, 'C', 'reduced motion → C (immediate)');
-  await page.mouse.move(5, 600);
-  await page.screenshot({ path: `${outDir}/09-reduced-motion-C.png` });
-  check(errors.length === 0, `reduced motion: no errors`);
+  const at30 = await opacities(page, 30);
+  check(Object.values(at30).every((v) => v === 1), 'reduced motion: lines, outline, frame value and sentence at the final state immediately');
+  const barTransition = await page.evaluate((root) => getComputedStyle(document.querySelector(`${root} [data-bar-mark]`)).transitionDuration, ROOT);
+  check(barTransition.split(',').every((d) => parseFloat(d) === 0), `reduced motion: bar marks jump, no slide (${barTransition})`);
+  expectState(await state(page), 'C', 'geo', 'reduced motion');
+  check((await runningAnimations(page)) === 0, 'reduced motion: no running animations');
+  await shot(page, 'r4-10-reduced-motion-geographic-C.png');
+  check(errors.length === 0, `reduced motion: no errors${errors.length ? ' — ' + errors.join(' | ') : ''}`);
   await ctx.close();
 }
 
 await browser.close();
-console.log(failures.length ? `\n${failures.length} FAILURE(S)` : '\nall checks passed');
+console.log(failures.length ? `\n${failures.length} check(s) failed` : '\nall checks passed');
 process.exit(failures.length ? 1 : 0);

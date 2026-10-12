@@ -2,6 +2,7 @@
 
 import { HookScene } from './HookScene';
 import { OnboardingScene } from './OnboardingScene';
+import { PlanningTipsScene } from './PlanningTipsScene';
 import { PrinciplesScene } from './PrinciplesScene';
 import { PlanningScene } from './PlanningScene';
 import { CombatNavScene } from './CombatNavScene';
@@ -11,9 +12,10 @@ import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
 const SCENES: PagedScene[] = [
   { id: 'hook',       label: 'פתיחה',                 Comp: HookScene },
   { id: 'onboarding', label: 'לפני שמתחילים',  Comp: OnboardingScene },
+  { id: 'tips',       label: 'דגשים לתכנון ולניווט', Comp: PlanningTipsScene },
+  { id: 'combatnav',  label: 'טכניקות ניווט',  Comp: CombatNavScene },
   { id: 'principles', label: 'עקרונות הניווט', Comp: PrinciplesScene },
   { id: 'planning',   label: 'תכנון ציר',      Comp: PlanningScene },
-  { id: 'combatnav',  label: 'טכניקות ניווט',  Comp: CombatNavScene },
   { id: 'recap',      label: 'סיכום',          Comp: RecapScene },
 ];
 

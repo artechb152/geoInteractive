@@ -1,28 +1,44 @@
 'use client';
+import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
 /**
- * The turnable stages' two quiet controls (the landscape and the ellipsoid):
- * "מבט התחלתי" back to the opening view — the view only, never the task — in
- * the datum block's "החזרת המבט" style, and the drag hint across from it.
+ * The view controls beside the figures' captions (the landscape, the ellipsoid
+ * and the enlargement), in the tabs' own button style, one size smaller. A
+ * button that stands for a state is pressed while it is on — marked by the
+ * station buttons' selected ring and a check, not by colour alone; one whose
+ * label names the next action ("חשיפת משטחי הייחוס" ↔ "החזרת פני השטח") is a
+ * plain action. "מבט התחלתי" goes back to the view's opening angle — the view
+ * only, never the task — and rests quieter once the view is there.
  */
-export function StageControls({ atStart, onReset, hint }: { atStart: boolean; onReset: () => void; hint: string }) {
+export function ViewButton({ pressed, onClick, children }: { pressed?: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <>
-      <button
-        type="button"
-        onClick={onReset}
-        onPointerDown={(e) => e.stopPropagation()}
-        className={cn(
-          'absolute bottom-1 start-1 h-9 rounded-xl border border-border bg-bg-elevated/95 px-3 font-display text-sm font-semibold text-fg-muted transition-colors hover:border-brand/30 hover:text-fg cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-          atStart && 'opacity-70',
-        )}
-      >
-        מבט התחלתי
-      </button>
-      <span aria-hidden className="pointer-events-none absolute bottom-2 end-1 rounded bg-paper-card/85 px-1.5 text-[13px] font-medium text-fg-muted">
-        {hint}
-      </span>
-    </>
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={cn(
+        'inline-flex h-8 items-center gap-1 rounded-xl border px-3 font-display text-sm font-bold text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        pressed ? 'border-accent bg-accent/10 ring-1 ring-accent' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+      )}
+    >
+      {pressed && <Icon name="check" size={14} strokeWidth={3} className="-ms-0.5 text-accent" />}
+      {children}
+    </button>
+  );
+}
+
+export function ResetViewButton({ atStart, onReset }: { atStart: boolean; onReset: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onReset}
+      className={cn(
+        'h-8 rounded-xl border border-border bg-bg-elevated px-3 font-display text-sm font-semibold text-fg-muted cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none hover:border-brand/30 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        atStart && 'opacity-70',
+      )}
+    >
+      מבט התחלתי
+    </button>
   );
 }

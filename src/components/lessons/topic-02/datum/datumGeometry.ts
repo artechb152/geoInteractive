@@ -175,6 +175,13 @@ export function ellipsePointToward(p: Pose, q: { x: number; y: number }) {
   return { x: cx + vx / rho, y: cy + vy / rho };
 }
 
+/** The radial gap fitError measures at one geoid point, section angle t (section units). */
+export function gapAt(p: Pose, t: number) {
+  const q = geoidAt(t);
+  const e = ellipsePointToward(p, q);
+  return Math.hypot(q.x - e.x, q.y - e.y);
+}
+
 /** Polyline of the posed ellipse in section (SVG) coordinates. */
 export function posedEllipse(p: Pose, n = 120) {
   const a = (p.rot * Math.PI) / 180;

@@ -17,7 +17,7 @@ const [outDir, topic, ...only] = process.argv.slice(2);
 const BASE = process.env.QA_BASE ?? 'http://localhost:3000';
 const SCENES = {
   'topic-02': ['hook', 'onboarding', 'relief-cover', 'landforms', 'geology', 'landcover', 'topography', 'scale', 'coordinates', 'contours', 'recap'],
-  'topic-06': ['hook', 'onboarding', 'principles', 'planning', 'combatnav', 'recap'],
+  'topic-06': ['hook', 'onboarding', 'tips', 'combatnav', 'principles', 'planning', 'recap'],
 };
 const list = only.length ? only : SCENES[topic];
 const SLICE = 1100;

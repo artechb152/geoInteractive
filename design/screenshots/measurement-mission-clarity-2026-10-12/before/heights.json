@@ -1,0 +1,150 @@
+{
+  "h1122": {
+    "surface": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 923,
+      "height": 831,
+      "fits": true,
+      "innerScroll": false
+    }
+  },
+  "h900": {
+    "surface": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 888,
+      "height": 796,
+      "fits": true,
+      "innerScroll": false
+    }
+  },
+  "h800": {
+    "surface": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 788,
+      "height": 696,
+      "fits": true,
+      "innerScroll": false
+    }
+  },
+  "1920x855": {
+    "surface": {
+      "top": 92,
+      "bottom": 843,
+      "height": 751,
+      "fits": true,
+      "innerScroll": false
+    },
+    "ellipsoid": {
+      "top": 92,
+      "bottom": 843,
+      "height": 751,
+      "fits": true,
+      "innerScroll": false
+    },
+    "geoid": {
+      "top": 92,
+      "bottom": 843,
+      "height": 751,
+      "fits": true,
+      "innerScroll": false
+    },
+    "undulation": {
+      "top": 92,
+      "bottom": 843,
+      "height": 751,
+      "fits": true,
+      "innerScroll": false
+    },
+    "mission-complete": {
+      "top": 92,
+      "bottom": 843,
+      "height": 751,
+      "fits": true,
+      "innerScroll": false
+    }
+  }
+}

@@ -26,7 +26,14 @@
    - the camera widens (camera.zoom) only when the displaced ellipsoid would
      leave the stage, and eases back as it comes in;
    - the linked close-up is drawn by the same renderer into its circle
-     (DatumInset3D).
+     (DatumInset3D);
+   - what each state shows is one explicit table (LOOKS,
+     claude-interaction-and-learning-refinement-prompt.md): the surface in
+     focus solid with its relief raised; the geoid or the ellipsoid in focus
+     with the shell turned to a veil so the body itself can be read; the
+     stations that move the ellipsoid keep a veil, so the moving body stays
+     in sight. Temporary reference marks (Guides) show what a phase or a
+     parameter changes: the outline it started from, its track, its axes.
    All learning state comes in as props; this file only owns the camera.
    Labels and the inspection marker are HTML/SVG overlays projected from 3-D
    anchors every rendered frame, hidden when their anchor is hidden. Frames
@@ -37,13 +44,13 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import {
-  CUT, DISPLAY_K, ELL, GC, GEOID, REGION, angleOf, bodyPoint, ellipsoidSectionX0, geoidAt, geoidW3, inCutaway, planeToWorld,
+  CUT, DISPLAY_K, ELL, GC, GEOID, LOCAL_ARC, REGION, angleOf, bodyPoint, ellipsoidSectionX0, geoidAt, geoidW3, inCutaway, planeToWorld,
   posedEllipse, poseToWorld, surfaceEnvelopeW, svgToPlane, type DatumMode, type Pose, type Vec3,
 } from './datumGeometry';
 import { earthTextures, heightAt, loadEarth, LON_AT_WALL, type EarthImages } from './datumEarth';
 import { bodyMaterial, clearDepthBefore, depthMaterial, earthMaterial, setUniforms, wallMaterial } from './datumHolo';
 import { InsetPass } from './DatumInset3D';
-import type { Interaction, Surface } from './datumDemo';
+import type { Guide, Look, Surface } from './datumDemo';
 import { INSET, MARKER_R, type ChipId, type OverlayRefs } from './datumOverlays';
 
 /* ── palette: lesson tokens only (tailwind.config.ts) ── */
@@ -262,7 +269,8 @@ const exerciseToWall = (pts: { x: number; y: number }[]) =>
     the opening), with the Earth's material above the geoid as a sand band —
     a lit lip at the surface, a shaded inner edge at the geoid — and the
     crisp section lines: the exact 2-D exercise on the back wall. */
-function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose, mode: DatumMode, surface: Surface, showEllipsoid: boolean) {
+function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose, mode: DatumMode, look: Look, showEllipsoid: boolean) {
+  const emph = LOOKS[look].emph;
   const ctx = wall.canvas.getContext('2d')!;
   const { k, h1, y1 } = WALL;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -333,31 +341,43 @@ function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose,
   ctx.restore();
 
   // the cut's outline
-  ctx.globalAlpha = surface === 'surface' ? 0.75 : 0.5;
+  ctx.globalAlpha = emph === 'surface' ? 0.85 : 0.45;
   ctx.strokeStyle = C.ink;
-  ctx.lineWidth = surface === 'surface' ? 1.8 : 1.2;
+  ctx.lineWidth = emph === 'surface' ? 2.2 : 1.2;
   path(wall.prof);
   ctx.stroke();
 
   if (kind === 'exercise' && mode === 'local') {
+    // the marked region: a thick band along the geoid, closed by two end caps across it —
+    // marked by shape, not by colour alone
+    const arc = exerciseToWall(REGION.local);
     ctx.globalAlpha = 0.5;
     ctx.strokeStyle = C.geoid;
     ctx.lineWidth = 9;
-    path(exerciseToWall(REGION.local));
+    path(arc);
     ctx.stroke();
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 2.4;
+    for (const p of [arc[0], arc[arc.length - 1]]) {
+      const l = Math.hypot(p.h, p.y) || 1;
+      const [nh, ny] = [p.h / l, p.y / l];
+      path([{ h: p.h - nh * 12, y: p.y - ny * 12 }, { h: p.h + nh * 12, y: p.y + ny * 12 }]);
+      ctx.stroke();
+    }
   }
-  ctx.globalAlpha = surface === 'geoid' ? 1 : 0.85;
+  ctx.globalAlpha = emph === 'geoid' ? 1 : 0.85;
   ctx.strokeStyle = C.geoid;
-  ctx.lineWidth = surface === 'geoid' ? 3.4 : 2.4;
+  ctx.lineWidth = emph === 'geoid' ? 3.6 : 2.4;
   path(geoid);
   ctx.stroke();
 
   if (showEllipsoid) {
     const sec = kind === 'exercise' ? exerciseToWall(posedEllipse(pose, 160)) : (ellipsoidSectionX0(pose, 160) ?? []).map((q) => ({ h: q.z, y: q.y }));
     if (sec.length) {
-      ctx.globalAlpha = surface === 'ellipsoid' ? 1 : 0.85;
+      ctx.globalAlpha = emph === 'ellipsoid' ? 1 : 0.85;
       ctx.strokeStyle = C.ellipsoid;
-      ctx.lineWidth = surface === 'ellipsoid' ? 3.4 : 2.4;
+      ctx.lineWidth = emph === 'ellipsoid' ? 3.6 : 2.4;
       ctx.save();
       ctx.beginPath();
       ctx.rect(0, -y1, h1 + 50, 2 * y1);
@@ -373,29 +393,65 @@ function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose,
 
 /* ───────────────────────── look per state ───────────────────────── */
 
-// Each body keeps a presence when it is not the chosen one; choosing it
-// strengthens its body, rim and lines — it never appears from nothing.
-// The geoid is a present, almost solid blue body (as in the reference); it
-// opens up a little while the ellipsoid inside it is the chosen one ("under").
-// Cage lines: `lines` is their final strength in front of everything,
-// `behind` seen through the geoid — thinner there, but kept nearly opaque:
-// orange blended half-way into blue turns grey, so the cage stays orange —
-// and `hidden` on the body's own far side. The ellipsoid's surface, seen
-// through the geoid, takes what the geoid lets through (see `through`).
-const LOOK = {
+// One explicit table per state — what is in focus, what stays as a quiet
+// reference, and what is veiled so the focus can be read. Nothing is removed
+// or reshaped; the colours stay the bodies' own.
+// - shell: the Earth's opacity on land and sea, its relief (bump) and rim.
+//   Below SHELL_VEIL the shell is drawn after the bodies inside it, as a veil
+//   over them (see ORDER), instead of hiding them;
+// - geoid: its body, rim, inner side, its few contour lines and the wave shading;
+// - ellipsoid: a thin skin (orange laid over blue turns grey, so it stays
+//   thin) and the cage: `lines` in front of everything, `behind` seen through
+//   the geoid — thinner, still nearly opaque, so it stays orange — `hidden`
+//   on the body's own far side. Its surface seen through the geoid takes what
+//   the geoid lets through (`through`).
+type ShellLook = { land: number; sea: number; bump: number; rim: number };
+type GeoidLook = { opacity: number; rimStrength: number; rimAlpha: number; back: number; lines: number; width: number; wave: number };
+type EllLook = { opacity: number; rimStrength: number; rimAlpha: number; back: number; lines: number; behind: number; hidden: number; width: number };
+type StateLook = { shell: ShellLook; geoid: GeoidLook; ell: EllLook; emph: Surface | null };
+
+const GEOID_QUIET: GeoidLook = { opacity: 0.8, rimStrength: 0.16, rimAlpha: 0.05, back: 0.42, lines: 0.06, width: 1, wave: 0.2 };
+const ELL_QUIET: EllLook = { opacity: 0.02, rimStrength: 0.32, rimAlpha: 0.18, back: 0.02, lines: 0.5, behind: 0.36, hidden: 0.04, width: 0.9 };
+/** the ellipsoid while the geoid is in focus: its cage barely there, so the blue body reads */
+const ELL_FAINT: EllLook = { opacity: 0.015, rimStrength: 0.22, rimAlpha: 0.12, back: 0.015, lines: 0.26, behind: 0.16, hidden: 0.03, width: 0.8 };
+const ELL_ON: EllLook = { opacity: 0.12, rimStrength: 0.85, rimAlpha: 0.5, back: 0.06, lines: 1, behind: 0.9, hidden: 0.14, width: 1.5 };
+
+const LOOKS: Record<Look, StateLook> = {
+  // the surface: the shell solid, its relief raised, its cut outlined; the bodies inside quiet
+  surface: { shell: { land: 1, sea: 0.99, bump: 1.4, rim: 0.18 }, geoid: GEOID_QUIET, ell: ELL_QUIET, emph: 'surface' },
+  // the geoid: the shell a veil, the blue body whole, its waves and contour lines stronger
   geoid: {
-    on: { opacity: 0.94, rimStrength: 0.26, rimAlpha: 0.06, back: 0.6, lines: 0.18, width: 1 },
-    off: { opacity: 0.88, rimStrength: 0.2, rimAlpha: 0.06, back: 0.5, lines: 0.12, width: 1 },
-    under: { opacity: 0.74, rimStrength: 0.18, rimAlpha: 0.05, back: 0.4, lines: 0.1, width: 1 },
+    shell: { land: 0.48, sea: 0.26, bump: 0.8, rim: 0.12 },
+    geoid: { opacity: 0.95, rimStrength: 0.3, rimAlpha: 0.08, back: 0.62, lines: 0.34, width: 1.3, wave: 0.32 },
+    ell: ELL_FAINT,
+    emph: 'geoid',
   },
+  // the ellipsoid: the smooth body and its cage in front, the geoid opened to a quiet reference
   ellipsoid: {
-    on: { opacity: 0.07, rimStrength: 0.7, rimAlpha: 0.42, back: 0.05, lines: 1, behind: 0.88, hidden: 0.1, width: 1.35 },
-    off: { opacity: 0.035, rimStrength: 0.5, rimAlpha: 0.3, back: 0.03, lines: 0.9, behind: 0.74, hidden: 0.06, width: 1.1 },
+    shell: { land: 0.4, sea: 0.2, bump: 0.8, rim: 0.12 },
+    geoid: { opacity: 0.58, rimStrength: 0.14, rimAlpha: 0.04, back: 0.3, lines: 0.05, width: 1, wave: 0.16 },
+    ell: ELL_ON,
+    emph: 'ellipsoid',
   },
-} as const;
-const geoidLook = (s: Surface) => LOOK.geoid[s === 'geoid' ? 'on' : s === 'ellipsoid' ? 'under' : 'off'];
+  // station 2: the ellipsoid moves — kept in sight against the geoid and the Earth throughout
+  motion: {
+    shell: { land: 0.56, sea: 0.32, bump: 1, rim: 0.12 },
+    geoid: { opacity: 0.7, rimStrength: 0.16, rimAlpha: 0.05, back: 0.36, lines: 0.06, width: 1, wave: 0.18 },
+    ell: ELL_ON,
+    emph: 'ellipsoid',
+  },
+  // station 3: the fit against the geoid — both bodies readable, the marked region on the wall
+  compare: {
+    shell: { land: 0.56, sea: 0.32, bump: 1, rim: 0.12 },
+    geoid: { opacity: 0.8, rimStrength: 0.2, rimAlpha: 0.06, back: 0.45, lines: 0.1, width: 1, wave: 0.22 },
+    ell: ELL_ON,
+    emph: null,
+  },
+};
+/** Below this sea opacity the shell is a veil, drawn over the bodies inside it. */
+const SHELL_VEIL = 0.9;
 /** How much of the ellipsoid's surface shows behind the geoid: what the geoid lets through, helped a little. */
-const through = (s: Surface) => Math.min(0.6, (1 - geoidLook(s).opacity) * 2.5);
+const through = (g: GeoidLook) => Math.min(0.6, (1 - g.opacity) * 2.5);
 
 /* Draw order (all in the transparent queue, so renderOrder is the sequence):
     1     Earth, inside of the shell (seen through the opening)
@@ -407,16 +463,19 @@ const through = (s: Surface) => Math.min(0.6, (1 - geoidLook(s).opacity) * 2.5);
           never through the cut faces) — all of it under the geoid's surface
    16–19  geoid: depth reset → cut faces into depth → depth → surface → a few
           faint contour lines on it
-   28–29  Earth, near side: depth reset → cut faces into depth → the shell
-          (writes depth) — it covers whatever lies inside it
+   28–29  Earth, near side: depth reset → cut faces into depth → the solid
+          shell (writes depth) — it covers whatever lies inside it
    31–35  ellipsoid, seen side: depth (tested against the shell) → cage and
           surface as seen through the geoid → the geoid's front into depth →
           surface and cage in front of the geoid again (crisp). So the cage
           is crisp in front, subdued behind the geoid, faint on its own far
           side, and hidden inside the globe — never pasted over the scene.
+   37     the shell as a veil (geoid / ellipsoid in focus, stations 2–3): drawn
+          after the bodies, tested against their depth — it lies over what is
+          inside it and under what pokes out of it; its lip at 37.5
    40     glass over the open quarter — almost clear, only a rim: the globe
           keeps its round silhouette */
-const ORDER = { earthBack: 1, walls: 2, geoidBack: 10, ellHidden: 12, geoid: 16, earthFront: 28, ellSeen: 31, glass: 40 } as const;
+const ORDER = { earthBack: 1, walls: 2, geoidBack: 10, ellHidden: 12, geoid: 16, earthFront: 28, ellSeen: 31, shellVeil: 37, glass: 40 } as const;
 
 /* ───────────────────────── scene ───────────────────────── */
 
@@ -426,8 +485,10 @@ type SceneProps = {
   images: EarthImages;
   pose: Pose;
   mode: DatumMode;
-  surface: Surface;
-  interaction: Interaction;
+  look: Look;
+  /** the ellipsoid is a handle (station 2's experiment) */
+  draggable: boolean;
+  guide: Guide | null;
   capture: boolean;
   onMovePose: (p: Pose) => void;
   onDragging: (d: boolean) => void;
@@ -435,7 +496,7 @@ type SceneProps = {
   isVisible: (p: Vec3) => boolean;
 };
 
-function Globe({ images, pose, mode, surface, interaction, capture, onMovePose, onDragging, controlsRef, isVisible }: SceneProps) {
+function Globe({ images, pose, mode, look, draggable, guide, capture, onMovePose, onDragging, controlsRef, isVisible }: SceneProps) {
   const invalidate = useThree((s) => s.invalidate);
   const gl = useThree((s) => s.gl);
 
@@ -520,20 +581,23 @@ function Globe({ images, pose, mode, surface, interaction, capture, onMovePose, 
   );
 
   useEffect(() => {
-    drawWall(walls.exercise, 'exercise', pose, mode, surface, !capture);
-    drawWall(walls.side, 'side', pose, mode, surface, !capture);
+    drawWall(walls.exercise, 'exercise', pose, mode, look, !capture);
+    drawWall(walls.side, 'side', pose, mode, look, !capture);
     invalidate();
-  }, [walls, pose, mode, surface, capture, invalidate]);
+  }, [walls, pose, mode, look, capture, invalidate]);
 
-  const g = geoidLook(surface);
+  const L = LOOKS[look];
+  const g = L.geoid;
+  const veil = L.shell.sea < SHELL_VEIL;
   useEffect(() => {
-    setUniforms(geoid.front, { uOpacity: g.opacity, uRimStrength: g.rimStrength, uRimAlpha: g.rimAlpha });
+    setUniforms(geoid.front, { uOpacity: g.opacity, uRimStrength: g.rimStrength, uRimAlpha: g.rimAlpha, uWave: g.wave });
     setUniforms(geoid.back, { uOpacity: g.back });
-    // The shell reads as warm ivory: almost solid, the sea letting through only a breath of the
-    // bodies inside — more of it turned the ivory grey-blue.
-    setUniforms(terrain.front, surface === 'surface' ? { uLand: 1, uSea: 0.985 } : { uLand: 0.99, uSea: 0.965 });
+    // The shell: warm ivory, solid when the surface is in focus (the sea letting through only
+    // a breath — more of it turned the ivory grey-blue); a veil when a body inside is.
+    setUniforms(terrain.front, { uLand: L.shell.land, uSea: L.shell.sea, uBump: L.shell.bump, uRimStrength: L.shell.rim });
+    setUniforms(lip.mat, { uOpacity: veil ? 0.5 : 1 });
     invalidate();
-  }, [g, geoid, terrain, surface, invalidate]);
+  }, [L, g, veil, geoid, terrain, lip, invalidate]);
 
   const shadowTex = useMemo(() => {
     const c = document.createElement('canvas');
@@ -588,8 +652,9 @@ function Globe({ images, pose, mode, surface, interaction, capture, onMovePose, 
               stage="hidden"
               sphere={sphere}
               pose={pose}
-              surface={surface}
-              interaction={interaction}
+              look={L.ell}
+              through={through(g)}
+              draggable={draggable}
               onMovePose={onMovePose}
               onDragging={onDragging}
               controlsRef={controlsRef}
@@ -598,17 +663,18 @@ function Globe({ images, pose, mode, surface, interaction, capture, onMovePose, 
           </>
         )}
 
-        {/* geoid: a whole, wavy blue body — always present, stronger when chosen */}
+        {/* geoid: a whole, wavy blue body — always present, stronger in focus */}
         {wallsIntoDepth(ORDER.geoid)}
         <mesh geometry={geoid.geom} material={geoid.depth} renderOrder={ORDER.geoid + 1} />
         <mesh geometry={geoid.geom} material={geoid.front} renderOrder={ORDER.geoid + 2} />
         <Line points={GEOID_LINES} segments color={C.geoid} lineWidth={g.width} transparent opacity={g.lines} depthWrite={false} renderOrder={ORDER.geoid + 3} />
 
-        {/* the Earth's near side: covers what lies inside it; the sea lets a little through */}
+        {/* the Earth's near side: solid, it covers what lies inside it (the sea lets a little
+            through); as a veil it is drawn after the bodies instead (ORDER.shellVeil) */}
         {wallsIntoDepth(ORDER.earthFront)}
-        <mesh geometry={terrain.geom} material={terrain.front} renderOrder={ORDER.earthFront + 1} />
+        <mesh geometry={terrain.geom} material={terrain.front} renderOrder={veil ? ORDER.shellVeil : ORDER.earthFront + 1} />
         {lip.geoms.map((geom, i) => (
-          <mesh key={i} geometry={geom} material={lip.mat} renderOrder={ORDER.earthFront + 1.5} />
+          <mesh key={i} geometry={geom} material={lip.mat} renderOrder={(veil ? ORDER.shellVeil : ORDER.earthFront + 1) + 0.5} />
         ))}
 
         {!capture && (
@@ -617,8 +683,9 @@ function Globe({ images, pose, mode, surface, interaction, capture, onMovePose, 
               stage="seen"
               sphere={sphere}
               pose={pose}
-              surface={surface}
-              interaction={interaction}
+              look={L.ell}
+              through={through(g)}
+              draggable={draggable}
               onMovePose={onMovePose}
               onDragging={onDragging}
               controlsRef={controlsRef}
@@ -629,6 +696,9 @@ function Globe({ images, pose, mode, surface, interaction, capture, onMovePose, 
         )}
 
         <mesh geometry={glass.geom} material={glass.mat} renderOrder={ORDER.glass} />
+
+        {!capture && <LocalRegion shown={mode === 'local'} />}
+        {!capture && <Guides guide={guide} pose={pose} />}
       </group>
 
       {/* soft contact shadow, a little away from the key light */}
@@ -648,15 +718,21 @@ function Ellipsoid({
   stage,
   sphere,
   pose,
-  surface,
-  interaction,
+  look,
+  through: t,
+  draggable,
   onMovePose,
   onDragging,
   controlsRef,
   isVisible,
-}: Omit<SceneProps, 'mode' | 'capture' | 'images'> & { stage: 'hidden' | 'seen'; sphere: THREE.SphereGeometry }) {
+}: Pick<SceneProps, 'pose' | 'draggable' | 'onMovePose' | 'onDragging' | 'controlsRef' | 'isVisible'> & {
+  stage: 'hidden' | 'seen';
+  sphere: THREE.SphereGeometry;
+  look: EllLook;
+  /** what the geoid lets through of the ellipsoid's surface behind it */
+  through: number;
+}) {
   const { center, rotZ, radii } = poseToWorld(pose);
-  const look = LOOK.ellipsoid[surface === 'ellipsoid' ? 'on' : 'off'];
   const drag = useRef<{ start: THREE.Vector3; pose: Pose; id: number } | null>(null);
   const [hover, setHover] = useState(false);
   const gl = useThree((s) => s.gl);
@@ -678,7 +754,6 @@ function Ellipsoid({
   useEffect(() => () => Object.values(mats).forEach((m) => m.dispose()), [mats]);
   // seen through the geoid, the surface takes what it lets through; the second pass
   // (in front of the geoid) tops the surface and the cage up to their full strength
-  const t = through(surface);
   const surfaceThrough = look.opacity * t;
   const surfaceAgain = 1 - (1 - look.opacity) / (1 - surfaceThrough);
   const again = 1 - (1 - look.lines) / (1 - look.behind);
@@ -690,16 +765,16 @@ function Ellipsoid({
   }, [look, mats, t, surfaceThrough, surfaceAgain, invalidate]);
 
   useEffect(() => {
-    if (stage === 'seen') gl.domElement.style.cursor = drag.current ? 'grabbing' : hover && interaction === 'manual' ? 'grab' : '';
-  }, [hover, interaction, gl, stage]);
+    if (stage === 'seen') gl.domElement.style.cursor = drag.current ? 'grabbing' : hover && draggable ? 'grab' : '';
+  }, [hover, draggable, gl, stage]);
 
   /** World hit → section units (undo the scene scale and the display mapping). */
   const hit = (e: ThreeEvent<PointerEvent>) => isVisible([e.point.x / S, e.point.y / (S * DISPLAY_K), e.point.z / S]);
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
-    // Only a visible part of the body, and only in manual mode, is a handle;
+    // Only a visible part of the body, and only in the experiment, is a handle;
     // everything else falls through to the camera (background drag rotates).
-    if (interaction !== 'manual' || e.button !== 0 || !hit(e)) return;
+    if (!draggable || e.button !== 0 || !hit(e)) return;
     const p = e.ray.intersectPlane(planeZ0, new THREE.Vector3());
     if (!p) return;
     e.stopPropagation();
@@ -712,7 +787,7 @@ function Ellipsoid({
   const onMove = (e: ThreeEvent<PointerEvent>) => {
     const d = drag.current;
     if (!d) {
-      if (interaction === 'manual') setHover(hit(e));
+      if (draggable) setHover(hit(e));
       return;
     }
     const p = e.ray.intersectPlane(planeZ0, new THREE.Vector3());
@@ -761,6 +836,103 @@ function Ellipsoid({
   );
 }
 
+/* ───────────────────────── temporary reference marks ───────────────────────── */
+
+/* Quiet marks that show what one phase or one parameter changes (Guide in
+   datumDemo): the outline the body left (dashed ink), its track to where the
+   phase ends, the one axis an X / Y parameter slides along, the body's own
+   axes against a fixed vertical while it turns, its outline while it scales.
+   In the section plane z = 0, over everything (no depth test), thin. Every
+   line is built once from fixed points and placed by its group, and a hidden
+   one is still drawn, at zero opacity — so its buffers exist from the first
+   frame and a moving body or a new phase never creates one. */
+const GUIDE_ORDER = 45;
+const UNIT_RING: Vec3[] = Array.from({ length: 97 }, (_, i) => [Math.cos((i / 96) * 2 * Math.PI), Math.sin((i / 96) * 2 * Math.PI), 0]);
+const UNIT_SEG: Vec3[] = [[0, 0, 0], [1, 0, 0]];
+/** An arrowhead pointing along +x, section units. */
+const ARROW: Vec3[] = [[0, 0, 0], [-11, 6, 0], [0, 0, 0], [-11, -6, 0]];
+const doubleArrow = (axis: 0 | 1): Vec3[] => {
+  const p = (a: number, b: number): Vec3 => (axis === 0 ? [a, b, 0] : [b, a, 0]);
+  return [p(-1.5, 0), p(1.5, 0), p(1.5, 0), p(1.38, 0.07), p(1.5, 0), p(1.38, -0.07), p(-1.5, 0), p(-1.38, 0.07), p(-1.5, 0), p(-1.38, -0.07)];
+};
+const ARROW_X = doubleArrow(0);
+const ARROW_Y = doubleArrow(1);
+const REFERENCE: Vec3[] = [[0, -1.5, 0], [0, 1.5, 0], [-1.5, 0, 0], [1.5, 0, 0]];
+const BODY_AXES: Vec3[] = [[0, -1.32, 0], [0, 1.32, 0], [-1.32, 0, 0], [1.32, 0, 0]];
+
+/** The marked local region on the geoid itself (the λ = 0 meridian, where the exercise wall cuts
+    it), just outside the body: a thick band with a dark edge, closed by two end caps across it —
+    marked by shape as well as colour, and seen over the whole blue body that covers the wall. */
+const REGION_LIFT = 1.016;
+const REGION_BAND: Vec3[] = Array.from({ length: 61 }, (_, i) => {
+  const t = LOCAL_ARC.from + (i / 60) * (LOCAL_ARC.to - LOCAL_ARC.from);
+  const g = geoidAt(t);
+  const { u, v } = svgToPlane(g.x, g.y);
+  return [u * REGION_LIFT, v * REGION_LIFT, 0];
+});
+const REGION_CAPS: Vec3[] = [REGION_BAND[0], REGION_BAND[REGION_BAND.length - 1]].flatMap((p) => {
+  const l = Math.hypot(p[0], p[1]) || 1;
+  const [nx, ny] = [p[0] / l, p[1] / l];
+  return [[p[0] - nx * 13, p[1] - ny * 13, 0], [p[0] + nx * 13, p[1] + ny * 13, 0]] as Vec3[];
+});
+
+function LocalRegion({ shown }: { shown: boolean }) {
+  const line = { transparent: true, depthTest: false, depthWrite: false, renderOrder: GUIDE_ORDER - 1 } as const;
+  return (
+    <>
+      <Line points={REGION_BAND} color={C.ink} lineWidth={10} opacity={shown ? 0.28 : 0} {...line} />
+      <Line points={REGION_BAND} color={C.geoid} lineWidth={6} opacity={shown ? 0.95 : 0} {...line} />
+      <Line points={REGION_CAPS} segments color={C.ink} lineWidth={2.6} opacity={shown ? 0.9 : 0} {...line} />
+    </>
+  );
+}
+
+function Guides({ guide, pose }: { guide: Guide | null; pose: Pose }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => invalidate(), [guide, invalidate]);
+  const cur = poseToWorld(pose);
+  const from = guide && 'from' in guide ? poseToWorld(guide.from) : cur;
+  const end = guide?.kind === 'shift' ? poseToWorld(guide.to).center : cur.center;
+  const track = Math.hypot(end[0] - from.center[0], end[1] - from.center[1]);
+  const heading = Math.atan2(end[1] - from.center[1], end[0] - from.center[0]);
+  const k = guide?.kind ?? null;
+  const on = {
+    from: k === 'shift' || k === 'axis' || k === 'scale',
+    track: k === 'shift' && track > 1,
+    x: guide?.kind === 'axis' && guide.axis === 'x',
+    y: guide?.kind === 'axis' && guide.axis === 'y',
+    rotate: k === 'rotate',
+    outline: k === 'scale',
+  };
+  const line = { transparent: true, depthTest: false, depthWrite: false, renderOrder: GUIDE_ORDER } as const;
+  return (
+    <>
+      {/* where the body was */}
+      <group position={from.center} rotation={[0, 0, from.rotZ]} scale={[from.radii[0], from.radii[1], 1]}>
+        <Line points={UNIT_RING} color={C.ink} lineWidth={1.4} dashed dashSize={0.07} gapSize={0.05} opacity={on.from ? 0.62 : 0} {...line} />
+      </group>
+      {/* its track to where the phase ends */}
+      <group position={from.center} rotation={[0, 0, heading]} scale={[Math.max(track, 1e-3), 1, 1]}>
+        <Line points={UNIT_SEG} color={C.ink} lineWidth={1.4} dashed dashSize={0.07} gapSize={0.05} opacity={on.track ? 0.7 : 0} {...line} />
+      </group>
+      <group position={end} rotation={[0, 0, heading]}>
+        <Line points={ARROW} segments color={C.ink} lineWidth={1.6} opacity={on.track ? 0.75 : 0} {...line} />
+      </group>
+      {/* the axis an X / Y parameter slides along; the fixed reference a turn is read against */}
+      <group position={cur.center} scale={[cur.radii[0], cur.radii[1], 1]}>
+        <Line points={ARROW_X} segments color={C.ink} lineWidth={1.5} opacity={on.x ? 0.72 : 0} {...line} />
+        <Line points={ARROW_Y} segments color={C.ink} lineWidth={1.5} opacity={on.y ? 0.72 : 0} {...line} />
+        <Line points={REFERENCE} segments color={C.ink} lineWidth={1.3} dashed dashSize={0.06} gapSize={0.05} opacity={on.rotate ? 0.6 : 0} {...line} />
+      </group>
+      {/* the body's own axes (they turn with it) and, while it scales, its outline */}
+      <group position={cur.center} rotation={[0, 0, cur.rotZ]} scale={[cur.radii[0], cur.radii[1], 1]}>
+        <Line points={BODY_AXES} segments color={C.ellipsoid} lineWidth={2.2} opacity={on.rotate ? 0.95 : 0} {...line} />
+        <Line points={UNIT_RING} color={C.ellipsoid} lineWidth={2} opacity={on.outline ? 0.9 : 0} {...line} />
+      </group>
+    </>
+  );
+}
+
 /* ───────────────────────── camera ───────────────────────── */
 
 const camPosition = (az: number, el: number, dist: number): Vec3 => [dist * Math.cos(el) * Math.sin(az), dist * Math.sin(el), dist * Math.cos(el) * Math.cos(az)];
@@ -780,12 +952,10 @@ const BOUND_DIRS: Vec3[] = (() => {
 const GLOBE_R_WORLD = 1.97;
 const MARGIN = { x: 0.92, y: 0.88 } as const;
 
-function CameraRig({ viewNonce, reduce, controlsRef, pose }: { viewNonce: number; reduce: boolean; controlsRef: React.MutableRefObject<OrbitControlsLike | null>; pose: Pose }) {
+function CameraRig({ reduce, pose }: { reduce: boolean; pose: Pose }) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
-  const anim = useRef<{ from: THREE.Vector3; t: number } | null>(null);
-  const first = useRef(true);
   /** Current framing: zoom and the lens shift in NDC (x right, y up). */
   const frame = useRef<{ z: number; sx: number; sy: number } | null>(null);
   const v = useMemo(() => new THREE.Vector3(), []);
@@ -793,20 +963,6 @@ function CameraRig({ viewNonce, reduce, controlsRef, pose }: { viewNonce: number
 
   useEffect(() => invalidate(), [pose, size.width, size.height, invalidate]);
   useEffect(() => () => camera.clearViewOffset(), [camera]);
-
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
-    const goal = new THREE.Vector3(...camPosition(CAM.az, CAM.el, CAM.dist));
-    if (reduce) {
-      camera.position.copy(goal);
-      controlsRef.current?.target.set(0, 0, 0);
-      controlsRef.current?.update();
-    } else anim.current = { from: camera.position.clone(), t: 0 };
-    invalidate();
-  }, [viewNonce, reduce, camera, controlsRef, invalidate]);
 
   /* Shared framing by bounds. Project the globe and the posed ellipsoid from
      the current viewing direction at the DEFAULT distance (so the learner's
@@ -854,8 +1010,6 @@ function CameraRig({ viewNonce, reduce, controlsRef, pose }: { viewNonce: number
     camera.setViewOffset(size.width, size.height, (-f.sx * size.width) / 2, (f.sy * size.height) / 2, size.width, size.height);
   };
 
-  const sFrom = useMemo(() => new THREE.Spherical(), []);
-  const sTo = useMemo(() => new THREE.Spherical(), []);
   useFrame((_, dt) => {
     const t = target();
     const cur = frame.current;
@@ -873,21 +1027,6 @@ function CameraRig({ viewNonce, reduce, controlsRef, pose }: { viewNonce: number
       } else Object.assign(cur, t);
       apply(cur);
     }
-
-    const a = anim.current;
-    if (!a) return;
-    a.t = Math.min(1, a.t + dt / 0.6);
-    const e = a.t * a.t * (3 - 2 * a.t);
-    sFrom.setFromVector3(a.from);
-    sTo.setFromVector3(new THREE.Vector3(...camPosition(CAM.az, CAM.el, CAM.dist)));
-    let dTheta = sTo.theta - sFrom.theta;
-    if (dTheta > Math.PI) dTheta -= 2 * Math.PI;
-    if (dTheta < -Math.PI) dTheta += 2 * Math.PI;
-    camera.position.setFromSpherical(new THREE.Spherical(sFrom.radius + (sTo.radius - sFrom.radius) * e, sFrom.phi + (sTo.phi - sFrom.phi) * e, sFrom.theta + dTheta * e));
-    controlsRef.current?.target.set(0, 0, 0);
-    controlsRef.current?.update();
-    if (a.t >= 1) anim.current = null;
-    invalidate();
   });
   return null;
 }
@@ -898,16 +1037,20 @@ function OverlaySync({
   refs,
   pose,
   inspect,
+  altInspect,
   capture,
   isVisible,
   cameraOut,
   showMarker,
-  surface,
+  emph,
 }: {
-  surface: Surface;
+  /** the body in focus: its label full, the others quieter (none: all alike) */
+  emph: ChipId | null;
   refs: OverlayRefs;
   pose: Pose;
   inspect: number;
+  /** the other check point (station 3), or none */
+  altInspect: number | null;
   capture: boolean;
   isVisible: (p: Vec3) => boolean;
   cameraOut: React.MutableRefObject<THREE.Camera | null>;
@@ -919,7 +1062,7 @@ function OverlaySync({
   cameraOut.current = camera;
   const v = useMemo(() => new THREE.Vector3(), []);
 
-  useEffect(() => invalidate(), [pose, inspect, showMarker, capture, surface, invalidate]);
+  useEffect(() => invalidate(), [pose, inspect, altInspect, showMarker, capture, emph, invalidate]);
 
   const project = (p: Vec3) => {
     v.copy(toWorld(p)).project(camera);
@@ -976,7 +1119,7 @@ function OverlaySync({
       const o = visible ? '1' : '0';
       line.style.opacity = o;
       dot.style.opacity = o;
-      chip.style.opacity = visible ? (surface === id ? '1' : '0.72') : '0';
+      chip.style.opacity = visible ? (emph === null || emph === id ? '1' : '0.5') : '0';
       chip.dataset.hidden = visible ? 'false' : 'true';
     });
 
@@ -1012,6 +1155,22 @@ function OverlaySync({
       l1.style.opacity = ok ? '1' : '0';
       l2.style.opacity = ok ? '1' : '0';
     }
+
+    // station 3: the other check point, a quieter marker on the wall
+    const alt = refs.markerAlt.current;
+    if (alt) {
+      let shown = false;
+      if (altInspect !== null) {
+        const g = geoidAt(altInspect);
+        const { u, v: vv } = svgToPlane(g.x, g.y);
+        const p3 = planeToWorld(u, vv);
+        const pr = project(p3);
+        shown = !capture && pr.front && camPos.z > 0.05 && isVisible([p3[0], p3[1], p3[2] + 0.5]);
+        alt.style.transform = `translate(${(pr.x - MARKER_R).toFixed(1)}px, ${(pr.y - MARKER_R).toFixed(1)}px)`;
+      }
+      alt.style.opacity = shown ? '1' : '0';
+      alt.style.pointerEvents = shown ? 'auto' : 'none';
+    }
   });
   return null;
 }
@@ -1020,13 +1179,19 @@ function OverlaySync({
 
 export type DatumGlobeProps = {
   pose: Pose;
+  /** global / local — the marked region is drawn on the wall for local */
   mode: DatumMode;
-  surface: Surface;
-  interaction: Interaction;
+  look: Look;
+  /** the ellipsoid is a handle (station 2's experiment) */
+  draggable: boolean;
+  guide: Guide | null;
   inspect: number;
+  /** the other check point (station 3), or none */
+  altInspect: number | null;
+  /** the inspection marker can be dragged along the wall (stations 1–2) */
+  markerDraggable: boolean;
   active: boolean;
   reduce: boolean;
-  viewNonce: number;
   zoomEnabled: boolean;
   capture: boolean;
   showMarker: boolean;
@@ -1035,7 +1200,6 @@ export type DatumGlobeProps = {
   onInspect: (t: number) => void;
   onReady: () => void;
   onFail: () => void;
-  onCameraMoved: () => void;
 };
 
 class GlobeBoundary extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
@@ -1052,8 +1216,10 @@ class GlobeBoundary extends Component<{ onFail: () => void; children: ReactNode 
 }
 
 export default function DatumGlobe3D(props: DatumGlobeProps) {
-  const { pose, mode, surface, interaction, inspect, active, reduce, viewNonce, zoomEnabled, capture, showMarker, refs, onMovePose, onInspect, onReady, onFail, onCameraMoved } = props;
+  const { pose, mode, look, draggable, guide, inspect, altInspect, markerDraggable, active, reduce, zoomEnabled, capture, showMarker, refs, onMovePose, onInspect, onReady, onFail } = props;
   const controlsRef = useRef<OrbitControlsLike | null>(null);
+  const markerDrag = useRef(markerDraggable);
+  markerDrag.current = markerDraggable;
   const cameraRef = useRef<THREE.Camera | null>(null);
   const [dragging, setDragging] = useState(false);
   const readyRef = useRef(false);
@@ -1112,7 +1278,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
       return angleOf(GC.x + hit.x / S, GC.y - hit.y / (S * DISPLAY_K));
     };
     const down = (ev: PointerEvent) => {
-      if (ev.button !== 0) return;
+      if (ev.button !== 0 || !markerDrag.current) return;
       ev.preventDefault();
       dragId = ev.pointerId;
       marker.setPointerCapture(ev.pointerId);
@@ -1161,8 +1327,9 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
           images={images}
           pose={pose}
           mode={mode}
-          surface={surface}
-          interaction={interaction}
+          look={look}
+          draggable={draggable}
+          guide={guide}
           capture={capture}
           onMovePose={onMovePose}
           onDragging={setDragging}
@@ -1181,13 +1348,25 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
           maxDistance={CAM.dist * 1.35}
           minPolarAngle={Math.PI / 2 - 0.75}
           maxPolarAngle={Math.PI / 2 + 0.55}
+          // the open quarter stays toward the viewer: turning cannot hide the model's inside
+          minAzimuthAngle={CAM.az - 0.95}
+          maxAzimuthAngle={CAM.az + 0.95}
           enableDamping
           dampingFactor={0.1}
-          onStart={onCameraMoved}
         />
-        <CameraRig viewNonce={viewNonce} reduce={reduce} controlsRef={controlsRef} pose={pose} />
-        <InsetPass pose={pose} inspect={inspect} mode={mode} surface={surface} enabled={!capture} />
-        <OverlaySync surface={surface} refs={refs} pose={pose} inspect={inspect} capture={capture} isVisible={isVisible} cameraOut={cameraRef} showMarker={showMarker} />
+        <CameraRig reduce={reduce} pose={pose} />
+        <InsetPass pose={pose} inspect={inspect} mode={mode} emph={LOOKS[look].emph} enabled={!capture} />
+        <OverlaySync
+          emph={LOOKS[look].emph}
+          refs={refs}
+          pose={pose}
+          inspect={inspect}
+          altInspect={altInspect}
+          capture={capture}
+          isVisible={isVisible}
+          cameraOut={cameraRef}
+          showMarker={showMarker}
+        />
         <FirstFrame
           onFrame={() => {
             if (readyRef.current) return;

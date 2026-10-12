@@ -52,17 +52,15 @@ export type TeachingPoint = {
   /** Stored reading, WGS84 / UTM 36N, whole metres. */
   e: number;
   n: number;
-  /** The feature it marks, outlined on both maps when selected: an ellipse in local metres. */
-  ring: { rx: number; ry: number; rot: number };
 };
 
 /* A sits on the bridge deck, B on the ridge summit, C in the middle of the
    village. Their local positions are the anchors the terrain is built around
    (TERRAIN below), so a marker can never drift off its feature. */
 export const POINTS: readonly TeachingPoint[] = [
-  { id: 'A', e: 701125, n: 3521095, ring: { rx: 118, ry: 52, rot: -8 } },
-  { id: 'B', e: 700430, n: 3521480, ring: { rx: 105, ry: 105, rot: 0 } },
-  { id: 'C', e: 700570, n: 3520715, ring: { rx: 175, ry: 128, rot: -12 } },
+  { id: 'A', e: 701125, n: 3521095 },
+  { id: 'B', e: 700430, n: 3521480 },
+  { id: 'C', e: 700570, n: 3520715 },
 ];
 
 export const START_POINT: PointId = 'A';

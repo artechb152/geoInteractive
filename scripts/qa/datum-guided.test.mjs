@@ -1,14 +1,18 @@
 // Acceptance tests for the guided 3-D datum block (topic-02 #scene-coordinates,
-// design/mockups/datum-concepts/claude-guided-3d-prompt.md §9, §11.3).
+// design/mockups/datum-concepts/claude-guided-3d-prompt.md §9, §11.3; the stations
+// as claude-interaction-and-learning-refinement-prompt.md redefines them).
 // Run: node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/datum-guided.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   START, GEOID, REGION, LOCAL_ARC, GC, ELL, fitError, computeBest, scoreFor, geoidW, geoidW3, bodyPoint,
   svgToPlane, planeToWorld, posedEllipse, ellipsoidQ, ellipsoidSectionX0, poseToWorld, ellipsePointToward, geoidAt,
-  DISPLAY_K, surfaceEnvelopeW, svgDisplay, toDisplay, fromDisplay,
+  DISPLAY_K, surfaceEnvelopeW, svgDisplay, toDisplay, fromDisplay, gapAt,
 } from '../../src/components/lessons/topic-02/datum/datumGeometry.ts';
-import { datumReducer, initialDatumState, demoPose, DEMO_MS, isAnimating } from '../../src/components/lessons/topic-02/datum/datumDemo.ts';
+import {
+  datumReducer, initialDatumState, demoPose, DEMO_MS, VIEW_MS, isAnimating, OVERVIEW, DEMO_START, PROBES, lookOf, viewPose, stationPose, inspectOf,
+  phaseAt, phaseStart,
+} from '../../src/components/lessons/topic-02/datum/datumDemo.ts';
 import {
   insetView, insetPx, toPlane, curveRun, tubeFill, geoidPlane, ellipsePlane, ellipsePhiAt, ellipseCentrePlane, GAP_MIN,
 } from '../../src/components/lessons/topic-02/datum/datumInset.ts';
@@ -112,97 +116,194 @@ test('the close-up measures the same radial gap as fitError', () => {
   close(sum / REGION.global.length, fitError(p, REGION.global), 1e-9);
 });
 
-test('demo: START → shift → rotate → scale → the mode fit, once, and it stays at the end', () => {
-  let s = run(initialDatumState(), { type: 'openStep', step: 1 }, { type: 'play' });
-  assert.equal(s.playback, 'playing');
-  assert.deepEqual(s.pose, START);
+/* ─────────────── the stations (datumDemo.ts) — claude-interaction-and-learning-refinement-prompt.md ─────────────── */
+
+const atStep = (step) => run(initialDatumState(), { type: 'openStep', step, instant: true });
+const onSteps = (p) => p.dx % 2 === 0 && p.dy % 2 === 0 && Number.isInteger(p.rot) && Math.round(p.s * 100) === p.s * 100;
+const inRange = (p) =>
+  p.dx >= RANGE.dx[0] && p.dx <= RANGE.dx[1] && p.dy >= RANGE.dy[0] && p.dy <= RANGE.dy[1] && p.rot >= RANGE.rot[0] && p.rot <= RANGE.rot[1] && p.s >= RANGE.s[0] && p.s <= RANGE.s[1];
+
+test('the composed poses: the overview is the nested reference, the demo opening is reachable and not a small body adrift', () => {
+  assert.deepEqual(OVERVIEW, { dx: 0, dy: 0, rot: 0, s: 1 });
+  assert.ok(onSteps(DEMO_START) && inRange(DEMO_START), 'DEMO_START on the sliders’ steps, inside their ranges');
+  assert.ok(DEMO_START.s >= 0.75, 'the opening body is not tiny');
+  // its centre stays inside the globe's outline (≈ 190 section units): displaced, not floating away
+  assert.ok(Math.hypot(DEMO_START.dx, DEMO_START.dy) < 120);
+  // the exercise's own START is untouched (the score tests above pin it)
+  assert.deepEqual(START, { dx: 170, dy: -120, rot: 25, s: 0.55 });
+});
+
+test('station 1: choosing a surface changes the look only — no fit, no pose, no motion', () => {
+  let s = initialDatumState();
+  assert.equal(s.step, 0);
+  assert.equal(lookOf(s), 'surface');
+  assert.deepEqual(viewPose(s, best), OVERVIEW);
+  for (const surface of ['geoid', 'ellipsoid', 'surface', 'surface']) {
+    const before = s;
+    s = run(s, { type: 'selectSurface', surface });
+    assert.equal(lookOf(s), surface);
+    assert.deepEqual(viewPose(s, best), OVERVIEW, 'the pose never moves');
+    assert.ok(!isAnimating(s), 'nothing animates');
+    assert.deepEqual(s.lab, before.lab, 'station 2 untouched');
+    assert.equal(s.mode, before.mode, 'station 3 untouched');
+    assert.equal(s.inspect, before.inspect, 'the check point untouched');
+  }
+});
+
+test('station 2: one button plays, stops, resumes and replays; the demo runs once and stays at the result', () => {
+  let s = atStep(1);
+  assert.equal(lookOf(s), 'motion');
+  assert.deepEqual(viewPose(s, best), DEMO_START);
+  assert.equal(s.lab.playback, 'idle', 'opening a station never plays');
+  s = run(s, { type: 'demo' });
+  assert.equal(s.lab.playback, 'playing');
   assert.ok(isAnimating(s));
-  s = run(s, { type: 'tick', dt: DEMO_MS * 0.5 });
-  assert.equal(s.playback, 'playing');
-  // mid-demo the shift is done but the scale is not
-  close(s.pose.dx, best.global.pose.dx, 1e-9);
-  assert.notEqual(s.pose.s, best.global.pose.s);
+  s = run(s, { type: 'tick', dt: 2000 }, { type: 'demo' });
+  assert.equal(s.lab.playback, 'paused', 'stop');
+  const held = s.lab.pose;
+  s = run(s, { type: 'tick', dt: 3000 });
+  assert.deepEqual(s.lab.pose, held, 'stopped means stopped');
+  s = run(s, { type: 'demo' }, { type: 'tick', dt: 500 });
+  close(s.lab.progress, 2500 / DEMO_MS, 1e-9, 'resumed from where it stopped');
   s = run(s, { type: 'tick', dt: DEMO_MS }, { type: 'tick', dt: DEMO_MS });
-  assert.equal(s.playback, 'ended');
-  assert.equal(s.progress, 1);
-  assert.deepEqual(s.pose, best.global.pose);
-  assert.equal(scoreFor(s.pose, 'global', best), 100);
-  assert.equal(s.step, 1, 'no auto-advance to the next station');
-  assert.ok(!isAnimating(s));
+  assert.equal(s.lab.playback, 'ended');
+  assert.deepEqual(s.lab.pose, best.global.pose, 'it ends on the computed global fit');
+  s = run(s, { type: 'tick', dt: DEMO_MS });
+  assert.equal(s.lab.playback, 'ended', 'no loop');
+  assert.equal(s.step, 1, 'no auto-advance');
+  s = run(s, { type: 'demo' });
+  assert.equal(s.lab.playback, 'playing', 'replay');
+  assert.equal(s.lab.progress, 0);
+  assert.deepEqual(s.lab.pose, DEMO_START);
+  assert.ok(s.view, 'the replay eases back to the opening pose');
 });
 
-test('pause stops in place, resume continues from there, scrub moves the pose', () => {
-  let s = run(initialDatumState(), { type: 'play' }, { type: 'tick', dt: 2000 }, { type: 'togglePlay' });
-  assert.equal(s.playback, 'paused');
-  const held = s.pose;
-  s = run(s, { type: 'tick', dt: 3000 });
-  assert.deepEqual(s.pose, held, 'paused pose does not move');
-  s = run(s, { type: 'togglePlay' }, { type: 'tick', dt: 500 });
-  close(s.progress, 2500 / DEMO_MS, 1e-9, 'resumed from where it stopped');
-  s = run(s, { type: 'scrub', progress: 0.8 });
-  assert.equal(s.playback, 'paused');
-  assert.deepEqual(s.pose, demoPose(0.8, best.global.pose));
+test('station 2: each phase changes only its own parameter (shift → rotate → scale)', () => {
+  const fit = best.global.pose;
+  const eq = (a, b, k) => close(a[k], b[k], 1e-9, k);
+  for (let p = 0; p <= 1.0001; p += 0.01) {
+    const q = demoPose(p, fit);
+    const ph = phaseAt(p);
+    if (ph === null) assert.deepEqual(q, DEMO_START, 'the opening holds');
+    if (ph === 'shift') {
+      eq(q, DEMO_START, 'rot');
+      eq(q, DEMO_START, 's');
+    }
+    if (ph === 'rotate') {
+      eq(q, fit, 'dx');
+      eq(q, fit, 'dy');
+      eq(q, DEMO_START, 's');
+    }
+    if (ph === 'scale') {
+      eq(q, fit, 'dx');
+      eq(q, fit, 'dy');
+      eq(q, fit, 'rot');
+      // uniform: one factor for both radii — the flattening never changes
+      assert.ok(q.s > 0);
+    }
+  }
+  // the phases' reference marks start where the phase starts
+  assert.deepEqual(phaseStart('shift', fit), DEMO_START);
+  assert.deepEqual(phaseStart('scale', fit), { ...fit, s: DEMO_START.s });
 });
 
-test('a manual action during the demo stops it before applying', () => {
-  let s = run(initialDatumState(), { type: 'play' }, { type: 'tick', dt: 3000 });
-  const before = s.pose;
-  s = run(s, { type: 'setPose', key: 'rot', value: 10 });
-  assert.equal(s.playback, 'paused');
-  assert.equal(s.interaction, 'manual');
-  assert.equal(s.pose.rot, 10);
-  assert.equal(s.pose.dx, before.dx);
-  s = run(s, { type: 'tick', dt: 3000 });
-  assert.equal(s.pose.rot, 10, 'no frame overwrites the manual value');
-});
-
-test('"נסו בעצמכם" switches to manual at the current place (snapped to the sliders)', () => {
-  const s = run(initialDatumState(), { type: 'play' }, { type: 'tick', dt: 3333 }, { type: 'tryYourself' });
-  assert.equal(s.interaction, 'manual');
-  assert.notEqual(s.playback, 'playing');
-  assert.equal(s.pose.dx % 2, 0);
-  assert.equal(Math.round(s.pose.rot), s.pose.rot);
-});
-
-test('reset, show fit and back-to-demo', () => {
-  let s = run(initialDatumState(), { type: 'tryYourself' }, { type: 'setPose', key: 'dx', value: 0 }, { type: 'showFit' });
-  assert.ok(s.tween, 'show fit animates');
+test('station 2: the experiment stops the demo, keeps one pose, resets to the opening, shows the fit without a score', () => {
+  let s = run(atStep(1), { type: 'demo' }, { type: 'tick', dt: 3333 }, { type: 'tryYourself' });
+  assert.equal(s.lab.interaction, 'manual');
+  assert.notEqual(s.lab.playback, 'playing');
+  assert.ok(onSteps(s.lab.pose), 'snapped to the sliders');
+  s = run(s, { type: 'setPose', key: 'rot', value: 10 }, { type: 'tick', dt: 3000 });
+  assert.equal(s.lab.pose.rot, 10, 'no frame overwrites the learner’s value');
+  s = run(s, { type: 'reset', instant: true });
+  assert.deepEqual(s.lab.pose, DEMO_START, 'reset = the defined opening');
+  assert.equal(s.lab.interaction, 'manual', 'reset keeps the experiment open');
+  s = run(s, { type: 'showFit' });
+  assert.ok(s.lab.tween, 'show fit moves there');
   s = run(s, { type: 'tick', dt: 2000 });
-  assert.deepEqual(s.pose, best.global.pose);
-  s = run(s, { type: 'showFit' }, { type: 'tick', dt: 100 }, { type: 'reset' });
-  assert.equal(s.tween, null, 'reset stops the movement');
-  assert.deepEqual(s.pose, START);
-  s = run(s, { type: 'backToDemo' });
-  assert.equal(s.interaction, 'demo');
-  assert.equal(s.playback, 'idle');
-  assert.equal(s.progress, 0);
+  assert.deepEqual(s.lab.pose, best.global.pose);
+  s = run(s, { type: 'backToDemo', instant: true });
+  assert.equal(s.lab.interaction, 'demo');
+  assert.equal(s.lab.playback, 'idle');
+  assert.deepEqual(s.lab.pose, DEMO_START);
+  // a parameter during the demo stops it first
+  s = run(s, { type: 'demo' }, { type: 'tick', dt: 3000 });
+  const before = s.lab.pose;
+  s = run(s, { type: 'setPose', key: 's', value: 1.2 });
+  assert.equal(s.lab.playback, 'paused');
+  assert.equal(s.lab.interaction, 'manual');
+  assert.equal(s.lab.pose.dx, before.dx);
 });
 
-test('global ↔ local stops the demo, keeps the pose; only an explicit action brings the new fit', () => {
-  let s = run(initialDatumState(), { type: 'play' }, { type: 'tick', dt: DEMO_MS + 10 });
-  assert.deepEqual(s.pose, best.global.pose);
+test('station 3: global / local applies the computed fit at once; the camera-free view eases there', () => {
+  let s = atStep(2);
+  assert.equal(lookOf(s), 'compare');
+  assert.deepEqual(stationPose(s, best), best.global.pose);
   s = run(s, { type: 'setMode', mode: 'local' });
-  assert.equal(s.mode, 'local');
-  assert.deepEqual(s.pose, best.global.pose, 'pose kept');
-  assert.notEqual(s.playback, 'playing');
-  assert.equal(scoreFor(s.pose, 'local', best), 60, 'the global fit scores 60 % over the marked arc');
-  s = run(s, { type: 'showFit', instant: true });
-  assert.deepEqual(s.pose, best.local.pose);
-  // the close-up moves into the marked arc
-  assert.ok(s.inspect >= LOCAL_ARC.from && s.inspect <= LOCAL_ARC.to);
-  // manual pose is kept across a mode switch too
-  s = run(s, { type: 'tryYourself' }, { type: 'setPose', key: 'dx', value: 20 }, { type: 'setMode', mode: 'global' });
-  assert.equal(s.pose.dx, 20);
-  assert.equal(s.interaction, 'manual');
+  assert.deepEqual(stationPose(s, best), best.local.pose, 'the new fit at once — no stale pose');
+  assert.ok(s.view, 'a short eased move');
+  s = run(s, { type: 'tick', dt: VIEW_MS + 10 });
+  assert.equal(s.view, null);
+  assert.deepEqual(viewPose(s, best), best.local.pose);
+  s = run(s, { type: 'setMode', mode: 'global', instant: true });
+  assert.equal(s.view, null, 'reduced motion: instant');
+  assert.deepEqual(viewPose(s, best), best.global.pose);
 });
 
-test('reduced motion steps through the phases without animating', () => {
-  let s = run(initialDatumState(), { type: 'stepReduced' });
-  assert.equal(s.playback, 'paused');
+test('station 3: the two check points are fixed, used by both fits, and the gaps say what the feedback says', () => {
+  let s = atStep(2);
+  assert.equal(inspectOf(s), PROBES.inside);
+  s = run(s, { type: 'setProbe', probe: 'outside' });
+  assert.equal(inspectOf(s), PROBES.outside);
+  s = run(s, { type: 'setMode', mode: 'local', instant: true });
+  assert.equal(inspectOf(s), PROBES.outside, 'the point does not move with the fit');
+  // the inside point lies in the marked region, the outside one on the open wall outside it
+  assert.ok(PROBES.inside >= LOCAL_ARC.from && PROBES.inside <= LOCAL_ARC.to);
+  assert.ok(PROBES.outside > LOCAL_ARC.to && PROBES.outside <= 1.45);
+  // measured, not assumed: the local fit is the closer one inside the region, the global one outside
+  const g = (mode, probe) => gapAt(best[mode].pose, PROBES[probe]);
+  assert.ok(g('local', 'inside') < 3 && g('global', 'inside') > 8, `inside: local ${g('local', 'inside')}, global ${g('global', 'inside')}`);
+  assert.ok(g('global', 'outside') < 8 && g('local', 'outside') > 20, `outside: global ${g('global', 'outside')}, local ${g('local', 'outside')}`);
+  // and gapAt is fitError's own term
+  close(gapAt(best.global.pose, 0.3), fitError(best.global.pose, [geoidAt(0.3)]), 1e-9);
+});
+
+test('stations keep their own state: 2 → 3 → 2 finds the experiment as it was, nothing plays', () => {
+  let s = run(atStep(1), { type: 'tryYourself' }, { type: 'setPose', key: 'dx', value: -40 }, { type: 'setPose', key: 's', value: 1.1 });
+  const lab = s.lab;
+  s = run(s, { type: 'openStep', step: 2, instant: true }, { type: 'setMode', mode: 'local', instant: true }, { type: 'setProbe', probe: 'outside' });
+  assert.deepEqual(s.lab, lab, 'station 3 never overwrites the experiment');
+  s = run(s, { type: 'openStep', step: 1, instant: true });
+  assert.deepEqual(s.lab, lab);
+  assert.deepEqual(viewPose(s, best), lab.pose);
+  assert.ok(!isAnimating(s), 'coming back plays nothing');
+  // and leaving mid-demo stops it
+  s = run(s, { type: 'backToDemo', instant: true }, { type: 'demo' }, { type: 'tick', dt: 1500 }, { type: 'openStep', step: 0 });
+  assert.equal(s.lab.playback, 'paused');
+  assert.ok(s.view, 'the view eases from the pose on screen to the overview');
+  s = run(s, { type: 'tick', dt: VIEW_MS + 10 });
+  assert.ok(!isAnimating(s), 'the demo stays stopped on another station');
+  assert.equal(s.mode, 'local', 'station 3 keeps its choice');
+});
+
+test('reduced motion: the same button steps through the phases, nothing animates', () => {
+  let s = run(atStep(1), { type: 'demoStep' });
+  assert.equal(s.lab.playback, 'paused');
+  assert.equal(phaseAt(s.lab.progress), 'shift');
   assert.ok(!isAnimating(s));
-  s = run(s, { type: 'stepReduced' }, { type: 'stepReduced' });
-  assert.equal(s.playback, 'ended');
-  assert.deepEqual(s.pose, best.global.pose);
+  s = run(s, { type: 'demoStep' });
+  assert.equal(phaseAt(s.lab.progress), 'rotate');
+  s = run(s, { type: 'demoStep' });
+  assert.equal(s.lab.playback, 'ended');
+  assert.deepEqual(s.lab.pose, best.global.pose);
+  assert.ok(!isAnimating(s));
+  s = run(s, { type: 'demoStep' });
+  assert.equal(phaseAt(s.lab.progress), 'shift', 'after the end the button starts over');
+});
+
+test('the inspection point (stations 1–2) is no longer limited to the marked region', () => {
+  const s = run(initialDatumState(), { type: 'setInspect', t: 1.2 });
+  assert.equal(s.inspect, 1.2);
+  assert.equal(run(s, { type: 'setInspect', t: 3 }).inspect, 1.45, 'clamped to the open wall');
 });
 
 test('display mapping: the globe reads almost round, the exercise numbers do not move', () => {

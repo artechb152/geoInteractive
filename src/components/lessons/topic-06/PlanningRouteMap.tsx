@@ -17,7 +17,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 export type RouteLeg = { az: number; m: number };
 type Pt = { x: number; y: number };
-type Deco = { x: number; y: number; s?: number };
+export type Deco = { x: number; y: number; s?: number };
 type Side = 'nw' | 'se';
 
 // ——— Geometry ———
@@ -33,15 +33,15 @@ const TAG_OFFSET = [7, 6.6, 6.6, 6.6, 6.6];
 const TAG_SHIFT = [2, 0, 0, 0, 0];
 
 // ——— Palette (design tokens mirrored as hex for SVG paint) ———
-const ORANGE = '#D97E2B'; // accent
-const ORANGE_DEEP = '#C96714'; // ember-deep
-const SAGE = '#749C75'; // brand
-const SAGE_DARK = '#5B7C5C'; // brand-dark
-const INK = '#38432E'; // fg
-const PAPER = '#FFFDF9';
-const HAIR = '#DCCDB2'; // tanline
-const FONT = { fontFamily: 'var(--font-rubik), system-ui, sans-serif' };
-const EASE = [0.22, 1, 0.36, 1] as const;
+export const ORANGE = '#D97E2B'; // accent
+export const ORANGE_DEEP = '#C96714'; // ember-deep
+export const SAGE = '#749C75'; // brand
+export const SAGE_DARK = '#5B7C5C'; // brand-dark
+export const INK = '#38432E'; // fg
+export const PAPER = '#FFFDF9';
+export const HAIR = '#DCCDB2'; // tanline
+export const FONT = { fontFamily: 'var(--font-rubik), system-ui, sans-serif' };
+export const EASE = [0.22, 1, 0.36, 1] as const;
 
 const fx = (n: number) => Math.round(n * 100) / 100;
 function polar(p: Pt, az: number, dist: number): Pt {
@@ -60,7 +60,7 @@ function sideNormal(az: number, side: Side): Pt {
 const pad3 = (n: number) => String(n).padStart(3, '0');
 
 // ——— Terrain objects ———
-function Pine({ x, y, s = 1 }: Deco) {
+export function Pine({ x, y, s = 1 }: Deco) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <ellipse cx={0} cy={0.25 * s} rx={1.5 * s} ry={0.4 * s} fill="#566b46" opacity={0.16} />
@@ -72,7 +72,7 @@ function Pine({ x, y, s = 1 }: Deco) {
   );
 }
 
-function Bush({ x, y, s = 1 }: Deco) {
+export function Bush({ x, y, s = 1 }: Deco) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <ellipse cx={0} cy={0.15 * s} rx={1.3 * s} ry={0.3 * s} fill="#566b46" opacity={0.14} />
@@ -83,7 +83,7 @@ function Bush({ x, y, s = 1 }: Deco) {
   );
 }
 
-function Rock({ x, y, s = 1 }: Deco) {
+export function Rock({ x, y, s = 1 }: Deco) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <ellipse cx={0} cy={0.18 * s} rx={1.1 * s} ry={0.28 * s} fill="#4a5663" opacity={0.16} />
@@ -96,7 +96,7 @@ function Rock({ x, y, s = 1 }: Deco) {
   );
 }
 
-function Cairn({ x, y, s = 1 }: Deco) {
+export function Cairn({ x, y, s = 1 }: Deco) {
   return (
     <g transform={`translate(${x} ${y})`}>
       <ellipse cx={0} cy={0.1 * s} rx={1 * s} ry={0.25 * s} fill="#4a5663" opacity={0.16} />

@@ -7,54 +7,64 @@ import { C_ACCENT, C_ELL, C_GEO, C_GROUND, C_GROUND_DIM, C_H, C_INK, C_SEA } fro
 export type BodyTab = 'surface' | 'ellipsoid' | 'geoid' | 'undulation';
 
 /**
- * The section along the survey line (the dashed line on the landscape, the
- * plane its cut opens along): ground, geoid (gently wavy, the sea surface
- * offshore) and ellipsoid (smooth). Profile, N and every arrow end come from
- * measurementLayout.sectionGeometry(): the landscape's own heights and N
- * field, one horizontal and one vertical scale. Each view draws only the
- * surfaces it is about — the ground alone, the ground and the ellipsoid, the
- * geoid with the ellipsoid as a quieter second line, then all three with the
- * heights. Hierarchy is line weight first, colour second. Line names and the
- * not-to-scale note keep the former diagram's text.
+ * The section along the survey line over SURVEY_SPAN (the dashed line on the
+ * landscape, the line across the ellipsoid's marked area): ground, geoid
+ * (gently wavy, the sea surface offshore) and ellipsoid (smooth). Profile, N
+ * and every arrow end come from measurementLayout.sectionGeometry(): the
+ * landscape's own heights and N field, one horizontal and one vertical scale.
+ * Each view draws only the surfaces it is about — the ground alone, the ground
+ * and the ellipsoid, the geoid with the ellipsoid as a quieter second line
+ * (both firm once the reference surfaces are revealed in the model), then all
+ * three with the heights at the picked station: the only place the H, h and N
+ * arrows are drawn. Hierarchy is line weight first, colour second.
+ *
+ * Each station has one marker, a lettered pin on its ground point (the model's
+ * pins, smaller); the line's two ends carry the same orange dots as the line on
+ * the model and the marked area on the ellipsoid.
  */
 export function MeasurementSection({
   geo,
   tab,
   station,
   onSelect,
-  focus = 1,
+  revealed = false,
+  linked = false,
   ariaLabel,
 }: {
   geo: SectionGeometry;
   tab: BodyTab;
   /** The picked station (surface and undulation views); its heights are drawn in the undulation view. */
   station: StationId | null;
-  /** Where stations are picked: a station point here picks it too (the station buttons are the keyboard way). */
+  /** Where stations are picked: a station pin here picks it too (the station buttons are the keyboard way). */
   onSelect?: (id: StationId) => void;
-  /** The ellipsoid view: how squarely the marked area faces the reader up on the body (0 … 1) — the section is that area's. */
-  focus?: number;
+  /** The geoid view with the reference surfaces revealed in the model: both reference lines are drawn firm. */
+  revealed?: boolean;
+  /** The ellipsoid's marked area is pointed at or turned beside: the stretch it covers (the whole line) lights up. */
+  linked?: boolean;
   ariaLabel: string;
 }) {
   // which reference lines each view draws: none on the bare surface, its own one otherwise
-  const shown = (layer: 'ellipsoid' | 'geoid') =>
-    tab === 'undulation' || tab === layer || (tab === 'geoid' && layer === 'ellipsoid');
-  const main = (layer: BodyTab) => tab === layer;
+  const shown = (layer: 'ellipsoid' | 'geoid') => tab === 'undulation' || tab === layer || (tab === 'geoid' && layer === 'ellipsoid');
   const mission = tab === 'undulation';
+  // where a station is picked: the bare surface, the geoid view (from which surface H is measured), the task
+  const picking = tab !== 'ellipsoid';
   const st = station && mission ? geo.stations[station] : null;
+  // the geoid view: the picked station's H alone — measured from the geoid, no numbers
+  const gs = station && tab === 'geoid' ? geo.stations[station] : null;
   const N = station ? STATIONS[station].N : 0;
   const fade = 'transition-[opacity,stroke-width] duration-200 motion-reduce:transition-none';
   const pos = (x: number, y: number) => ({ left: `${x}px`, top: `${y}px` });
   // Arrow columns beside the station point: H left of it, h and N right of it.
-  const ax = st ? { H: st.x - 13, h: st.x + 5, N: st.x + 24, chips: N === 0 ? st.x + 15 : st.x + 40 } : null;
+  const ax = st ? { H: st.x - 13, h: st.x + 6, N: st.x + 22, letters: N === 0 ? st.x + 14 : st.x + 31 } : null;
   const yN = st ? (st.ellipsoid + st.geoid) / 2 : 0;
   let yh = st ? st.ground + (st.ellipsoid - st.ground) * 0.3 : 0;
-  if (st && N !== 0 && Math.abs(yh - yN) < 26) yh = yN - 26;
-  const weight = (layer: 'ellipsoid' | 'geoid') => (main(layer) ? 3.5 : 2.25);
+  if (st && N !== 0 && Math.abs(yh - yN) < 22) yh = yN - 22;
+  const firm = (layer: 'ellipsoid' | 'geoid') => tab === layer || (tab === 'geoid' && revealed);
+  const weight = (layer: 'ellipsoid' | 'geoid') => (firm(layer) ? 3.5 : 2.25);
+  const groundFirm = tab === 'surface' || mission;
 
   return (
     <div dir="ltr" role="img" aria-label={ariaLabel} className="relative w-full" style={{ height: geo.height }}>
-      {/* the plot answers the area up on the body: dim while it is turned away, full once it faces the reader */}
-      <div className="absolute inset-0" style={{ opacity: 0.4 + 0.6 * focus }}>
       <svg viewBox={`0 0 ${geo.width} ${geo.height}`} width="100%" height={geo.height} aria-hidden className="absolute inset-0 overflow-visible">
         <defs>
           {(
@@ -64,7 +74,7 @@ export function MeasurementSection({
               ['msArG', C_GEO],
             ] as const
           ).map(([id, c]) => (
-            <marker key={id} id={id} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <marker key={id} id={id} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill={c} />
             </marker>
           ))}
@@ -74,11 +84,18 @@ export function MeasurementSection({
           </linearGradient>
         </defs>
 
-        <path d={geo.groundFillPath} fill="url(#msGround)" className={cn(fade, tab === 'surface' || mission ? 'opacity-100' : 'opacity-60')} />
+        {/* the marked area's stretch, in its orange, while the area on the body is pointed at or turned */}
+        <g aria-hidden className={cn('transition-opacity duration-200 motion-reduce:transition-none', linked ? 'opacity-100' : 'opacity-0')} data-section-linked={linked}>
+          <rect x={geo.spanEnds[0].x} y={0} width={geo.spanEnds[1].x - geo.spanEnds[0].x} height={geo.height} fill={C_ACCENT} fillOpacity={0.07} />
+          {geo.spanEnds.map((p, i) => (
+            <line key={i} x1={p.x} y1={0} x2={p.x} y2={geo.height} stroke={C_ACCENT} strokeWidth={1.5} strokeDasharray="4 3" />
+          ))}
+        </g>
+        <path d={geo.groundFillPath} fill="url(#msGround)" className={cn(fade, groundFirm ? 'opacity-100' : 'opacity-60')} />
         {geo.seaPath && <path d={geo.seaPath} fill={C_SEA} className={cn(fade, tab === 'geoid' ? 'opacity-75' : 'opacity-50')} />}
 
         {/* the gap between geoid and ellipsoid = undulation */}
-        <path d={geo.gapPath} fill={C_GEO} className={cn(fade, mission ? 'opacity-25' : 'opacity-0')} />
+        <path d={geo.gapPath} fill={C_GEO} className={cn(fade, mission || (tab === 'geoid' && revealed) ? 'opacity-25' : 'opacity-0')} />
 
         <path
           d={geo.ellipsoidPath}
@@ -86,112 +103,117 @@ export function MeasurementSection({
           stroke={C_ELL}
           strokeWidth={weight('ellipsoid')}
           strokeLinejoin="round"
-          className={cn(fade, shown('ellipsoid') ? (main('ellipsoid') || mission ? 'opacity-100' : 'opacity-75') : 'opacity-0')}
+          className={cn(fade, shown('ellipsoid') ? (firm('ellipsoid') || mission ? 'opacity-100' : 'opacity-75') : 'opacity-0')}
         />
-        <path
-          d={geo.geoidPath}
-          fill="none"
-          stroke={C_GEO}
-          strokeWidth={weight('geoid')}
-          strokeLinejoin="round"
-          className={cn(fade, shown('geoid') ? 'opacity-100' : 'opacity-0')}
-        />
+        <path d={geo.geoidPath} fill="none" stroke={C_GEO} strokeWidth={weight('geoid')} strokeLinejoin="round" className={cn(fade, shown('geoid') ? 'opacity-100' : 'opacity-0')} />
         <path
           d={geo.terrainPath}
           fill="none"
-          stroke={tab === 'surface' ? C_INK : C_GROUND_DIM}
+          stroke={groundFirm ? C_INK : C_GROUND_DIM}
           strokeWidth={tab === 'surface' ? 3.5 : 2.25}
           strokeLinejoin="round"
           className={fade}
         />
 
         {st && ax && (
-          <g strokeWidth="3">
-            <line x1={ax.H} y1={st.geoid} x2={ax.H} y2={st.ground + 4} stroke={C_H} markerEnd="url(#msArH)" />
-            <line x1={ax.h} y1={st.ellipsoid} x2={ax.h} y2={st.ground + 4} stroke={C_ELL} markerEnd="url(#msArE)" />
-            {N !== 0 && (
-              <line x1={ax.N} y1={st.ellipsoid} x2={ax.N} y2={st.geoid + (st.geoid < st.ellipsoid ? 3 : -3)} stroke={C_GEO} markerEnd="url(#msArG)" />
-            )}
-            <line x1={st.x - 24} y1={st.geoid} x2={st.x + 34} y2={st.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
-            <line x1={st.x - 24} y1={st.ellipsoid} x2={st.x + 34} y2={st.ellipsoid} stroke={C_ELL} strokeWidth="1.5" strokeDasharray="4 3" />
+          <g strokeWidth="2.5">
+            <line x1={ax.H} y1={st.geoid} x2={ax.H} y2={st.ground + 1} stroke={C_H} markerEnd="url(#msArH)" />
+            <line x1={ax.h} y1={st.ellipsoid} x2={ax.h} y2={st.ground + 1} stroke={C_ELL} markerEnd="url(#msArE)" />
+            {N !== 0 && <line x1={ax.N} y1={st.ellipsoid} x2={ax.N} y2={st.geoid + (st.geoid < st.ellipsoid ? 1 : -1)} stroke={C_GEO} markerEnd="url(#msArG)" />}
+            <line x1={st.x - 24} y1={st.geoid} x2={st.x + 30} y2={st.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
+            <line x1={st.x - 24} y1={st.ellipsoid} x2={st.x + 30} y2={st.ellipsoid} stroke={C_ELL} strokeWidth="1.5" strokeDasharray="4 3" />
           </g>
         )}
+
+        {gs && (
+          <g strokeWidth="2.5" data-geoid-h>
+            <line x1={gs.x - 22} y1={gs.geoid} x2={gs.x + 14} y2={gs.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
+            <line x1={gs.x - 10} y1={gs.geoid} x2={gs.x - 10} y2={gs.ground + 1} stroke={C_H} markerEnd="url(#msArH)" />
+          </g>
+        )}
+
+        {/* the line's two ends: the same orange dots as on the model and on the ellipsoid's marked area */}
+        {geo.spanEnds.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={linked ? 6 : 4} fill={C_ACCENT} stroke="#FDFBF3" strokeWidth={1.5} className="transition-[r] duration-200 motion-reduce:transition-none" />
+        ))}
       </svg>
 
-      {/* station points on the ground — the active one carries the measurement */}
+      {/* the heights' letters, beside their arrows */}
+      {st && ax && (
+        <div aria-hidden className="pointer-events-none font-display text-base font-bold leading-none">
+          <span className="absolute" style={{ ...pos(ax.H - 7, (st.geoid + st.ground) / 2), transform: 'translate(-100%, -50%)', color: C_H }}>
+            H
+          </span>
+          <span className="absolute" style={{ ...pos(ax.letters, N === 0 ? (st.ellipsoid + st.ground) / 2 : yh), transform: 'translate(0, -50%)', color: C_ELL }}>
+            h
+          </span>
+          {N !== 0 && (
+            <span className="absolute" style={{ ...pos(ax.letters, yN), transform: 'translate(0, -50%)', color: C_GEO }}>
+              N
+            </span>
+          )}
+        </div>
+      )}
+
+      {gs && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute font-display text-base font-bold leading-none"
+          style={{ ...pos(gs.x - 17, (gs.geoid + gs.ground) / 2), transform: 'translate(-100%, -50%)', color: C_H }}
+        >
+          H
+        </span>
+      )}
+
+      {/* one marker per station: a lettered pin on its ground point */}
       {STATION_IDS.map((id) => {
         const p = geo.stations[id];
-        const active = id === station && (tab === 'surface' || mission);
-        return (
-          <span key={id} aria-hidden>
-            {onSelect && (
-              // pointer only: the same pick as the pins and the station buttons
-              <button
-                type="button"
-                tabIndex={-1}
-                aria-hidden
-                onClick={() => onSelect(id)}
-                className="absolute z-10 size-8 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full"
-                style={pos(p.x, p.ground)}
-              />
-            )}
-            <span
-              className={cn(
-                'absolute -translate-x-1/2 -translate-y-1/2 rounded-full',
-                active
-                  ? 'grid size-[18px] place-items-center border-[3px] border-accent bg-paper-bright shadow-[0_2px_6px_rgba(40,50,35,0.35)]'
-                  : 'size-2.5 border-2 border-paper-bright bg-brand-dark',
-              )}
-              style={pos(p.x, p.ground)}
-            />
-            {active ? (
-              <DiagramChip color={C_ACCENT} style={{ ...pos(p.x, p.ground), transform: 'translate(-50%, calc(-100% - 12px))' }}>
-                {id}
-              </DiagramChip>
-            ) : (
-              // the other stations: a quiet letter, so the active one's arrows keep the stage
-              <span
-                className="absolute font-display text-[13px] font-bold leading-none text-brand-dark"
-                style={{ ...pos(p.x, p.ground), transform: 'translate(-50%, calc(-100% - 8px))' }}
-              >
-                {id}
-              </span>
-            )}
+        const active = picking && id === station;
+        const head = cn(
+          'grid place-items-center rounded-full border-2 font-display font-bold leading-none transition-colors duration-200 motion-reduce:transition-none',
+          active ? 'size-7 border-paper-bright bg-accent text-sm text-white shadow-[0_2px_5px_rgba(40,50,35,0.3)]' : 'size-6 border-brand-dark bg-bg-elevated text-[13px] text-brand-dark',
+          !picking && 'opacity-80',
+        );
+        const body = (
+          <>
+            <span className={head}>{id}</span>
+            <span className={cn('h-2 w-0.5', active ? 'bg-accent' : 'bg-brand-dark')} />
+            <span className={cn('-mt-px size-1.5 rounded-full', active ? 'bg-accent' : 'bg-brand-dark')} />
+          </>
+        );
+        const place = { ...pos(p.x, p.ground), transform: 'translate(-50%, calc(-100% + 3px))' };
+        return picking && onSelect ? (
+          // pointer only: the same pick as the pins and the station buttons
+          <button
+            key={id}
+            type="button"
+            tabIndex={-1}
+            aria-hidden
+            onClick={() => onSelect(id)}
+            className={cn('absolute z-10 flex cursor-pointer flex-col items-center', !active && 'hover:[&>span:first-child]:border-accent')}
+            style={place}
+          >
+            {body}
+          </button>
+        ) : (
+          <span key={id} aria-hidden className="absolute flex flex-col items-center" style={place}>
+            {body}
           </span>
         );
       })}
 
-      {st && ax && (
-        <>
-          <DiagramChip color={C_H} style={{ ...pos(ax.H, (st.geoid + st.ground) / 2), transform: 'translate(calc(-100% - 6px), -50%)' }}>
-            H
-          </DiagramChip>
-          <DiagramChip color={C_ELL} style={{ ...pos(ax.chips, N === 0 ? (st.ellipsoid + st.ground) / 2 : yh), transform: 'translate(0, -50%)' }}>
-            h
-          </DiagramChip>
-          {N !== 0 && (
-            <DiagramChip color={C_GEO} style={{ ...pos(ax.chips, yN), transform: 'translate(0, -50%)' }}>
-              N
-            </DiagramChip>
-          )}
-        </>
-      )}
-
+      {/* line names, left of the plot */}
+      <div aria-hidden dir="rtl" className="pointer-events-none font-display text-[13px] font-bold leading-tight">
+        <span className={cn('absolute whitespace-nowrap', fade, groundFirm ? 'opacity-100' : 'opacity-60')} style={{ ...pos(geo.leftEnds.x - 8, geo.leftEnds.ground), transform: 'translate(-100%, -50%)', color: C_INK }}>
+          פני השטח
+        </span>
+        <span className={cn('absolute whitespace-nowrap', fade, shown('geoid') ? 'opacity-100' : 'opacity-0')} style={{ ...pos(geo.leftEnds.x - 8, geo.leftEnds.geoid), transform: 'translate(-100%, calc(-100% + 3px))', color: C_GEO }}>
+          גיאואיד · פני הים
+        </span>
+        <span className={cn('absolute whitespace-nowrap', fade, shown('ellipsoid') ? 'opacity-100' : 'opacity-0')} style={{ ...pos(geo.leftEnds.x - 8, geo.leftEnds.ellipsoid), transform: 'translate(-100%, 1px)', color: C_ELL }}>
+          אליפסואיד
+        </span>
       </div>
-
-      {/* line names, left of the plot; a quiet line keeps a readable name */}
-      <DiagramChip color={C_INK} wide dim={tab !== 'surface' && !mission} style={{ ...pos(geo.leftEnds.x - 8, geo.leftEnds.ground), transform: 'translate(-100%, -50%)' }}>
-        פני השטח
-      </DiagramChip>
-      <DiagramChip color={C_GEO} wide hidden={!shown('geoid')} style={{ ...pos(geo.leftEnds.x - 8, geo.leftEnds.geoid), transform: 'translate(-100%, calc(-100% + 2px))' }}>
-        גיאואיד · פני הים
-      </DiagramChip>
-      <DiagramChip color={C_ELL} wide hidden={!shown('ellipsoid')} style={{ ...pos(geo.leftEnds.x - 8, geo.leftEnds.ellipsoid), transform: 'translate(-100%, 2px)' }}>
-        אליפסואיד
-      </DiagramChip>
-      <span className="absolute top-0 rounded bg-paper-card/85 px-1.5 text-[13px] font-medium text-fg-muted" style={{ right: 8 }}>
-        ללא קנה מידה · הגבהים מוגזמים
-      </span>
     </div>
   );
 }

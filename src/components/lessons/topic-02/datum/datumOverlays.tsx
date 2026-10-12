@@ -39,6 +39,8 @@ export type OverlayRefs = {
   leaders: Record<ChipId, RefObject<SVGLineElement | null>>;
   dots: Record<ChipId, RefObject<SVGCircleElement | null>>;
   marker: RefObject<HTMLDivElement | null>;
+  /** station 3: the other check point */
+  markerAlt: RefObject<HTMLDivElement | null>;
   insetLeaders: [RefObject<SVGLineElement | null>, RefObject<SVGLineElement | null>];
 };
 
@@ -50,16 +52,18 @@ export function makeOverlayRefs(stage: RefObject<HTMLDivElement | null>): Overla
     leaders: per<SVGLineElement>(),
     dots: per<SVGCircleElement>(),
     marker: createRef<HTMLDivElement>(),
+    markerAlt: createRef<HTMLDivElement>(),
     insetLeaders: [createRef<SVGLineElement>(), createRef<SVGLineElement>()],
   };
 }
 
-export function GlobeOverlays({ refs, surface, labels }: { refs: OverlayRefs; surface: Surface; labels: Record<ChipId, string> }) {
+/** `emph`: the body in focus — its label and leader full, the others quieter (none: all alike). */
+export function GlobeOverlays({ refs, emph, labels }: { refs: OverlayRefs; emph: Surface | null; labels: Record<ChipId, string> }) {
   return (
     <>
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible">
         {CHIP_IDS.map((id) => (
-          <g key={id} opacity={surface === id ? 1 : 0.6}>
+          <g key={id} opacity={emph === null || emph === id ? 1 : 0.45}>
             <line ref={refs.leaders[id]} stroke={CHIP_COLOR[id]} strokeWidth={1.5} style={{ opacity: 0, transition: 'opacity 150ms' }} />
             <circle ref={refs.dots[id]} r={5} fill={CHIP_COLOR[id]} stroke="#FFFFFF" strokeWidth={2} style={{ opacity: 0, transition: 'opacity 150ms' }} />
           </g>
