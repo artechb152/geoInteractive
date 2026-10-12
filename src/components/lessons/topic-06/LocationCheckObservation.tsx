@@ -16,17 +16,16 @@ import {
 import dynamic from 'next/dynamic';
 import { useReducedMotion } from 'framer-motion';
 import { useProgress } from '@react-three/drei';
-import { Maximize2, Minimize2, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FORK, READINGS } from './locationCheckScenario';
 import { bearingToViewX, formatBearing, normalizeDegrees, projectToView, signedTurn, type EyePoint } from './locationCheckGeometry';
 import { heightAt, observerEye } from './locationCheckTerrain';
-import { INITIAL_LOOK, LOOK_LIMITS, type LookState, type LookStore } from './locationCheckViewStore';
+import { INITIAL_LOOK, type LookStore } from './locationCheckViewStore';
 
 /**
  * The observation panel: the live eye-level canvas (LocationCheckTerrain3D)
  * and everything drawn or handled over it in the DOM — look controls (drag,
- * a few buttons, keys) and the heading tape. The view is only looked at: the
+ * keys) and the heading tape. The view is only looked at: the
  * groves in it are landmarks, nothing in it is selected.
  * All of it goes through the pure projection of locationCheckGeometry with the
  * frame's measured size, so it registers with the canvas (whose camera takes
@@ -91,13 +90,11 @@ export function LocationCheckObservation({
 }) {
   const reduce = !!useReducedMotion();
   const uid = useId();
-  const rootRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<'pending' | 'live' | 'static'>('pending');
   const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [fullscreen, setFullscreen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [turned, setTurned] = useState(false);
   const [keyFocus, setKeyFocus] = useState(false);
@@ -120,12 +117,6 @@ export function LocationCheckObservation({
     };
   }, []);
 
-  useEffect(() => {
-    const onChange = () => setFullscreen(document.fullscreenElement === rootRef.current);
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
-  }, []);
-
   // Without WebGL the picture is the fixed opening view: the look is fixed too.
   const live = mode === 'live';
   useEffect(() => {
@@ -142,7 +133,6 @@ export function LocationCheckObservation({
   // Projection and labels use the frame as measured — the canvas camera takes the same size.
   const aspect = size.w > 0 && size.h > 0 ? size.w / size.h : OBSERVATION_ASPECT;
   const viewLook = live ? look : INITIAL_LOOK;
-  const atOpening = Math.abs(viewLook.yawDeg - INITIAL_LOOK.yawDeg) < 0.5 && Math.abs(viewLook.pitchDeg - INITIAL_LOOK.pitchDeg) < 0.5 && Math.abs(viewLook.hfovDeg - INITIAL_LOOK.hfovDeg) < 0.5;
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 || !live) return;
@@ -201,11 +191,6 @@ export function LocationCheckObservation({
     run();
   };
 
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else rootRef.current?.requestFullscreen?.();
-  };
-
   const descId = `${uid}-obs-desc`;
   const showOverlay = mode !== 'pending' && (mode === 'static' || ready);
 
@@ -217,7 +202,7 @@ export function LocationCheckObservation({
   const hint = keyFocus ? 'חצים: סיבוב המבט · + / −: הגדלה' : !turned && live ? 'גררו כדי להביט סביב' : null;
 
   return (
-    <div ref={rootRef} className={cn('relative bg-bg-accent', fullscreen && 'flex items-center justify-center bg-black', className)}>
+    <div className={cn('relative bg-bg-accent', className)}>
       <div
         ref={frameRef}
         role="group"
@@ -237,7 +222,6 @@ export function LocationCheckObservation({
           'relative w-full select-none overflow-hidden outline-none',
           // Focus ring on a layer above the canvas.
           "after:pointer-events-none after:absolute after:inset-0 after:z-20 after:content-[''] focus-visible:after:ring-4 focus-visible:after:ring-inset focus-visible:after:ring-accent",
-          fullscreen ? 'max-h-full' : '',
           live ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default',
         )}
         style={{ aspectRatio: `${OBSERVATION_ASPECT}`, touchAction: 'pan-y' }}
@@ -267,51 +251,13 @@ export function LocationCheckObservation({
         {mode === 'live' && activated && !ready && <LoadingOverlay />}
       </div>
 
-      {/* Bottom edge: view direction (inline start), a short hint, look controls (inline end) —
-          over the foreground ground, clear of the groves, the ridge and the fork. */}
-      <div data-obs-chrome className="pointer-events-none absolute inset-x-2 bottom-2 flex items-end justify-between gap-2">
-        <div className="rounded-md bg-bg-elevated/95 px-2 py-0.5 font-display text-sm font-bold text-black shadow-sm">
-          כיוון המבט{' '}
-          <span dir="ltr" className="font-mono tabular-nums">
-            {formatBearing(viewLook.yawDeg)}
-          </span>
+      {/* Bottom edge: a short hint over the foreground ground, clear of the groves, the ridge and the fork. */}
+      {hint && (
+        <div data-obs-chrome className="pointer-events-none absolute inset-x-2 bottom-2 flex justify-center">
+          <div className="rounded-md bg-fg/80 px-2 py-0.5 font-display text-sm font-semibold text-white">{hint}</div>
         </div>
-        {hint && <div className="rounded-md bg-fg/80 px-2 py-0.5 font-display text-sm font-semibold text-white">{hint}</div>}
-        <div className="pointer-events-auto flex items-center gap-1">
-          <ObsButton label="חזרה למבט הפתיחה" onClick={() => lookStore.reset()} disabled={!live || atOpening}>
-            <RotateCcw className="size-4" />
-          </ObsButton>
-          <ObsButton label="הגדלה" onClick={() => zoom(-15)} disabled={!live || look.hfovDeg <= LOOK_LIMITS.hfovMin + 0.5}>
-            <Plus className="size-4" />
-          </ObsButton>
-          <ObsButton label="הקטנה" onClick={() => zoom(15)} disabled={!live || look.hfovDeg >= LOOK_LIMITS.hfovMax - 0.5}>
-            <Minus className="size-4" />
-          </ObsButton>
-        </div>
-      </div>
-
-      {/* Secondary: fullscreen, small, under the tape at the inline end. */}
-      <div data-obs-chrome className="absolute end-2" style={{ top: TAPE_H + 8 }}>
-        <ObsButton label={fullscreen ? 'יציאה ממסך מלא' : 'הצגת התצפית במסך מלא'} onClick={toggleFullscreen}>
-          {fullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-        </ObsButton>
-      </div>
+      )}
     </div>
-  );
-}
-
-function ObsButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="pointer-events-auto flex size-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-bg-elevated/95 text-black shadow-sm transition-colors hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-accent"
-    >
-      {children}
-    </button>
   );
 }
 
@@ -438,16 +384,3 @@ export const MEASURED_MARKER: TapeMarker = {
   tone: 'measured',
   target: { E: FORK.E, N: FORK.N, heightM: heightAt(FORK.E, FORK.N) + 0.5 },
 };
-
-/**
- * The look of "הראו את התפצלות הדרך": along the measured bearing, the split a
- * little above the middle of the frame, at the narrowest field of view — the
- * road arms are only a few metres wide 440 m away, so this is where they read
- * at the panel's normal size.
- */
-export function roadSplitLook(): LookState {
-  const eye = observerEye();
-  const d = Math.hypot(FORK.E - eye.E, FORK.N - eye.N);
-  const elevationDeg = (Math.atan2(heightAt(FORK.E, FORK.N) - eye.heightM, d) * 180) / Math.PI;
-  return { yawDeg: READINGS.forkBearingDeg, pitchDeg: elevationDeg - 3, hfovDeg: LOOK_LIMITS.hfovMin };
-}

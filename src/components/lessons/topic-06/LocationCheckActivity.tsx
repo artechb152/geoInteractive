@@ -6,20 +6,18 @@ import {
   useReducer,
   useRef,
   useState,
-  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react';
-import { BatteryLow, Check, CircleHelp, Compass, Footprints, Info, ListTree, Maximize2, Minimize2, Mountain, RadioTower, RotateCcw, SatelliteDish, X } from 'lucide-react';
+import { Check, Info, ListTree, Maximize2, Minimize2, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { StatusChip } from '@/components/ui/StatusChip';
 import { cn } from '@/lib/utils';
 import { CANDIDATES, READINGS, type CandidateId } from './locationCheckScenario';
 import { formatBearing, formatMetres } from './locationCheckGeometry';
-import { INITIAL_STATE, directionCheck, distanceCheck, reducer, view, type Evaluation, type GpsReasonId } from './locationCheckState';
+import { INITIAL_STATE, directionCheck, distanceCheck, reducer, view, type Evaluation } from './locationCheckState';
 import { createLookStore, type LookStore } from './locationCheckViewStore';
 import { LocationCheckMap, MAP_ASPECT, MapLegend } from './LocationCheckMap';
-import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, roadSplitLook, type TapeMarker } from './LocationCheckObservation';
+import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, type TapeMarker } from './LocationCheckObservation';
 
 /**
  * "באיזה אזור אתם נמצאים?" — a decision between two location hypotheses
@@ -33,8 +31,7 @@ import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, roadSpli
  * Desktop layout (RTL), one screen at 1440 × 1122: title, instruction and the
  * two measurements on top; the 3D observation (inline start, right) and the
  * map (left) side by side at one height; the area choice, the check and a
- * fixed-height feedback box at the bottom. Why GPS may be unavailable lives in
- * a help dialog.
+ * fixed-height feedback box at the bottom.
  */
 
 /** A numeric range kept left-to-right inside Hebrew text (U+2066 … U+2069 isolate). */
@@ -42,27 +39,6 @@ const ltr = (s: string) => `⁦${s}⁩`;
 const RANGE = ltr(`${READINGS.distanceMinM}–${READINGS.distanceMaxM}`);
 
 const CANDIDATE_LABEL = Object.fromEntries(CANDIDATES.map((c) => [c.id, c.label])) as Record<CandidateId, string>;
-
-const GPS_REASONS: { id: GpsReasonId; title: string; icon: ReactNode; text: string }[] = [
-  {
-    id: 'blocked',
-    title: 'חסימת קליטה',
-    icon: <Mountain className="size-5" aria-hidden />,
-    text: 'מבנים ושטח גבוה עלולים לחסום את אותות הלוויינים. המכשיר עלול להציג מיקום לא מדויק או לא להציג מיקום כלל.',
-  },
-  {
-    id: 'interference',
-    title: 'הפרעת אותות',
-    icon: <RadioTower className="size-5" aria-hidden />,
-    text: 'שידורי הפרעה עלולים למנוע מהמכשיר לקלוט את אותות הלוויינים ולקבוע מיקום.',
-  },
-  {
-    id: 'battery',
-    title: 'סוללה ריקה',
-    icon: <BatteryLow className="size-5" aria-hidden />,
-    text: 'בלי סוללה המכשיר אינו פועל. אפשר להמשיך להיעזר במפת נייר ובמצפן.',
-  },
-];
 
 /** What the map shows for the chosen area, for screen readers (the same computed values). */
 function areaValuesText(id: CandidateId) {
@@ -76,9 +52,6 @@ export function LocationCheckActivity() {
   const { stale, result, solved } = view(state);
   const sel = state.selections;
   const uid = useId();
-  // The view can turn only when it is live 3D (not the static picture).
-  const interactive = useSyncExternalStore(lookStore.subscribe, lookStore.getInteractive, () => false);
-  const helpRef = useRef<HTMLDialogElement>(null);
 
   // Dev-only handle for scripts/qa/shot-location-check.mjs (set a look, read the state).
   useEffect(() => {
@@ -105,53 +78,9 @@ export function LocationCheckActivity() {
   return (
     <div className="surface-elevated p-5 lg:p-6" data-activity="location-check">
       {/* Task */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <h3 className="font-display text-2xl font-bold leading-tight text-black">באיזה אזור אתם נמצאים?</h3>
-            <StatusChip tone="neutral" icon={<SatelliteDish className="size-3.5" aria-hidden />} className="text-black">
-              GPS לא זמין
-            </StatusChip>
-          </div>
-          <p className="mt-1.5 text-base leading-relaxed text-black">בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח.</p>
-        </div>
-        <Button variant="secondary" size="sm" className="shrink-0" onClick={() => helpRef.current?.showModal()}>
-          <CircleHelp className="size-4" aria-hidden />
-          למה אין GPS?
-        </Button>
-      </div>
-
-      {/* The two measurements — fixed evidence, both always part of the check */}
-      <div className="mt-4 flex flex-wrap items-center gap-2.5" data-measurements>
-        <Measurement
-          icon={<Compass className="size-5" aria-hidden />}
-          label="כיוון להתפצלות הדרך:"
-          help="התפצלות הדרך היא המקום שבו הדרך מתחלקת לשני כיוונים. הכיוון אליה נמדד במצפן, ביחס לצפון הרשת במפה. סיבוב המבט אינו משנה את המדידה."
-        >
-          <bdi dir="ltr" className="font-mono tabular-nums">
-            {formatBearing(READINGS.forkBearingDeg)}
-          </bdi>
-        </Measurement>
-        <button
-          type="button"
-          onClick={() => lookStore.setTarget(roadSplitLook())}
-          disabled={!interactive}
-          className="rounded-md px-1 font-display text-base font-semibold text-black underline decoration-accent decoration-2 underline-offset-4 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:no-underline disabled:opacity-45"
-        >
-          הראו את התפצלות הדרך
-        </button>
-        <span aria-hidden className="mx-1 h-6 w-px bg-border" />
-        <Measurement
-          icon={<Footprints className="size-5" aria-hidden />}
-          label="מרחק מהמיקום האחרון:"
-          help={`המרחק הוערך לפי ספירת צעדים. בבדיקה מתקבל טווח של ${RANGE} מ׳.`}
-        >
-          כ־
-          <bdi dir="ltr" className="font-mono tabular-nums">
-            {Math.round(READINGS.distanceM)}
-          </bdi>{' '}
-          מ׳
-        </Measurement>
+      <div className="min-w-0">
+        <h3 className="font-display text-2xl font-bold leading-tight text-black">באיזה אזור אתם נמצאים?</h3>
+        <p className="mt-1.5 text-base leading-relaxed text-black">בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח.</p>
       </div>
 
       {/* The two views, one height: column widths follow their aspects. */}
@@ -195,8 +124,6 @@ export function LocationCheckActivity() {
         </div>
         <Feedback result={result} stale={stale} attempt={state.attempts} />
       </div>
-
-      <GpsHelpDialog dialogRef={helpRef} value={state.gpsReason} onChange={(id) => dispatch({ type: 'setGpsReason', id })} />
     </div>
   );
 }
@@ -245,17 +172,6 @@ function InfoPopover({ label, children, placement = 'below', trigger }: { label:
         </span>
       )}
     </span>
-  );
-}
-
-function Measurement({ icon, label, help, children }: { icon: ReactNode; label: string; help: string; children: ReactNode }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-border bg-bg-accent px-3 py-1.5 font-display text-base text-black">
-      {icon}
-      <span className="font-semibold">{label}</span>
-      <span className="font-bold">{children}</span>
-      <InfoPopover label={`הסבר: ${label.replace(':', '')}`}>{help}</InfoPopover>
-    </div>
   );
 }
 
@@ -530,81 +446,5 @@ function FeedbackTitle({ icon, children }: { icon: ReactNode; children: ReactNod
       {icon}
       {children}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------- help
-
-/** "למה אין GPS?" — background, not needed for the task: a closable modal dialog. */
-function GpsHelpDialog({ dialogRef, value, onChange }: { dialogRef: React.RefObject<HTMLDialogElement | null>; value: GpsReasonId; onChange: (id: GpsReasonId) => void }) {
-  const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const uid = useId();
-  const active = GPS_REASONS.find((r) => r.id === value)!;
-  const onKey = (e: ReactKeyboardEvent<HTMLButtonElement>, i: number) => {
-    let next = -1;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = (i + 1) % GPS_REASONS.length;
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = (i + GPS_REASONS.length - 1) % GPS_REASONS.length;
-    if (next < 0) return;
-    e.preventDefault();
-    onChange(GPS_REASONS[next].id);
-    refs.current[next]?.focus();
-  };
-  return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={`${uid}-title`}
-      onClick={(e) => e.target === e.currentTarget && dialogRef.current?.close()}
-      className="w-[min(40rem,calc(100vw-2rem))] rounded-2xl border border-border bg-bg-elevated p-0 text-black shadow-elevated backdrop:bg-black/40"
-      data-dialog="gps-help"
-    >
-      <div className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <h4 id={`${uid}-title`} className="font-display text-xl font-bold text-black">
-            למה אין GPS?
-          </h4>
-          <button
-            type="button"
-            onClick={() => dialogRef.current?.close()}
-            aria-label="סגירה"
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-black hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-        </div>
-        <p className="mt-2 text-base leading-relaxed text-black">
-          כש<strong>GPS לא זמין</strong>, נעזרים במפה ובמצפן. בחרו סיבה להסבר קצר.
-        </p>
-        <div role="radiogroup" aria-labelledby={`${uid}-title`} aria-describedby={`${uid}-text`} className="mt-4 grid gap-2.5 sm:grid-cols-3">
-          {GPS_REASONS.map((r, i) => {
-            const on = r.id === value;
-            return (
-              <button
-                key={r.id}
-                ref={(el) => {
-                  refs.current[i] = el;
-                }}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                tabIndex={on ? 0 : -1}
-                onClick={() => onChange(r.id)}
-                onKeyDown={(e) => onKey(e, i)}
-                className={cn(
-                  'flex min-h-12 cursor-pointer items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-start font-display text-base font-bold text-black transition-colors duration-200 ease-snap',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                  on ? 'border-2 border-accent bg-accent/10' : 'border border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                )}
-              >
-                {r.icon}
-                {r.title}
-              </button>
-            );
-          })}
-        </div>
-        <p id={`${uid}-text`} className="mt-3 text-base leading-relaxed text-black">
-          {active.text}
-        </p>
-      </div>
-    </dialog>
   );
 }
