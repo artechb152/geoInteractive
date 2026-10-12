@@ -58,6 +58,8 @@ const Deg = ({ v }: { v: number }) => (
 
 const LEG_NAME = (to: CheckpointId) => CHECKPOINT_LABEL[to];
 const FROM_NAME = (leg: Leg) => (leg.from === 'A' ? 'נקודת המוצא A' : CHECKPOINT_LABEL[leg.from]);
+/** "In" a checkpoint, for sentences (the label of B starts with the article, so it cannot just take ב־). */
+const AT_NAME: Record<CheckpointId, string> = { H1: 'בכיפה 1', H2: 'בכיפה 2', H3: 'בכיפה 3', B: 'בכיכר המרכזית' };
 
 /** What a statement is about, as a noun for feedback sentences, with its grammatical gender. */
 type Noun = { readonly text: string; readonly f: boolean };
@@ -65,9 +67,9 @@ const NOUN: Partial<Record<FeatureId, Noun>> = {
   'track-east': { text: 'דרך העפר', f: true },
   'road-west': { text: 'דרך העפר', f: true },
   'road-north': { text: 'הדרך הצפונית', f: true },
-  G1: { text: 'החורשה', f: true },
-  G2: { text: 'החורשה', f: true },
-  G3: { text: 'החורשה', f: true },
+  G1: { text: 'החורשה שליד כיפה 1', f: true },
+  G2: { text: 'החורשה שליד כיפה 3', f: true },
+  G3: { text: 'החורשה הצפונית', f: true },
   stream: { text: 'ערוץ הנחל', f: false },
   'gully-north': { text: 'הערוץ הצר', f: false },
   village: { text: 'הכפר', f: false },
@@ -158,7 +160,7 @@ export function TerrainAssociationActivity({ copy, onContinue }: { copy: Terrain
     state.mode === 'practice' && leg && state.sel.candidate
       ? (() => {
           const m = measuredTo(leg, state.sel.candidate);
-          return { from: legStart(leg), to: candidatePoint(state.sel.candidate), text: `${formatBearing(m.bearingDeg)} · ${formatMetres(m.distanceM)}` };
+          return { from: legStart(leg), to: candidatePoint(state.sel.candidate), text: `${ltr(formatBearing(m.bearingDeg))} · ${formatMetres(m.distanceM)}` };
         })()
       : null;
 
@@ -195,10 +197,11 @@ export function TerrainAssociationActivity({ copy, onContinue }: { copy: Terrain
       };
     }
     // practice: A and the verified checkpoints only — never the place being checked
-    const here = leg ? checkpoint(leg.to) : null;
-    const shown = confirmed.filter((id) => !here || checkpoint(id) !== here);
+    const shown = confirmed.filter((id) => id !== leg?.to);
+    // The ground you stand on is lit on the map only: seen from inside, its outline would ring the view.
+    const underfoot: FeatureId | null = leg ? (leg.to === 'B' ? 'square' : leg.to) : null;
     return {
-      highlights,
+      highlights: highlights.filter((h) => h !== underfoot),
       // The walked route is drawn on the map; from the eye it would only cross the view (its last vertex is underfoot).
       route: null,
       labels: [{ id: 'A', text: 'A', at: START, liftM: 34, tone: 'start' as const }, ...shown.map((id) => ({ id, text: id === 'B' ? 'B · הכיכר' : fi.get(id as FeatureId)!.name, at: checkpoint(id), liftM: 34, tone: 'route' as const }))],
@@ -230,7 +233,7 @@ export function TerrainAssociationActivity({ copy, onContinue }: { copy: Terrain
               ? 'סובבו את המודל והשוו אותו למפה. לחצו על עצם באחת התצוגות כדי לראות מהו ואיך הוא מסומן במפה.'
               : v.finished
                 ? 'כל ארבעת קטעי הדרך נבדקו. אפשר להתחיל מחדש או לעבור לניווט עיוור.'
-                : 'אתם עומדים בסוף קטע הדרך. סמנו במפה היכן אתם, בחרו שתי ראיות מהשטח והשוו לכיוון ולמרחק המתוכננים.'}
+                : 'אתם עומדים בסוף קטע הדרך. סמנו במפה היכן אתם, בחרו שתי ראיות מהשטח והשוו לכיוון ולמרחק בתכנון.'}
           </p>
         </div>
         <ModeSwitch mode={state.mode} onChange={setMode} />
@@ -331,20 +334,36 @@ function MapPanel({ ready, layer, onPickFeature, onPickCandidate }: { ready: boo
         <TerrainNavMap layer={layer} onPickFeature={onPickFeature} onPickCandidate={onPickCandidate} className="block h-full max-h-full w-full" />
       ) : (
         <span className="font-display text-base font-semibold text-black" data-loading>
-          מכין את המפה…
+          טוען את המפה…
         </span>
       )}
-      <button
-        type="button"
-        onClick={() => (document.fullscreenElement ? document.exitFullscreen() : ref.current?.requestFullscreen?.())}
-        aria-label={fullscreen ? 'יציאה ממסך מלא' : 'הצגת המפה במסך מלא'}
-        title={fullscreen ? 'יציאה ממסך מלא' : 'הצגת המפה במסך מלא'}
-        className="absolute end-3 top-3 flex size-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-bg-elevated/95 text-black shadow-sm hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        {fullscreen ? <Minimize2 className="size-4" aria-hidden /> : <Maximize2 className="size-4" aria-hidden />}
-      </button>
-      <span className="sr-only">יחס המפה {MAP_ASPECT.toFixed(2)}</span>
+      {/* In full screen the exit control sits on the sheet's collar; otherwise it lives in the legend row (MapFullscreenButton). */}
+      {fullscreen && (
+        <button
+          type="button"
+          onClick={() => document.exitFullscreen()}
+          aria-label="יציאה ממסך מלא"
+          title="יציאה ממסך מלא"
+          className="absolute end-3 top-3 flex size-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-bg-elevated/95 text-black shadow-sm hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Minimize2 className="size-4" aria-hidden />
+        </button>
+      )}
     </div>
+  );
+}
+
+/** Opens the map panel full screen — beside the map key, so it never covers the sheet. */
+function MapFullscreenButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => (document.querySelector('[data-activity="terrain-association"] [data-panel="map"]') as HTMLElement | null)?.requestFullscreen?.()}
+      className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      <Maximize2 className="size-4" aria-hidden />
+      מפה במסך מלא
+    </button>
   );
 }
 
@@ -363,18 +382,21 @@ function Legend({ copy }: { copy: TerrainNavCopy }) {
           ))}
         </ul>
       </div>
-      <Popover
-        label="מקרא המפה"
-        trigger={
-          <span className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black">
-            <ListTree className="size-4" aria-hidden />
-            מקרא המפה
-          </span>
-        }
-        wide
-      >
-        <MapSymbolLegend />
-      </Popover>
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <Popover
+          label="מקרא המפה"
+          trigger={
+            <span className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black">
+              <ListTree className="size-4" aria-hidden />
+              מקרא המפה
+            </span>
+          }
+          wide
+        >
+          <MapSymbolLegend />
+        </Popover>
+        <MapFullscreenButton />
+      </div>
     </div>
   );
 }
@@ -423,7 +445,7 @@ function LearnStrip({ state, info, onSelect, onStart, view }: { state: State; in
           <ArrowLeft className="size-4" aria-hidden />
         </Button>
       </div>
-      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="בחירת עצם — מודגש במודל ובמפה">
+      <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="בחירת עצם. הוא יודגש במודל ובמפה.">
         {LEARN_FEATURES.map((id) => {
           const on = state.learnFeature === id;
           return (
@@ -500,7 +522,7 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
         <div className="flex min-w-0 items-center gap-x-5">
           <Progress state={state} />
           <p className="min-w-0 text-base text-black" data-plan-leg>
-            התכנון: מ{FROM_NAME(leg)}, אזימוט <Deg v={plan.bearingDeg} />, מרחק {formatMetres(plan.distanceM)}.
+            התכנון: מ{FROM_NAME(leg)} · אזימוט <Deg v={plan.bearingDeg} /> · מרחק {formatMetres(plan.distanceM)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -519,7 +541,7 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
         {/* א. the point, and ג. the comparison with the plan */}
         <div className="min-w-0">
           <div id={`${uid}-pt`} className="mb-1.5 font-display text-base font-bold text-black">
-            א. היכן אתם? סמנו במפה או בחרו
+            א. היכן אתם? סמנו נקודה במפה או בחרו כאן
           </div>
           <RadioRow
             labelledBy={`${uid}-pt`}
@@ -541,7 +563,7 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
                 labelledBy={`${uid}-cmp`}
                 options={[
                   { id: 'match', label: 'מתאים לתכנון' },
-                  { id: 'mismatch', label: 'אינו מתאים' },
+                  { id: 'mismatch', label: 'לא מתאים לתכנון' },
                 ]}
                 value={sel.comparison}
                 disabled={locked}
@@ -551,7 +573,7 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
               />
             </>
           ) : (
-            <p className="text-base leading-snug text-black">אחרי שתסמנו נקודה, יוצגו הכיוון והמרחק אליה במפה.</p>
+            <p className="text-base leading-snug text-black">אחרי שתסמנו נקודה יוצגו כאן הכיוון והמרחק אליה במפה.</p>
           )}
         </div>
 
@@ -589,7 +611,7 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
             })}
           </ul>
           <p className="sr-only" aria-live="polite">
-            {sel.evidence.length >= EVIDENCE_COUNT && !locked ? 'נבחרו שתי ראיות. כדי להחליף ראיה, בטלו קודם אחת מהן.' : ''}
+            {sel.evidence.length >= EVIDENCE_COUNT && !locked ? 'נבחרו שתי ראיות. כדי להחליף ראיה, בטלו את הבחירה באחת מהן.' : ''}
           </p>
         </div>
 
@@ -634,7 +656,7 @@ function Progress({ state }: { state: State }) {
               {i > 0 && <span aria-hidden className={cn('h-0.5 w-4 rounded', state.outcomes[i - 1] ? 'bg-accent' : 'bg-border')} />}
               <span
                 className={cn('flex size-6 items-center justify-center rounded-full border-2 font-display text-sm font-bold', o ? 'border-accent bg-accent text-white' : current ? 'border-accent bg-white text-black' : 'border-border bg-white text-black')}
-                aria-label={`קטע דרך ${i + 1}: ${o === 'verified' ? 'אומת' : o === 'explained' ? 'הוצג הסבר' : current ? 'נבדק עכשיו' : 'עוד לא נבדק'}`}
+                aria-label={`קטע דרך ${i + 1}: ${o === 'verified' ? 'אומת' : o === 'explained' ? 'הוצג הסבר' : current ? 'הקטע הנוכחי' : 'עוד לא נבדק'}`}
               >
                 {o ? <Check className="size-3.5" strokeWidth={3.5} aria-hidden /> : i + 1}
               </span>
@@ -730,7 +752,7 @@ function mismatchLine(leg: Leg, chosen: CandidateId, letter: string): ReactNode 
   const n = nounOf(e.feature);
   const round = (m: number) => Math.round(m / 10) * 10;
   if (a.sector === b.sector) {
-    return `מנקודה ${letter}, ${n.text} ${n.f ? 'הייתה' : 'היה'} במרחק של כ־${round(a.distanceM)} מ׳ — אבל בתצפית ${n.f ? 'היא' : 'הוא'} במרחק של כ־${round(b.distanceM)} מ׳.`;
+    return `מנקודה ${letter}, ${n.text} ${n.f ? 'הייתה אמורה' : 'היה אמור'} להיות במרחק של כ־${round(a.distanceM)} מ׳ — אבל בתצפית ${n.f ? 'היא' : 'הוא'} במרחק של כ־${round(b.distanceM)} מ׳.`;
   }
   return `מנקודה ${letter}, ${n.text} ${n.f ? 'הייתה אמורה' : 'היה אמור'} להיות ${fromSector(a.sector)} לכם — אבל בתצפית ${n.f ? 'היא' : 'הוא'} ${fromSector(b.sector)} לכם.`;
 }
@@ -749,7 +771,7 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
   const plan = plannedLeg(leg);
   let tone = 'border-dashed border-border bg-bg-accent/50';
   let icon: ReactNode = <Info className="size-5 shrink-0" aria-hidden />;
-  let title: ReactNode = 'אחרי שתסמנו נקודה, תבחרו ראיות ותשוו לתכנון — לחצו ״בדיקת המיקום״.';
+  let title: ReactNode = 'סמנו נקודה, בחרו שתי ראיות והשוו לתכנון. אחר כך לחצו ״בדיקת המיקום״.';
   let lines: ReactNode[] = [];
   let kind = 'empty';
   if (v.stale) {
@@ -772,7 +794,7 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
       mismatchLine(leg, r.candidate, L),
       <>
         במפה, מ{FROM_NAME(leg)} לנקודה {L}: <Deg v={m.bearingDeg} /> ו־{formatMetres(m.distanceM)}; לפי התכנון: <Deg v={plan.bearingDeg} /> ו־{formatMetres(plan.distanceM)}.
-        {r.comparisonRight === true && ' צדקתם שהם אינם מתאימים.'}
+        {r.comparisonRight === true && ' צדקתם — הכיוון והמרחק לא מתאימים לתכנון.'}
       </>,
     ].filter(Boolean);
   } else if (r?.kind === 'partial') {
@@ -784,10 +806,10 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
     lines = [
       ...r.wrongEvidence.map((id) => {
         const e = leg.evidence.find((x) => x.id === id)!;
-        return `„${e.text.replace(/\.$/, '')}” — לא מתאים: ${whyWrong(e, here)}`;
+        return `״${e.text.replace(/\.$/, '')}״ — לא נכון מכאן: ${whyWrong(e, here)}`;
       }),
       r.evidenceMissing > 0 ? (r.evidenceMissing === EVIDENCE_COUNT ? 'בחרו שתי ראיות שרואים בתצפית ובמפה.' : 'בחרו ראיה נוספת שרואים בתצפית ובמפה.') : null,
-      r.comparison === 'missing' ? 'השוו את הכיוון והמרחק לתכנון ובחרו ״מתאים לתכנון״ או ״אינו מתאים״.' : null,
+      r.comparison === 'missing' ? 'השוו את הכיוון והמרחק לתכנון ובחרו ״מתאים לתכנון״ או ״לא מתאים לתכנון״.' : null,
       r.comparison === 'wrong' ? (
         <>
           בדקו שוב: הכיוון והמרחק אל הנקודה מתאימים לתכנון — <Deg v={plan.bearingDeg} /> ו־{formatMetres(plan.distanceM)}.
@@ -799,7 +821,7 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
     tone = 'border-brand bg-brand/10';
     icon = <Check className="size-5 shrink-0" aria-hidden />;
     const here = candidatePoint(leg.answer);
-    title = state.revealed ? `ההסבר: אתם ב${LEG_NAME(leg.to)}.` : `אימתתם את המיקום: ${LEG_NAME(leg.to)}.`;
+    title = state.revealed ? `ההסבר: אתם ${AT_NAME[leg.to]}.` : `אימתתם את המיקום: ${LEG_NAME(leg.to)}.`;
     const ev = leg.correctEvidence.map((id) => leg.evidence.find((x) => x.id === id)!);
     lines = [
       ...ev.map((e) => {
@@ -836,7 +858,7 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
 function Summary({ state, onRestart, onContinue }: { state: State; onRestart: () => void; onContinue?: () => void }) {
   return (
     <div data-strip="summary">
-      <p className="text-base leading-relaxed text-black">השלמתם את הציר מנקודת המוצא A עד הכיכר המרכזית בכפר. בכל קטע דרך השוויתם סימנים בשטח למפה, ואת הכיוון והמרחק לתכנון.</p>
+      <p className="text-base leading-relaxed text-black">השלמתם את הציר מנקודת המוצא A עד הכיכר המרכזית בכפר. בכל קטע דרך השוויתם ראיות מהשטח למפה, ואת הכיוון והמרחק לתכנון.</p>
       <ol className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2" data-summary>
         {LEGS.map((l) => {
           const p = plannedLeg(l);

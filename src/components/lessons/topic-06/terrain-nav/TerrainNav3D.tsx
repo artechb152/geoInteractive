@@ -13,16 +13,15 @@ import {
   groundTufts,
   crownShape,
   heightAt,
-  heightField,
-  heightGrid,
+
   houses,
   insideSheet,
-  meshAxis,
+
   rng,
   shrubs,
   trees,
   waterCourses,
-  GRID,
+
   type Tree,
 } from './terrainNavTerrain';
 import { FEATURE_INDEX, buildFeatureIdTexture, buildGroundMasks, createGroundMaterial } from './terrainNavMaterials';
@@ -30,6 +29,7 @@ import { createSkyMaterial } from '../locationCheckMaterials';
 import type { FeatureId } from './terrainNavPractice';
 import type { ViewStore } from './terrainNavViewStore';
 import { WATER } from './TerrainNavMap';
+import { terrainMeshArrays } from './terrainNavMesh';
 
 /**
  * The live terrain model. Everything it shows comes from terrainNavTerrain:
@@ -52,7 +52,6 @@ import { WATER } from './TerrainNavMap';
  */
 
 const S = WORLD3D.metresPerUnit;
-const APRON_M = 9000;
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const TEX = `${BASE}/assets/lessons/topic06/location-check/textures`;
 const TEXTURE_URLS = {
@@ -296,42 +295,11 @@ function Picker({ onPick }: { onPick?: (p: Point) => void }) {
 
 // ---------------------------------------------------------------- terrain
 
+/** The sheet's 5 m grid samples and the apron, SW–NE triangles (terrainNavMesh — the arrays the tests check). */
 function buildTerrainGeometry() {
-  const xs = meshAxis(WORLD_BOUNDS.minE, WORLD_BOUNDS.maxE, APRON_M);
-  const ns = meshAxis(WORLD_BOUNDS.minN, WORLD_BOUNDS.maxN, APRON_M);
-  const nx = xs.length;
-  const ny = ns.length;
-  const g = heightGrid();
-  const pos = new Float32Array(nx * ny * 3);
-  for (let j = 0; j < ny; j++) {
-    for (let i = 0; i < nx; i++) {
-      const E = xs[i];
-      const N = ns[j];
-      // Inside the sheet: exactly the grid samples (the contours' source).
-      const inside = insideSheet(E, N);
-      const h = inside ? g[Math.round(N / GRID.stepM) * GRID.nE + Math.round(E / GRID.stepM)] : heightField(E, N);
-      const [x, y, z] = toWorld3(E, N, h);
-      const o = (j * nx + i) * 3;
-      pos[o] = x;
-      pos[o + 1] = y;
-      pos[o + 2] = z;
-    }
-  }
-  const index = new Uint32Array((nx - 1) * (ny - 1) * 6);
-  let k = 0;
-  for (let j = 0; j < ny - 1; j++) {
-    for (let i = 0; i < nx - 1; i++) {
-      const a = j * nx + i;
-      const b = a + 1;
-      const c = a + nx + 1;
-      const d = a + nx;
-      // The SW–NE split of terrainNavTerrain — counter-clockwise seen from above.
-      index.set([a, b, c, a, c, d], k);
-      k += 6;
-    }
-  }
+  const { positions, index } = terrainMeshArrays();
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geo.setIndex(new THREE.BufferAttribute(index, 1));
   geo.computeVertexNormals();
   geo.computeBoundingSphere();

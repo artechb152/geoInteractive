@@ -44,14 +44,14 @@ export function featureInfo(): Map<FeatureId, FeatureInfo> {
   if (!infoCache) {
     const m = new Map<FeatureId, FeatureInfo>();
     const add = (f: FeatureInfo) => m.set(f.id, f);
-    add({ id: 'A', name: 'נקודת מוצא (A)', kind: 'נקודת ציר', onMap: 'עיגול מלא עם האות A, בצומת הדרכים שבדרום־מזרח.', anchor: START });
+    add({ id: 'A', name: 'נקודת המוצא A', kind: 'נקודת מוצא', onMap: 'עיגול מלא עם האות A, בצומת הדרכים שבדרום־מזרח.', anchor: START });
     for (const id of ['H1', 'H2', 'H3', 'D1', 'D2', 'D3', 'D4'] as const) {
       const s = summitOf(id);
       const h = Math.round(s.heightM);
       const route = ROUTE_DOMES.includes(id);
       add({
         id,
-        name: route ? CHECKPOINT_LABEL[id as 'H1' | 'H2' | 'H3'] : `כיפה ${h}`,
+        name: route ? CHECKPOINT_LABEL[id as 'H1' | 'H2' | 'H3'] : `כיפה בגובה ${h} מ׳`,
         kind: route ? 'תבליט · נקודה לבדיקת המיקום' : 'תבליט',
         onMap: `קווי גובה סגורים סביב נקודת גובה ${h} מ׳.`,
         anchor: { E: s.E, N: s.N },
@@ -59,12 +59,12 @@ export function featureInfo(): Map<FeatureId, FeatureInfo> {
     }
     add({ id: 'square', name: CHECKPOINT_LABEL.B, kind: 'תכסית · היעד', onMap: 'משטח מרוצף בלב הכפר, שהבתים סביבו מכל הצדדים.', anchor: SQUARE_CENTER });
     add({ id: 'village', name: 'הכפר', kind: 'תכסית', onMap: 'מבנים בצבע כהה משני צדי הדרכים.', anchor: polygonCentroid(ringPoints(VILLAGE_RING)) });
-    add({ id: 'tower', name: 'מגדל המים', kind: 'תכסית', onMap: 'עיגול עם נקודה במרכזו, על הרמה שממזרח לבתים.', anchor: WATER_TOWER });
+    add({ id: 'tower', name: 'מגדל המים', kind: 'תכסית', onMap: 'עיגול עם נקודה במרכזו, על רמה ממזרח לבתים.', anchor: WATER_TOWER });
     const GROVE_NAME: Record<(typeof GROVES)[number]['id'], string> = { G1: 'החורשה ליד כיפה 1', G2: 'החורשה ליד כיפה 3', G3: 'החורשה הצפונית' };
     for (const g of GROVES) add({ id: g.id, name: GROVE_NAME[g.id], kind: 'תכסית', onMap: 'שטח ירוק בקו מקווקו, ובו סימן לכל עץ.', anchor: polygonCentroid(ringPoints(g.ring)) });
     const w = waterCourses();
     add({ id: 'stream', name: 'ערוץ הנחל', kind: 'תבליט', onMap: 'קו כחול בתחתית הערוץ; קווי הגובה יוצרים בו צורת V שפונה במעלה הזרם.', anchor: alongCurve(w.stream.pts, 0.42) });
-    add({ id: 'gully-north', name: 'ערוץ צר', kind: 'תבליט', onMap: 'קו כחול מקווקו; קווי הגובה יוצרים צורת V שפונה במעלה הערוץ.', anchor: alongCurve(w.gullies.find((g) => g.id === 'gully-north')!.pts, 0.45) });
+    add({ id: 'gully-north', name: 'הערוץ הצר', kind: 'תבליט', onMap: 'קו כחול מקווקו; קווי הגובה יוצרים צורת V שפונה במעלה הערוץ.', anchor: alongCurve(w.gullies.find((g) => g.id === 'gully-north')!.pts, 0.45) });
     const road = (id: 'road-west' | 'track-east' | 'road-north', f: number) => alongCurve(roads().find((r) => r.id === id)!.pts, f);
     add({ id: 'track-east', name: 'דרך העפר המזרחית', kind: 'תכסית', onMap: 'קו חום בהיר בשוליים כהים.', anchor: road('track-east', 0.24) });
     add({ id: 'road-west', name: 'דרך העפר המערבית', kind: 'תכסית', onMap: 'קו חום בהיר בשוליים כהים.', anchor: road('road-west', 0.62) });

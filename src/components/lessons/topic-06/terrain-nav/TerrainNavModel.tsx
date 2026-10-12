@@ -103,6 +103,12 @@ export function TerrainNavModel({
   const live = renderer === 'live';
   const eye = st.mode === 'eye';
 
+  // Without a canvas nothing publishes the heading: the static picture faces the look's yaw
+  // (the overview faces north).
+  useEffect(() => {
+    if (renderer === 'static') view.publishLive(eye ? st.look.yawDeg : 0, false);
+  }, [renderer, eye, st.look.yawDeg, view]);
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!eye || !live || e.button !== 0) return;
     drag.current = { x: e.clientX, y: e.clientY, yaw: st.look.yawDeg, pitch: st.look.pitchDeg, id: e.pointerId };
@@ -194,16 +200,16 @@ export function TerrainNavModel({
       <div aria-hidden className={cn('pointer-events-none absolute inset-0 bg-bg transition-opacity duration-200', cut ? 'opacity-100' : 'opacity-0')} />
 
       {/* North / heading */}
-      <div className="pointer-events-none absolute start-3 top-3">
+      <div className="pointer-events-none absolute start-3 top-3" data-overlay>
         {eye ? <HeadingTape yawDeg={st.liveYawDeg} /> : <NorthArrow yawDeg={st.liveYawDeg} topDown={st.liveTopDown} />}
       </div>
 
       {/* Controls (inline end = left in RTL) */}
-      <div className="absolute bottom-3 end-3 flex items-center gap-1.5">
-        <button type="button" className={ctrlBtn} onClick={zoomIn} disabled={!live} aria-label={eye ? 'הגדלה (תקריב)' : 'התקרבות'} title={eye ? 'הגדלה (תקריב)' : 'התקרבות'}>
+      <div className="absolute bottom-3 end-3 flex items-center gap-1.5" data-overlay>
+        <button type="button" className={ctrlBtn} onClick={zoomIn} disabled={!live} aria-label="התקרבות" title="התקרבות">
           <Plus className="size-4" aria-hidden />
         </button>
-        <button type="button" className={ctrlBtn} onClick={zoomOut} disabled={!live} aria-label={eye ? 'הרחבת שדה הראייה' : 'התרחקות'} title={eye ? 'הרחבת שדה הראייה' : 'התרחקות'}>
+        <button type="button" className={ctrlBtn} onClick={zoomOut} disabled={!live} aria-label="התרחקות" title="התרחקות">
           <Minus className="size-4" aria-hidden />
         </button>
         <button type="button" className={ctrlBtn} onClick={reset} disabled={!live} aria-label={eye ? 'מבט ישר לפנים' : 'חזרה למבט ההתחלתי'} title={eye ? 'מבט ישר לפנים' : 'חזרה למבט ההתחלתי'}>
@@ -226,9 +232,9 @@ export function TerrainNavModel({
       </div>
 
       {/* How to move the view (in the navigator's view the heading tape takes the top) */}
-      <div className={cn('pointer-events-none absolute', eye ? 'bottom-3 start-3' : 'end-3 top-3')}>
+      <div className={cn('pointer-events-none absolute', eye ? 'bottom-3 start-3' : 'end-3 top-3')} data-overlay>
         <span className="rounded-lg bg-pine/80 px-2.5 py-1 font-display text-sm font-semibold text-paper-bright">
-          {eye ? 'גררו כדי להסתכל סביב · חיצים במקלדת' : mode === 'learn' ? 'גררו לסיבוב · גלגלת להתקרבות · לחצו על עצם' : 'גררו לסיבוב · גלגלת להתקרבות'}
+          {eye ? 'גררו כדי להסתכל סביב · חיצי המקלדת' : mode === 'learn' ? 'גררו לסיבוב · גלגלת להתקרבות · לחצו על עצם' : 'גררו לסיבוב · גלגלת להתקרבות'}
         </span>
       </div>
     </div>

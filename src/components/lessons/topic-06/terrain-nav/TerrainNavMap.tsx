@@ -49,9 +49,11 @@ export const MAP_VIEWBOX = { x: -COLLAR_W, y: -COLLAR_EDGE, w: W + COLLAR_W + CO
 export const MAP_ASPECT = MAP_VIEWBOX.w / MAP_VIEWBOX.h;
 
 /** Type sizes in viewBox units (≈ 0.28 px per unit in the desktop map column: 50 ≈ 14 px, 56 ≈ 16 px). */
-const FS = { label: 54, small: 48, grid: 44, contour: 44, letter: 58 } as const;
-const HAIR = 2.6;
-const INDEX_W = 5.6;
+const FS = { label: 54, small: 48, grid: 48, contour: 48, letter: 58 } as const;
+const HAIR = 3.2;
+const INDEX_W = 6.4;
+/** Grid lines: thinner and lighter than any contour, so a 200 m line never reads as relief. */
+const GRID_W = 2.2;
 
 /** Water — the existing water tones of the lessons' terrain blocks (topic-02 terrainBlockGeometry). */
 export const WATER = { line: '#4F8FA6', fill: '#7FB4C6' } as const;
@@ -141,7 +143,7 @@ export function TerrainNavMap({
       aria-label={
         layer.mode === 'learn'
           ? 'מפה טופוגרפית של שטח האימון, צפון למעלה: קווי גובה כל 10 מ׳, שלוש כיפות לאורך הציר, נחל, חורשות, דרכי עפר וכפר עם כיכר מרכזית. A בדרום־מזרח, B בכיכר הכפר.'
-          : 'מפת התכנון, צפון למעלה, ועליה נקודות לבחירה באותיות. בוחרים נקודה במפה או בכפתורי הנקודות.'
+          : 'מפת התכנון, צפון למעלה, ועליה נקודות לבחירה באותיות. בחרו נקודה במפה או בכפתורי הנקודות.'
       }
       style={{ cursor: hover ? 'pointer' : 'default', touchAction: 'manipulation' }}
       onPointerMove={(e) => {
@@ -169,7 +171,7 @@ export function TerrainNavMap({
         ))}
         {hover?.startsWith('feature:') && !layer.highlights.includes(hover.slice(8) as FeatureId) && <FeatureHighlight id={hover.slice(8) as FeatureId} faint />}
         <RouteLayer layer={layer} />
-        {layer.measure && <MeasureLine {...layer.measure} />}
+        {layer.measure && <MeasureLine {...layer.measure} avoid={[START, ...layer.candidates.map((c) => candidatePoint(c.id)), ...layer.confirmed.map((id) => checkpoint(id))]} />}
         {layer.mode === 'practice' &&
           layer.candidates.map((c) => <CandidateMark key={c.id} c={c} selected={layer.selectedCandidate === c.id} hovered={hover === `candidate:${c.id}`} />)}
       </g>
@@ -196,7 +198,7 @@ const MapBase = memo(function MapBase({ uid }: { uid: string }) {
       <rect x={0} y={0} width={W} height={H} fill={MAP.paper} />
       <g clipPath={`url(#${clip})`}>
         {/* 200 m local grid */}
-        <g stroke={MAP.grid} strokeWidth={HAIR}>
+        <g stroke={MAP.grid} strokeWidth={GRID_W} strokeOpacity={0.75}>
           {Array.from({ length: Math.floor(W / 200) }, (_, k) => (k + 1) * 200)
             .filter((E) => E < W)
             .map((E) => (
@@ -387,7 +389,7 @@ function ScaleBar() {
   const y = H - 46;
   return (
     <g pointerEvents="none" data-map="scale">
-      <rect x={12} y={y - 74} width={4 * seg + 120} height={104} rx={12} fill={MAP.paper} fillOpacity={0.94} />
+      <rect x={12} y={y - 74} width={4 * seg + 136} height={104} rx={12} fill={MAP.paper} fillOpacity={0.94} />
       {[0, 1, 2, 3].map((k) => (
         <rect key={k} x={x0 + k * seg} y={y} width={seg} height={16} fill={k % 2 === 0 ? MAP.ink : MAP.collar} stroke={MAP.ink} strokeWidth={2} />
       ))}
@@ -396,7 +398,7 @@ function ScaleBar() {
           {m}
         </text>
       ))}
-      <text x={x0 + 4 * seg + 18} y={y + 8} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={FS.small} fontWeight={600} fill={MAP.ink} className="font-display">
+      <text x={x0 + 4 * seg + 34} y={y + 8} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={FS.small} fontWeight={600} fill={MAP.ink} className="font-display">
         מ׳
       </text>
     </g>
@@ -496,7 +498,7 @@ function RouteLayer({ layer }: { layer: MapLayer }) {
             d={path(shownUpTo)}
             fill="none"
             stroke={MAP.accent}
-            strokeWidth={7}
+            strokeWidth={9}
             strokeDasharray={layer.fullRoute ? '22 13' : undefined}
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -533,8 +535,8 @@ function RouteLayer({ layer }: { layer: MapLayer }) {
         const m = worldToMap(START);
         return (
           <g data-checkpoint="A">
-            <circle cx={m.x} cy={m.y} r={24} fill={MAP.accent} stroke={MAP.paper} strokeWidth={5} />
-            <text x={m.x} y={m.y + 1} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={34} fontWeight={800} fill="#FFFFFF" className="font-display">
+            <circle cx={m.x} cy={m.y} r={30} fill={MAP.accent} stroke={MAP.paper} strokeWidth={5} />
+            <text x={m.x} y={m.y + 1} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={44} fontWeight={800} fill="#FFFFFF" className="font-display">
               A
             </text>
           </g>
@@ -575,7 +577,7 @@ function CandidateMark({ c, selected, hovered }: { c: MapCandidate; selected: bo
       {!onPoint && <circle cx={m.x} cy={m.y} r={selected ? 9 : 7} fill={selected ? MAP.accent : MAP.ink} />}
       <g transform={`translate(${r1(lx)} ${r1(ly)})`}>
         <rect x={-34} y={-34} width={68} height={68} rx={34} fill={selected ? MAP.accent : MAP.paper} stroke={selected ? MAP.accent : MAP.ink} strokeWidth={4} />
-        <text textAnchor="middle" dominantBaseline="central" direction="rtl" y={2} fontSize={FS.letter * 0.78} fontWeight={800} fill={selected ? '#FFFFFF' : MAP.ink} className="font-display">
+        <text textAnchor="middle" dominantBaseline="central" direction="rtl" y={2} fontSize={52} fontWeight={800} fill={selected ? '#FFFFFF' : MAP.ink} className="font-display">
           {c.letter}
         </text>
       </g>
@@ -584,7 +586,7 @@ function CandidateMark({ c, selected, hovered }: { c: MapCandidate; selected: bo
 }
 
 /** The map's direction and distance from the leg start to the marked point (plain ink, solid: a map measure). */
-function MeasureLine({ from, to, text }: { from: Point; to: Point; text: string }) {
+function MeasureLine({ from, to, text, avoid }: { from: Point; to: Point; text: string; avoid: readonly Point[] }) {
   const a = worldToMap(from);
   const b = worldToMap(to);
   const ang = Math.atan2(b.y - a.y, b.x - a.x);
@@ -592,12 +594,17 @@ function MeasureLine({ from, to, text }: { from: Point; to: Point; text: string 
   const end = { x: b.x - Math.cos(ang) * 36, y: b.y - Math.sin(ang) * 36 };
   const head = `M${r1(end.x)} ${r1(end.y)}L${r1(end.x - L * Math.cos(ang - 0.4))} ${r1(end.y - L * Math.sin(ang - 0.4))}L${r1(end.x - L * Math.cos(ang + 0.4))} ${r1(end.y - L * Math.sin(ang + 0.4))}Z`;
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  // the value plate beside the line's middle, on its upper side
+  // The value plate beside the line's middle, on the side farther from the other marked points.
   const nx = Math.sin(ang);
   const ny = -Math.cos(ang);
-  const side = ny < 0 ? 1 : -1;
-  const at = { x: mid.x + nx * 60 * side, y: mid.y + ny * 60 * side };
   const w = plateW(text, FS.small);
+  const offset = 30 + w / 2;
+  const sides = [1, -1].map((side) => {
+    const at = { x: mid.x + nx * offset * side, y: mid.y + ny * offset * side };
+    const clear = Math.min(...avoid.map((p) => worldToMap(p)).map((m) => Math.hypot(m.x - at.x, m.y - at.y)));
+    return { at, clear };
+  });
+  const { at } = sides[0].clear >= sides[1].clear ? sides[0] : sides[1];
   return (
     <g pointerEvents="none" data-overlay="measure">
       <path d={`M${r1(a.x)} ${r1(a.y)}L${r1(end.x)} ${r1(end.y)}`} stroke={MAP.paper} strokeWidth={11} strokeLinecap="round" strokeOpacity={0.85} />
@@ -628,8 +635,9 @@ export function MapSymbolLegend() {
     { swatch: <path d={`M0 0h${SW}`} stroke={MAP.contour} strokeWidth={HAIR} />, text: `קו גובה · כל ${CONTOUR_INTERVAL_M} מ׳` },
     { swatch: <path d={`M0 0h${SW}`} stroke={MAP.contour} strokeWidth={INDEX_W} />, text: `קו גובה ראשי · כל ${INDEX_INTERVAL_M} מ׳` },
     { swatch: <path d={`M${SW / 2} -11l11 19h-22z`} fill={MAP.ink} />, text: 'נקודת גובה (מ׳)' },
+    { swatch: <path d={`M2 0h${SW - 4}`} stroke={MAP.accent} strokeWidth={5} strokeLinecap="round" />, text: 'קטעי דרך שאומתו (בתרגול)' },
     { swatch: <path d={`M0 0h${SW}`} stroke={WATER.line} strokeWidth={6} />, text: 'נחל' },
-    { swatch: <path d={`M0 0h${SW}`} stroke={WATER.line} strokeWidth={3.2} strokeDasharray="10 6" />, text: 'ערוץ' },
+    { swatch: <path d={`M0 0h${SW}`} stroke={WATER.line} strokeWidth={3.2} strokeDasharray="7 4.5" />, text: 'ערוץ יבש' },
     {
       swatch: (
         <>
@@ -657,7 +665,7 @@ export function MapSymbolLegend() {
           <circle cx={32} cy={4} r={5} fill="none" stroke={MAP.vegInk} strokeWidth={2} />
         </>
       ),
-      text: 'חורש — עצים פזורים',
+      text: 'חורש (עצים פזורים)',
     },
     {
       swatch: (

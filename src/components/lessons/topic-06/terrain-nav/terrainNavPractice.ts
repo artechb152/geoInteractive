@@ -29,7 +29,7 @@ import {
   type XY,
 } from './terrainNavScenario';
 import { COMPASS_HE, angularDifference, bearing, compassPoint, distance, type CompassPoint } from './terrainNavGeometry';
-import { checkpoint, houses, ringPoints, roads, summitOf, summits, waterCourses } from './terrainNavTerrain';
+import { checkpoint, heightAt, houses, ringPoints, roads, summitOf, summits, waterCourses } from './terrainNavTerrain';
 import { distanceToPolyline, pointInPolygon } from '../locationCheckGeometry';
 
 // ---------------------------------------------------------------- features (ids shared by both views)
@@ -55,7 +55,7 @@ export const VILLAGE_POINTS: Record<'entrance' | 'tower-yard' | 'west-lane', Poi
   /** On the western road, just short of the built-up area's southern edge. */
   entrance: { E: 296, N: 1412 },
   /** The open yard at the foot of the water tower. */
-  'tower-yard': { E: 482, N: 1628 },
+  'tower-yard': { E: 510, N: 1602 },
   /** The far end of the lane that leaves the square westward. */
   'west-lane': { E: 162, N: 1680 },
 };
@@ -85,6 +85,10 @@ export type EvidencePredicate =
       /** …and within this horizontal distance, metres. */
       readonly maxM: number;
       readonly minM?: number;
+      /** "מעבר לנחל": the sight line to that point crosses the stream. */
+      readonly across?: 'stream';
+      /** "בעמק": that point lies at least this much lower than the ground here, metres. */
+      readonly lowerByM?: number;
     }
   | {
       readonly kind: 'higher';
@@ -152,12 +156,25 @@ export function nearestOf(t: Target, p: Point): { point: Point; distanceM: numbe
 
 const inSectors = (deg: number, sectors: readonly CompassPoint[]) => sectors.includes(compassPoint(deg));
 
+/** Whether the segment a–b crosses a polyline. */
+function segmentCrosses(a: Point, b: Point, line: readonly XY[]): boolean {
+  const cross = (o: Point, p: Point, q: Point) => (p.E - o.E) * (q.N - o.N) - (p.N - o.N) * (q.E - o.E);
+  for (let k = 0; k < line.length - 1; k++) {
+    const c = { E: line[k][0], N: line[k][1] };
+    const d = { E: line[k + 1][0], N: line[k + 1][1] };
+    if (cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0) return true;
+  }
+  return false;
+}
+
 /** Whether a statement is true when read at p. */
 export function evidenceHolds(e: Evidence, p: Point): boolean {
   const q = e.predicate;
   if (q.kind === 'direction') {
     const n = nearestOf(q.target, p);
     if (n.inside || n.distanceM > q.maxM || n.distanceM < (q.minM ?? 0)) return false;
+    if (q.lowerByM !== undefined && heightAt(p.E, p.N) - heightAt(n.point.E, n.point.N) < q.lowerByM) return false;
+    if (q.across === 'stream' && !segmentCrosses(p, n.point, waterCourses().stream.pts)) return false;
     return inSectors(bearing(p, n.point)!, q.sectors);
   }
   if (q.kind === 'higher') {
@@ -238,9 +255,9 @@ export const LEGS: readonly Leg[] = [
     candidates: ['H2', 'D3', 'D2'],
     answer: 'H2',
     evidence: [
-      E('l2-grove-se', 'מדרום־מזרח, מעבר לנחל, נראית החורשה שליד כיפה 1.', 'G1', { kind: 'direction', target: { grove: 'G1' }, sectors: ['SE'], maxM: 400 }),
-      E('l2-road-w', 'דרך עפר עוברת בעמק שממערב לכם, כ־300 מ׳ מכם.', 'road-west', { kind: 'direction', target: { road: 'road-west' }, sectors: ['W'], minM: 200, maxM: 420 }),
-      E('l2-grove-n', 'חורשה צמודה למדרון הצפוני של הכיפה.', 'G3', { kind: 'direction', target: { grove: 'G3' }, sectors: ['N', 'NE'], maxM: 160 }),
+      E('l2-grove-se', 'מדרום־מזרח לכם, מעבר לנחל, נראית החורשה שליד כיפה 1.', 'G1', { kind: 'direction', target: { grove: 'G1' }, sectors: ['SE'], maxM: 400, across: 'stream' }),
+      E('l2-road-w', 'דרך עפר עוברת בעמק שממערב לכם, כ־300 מ׳ מכם.', 'road-west', { kind: 'direction', target: { road: 'road-west' }, sectors: ['W'], minM: 250, maxM: 380, lowerByM: 25 }),
+      E('l2-grove-n', 'חורשה צמודה למדרון הצפוני של הכיפה.', 'G3', { kind: 'direction', target: { grove: 'G3' }, sectors: ['N'], maxM: 160 }),
       E('l2-village-n', 'הכפר נמצא מצפון לכם.', 'village', { kind: 'direction', target: { point: 'village' }, sectors: ['N'], maxM: 900 }),
     ],
     correctEvidence: ['l2-grove-se', 'l2-road-w'],
@@ -255,12 +272,12 @@ export const LEGS: readonly Leg[] = [
     answer: 'H3',
     evidence: [
       E('l3-village-nw', 'הכפר נראה מצפון־מערב, פחות מחצי ק״מ מכם.', 'village', { kind: 'direction', target: { point: 'village' }, sectors: ['NW'], maxM: 500 }),
-      E('l3-grove-w', 'חורשה צמודה למדרון המערבי של הכיפה.', 'G2', { kind: 'direction', target: { grove: 'G2' }, sectors: ['W', 'SW'], maxM: 180 }),
+      E('l3-grove-w', 'חורשה צמודה למדרון המערבי של הכיפה.', 'G2', { kind: 'direction', target: { grove: 'G2' }, sectors: ['W'], maxM: 180 }),
       E('l3-village-n', 'הכפר נמצא מצפון לכם.', 'village', { kind: 'direction', target: { point: 'village' }, sectors: ['N'], maxM: 900 }),
       E('l3-road-n', 'הדרך הצפונית עוברת למרגלות הכיפה, מצפון לכם.', 'road-north', { kind: 'direction', target: { road: 'road-north' }, sectors: ['N'], maxM: 200 }),
     ],
     correctEvidence: ['l3-village-nw', 'l3-grove-w'],
-    hint1: 'השוו באיזה כיוון ממכם נמצא הכפר, ומה צמוד למדרון שמתחתיכם.',
+    hint1: 'השוו באיזה כיוון נמצא הכפר ביחס אליכם, ומה צמוד למדרון שאתם עומדים עליו.',
     hint2: { feature: 'G2', text: 'החורשה מודגשת במפה ובמודל. באיזה צד של הכיפה היא נמצאת?' },
   },
   {
@@ -271,13 +288,13 @@ export const LEGS: readonly Leg[] = [
     answer: 'square',
     evidence: [
       E('l4-around', 'סביבכם בתים מכל הצדדים — אתם בלב הכפר.', 'square', { kind: 'houses-around', radiusM: 70, holds: true }),
-      E('l4-tower-e', 'מגדל המים נראה ממזרח לכם, כ־200 מ׳ מכם.', 'tower', { kind: 'direction', target: { point: 'tower' }, sectors: ['E', 'NE'], minM: 120, maxM: 280 }),
+      E('l4-tower-e', 'מגדל המים נראה ממזרח לכם, כ־230 מ׳ מכם.', 'tower', { kind: 'direction', target: { point: 'tower' }, sectors: ['E'], minM: 200, maxM: 260 }),
       E('l4-houses-n', 'כל הבתים הקרובים נמצאים מצפון לכם.', 'village', { kind: 'houses-only', sectors: ['N', 'NE', 'NW'], radiusM: 120 }),
       E('l4-tower-close', 'מגדל המים נמצא ממש לידכם.', 'tower', { kind: 'direction', target: { point: 'tower' }, sectors: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'], maxM: 60 }),
     ],
     correctEvidence: ['l4-around', 'l4-tower-e'],
-    hint1: 'בדקו אם יש בתים מכל צדדיכם, ובאיזה כיוון ובאיזה מרחק נמצא מגדל המים.',
-    hint2: { feature: 'tower', text: 'מגדל המים מודגש במפה ובמודל. כמה רחוק הוא ממכם, ובאיזה כיוון?' },
+    hint1: 'בדקו אם יש בתים מכל הצדדים, ובאיזה כיוון ובאיזה מרחק נמצא מגדל המים.',
+    hint2: { feature: 'tower', text: 'מגדל המים מודגש במפה ובמודל. כמה רחוק הוא מכם, ובאיזה כיוון?' },
   },
 ];
 

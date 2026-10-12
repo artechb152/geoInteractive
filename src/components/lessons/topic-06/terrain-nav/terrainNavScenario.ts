@@ -66,9 +66,10 @@ export const RIDGES: readonly RidgeSpec[] = [
 
 export type StreamId = 'stream';
 /**
- * The perennial stream — a narrow water course in a carved valley. `bed` is the
- * bed height at each control point; it falls the whole way (the carve and the
- * water ribbon follow it), rising at a spring in the north-east of the sheet and leaving in the west.
+ * The perennial stream — a narrow water course in a carved valley, rising at a
+ * spring in the north-east of the sheet and leaving in the west. Its bed lies
+ * incisionM below the natural ground and never rises downstream
+ * (terrainNavTerrain waterCourses()); the carve and the water ribbon follow it.
  */
 export const STREAM = {
   id: 'stream' as StreamId,
@@ -98,7 +99,8 @@ export const STREAM = {
     [60, 345],
     [-80, 300],
   ] as readonly XY[],
-  bed: [380, 373, 367, 359, 353, 349, 344, 341, 337, 334, 331, 328, 325, 322, 319, 316, 313, 311, 309, 307, 305, 303, 301, 298] as readonly number[],
+  /** Depth of the bed below the natural ground, metres. */
+  incisionM: 5,
   /** Water surface width, metres (the map's line width matches it). */
   waterWidthM: 4,
 } as const;
@@ -106,15 +108,16 @@ export const STREAM = {
 export type GullyId = 'gully-west' | 'gully-north' | 'gully-south';
 /**
  * Dry side gullies (ערוצים) feeding the stream: carved into the slopes the same
- * way, with a falling bed; drawn on the map as dashed blue lines.
+ * way (incisionM below the ground, a bed that never rises downstream); drawn on
+ * the map as dashed blue lines.
  */
-export const GULLIES: readonly { id: GullyId; pts: readonly XY[]; bed: readonly number[] }[] = [
+export const GULLIES: readonly { id: GullyId; pts: readonly XY[]; incisionM: number }[] = [
   // From the village shoulder south, west of H2/D3, to the stream.
-  { id: 'gully-west', pts: [[110, 1460], [135, 1330], [150, 1200], [128, 1080], [132, 960], [118, 830], [124, 700], [150, 560], [165, 470], [205, 390]], bed: [352, 348, 343, 338, 333, 327, 320, 312, 308, 305] },
+  { id: 'gully-west', pts: [[110, 1460], [135, 1330], [150, 1200], [128, 1080], [132, 960], [118, 830], [124, 700], [150, 560], [165, 470], [205, 390]], incisionM: 3 },
   // Between H3/H2 and D2, down to the stream.
-  { id: 'gully-north', pts: [[760, 1300], [790, 1215], [800, 1130], [822, 1045], [835, 960], [860, 880], [870, 800], [880, 765]], bed: [368, 362, 357, 351, 346, 340, 335, 332] },
+  { id: 'gully-north', pts: [[760, 1300], [790, 1215], [800, 1130], [822, 1045], [835, 960], [860, 880], [870, 800], [880, 765]], incisionM: 3 },
   // From the south-east, between H1 and the southern knolls, to the stream.
-  { id: 'gully-south', pts: [[930, 160], [880, 235], [840, 300], [800, 370], [760, 430], [725, 490], [700, 540], [690, 590]], bed: [338, 335, 333, 330, 328, 325, 323, 322] },
+  { id: 'gully-south', pts: [[930, 160], [880, 235], [840, 300], [800, 370], [760, 430], [725, 490], [700, 540], [690, 590]], incisionM: 3 },
 ];
 
 // ---------------------------------------------------------------- cover
@@ -122,8 +125,8 @@ export const GULLIES: readonly { id: GullyId; pts: readonly XY[]; bed: readonly 
 export type GroveId = 'G1' | 'G2' | 'G3';
 /** Planted pine groves (חורשות) — polygons in metres; each tree is generated inside (terrainNavTerrain groveTrees()). */
 export const GROVES: readonly { id: GroveId; ring: readonly XY[]; seed: number }[] = [
-  // On H1's north-west flank, down to the stream.
-  { id: 'G1', ring: [[820, 640], [865, 600], [915, 640], [925, 710], [895, 775], [840, 800], [795, 760], [790, 690]], seed: 0x6a09e667 },
+  // On H1's north-west flank, between the summit and the stream (wholly on the stream's south-east bank).
+  { id: 'G1', ring: [[840, 610], [885, 585], [925, 612], [930, 668], [903, 715], [860, 730], [826, 700], [820, 645]], seed: 0x6a09e667 },
   // On H3's west flank.
   { id: 'G2', ring: [[395, 1205], [440, 1170], [480, 1200], [490, 1265], [470, 1330], [420, 1350], [380, 1310], [370, 1250]], seed: 0xbb67ae85 },
   // On D2's north flank.
@@ -167,7 +170,7 @@ export const SQUARE_RING: readonly XY[] = [
   [278, 1586],
 ];
 /** Village water tower (מגדל מים) — a landmark on a small rise east of the houses. */
-export const WATER_TOWER: Point = { E: 505, N: 1640 };
+export const WATER_TOWER: Point = { E: 530, N: 1585 };
 /** Outline of the built-up area, metres (land cover; the houses are generated inside it, off the streets). */
 export const VILLAGE_RING: readonly XY[] = [
   [170, 1440],

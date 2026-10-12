@@ -127,46 +127,38 @@ function lineOf(pts: readonly XY[]): Line {
   return { segs, chunks, total: s, minE: Math.min(...Es), maxE: Math.max(...Es), minN: Math.min(...Ns), maxN: Math.max(...Ns) };
 }
 
-/** Arc length of each control point along a densely sampled smooth curve (the curve passes through every one). */
-function controlArcLengths(curve: readonly XY[], ctrl: readonly XY[]): number[] {
-  const out: number[] = [];
-  let s = 0;
-  let k = 0;
-  for (let i = 0; i < curve.length; i++) {
-    if (i) s += Math.hypot(curve[i][0] - curve[i - 1][0], curve[i][1] - curve[i - 1][1]);
-    if (k < ctrl.length && curve[i][0] === ctrl[k][0] && curve[i][1] === ctrl[k][1]) {
-      out.push(s);
-      k++;
-    }
-  }
-  return out;
-}
-
 export type WaterCurve = { readonly id: string; readonly pts: readonly XY[]; /** Bed height at each curve sample. */ readonly bed: readonly number[] };
 
-function bedCurve(id: string, ctrl: readonly XY[], bedAtCtrl: readonly number[]): WaterCurve {
+/**
+ * A water course as drawn: a smooth curve through its control points, and its
+ * bed — incisionM below the ground at each sample, never rising downstream
+ * (where the ground ahead is higher, the bed keeps its level and the carve
+ * deepens). So the water always lies in its valley.
+ */
+function bedCurve(id: string, ctrl: readonly XY[], incisionM: number, ground: (E: number, N: number) => number): WaterCurve {
   const pts = smoothCurve(ctrl, 2);
-  const at = controlArcLengths(pts, ctrl);
   const bed: number[] = [];
-  let s = 0;
-  let k = 0;
-  for (let i = 0; i < pts.length; i++) {
-    if (i) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    while (k < at.length - 2 && s > at[k + 1]) k++;
-    const t = at[k + 1] === at[k] ? 0 : Math.min(1, Math.max(0, (s - at[k]) / (at[k + 1] - at[k])));
-    bed.push(bedAtCtrl[k] + (bedAtCtrl[k + 1] - bedAtCtrl[k]) * t);
+  let prev = Infinity;
+  for (const [E, N] of pts) {
+    prev = Math.min(prev, ground(E, N) - incisionM);
+    bed.push(prev);
   }
   return { id, pts, bed };
 }
 
 let waterCache: { stream: WaterCurve; gullies: WaterCurve[] } | null = null;
-/** The stream and the gullies as drawn: smooth curves through the control points, with their falling bed. */
+/**
+ * The stream and the gullies as drawn, with their falling beds. The stream is
+ * cut into the natural ground first; the gullies take their beds from the ground
+ * as the stream left it, so each one drains into the stream instead of hanging
+ * above it.
+ */
 export function waterCourses() {
   if (!waterCache) {
-    waterCache = {
-      stream: bedCurve(STREAM.id, STREAM.pts, STREAM.bed),
-      gullies: GULLIES.map((g) => bedCurve(g.id, g.pts, g.bed)),
-    };
+    const stream = bedCurve(STREAM.id, STREAM.pts, STREAM.incisionM, naturalHeight);
+    const streamCarve = { ...carveLine(stream), ...STREAM_CARVE };
+    const ground = (E: number, N: number) => applyCarve(naturalHeight(E, N), E, N, streamCarve);
+    waterCache = { stream, gullies: GULLIES.map((g) => bedCurve(g.id, g.pts, g.incisionM, ground)) };
   }
   return waterCache;
 }
@@ -313,26 +305,43 @@ function smin(a: number, b: number, k: number): number {
  * only incises it, and fades out between fadeM and reachM so it never ends in
  * a step.
  */
-type Carve = { line: Line; pts: XY[]; bed: number[]; floorM: number; bankSlope: number; k: number; fadeM: number; reachM: number };
+type CarveShape = { floorM: number; bankSlope: number; k: number; fadeM: number; reachM: number };
+type Carve = CarveShape & { line: Line; pts: XY[]; bed: number[] };
+const STREAM_CARVE: CarveShape = { floorM: 7, bankSlope: 0.5, k: 8, fadeM: 80, reachM: 130 };
+const GULLY_CARVE: CarveShape = { floorM: 2.5, bankSlope: 0.55, k: 5, fadeM: 45, reachM: 75 };
 let carveCache: Carve[] | null = null;
 function carves(): Carve[] {
   if (!carveCache) {
     const { stream, gullies } = waterCourses();
-    carveCache = [
-      { ...carveLine(stream), floorM: 7, bankSlope: 0.5, k: 8, fadeM: 80, reachM: 130 },
-      ...gullies.map((g) => ({ ...carveLine(g), floorM: 2.5, bankSlope: 0.55, k: 5, fadeM: 45, reachM: 75 })),
-    ];
+    carveCache = [{ ...carveLine(stream), ...STREAM_CARVE }, ...gullies.map((g) => ({ ...carveLine(g), ...GULLY_CARVE }))];
   }
   return carveCache;
 }
 
+/** One carve applied to a height h at (E, N). */
+function applyCarve(h: number, E: number, N: number, c: Carve): number {
+  const l = c.line;
+  if (E < l.minE - c.reachM || E > l.maxE + c.reachM || N < l.minN - c.reachM || N > l.maxN + c.reachM) return h;
+  let dMin = Infinity;
+  const valley = alongSegments(
+    l,
+    E,
+    N,
+    c.reachM,
+    (d, k, t) => {
+      dMin = Math.min(dMin, d);
+      return c.bed[k] + (c.bed[k + 1] - c.bed[k]) * t + Math.max(0, d - c.floorM) * c.bankSlope + 0.6 * Math.min(1, d / c.floorM) ** 2;
+    },
+    Math.min,
+    Infinity,
+  );
+  return valley < Infinity ? h + (smin(h, valley, c.k) - h) * (1 - smoothstep(c.fadeM, c.reachM, dMin)) : h;
+}
+
 const VILLAGE_C = { E: 300, N: 1575 };
 
-/**
- * The deterministic generator, metres. Defined everywhere, so the 3D apron
- * beyond the mapped sheet continues the same ground to the horizon.
- */
-export function heightField(E: number, N: number): number {
+/** The landforms before the water courses incise them. */
+function naturalHeight(E: number, N: number): number {
   const wE = E + 48 * valueNoise(E / 330 + 7.7, N / 330 + 1.1) + 16 * valueNoise(E / 120 - 2.1, N / 120 + 6.3);
   const wN = N + 48 * valueNoise(E / 330 - 3.3, N / 330 + 4.4) + 16 * valueNoise(E / 120 + 5.5, N / 120 - 0.7);
   let h = regional(E, N) + ridgeKernel(wE, wN) + domeKernel(wE, wN) + distantKernel(E, N) + slopeDetail(E, N);
@@ -342,24 +351,16 @@ export function heightField(E: number, N: number): number {
     const w = 1 - smoothstep(110, 260, dv);
     h += (366 + 0.03 * (N - VILLAGE_C.N) - h) * w * 0.55;
   }
-  for (const c of carves()) {
-    const l = c.line;
-    if (E < l.minE - c.reachM || E > l.maxE + c.reachM || N < l.minN - c.reachM || N > l.maxN + c.reachM) continue;
-    let dMin = Infinity;
-    const valley = alongSegments(
-      l,
-      E,
-      N,
-      c.reachM,
-      (d, k, t) => {
-        dMin = Math.min(dMin, d);
-        return c.bed[k] + (c.bed[k + 1] - c.bed[k]) * t + Math.max(0, d - c.floorM) * c.bankSlope + 0.6 * Math.min(1, d / c.floorM) ** 2;
-      },
-      Math.min,
-      Infinity,
-    );
-    if (valley < Infinity) h += (smin(h, valley, c.k) - h) * (1 - smoothstep(c.fadeM, c.reachM, dMin));
-  }
+  return h;
+}
+
+/**
+ * The deterministic generator, metres. Defined everywhere, so the 3D apron
+ * beyond the mapped sheet continues the same ground to the horizon.
+ */
+export function heightField(E: number, N: number): number {
+  let h = naturalHeight(E, N);
+  for (const c of carves()) h = applyCarve(h, E, N, c);
   return h;
 }
 
