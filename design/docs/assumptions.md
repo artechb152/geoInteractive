@@ -2480,3 +2480,10 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 - **1440 × 1122 is now a uniform 0.967 shrink of the 1920 layout.** Before, the lab reflowed into the ≈1052 px column (map 587 px). Now it keeps the 1920 columns and line breaks (map 588 px on screen).
 - **Taller states grow the page at the same scale.** Opening "פרטי החישוב" in measure mode makes the lab 132 px taller (reference px). The scale stays steady, and the page scrolls.
 - **Small text on 1366 × 768.** The fit scale there is 0.659, so 14 px text renders at ≈9.2 px. This follows the requested uniform shrink. The legibility trade-off is open for review.
+
+## 2026-10-13 — Topic 02 "משמעות מעשית" laptop fit
+
+- **One screen, one fit.** The section holds a single learning screen: the four case cards and the detail panel below them (`HistoricalCasesPanel`). It is wrapped once in `LessonViewportFit` (`PracticalMeaningScene.tsx`). Switching cases changes the state of that screen; it does not open another screen.
+- **Reference = 1920 × 1080 layout:** 1344 px wide (88 rem column minus 2 × 32 px padding) and 832 px tall, the tallest case state. Case 3 is 806 px. The page follows each state's own scaled height, so the prev/next row moves by the same ≈26 px × scale that it already moves at 1920.
+- **Measured scales:** 1920 × 1080 → 1 (pixel-identical to before, all four states); 1440 × 1122 → 0.783 (width-limited: the column is 1052 px, so 1440 now shows the 1920 composition shrunk instead of re-flowing it); 1536 × 864 → 0.752; 1366 × 768 → 0.637 (body text renders at ≈10 px). The whole screen and the prev/next row fit without page scroll at every size.
+- QA: `scripts/qa/shot-practice-fit.mjs`, output in `design/screenshots/practice-fit-before/` and `practice-fit-after/`.
