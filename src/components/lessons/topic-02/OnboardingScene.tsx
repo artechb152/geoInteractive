@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +26,19 @@ type Layer = {
   popupBody: string;
   icon: IconName;
 };
+
+// Laptop fit (LessonViewportFit): each screen of this sub-topic is laid out
+// at its 1920×1080 reference width and shrunk uniformly when a smaller
+// screen leaves less room. Measured at 1920×1080: the section content box is
+// 1344px wide (max-w-lesson minus px-8), and the first screen — SceneHeader
+// (151px) + mb-8 (32px) + the accordion/map grid (638px, every panel shares
+// md:min-h-[232px]) — is 821px tall.
+const FIT_REFERENCE_WIDTH = 1344;
+const FIT_LAYERS_SCREEN_HEIGHT = 821;
+// Height of the sticky site header (--header-h at md+). A screen further
+// down the page is read after scrolling it up under the header, so its
+// measured document position is not what limits it.
+const FIT_SITE_HEADER = 80;
 
 const LAYERS: Layer[] = [
   {
@@ -93,124 +107,144 @@ export function OnboardingScene() {
 
   return (
     <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="02.0"
-        title="המפה כמערכת של שכבות מידע"
-        intro="מפה משלבת כמה סוגי מידע: מבנה הקרקע, דרכים, יישובים, גבולות ומיקום כוחות. כל שכבה מוסיפה מידע שמסייע להבין את המרחב ולתכנן בו פעילות. בחרו את השכבות לפי הסדר ובדקו כיצד כל אחת מוסיפה לתמונת השטח."
-      />
+      {/* Screen 1 — the layers build-up. reserveBottom={0}: the screen has to
+          fit the viewport on its own; the callout and the prev/next row below
+          it stay in the normal scroll flow. */}
+      <LessonViewportFit
+        referenceWidth={FIT_REFERENCE_WIDTH}
+        referenceHeight={FIT_LAYERS_SCREEN_HEIGHT}
+        reserveBottom={0}
+      >
+        <SceneHeader
+          step="02.0"
+          title="המפה כמערכת של שכבות מידע"
+          intro="מפה משלבת כמה סוגי מידע: מבנה הקרקע, דרכים, יישובים, גבולות ומיקום כוחות. כל שכבה מוסיפה מידע שמסייע להבין את המרחב ולתכנן בו פעילות. בחרו את השכבות לפי הסדר ובדקו כיצד כל אחת מוסיפה לתמונת השטח."
+        />
 
-      {/* Preserve the existing 32:68 accordion/map split. Longer approved
-          labels wrap naturally without reducing the type size. */}
-      <div className="grid md:grid-cols-[32fr_68fr] gap-6">
-        <div className="space-y-1">
-          {LAYERS.map((l, i) => {
-            const active = activeIndex === i;
-            const expanded = expandedLayer === l.id;
-            const passed = activeIndex > i;
-            return (
-              <div
-                key={l.id}
-                className={cn(
-                  // Rows sit on the textured page — the hover tint lives on a ::before
-                  // layer over the opaque white base, so it never lets the page show through.
-                  'relative isolate overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
-                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                  active
-                    ? 'border-brand/45 bg-bg-elevated'
-                    : 'border-border bg-bg-elevated hover:border-brand/30 hover:before:bg-brand/[0.03]'
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => clickLayer(i)}
-                  aria-expanded={expanded}
-                  aria-controls={`layer-panel-${l.id}`}
-                  className="w-full p-4 text-start flex items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
-                >
-                  <span
-                    className={cn(
-                      'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
-                    )}
-                  >
-                    {passed && !active ? (
-                      <Icon name="check" size={18} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-base font-bold">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">
-                      {l.label}
-                    </div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`panel-${l.id}`}
-                      id={`layer-panel-${l.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      {/* All five panels share one height so the column -- and the
-                          map box stretched beside it -- never resize as you click
-                          through. At 1440px the approved copy's tallest panels
-                          (roads, buildings) need 232px including padding. */}
-                      <div className="px-4 pb-4 pt-1 md:min-h-[232px]">
-                        <div className="text-base font-display font-bold text-black mb-1.5">
-                          {l.popupTitle}
-                        </div>
-                        <p className="text-base leading-relaxed text-black">
-                          {l.popupBody}
-                        </p>
-                      </div>
-                    </motion.div>
+        {/* Preserve the existing 32:68 accordion/map split. Longer approved
+            labels wrap naturally without reducing the type size. */}
+        <div className="grid md:grid-cols-[32fr_68fr] gap-6">
+          <div className="space-y-1">
+            {LAYERS.map((l, i) => {
+              const active = activeIndex === i;
+              const expanded = expandedLayer === l.id;
+              const passed = activeIndex > i;
+              return (
+                <div
+                  key={l.id}
+                  className={cn(
+                    // Rows sit on the textured page — the hover tint lives on a ::before
+                    // layer over the opaque white base, so it never lets the page show through.
+                    'relative isolate overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
+                    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                    active
+                      ? 'border-brand/45 bg-bg-elevated'
+                      : 'border-border bg-bg-elevated hover:border-brand/30 hover:before:bg-brand/[0.03]'
                   )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
+                >
+                  <button
+                    type="button"
+                    onClick={() => clickLayer(i)}
+                    aria-expanded={expanded}
+                    aria-controls={`layer-panel-${l.id}`}
+                    className="w-full p-4 text-start flex items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
+                  >
+                    <span
+                      className={cn(
+                        'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
+                        active || passed ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
+                      )}
+                    >
+                      {passed && !active ? (
+                        <Icon name="check" size={18} strokeWidth={2.5} />
+                      ) : (
+                        <span className="font-display text-base font-bold">{i + 1}</span>
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">
+                        {l.label}
+                      </div>
+                    </div>
+                    <motion.span
+                      animate={{ rotate: expanded ? 180 : 0 }}
+                      transition={{ duration: 0.25 }}
+                      className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </motion.span>
+                  </button>
 
-        {/* Visualization — WebP frame-sequence player, same technology as
-            topic-01/SceneOnboardingFramePlayer.tsx. min-h is only a floor;
-            the canvas cover-fits whatever box it's given. */}
-        <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px] [&_canvas]:!w-full [&_canvas]:!h-full">
-          <SceneOnboardingFramePlayer targetState={LAYERS[activeIndex].id} />
+                  <AnimatePresence initial={false}>
+                    {expanded && (
+                      <motion.div
+                        key={`panel-${l.id}`}
+                        id={`layer-panel-${l.id}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
+                        {/* All five panels share one height so the column -- and the
+                            map box stretched beside it -- never resize as you click
+                            through. At 1440px the approved copy's tallest panels
+                            (roads, buildings) need 232px including padding. */}
+                        <div className="px-4 pb-4 pt-1 md:min-h-[232px]">
+                          <div className="text-base font-display font-bold text-black mb-1.5">
+                            {l.popupTitle}
+                          </div>
+                          <p className="text-base leading-relaxed text-black">
+                            {l.popupBody}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Visualization — WebP frame-sequence player, same technology as
+              topic-01/SceneOnboardingFramePlayer.tsx. min-h is only a floor;
+              the canvas cover-fits whatever box it's given. */}
+          <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px] [&_canvas]:!w-full [&_canvas]:!h-full">
+            <SceneOnboardingFramePlayer targetState={LAYERS[activeIndex].id} />
+          </div>
         </div>
-      </div>
+      </LessonViewportFit>
 
       {/* The practical-examples panel moved to PracticalMeaningScene (before recap). */}
       <div className="mt-20" />
 
-      <ReadyCallout title="בהמשך השיעור" signature={false}>
-        <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר תבליט ותכסית, תבניות נוף וסוגי סלעים, ובהמשך נתרגל
-            <strong className="text-fg"> שימוש בקנה מידה, קריאת נקודות ציון ופענוח קווי גובה</strong>.</p>
-      </ReadyCallout>
+      {/* Screen 2 — the closing callout, shrunk by the same width rule so its
+          line breaks match the reference. Its own mt-8 is dropped inside the
+          fit box: unwrapped it collapsed into the 80px spacer above, wrapped
+          it would add to it. */}
+      <LessonViewportFit
+        referenceWidth={FIT_REFERENCE_WIDTH}
+        reserveTop={FIT_SITE_HEADER}
+        reserveBottom={0}
+        contentClassName="[&>section]:mt-0"
+      >
+        <ReadyCallout title="בהמשך השיעור" signature={false}>
+          <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר תבליט ותכסית, תבניות נוף וסוגי סלעים, ובהמשך נתרגל
+              <strong className="text-fg"> שימוש בקנה מידה, קריאת נקודות ציון ופענוח קווי גובה</strong>.</p>
+        </ReadyCallout>
+      </LessonViewportFit>
     </section>
   );
 }

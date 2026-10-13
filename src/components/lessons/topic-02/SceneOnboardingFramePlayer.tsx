@@ -187,11 +187,13 @@ export default function SceneOnboardingFramePlayer({ targetState }: { targetStat
     if (!container || !canvas) return;
     ctxRef.current = canvas.getContext('2d');
 
+    // Layout size, not the bounding rect: inside OnboardingScene's
+    // LessonViewportFit the box is CSS-scaled, and a scale change alone
+    // never fires the ResizeObserver — the buffer would go stale.
     const resize = () => {
-      const rect = container.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = Math.max(1, Math.round(rect.width * dpr));
-      const h = Math.max(1, Math.round(rect.height * dpr));
+      const w = Math.max(1, Math.round(container.offsetWidth * dpr));
+      const h = Math.max(1, Math.round(container.offsetHeight * dpr));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
