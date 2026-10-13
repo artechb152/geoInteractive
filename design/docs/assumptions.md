@@ -2481,6 +2481,16 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 - **Taller states grow the page at the same scale.** Opening "פרטי החישוב" in measure mode makes the lab 132 px taller (reference px). The scale stays steady, and the page scrolls.
 - **Small text on 1366 × 768.** The fit scale there is 0.659, so 14 px text renders at ≈9.2 px. This follows the requested uniform shrink. The legibility trade-off is open for review.
 
+## 2026-10-13 — Topic 02 "תבליט ותכסית" laptop fit
+
+- **Five compositions, one fit each.** Screen 1 is the part header (`SceneHeader`) with the two definitions. Screen 2 is the layered-terrain workspace. Screen 3 is the "same hill, three landscapes" comparison. Screen 4 is the sort quiz. Screen 5 is the "בהמשך השיעור" roadmap. Each fit holds its own section title, so the title shrinks with its screen. The 48 px gap between screens sits outside the fits and is not scaled. The page still scrolls from screen to screen.
+- **Reference = 1920 × 1080.** Width 1088 px (the section's content column). Heights are each screen's initial height at that width: 405, 530, 732, 419 and 180 px.
+- **Free height = viewport − 104 px − 24 px.** The 104 px is the 80 px fixed site header plus a 24 px gap. The 24 px is a gap at the bottom of the view. Each screen is fitted to the view under the header on its own, not to its distance from the top of the long page.
+- **The comparison's summary row is not counted.** "סיכום ההשוואה" and its toggle follow the activity card and open into the full table at the end. Screen 3 is fitted on its title and the card only (732 px). The summary row is scaled with the card but may sit below the fold.
+- **Scale stays steady per screen.** `fitTallerStates` is off. The comparison question, feedback, the open summary table and the quiz feedback grow the page at the same scale.
+- **Resulting scales.** 1920 × 1080 and 1536 × 864: 1. 1440 × 1122: 0.967 for every screen (width-bound). 1366 × 768: 0.899 (width-bound), and 0.874 for the comparison (height-bound). A screen shrunk further than its neighbours keeps to the reading side (`align="start"`), so the titles and card edges stay aligned on the right; the 27 px it gives up shows on the left.
+- **3D board.** The "בשטח" canvas measures its untransformed size (`LESSON_FIT_CANVAS_RESIZE`). A drag turns the model by the same angle per px of the shrunk board as at full size (`OrbitControls rotateSpeed` divided by the scale).
+
 ## 2026-10-13 — Topic 02 "משמעות מעשית" laptop fit
 
 - **One screen, one fit.** The section holds a single learning screen: the four case cards and the detail panel below them (`HistoricalCasesPanel`). It is wrapped once in `LessonViewportFit` (`PracticalMeaningScene.tsx`). Switching cases changes the state of that screen; it does not open another screen.

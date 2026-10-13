@@ -7,6 +7,7 @@ import { SceneHeader } from './SceneHeader';
 import { SortQuiz, type SortItem } from './SortQuiz';
 import { ReliefCoverTerrain } from './ReliefCoverTerrain';
 import { ReliefCoverCompare, type ReliefCoverCopy } from './ReliefCoverCompare';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 
 /**
@@ -73,8 +74,53 @@ const NEXT_STEPS = [
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-/** T1 section title (cleanup spec §3) — replaces the labelled SoftDividers. */
-const SECTION_TITLE = 'mt-12 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl';
+/** T1 section title (cleanup spec §3) — replaces the labelled SoftDividers. Its mt-12 sits on the
+ *  screen's ScreenFit wrapper (SCREEN_GAP), so the gap between screens is not scaled. */
+const SECTION_TITLE = 'mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl';
+const SCREEN_GAP = 'mt-12';
+
+/**
+ * Laptop fit — each screen of the section is one LessonViewportFit composition, laid out at its
+ * 1920×1080 width (the section's content width: max-w-6xl minus lg:px-8) and shrunk uniformly
+ * when a laptop leaves less room, so columns, line breaks and the illustrations' proportions stay
+ * those of the large screen. The section still scrolls from screen to screen: every screen fits
+ * under the fixed site header (80px) with a 24px gap above and below it. A screen that is shrunk
+ * further than its neighbours (height-bound) keeps to the reading side, so titles and card edges
+ * stay aligned on the right.
+ * Heights are each screen's initial height at that width (measured 2026-10-13 at 1920×1080);
+ * a state that grows (feedback, the open summary table) lengthens the page at the same scale.
+ */
+const FIT_WIDTH = 1088;
+const FIT_RESERVE_TOP = 80 + 24;
+const FIT_RESERVE_BOTTOM = 24;
+const FIT_HEIGHT = {
+  /** SceneHeader + the definitions card */
+  definitions: 405,
+  /** title + the layered-terrain workspace */
+  workspace: 530,
+  /** title + the comparison card in its first state; the summary row below it is not counted —
+   *  it follows the activity and opens into the full table at its end */
+  compare: 732,
+  /** title + the quiz before any answer */
+  quiz: 419,
+  /** title + the roadmap card */
+  roadmap: 180,
+} as const;
+
+function ScreenFit({ height, className, children }: { height: number; className?: string; children: React.ReactNode }) {
+  return (
+    <LessonViewportFit
+      referenceWidth={FIT_WIDTH}
+      referenceHeight={height}
+      reserveTop={FIT_RESERVE_TOP}
+      reserveBottom={FIT_RESERVE_BOTTOM}
+      align="start"
+      className={className}
+    >
+      {children}
+    </LessonViewportFit>
+  );
+}
 
 /** Screen 3 — „אותה גבעה, שלושה נופים” (ReliefCoverCompare): UI chrome and supportive
  *  feedback only. The lesson content is COMPARE_ROWS above, shown verbatim. */
@@ -132,178 +178,189 @@ export function ReliefCoverIntroScene() {
 
   return (
     <section id="scene-relief-cover" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <SceneHeader
-        title={
-          <>
-            מרכיבי השטח: <span className="gradient-text">תבליט ותכסית</span>
-          </>
-        }
-        intro="כדי לתאר שטח ולקרוא את ייצוגו במפה, מבחינים בין שני מרכיבים: תבליט — מבנה פני הקרקע, ותכסית — המרכיבים שנמצאים על פני הקרקע. ההבחנה ביניהם היא בסיס לקריאת השטח."
-      />
+      {/* ── Screen 1: the section's header and the two definitions ── */}
+      <ScreenFit height={FIT_HEIGHT.definitions}>
+        <SceneHeader
+          title={
+            <>
+              מרכיבי השטח: <span className="gradient-text">תבליט ותכסית</span>
+            </>
+          }
+          intro="כדי לתאר שטח ולקרוא את ייצוגו במפה, מבחינים בין שני מרכיבים: תבליט — מבנה פני הקרקע, ותכסית — המרכיבים שנמצאים על פני הקרקע. ההבחנה ביניהם היא בסיס לקריאת השטח."
+        />
 
-      {/* ── Screen 1: the two definitions — one flat info card, so the
-           interactive workspace below is the first strong surface ── */}
-      <div className="surface p-5 sm:p-6">
-        <div className="grid md:grid-cols-2 gap-6 md:gap-10">
-          <DefinitionCard layer="relief" term="תבליט" lead="מבנה פני הקרקע.">
-            התבליט מתאר את צורת הקרקע: הרים וגבעות, עמקים ומדרונות, מישורים ושקעים.
-            כדי לזהות ולתאר את התבליט, נעזרים ב<strong className="text-fg">תבניות נוף</strong> — צורות יסוד שמופיעות בשטחים שונים.
-          </DefinitionCard>
-          <DefinitionCard layer="cover" term="תכסית" lead="המרכיבים שנמצאים על פני הקרקע.">
-            התכסית כוללת מרכיבים <strong className="text-fg">טבעיים</strong>, כגון עצים, שיחים ועשב שגדלו באופן טבעי,
-            ומרכיבים <strong className="text-fg">מלאכותיים</strong> שהאדם יצר, כגון בתים, כבישים, שדות ומטעים, גדרות וקווי חשמל.
-          </DefinitionCard>
+        {/* the two definitions — one flat info card, so the
+            interactive workspace below is the first strong surface */}
+        <div className="surface p-5 sm:p-6">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-10">
+            <DefinitionCard layer="relief" term="תבליט" lead="מבנה פני הקרקע.">
+              התבליט מתאר את צורת הקרקע: הרים וגבעות, עמקים ומדרונות, מישורים ושקעים.
+              כדי לזהות ולתאר את התבליט, נעזרים ב<strong className="text-fg">תבניות נוף</strong> — צורות יסוד שמופיעות בשטחים שונים.
+            </DefinitionCard>
+            <DefinitionCard layer="cover" term="תכסית" lead="המרכיבים שנמצאים על פני הקרקע.">
+              התכסית כוללת מרכיבים <strong className="text-fg">טבעיים</strong>, כגון עצים, שיחים ועשב שגדלו באופן טבעי,
+              ומרכיבים <strong className="text-fg">מלאכותיים</strong> שהאדם יצר, כגון בתים, כבישים, שדות ומטעים, גדרות וקווי חשמל.
+            </DefinitionCard>
+          </div>
         </div>
-      </div>
+      </ScreenFit>
 
       {/* ── Screen 2: interactive layered terrain — the scene's workspace ── */}
-      <h3 className={SECTION_TITLE}>זיהוי תבליט ותכסית בשטח</h3>
+      <ScreenFit height={FIT_HEIGHT.workspace} className={SCREEN_GAP}>
+        <h3 className={SECTION_TITLE}>זיהוי תבליט ותכסית בשטח</h3>
 
-      <div className="surface-elevated p-5 sm:p-6 grid lg:grid-cols-[20rem_minmax(0,1fr)] gap-6 items-stretch">
-        {/* Controls + info (first child → right in RTL) */}
-        <div className="flex flex-col gap-5">
-          <div className="space-y-5">
-            <div>
-              <div className="text-sm font-display font-semibold text-fg-muted mb-2.5">
-                הציגו או הסתירו כל שכבה
+        <div className="surface-elevated p-5 sm:p-6 grid lg:grid-cols-[20rem_minmax(0,1fr)] gap-6 items-stretch">
+          {/* Controls + info (first child → right in RTL) */}
+          <div className="flex flex-col gap-5">
+            <div className="space-y-5">
+              <div>
+                <div className="text-sm font-display font-semibold text-fg-muted mb-2.5">
+                  הציגו או הסתירו כל שכבה
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['relief', 'cover'] as Layer[]).map((layer) => (
+                    <LayerToggle key={layer} on={visible(layer)} onToggle={() => toggleLayer(layer)}>
+                      שכבת {LAYER_LABEL[layer]}
+                    </LayerToggle>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              <div className="space-y-3">
+                <div className="text-sm font-display font-semibold text-fg-muted">
+                  בחרו רכיב באיור או ברשימה
+                </div>
+                {/* one group per layer, unlabelled — classifying is the learner's job (the result says it);
+                    a hairline separates the relief group from the cover group; each group fills one row, equal widths */}
                 {(['relief', 'cover'] as Layer[]).map((layer) => (
-                  <LayerToggle key={layer} on={visible(layer)} onToggle={() => toggleLayer(layer)}>
-                    שכבת {LAYER_LABEL[layer]}
-                  </LayerToggle>
+                  <div key={layer} className={cn('flex gap-1.5', layer === 'cover' && 'border-t border-border-subtle pt-3')}>
+                    {FEATURES.filter((f) => f.layer === layer).map((f) => {
+                      const isSel = selected?.id === f.id;
+                      const off = !visible(layer);
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          disabled={off}
+                          aria-pressed={isSel}
+                          onClick={() => selectFeature(f.id)}
+                          onMouseEnter={() => setHoverId(f.id)}
+                          onMouseLeave={() => setHoverId(null)}
+                          onFocus={() => setHoverId(f.id)}
+                          onBlur={() => setHoverId(null)}
+                          className={cn(
+                            'flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-xl border px-1.5 py-2 text-sm font-display font-bold',
+                            'transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-elevated',
+                            isSel ? OPTION_ON : OPTION_IDLE,
+                            off && 'opacity-40 cursor-not-allowed hover:border-border hover:bg-bg-elevated',
+                          )}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="text-sm font-display font-semibold text-fg-muted">
-                בחרו רכיב באיור או ברשימה
-              </div>
-              {/* one group per layer, unlabelled — classifying is the learner's job (the result says it);
-                  a hairline separates the relief group from the cover group; each group fills one row, equal widths */}
-              {(['relief', 'cover'] as Layer[]).map((layer) => (
-                <div key={layer} className={cn('flex gap-1.5', layer === 'cover' && 'border-t border-border-subtle pt-3')}>
-                  {FEATURES.filter((f) => f.layer === layer).map((f) => {
-                    const isSel = selected?.id === f.id;
-                    const off = !visible(layer);
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        disabled={off}
-                        aria-pressed={isSel}
-                        onClick={() => selectFeature(f.id)}
-                        onMouseEnter={() => setHoverId(f.id)}
-                        onMouseLeave={() => setHoverId(null)}
-                        onFocus={() => setHoverId(f.id)}
-                        onBlur={() => setHoverId(null)}
-                        className={cn(
-                          'flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-xl border px-1.5 py-2 text-sm font-display font-bold',
-                          'transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-elevated',
-                          isSel ? OPTION_ON : OPTION_IDLE,
-                          off && 'opacity-40 cursor-not-allowed hover:border-border hover:bg-bg-elevated',
-                        )}
-                      >
-                        {f.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
+            {/* The inset stays put; only its text swaps — the new text slides in from the
+                reading side (inline-start = right) and the box flashes once in the selection tint. */}
+            <div aria-live="polite" className="relative isolate flex-1 rounded-xl bg-bg-accent/60 p-4 min-h-[140px]">
+              {selected && !reduce && (
+                <motion.span
+                  key={selected.id}
+                  aria-hidden
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.7, ease: EASE }}
+                  className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-accent/10"
+                />
+              )}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={selected?.id ?? 'empty'}
+                  initial={{ opacity: 0, x: reduce ? 0 : 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: reduce ? 0 : -6 }}
+                  transition={{ duration: 0.18, ease: EASE }}
+                >
+                  {selected ? (
+                    <>
+                      <div className="mb-2">
+                        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h3>
+                        <div className="mt-0.5 text-sm font-display font-semibold text-fg-muted">
+                          {selected.origin ? `תכסית ${ORIGIN_LABEL[selected.origin]}` : LAYER_LABEL[selected.layer]}
+                        </div>
+                      </div>
+                      <p className="text-base text-fg leading-relaxed">{selected.desc}</p>
+                    </>
+                  ) : (
+                    <p className="text-base text-fg-muted leading-relaxed">
+                      בחרו רכיב כדי לקרוא את תיאורו ואת סיווגו כתבליט או כתכסית. הסתירו את שכבת התכסית כדי לבחון את מבנה הקרקע בנפרד.
+                    </p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* The inset stays put; only its text swaps — the new text slides in from the
-              reading side (inline-start = right) and the box flashes once in the selection tint. */}
-          <div aria-live="polite" className="relative isolate flex-1 rounded-xl bg-bg-accent/60 p-4 min-h-[140px]">
-            {selected && !reduce && (
-              <motion.span
-                key={selected.id}
-                aria-hidden
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 0 }}
-                transition={{ duration: 0.7, ease: EASE }}
-                className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-accent/10"
-              />
-            )}
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={selected?.id ?? 'empty'}
-                initial={{ opacity: 0, x: reduce ? 0 : 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: reduce ? 0 : -6 }}
-                transition={{ duration: 0.18, ease: EASE }}
-              >
-                {selected ? (
-                  <>
-                    <div className="mb-2">
-                      <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h3>
-                      <div className="mt-0.5 text-sm font-display font-semibold text-fg-muted">
-                        {selected.origin ? `תכסית ${ORIGIN_LABEL[selected.origin]}` : LAYER_LABEL[selected.layer]}
-                      </div>
-                    </div>
-                    <p className="text-base text-fg leading-relaxed">{selected.desc}</p>
-                  </>
-                ) : (
-                  <p className="text-base text-fg-muted leading-relaxed">
-                    בחרו רכיב כדי לקרוא את תיאורו ואת סיווגו כתבליט או כתכסית. הסתירו את שכבת התכסית כדי לבחון את מבנה הקרקע בנפרד.
-                  </p>
-                )}
-              </motion.div>
-            </AnimatePresence>
+          {/* Illustration — the focal point */}
+          <div className="min-w-0 self-start rounded-xl overflow-hidden border border-border-subtle bg-paper-card">
+            <ReliefCoverTerrain
+              showRelief={showRelief}
+              showCover={showCover}
+              selectedId={selected?.id ?? null}
+              hoverId={hoverId}
+              labels={FEATURE_LABELS}
+              onSelect={selectFeature}
+              onHover={setHoverId}
+            />
           </div>
         </div>
-
-        {/* Illustration — the focal point */}
-        <div className="min-w-0 self-start rounded-xl overflow-hidden border border-border-subtle bg-paper-card">
-          <ReliefCoverTerrain
-            showRelief={showRelief}
-            showCover={showCover}
-            selectedId={selected?.id ?? null}
-            hoverId={hoverId}
-            labels={FEATURE_LABELS}
-            onSelect={selectFeature}
-            onHover={setHoverId}
-          />
-        </div>
-      </div>
+      </ScreenFit>
 
       {/* ── Screen 3: same hill, three landscapes — predict, then see (ReliefCoverCompare);
            the original table closes it as the summary ── */}
-      <h3 className={SECTION_TITLE}>השוואה בין תבליט לתכסית</h3>
+      <ScreenFit height={FIT_HEIGHT.compare} className={SCREEN_GAP}>
+        <h3 className={SECTION_TITLE}>השוואה בין תבליט לתכסית</h3>
 
-      <ReliefCoverCompare rows={COMPARE_ROWS} copy={COMPARE_COPY} />
+        <ReliefCoverCompare rows={COMPARE_ROWS} copy={COMPARE_COPY} />
+      </ScreenFit>
 
       {/* ── Screen 4: quick check ── */}
-      <h3 className={SECTION_TITLE}>תרגול: סיווג מרכיבי השטח</h3>
+      <ScreenFit height={FIT_HEIGHT.quiz} className={SCREEN_GAP}>
+        <h3 className={SECTION_TITLE}>תרגול: סיווג מרכיבי השטח</h3>
 
-      <SortQuiz
-        title="תבליט או תכסית?"
-        prompt="סווגו כל רכיב כתבליט או כתכסית. לאחר הבחירה יוצג הסבר לסיווג."
-        options={[
-          { id: 'relief', label: 'תבליט' },
-          { id: 'cover', label: 'תכסית' },
-        ]}
-        items={QUIZ_ITEMS}
-      />
+        <SortQuiz
+          title="תבליט או תכסית?"
+          prompt="סווגו כל רכיב כתבליט או כתכסית. לאחר הבחירה יוצג הסבר לסיווג."
+          options={[
+            { id: 'relief', label: 'תבליט' },
+            { id: 'cover', label: 'תכסית' },
+          ]}
+          items={QUIZ_ITEMS}
+        />
+      </ScreenFit>
 
       {/* ── Roadmap for the rest of the terrain block (static → one flat card) ── */}
-      <h3 className={SECTION_TITLE}>בהמשך השיעור</h3>
+      <ScreenFit height={FIT_HEIGHT.roadmap} className={SCREEN_GAP}>
+        <h3 className={SECTION_TITLE}>בהמשך השיעור</h3>
 
-      <ol className="surface p-5 sm:p-6 grid md:grid-cols-3 gap-6">
-        {NEXT_STEPS.map((s) => (
-          <li key={s.n} className="flex items-start gap-3">
-            <span className="font-display text-lg font-bold leading-6 text-fg-muted tabular-nums shrink-0">
-              {s.n}
-            </span>
-            <div>
-              <div className="text-base font-display font-bold leading-6 text-fg">{s.title}</div>
-              <div className="text-sm text-fg-muted leading-relaxed mt-1">{s.text}</div>
-            </div>
-          </li>
-        ))}
-      </ol>
+        <ol className="surface p-5 sm:p-6 grid md:grid-cols-3 gap-6">
+          {NEXT_STEPS.map((s) => (
+            <li key={s.n} className="flex items-start gap-3">
+              <span className="font-display text-lg font-bold leading-6 text-fg-muted tabular-nums shrink-0">
+                {s.n}
+              </span>
+              <div>
+                <div className="text-base font-display font-bold leading-6 text-fg">{s.title}</div>
+                <div className="text-sm text-fg-muted leading-relaxed mt-1">{s.text}</div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </ScreenFit>
     </section>
   );
 }

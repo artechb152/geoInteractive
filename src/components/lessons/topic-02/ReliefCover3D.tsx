@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { COVER, GROVE, HILL, HOUSES, ORCHARD, SHRUBS, STATES, type House, type StateId, type Tree } from './reliefCoverCompare.data';
 import { CENTER, DRAPE, DRAPE_FEATHER, groundMesh, toWorld, type DrapeRegion } from './reliefCoverMesh';
+import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 
 /**
  * ReliefCover3D — the "בשטח" board of „אותה גבעה, שלושה נופים” as a live model, in the lesson's
@@ -593,6 +594,10 @@ function SceneSetup({ onReady }: { onReady?: () => void }) {
 }
 
 export default function ReliefCover3D({ state, reduce, command, onHeading, onReady }: Model3DProps) {
+  // Inside a shrunk LessonViewportFit the canvas sizes itself from its untransformed box, and a drag
+  // turns the model as far per px of the shrunk board as at full size (OrbitControls turns by screen
+  // px over the untransformed clientHeight).
+  const fitScale = useLessonViewportScale();
   const pos = useMemo(() => {
     const p = THREE.MathUtils.degToRad(HOME.polarDeg);
     const [x, y, z] = HOME.target;
@@ -605,6 +610,7 @@ export default function ReliefCover3D({ state, reduce, command, onHeading, onRea
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
       camera={{ fov: 31, near: 5, far: 6000, position: pos }}
       frameloop="demand"
+      resize={LESSON_FIT_CANVAS_RESIZE}
       style={{ position: 'absolute', inset: 0 }}
     >
       <OrbitControls
@@ -620,7 +626,7 @@ export default function ReliefCover3D({ state, reduce, command, onHeading, onRea
         maxPolarAngle={THREE.MathUtils.degToRad(74)}
         minAzimuthAngle={THREE.MathUtils.degToRad(-80)}
         maxAzimuthAngle={THREE.MathUtils.degToRad(80)}
-        rotateSpeed={0.6}
+        rotateSpeed={0.6 / fitScale}
       />
       <CameraRig command={command} reduce={reduce} onHeading={onHeading} />
       <Suspense fallback={null}>
