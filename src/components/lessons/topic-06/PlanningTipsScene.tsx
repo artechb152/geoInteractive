@@ -1,8 +1,9 @@
 'use client';
-import { useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import { NavTipsMap, TipsLegendGlyph, TIP_LEGS, type MapFocus, type NavFocus, type PlanFocus } from './NavTipsMap';
 
@@ -100,6 +101,43 @@ const NAV_LEGEND: LegendItem[] = [
   { kind: 'ahead', label: 'המשך המסלול המתוכנן' },
 ];
 
+/**
+ * Laptop fit — each of the three screens (planning tips, navigation tips, the
+ * application question with its conclusion) shrinks on its own, like a slide,
+ * so the whole screen fits under the site header once it is scrolled to. The
+ * 1920×1080 layout is the reference: scale 1 there and on any screen with
+ * room for it.
+ *   - Width: the section's content width at lg+ (max-w-6xl − lg:px-8).
+ *   - Heights: the tallest state of each screen at the reference width
+ *     (measured: plan 721px for every tip; nav 747px with tip 4 open; the
+ *     question 690px with feedback and the retry button), so the scale stays
+ *     steady while learners switch tips or answer.
+ *   - Reserves are numeric because the screens sit deep in a scrolling page:
+ *     the fixed 80px site header plus a 24px gap above, 24px of air below —
+ *     the same reserves as the other topic-06 parts.
+ *   - A screen shrunk by height is narrower than the column; it keeps to the
+ *     inline start (right) so the three screens share one right edge.
+ */
+const FIT_WIDTH = 1088;
+const FIT_HEIGHT = { plan: 721, nav: 747, question: 690 } as const;
+const FIT_RESERVE_TOP = 104;
+const FIT_RESERVE_BOTTOM = 24;
+
+function ScreenFit({ height, children }: { height: number; children: ReactNode }) {
+  return (
+    <LessonViewportFit
+      referenceWidth={FIT_WIDTH}
+      referenceHeight={height}
+      reserveTop={FIT_RESERVE_TOP}
+      reserveBottom={FIT_RESERVE_BOTTOM}
+      align="start"
+      fitTallerStates
+    >
+      {children}
+    </LessonViewportFit>
+  );
+}
+
 /** Motion language (INTERACTION_DNA): snap ease, ~0.3s panel swaps. */
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -111,29 +149,38 @@ export function PlanningTipsScene() {
         intro="מה מכינים לפני היציאה, ומה בודקים במהלך התנועה? נבחן את שניהם על אותה מפה לימודית, ונראה כיצד התכנון מסייע לזהות סטייה מהמסלול."
       />
 
-      <TipsScreen
-        title="לפני שיוצאים: מה צריך לתכנן?"
-        intro="בחרו דגש כדי לראות במפה את הפרט המתאים ולקרוא מה עושים ולמה זה מועיל."
-        boardLabel="מפת התכנון · לפני היציאה"
-        tips={PLAN_TIPS}
-        legend={PLAN_LEGEND}
-      />
-
-      <div className="mt-12">
+      <ScreenFit height={FIT_HEIGHT.plan}>
         <TipsScreen
-          title="במהלך הניווט: מה צריך לבדוק?"
-          intro="אותה מפה, עכשיו בזמן התנועה. בחרו דגש כדי לראות את המיקום הנוכחי ומה בודקים בו."
-          boardLabel="אותה מפה · במהלך הניווט"
-          tips={NAV_TIPS}
-          legend={NAV_LEGEND}
+          screenId="plan"
+          title="לפני שיוצאים: מה צריך לתכנן?"
+          intro="בחרו דגש כדי לראות במפה את הפרט המתאים ולקרוא מה עושים ולמה זה מועיל."
+          boardLabel="מפת התכנון · לפני היציאה"
+          tips={PLAN_TIPS}
+          legend={PLAN_LEGEND}
         />
+      </ScreenFit>
+
+      <div className="mt-12">
+        <ScreenFit height={FIT_HEIGHT.nav}>
+          <TipsScreen
+            screenId="nav"
+            title="במהלך הניווט: מה צריך לבדוק?"
+            intro="אותה מפה, עכשיו בזמן התנועה. בחרו דגש כדי לראות את המיקום הנוכחי ומה בודקים בו."
+            boardLabel="אותה מפה · במהלך הניווט"
+            tips={NAV_TIPS}
+            legend={NAV_LEGEND}
+          />
+        </ScreenFit>
       </div>
 
       <div className="mt-12">
-        <ApplicationQuestion />
+        <ScreenFit height={FIT_HEIGHT.question}>
+          <div data-tips-screen="question">
+            <ApplicationQuestion />
+            <ConclusionCard />
+          </div>
+        </ScreenFit>
       </div>
-
-      <ConclusionCard />
     </section>
   );
 }
@@ -144,12 +191,14 @@ export function PlanningTipsScene() {
  * caption under it, so every map highlight also has a text description.
  */
 function TipsScreen<F extends MapFocus>({
+  screenId,
   title,
   intro,
   boardLabel,
   tips,
   legend,
 }: {
+  screenId: string;
   title: string;
   intro: string;
   boardLabel: string;
@@ -173,7 +222,7 @@ function TipsScreen<F extends MapFocus>({
   };
 
   return (
-    <div role="group" aria-labelledby={`${uid}-title`}>
+    <div role="group" aria-labelledby={`${uid}-title`} data-tips-screen={screenId}>
       <h3 id={`${uid}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
         {title}
       </h3>

@@ -2558,3 +2558,11 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 - **Reserves.** Screen 1's top is measured (152 px at page top); screen 2 is read after scrolling it under the fixed header, so its top reserve is 80 + 24 px. Both keep 24 px below.
 - **Resulting scales.** 1920 × 1080: 1 (layout pixel-identical to before). 1440 × 1122: 0.967 for both (width-bound). 1536 × 864: 0.808 and 0.904. 1366 × 768: 0.695 and 0.786 — 14 px captions render at ≈9.7 px on screen 1. This follows the requested uniform shrink; legibility is open for review.
 - **3D model.** The canvas measures its untransformed size (`LESSON_FIT_CANVAS_RESIZE`); `OrbitControls` rotate/pan speeds are divided by the scale (1 in full screen). The layer drag maps the pointer through `getBoundingClientRect()` ratios, so it needed no change.
+
+## 2026-10-14 — Topic 06 "דגשים לתכנון ולניווט" laptop fit
+
+- **Three learning screens, one fit each.** Planning tips ("לפני שיוצאים"), navigation tips ("במהלך הניווט"), and the application question with its conclusion card. The part header (`SceneHeader`) is not a learning screen and stays unwrapped; its `vw` clamp is at its cap across 1366–1920. The 48 px gaps between screens stay outside the scale.
+- **Reference = 1920 × 1080.** Width 1088 px (the section's content column). Heights are each screen's tallest state at that width: 721 px for the planning tips (every tip — the map board sets the height), 747 px for the navigation tips (tip 4 open), 690 px for the question (wrong-answer feedback plus the retry button). The scale therefore stays steady while tips switch or answers are chosen; `fitTallerStates` is on only as a guard.
+- **Reserves.** 104 px top (80 px site header + 24 px) and 24 px bottom, the same as the other topic-06 parts, so each screen is fitted to the view under the header on its own.
+- **Inline-start alignment.** A screen shrunk by height is narrower than the column; it keeps to the right edge (RTL start) so the three screens share one right edge.
+- **Resulting scales.** 1920 × 1080: 1 for all (layout identical to before). 1536 × 864: 1 / 0.985 / 1. 1440 × 1122: 0.967 for all (width-bound). 1366 × 768: 0.888 / 0.857 / 0.899 — 16 px body text renders at ≈13.7 px at the smallest.
