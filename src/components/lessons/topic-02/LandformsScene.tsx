@@ -1,8 +1,9 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import {
   LandformMap,
@@ -124,43 +125,27 @@ const SLOPE_LABELS = {
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// Short screens: the two views narrow (centred in the board) until their bottom
-// edge sits on the first screen, so the map never needs a scroll. Applies while
-// the views stand side by side (md+); below that they stack at full width.
-const FIT_GAP = 24; // px kept clear under the views
-const VIEW_MIN_W = 280; // px — narrowest a view may get
-
-function useViewsFit(row: RefObject<HTMLDivElement | null>) {
-  const [width, setWidth] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    const el = row.current;
-    const box = el?.parentElement;
-    if (!el || !box) return;
-    const sideBySide = window.matchMedia('(min-width: 768px)');
-    const fit = () => {
-      const frames = [...el.querySelectorAll<HTMLElement>('[data-view-frame]')];
-      if (!sideBySide.matches || frames.length === 0) return setWidth(null);
-      const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
-      const ratio = Math.max(...frames.map((f) => f.offsetHeight / f.offsetWidth)); // views keep their aspect
-      const top = Math.max(...frames.map((f) => f.getBoundingClientRect().top)) + window.scrollY;
-      const viewW = Math.max(VIEW_MIN_W, (window.innerHeight - FIT_GAP - top) / ratio);
-      const w = Math.floor(viewW * 2 + gap);
-      setWidth(w < box.clientWidth ? w : null);
-    };
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(box);
-    ro.observe(el);
-    window.addEventListener('resize', fit);
-    sideBySide.addEventListener('change', fit);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', fit);
-      sideBySide.removeEventListener('change', fit);
-    };
-  }, [row]);
-  return width;
-}
+/**
+ * Laptop fit — the part's two screens (the landform board under the scene
+ * header, then the slope analyzer) each shrink on their own, uniformly, like a
+ * slide (LessonViewportFit). Reference = 1920 × 1080: the section's content box
+ * is 1088px (max-w-6xl 1152 − lg:px-8), and there both screens fit whole at
+ * scale 1. The screens follow one another in a scrolling section, so only the
+ * first one's top can be measured ('auto'); the second reserves the sticky
+ * site header (--header-h, 5rem from lg) plus the shell's 24px gap above it,
+ * the same band the first screen starts under. Both keep 24px clear below.
+ *
+ * Inside the fit nothing may size itself from the viewport, so the two
+ * height-driven rules the scene had are frozen to their 1920 × 1080 result:
+ * the views row is never narrowed (it took the full 1038px there), and the
+ * slope drawings take 72% of the row (min(72%, (100svh − 360px) × 1.6)).
+ */
+const FIT_WIDTH = 1088;
+const FIT_TOP = 80 + 24;
+const FIT_BOTTOM = 24;
+/** Laid-out heights at FIT_WIDTH, px (measured 2026-10-13, the same on every tab and on both forms of the valley/saddle tab). */
+const FIT_HEIGHT_BOARD = 700; // scene header + landform board
+const FIT_HEIGHT_SLOPES = 655;
 
 export function LandformsScene() {
   const [active, setActive] = useState<TerrainId>('hill');
@@ -168,18 +153,35 @@ export function LandformsScene() {
 
   return (
     <section id="scene-landforms" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="02.1"
-        title="תבניות נוף: חמש צורות יסוד של התבליט"
-        intro="בשיעור זה נכיר חמש תבניות נוף בסיסיות: כיפה, שלוחה, גיא, אוכף ומכתש. זיהוין מסייע להבין את מבנה הקרקע ואת ייצוגו במפה. בחרו כל תבנית והשוו בין צורתה בשטח לבין קווי הגובה המתארים אותה."
-      />
+      {/* Screen 1 — the scene header and the landform board. The 48px gap to
+          the next screen (the board's former mb-12) sits on the wrapper,
+          between the screens, outside the scaled composition. */}
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={FIT_HEIGHT_BOARD}
+        reserveBottom={FIT_BOTTOM}
+        className="mb-12"
+      >
+        <SceneHeader
+          step="02.1"
+          title="תבניות נוף: חמש צורות יסוד של התבליט"
+          intro="בשיעור זה נכיר חמש תבניות נוף בסיסיות: כיפה, שלוחה, גיא, אוכף ומכתש. זיהוין מסייע להבין את מבנה הקרקע ואת ייצוגו במפה. בחרו כל תבנית והשוו בין צורתה בשטח לבין קווי הגובה המתארים אותה."
+        />
 
-      <FormBoard active={active} onSelect={setActive} />
+        <FormBoard active={active} onSelect={setActive} />
+      </LessonViewportFit>
 
-      {/* The former divider line ("עוד שכבה: …") was removed by the user's
-          2026-09-28 decision — the slope workspace opens with its own T1 h3,
-          and the board above already sets the 48px block gap (mb-12). */}
-      <SlopeAnalyzer slopes={SLOPES} active={slope} onSelect={setSlope} />
+      {/* Screen 2 — the slope analyzer. The former divider line ("עוד שכבה: …")
+          was removed by the user's 2026-09-28 decision — the slope workspace
+          opens with its own T1 h3. */}
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={FIT_HEIGHT_SLOPES}
+        reserveTop={FIT_TOP}
+        reserveBottom={FIT_BOTTOM}
+      >
+        <SlopeAnalyzer slopes={SLOPES} active={slope} onSelect={setSlope} />
+      </LessonViewportFit>
     </section>
   );
 }
@@ -191,7 +193,7 @@ function InfoLabel({ children }: { children: ReactNode }) {
 
 /* ── Landforms — tabs + terrain beside its map ───────────────────────────── */
 
-// One workspace that fits the first screen at any size: the landforms as tabs
+// One workspace on the first screen: the landforms as tabs
 // on top, the terrain and its map side by side (terrain → RIGHT in RTL, read
 // first), and the form's description beneath them. A tab with two forms (valley
 // and saddle) keeps the same board: a switch over the map picks which form the
@@ -202,21 +204,15 @@ function FormBoard({ active, onSelect }: { active: TerrainId; onSelect: (id: Ter
   const [pick, setPick] = useState<Form>('valley');
   const form = FORMS[pair && tab.forms.includes(pick) ? pick : tab.forms[0]];
   const reduce = useReducedMotion();
-  const rowRef = useRef<HTMLDivElement>(null);
-  const rowW = useViewsFit(rowRef);
 
   return (
-    <div data-qa="forms-board" className="surface-elevated p-5 sm:p-6 mb-12">
+    <div data-qa="forms-board" className="surface-elevated p-5 sm:p-6">
       <FormTabs active={active} onSelect={onSelect} />
 
       <div role="tabpanel" id="lf-form-panel" aria-labelledby={`lf-form-tab-${active}`}>
         {/* The views stay mounted: on a switch the terrain and its contours
             reshape from the current form into the next one. */}
-        <div
-          ref={rowRef}
-          className="mx-auto grid gap-4 md:grid-cols-2"
-          style={rowW ? { maxWidth: rowW } : undefined}
-        >
+        <div className="mx-auto grid gap-4 md:grid-cols-2">
           <BoardView>
             <LandformReality
               terrain={active}
@@ -473,8 +469,7 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
           drawings, as in the landforms block above, so switching a slope never
           pushes its description below the fold. */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
-        {/* Takes whatever width the drawings leave; once it is wide enough
-            (short screens cap the drawings) the tabs go two per row. */}
+        {/* Takes the width the drawings leave (28% of the row). */}
         <div className="flex flex-col gap-5 lg:flex-1 lg:min-w-[15rem]">
           <div
             role="tablist"
@@ -552,9 +547,9 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
         {/* The same slope from the side (profile) and from above (contours). The
             drawings morph between types — the drop lines carry every equal-height
             crossing straight down onto its contour line. Both keep a fixed aspect
-            (height ≈ 0.62 × width), so on short screens the width is capped by the
-            viewport height: nav + card padding + header + captions ≈ 360px. */}
-        <div id="lf-slope-figure" className="min-w-0 lg:basis-[min(72%,calc((100svh_-_360px)_*_1.6))]">
+            (height ≈ 0.62 × width); on short screens the laptop fit shrinks the
+            whole screen instead of capping their width. */}
+        <div id="lf-slope-figure" className="min-w-0 lg:basis-[72%]">
           <LinkedBoards>
             <SlopeProfile slope={active} ariaLabel={`${meta.label} — מהצד: חתך השטח`} />
             <SlopeContours

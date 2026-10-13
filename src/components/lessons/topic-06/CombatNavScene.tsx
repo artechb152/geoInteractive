@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useRef, useState, type ReactNode } from 'react';
 import {
   motion,
   useInView,
@@ -10,6 +10,7 @@ import {
 } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import {
   HALO,
   PAPER,
@@ -110,12 +111,58 @@ type VisualProps = {
   label: string;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Laptop fit — the part's three learning screens (the opening, technique 1,
+// technique 2 with the closing principles) are each their own
+// LessonViewportFit, shrunk uniformly like a slide so a laptop shows the same
+// view as the 1920 × 1080 reference.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Content width of the section at the reference viewport (max-w-6xl minus lg:px-8). */
+const SCREEN_REFERENCE_WIDTH = 1088;
+/**
+ * The part scrolls through several screens, so the automatic reserves (which
+ * count everything below a wrapper) don't apply: a screen in view sits under
+ * the fixed 80px site header with the section's 24px top gap, plus 24px of air
+ * below it.
+ */
+const SCREEN_RESERVE_TOP = 104;
+const SCREEN_RESERVE_BOTTOM = 24;
+/**
+ * Every screen fits against the height the 1920 × 1080 viewport leaves for it
+ * rather than its own height: scale 1 at 1080px tall, and the same scale on
+ * every screen of the part, so the type keeps one size from screen to screen.
+ * Technique 1 (the lab, ~1410px) is taller than this budget, as it is at the
+ * reference; a laptop shows the same part of it and the rest scrolls.
+ */
+const SCREEN_REFERENCE_HEIGHT = 1080 - SCREEN_RESERVE_TOP - SCREEN_RESERVE_BOTTOM;
+
+function ScreenFit({ className, children }: { className?: string; children: ReactNode }) {
+return (
+ <LessonViewportFit
+referenceWidth={SCREEN_REFERENCE_WIDTH}
+referenceHeight={SCREEN_REFERENCE_HEIGHT}
+reserveTop={SCREEN_RESERVE_TOP}
+reserveBottom={SCREEN_RESERVE_BOTTOM}
+className={className}
+ >
+ {children}
+ </LessonViewportFit>
+);
+}
+
 export function CombatNavScene() {
 const reduce = !!useReducedMotion();
 // Quiet anchors to the two parts of the page — both stay in the scroll; nothing is hidden.
-const scrollToPart = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+// The scroll target is the part's screen wrapper: it is never transformed, so its
+// scroll margin keeps the part clear of the site header at every fit scale.
+const scrollToPart = (id: string) => {
+const part = document.getElementById(id);
+(part?.closest<HTMLElement>('[data-lesson-viewport-fit]') ?? part)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+};
 return (
  <section id="scene-combat" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <ScreenFit>
  <SceneHeader
 step="03.3"
 eyebrow="טכניקות ניווט"
@@ -162,11 +209,17 @@ className="rounded font-display font-semibold underline decoration-border-strong
  </Fragment>
  ))}
  </nav>
+ </ScreenFit>
 
+ <ScreenFit className="scroll-mt-24">
  <TerrainSection data={METHODS[0]} support={SUPPORT.handrail} onContinue={() => scrollToPart('combatnav-dead')} />
- <DeadReckoningSection data={METHODS[1]} support={SUPPORT.dead} />
+ </ScreenFit>
 
+ {/* Technique 2 and the closing principles share one screen, as at the reference. */}
+ <ScreenFit className="mt-12 scroll-mt-24">
+ <DeadReckoningSection data={METHODS[1]} support={SUPPORT.dead} />
  <ConclusionCard />
+ </ScreenFit>
  </section>
  );
 }
@@ -235,7 +288,7 @@ const boardRef = useRef<HTMLDivElement>(null);
 // once (the replay control re-runs it).
 const boardSeen = useInView(boardRef, { once: true, amount: 0.3 });
 return (
- <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="mt-12 scroll-mt-24">
+ <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}
  {INLINE_TERM.has(data.id) && (
@@ -263,13 +316,14 @@ return (
 
  {/* Explanation board — second child → LEFT in RTL. A clean elevated surface
      holding the header, diagram and legend; sticky below the fixed site
-     header (h-20) and capped to the viewport on desktop. */}
+     header (h-20) and capped to the viewport on desktop — the cap frozen at
+     its 1080px-tall result (100vh − 7rem), as the screen is laptop-fitted. */}
  <div className="lg:sticky lg:top-24 self-start">
  <div
 ref={boardRef}
 role="group"
 aria-label={`הסבר חזותי · ${data.label}`}
-className="surface-elevated overflow-hidden flex flex-col lg:max-h-[calc(100vh-7rem)]"
+className="surface-elevated overflow-hidden flex flex-col lg:max-h-[968px]"
  >
  <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-5 pb-2">
  <div className="min-w-0">

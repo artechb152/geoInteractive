@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, Line, OrbitControls, useTexture } from '@react-three/drei';
+import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STREAM, WATER_TOWER, WORLD_BOUNDS, type Point } from './terrainNavScenario';
@@ -81,6 +82,12 @@ export type ModelProps = {
   pins: readonly { readonly id: string; readonly at: Point; readonly tone: 'start' | 'checkpoint' }[];
   onPick?: (p: Point) => void;
   onReady?: () => void;
+  /**
+   * CSS scale of the model on screen (the laptop fit of CombatNavScene; 1 when
+   * not shrunk or in full screen). OrbitControls reads drag deltas in screen px
+   * but divides by the untransformed size, so its speeds are compensated.
+   */
+  pointerScale?: number;
 };
 
 // ---------------------------------------------------------------- camera
@@ -991,7 +998,7 @@ function World({ highlights, onReady }: { highlights: readonly FeatureId[]; onRe
   );
 }
 
-export default function TerrainNav3D({ view, reduce, highlights, route, labels, pins, onPick, onReady }: ModelProps) {
+export default function TerrainNav3D({ view, reduce, highlights, route, labels, pins, onPick, onReady, pointerScale = 1 }: ModelProps) {
   const home = useMemo(() => {
     const t = toWorld3(SHEET_CENTER.E, SHEET_CENTER.N, HOME_VIEW.targetHeightM);
     const polar = THREE.MathUtils.degToRad(HOME_VIEW.polarDeg);
@@ -1006,6 +1013,8 @@ export default function TerrainNav3D({ view, reduce, highlights, route, labels, 
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ fov: 40, near: 5 / S, far: 30000 / S, position: home.pos }}
       frameloop="demand"
+      // Inside CombatNavScene's LessonViewportFit: size from the untransformed box.
+      resize={LESSON_FIT_CANVAS_RESIZE}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 0.86;
@@ -1013,7 +1022,7 @@ export default function TerrainNav3D({ view, reduce, highlights, route, labels, 
       style={{ position: 'absolute', inset: 0 }}
     >
       <SceneSetup />
-      <OrbitControls makeDefault target={home.target} enableDamping dampingFactor={0.1} minDistance={300 / S} maxDistance={3600 / S} maxPolarAngle={THREE.MathUtils.degToRad(80)} zoomSpeed={0.9} screenSpacePanning={false} />
+      <OrbitControls makeDefault target={home.target} enableDamping dampingFactor={0.1} minDistance={300 / S} maxDistance={3600 / S} maxPolarAngle={THREE.MathUtils.degToRad(80)} zoomSpeed={0.9} rotateSpeed={1 / pointerScale} panSpeed={1 / pointerScale} screenSpacePanning={false} />
       <CameraRig view={view} reduce={reduce} />
       <Picker onPick={onPick} />
       <SkyDome />

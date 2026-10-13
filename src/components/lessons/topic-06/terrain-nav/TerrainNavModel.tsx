@@ -4,6 +4,7 @@ import { Component, useCallback, useEffect, useRef, useState, useSyncExternalSto
 import dynamic from 'next/dynamic';
 import { Maximize2, Minimize2, Minus, Plus, RotateCcw, ScanSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { formatBearing } from './terrainNavGeometry';
 import type { ModelProps } from './TerrainNav3D';
 import type { ViewStore } from './terrainNavViewStore';
@@ -69,6 +70,11 @@ export function TerrainNavModel({
   const [cut, setCut] = useState(false);
   const drag = useRef<{ x: number; y: number; yaw: number; pitch: number; id: number } | null>(null);
   const st = useSyncExternalStore(view.subscribe, view.get, view.get);
+  // The panel is CSS-scaled by the scene's laptop fit (not in full screen, which
+  // leaves the transformed box). Pointer deltas are screen px and the panel's
+  // size is untransformed, so the deltas are divided by this to keep drags 1:1.
+  const fitScale = useLessonViewportScale();
+  const pointerScale = fullscreen ? 1 : fitScale;
 
   useEffect(() => setRenderer(hasWebGL() ? 'live' : 'static'), []);
   const fallBack = useCallback(() => setRenderer('static'), []);
@@ -119,7 +125,7 @@ export function TerrainNavModel({
     if (!d || d.id !== e.pointerId) return;
     const w = e.currentTarget.clientWidth || 1;
     const degPerPx = st.look.hfovDeg / w;
-    view.look({ yawDeg: d.yaw - (e.clientX - d.x) * degPerPx, pitchDeg: d.pitch + (e.clientY - d.y) * degPerPx });
+    view.look({ yawDeg: d.yaw - ((e.clientX - d.x) / pointerScale) * degPerPx, pitchDeg: d.pitch + ((e.clientY - d.y) / pointerScale) * degPerPx });
   };
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (drag.current?.id === e.pointerId) drag.current = null;
@@ -163,7 +169,7 @@ export function TerrainNavModel({
       {/* The canvas (live) or the static picture of the same model and camera (no WebGL) */}
       {live && activated && (
         <CanvasErrorBoundary onError={fallBack}>
-          <TerrainNav3D view={view} reduce={reduce} onReady={onReady} {...modelProps} />
+          <TerrainNav3D view={view} reduce={reduce} onReady={onReady} pointerScale={pointerScale} {...modelProps} />
         </CanvasErrorBoundary>
       )}
       {renderer === 'static' && (

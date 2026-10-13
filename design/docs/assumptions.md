@@ -2531,3 +2531,12 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 - **Sub-pixel shift at 1920.** The fit wrapper takes the composition's integer `offsetHeight` (699.6 → 700 px), so screen 2 moves down by 0.4 px. Screen 1 is pixel-identical to before on every tab; screen 2 differs only in anti-aliasing.
 - **Below lg.** The fit is not gated by width, as in the other wrapped topic-02 screens; mobile stays out of scope until desktop is signed off.
 - QA: `scripts/qa/probe-landforms-fit.mjs` (geometry, overflow and every landform/slope tab per viewport). Output in `design/screenshots/topic02-landforms-fit/` (`before-*` and `after-*`).
+
+## 2026-10-13 — Topic 06 "טכניקות ניווט" laptop fit
+
+- **Three screens, three fits.** The opening (scene header, the two terms and the "בחלק זה" links), technique 1 (title, principle, the terrain lab and its two cards) and technique 2 with the closing principles card. Technique 2 and the closing card share one fit because at 1920 × 1080 they share one view (938 px together).
+- **Reference = 1920 × 1080.** Width 1088 px (the section's content column). `reserveTop` 104 (the 80 px site header plus the section's 24 px top gap) and `reserveBottom` 24, the same values as the sibling principles part, so the height budget is 952 px.
+- **Every screen fits against the 952 px budget, not its own height.** Technique 1 is ≈1410 px tall, so fitting its full height would shrink the 1920 view. With the budget the 1920 × 1080 view keeps scale 1, a laptop shows the same share of the lab as 1920 does, and all three screens share one scale, so the type does not jump between screens. Resulting scales: 1366 × 768 0.672, 1536 × 864 0.773, 1440 × 1122 0.967 (width-bound; the column there is 1052 px).
+- **Board height cap frozen.** Technique 2's board was capped at `100vh − 7rem`. Inside the fit it is capped at that cap's 1080 px-tall result (968 px). The cap does not bind at 1920 × 1080 (the board is 720 px), so the reference view is unchanged.
+- **Pointer feel under the fit.** The 3D model's canvas sizes itself from its untransformed box (`LESSON_FIT_CANVAS_RESIZE`). The navigator's-eye drag divides pointer deltas by the scale, and `OrbitControls` rotate/pan speeds are divided by it, so drags keep the reference feel. In full screen the scale is ignored there. The topographic map already reads clicks through `getScreenCTM()`, which includes the CSS scale.
+- **Small text on 1366 × 768.** At 0.672, 16 px body text renders at ≈10.8 px. This follows the requested uniform shrink; legibility is open for review.
