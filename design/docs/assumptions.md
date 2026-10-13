@@ -2472,3 +2472,11 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 ## 2026-10-13 — Topic 02 base-60 calculator placement
 
 - The user asked to restore the calculator to its original state and defer the placement change until working from another computer. The original toggle above the diagram and the original floating calculator are restored; no calculator layout change remains.
+
+## 2026-10-13 — Topic 02 "קנה מידה" laptop fit
+
+- **One screen, one fit.** The part has one learning screen (the scene header plus the scale lab), so one `LessonViewportFit` wraps both. Reference: 1088 × 916 px, the section's content box and the composition's initial height at 1920 × 1080.
+- **Bottom reserve is 12 px, not the measured space below.** The measured default counts PagedLearn's prev/next row and the section's bottom padding (≈156 px). That would shrink the 1920 × 1080 view to ≈0.84. At 1920 × 1080 the lab ends 13 px above the fold, so a 12 px reserve keeps that view at scale 1. On laptops it leaves a small gap at the viewport edge. The prev/next row stays below the fold, as before.
+- **1440 × 1122 is now a uniform 0.967 shrink of the 1920 layout.** Before, the lab reflowed into the ≈1052 px column (map 587 px). Now it keeps the 1920 columns and line breaks (map 588 px on screen).
+- **Taller states grow the page at the same scale.** Opening "פרטי החישוב" in measure mode makes the lab 132 px taller (reference px). The scale stays steady, and the page scrolls.
+- **Small text on 1366 × 768.** The fit scale there is 0.659, so 14 px text renders at ≈9.2 px. This follows the requested uniform shrink. The legibility trade-off is open for review.

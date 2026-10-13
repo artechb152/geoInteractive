@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { useReducedMotion } from 'framer-motion';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import type { SheetPoint } from './geo';
 import { IDENTITY, clampView, nestIn, panView, screenToUnits, zoomAt, type View } from './viewMath';
 
@@ -51,6 +52,11 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
   outPastRef.current = opts.onZoomOutPast;
   const inRectRef = useRef(opts.zoomInRect);
   inRectRef.current = opts.zoomInRect;
+  // Inside a LessonViewportFit the map is CSS-scaled: pointer offsets arrive in screen px, the view is in
+  // layout px (clientWidth). Every pointer reading is divided by this.
+  const fitScale = useLessonViewportScale();
+  const fitRef = useRef(fitScale);
+  fitRef.current = fitScale;
 
   const sizeRef = useRef(1);
   useLayoutEffect(() => {
@@ -152,7 +158,7 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
       }
       d.x = e.clientX;
       d.y = e.clientY;
-      if (viewRef.current.k > MIN_K) panBy(dx, dy);
+      if (viewRef.current.k > MIN_K) panBy(dx / fitRef.current, dy / fitRef.current);
     },
     [panBy],
   );
@@ -175,8 +181,8 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
       // Over the map the wheel only zooms: at a limit it does nothing (the page does not scroll).
       e.preventDefault();
       const r = el.getBoundingClientRect();
-      const sx = e.clientX - r.left;
-      const sy = e.clientY - r.top;
+      const sx = (e.clientX - r.left) / fitRef.current;
+      const sy = (e.clientY - r.top) / fitRef.current;
       const s = el.clientWidth || 1;
       const zr = inRectRef.current;
       if (zr && e.deltaY < 0) {
@@ -251,7 +257,8 @@ export function useMapView(ref: RefObject<HTMLElement | null>, initial?: Initial
       const el = ref.current;
       if (!el) return { x: 0, y: 0 };
       const r = el.getBoundingClientRect();
-      return screenToUnits(viewRef.current, clientX - r.left, clientY - r.top, el.clientWidth || 1);
+      const f = fitRef.current;
+      return screenToUnits(viewRef.current, (clientX - r.left) / f, (clientY - r.top) / f, el.clientWidth || 1);
     },
     [ref],
   );
