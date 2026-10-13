@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { ReadyCallout } from '@/components/lesson/ReadyCallout';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -83,6 +84,25 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
   },
 ];
 
+// Laptop fit (LessonViewportFit): each of the two screens of this part is
+// shrunk uniformly, like a slide, from its 1920×1080 composition. The section
+// keeps its max-w-6xl and lg:px-8, so the reference width is the section's
+// content box there (1152 − 2·32). Heights are the screens measured at that
+// width: screen 1 = header 151 + mb-8 + accordion/stage row 604 (the row
+// height is the same with every step open; all-closed is shorter), screen 2
+// = h3 + 2×2 info cards + ReadyCallout. Any column narrower than 1088px
+// (1440 with the side nav: 1052px) shrinks the screens too, so they keep the
+// 1920 line breaks instead of reflowing.
+const FIT_WIDTH = 1088;
+const FIT_HEIGHT_STEPS = 787;
+const FIT_HEIGHT_CASES = 658;
+// Viewport px above a screen when it is read in place: the site header
+// (--header-h, 5rem from lg) plus the shell's 24px top gap that sits above
+// the section at scroll 0. Mirrored below screen 1, whose bottom would
+// otherwise be measured to include screen 2.
+const FIT_GAP = 24;
+const FIT_TOP = 80 + FIT_GAP;
+
 export function OnboardingScene() {
   const [phase, setPhase] = useState<Phase>('plan');
   const [expandedStep, setExpandedStep] = useState<Phase | null>('plan');
@@ -98,137 +118,152 @@ export function OnboardingScene() {
 
   return (
     <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        title="ניווט בשטח: מתכנון ועד הגעה"
-        intro="כיצד מגיעים מנקודת המוצא ליעד בשטח לא מוכר? נבחן ארבעה שלבים: תכנון המסלול, קביעת כיוון, בדיקת המיקום בתנועה ואימות ההגעה. בחרו בכל שלב כדי לעקוב אחר ההסבר וההמחשה."
-      />
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={FIT_HEIGHT_STEPS}
+        reserveBottom={FIT_GAP}
+      >
+        <SceneHeader
+          title="ניווט בשטח: מתכנון ועד הגעה"
+          intro="כיצד מגיעים מנקודת המוצא ליעד בשטח לא מוכר? נבחן ארבעה שלבים: תכנון המסלול, קביעת כיוון, בדיקת המיקום בתנועה ואימות ההגעה. בחרו בכל שלב כדי לעקוב אחר ההסבר וההמחשה."
+        />
 
-      <div className="grid md:grid-cols-[2fr_3fr] gap-6">
-        <div className="space-y-3">
-          {STEPS.map((s, i) => {
-            const active = phase === s.id;
-            const expanded = expandedStep === s.id;
-            const passed = STEPS.findIndex((x) => x.id === phase) > i;
-            return (
-              <div
-                key={s.id}
-                className={cn(
-                  'relative isolate rounded-xl border bg-bg-elevated overflow-hidden transition-colors duration-200 ease-snap',
-                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                  active
-                    ? 'border-brand/45'
-                    : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleStepClick(s.id)}
-                  aria-expanded={expanded}
-                  aria-controls={`step-panel-${s.id}`}
-                  className="w-full p-4 text-start flex items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
-                >
-                  <span
-                    className={cn(
-                      'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
-                      active || passed ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
-                    )}
-                  >
-                    {passed && !active ? (
-                      <Icon name="check" size={18} strokeWidth={2.5} />
-                    ) : (
-                      <span className="font-display text-base font-bold">{i + 1}</span>
-                    )}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">
-                      {s.label}
-                    </div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: expanded ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key={`panel-${s.id}`}
-                      id={`step-panel-${s.id}`}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-5 pt-1 space-y-4">
-                        <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5">
-                            הפעולה בשלב זה
-                          </div>
-                          <p className="text-base leading-relaxed text-black">{s.caption}</p>
-                        </div>
-                        <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5">
-                            חשיבות הפעולה
-                          </div>
-                          <p className="text-base leading-relaxed text-black">{s.insight}</p>
-                        </div>
-                      </div>
-                    </motion.div>
+        <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+          <div className="space-y-3">
+            {STEPS.map((s, i) => {
+              const active = phase === s.id;
+              const expanded = expandedStep === s.id;
+              const passed = STEPS.findIndex((x) => x.id === phase) > i;
+              return (
+                <div
+                  key={s.id}
+                  className={cn(
+                    'relative isolate rounded-xl border bg-bg-elevated overflow-hidden transition-colors duration-200 ease-snap',
+                    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                    active
+                      ? 'border-brand/45'
+                      : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
                   )}
-                </AnimatePresence>
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleStepClick(s.id)}
+                    aria-expanded={expanded}
+                    aria-controls={`step-panel-${s.id}`}
+                    className="w-full p-4 text-start flex items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
+                  >
+                    <span
+                      className={cn(
+                        'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
+                        active || passed ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted'
+                      )}
+                    >
+                      {passed && !active ? (
+                        <Icon name="check" size={18} strokeWidth={2.5} />
+                      ) : (
+                        <span className="font-display text-base font-bold">{i + 1}</span>
+                      )}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">
+                        {s.label}
+                      </div>
+                    </div>
+                    <motion.span
+                      animate={{ rotate: expanded ? 180 : 0 }}
+                      transition={{ duration: 0.25 }}
+                      className={cn('shrink-0 inline-flex', expanded ? 'text-brand-dark' : 'text-fg-dim')}
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </motion.span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {expanded && (
+                      <motion.div
+                        key={`panel-${s.id}`}
+                        id={`step-panel-${s.id}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-5 pt-1 space-y-4">
+                          <div>
+                            <div className="text-base font-display font-bold text-black mb-1.5">
+                              הפעולה בשלב זה
+                            </div>
+                            <p className="text-base leading-relaxed text-black">{s.caption}</p>
+                          </div>
+                          <div>
+                            <div className="text-base font-display font-bold text-black mb-1.5">
+                              חשיבות הפעולה
+                            </div>
+                            <p className="text-base leading-relaxed text-black">{s.insight}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px]">
+            <MissionStage phase={phase} />
+          </div>
+        </div>
+      </LessonViewportFit>
+
+      {/* mt-12 sits on the unscaled wrapper so the gap between the screens
+          stays the original 48px. */}
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={FIT_HEIGHT_CASES}
+        reserveTop={FIT_TOP}
+        className="mt-12"
+      >
+        <h3 className="mb-6 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+          חשיבות הניווט בתנאים שונים
+        </h3>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          {/* Local info cards (spec §1 "Info card") instead of the shared IntelCard,
+              whose rounded-md surface and tracked attribution line are kept for
+              the other lessons that use it. Same content and order as before. */}
+          {HISTORICAL.map((h) => (
+            <article key={h.headline} className="surface flex h-full flex-col p-5 sm:p-6">
+              <h3 className="font-display text-lg font-bold leading-snug text-fg text-balance md:text-xl">
+                {h.headline}
+              </h3>
+              <p className="mt-2 text-base leading-relaxed text-fg text-pretty">{h.lesson}</p>
+              <div className="mt-auto pt-4 text-sm font-display font-semibold text-fg-muted">
+                <span aria-hidden className="me-1.5">—</span>
+                <span>{h.place}</span>
               </div>
-            );
-          })}
+            </article>
+          ))}
         </div>
 
-        <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px]">
-          <MissionStage phase={phase} />
-        </div>
-      </div>
-
-      <h3 className="mt-12 mb-6 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-        חשיבות הניווט בתנאים שונים
-      </h3>
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        {/* Local info cards (spec §1 "Info card") instead of the shared IntelCard,
-            whose rounded-md surface and tracked attribution line are kept for
-            the other lessons that use it. Same content and order as before. */}
-        {HISTORICAL.map((h) => (
-          <article key={h.headline} className="surface flex h-full flex-col p-5 sm:p-6">
-            <h3 className="font-display text-lg font-bold leading-snug text-fg text-balance md:text-xl">
-              {h.headline}
-            </h3>
-            <p className="mt-2 text-base leading-relaxed text-fg text-pretty">{h.lesson}</p>
-            <div className="mt-auto pt-4 text-sm font-display font-semibold text-fg-muted">
-              <span aria-hidden className="me-1.5">—</span>
-              <span>{h.place}</span>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <ReadyCallout title="בהמשך השיעור" signature={false}>
-        <p>ארבעת השלבים משלבים תכנון ובדיקת מיקום לאורך הדרך. בחלק הבא נכיר
-            <strong className="text-fg"> דגשים לתכנון ולניווט</strong>, ובהמשך נלמד לבחור שיטת ניווט המתאימה לתנאי השטח, לקבוע אזימוט ולתכנן מסלול.</p>
-      </ReadyCallout>
+        <ReadyCallout title="בהמשך השיעור" signature={false}>
+          <p>ארבעת השלבים משלבים תכנון ובדיקת מיקום לאורך הדרך. בחלק הבא נכיר
+              <strong className="text-fg"> דגשים לתכנון ולניווט</strong>, ובהמשך נלמד לבחור שיטת ניווט המתאימה לתנאי השטח, לקבוע אזימוט ולתכנן מסלול.</p>
+        </ReadyCallout>
+      </LessonViewportFit>
     </section>
   );
 }
