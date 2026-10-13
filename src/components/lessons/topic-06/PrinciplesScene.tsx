@@ -4,10 +4,12 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
 } from 'react';
 import { useSpring, useMotionValueEvent, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { LocationCheckActivity } from './LocationCheckActivity';
 import { BearingMap, CompassInstrument } from './CompassMapVisuals';
 import { NorthLab } from './north-lab/NorthLab';
@@ -18,6 +20,43 @@ import { AZIMUTH_MAX, AZIMUTH_START, backAzimuth, backEquation, formatDeg, short
 // https://www.ngdc.noaa.gov/geomag/declination.shtml
 // https://www.gps.gov/gps-accuracy
 // https://www.first.army.mil/Portals/102/STP%2021-1-SMCT.pdf
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Laptop fit — each learning screen of this part (compass + map, the three
+// norths, the location check) is its own LessonViewportFit, shrunk uniformly
+// like a slide so laptops show the same view as the 1920 × 1080 reference.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Content width of the section at the reference viewport (max-w-6xl minus lg:px-8). */
+const SCREEN_REFERENCE_WIDTH = 1088;
+/**
+ * The scene scrolls through several screens, so the automatic reserves (which
+ * count everything below a wrapper) don't apply: a screen in view sits under
+ * the fixed 80px site header with the section's 24px top gap, plus 24px of air
+ * below it.
+ */
+const SCREEN_RESERVE_TOP = 104;
+const SCREEN_RESERVE_BOTTOM = 24;
+/**
+ * The three-norths lab (1102px) is taller than the 1920 × 1080 viewport leaves
+ * for it, so its fit height is that viewport budget rather than its full
+ * height: scale 1 at 1080px tall, and a laptop shows the same part of it the
+ * reference does. The rest scrolls, as at the reference.
+ */
+const NORTH_LAB_REFERENCE_HEIGHT = 1080 - SCREEN_RESERVE_TOP - SCREEN_RESERVE_BOTTOM;
+
+function ScreenFit({ referenceHeight, children }: { referenceHeight?: number; children: ReactNode }) {
+  return (
+    <LessonViewportFit
+      referenceWidth={SCREEN_REFERENCE_WIDTH}
+      referenceHeight={referenceHeight}
+      reserveTop={SCREEN_RESERVE_TOP}
+      reserveBottom={SCREEN_RESERVE_BOTTOM}
+    >
+      {children}
+    </LessonViewportFit>
+  );
+}
 
 export function PrinciplesScene() {
   return (
@@ -57,14 +96,20 @@ export function PrinciplesScene() {
         </div>
       </div>
 
-      <AzimuthExplorer />
+      <ScreenFit>
+        <AzimuthExplorer />
+      </ScreenFit>
 
       <div className="my-12">
-        <NorthLab />
+        <ScreenFit referenceHeight={NORTH_LAB_REFERENCE_HEIGHT}>
+          <NorthLab />
+        </ScreenFit>
       </div>
 
       <div className="my-12">
-        <GpsDeniedCard />
+        <ScreenFit>
+          <GpsDeniedCard />
+        </ScreenFit>
       </div>
 
       <ConclusionCard />

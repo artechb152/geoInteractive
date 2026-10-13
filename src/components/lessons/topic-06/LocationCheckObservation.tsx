@@ -17,6 +17,7 @@ import dynamic from 'next/dynamic';
 import { useReducedMotion } from 'framer-motion';
 import { useProgress } from '@react-three/drei';
 import { cn } from '@/lib/utils';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { FORK, READINGS } from './locationCheckScenario';
 import { bearingToViewX, formatBearing, normalizeDegrees, projectToView, signedTurn, type EyePoint } from './locationCheckGeometry';
 import { heightAt, observerEye } from './locationCheckTerrain';
@@ -95,6 +96,9 @@ export function LocationCheckObservation({
   const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  // `size` is the untransformed frame; pointer deltas are screen px, so divide
+  // them by the laptop-fit scale (1 when not shrunk) to keep the drag 1:1.
+  const fitScale = useLessonViewportScale();
   const [dragging, setDragging] = useState(false);
   const [turned, setTurned] = useState(false);
   const [keyFocus, setKeyFocus] = useState(false);
@@ -142,8 +146,8 @@ export function LocationCheckObservation({
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (d && d.id === e.pointerId) {
-      const dx = e.clientX - d.x;
-      const dy = e.clientY - d.y;
+      const dx = (e.clientX - d.x) / fitScale;
+      const dy = (e.clientY - d.y) / fitScale;
       if (!d.moved && Math.hypot(dx, dy) > 4) {
         d.moved = true;
         frameRef.current?.setPointerCapture(e.pointerId);

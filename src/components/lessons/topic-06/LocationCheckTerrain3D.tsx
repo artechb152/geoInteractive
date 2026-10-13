@@ -10,6 +10,7 @@ import { WORLD3D, grovePolygon, toWorld3, verticalFov } from './locationCheckGeo
 import { ROAD_VERGE_M, crownShape, groundStones, groundTufts, groveTrees, heightField, meshAxis, observerEye, roads, rng, shrubs } from './locationCheckTerrain';
 import type { LookStore } from './locationCheckViewStore';
 import { createTerrainMaterial, createSkyMaterial, SKY } from './locationCheckMaterials';
+import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 
 /**
  * The live eye-level observation: one camera, fixed at the observation point
@@ -591,6 +592,8 @@ export default function LocationCheckTerrain3D({
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ fov: 50, near: 0.25 / S, far: 9000 / S, position: [0, 0, 0] }}
       frameloop="demand"
+      // Inside PrinciplesScene's LessonViewportFit: size from the untransformed box.
+      resize={LESSON_FIT_CANVAS_RESIZE}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.NeutralToneMapping;
         gl.toneMappingExposure = 1.0;
