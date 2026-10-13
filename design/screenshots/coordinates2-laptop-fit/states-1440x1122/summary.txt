@@ -1,0 +1,5 @@
+projections-lab exit=0
+geo-globe exit=0
+base60-workbench exit=0
+utm-atlas exit=0
+reference-systems exit=1

@@ -23,6 +23,7 @@
 import { Component, useEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { ellipsoidMesh, geodeticToScene } from '../geo-globe/geoCoords';
 import { GLOBE_SEA, SRC_RAMP } from './earthRaster';
 import {
@@ -687,8 +688,12 @@ function Rig({ view, reduce, api, shadowFade }: { view: StageView; reduce: boole
 
 /* ───────────────────────── pointer: turning the view ───────────────────────── */
 
-function DragTurn({ api, onEngage }: { api: MutableRefObject<StageApi | null>; onEngage: () => void }) {
+/** `scale`: the laptop fit's scale (LessonViewportFit) — screen px are turned back into layout px,
+    so the globe turns as much per px of the shrunk stage as it does at full size. */
+function DragTurn({ api, onEngage, scale }: { api: MutableRefObject<StageApi | null>; onEngage: () => void; scale: number }) {
   const gl = useThree((s) => s.gl);
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
   useEffect(() => {
     const el = gl.domElement;
     let id: number | null = null;
@@ -704,8 +709,8 @@ function DragTurn({ api, onEngage }: { api: MutableRefObject<StageApi | null>; o
     };
     const move = (e: PointerEvent) => {
       if (e.pointerId !== id) return;
-      const dx = e.clientX - x;
-      const dy = e.clientY - y;
+      const dx = (e.clientX - x) / scaleRef.current;
+      const dy = (e.clientY - y) / scaleRef.current;
       x = e.clientX;
       y = e.clientY;
       // the globe's face follows the hand: dragging right brings the west into view
@@ -780,9 +785,11 @@ export default function ProjectionStage3D({ images, view, reduce, active, api, o
     };
   }, []);
   const shadowFade = useRef(1);
+  const scale = useLessonViewportScale();
   return (
     <StageBoundary onFail={onFail}>
       <Canvas
+        resize={LESSON_FIT_CANVAS_RESIZE}
         flat
         dpr={[1, 2]}
         camera={{ fov: CAM_FOV, near: 0.1, far: 60, position: [6, 1.6, -0.8] }}
@@ -800,7 +807,7 @@ export default function ProjectionStage3D({ images, view, reduce, active, api, o
         <Earth images={images} view={view} />
         <Shadow fade={shadowFade} />
         <Sheets view={view} reduce={reduce} />
-        <DragTurn api={api} onEngage={onEngage} />
+        <DragTurn api={api} onEngage={onEngage} scale={scale} />
         <FrameCount onReady={onReady} />
       </Canvas>
     </StageBoundary>

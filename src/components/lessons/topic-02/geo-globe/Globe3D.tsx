@@ -26,6 +26,7 @@ import { Component, useEffect, useMemo, useRef, type MutableRefObject, type Reac
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import {
   B, CAM_DIST, CAM_FOV, CAM_MAX, CAM_MIN, VIEW_START, ellipsoidMesh, facing, geodeticToScene, pickLabel, segmentHitsEllipsoid, viewDir,
   type Rect, type Signed, type Vec3,
@@ -609,9 +610,13 @@ export default function Globe3D({ images, sel, win, choices, target, note, reduc
     }
   };
   const p = viewDir(VIEW_START.lat, VIEW_START.lon).map((c) => c * CAM_DIST) as Vec3;
+  // the laptop fit's scale: OrbitControls turns by drag px over the canvas' layout height, so a
+  // shrunk globe turns as much per px of its own size as it does at full size
+  const scale = useLessonViewportScale();
   return (
     <GlobeBoundary onFail={onFail}>
       <Canvas
+        resize={LESSON_FIT_CANVAS_RESIZE}
         flat
         dpr={[1, 2]}
         camera={{ position: memory.current ?? p, fov: CAM_FOV, near: 0.5, far: 20 }}
@@ -632,7 +637,7 @@ export default function Globe3D({ images, sel, win, choices, target, note, reduc
           enablePan={false}
           enableZoom={zoomEnabled}
           zoomSpeed={0.6}
-          rotateSpeed={0.42}
+          rotateSpeed={0.42 / scale}
           minDistance={CAM_MIN}
           maxDistance={CAM_MAX}
           minPolarAngle={POLAR_MIN}

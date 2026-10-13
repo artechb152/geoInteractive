@@ -11,6 +11,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import { L } from '../Ltr';
 import { fromUtm } from '../reference-systems/utm';
@@ -480,13 +481,16 @@ export function UtmZoneAtlas() {
   }
 
   /* ── frames, for the connectors ── */
+  /* in layout px: under the laptop fit (LessonViewportFit) the screen rects are shrunk by `fitScale` */
   const mapsRef = useRef<HTMLDivElement>(null);
+  const fitScale = useLessonViewportScale();
   useLayoutEffect(() => {
     const el = mapsRef.current;
     if (!el) return;
+    const local = (r: DOMRect) => new DOMRect(r.x / fitScale, r.y / fitScale, r.width / fitScale, r.height / fitScale);
     const measure = () => {
       if (!worldRef.current || !insetRef.current) return;
-      setFrames({ world: worldRef.current.getBoundingClientRect(), inset: insetRef.current.getBoundingClientRect(), box: el.getBoundingClientRect() });
+      setFrames({ world: local(worldRef.current.getBoundingClientRect()), inset: local(insetRef.current.getBoundingClientRect()), box: local(el.getBoundingClientRect()) });
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -494,7 +498,7 @@ export function UtmZoneAtlas() {
     if (worldRef.current) ro.observe(worldRef.current);
     if (insetRef.current) ro.observe(insetRef.current);
     return () => ro.disconnect();
-  }, [mode]);
+  }, [mode, fitScale]);
 
   const connectors = useMemo(() => {
     if (!frames || mode === 'done') return null;

@@ -6,6 +6,7 @@ import { UtmZoneAtlas } from './utm-atlas/UtmZoneAtlas';
 import { Base60Workbench } from './base60/Base60Workbench';
 import { GlobeExplorer } from './geo-globe/GlobeExplorer';
 import { ProjectionsLab } from './projections/ProjectionsLab';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 
 /* ─────────── קואורדינטות 2 — היטלים ומערכות קואורדינטות ───────────
@@ -26,15 +27,71 @@ export function CoordinatesPart2Scene() {
         intro="אחרי שהגדרנו על מה מודדים, נלמד כיצד עוברים מהגוף התלת־ממדי למפה, וכיצד מציינים מיקום בשתי מערכות קואורדינטות מרכזיות: מערכת קואורדינטות גיאוגרפית ומערכת UTM."
       />
 
-      <ProjectionsLab />
-      <GlobeExplorer />
-      <Base60Workbench />
-      <GeoProsCons />
+      <FitScreen name="projections" height={1036}>
+        <ProjectionsLab />
+      </FitScreen>
+      <FitScreen name="geographic-coordinates" height={898}>
+        <GlobeExplorer />
+      </FitScreen>
+      <FitScreen name="base60" height={1090}>
+        <Base60Workbench />
+      </FitScreen>
+      <FitScreen name="geo-pros-cons" height={216}>
+        <GeoProsCons />
+      </FitScreen>
       <UtmBlock />
-      <ReferenceSystemBlock />
-      <ReadingCoordinatesBlock />
-      <Part2Summary />
+      <FitScreen name="reference-systems" height={857}>
+        <ReferenceSystemBlock />
+      </FitScreen>
+      <FitScreen name="reading-coordinates" height={778}>
+        <ReadingCoordinatesBlock />
+      </FitScreen>
+      <FitScreen name="summary" height={244} className="">
+        <Part2Summary />
+      </FitScreen>
     </section>
+  );
+}
+
+/* ─────────────────── מסכי לפטופ ─────────────────── */
+/* Each learning screen of the part shrinks on its own, uniformly, like a slide (LessonViewportFit),
+   so a laptop shows it whole: same columns, line breaks, map ratios and control positions.
+   Reference = 1920 × 1080: the section's content column is 1088px (max-w-6xl less its lg padding).
+   The free height is the view under the 80px site header (--header-h from md up) less a 16px margin
+   above and below the screen: 968px there. `height` is the screen's laid-out height at 1920 × 1080; a
+   screen taller than those 968px is fitted as 968px, so the 1920 × 1080 view stays at scale 1 and a
+   laptop keeps the same share of the screen in view. The scale never exceeds 1 and stays steady while
+   a state (feedback, practice) changes the screen's height. */
+const FIT_WIDTH = 1088;
+const FIT_TOP = 80 + 16;
+const FIT_BOTTOM = 16;
+const FIT_VIEW_HEIGHT = 1080 - FIT_TOP - FIT_BOTTOM;
+
+function FitScreen({
+  name,
+  height,
+  className = 'my-10',
+  children,
+}: {
+  name: string;
+  /** Laid-out height at 1920 × 1080, px. */
+  height: number;
+  /** Margins of the screen in the sequence (the wrapped root's own margins are moved here). */
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div data-coordinates2-screen={name} className={className}>
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={Math.min(height, FIT_VIEW_HEIGHT)}
+        reserveTop={FIT_TOP}
+        reserveBottom={FIT_BOTTOM}
+        contentClassName="[&>*]:!my-0"
+      >
+        {children}
+      </LessonViewportFit>
+    </div>
   );
 }
 
@@ -95,22 +152,32 @@ function GeoProsCons() {
    zone, the hemisphere and E/N in metres; practice runs in the same card.
    Everything lives in ./utm-atlas. */
 
+/* Two screens on a laptop: the heading with the explainer, then the atlas. Both parts keep
+   data-block="utm"; the explainer's own bottom margin stays the gap between them. */
 function UtmBlock() {
   return (
-    <div className="my-10" data-block="utm">
-      <h3 className={H3}>
-        היטל <L>UTM</L>
-      </h3>
-      <p className={LEAD}>
-        <L>
-          <strong className="text-fg">Universal Transverse Mercator</strong>
-        </L>{' '}
-        – מערכת קואורדינטות שמבוססת על <strong className="text-fg">היטל מרקטור רוחבי</strong>. העולם מחולק ל־60 פלחים צרים, ובכל פלח
-        מודדים מיקום במטרים, ברשת מקומית.
-      </p>
-      <UtmProjectionExplainer />
-      <UtmZoneAtlas />
-    </div>
+    <>
+      <FitScreen name="utm-projection" height={565} className="mt-10">
+        <div data-block="utm">
+          <h3 className={H3}>
+            היטל <L>UTM</L>
+          </h3>
+          <p className={LEAD}>
+            <L>
+              <strong className="text-fg">Universal Transverse Mercator</strong>
+            </L>{' '}
+            – מערכת קואורדינטות שמבוססת על <strong className="text-fg">היטל מרקטור רוחבי</strong>. העולם מחולק ל־60 פלחים צרים, ובכל פלח
+            מודדים מיקום במטרים, ברשת מקומית.
+          </p>
+          <UtmProjectionExplainer />
+        </div>
+      </FitScreen>
+      <FitScreen name="utm-atlas" height={951} className="mb-10">
+        <div data-block="utm">
+          <UtmZoneAtlas />
+        </div>
+      </FitScreen>
+    </>
   );
 }
 
