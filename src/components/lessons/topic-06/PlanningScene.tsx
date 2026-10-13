@@ -5,6 +5,7 @@ import { SceneHeader } from './SceneHeader';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import { RouteMap, type RouteLeg } from './PlanningRouteMap';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 type Checkpoint = {
 id: string;
 label: string;
@@ -18,9 +19,19 @@ const CHECKPOINTS: Checkpoint[] = [
  { id: '4', label: 'נקודה 4: חציית דרך עפר', feature: 'אזימוט 050°, כ־500 מ׳ מנקודה 3: מזהים את דרך העפר ובודקים את כיוונה ואת נקודת החצייה ביחס לתכנון. ממשיכים ממנה אל החורשה.', icon: 'truck' },
  { id: '5', label: 'נקודה 5: נקודת הסיום (נ.ס)', feature: 'אזימוט 040°, כ־600 מ׳ מנקודה 4: עוברים בחורשה ומזהים את קבוצת האורנים בקרקע הסלעית. מאמתים את נקודת הסיום לפי הסימנים שסביבה והמרחק שעברנו.', icon: 'target' },
 ];
+// Laptop fit — every screen of this part is laid out at the 1920×1080 reference
+// width and shrunk uniformly (never enlarged) to the room the site header and the
+// lesson side nav leave. width = the section's content box at the reference
+// viewport (max-w-6xl 1152 − 2 × lg:px-8). Screens 2–4 sit below the fold, so
+// their height budget is one viewport minus the fixed site header (--header-h,
+// 80px) and the 24px page inset above and below, not their page offset.
+const PLANNING_FIT = { width: 1088, reserveTop: 104, reserveBottom: 24 } as const;
+
 export function PlanningScene() {
 return (
  <section id="scene-planning" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ {/* Screen 1 · title + concept. Each screen of this part shrinks on its own, like a slide (see PLANNING_FIT). */}
+ <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveBottom={PLANNING_FIT.reserveBottom}>
  <SceneHeader
 step="03.2"
 eyebrow="תכנון ציר ותנועה"
@@ -52,14 +63,24 @@ intro="לפני היציאה מחלקים את המסלול לקטעים ומת�
  </p>
  </div>
  </div>
+ </LessonViewportFit>
 
+ {/* Screen 2 · route-story builder (list + map) */}
+ <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveTop={PLANNING_FIT.reserveTop} reserveBottom={PLANNING_FIT.reserveBottom}>
  <RouteStoryBuilder />
+ </LessonViewportFit>
 
+ {/* Screen 3 · pacing demo — its my-12 stays inside the box (a flex item contains its children's margins), so the gaps scale with it */}
+ <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveTop={PLANNING_FIT.reserveTop} reserveBottom={PLANNING_FIT.reserveBottom}>
  <div className="my-12">
  <PacingDemo />
  </div>
+ </LessonViewportFit>
 
+ {/* Screen 4 · summary */}
+ <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveTop={PLANNING_FIT.reserveTop} reserveBottom={PLANNING_FIT.reserveBottom}>
  <ConclusionCard />
+ </LessonViewportFit>
  </section>
  );
 }
