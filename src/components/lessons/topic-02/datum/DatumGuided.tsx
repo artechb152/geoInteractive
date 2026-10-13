@@ -9,7 +9,8 @@
 
    Layout: the lesson's guided-demo pattern (OnboardingScene, 32 : 68) — three
    compact stations on the right, followed by the active station's controls
-   and feedback; on the left the live globe and linked close-up.
+   and feedback; on the left the live globe and linked close-up. During the
+   taller manual experiment, controls and feedback sit below the globe.
    One action per station:
    1. "גוף הייחוס" — choose a surface to tell the three bodies apart;
    2. "מיקום וכיוון" — one demo button (shift → rotate → scale, each phase
@@ -620,9 +621,8 @@ export function DatumGuided() {
                   style={{ left: INSET.left, bottom: INSET.bottom }}
                 />
               )}
-              {showExperiment && stationPanel}
-          </div>
-
+            </div>
+            {showExperiment && stationPanel}
           </div>
         </div>
       </div>

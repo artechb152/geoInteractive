@@ -2466,10 +2466,9 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 
 ## 2026-10-13 — Topic 02 datum: clearer copy and matching column heights
 
-- User requested wording simplification and removal of the unused area below the right information column. The existing 32:68 columns, model, controls and station behavior remain; the open station takes the remaining desktop height, with its action hint at the bottom. Both columns stretch together; the visual stage retains its 440 px minimum and can grow for the manual experiment.
+- User requested wording simplification and removal of the unused area below the right information column. Follow-up: the user rejected stretching the accordion because it creates a large empty space inside the open panel. Panels now keep their natural content height. Existing controls and feedback fill the right column beneath them; in the taller manual experiment those sit beneath the globe, keeping the full layout compact. The existing 32:68 columns and station behavior remain; the visual stage retains its 440 px minimum.
 - Condensed duplicated experiment instructions and removed the bottle/cork analogy. Clarified ellipsoid versus datum, and corrected the seven-parameter text to describe a coordinate transformation between datums rather than a universal process for creating a datum. Reference: https://proj.org/en/stable/operations/transformations/helmert.html . The datum copy inventory records these user-authorized edits.
 
 ## 2026-10-13 — Topic 02 base-60 calculator placement
 
-- User requested moving the calculator away from the left screen edge and keeping it from following the rest of the page. Placement decision: reuse the existing steps column at inline-start (visual right), with the toggle directly below the three step cards and the open calculator in normal document flow beneath it. The diagram and answer fields retain their existing dimensions and positions.
-- The calculator uses its existing surface, 19rem width, typography, keys and spacing; no new color tokens. It is unmounted when the current track completes, so it closes automatically and cannot persist into the following lesson content. Returning to an unfinished step restores the closed toggle.
+- The user asked to restore the calculator to its original state and defer the placement change until working from another computer. The original toggle above the diagram and the original floating calculator are restored; no calculator layout change remains.
