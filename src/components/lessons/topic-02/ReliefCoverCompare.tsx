@@ -15,9 +15,10 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import { BoardView } from './LandformsScene';
-import { LegendSwatch, ReliefCoverBlock, ReliefCoverMap } from './ReliefCoverVisuals';
+import { ReliefCoverMap } from './ReliefCoverVisuals';
+import { ReliefCoverModel } from './ReliefCoverModel';
 import {
-  ANSWERS, CHIP, CORRECT, INITIAL_FLOW, LEGEND, STATES, STATE_CELLS, flowReducer, isComplete, splitExamples,
+  ANSWERS, CHIP, CORRECT, INITIAL_FLOW, STATES, STATE_CELLS, flowReducer, isComplete, splitExamples,
   type Answer, type CellRef, type LegendKey, type StateId,
 } from './reliefCoverCompare.data';
 
@@ -45,8 +46,6 @@ export type ReliefCoverCopy = {
 const EASE = [0.22, 1, 0.36, 1] as const;
 /** Layer dot — the same legend key as the scene's LAYER_SWATCH (sand = relief, sage = cover). */
 const LAYER_DOT: Record<Layer, string> = { relief: 'bg-terrain-sand', cover: 'bg-brand' };
-/** Map-key entries drawn with contour lines (relief); every other entry is a land-cover symbol. */
-const CONTOUR_KEYS: readonly LegendKey[] = ['contour', 'index', 'before'];
 
 export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: ReliefCoverCopy }) {
   const reduce = useReducedMotion();
@@ -189,21 +188,25 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
           </button>
         </div>
 
-        {/* the two boards; row 2 = the map key, under the map */}
+        {/* the two boards; row 2 = the contour chip, under the map */}
         <div className="grid gap-x-4 gap-y-2 md:grid-cols-2">
-          <BoardView caption={{ kind: 'real', sub: copy.states[state] }}>
+          <BoardView frameClassName="border border-border-subtle">
             <div data-qa="rc-block">
-              <ReliefCoverBlock state={state} ariaLabel={`${copy.states[state]} — ${copy.boards.real}`} />
+              <ReliefCoverModel state={state} reduce={!!reduce} ariaLabel={`${copy.states[state]} — ${copy.boards.real}`} />
             </div>
           </BoardView>
           {/* grid: the figure keeps the row's full height, so both frames stay equal */}
-          <div className="relative grid">
-            <BoardView caption={{ kind: 'map', sub: copy.states[state] }} frameClassName="bg-paper-bright">
+          <div className="grid">
+            <BoardView frameClassName="border border-border-subtle bg-white">
               <div data-qa="rc-map">
                 <ReliefCoverMap state={state} ariaLabel={`${copy.states[state]} — ${copy.boards.map}`} />
               </div>
             </BoardView>
-            {/* the contour chip sits on the map's caption line (spec §5), clear of every symbol and label */}
+          </div>
+          <div aria-hidden className="hidden md:block" />
+          {/* the contour chip, under the map (its row keeps its height in every state, so the card
+              below never moves) */}
+          <div className="flex min-h-6 justify-end">
             <AnimatePresence initial={false}>
               {chip && (
                 <motion.span
@@ -212,33 +215,12 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                   initial={reduce ? false : { opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0, transition: { duration: reduce ? 0 : 0.3, ease: EASE, delay: frontier ? settle : 0 } }}
                   exit={{ opacity: 0, transition: { duration: reduce ? 0 : 0.15 } }}
-                  className="absolute -top-0.5 end-0 rounded-full bg-bg-accent px-2.5 py-0.5 font-display text-sm font-semibold leading-5 text-fg"
+                  className="rounded-full bg-bg-accent px-2.5 py-0.5 font-display text-sm font-semibold leading-5 text-fg"
                 >
                   {copy.chips[chip]}
                 </motion.span>
               )}
             </AnimatePresence>
-          </div>
-          <div aria-hidden className="hidden md:block" />
-          {/* map key: one line of contour entries, one line of land-cover symbols (kept even when empty,
-              so the key — and the card below it — keeps its height in every state), the disclaimer */}
-          <div data-qa="rc-legend" className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm text-fg-muted">
-            <span className="font-display font-bold leading-5 text-fg">{copy.legendTitle}</span>
-            <div className="grid gap-y-1.5">
-              {[true, false].map((contour) => (
-                <div key={String(contour)} className="flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1.5">
-                  {LEGEND[state]
-                    .filter((k) => CONTOUR_KEYS.includes(k) === contour)
-                    .map((k) => (
-                      <span key={k} className="inline-flex items-center gap-1.5 leading-5">
-                        <LegendSwatch k={k} />
-                        {copy.legend[k]}
-                      </span>
-                    ))}
-                </div>
-              ))}
-            </div>
-            <span className="col-span-2 leading-5">{copy.disclaimer}</span>
           </div>
         </div>
 
@@ -292,57 +274,57 @@ export function ReliefCoverCompare({ rows, copy }: { rows: CompareRow[]; copy: R
                 </div>
               )}
 
-              <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                {STATE_CELLS[state].map((ref) => (
-                  <div key={`${ref.row}-${ref.layer}-${ref.part ?? ''}`} data-qa="rc-cell">
-                    <dt className="flex items-center gap-1.5 font-display text-sm font-semibold text-fg-muted">
-                      <span aria-hidden className={cn('size-2 rounded-full', LAYER_DOT[ref.layer])} />
-                      {ref.row} · {copy.layers[ref.layer]}
-                    </dt>
-                    <dd className="mt-1 text-pretty text-base leading-relaxed text-fg">{cellText(ref)}</dd>
-                  </div>
-                ))}
-              </dl>
-
-              {frontier && !last && (
-                <div className="mt-5 border-t border-border-subtle pt-4">
-                  {!flow.asking ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        dispatch({ type: 'continue' });
-                        cancelPending();
-                        focusSoon(() => questionRef.current?.querySelector('button'));
-                      }}
-                      className="btn-primary cursor-pointer px-5 text-sm"
-                    >
-                      {copy.next}
-                    </button>
-                  ) : (
-                    <div ref={questionRef} data-qa="rc-question">
-                      <p id={`${uid}-q`} className="font-display text-lg font-bold text-fg">
-                        {copy.question}
-                      </p>
-                      <p className="mt-1 text-sm text-fg-muted">
-                        {copy.states[state]} ← {copy.states[STATES[flow.view + 1]]}
-                      </p>
-                      <div role="group" aria-labelledby={`${uid}-q`} className="mt-3 grid max-w-md grid-cols-3 gap-2">
-                        {ANSWERS.map((a) => (
-                          <button
-                            key={a}
-                            type="button"
-                            onClick={() => predict(a)}
-                            className={cn(
-                              'cursor-pointer rounded-xl border border-border bg-bg-elevated px-3 py-2.5 font-display text-base font-semibold text-fg',
-                              'transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] focus-visible:ring-offset-bg-elevated',
-                            )}
-                          >
-                            {copy.answers[a]}
-                          </button>
-                        ))}
-                      </div>
+              {/* the state's cells; "continue" at their end (bottom-left), not on a row of its own */}
+              <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+                <dl className="grid min-w-0 flex-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                  {STATE_CELLS[state].map((ref) => (
+                    <div key={`${ref.row}-${ref.layer}-${ref.part ?? ''}`} data-qa="rc-cell">
+                      <dt className="flex items-center gap-1.5 font-display text-sm font-semibold text-fg-muted">
+                        <span aria-hidden className={cn('size-2 rounded-full', LAYER_DOT[ref.layer])} />
+                        {ref.row} · {copy.layers[ref.layer]}
+                      </dt>
+                      <dd className="mt-1 text-pretty text-base leading-relaxed text-fg">{cellText(ref)}</dd>
                     </div>
-                  )}
+                  ))}
+                </dl>
+                {frontier && !last && !flow.asking && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch({ type: 'continue' });
+                      cancelPending();
+                      focusSoon(() => questionRef.current?.querySelector('button'));
+                    }}
+                    className="btn-primary ms-auto shrink-0 cursor-pointer px-5 text-sm"
+                  >
+                    {copy.next}
+                  </button>
+                )}
+              </div>
+
+              {frontier && !last && flow.asking && (
+                <div ref={questionRef} data-qa="rc-question" className="mt-5 border-t border-border-subtle pt-4">
+                  <p id={`${uid}-q`} className="font-display text-lg font-bold text-fg">
+                    {copy.question}
+                  </p>
+                  <p className="mt-1 text-sm text-fg-muted">
+                    {copy.states[state]} ← {copy.states[STATES[flow.view + 1]]}
+                  </p>
+                  <div role="group" aria-labelledby={`${uid}-q`} className="mt-3 grid max-w-md grid-cols-3 gap-2">
+                    {ANSWERS.map((a) => (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => predict(a)}
+                        className={cn(
+                          'cursor-pointer rounded-xl border border-border bg-bg-elevated px-3 py-2.5 font-display text-base font-semibold text-fg',
+                          'transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] focus-visible:ring-offset-bg-elevated',
+                        )}
+                      >
+                        {copy.answers[a]}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </motion.div>

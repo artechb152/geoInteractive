@@ -1,0 +1,17 @@
+{
+  "generator": "Built-in image_gen",
+  "displaySize": {
+    "width": 184,
+    "height": 80
+  },
+  "prompts": {
+    "relief": "Use case: photorealistic-natural. Asset type: a small wide thumbnail for a Hebrew geography course, displayed at exactly 138 x 60 px. Generate one single realistic landscape image, horizontal aspect ratio 2.3:1. Subject: bare limestone hill country in a Mediterranean semi-arid landscape, viewed obliquely from a drone at moderate altitude. Clear broad rounded ridges, two distinct hilltops with a saddle, a deep winding valley, and sloping rocky flanks; the silhouette and natural landforms must be immediately readable when reduced to a tiny thumbnail. Real terrain texture and believable geology, natural warm sand and muted earth tones, soft warm daylight with shadows defining the hills, atmospheric distant ridges. Terrain fills almost all the frame, only a narrow pale hazy sky strip if any. High quality realistic geographical visualization / landscape photography, restrained contrast matching an elegant cream and olive educational website. No vegetation, trees, buildings, roads, utilities, people, flags, vehicles, text, labels, icons, diagram lines, collage, map, contour lines, cutaway slabs, isolated miniature models, papercraft, cartoon or toy appearance. This must be a complete real landscape, entirely different from a side-on interactive terrain slab.",
+    "cover": "Use case: photorealistic-natural. Asset type: a small wide thumbnail for a Hebrew geography course, displayed at exactly 138 x 60 px. Generate one single realistic landscape image, horizontal aspect ratio 2.3:1. Subject: Mediterranean rural hills and valley seen obliquely from a drone at moderate altitude, emphasizing the things ON the ground. A clear dark olive-green grove of natural trees and shrubs occupies one side; a compact cluster of pale stone rural homes beside a visibly curving gray road occupies the other; an orderly planted olive orchard and one broad cultivated field in foreground make natural and human-created land cover distinguishable. Few large clear groupings, legible when reduced to a tiny thumbnail. Realistic limestone terrain texture, warm sand/cream soil, muted olive foliage, soft warm daylight with natural shadows, restrained realistic colors matching an elegant cream and olive educational website. Terrain fills almost all frame, at most a narrow pale hazy distant horizon. Photorealistic geography visualization / landscape photograph with real material detail and plausible scale. No text, labels, people, vehicles, military objects, flags, icons, map overlays, contour lines, diagram lines, collage, cutaway slabs, papercraft, cartoon, toy appearance, or isolated miniatures. This must be a full natural landscape, entirely different from a side-on interactive terrain slab."
+  },
+  "export": {
+    "format": "webp",
+    "width": 552,
+    "height": 240,
+    "quality": 88
+  }
+}

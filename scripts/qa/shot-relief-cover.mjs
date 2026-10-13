@@ -13,17 +13,19 @@
 //            during the answer's exit changes neither the stored answer nor the announcement
 //            (Ruling 13); focus is not moved on load, lands on the card after a choice and on
 //            the first step after reset
-//   map      contour paths identical in states 1–3 and different in state 4; chip and
-//            legend per state; disclaimer always
-//   layout   both boards the same height; the legend under the map; the chip clear of the map
-//            frame; stepper, legend and state card do not move between states; the prediction
-//            buttons on one row; no one-word last line in the card's text; tree crowns ≥ 10 px
+//   map      contour paths identical in states 1–3 and different in state 4; chip per state;
+//            no map key and no disclaimer (removed 2026-10-13)
+//   layout   both boards the same height, no captions above them; the chip under the map, clear of
+//            both frames; the model has no north arrow and no view buttons; "המשך" sits at the
+//            bottom-left of the state's cells, not on a row of its own; stepper and state card do
+//            not move between states; the prediction buttons on one row; no one-word last line in the card's text; the "בשטח" board is the
+//            live 3D model (a canvas, drawn), not the old SVG block
 //   page     no console errors (pageerror, console.error — framer's reduced-motion notice is a
 //            warning and is fine); no horizontal scroll at 1440
 // Screenshots: every state at 1440 × 1122, plus the open summary.
 import { chromium } from 'playwright';
 import { mkdir, readFile } from 'node:fs/promises';
-import { LEGEND, STATE_CELLS, splitExamples } from '../../src/components/lessons/topic-02/reliefCoverCompare.data.ts';
+import { STATE_CELLS, splitExamples } from '../../src/components/lessons/topic-02/reliefCoverCompare.data.ts';
 
 const outDir = process.argv[2] ?? 'qa-output/relief-cover-compare';
 const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02/#scene-relief-cover`;
@@ -60,8 +62,16 @@ const COPY = {
 const browser = await chromium.launch({ channel: 'chrome' });
 
 async function settle(page) {
-  await page.waitForFunction(() => !document.querySelector('[data-qa="rc-block"] canvas'), null, { timeout: 15000 });
-  await page.waitForTimeout(1300); // object fades + delayed feedback
+  // the live model has drawn its first frame (or, without WebGL, shows its still)
+  await page.waitForFunction(
+    () => {
+      const m = document.querySelector('[data-qa="rc-block"] [data-renderer]');
+      return m && (m.hasAttribute('data-ready') || m.getAttribute('data-renderer') === 'static');
+    },
+    null,
+    { timeout: 60000 },
+  );
+  await page.waitForTimeout(1900); // the ground sweep, objects growing / sinking (1.65 s), the quarry morph, delayed feedback
 }
 
 /** Page-side layout probes (one evaluate per state). */
@@ -77,10 +87,7 @@ function probe() {
   const mapFrame = q('[data-qa="rc-map"]')?.closest('[data-view-frame]');
   // a "one-word last line": the last two words of a text block sit on different lines
   const orphans = [];
-  // (the key's lines one by one: its contour line and its symbol line are meant to be two lines)
-  const blocks = root.querySelectorAll(
-    '[data-qa="rc-cell"] dd, [data-qa="rc-feedback"] p, [data-qa="rc-question"] p, [data-qa="rc-legend"] > span, [data-qa="rc-legend"] > div > div',
-  );
+  const blocks = root.querySelectorAll('[data-qa="rc-cell"] dd, [data-qa="rc-feedback"] p, [data-qa="rc-question"] p');
   for (const el of blocks) {
     const words = [];
     const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
@@ -99,18 +106,14 @@ function probe() {
       orphans.push({ question: !!el.closest('[data-qa="rc-question"]'), text: el.textContent.trim().slice(-40) });
     }
   }
-  // tree crowns on the block (TreeArt: ellipse, trunk, crown circle, highlight circle)
-  const objSvg = q('[data-qa="rc-block"] svg[aria-hidden]');
-  let crownMin = null;
-  if (objSvg) {
-    const k = objSvg.getBoundingClientRect().width / objSvg.viewBox.baseVal.width;
-    const rs = [...objSvg.querySelectorAll('g > line + circle')].map((c) => 2 * c.r.baseVal.value * k);
-    if (rs.length) crownMin = Math.min(...rs);
-  }
+  // the "בשטח" board: the live model (a canvas) or its still, never the old SVG block
+  const model = q('[data-qa="rc-block"] [data-renderer]');
+  const renderer = model?.getAttribute('data-renderer') ?? null;
+  const hasCanvas = !!model?.querySelector('canvas');
   const answers = [...root.querySelectorAll('[data-qa="rc-question"] [role="group"] button')].map(box);
   // clipped = cut by its own overflow, or sticking out of the component's box
   const rb = root.getBoundingClientRect();
-  const clipped = [...root.querySelectorAll('button, [data-qa="rc-chip"], [data-qa="rc-legend"] > *, dt, dd, [data-qa="rc-feedback"] p, svg')]
+  const clipped = [...root.querySelectorAll('button, [data-qa="rc-chip"], dt, dd, [data-qa="rc-feedback"] p, svg')]
     .filter((el) => {
       const r = el.getBoundingClientRect();
       const own =
@@ -124,11 +127,17 @@ function probe() {
     steps: [...root.querySelectorAll('ol[aria-label] button')].map(box),
     frames,
     map: box(mapFrame),
-    legend: box(q('[data-qa="rc-legend"]')),
+    legend: !!q('[data-qa="rc-legend"]'),
+    captions: root.querySelectorAll('figcaption').length,
+    north: !!model?.querySelector('[data-north]'),
+    modelButtons: model?.querySelectorAll('button').length ?? 0,
+    cells: box(q('[data-qa="rc-state-card"] dl')),
+    next: box([...root.querySelectorAll('[data-qa="rc-state-card"] button')].find((b) => b.textContent.trim() === 'המשך')),
     card: box(q('[data-qa="rc-state-card"]')),
     chip: box(q('[data-qa="rc-chip"]')),
     orphans,
-    crownMin,
+    renderer,
+    hasCanvas,
     answers,
     clipped,
     status: q('[data-qa="rc-status"]')?.textContent ?? null,
@@ -172,12 +181,8 @@ async function walk(reduced) {
     check(JSON.stringify(got) === JSON.stringify(want), `${tag} ${s}: state-card cells\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`);
   };
   const expectMap = async (s, chip) => {
-    const legend = await root.locator('[data-qa="rc-legend"]').innerText();
-    for (const k of LEGEND[s]) check(legend.includes(COPY.legend[k]), `${tag} ${s}: legend lists "${COPY.legend[k]}"`);
-    for (const k of Object.keys(COPY.legend)) {
-      if (!LEGEND[s].includes(k)) check(!legend.includes(COPY.legend[k]), `${tag} ${s}: legend omits "${COPY.legend[k]}"`);
-    }
-    check(legend.includes(COPY.disclaimer), `${tag} ${s}: disclaimer shown`);
+    check((await root.locator('[data-qa="rc-legend"]').count()) === 0, `${tag} ${s}: no map key`);
+    check(!(await root.innerText()).includes(COPY.disclaimer), `${tag} ${s}: no disclaimer`);
     const chipEl = root.locator('[data-qa="rc-chip"]');
     if (chip) check((await chipEl.count()) === 1 && (await chipEl.innerText()).trim() === chip, `${tag} ${s}: chip "${chip}"`);
     else check((await chipEl.count()) === 0, `${tag} ${s}: no chip`);
@@ -188,17 +193,20 @@ async function walk(reduced) {
     const p = await page.evaluate(probe);
     layout[s] = p;
     check(p.frames.length === 2 && Math.abs(p.frames[0].h - p.frames[1].h) <= 1, `${tag} ${s}: boards differ in height ${p.frames.map((f) => f.h.toFixed(1)).join(' / ')}`);
-    check(
-      p.legend && p.map && p.legend.y >= p.map.b - 1 && p.legend.x >= p.map.x - 1 && p.legend.r <= p.map.r + 1,
-      `${tag} ${s}: legend not under the map (legend ${JSON.stringify(p.legend)}, map ${JSON.stringify(p.map)})`,
-    );
+    check(p.captions === 0, `${tag} ${s}: captions above the boards (${p.captions})`);
+    check(!p.north && p.modelButtons === 0, `${tag} ${s}: the model shows a north arrow (${p.north}) or view buttons (${p.modelButtons})`);
     if (p.chip) {
       const hit = p.frames.some((f) => p.chip.x < f.r && p.chip.r > f.x && p.chip.y < f.b && p.chip.b > f.y);
       check(!hit, `${tag} ${s}: the chip overlaps a board (chip ${JSON.stringify(p.chip)})`);
+      check(p.map && p.chip.y >= p.map.b - 1 && p.chip.x >= p.map.x - 1 && p.chip.r <= p.map.r + 1, `${tag} ${s}: the chip is not under the map`);
+    }
+    if (p.next) {
+      // RTL: the cells start on the right, "המשך" ends their block on the left, level with their last line
+      check(p.next.r <= p.cells.x + 1 && p.next.b <= p.cells.b + 1 && p.next.y >= p.cells.y, `${tag} ${s}: "המשך" not at the cells' bottom-left (next ${JSON.stringify(p.next)}, cells ${JSON.stringify(p.cells)})`);
     }
     check(p.orphans.length === 0, `${tag} ${s}: one-word last line in ${JSON.stringify(p.orphans)}`);
     check(p.clipped.length === 0, `${tag} ${s}: clipped text ${JSON.stringify(p.clipped)}`);
-    if (s !== 'bare') check(p.crownMin !== null && p.crownMin >= 10, `${tag} ${s}: smallest tree crown ${p.crownMin?.toFixed(1)} px (< 10)`);
+    check(p.renderer === 'live' && p.hasCanvas, `${tag} ${s}: the "בשטח" board is the live 3D model (renderer ${p.renderer}, canvas ${p.hasCanvas})`);
   };
   /** The announcement must say exactly what the visible feedback says. */
   const expectAnnounced = async (s) => {
@@ -279,11 +287,10 @@ async function walk(reduced) {
   check(contours.bare === contours.grove && contours.grove === contours.built, `${tag}: contours identical in states 1–3`);
   check(contours.quarry !== contours.built, `${tag}: contours change in state 4`);
 
-  // nothing above the boards or in the map key moves between states
+  // nothing above the boards, nor the state card, moves between states
   const L = Object.values(layout);
   const same = (f, what) => check(L.every((p) => JSON.stringify(f(p)) === JSON.stringify(f(L[0]))), `${tag}: ${what} moves between states ${L.map((p) => JSON.stringify(f(p))).join(' | ')}`);
   same((p) => p.steps.map((b) => [Math.round(b.x), Math.round(b.y), Math.round(b.w)]), 'stepper');
-  same((p) => [Math.round(p.legend.y), Math.round(p.legend.h)], 'legend');
   same((p) => Math.round(p.card.y), 'state card');
 
   const summary = page.locator('[data-qa="rc-summary"]');

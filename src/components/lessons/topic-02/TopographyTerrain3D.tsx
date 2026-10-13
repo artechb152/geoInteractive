@@ -78,7 +78,7 @@ const LAYERS: { view: TopoView; label: string; y: number }[] = [
 
 // ---------------------------------------------------------------- map features
 // The named things on the sheet. Pointing at one — on either layer of the
-// stack, or at its name in the legend row — outlines it on both layers.
+// stack — outlines it on both layers.
 
 export type FeatureId = 'woodland' | 'sparse' | 'orchard' | 'buildings' | 'road' | 'path';
 export const FEATURES: { id: FeatureId; label: string }[] = [
@@ -492,7 +492,7 @@ function Scene({
   labelPortal: React.MutableRefObject<HTMLElement>;
   controlsRef: ControlsRef;
   onSelectView: (v: TopoView) => void;
-  /** The highlighted map feature (pointed at on a layer or in the legend row). */
+  /** The highlighted map feature (pointed at on a layer). */
   feature: FeatureId | null;
   onFeature: (f: FeatureId | null) => void;
 }) {
@@ -949,30 +949,6 @@ export default function TopographyTerrain3D({
       </div>
 
       {activated && <LoadingOverlay />}
-
-      {/* "All together": the sheet's named features. Pointing at one outlines
-          it on the model and on the map, as pointing at it on a layer does. */}
-      {stacked && (
-        <div className="absolute inset-x-2 bottom-2 z-10 flex flex-wrap items-center justify-center gap-1.5">
-          {FEATURES.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              aria-pressed={feature === f.id}
-              onPointerEnter={() => setFeature(f.id)}
-              onPointerLeave={() => setFeature(null)}
-              onFocus={() => setFeature(f.id)}
-              onBlur={() => setFeature(null)}
-              className={cn(
-                'rounded-[3px] border bg-bg-elevated/95 px-2.5 py-1 text-xs font-display font-bold transition-colors cursor-default',
-                feature === f.id ? 'border-accent text-fg' : 'border-border text-fg-muted',
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       <button
         type="button"

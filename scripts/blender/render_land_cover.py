@@ -12,9 +12,9 @@ hulls, hover/selection outlines, name tags and hit areas — lands exactly where
     shadow-<region>     what a raised region casts on the land around it (shown under
                         every raised region, dimmed with its own region on the page)
 
-Seasonal regions (ground, grove, garrigue, batha, terraces, fields) render twice; the
-page cross-fades winter ↔ summer. Planted forest and orchard are evergreen and the rest
-does not change, so they render once.
+Seasonal regions (ground, grove, garrigue, batha, terraces, fields) render their winter
+look only (the page has no season switch; the summer material values stay unused).
+Planted forest, orchard and the rest render once.
 
     & 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background \
         --python scripts/blender/render_land_cover.py -- [pass ...]
@@ -1451,7 +1451,7 @@ def build():
     return {k: f(collection(k), M) for k, f in builders.items()}
 
 
-# Seasonal regions render twice; raised regions get a cast-shadow pass onto the land.
+# Seasonal regions render their winter look only (the page shows winter); raised regions get a cast-shadow pass onto the land.
 SEASONAL = ('ground', 'grove', 'garrigue', 'batha', 'terraces', 'fields')
 REGIONS = ('grove', 'garrigue', 'batha', 'planted', 'terraces', 'fields', 'village', 'orchard', 'reservoir', 'track', 'road', 'power', 'fence')
 RAISED = ('grove', 'garrigue', 'planted', 'village', 'orchard', 'reservoir', 'power', 'fence')
@@ -1462,7 +1462,7 @@ SAMPLES = {'ground': 64, 'shadow': 96, 'grove': 192, 'garrigue': 160, 'batha': 1
 def passes():
     out = []
     for k in ('ground',) + REGIONS:
-        out += [f'{k}-winter', f'{k}-summer'] if k in SEASONAL else [k]
+        out += [f'{k}-winter'] if k in SEASONAL else [k]
     out += ['shadow-' + k for k in RAISED]
     return out
 

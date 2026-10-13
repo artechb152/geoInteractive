@@ -114,8 +114,6 @@ const MAP_LABELS: LandformMapLabels = {
   low: 'נמוך',
 };
 const SLOPE_LABELS = {
-  bottom: 'תחתית',
-  top: 'פסגה',
   // named under the map, over the stretch they describe
   zones: {
     steep: 'צפוף = תלול',
@@ -219,7 +217,7 @@ function FormBoard({ active, onSelect }: { active: TerrainId; onSelect: (id: Ter
           className="mx-auto grid gap-4 md:grid-cols-2"
           style={rowW ? { maxWidth: rowW } : undefined}
         >
-          <BoardView caption={{ kind: 'real', sub: tab.realWorld }}>
+          <BoardView>
             <LandformReality
               terrain={active}
               focus={pair ? form.id : undefined}
@@ -228,21 +226,12 @@ function FormBoard({ active, onSelect }: { active: TerrainId; onSelect: (id: Ter
             />
           </BoardView>
           <BoardView
-            caption={{
-              kind: 'map',
-              sub: MAP_CUE[form.id],
-              aside: pair && <FormSwitch forms={tab.forms} value={form.id} onChange={setPick} />,
-            }}
+            corner={pair && <FormSwitch forms={tab.forms} value={form.id} onChange={setPick} />}
             frameClassName="bg-paper-bright"
           >
             <LandformMap form={form.id} labels={MAP_LABELS} ariaLabel={`${form.label} — במפה: ${MAP_CUE[form.id]}`} />
           </BoardView>
         </div>
-        <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
-          {pair
-            ? 'ההמחשה מציגה גיא ואוכף באותו שטח. בחרו מעל המפה איזו מהתבניות להציג.'
-            : 'ההמחשה מציגה את אותה תבנית נוף בשטח ובמפה באמצעות קווי גובה.'}
-        </p>
 
         <div aria-live="polite" className="mt-4 rounded-xl bg-bg-accent/60 p-4 sm:p-5">
           <AnimatePresence mode="wait" initial={false}>
@@ -270,11 +259,10 @@ function FormBoard({ active, onSelect }: { active: TerrainId; onSelect: (id: Ter
   );
 }
 
-// Picks which of a tab's two forms the map shows. One text line tall, so the
-// map's caption keeps the height it has on every other tab.
+// Picks which of a tab's two forms the map shows, in the map's top corner.
 function FormSwitch({ forms, value, onChange }: { forms: Form[]; value: Form; onChange: (f: Form) => void }) {
   return (
-    <div role="group" aria-label="תבנית במפה" className="ms-auto flex shrink-0 rounded-full bg-bg-accent">
+    <div role="group" aria-label="תבנית במפה" className="flex rounded-full bg-bg-accent">
       {forms.map((f) => {
         const on = f === value;
         return (
@@ -359,22 +347,32 @@ function FormTabs({ active, onSelect }: { active: TerrainId; onSelect: (id: Terr
 // One view with its caption above it. Both views share the row, so the terrain
 // and its map are compared side by side at the same size. The frames stretch to
 // the taller view; the shorter one sits centred on its own paper colour.
+// Without a caption the view is the bare frame; `corner` then holds a control in
+// the frame's top inline-end corner (→ LEFT in RTL).
 export function BoardView({
   caption,
+  corner,
   frameClassName,
   children,
 }: {
-  caption: BoardCaptionProps;
+  caption?: BoardCaptionProps;
+  corner?: ReactNode;
   frameClassName?: string;
   children: ReactNode;
 }) {
   return (
     <figure className="m-0 min-w-0 flex flex-col">
-      <figcaption className="mb-2">
-        <BoardCaption {...caption} />
-      </figcaption>
-      <div data-view-frame className={cn('flex-1 flex flex-col justify-center rounded-xl overflow-hidden', frameClassName)}>
+      {caption && (
+        <figcaption className="mb-2">
+          <BoardCaption {...caption} />
+        </figcaption>
+      )}
+      <div
+        data-view-frame
+        className={cn('relative flex-1 flex flex-col justify-center rounded-xl overflow-hidden', frameClassName)}
+      >
         {children}
+        {corner && <div className="absolute top-3 end-3 z-10">{corner}</div>}
       </div>
     </figure>
   );
@@ -384,11 +382,9 @@ type BoardCaptionProps = {
   kind: 'real' | 'map';
   sub: string;
   labelText?: string;
-  /** a control at the caption's far end (one text line tall) */
-  aside?: ReactNode;
 };
 
-function BoardCaption({ kind, sub, labelText, aside }: BoardCaptionProps) {
+function BoardCaption({ kind, sub, labelText }: BoardCaptionProps) {
   const reduce = useReducedMotion();
   const label = labelText ?? (kind === 'real' ? 'בשטח' : 'במפה');
   return (
@@ -406,7 +402,6 @@ function BoardCaption({ kind, sub, labelText, aside }: BoardCaptionProps) {
           · {sub}
         </motion.span>
       </AnimatePresence>
-      {aside}
     </div>
   );
 }
@@ -414,30 +409,33 @@ function BoardCaption({ kind, sub, labelText, aside }: BoardCaptionProps) {
 // Two views of the same terrain in one frame: the view from the side / in the
 // field on top, the map view directly beneath it. Both share the horizontal
 // scale, so a feature sits at the same x in both halves.
-function LinkedBoards({
-  top,
-  bottom,
-  children,
-}: {
-  top: BoardCaptionProps;
-  bottom: BoardCaptionProps;
-  children: [ReactNode, ReactNode];
-}) {
+function LinkedBoards({ children }: { children: [ReactNode, ReactNode] }) {
   return (
     <figure className="m-0 min-w-0">
-      <BoardCaption {...top} />
-      <div className="my-2 rounded-xl overflow-hidden divide-y divide-border-subtle">
+      <div className="rounded-xl overflow-hidden divide-y divide-border-subtle">
         <div>{children[0]}</div>
         <div>{children[1]}</div>
       </div>
-      <figcaption>
-        <BoardCaption {...bottom} />
-      </figcaption>
     </figure>
   );
 }
 
 /* ── Slopes — tabs + linked profile/contours ─────────────────────────────── */
+
+function SlopeText({ slope, className, ...rest }: { slope: Slope; className?: string; 'aria-hidden'?: boolean }) {
+  return (
+    <div className={cn('grid sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4', className)} {...rest}>
+      <div>
+        <InfoLabel>תיאור המדרון</InfoLabel>
+        <p className="text-base leading-relaxed text-fg">{slope.description}</p>
+      </div>
+      <div>
+        <InfoLabel>זיהוי במפה</InfoLabel>
+        <p className="text-base leading-relaxed text-fg">{slope.contourHint}</p>
+      </div>
+    </div>
+  );
+}
 
 function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: string; onSelect: (id: string) => void }) {
   const meta = slopes.find((s) => s.id === active)!;
@@ -523,14 +521,19 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
           </div>
 
           {/* The panel holds the text; the drawings beside it name the active
-              slope in their own labels and are listed in each tab's aria-controls. */}
+              slope in their own labels and are listed in each tab's aria-controls.
+              Every slope's text is laid out, invisible, in the same grid cell, so
+              the panel keeps the height of the longest one on every tab. */}
           <div
             role="tabpanel"
             id="lf-slope-panel"
             aria-labelledby={`lf-slope-tab-${active}`}
             aria-live="polite"
-            className="rounded-xl bg-bg-accent/60 p-4 sm:p-5 lg:p-4"
+            className="grid rounded-xl bg-bg-accent/60 p-4 sm:p-5 lg:p-4"
           >
+            {slopes.map((s) => (
+              <SlopeText key={s.id} slope={s} className="invisible [grid-area:1/1]" aria-hidden />
+            ))}
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={`text-${active}`}
@@ -538,16 +541,9 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
                 transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
-                className="grid sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4"
+                className="[grid-area:1/1]"
               >
-                <div>
-                  <InfoLabel>תיאור המדרון</InfoLabel>
-                  <p className="text-base leading-relaxed text-fg">{meta.description}</p>
-                </div>
-                <div>
-                  <InfoLabel>זיהוי במפה</InfoLabel>
-                  <p className="text-base leading-relaxed text-fg">{meta.contourHint}</p>
-                </div>
+                <SlopeText slope={meta} />
               </motion.div>
             </AnimatePresence>
           </div>
@@ -559,26 +555,16 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
             (height ≈ 0.62 × width), so on short screens the width is capped by the
             viewport height: nav + card padding + header + captions ≈ 360px. */}
         <div id="lf-slope-figure" className="min-w-0 lg:basis-[min(72%,calc((100svh_-_360px)_*_1.6))]">
-          <LinkedBoards
-            top={{ kind: 'real', labelText: 'מהצד', sub: 'חתך השטח' }}
-            bottom={{ kind: 'map', labelText: 'במפה', sub: 'קווי הגובה של המדרון במבט מלמעלה' }}
-          >
-            <SlopeProfile
-              slope={active}
-              bottomLabel={SLOPE_LABELS.bottom}
-              topLabel={SLOPE_LABELS.top}
-              ariaLabel={`${meta.label} — מהצד: חתך השטח`}
-            />
+          <LinkedBoards>
+            <SlopeProfile slope={active} ariaLabel={`${meta.label} — מהצד: חתך השטח`} />
             <SlopeContours
               slope={active}
-              bottomLabel={SLOPE_LABELS.bottom}
-              topLabel={SLOPE_LABELS.top}
               zoneLabels={SLOPE_LABELS.zones}
               ariaLabel={`${meta.label} — במפה: קווי גובה במבט מלמעלה`}
             />
           </LinkedBoards>
-          <p className="mt-3 text-center text-sm leading-snug text-fg-muted">
-            ההמחשה מציגה את אותו מדרון בחתך מהצד ובמפה. כאשר הפרש הגובה בין הקווים קבוע, מרווחים קטנים יותר מעידים על מדרון תלול יותר.
+          <p className="mt-3 text-center text-base leading-relaxed text-fg">
+            כאשר הפרש הגובה בין הקווים קבוע, מרווחים קטנים יותר מעידים על מדרון תלול יותר.
           </p>
         </div>
       </div>

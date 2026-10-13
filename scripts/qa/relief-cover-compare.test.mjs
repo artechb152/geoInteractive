@@ -1,47 +1,57 @@
-// Geometry, cover, flow and content tests for topic-02 screen 3 „אותה גבעה, שלושה נופים”
-// (docs/superpowers/specs/2026-10-08-relief-cover-compare-design.md §5, §7, §10.2).
+// Geometry, cover, map, model, flow and content tests for topic-02 screen 3 „אותה גבעה, שלושה נופים”
+// (docs/superpowers/specs/2026-10-08-relief-cover-compare-design.md §5; boards redone 2026-10-13:
+// a live 3D model and a topographic map from one terrain).
 // Run: node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/relief-cover-compare.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LEVELS, TH, TW, isVisible, onBorder } from '../../src/components/lessons/topic-02/terrainBlockGeometry.ts';
 import {
-  ANSWERS, CHIP, CORRECT, COVER, GROVE, HILL, HOUSES, INITIAL_FLOW, LEGEND, ORCHARD, QUARRIED, QUARRY, STATES, STATE_CELLS,
-  contoursFor, flowReducer, isComplete, quarryMask, splitExamples, terrainFor,
+  ANSWERS, CHIP, CORRECT, COVER, GRID_STEP, GROVE, GROVE_AREA, HILL, HOUSES, INDEX_EVERY, INITIAL_FLOW, INTERVAL, LEGEND, ORCHARD,
+  QUARRIED, QUARRY, QUARRY_SITE, SHEET, SHRUBS, SPOTS, STATES, STATE_CELLS,
+  contourLabels, contoursFor, flowReducer, houseCorners, isComplete, onSheetEdge, quarryMask, splitExamples,
 } from '../../src/components/lessons/topic-02/reliefCoverCompare.data.ts';
+import { VEX, groundMesh, toWorld } from '../../src/components/lessons/topic-02/reliefCoverMesh.ts';
 
 const close = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg}: ${a} ≉ ${b}`);
 const key = ([x, y]) => `${x.toFixed(9)},${y.toFixed(9)}`;
-const vertexSet = (c, L) => new Set((c.rings.get(L) ?? []).flat().map(key));
-/** The two grid nodes (STEP = 1) at the ends of the grid edge a marching-squares vertex lies on. */
+const points = (c, L) => (c.levels.find((l) => l.level === L)?.lines ?? []).flatMap((l) => l.pts);
+const vertexSet = (c, L) => new Set(points(c, L).map(key));
+const LEVELS_PRESENT = contoursFor('bare').levels.map((l) => l.level);
+/** The two grid nodes (every GRID_STEP m) at the ends of the grid edge a marching-squares vertex lies on. */
 function edgeNodes([x, y]) {
-  const ix = Math.abs(x - Math.round(x)) < 1e-9;
-  const iy = Math.abs(y - Math.round(y)) < 1e-9;
-  if (ix && iy) return [[Math.round(x), Math.round(y)], [Math.round(x), Math.round(y)]];
-  return ix
-    ? [[Math.round(x), Math.floor(y)], [Math.round(x), Math.ceil(y)]]
-    : [[Math.floor(x), Math.round(y)], [Math.ceil(x), Math.round(y)]];
+  const on = (v) => Math.abs(v / GRID_STEP - Math.round(v / GRID_STEP)) < 1e-9;
+  const r = (v) => Math.round(v / GRID_STEP) * GRID_STEP;
+  const lo = (v) => Math.floor(v / GRID_STEP) * GRID_STEP;
+  const hi = (v) => Math.ceil(v / GRID_STEP) * GRID_STEP;
+  if (on(x) && on(y)) return [[r(x), r(y)], [r(x), r(y)]];
+  return on(x) ? [[r(x), lo(y)], [r(x), hi(y)]] : [[lo(x), r(y)], [hi(x), r(y)]];
 }
 const changed = ([x, y]) => HILL(x, y) !== QUARRIED(x, y);
 
-test('states 1–3 share one terrain and one contour set; the quarry has its own', () => {
+test('states 1–3 share one contour set; the quarry has its own; 5 m interval, index every 25 m', () => {
   assert.equal(contoursFor('grove'), contoursFor('bare'));
   assert.equal(contoursFor('built'), contoursFor('bare'));
-  assert.equal(terrainFor('grove'), terrainFor('bare'));
-  assert.equal(terrainFor('built'), terrainFor('bare'));
   assert.notEqual(contoursFor('quarry'), contoursFor('built'));
-  assert.notEqual(terrainFor('quarry'), terrainFor('built'));
-  for (const L of LEVELS) {
-    const rings = contoursFor('bare').rings.get(L) ?? [];
-    assert.ok(rings.length > 0, `the hill has a ${L} m contour`);
-    assert.ok(rings.flat().every((p) => !onBorder(p)), `the ${L} m contour closes inside the tile`);
+  assert.equal(INTERVAL, 5);
+  assert.equal(INDEX_EVERY, 25);
+  assert.ok(LEVELS_PRESENT.length >= 12, `a real hill's worth of contours (${LEVELS_PRESENT.length})`);
+  for (const lv of contoursFor('bare').levels) {
+    assert.equal(lv.level % INTERVAL, 0);
+    assert.equal(lv.index, lv.level % INDEX_EVERY === 0, `${lv.level} m index flag`);
+    for (const l of lv.lines) {
+      if (l.closed) assert.ok(!l.pts.some(onSheetEdge), `${lv.level} m: a closed line stays inside the sheet`);
+      else {
+        assert.ok(onSheetEdge(l.pts[0]) && onSheetEdge(l.pts[l.pts.length - 1]), `${lv.level} m: an open line ends on the sheet edge`);
+        assert.ok(!l.pts.slice(1, -1).some(onSheetEdge), `${lv.level} m: no line runs along the sheet edge`);
+      }
+    }
   }
 });
 
-test('quarrying changes heights only where the mask is > 0 — its transition band included', () => {
+test('quarrying changes heights only where the mask is > 0, and cuts benches into the hill', () => {
   let inside = 0;
   let band = 0;
-  for (let x = 0; x <= TW; x += 0.25) {
-    for (let y = 0; y <= TH; y += 0.25) {
+  for (let x = 0; x <= SHEET.w; x += 1) {
+    for (let y = 0; y <= SHEET.h; y += 1) {
       const w = quarryMask(x, y);
       const d = HILL(x, y) - QUARRIED(x, y);
       assert.ok(d >= 0, `quarrying never raises ground (${x}, ${y})`);
@@ -52,23 +62,27 @@ test('quarrying changes heights only where the mask is > 0 — its transition ba
       }
     }
   }
-  assert.ok(inside > 100, `the cut lowers a real area (${inside} samples)`);
+  assert.ok(inside > 1500, `the cut lowers a real area (${inside} m²)`);
   assert.ok(band > 0, `the transition band changes height too (${band} samples)`);
-  for (const [x, y] of [[50, 30], [47, 32], [52, 34]]) {
-    assert.equal(quarryMask(x, y), 1, `(${x}, ${y}) fully inside the mask`);
-    assert.ok(HILL(x, y) > QUARRY.floor, `(${x}, ${y}) was above the floor level`);
-    close(QUARRIED(x, y), QUARRY.floor, 1e-9, `(${x}, ${y}) is cut down to the floor`);
+  // treads: the flat steps of the cut, 1 m off every contour level (no staircase contours on the map)
+  const mid = (QUARRY.x0 + QUARRY.x1) / 2;
+  const treads = new Set();
+  for (let y = QUARRY.y0 + 6; y <= QUARRY.faceY + 10; y += 0.25) {
+    const h = QUARRIED(mid, y);
+    if (HILL(mid, y) - h > 2 && Math.abs(QUARRIED(mid, y + 0.25) - h) < 1e-6) treads.add(h.toFixed(3));
   }
+  assert.ok(treads.size >= 3, `a floor and at least two benches (${[...treads].join(', ')})`);
+  for (const t of treads) close(Number(t) % INTERVAL, 1, 1e-6, `tread ${t} m sits 1 m off a contour level`);
 });
 
 test('contours change only on grid edges that touch changed ground inside the mask', () => {
   const a = contoursFor('built');
   const b = contoursFor('quarry');
   let moved = 0;
-  for (const L of LEVELS) {
+  for (const L of LEVELS_PRESENT) {
     for (const [from, other] of [[a, vertexSet(b, L)], [b, vertexSet(a, L)]]) {
-      for (const p of (from.rings.get(L) ?? []).flat()) {
-        if (onBorder(p) || other.has(key(p))) continue;
+      for (const p of points(from, L)) {
+        if (onSheetEdge(p) || other.has(key(p))) continue;
         moved++;
         const nodes = edgeNodes(p);
         assert.ok(nodes.some(changed), `${L} m vertex (${p}) moved although its grid edge kept its heights`);
@@ -81,9 +95,9 @@ test('contours change only on grid edges that touch changed ground inside the ma
 
 test('quarry contours are traced from the quarried surface', () => {
   let worst = 0;
-  for (const L of LEVELS) {
-    for (const p of (contoursFor('quarry').rings.get(L) ?? []).flat()) {
-      if (onBorder(p)) continue;
+  for (const L of LEVELS_PRESENT) {
+    for (const p of points(contoursFor('quarry'), L)) {
+      if (onSheetEdge(p)) continue;
       const [n1, n2] = edgeNodes(p);
       const v1 = QUARRIED(n1[0], n1[1]);
       const v2 = QUARRIED(n2[0], n2[1]);
@@ -91,61 +105,112 @@ test('quarry contours are traced from the quarried surface', () => {
       worst = Math.max(worst, Math.abs(QUARRIED(p[0], p[1]) - L));
     }
   }
-  assert.ok(worst <= 5, `interpolation error under half a contour interval (worst ${worst.toFixed(2)} m)`);
+  assert.ok(worst <= INTERVAL / 2, `interpolation error under half a contour interval (worst ${worst.toFixed(2)} m)`);
 });
 
-test('the cut faces the camera: most of its floor is visible on the block', () => {
-  const t = terrainFor('quarry');
-  let n = 0;
-  let seen = 0;
-  for (let x = QUARRY.x0 + 2; x <= QUARRY.x1 - 2; x += 0.5) {
-    for (let y = QUARRY.y0 + 2; y <= QUARRY.y1 - 2; y += 0.5) {
-      if (HILL(x, y) - QUARRY.floor < 2) continue; // floor = where ground was really cut down
-      n++;
-      if (isVisible(t, x, y)) seen++;
-    }
+test('the model and the map show one ground: mesh heights are the height functions (× VEX)', () => {
+  const m = groundMesh();
+  const [P0, P1] = m.pose;
+  const inMorph = new Set(m.morph);
+  let onSheet = 0;
+  for (let k = 0; k < m.plan.length / 2; k++) {
+    const x = m.plan[k * 2];
+    const y = m.plan[k * 2 + 1];
+    if (x < 0 || x > SHEET.w || y < 0 || y > SHEET.h) continue;
+    onSheet++;
+    const w0 = toWorld(x, y, HILL(x, y));
+    const w1 = toWorld(x, y, QUARRIED(x, y));
+    close(P0[k * 3 + 1], w0[1], 1e-3, `hill pose at (${x}, ${y})`);
+    close(P1[k * 3 + 1], w1[1], 1e-3, `quarried pose at (${x}, ${y})`);
+    close(P0[k * 3], w0[0], 1e-3, 'x');
+    close(P0[k * 3 + 2], w0[2], 1e-3, 'z');
+    if (HILL(x, y) !== QUARRIED(x, y)) assert.ok(inMorph.has(k), `changed vertex (${x}, ${y}) morphs`);
+    if (inMorph.has(k)) assert.ok(quarryMask(x, y) > 0, `a morphing vertex (${x}, ${y}) lies in the quarry`);
   }
-  assert.ok(n > 20 && seen / n >= 0.6, `visible cut floor ${seen}/${n}`);
+  assert.ok(onSheet >= 241 * 161, `the sheet is meshed every 2 m (${onSheet} vertices)`);
+  assert.ok(VEX >= 1 && VEX <= 2, 'a mild vertical exaggeration only');
+  // north is up the screen, east to the right (never mirrored): +x → +X, +y (south) → +Z
+  assert.ok(toWorld(10, 0, 100)[0] > toWorld(0, 0, 100)[0] && toWorld(0, 10, 100)[2] > toWorld(0, 0, 100)[2]);
 });
 
 test('objects outside the cut keep their ground; the cut takes orchard trees with it', () => {
-  const tb = terrainFor('built');
-  const tq = terrainFor('quarry');
-  const pts = [
-    ...COVER.quarry.orchard.map((t) => [t.x, t.y]),
-    ...COVER.quarry.houses.flatMap((h) => [
-      [h.x - h.w / 2, h.y - h.d / 2], [h.x + h.w / 2, h.y - h.d / 2], [h.x + h.w / 2, h.y + h.d / 2], [h.x - h.w / 2, h.y + h.d / 2],
-    ]),
-  ];
-  for (const [x, y] of pts) {
-    assert.equal(QUARRIED(x, y), HILL(x, y), `ground under (${x}, ${y}) unchanged`);
-    assert.deepEqual(tq.at(x, y), tb.at(x, y), `(${x}, ${y}) stays put on screen through the morph`);
-  }
+  const pts = [...COVER.quarry.orchard.map((t) => [t.x, t.y]), ...COVER.quarry.houses.flatMap((h) => houseCorners(h))];
+  for (const [x, y] of pts) assert.equal(QUARRIED(x, y), HILL(x, y), `ground under (${x}, ${y}) unchanged`);
   const removed = ORCHARD.filter((t) => !COVER.quarry.orchard.includes(t));
-  assert.ok(removed.length >= 4, `the quarry removes orchard trees (${removed.length})`);
+  assert.ok(removed.length >= 6, `the quarry removes orchard trees (${removed.length})`);
   for (const t of removed) assert.ok(quarryMask(t.x, t.y) >= 0.5, `removed tree ${t.id} lies inside the mapped quarry area`);
   for (const t of COVER.quarry.orchard) assert.equal(quarryMask(t.x, t.y), 0, `kept tree ${t.id} is outside the cut`);
   assert.equal(COVER.quarry.houses, COVER.built.houses);
 });
 
 test('cover per state: bare → natural grove → buildings and orchard → quarry', () => {
-  assert.deepEqual(COVER.bare, { grove: [], orchard: [], houses: [] });
-  assert.ok(COVER.grove.grove.length >= 20 && !COVER.grove.orchard.length && !COVER.grove.houses.length);
-  assert.ok(!COVER.built.grove.length && COVER.built.orchard === ORCHARD && COVER.built.houses === HOUSES);
-  assert.ok(!COVER.quarry.grove.length);
+  assert.deepEqual(COVER.bare, { grove: [], shrubs: [], orchard: [], houses: [] });
+  assert.ok(COVER.grove.grove.length >= 40 && COVER.grove.shrubs === SHRUBS && !COVER.grove.orchard.length && !COVER.grove.houses.length);
+  assert.ok(!COVER.built.grove.length && !COVER.built.shrubs.length && COVER.built.orchard === ORCHARD && COVER.built.houses === HOUSES);
+  assert.ok(!COVER.quarry.grove.length && !COVER.quarry.shrubs.length);
   for (const t of GROVE) {
-    assert.ok(t.x > 1 && t.x < TW - 1 && t.y > 1 && t.y < TH - 1, `grove tree ${t.id} on the tile`);
-    assert.ok(HILL(t.x, t.y) >= 105, `grove tree ${t.id} grows on the hill (${HILL(t.x, t.y).toFixed(1)} m)`);
+    assert.ok(t.x > 1 && t.x < SHEET.w - 1 && t.y > 1 && t.y < SHEET.h - 1, `grove tree ${t.id} on the sheet`);
+    assert.ok(HILL(t.x, t.y) >= 112, `grove tree ${t.id} grows on the hill (${HILL(t.x, t.y).toFixed(1)} m)`);
   }
-  for (const h of HOUSES) assert.ok(HILL(h.x, h.y) < 103, `house ${h.id} stands on the plain`);
-  for (const h of HOUSES) for (const t of ORCHARD) assert.ok(Math.hypot(h.x - t.x, h.y - t.y) > 3, `house ${h.id} clear of ${t.id}`);
-  // natural = irregular, planted = orderly (spec §6)
+  for (const h of HOUSES) {
+    assert.ok(HILL(h.x, h.y) < 106, `house ${h.id} stands on the plain`);
+    assert.ok(houseCorners(h).every(([x, y]) => x > 0 && x < SHEET.w && y > 0 && y < SHEET.h), `house ${h.id} on the sheet`);
+    for (const t of ORCHARD) assert.ok(Math.hypot(h.x - t.x, h.y - t.y) > 12, `house ${h.id} clear of ${t.id}`);
+  }
+  for (let i = 0; i < HOUSES.length; i++)
+    for (let j = i + 1; j < HOUSES.length; j++)
+      assert.ok(Math.hypot(HOUSES[i].x - HOUSES[j].x, HOUSES[i].y - HOUSES[j].y) > 22, `houses ${HOUSES[i].id} and ${HOUSES[j].id} apart`);
+  // natural = irregular, planted = orderly
   const gaps = (ts) => ts.map((a) => Math.min(...ts.filter((b) => b !== a).map((b) => Math.hypot(a.x - b.x, a.y - b.y))));
   const spread = (v) => Math.max(...v) - Math.min(...v);
   assert.ok(spread(gaps(ORCHARD)) < 1e-9, 'orchard trees sit at one fixed spacing');
   assert.ok(spread(gaps(GROVE)) > 0.5, 'grove spacing varies');
   assert.ok(new Set(GROVE.map((t) => t.r.toFixed(2))).size > 5, 'grove crowns vary in size');
   assert.equal(new Set(ORCHARD.map((t) => t.r)).size, 1, 'orchard crowns match');
+});
+
+test('map annotation: spot heights on the summits, contour numbers on their line facing uphill', () => {
+  for (const s of SPOTS) {
+    const h = HILL(s.x, s.y);
+    assert.equal(s.h, Math.round(h));
+    for (const [dx, dy] of [[3, 0], [-3, 0], [0, 3], [0, -3]]) assert.ok(HILL(s.x + dx, s.y + dy) < h, `spot ${s.id} is a top`);
+  }
+  assert.deepEqual(SPOTS.map((s) => s.h).sort(), [152, 176]);
+  for (const [state, f] of [['bare', HILL], ['quarry', QUARRIED]]) {
+    const labels = contourLabels(contoursFor(state), f);
+    assert.ok(labels.length >= 4, `${state}: contour numbers`);
+    for (const l of labels) {
+      assert.equal(l.level % INDEX_EVERY, 0, `${state}: ${l.level} is an index contour`);
+      close(f(l.x, l.y), l.level, 0.6, `${state}: label ${l.level} sits on its line`);
+      // the figures' "up" (0, −1) turned by deg must point uphill
+      const t = (l.deg * Math.PI) / 180;
+      const up = [Math.sin(t), -Math.cos(t)];
+      const e = 0.5;
+      const g = [(f(l.x + e, l.y) - f(l.x - e, l.y)) / (2 * e), (f(l.x, l.y + e) - f(l.x, l.y - e)) / (2 * e)];
+      const n = Math.hypot(...g);
+      assert.ok((up[0] * g[0] + up[1] * g[1]) / n > 0.99, `${state}: label ${l.level} faces uphill`);
+      assert.ok(Math.abs(l.deg) < 100, `${state}: label ${l.level} reads without turning the page over (${l.deg.toFixed(0)}°)`);
+    }
+  }
+});
+
+test('map areas: the grove tint holds every grove tree; the quarry site is the mask ≥ 0.5', () => {
+  const inside = (p, ring) => {
+    let c = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  for (const t of GROVE) assert.ok(GROVE_AREA.some((r) => inside([t.x, t.y], r)), `grove tree ${t.id} inside the tint`);
+  assert.equal(QUARRY_SITE.rings.length, 1);
+  for (const [x, y] of QUARRY_SITE.rings[0]) close(quarryMask(x, y), 0.5, 0.05, `site edge (${x.toFixed(1)}, ${y.toFixed(1)})`);
+  assert.ok(QUARRY_SITE.ticks.length >= 8, 'ticks along the cut faces');
+  // ticks only along cut faces (the back wall and the side walls), never along the open front
+  for (const [, b] of QUARRY_SITE.ticks) assert.ok(HILL(b[0], b[1]) - QUARRIED(b[0], b[1]) >= 3, `tick at (${b[0].toFixed(0)}, ${b[1].toFixed(0)}) points into a cut ≥ 3 m deep`);
+  assert.ok(QUARRY_SITE.ticks.every(([a]) => a[1] < QUARRY.y1 - 10), 'no tick along the front edge');
 });
 
 test('legend and chip follow the state', () => {

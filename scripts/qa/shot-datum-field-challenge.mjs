@@ -17,7 +17,7 @@
 //               mistakes get their own text and their gap on the map (60 / 120 m); back, next,
 //               summary, practise again, back to the demonstration
 //   layout      the instruction, the map, the action and the feedback on screen together; the card
-//               follows its content with the way on next to feedback; chips inside the map and apart;
+//               keeps both columns and their bottom edges aligned; chips inside the map and apart;
 //               readable text sizes; no N glyph, hint, point picker or thumbnails
 //   keyboard    stage tabs and the datum switch follow RTL arrows; options are a radio group; focus
 //               is visible
@@ -38,9 +38,9 @@ const H = 1122;
 const TITLE = 'הדמיה: מה קורה כשהדאטום לא תואם?';
 const T = {
   toB: 'הגשר נשאר באותו מקום. בהמרה לדאטום B המספרים שמייצגים אותו משתנים.',
-  raw: 'העיגול מסמן את הגשר האמיתי. המעוין מסמן לאן מפנים המספרים כשהמפה קוראת אותם בדאטום B. הם הועתקו מ־A ללא המרה, ולכן מתקבל פער של 60 מטר. זהו פער בסימון, לא תזוזה של הגשר.',
-  labelled: 'הכיתוב השתנה, אבל המספרים עדיין נלקחו מדאטום A. המפה ממשיכה לקרוא אותם כ־B, ולכן הפער נשאר 60 מטר.',
-  fixed: 'המספרים הומרו לייצוג המתאים לדאטום B. כשהמפה קוראת אותם, הסימון חוזר לאותו גשר. השתנה הייצוג — המקום בשטח נשאר קבוע.',
+  raw: 'המעוין נמצא 60 מטר מהגשר: מספרי A נקראו כ־B ללא המרה. הגשר לא זז — הסימון שגוי. השוו עכשיו בין שינוי הכיתוב להמרת המספרים.',
+  labelled: 'החלפנו את הכיתוב מ־A ל־B, אבל המספרים לא השתנו. לכן המעוין נשאר 60 מטר מהגשר. כדי לתקן צריך להמיר את המספרים.',
+  fixed: 'ההמרה שינתה את המספרים לייצוג בדאטום B, ולכן המעוין חזר לגשר. הגשר עצמו נשאר במקומו.',
   match: 'הסימון תואם למיקום הגשר',
   moving: 'המחשת המעבר',
   c1right: 'המקור והמפה משתמשים כאן באותו דאטום. אין צורך בהמרה; המספרים המקוריים כבר מצביעים על הגשר.',
@@ -127,6 +127,12 @@ const layouts = [];
 async function layout(ui, state) {
   const card = await ui.card.boundingBox();
   const footer = await ui.footer.boundingBox();
+  const panel = await ui.panel.boundingBox();
+  const figure = await ui.root.locator('figure').boundingBox();
+  expect(Math.abs(panel.y - figure.y) <= 1 && Math.abs(panel.height - figure.height) <= 1, `${state}: both columns have the same top and height`);
+  expect(Math.abs(footer.y + footer.height - figure.y - figure.height) <= 1, `${state}: the navigation ends level with the illustration`);
+  expect(card.y + card.height - footer.y - footer.height <= 25, `${state}: no excess space at the bottom of the card`);
+  expect(!(await text(ui.root)).includes('הגשר בשטח') && !(await text(ui.root)).includes('רשת דאטום'), `${state}: the removed map captions stay absent`);
   layouts.push({ state, cardH: Math.round(card.height), footerY: Math.round(footer.y - card.y), raw: [card.height, footer.y, footer.height].map((v) => +v.toFixed(2)) });
   // the block on screen together, under the header: instruction (first body line), map, action, feedback
   const box = await ui.box.boundingBox();
@@ -136,7 +142,7 @@ async function layout(ui, state) {
   if (await ui.feedback.count()) {
     const fb = await ui.feedback.first().boundingBox();
     expect(fb.y + fb.height <= H, `${state}: the feedback ends on screen (${fb.y + fb.height})`);
-    expect(footer.y - (fb.y + fb.height) <= 24, `${state}: continue stays close to feedback`);
+    expect(footer.y >= fb.y + fb.height - 1, `${state}: navigation does not overlap feedback`);
   }
   expect(footer.y + footer.height <= H, `${state}: the way on is on screen (${footer.y + footer.height})`);
   // chips and the distance label: inside the map, and apart from each other
@@ -182,7 +188,7 @@ async function layout(ui, state) {
   expect(near(at0, bridge), `the bridge marker stands on the bridge ${JSON.stringify(at0)} vs ${JSON.stringify(bridge)}`);
   expect((await ui.result.count()) === 0 && (await ui.measure.count()) === 0, 'stage 1 shows only the bridge');
   expect((await text(ui.chips)).includes('E 1200 · N 800'), 'the readout shows A’s numbers');
-  expect((await text(ui.legend)).includes('רשת דאטום A'), 'the legend names the A grid');
+  expect((await root.locator('[data-grid]').getAttribute('data-grid')) === 'A', 'the map uses the A grid');
   expect((await text(ui.live)) === '', 'nothing announced before a switch');
   // nothing left of the old design
   expect((await root.getByText('N', { exact: true }).count()) === 0, 'no N glyph');
@@ -209,7 +215,7 @@ async function layout(ui, state) {
   const nB = await root.locator('[data-grid-n="800"]').boundingBox();
   const nExpected = (await screenOf(ui, { e: 0, n: 848 })).y;
   expect(Math.abs(nB.y + nB.height / 2 - nExpected) <= 1.5, 'B’s N 800 line stands 48 m north of A’s');
-  expect((await text(ui.legend)).includes('רשת דאטום B'), 'the legend names the B grid');
+  expect((await root.locator('[data-grid]').getAttribute('data-grid')) === 'B', 'the map uses the B grid');
   expect((await text(ui.live)) === T.toB, 'one short message after the switch');
   await layout(ui, 'compare-B');
   await shot(ui, '02-compare-B');
@@ -235,7 +241,7 @@ async function layout(ui, state) {
   expect((await text(ui.panel)).includes('נתוני המקור · דאטום A'), 'the source, fixed, in A');
   expect((await text(ui.panel)).includes('המפה מפרשת את הנתונים בדאטום B'), 'the target, fixed, in B');
   expect((await ui.result.count()) === 0, 'only the bridge before the copy');
-  expect((await text(ui.legend)).includes('רשת דאטום B'), 'the map shows its own grid, B');
+  expect((await root.locator('[data-grid]').getAttribute('data-grid')) === 'B', 'the map shows its own grid, B');
   await layout(ui, 'error-ready');
   await shot(ui, '03-error-ready');
 

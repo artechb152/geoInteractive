@@ -74,7 +74,7 @@ export function Base60Workbench() {
 
           <div className="min-w-0 lg:ps-6">
             <div className="flex items-center justify-between gap-3">
-              <Calculator />
+              <Calculator complete={!activeStep(t)} />
               <AxisSwitch axis={s.axis} uid={uid} onSelect={(axis) => act({ type: 'axis', axis })} />
             </div>
             <div className="mt-4 overflow-x-auto">

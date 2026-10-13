@@ -17,8 +17,8 @@ const MAP_W = 400;
 const SEASONAL = ['grove', 'garrigue', 'batha', 'terraces', 'fields'];
 const REGIONS = ['grove', 'garrigue', 'batha', 'planted', 'terraces', 'fields', 'village', 'orchard', 'reservoir', 'track', 'road', 'power', 'fence'];
 const RAISED = ['grove', 'garrigue', 'planted', 'village', 'orchard', 'reservoir', 'power', 'fence'];
-const FULL = ['ground-winter', 'ground-summer'];
-const LAYERS = REGIONS.flatMap((k) => (SEASONAL.includes(k) ? [`${k}-winter`, `${k}-summer`] : [k]));
+const FULL = ['ground-winter'];
+const LAYERS = REGIONS.flatMap((k) => (SEASONAL.includes(k) ? [`${k}-winter`] : [k]));
 const SHADOW = RAISED.map((k) => 'shadow-' + k);
 const PAD = 3; // px of transparent margin kept around a cropped layer
 

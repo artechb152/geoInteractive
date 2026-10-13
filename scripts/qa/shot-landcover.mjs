@@ -5,7 +5,7 @@
 // Checks (exit 1 on any failure): every region is a button whose hit area answers a click
 // at its tag position (selection follows); only the active category's regions are in the
 // tab order; every render layer loads (no broken <image>); no console errors; no horizontal
-// scroll at 1440. Screenshots at 1440 × 1122: each category in winter and summer, a selected
+// scroll at 1440; no season switch. Screenshots at 1440 × 1122: each category, a selected
 // region, and the whole workspace.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
@@ -57,11 +57,12 @@ const broken = await map.evaluate(async (svg) => {
   );
   return { n: hrefs.length, bad };
 });
-check(broken.n === 28, `${broken.n} render layers in the map (expected 28)`);
+check(broken.n === 22, `${broken.n} render layers in the map (expected 22)`);
 check(broken.bad.length === 0, `broken layers: ${broken.bad.join(', ')}`);
 
 const tab = (label) => page.getByRole('tab', { name: label });
-const season = (label) => page.locator('#scene-landcover').getByRole('button', { name: label, exact: true });
+const seasonButtons = await page.locator('#scene-landcover').getByRole('button', { name: /^(חורף|קיץ)$/ }).count();
+check(seasonButtons === 0, `${seasonButtons} season buttons (the season switch was removed)`);
 
 for (const t of TABS) {
   await tab(t.label).click();
@@ -73,12 +74,7 @@ for (const t of TABS) {
     JSON.stringify([...focusable].sort()) === JSON.stringify([...t.regions].sort()),
     `${t.id}: focusable regions ${focusable.join(',')} ≠ ${t.regions.join(',')}`,
   );
-  for (const s of ['חורף', 'קיץ']) {
-    await season(s).click();
-    await page.waitForTimeout(900);
-    await workspace.screenshot({ path: `${outDir}/${t.id}-${s === 'חורף' ? 'winter' : 'summer'}.png` });
-  }
-  await season('חורף').click();
+  await workspace.screenshot({ path: `${outDir}/${t.id}.png` });
   // a click on each region's tag point selects it (the hull, not the image, takes the click)
   for (const id of t.regions) {
     const g = map.locator(`[data-region="${id}"]`);

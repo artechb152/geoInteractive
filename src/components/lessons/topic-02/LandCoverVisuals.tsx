@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { VEGETATION_LADDER_RENDERS } from './vegetationLadderRenders.data';
@@ -140,11 +140,20 @@ function LadderRender({ id }: { id: LadderRenderId }) {
   );
 }
 
-export type LadderItem = { label: string; height: string; planted?: boolean };
+export type LadderItem = { label: string; height: string; description: string; planted?: boolean };
 
 export function VegetationLadder({ items, legend }: { items: LadderItem[]; legend: string }) {
   const reduce = useReducedMotion();
   const [hover, setHover] = useState<number | null>(null);
+  const [focus, setFocus] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(null);
+  const uid = useId();
+  const active = hover ?? focus ?? picked;
+  const selected = active === null ? null : items[active];
+  const pick = (i: number) => {
+    setPicked(i);
+    setFocus(null);
+  };
 
   const grow: Variants = {
     hidden: { scaleY: 0.02, opacity: 0 },
@@ -154,7 +163,7 @@ export function VegetationLadder({ items, legend }: { items: LadderItem[]; legen
       transition: { delay: 0.1 + i * 0.12, duration: 0.6, ease: EASE },
     }),
   };
-  const dimStyle = (i: number) => ({ opacity: hover !== null && hover !== i ? 0.4 : 1 });
+  const dimStyle = (i: number) => ({ opacity: active !== null && active !== i ? 0.4 : 1 });
   const DIM = 'transition-opacity duration-300 ease-snap motion-reduce:transition-none';
 
   return (
@@ -216,7 +225,8 @@ export function VegetationLadder({ items, legend }: { items: LadderItem[]; legen
               key={v.label}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              className={DIM}
+              onClick={() => pick(i)}
+              className={cn(DIM, 'cursor-pointer')}
               style={dimStyle(i)}
             >
               <rect x={cx(i) - COL / 2} y={0} width={COL} height={GROUND} fill="transparent" />
@@ -235,16 +245,37 @@ export function VegetationLadder({ items, legend }: { items: LadderItem[]; legen
             key={v.label}
             onMouseEnter={() => setHover(i)}
             onMouseLeave={() => setHover(null)}
-            className={cn(
-              'min-w-0 text-center rounded-xl px-1 py-1.5 transition-colors duration-200',
-              hover === i && 'bg-bg-accent',
-            )}
+            className="min-w-0"
           >
-            <div className="font-display font-bold text-sm text-fg">{v.label}</div>
-            <div className="text-[13px] text-fg-muted leading-snug mt-0.5">{v.height}</div>
+            <button
+              type="button"
+              aria-describedby={`${uid}-description-${i}`}
+              aria-controls={`${uid}-explanation`}
+              aria-pressed={picked === i}
+              onClick={() => pick(i)}
+              onFocus={() => setFocus(i)}
+              onBlur={() => setFocus(null)}
+              className={cn(
+                'w-full text-center rounded-xl px-1 py-1.5 cursor-pointer transition-colors duration-200 motion-reduce:transition-none',
+                active === i && 'bg-bg-accent',
+              )}
+            >
+              <span className="block font-display font-bold text-sm text-fg">{v.label}</span>
+              <span className="block text-[13px] text-fg-muted leading-snug mt-0.5">{v.height}</span>
+            </button>
+            <span id={`${uid}-description-${i}`} className="sr-only">{v.description}</span>
           </li>
         ))}
       </ul>
+      <div id={`${uid}-explanation`} aria-live="polite" aria-atomic="true" className="mt-3 min-h-[112px] rounded-xl bg-bg-accent/60 p-4">
+        <p className="text-base leading-relaxed text-black">
+          {selected ? (
+            <><strong className="font-display font-bold">{selected.label}</strong> — {selected.description}</>
+          ) : (
+            'עברו עם העכבר על תצורת צומח כדי לקרוא על מאפייני הזיהוי שלה. לחצו על הצמח או על שמו כדי להשאיר את ההסבר מוצג.'
+          )}
+        </p>
+      </div>
       <p className="flex items-center gap-2 text-sm text-fg-muted leading-snug mt-3">
         <span aria-hidden className="inline-block w-5 h-3.5 rounded-md border-[1.5px] border-dashed border-brand-dark bg-brand/10 shrink-0" />
         {legend}

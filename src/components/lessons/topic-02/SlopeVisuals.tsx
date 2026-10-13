@@ -300,17 +300,7 @@ function SlopeTerrain({ morph }: { morph: Morph }) {
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden />;
 }
 
-export function SlopeProfile({
-  slope,
-  bottomLabel,
-  topLabel,
-  ariaLabel,
-}: {
-  slope: string;
-  bottomLabel: string;
-  topLabel: string;
-  ariaLabel: string;
-}) {
+export function SlopeProfile({ slope, ariaLabel }: { slope: string; ariaLabel: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const morph = useSlopeMorph(slope);
   const { pts } = morph;
@@ -351,14 +341,6 @@ export function SlopeProfile({
         {pts.map(([d, e], i) => (
           <circle key={'dot' + i} cx={sx(d)} cy={py(e)} r={1.5} fill={C.accent} stroke="#FFFFFF" strokeWidth={0.5} />
         ))}
-
-        {/* crest + foot */}
-        <text x={sx(1)} y={py(1) - 8.5} textAnchor="middle" fontSize={4.2} fill={C.ink} className="font-display font-bold">
-          {topLabel}
-        </text>
-        <text x={sx(0) - 7} y={P_H - 1.6} textAnchor="middle" fontSize={4.2} fill={C.ink} className="font-display font-bold">
-          {bottomLabel}
-        </text>
       </svg>
     </div>
   );
@@ -402,14 +384,10 @@ const shadeOf = (dd: number) => Math.min(0.3, 0.035 + 0.05 * (0.2 / Math.max(dd,
 
 export function SlopeContours({
   slope,
-  bottomLabel,
-  topLabel,
   zoneLabels,
   ariaLabel,
 }: {
   slope: string;
-  bottomLabel: string;
-  topLabel: string;
   zoneLabels: Record<SlopeZoneKind, string>;
   ariaLabel: string;
 }) {
@@ -517,17 +495,11 @@ export function SlopeContours({
         );
       })}
 
-      {/* summit (top of the slope) and foot */}
+      {/* summit (top of the slope) */}
       <polygon
         points={`${f2(summitX)},${f2(M_MID - 5.4)} ${f2(summitX - 1.6)},${f2(M_MID - 2.6)} ${f2(summitX + 1.6)},${f2(M_MID - 2.6)}`}
         fill={C.ink}
       />
-      <text x={summitX} y={M_MID - 8.2} textAnchor="middle" fontSize={3.9} fill={C.ink} className="font-display font-bold">
-        {topLabel}
-      </text>
-      <text x={(P_LEFT + sx(0)) / 2} y={M_MID - 8.2} textAnchor="middle" fontSize={3.9} fill={C.ink} className="font-display font-bold">
-        {bottomLabel}
-      </text>
 
       {/* what the spacing means, stretch by stretch */}
       <motion.g

@@ -174,8 +174,8 @@ export function ReliefCoverTerrain({
   };
 
   const tag =
-    showRelief && !showCover ? { key: 'bare', text: 'הקרקע החשופה', tone: 'relief' as const }
-    : !showRelief && showCover ? { key: 'cover', text: 'שכבת תכסית', tone: 'cover' as const }
+    showRelief && !showCover ? { key: 'bare', text: 'הקרקע החשופה' }
+    : !showRelief && showCover ? { key: 'cover', text: 'שכבת תכסית' }
     : null;
 
   const selectedRelief = sel && layerOf(sel) === 'relief' ? sel : null;
@@ -421,7 +421,7 @@ export function ReliefCoverTerrain({
             transition={{ duration: 0.3, ease: EASE, delay: reduce ? 0 : 0.25 }}
             pointerEvents="none"
           >
-            <StageTag text={tag.text} tone={tag.tone} />
+            <StageTag text={tag.text} />
           </motion.g>
         )}
       </AnimatePresence>
@@ -477,20 +477,9 @@ function ReliefPin({
         cy={gy}
         r={active ? 4.6 : hover ? 4.2 : 3.5}
         strokeWidth={1.6}
-        className={active ? 'fill-accent stroke-white' : 'fill-paper-bright stroke-terrain-ridge'}
+        className={active ? 'fill-accent stroke-white' : 'fill-white stroke-fg-muted'}
       />
-      <rect
-        x={x - w / 2}
-        y={py - 11}
-        width={w}
-        height={22}
-        rx={11}
-        strokeWidth={1.2}
-        className={cn(
-          'transition-colors',
-          active ? 'fill-accent stroke-accent' : hover ? 'fill-white stroke-fg' : 'fill-paper-bright stroke-tanline-contour/60',
-        )}
-      />
+      <LabelBox x={x - w / 2} y={py - 11} w={w} state={active ? 'active' : hover ? 'hover' : 'idle'} />
       <text
         x={x}
         y={py + 0.5}
@@ -523,12 +512,11 @@ function Callout({
 }) {
   const w = label.length * 7.4 + 22;
   const cx = Math.min(W - w / 2 - 4, Math.max(w / 2 + 4, x));
-  const fill = active ? 'fill-accent' : 'fill-fg';
   return (
     <g>
-      <line x1={ax} y1={ay} x2={cx} y2={y + 11} strokeWidth={1.3} className={active ? 'stroke-accent' : 'stroke-fg'} />
-      <circle cx={ax} cy={ay} r={2.6} className={fill} />
-      <rect x={cx - w / 2} y={y - 11} width={w} height={22} rx={11} className={fill} />
+      <line x1={ax} y1={ay} x2={cx} y2={y + 11} strokeWidth={1.3} className={active ? 'stroke-accent' : 'stroke-fg-muted'} />
+      <circle cx={ax} cy={ay} r={2.6} className={active ? 'fill-accent' : 'fill-fg-muted'} />
+      <LabelBox x={cx - w / 2} y={y - 11} w={w} state={active ? 'active' : 'hover'} />
       <text
         x={cx}
         y={y + 0.5}
@@ -536,7 +524,7 @@ function Callout({
         dominantBaseline="central"
         fontSize={12.5}
         fontWeight={700}
-        className="font-display fill-white"
+        className={cn('font-display', active ? 'fill-white' : 'fill-fg')}
       >
         {label}
       </text>
@@ -544,28 +532,38 @@ function Callout({
   );
 }
 
-function StageTag({ text, tone }: { text: string; tone: Layer }) {
-  const w = text.length * 7.6 + 30;
+/** The site's option look, drawn in SVG: white + hairline (rounded-xl) → sage edge on
+ *  hover → orange fill when selected (cleanup spec §1–2). */
+function LabelBox({ x, y, w, state }: { x: number; y: number; w: number; state: 'idle' | 'hover' | 'active' }) {
+  return (
+    <rect
+      x={x}
+      y={y}
+      width={w}
+      height={22}
+      rx={7}
+      strokeWidth={1.2}
+      className={cn(
+        'transition-colors',
+        state === 'active' ? 'fill-accent stroke-accent' : state === 'hover' ? 'fill-white stroke-brand' : 'fill-white stroke-border',
+      )}
+    />
+  );
+}
+
+function StageTag({ text }: { text: string }) {
+  const w = text.length * 7.6 + 24;
   return (
     <g>
-      <rect
-        x={W / 2 - w / 2}
-        y={16}
-        width={w}
-        height={26}
-        rx={13}
-        strokeWidth={1.2}
-        className={tone === 'relief' ? 'fill-white stroke-terrain-sand' : 'fill-white stroke-brand'}
-      />
-      <circle cx={W / 2 + w / 2 - 13} cy={29} r={3.5} className={tone === 'relief' ? 'fill-terrain-sand' : 'fill-brand'} />
+      <rect x={W / 2 - w / 2} y={16} width={w} height={26} rx={8} strokeWidth={1.2} className="fill-white stroke-border" />
       <text
-        x={W / 2 - 4}
+        x={W / 2}
         y={29.5}
         textAnchor="middle"
         dominantBaseline="central"
         fontSize={13}
         fontWeight={700}
-        className={cn('font-display', tone === 'relief' ? 'fill-tanline-badge' : 'fill-brand-dark')}
+        className="font-display fill-fg"
       >
         {text}
       </text>

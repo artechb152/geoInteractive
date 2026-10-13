@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type CSSProperties, type FocusEvent, type KeyboardEvent } from 'react';
+import { useId, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { LAND_COVER_RENDERS } from './landCoverRenders.data';
 
@@ -12,13 +12,14 @@ import { LAND_COVER_RENDERS } from './landCoverRenders.data';
  * הלחיצה זהים לגרסת ה-papercut (בארכיון: LandCoverMapV1.tsx).
  * הרמז הלימודי נשמר בשטח עצמו: צומח טבעי = כתמים לא סדורים, צומח נטוע = שורות ומרווחים קבועים.
  * כל אזור הוא שכבה שקופה משלו (ואזור מורם גם שכבת צל), כך שקטגוריה פעילה מודגשת והשאר
- * דהויות; עונה מחליפה בין רינדור חורף לרינדור קיץ, וירוקי־עד (יער נטוע, מטע) לא משתנים.
+ * דהויות — מולבנות, לא מוחשכות. השטח מוצג בחורף בלבד.
+ * הרינדור עובר "פיתוח" בהיר (BRIGHT), כמו תצלום אוויר שהוארו בו הצללים: הבהירות של גרסת
+ * ה-papercut, בלי לוותר על המראה הריאליסטי.
  *
  * המפה לא משוקפת ב-RTL. כל <text> עם textAnchor מפורש.
  */
 
 export type CoverCat = 'vegetation' | 'human' | 'infra';
-export type CoverSeason = 'winter' | 'summer';
 export type CoverMapFeature = { id: string; label: string; cat: CoverCat };
 
 const W = 400;
@@ -108,14 +109,15 @@ const REGION_ORDER = [
 const FLAT = ['batha', 'terraces', 'fields', 'track', 'road'] as const;
 /** Each casts a shadow on the land around it (drawn under all of them, dimmed with its own region). */
 const RAISED = ['grove', 'garrigue', 'planted', 'village', 'orchard', 'reservoir', 'power', 'fence'] as const;
-/** Rendered once per season; the rest look the same all year. */
-const SEASONAL = new Set<string>(['grove', 'garrigue', 'batha', 'terraces', 'fields']);
+/** Rendered as a winter pass (the map shows winter only); the rest have a single render. */
+const WINTER = new Set<string>(['ground', 'grove', 'garrigue', 'batha', 'terraces', 'fields']);
+/** A region's own render layer. */
+const layerOf = (id: string) => (WINTER.has(id) ? `${id}-winter` : id) as RenderId;
 
-const SEASON_MS = 700;
 const DIM_STYLE = 'transition-opacity duration-300 ease-snap motion-reduce:transition-none';
 
 /** One rendered layer, placed in map units. Never a hit target. */
-function Render({ id, style }: { id: RenderId; style?: CSSProperties }) {
+function Render({ id }: { id: RenderId }) {
   const r = LAND_COVER_RENDERS[id];
   return (
     <image
@@ -126,29 +128,7 @@ function Render({ id, style }: { id: RenderId; style?: CSSProperties }) {
       height={r.h}
       preserveAspectRatio="none"
       pointerEvents="none"
-      style={style}
     />
-  );
-}
-
-/**
- * Winter ↔ summer: the summer layer fades over a fully drawn winter layer (like the
- * papercut's 700 ms colour change), and winter is dropped only once summer covers it.
- */
-function Seasonal({ id, season, reduce }: { id: string; season: CoverSeason; reduce: boolean }) {
-  if (!SEASONAL.has(id) && id !== 'ground') return <Render id={id as RenderId} />;
-  const summer = season === 'summer';
-  return (
-    <>
-      <Render
-        id={`${id}-winter` as RenderId}
-        style={{ opacity: summer ? 0 : 1, transition: reduce || !summer ? 'none' : `opacity 0s linear ${SEASON_MS}ms` }}
-      />
-      <Render
-        id={`${id}-summer` as RenderId}
-        style={{ opacity: summer ? 1 : 0, transition: reduce ? 'none' : `opacity ${SEASON_MS}ms cubic-bezier(0.22,1,0.36,1)` }}
-      />
-    </>
   );
 }
 
@@ -235,14 +215,12 @@ export function LandCoverMap({
   features,
   cat,
   selectedId,
-  season,
   onSelect,
   ariaLabel,
 }: {
   features: CoverMapFeature[];
   cat: CoverCat;
   selectedId: string | null;
-  season: CoverSeason;
   onSelect: (id: string) => void;
   ariaLabel: string;
 }) {
@@ -256,17 +234,19 @@ export function LandCoverMap({
   const ids = {
     tile: `${uid}-tile`,
     dim: `${uid}-dim`,
+    bright: `${uid}-bright`,
   };
 
-  /** A region's rendered layers: full strength in the active category, faded and greyed otherwise. */
+  /** A region's rendered layers: full strength in the active category; otherwise washed pale (greyed
+   *  and lifted toward white — never darker than the land around it). */
   const visual = (id: string) => (
     <g
       key={id}
       className={DIM_STYLE}
-      style={{ opacity: lit(id) ? 1 : 0.38 }}
+      style={{ opacity: lit(id) ? 1 : 0.7 }}
       filter={lit(id) ? undefined : `url(#${ids.dim})`}
     >
-      <Seasonal id={id} season={season} reduce={reduce} />
+      <Render id={layerOf(id)} />
     </g>
   );
 
@@ -322,26 +302,42 @@ export function LandCoverMap({
         <clipPath id={ids.tile}>
           <rect x={0} y={0} width={W} height={H} rx={10} />
         </clipPath>
-        <filter id={ids.dim}>
-          <feColorMatrix type="saturate" values="0.15" />
+        <filter id={ids.dim} colorInterpolationFilters="sRGB">
+          <feColorMatrix type="saturate" values="0.3" />
+          <feComponentTransfer>
+            <feFuncR type="linear" slope={0.62} intercept={0.34} />
+            <feFuncG type="linear" slope={0.62} intercept={0.34} />
+            <feFuncB type="linear" slope={0.62} intercept={0.32} />
+          </feComponentTransfer>
+        </filter>
+        {/* the bright grade: shadows and mid-tones lifted, a little more colour */}
+        <filter id={ids.bright} colorInterpolationFilters="sRGB">
+          <feComponentTransfer>
+            <feFuncR type="gamma" amplitude={1.04} exponent={0.62} offset={0.02} />
+            <feFuncG type="gamma" amplitude={1.04} exponent={0.62} offset={0.02} />
+            <feFuncB type="gamma" amplitude={1.02} exponent={0.66} offset={0.02} />
+          </feComponentTransfer>
+          <feColorMatrix type="saturate" values="1.18" />
         </filter>
       </defs>
 
       {/* tile: rim + rendered land */}
       <rect x={0} y={3} width={W} height={H} rx={10} fill={C.rim} />
       <g clipPath={`url(#${ids.tile})`}>
-        <Seasonal id="ground" season={season} reduce={reduce} />
+        <g filter={`url(#${ids.bright})`}>
+          <Render id={layerOf('ground')} />
 
-        {/* flat regions, then every cast shadow, then the raised regions */}
-        {FLAT.map(visual)}
-        <g pointerEvents="none">
-          {RAISED.map((id) => (
-            <g key={id} className={DIM_STYLE} style={{ opacity: lit(id) ? 1 : 0.38 }}>
-              <Render id={`shadow-${id}` as RenderId} />
-            </g>
-          ))}
+          {/* flat regions, then every cast shadow, then the raised regions */}
+          {FLAT.map(visual)}
+          <g pointerEvents="none">
+            {RAISED.map((id) => (
+              <g key={id} className={DIM_STYLE} style={{ opacity: lit(id) ? 1 : 0.3 }}>
+                <Render id={`shadow-${id}` as RenderId} />
+              </g>
+            ))}
+          </g>
+          {RAISED.map(visual)}
         </g>
-        {RAISED.map(visual)}
 
         {/* hit areas — the hulls, transparent, in the original order */}
         {REGION_ORDER.map(region)}

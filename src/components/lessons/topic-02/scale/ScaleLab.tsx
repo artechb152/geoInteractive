@@ -177,7 +177,7 @@ export function ScaleLab() {
           })}
         </div>
 
-        <div role="tabpanel" id={PANEL_ID} aria-labelledby={tabId(mode)} className="flex flex-col gap-5 lg:col-start-1 lg:row-start-2">
+        <div role="tabpanel" id={PANEL_ID} aria-labelledby={tabId(mode)} className="flex flex-col gap-5 lg:col-start-1 lg:row-start-2 lg:justify-between">
           {!comparing && (
             <div>
               <div className={cn(T5, 'mb-2')}>קנה מידה</div>
@@ -229,8 +229,8 @@ export function ScaleLab() {
                 : { value: curtain, onChange: setCurtain, leftLabel: CURTAIN_LABELS.left, rightLabel: CURTAIN_LABELS.right }
             }
             attribution={comparing ? ATTRIBUTION.map : layers.attribution}
+            showFooter={false}
             preload={preload}
-            note={mode === 'explore' && !comparing ? `סרגל קנה המידה שעל המפה מתעדכן בתקריב; קנה המידה של הדף נשאר ${formatRatio(D)}.` : undefined}
             onPick={mode === 'measure' ? place : undefined}
             overlay={(ctx) => {
               centerRef.current = ctx.center;
@@ -327,7 +327,7 @@ function ExplorePanel({
 
           <div>
             <div id="scale-lab-locate" className={cn(T5, 'mb-2')}>איתור במפה</div>
-            <div role="group" aria-labelledby="scale-lab-locate" className="flex flex-wrap gap-2">
+            <div role="group" aria-labelledby="scale-lab-locate" className="grid grid-cols-2 gap-2">
               {LOCATE.map((l) => {
                 const on = locate === l.id;
                 return (
@@ -336,7 +336,7 @@ function ExplorePanel({
                     type="button"
                     aria-pressed={on}
                     onClick={() => onLocate(on ? null : l.id)}
-                    className={cn(OPTION_BASE, FOCUS_RING, on ? OPTION_ACTIVE : OPTION_IDLE, 'px-3 py-1.5 font-display text-sm font-bold text-fg')}
+                    className={cn(OPTION_BASE, FOCUS_RING, on ? OPTION_ACTIVE : OPTION_IDLE, 'h-10 px-3 py-1.5 font-display text-sm font-bold text-fg')}
                   >
                     {l.label}
                   </button>
@@ -358,12 +358,12 @@ function ExplorePanel({
           aria-pressed={comparing}
           onClick={() => onCompare(!comparing)}
           data-qa="zoom-compare-toggle"
-          className={cn(OPTION_BASE, FOCUS_RING, comparing ? OPTION_ACTIVE : OPTION_IDLE, 'h-10 px-4 font-display text-sm font-bold text-fg')}
+          className={cn(OPTION_BASE, FOCUS_RING, comparing ? OPTION_ACTIVE : OPTION_IDLE, 'h-10 flex-1 px-4 text-center font-display text-sm font-bold text-fg')}
         >
           הגדלה לעומת פירוט
         </button>
         {comparing && (
-          <button type="button" onClick={back} className="btn-secondary h-10 px-4 text-sm">
+          <button type="button" onClick={back} className="btn-secondary h-10 flex-1 px-4 text-sm">
             חזרה למפות
           </button>
         )}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import Image from 'next/image';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { SortQuiz, type SortItem } from './SortQuiz';
 import { ReliefCoverTerrain } from './ReliefCoverTerrain';
@@ -42,10 +43,9 @@ const LAYER_LABEL: Record<Layer, string> = { relief: 'תבליט', cover: 'תכ�
 const ORIGIN_LABEL: Record<Origin, string> = { natural: 'טבעית', artificial: 'מלאכותית' };
 const FEATURE_LABELS = Object.fromEntries(FEATURES.map((f) => [f.id, f.label])) as Record<string, string>;
 
-/** Layer colour cue — the illustration's legend key (sand = relief, sage = cover). */
-const LAYER_SWATCH: Record<Layer, string> = { relief: 'bg-terrain-sand', cover: 'bg-brand' };
-/** Result inset tint = the selected feature's legend colour (cleanup spec §1 result role). */
-const RESULT_TINT: Record<Layer, string> = { relief: 'bg-terrain-sand/20', cover: 'bg-brand/10' };
+/** Option recipe (cleanup spec §1–2, same as LandCoverScene): orange = on/selected. */
+const OPTION_IDLE = 'border-border bg-bg-elevated text-fg hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer';
+const OPTION_ON = 'border-accent bg-accent/10 text-fg';
 
 const QUIZ_ITEMS: SortItem<Layer>[] = [
   { id: 'q-hill',    label: 'גבעה',       answer: 'relief', why: 'גבעה היא התרוממות של פני הקרקע, ולכן היא חלק מהתבליט.' },
@@ -114,6 +114,7 @@ const COMPARE_COPY: ReliefCoverCopy = {
 };
 
 export function ReliefCoverIntroScene() {
+  const reduce = useReducedMotion();
   const [showRelief, setShowRelief] = useState(true);
   const [showCover, setShowCover] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -153,9 +154,6 @@ export function ReliefCoverIntroScene() {
             ומרכיבים <strong className="text-fg">מלאכותיים</strong> שהאדם יצר, כגון בתים, כבישים, שדות ומטעים, גדרות וקווי חשמל.
           </DefinitionCard>
         </div>
-        <p className="mt-6 rounded-xl bg-bg-accent/60 p-4 text-base text-fg-muted leading-relaxed text-pretty">
-          להמחשת ההבחנה, דמיינו שמסירים מהשטח את הצומח, המבנים והתשתיות. צורת הקרקע שנותרת היא <strong className="text-fg">התבליט</strong>; המרכיבים שהוסרו הם <strong className="text-fg">התכסית</strong>.
-        </p>
       </div>
 
       {/* ── Screen 2: interactive layered terrain — the scene's workspace ── */}
@@ -171,7 +169,7 @@ export function ReliefCoverIntroScene() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {(['relief', 'cover'] as Layer[]).map((layer) => (
-                  <LayerToggle key={layer} layer={layer} on={visible(layer)} onToggle={() => toggleLayer(layer)}>
+                  <LayerToggle key={layer} on={visible(layer)} onToggle={() => toggleLayer(layer)}>
                     שכבת {LAYER_LABEL[layer]}
                   </LayerToggle>
                 ))}
@@ -182,86 +180,75 @@ export function ReliefCoverIntroScene() {
               <div className="text-sm font-display font-semibold text-fg-muted">
                 בחרו רכיב באיור או ברשימה
               </div>
+              {/* one group per layer, unlabelled — classifying is the learner's job (the result says it);
+                  a hairline separates the relief group from the cover group; each group fills one row, equal widths */}
               {(['relief', 'cover'] as Layer[]).map((layer) => (
-                <div key={layer} className="flex items-start gap-2.5">
-                  <span
-                    className={cn(
-                      'mt-[7px] inline-flex items-center gap-1.5 w-14 shrink-0 text-sm font-display font-semibold transition-opacity',
-                      visible(layer) ? 'text-fg-muted' : 'text-fg-dim opacity-60',
-                    )}
-                  >
-                    <span aria-hidden className={cn('size-2 rounded-full', LAYER_SWATCH[layer])} />
-                    {LAYER_LABEL[layer]}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {FEATURES.filter((f) => f.layer === layer).map((f) => {
-                      const isSel = selected?.id === f.id;
-                      const off = !visible(layer);
-                      return (
-                        <button
-                          key={f.id}
-                          type="button"
-                          disabled={off}
-                          aria-pressed={isSel}
-                          onClick={() => selectFeature(f.id)}
-                          onMouseEnter={() => setHoverId(f.id)}
-                          onMouseLeave={() => setHoverId(null)}
-                          onFocus={() => setHoverId(f.id)}
-                          onBlur={() => setHoverId(null)}
-                          className={cn(
-                            'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-display font-semibold text-fg',
-                            'transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-elevated',
-                            isSel
-                              ? 'border-accent bg-accent/10'
-                              : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer',
-                            off && 'opacity-40 cursor-not-allowed hover:border-border hover:bg-bg-elevated',
-                          )}
-                        >
-                          {f.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div key={layer} className={cn('flex gap-1.5', layer === 'cover' && 'border-t border-border-subtle pt-3')}>
+                  {FEATURES.filter((f) => f.layer === layer).map((f) => {
+                    const isSel = selected?.id === f.id;
+                    const off = !visible(layer);
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        disabled={off}
+                        aria-pressed={isSel}
+                        onClick={() => selectFeature(f.id)}
+                        onMouseEnter={() => setHoverId(f.id)}
+                        onMouseLeave={() => setHoverId(null)}
+                        onFocus={() => setHoverId(f.id)}
+                        onBlur={() => setHoverId(null)}
+                        className={cn(
+                          'flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-xl border px-1.5 py-2 text-sm font-display font-bold',
+                          'transition-colors duration-200 ease-snap focus-visible:ring-offset-bg-elevated',
+                          isSel ? OPTION_ON : OPTION_IDLE,
+                          off && 'opacity-40 cursor-not-allowed hover:border-border hover:bg-bg-elevated',
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })}
                 </div>
               ))}
             </div>
           </div>
 
-          <div aria-live="polite" className="flex-1 flex flex-col">
+          {/* The inset stays put; only its text swaps — the new text slides in from the
+              reading side (inline-start = right) and the box flashes once in the selection tint. */}
+          <div aria-live="polite" className="relative isolate flex-1 rounded-xl bg-bg-accent/60 p-4 min-h-[140px]">
+            {selected && !reduce && (
+              <motion.span
+                key={selected.id}
+                aria-hidden
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 0.7, ease: EASE }}
+                className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-accent/10"
+              />
+            )}
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={selected?.id ?? 'empty'}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.25, ease: EASE }}
-                className="flex-1 flex flex-col"
+                initial={{ opacity: 0, x: reduce ? 0 : 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: reduce ? 0 : -6 }}
+                transition={{ duration: 0.18, ease: EASE }}
               >
                 {selected ? (
-                  <div className={cn('rounded-xl p-4 flex-1 min-h-[140px]', RESULT_TINT[selected.layer])}>
+                  <>
                     <div className="mb-2">
-                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h3>
-                        <span className="inline-flex items-center gap-1.5 text-sm font-display font-semibold text-fg-muted">
-                          <span aria-hidden className={cn('size-2 rounded-full', LAYER_SWATCH[selected.layer])} />
-                          {LAYER_LABEL[selected.layer]}
-                        </span>
+                      <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h3>
+                      <div className="mt-0.5 text-sm font-display font-semibold text-fg-muted">
+                        {selected.origin ? `תכסית ${ORIGIN_LABEL[selected.origin]}` : LAYER_LABEL[selected.layer]}
                       </div>
-                      {/* origin on its own line — inline beside the layer key it read as „תכסית תכסית …” */}
-                      {selected.origin && (
-                        <div className="mt-0.5 text-sm text-fg-muted">
-                          תכסית {ORIGIN_LABEL[selected.origin]}
-                        </div>
-                      )}
                     </div>
                     <p className="text-base text-fg leading-relaxed">{selected.desc}</p>
-                  </div>
+                  </>
                 ) : (
-                  <div className="flex-1 min-h-[140px]">
-                    <p className="text-sm text-fg-muted leading-relaxed">
-                      בחרו רכיב כדי לקרוא את תיאורו ואת סיווגו כתבליט או כתכסית. הסתירו את שכבת התכסית כדי לבחון את מבנה הקרקע בנפרד.
-                    </p>
-                  </div>
+                  <p className="text-base text-fg-muted leading-relaxed">
+                    בחרו רכיב כדי לקרוא את תיאורו ואת סיווגו כתבליט או כתכסית. הסתירו את שכבת התכסית כדי לבחון את מבנה הקרקע בנפרד.
+                  </p>
                 )}
               </motion.div>
             </AnimatePresence>
@@ -269,38 +256,17 @@ export function ReliefCoverIntroScene() {
         </div>
 
         {/* Illustration — the focal point */}
-        <figure className="flex flex-col min-w-0">
-          <div className="rounded-xl overflow-hidden border border-border-subtle bg-paper-card">
-            <ReliefCoverTerrain
-              showRelief={showRelief}
-              showCover={showCover}
-              selectedId={selected?.id ?? null}
-              hoverId={hoverId}
-              labels={FEATURE_LABELS}
-              onSelect={selectFeature}
-              onHover={setHoverId}
-            />
-          </div>
-          <figcaption className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <span className="flex items-center gap-3" aria-hidden>
-              {(['relief', 'cover'] as Layer[]).map((layer) => (
-                <span
-                  key={layer}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 text-sm font-display font-semibold transition-opacity duration-300',
-                    visible(layer) ? 'text-fg-muted' : 'text-fg-dim opacity-50',
-                  )}
-                >
-                  <span className={cn('size-2.5 rounded-full', LAYER_SWATCH[layer])} />
-                  {LAYER_LABEL[layer]}
-                </span>
-              ))}
-            </span>
-            <span className="text-sm text-fg-muted leading-snug">
-              חתך צד של שטח לדוגמה · האיור סכמטי ואינו בקנה מידה
-            </span>
-          </figcaption>
-        </figure>
+        <div className="min-w-0 self-start rounded-xl overflow-hidden border border-border-subtle bg-paper-card">
+          <ReliefCoverTerrain
+            showRelief={showRelief}
+            showCover={showCover}
+            selectedId={selected?.id ?? null}
+            hoverId={hoverId}
+            labels={FEATURE_LABELS}
+            onSelect={selectFeature}
+            onHover={setHoverId}
+          />
+        </div>
       </div>
 
       {/* ── Screen 3: same hill, three landscapes — predict, then see (ReliefCoverCompare);
@@ -343,12 +309,10 @@ export function ReliefCoverIntroScene() {
 }
 
 function LayerToggle({
-  layer,
   on,
   onToggle,
   children,
 }: {
-  layer: Layer;
   on: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -361,20 +325,16 @@ function LayerToggle({
       className={cn(
         'rounded-xl border ps-3 pe-2.5 py-2.5 font-display font-bold text-sm whitespace-nowrap transition-colors duration-200 ease-snap cursor-pointer',
         'flex items-center justify-between gap-2 focus-visible:ring-offset-bg-elevated',
-        on
-          ? layer === 'relief'
-            ? 'border-terrain-sand/70 bg-terrain-sand/10 text-fg'
-            : 'border-brand/60 bg-brand/10 text-fg'
-          : 'border-border bg-bg-elevated text-fg-muted hover:border-brand/30 hover:bg-brand/[0.03]',
+        on ? OPTION_ON : OPTION_IDLE,
       )}
     >
       <span>{children}</span>
-      {/* switch: knob travels to the inline-end when on */}
+      {/* switch (same as the site's other switches): orange when on, knob travels to the inline-end */}
       <span
         aria-hidden
         className={cn(
-          'relative flex h-[18px] w-8 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200',
-          on ? (layer === 'relief' ? 'bg-terrain-sand justify-end' : 'bg-brand justify-end') : 'bg-fg-dim/25 justify-start',
+          'relative flex h-[18px] w-8 shrink-0 items-center rounded-full border p-0.5 transition-colors duration-200',
+          on ? 'border-accent bg-accent justify-end' : 'border-border bg-bg-accent justify-start',
         )}
       >
         <motion.span layout transition={{ duration: 0.2, ease: EASE }} className="size-3.5 rounded-full bg-white shadow-sm" />
@@ -383,8 +343,27 @@ function LayerToggle({
   );
 }
 
-/** One definition column inside the opening info card — plain text, no frame.
- *  The dot introduces the legend key (sand = relief, sage = cover) reused by the workspace, table and result. */
+/** Independent realistic landscapes for the two definitions. */
+const DEFINITION_IMAGE_BASE = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic02/relief-cover-definitions`;
+const DEFINITION_IMAGE_ALT: Record<Layer, string> = {
+  relief: 'נוף סלעי חשוף עם גבעות, מדרונות ועמק המדגיש את מבנה פני הקרקע',
+  cover: 'נוף עם חורש, מטע, שדה, בתים וכביש המדגים תכסית טבעית ומלאכותית',
+};
+
+function ReliefCoverVignette({ layer }: { layer: Layer }) {
+  return (
+    <Image
+      src={`${DEFINITION_IMAGE_BASE}/${layer}.webp`}
+      alt={DEFINITION_IMAGE_ALT[layer]}
+      width={184}
+      height={80}
+      className="block h-[80px] w-[184px] shrink-0 rounded-lg bg-paper-card object-cover"
+    />
+  );
+}
+
+/** One definition column inside the opening info card — plain text, no frame, no dot.
+ *  Same header row as LandCoverScene's OriginCard: title, with the identifying vignette at the end. */
 function DefinitionCard({
   layer,
   term,
@@ -397,13 +376,13 @@ function DefinitionCard({
   children: React.ReactNode;
 }) {
   return (
-    <article>
-      <h3 className="flex items-center gap-2 font-display text-lg font-bold leading-snug text-fg md:text-xl">
-        <span aria-hidden className={cn('size-2.5 shrink-0 rounded-full', LAYER_SWATCH[layer])} />
-        {term}
-      </h3>
-      <div className="mt-1 text-base font-display font-bold text-fg">{lead}</div>
-      <p className="mt-2 text-base text-fg-muted leading-relaxed text-pretty">{children}</p>
+    <article className="flex items-start gap-4">
+      <div className="min-w-0 flex-1">
+        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl pt-1">{term}</h3>
+        <div className="mt-1 text-base font-display font-bold text-fg">{lead}</div>
+        <p className="mt-2 text-base text-fg-muted leading-relaxed text-pretty">{children}</p>
+      </div>
+      <ReliefCoverVignette layer={layer} />
     </article>
   );
 }

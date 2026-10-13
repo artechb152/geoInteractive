@@ -49,15 +49,15 @@ const STAGE: Record<Mode, string> = { compare: 'משווים', error: 'בודק�
 
 // stage 1
 const C_HEADING = 'גשר אחד, קואורדינטות בשני דאטומים';
-const C_DO = 'A ו־B הם שמות של שני דאטומים — שתי מערכות ייחוס לחישוב קואורדינטות, ולא שתי נקודות בשטח. כל אחד מהם מעגן את המדידה אחרת, ולכן לאותו גשר מתקבלים מספרים שונים.';
+const C_DO = 'A ו־B הם שני דאטומים: שתי מערכות ייחוס למדידת מיקום. כל אחת נותנת לאותו גשר מספרי קואורדינטות שונים.';
 const C_SWITCH = 'בחרו באיזה דאטום להציג את קואורדינטות הגשר';
 const C_INITIAL = 'שני צמדי המספרים מתארים את אותו גשר. עברו ל־B: הרשת והמספרים ישתנו, והעיגול שמסמן את הגשר יישאר במקומו.';
 const C_TO_B = 'הגשר נשאר באותו מקום. בהמרה לדאטום B המספרים שמייצגים אותו משתנים.';
 const C_TO_A = 'הגשר נשאר באותו מקום. בהמרה חזרה לדאטום A המספרים שמייצגים אותו חוזרים לערכים הקודמים.';
 const C_NEXT = 'מה קורה בלי המרה?';
 // stage 2
-const E_HEADING = 'למה מופיע סימון נוסף, הרחק מהגשר?';
-const E_DO = 'קיבלנו את קואורדינטות הגשר בדאטום A, והמפה שלנו משתמשת בדאטום B. העתיקו את המספרים ללא המרה וראו לאיזה מקום המפה מפנה אותנו.';
+const E_HEADING = 'אותם מספרים נקראים בדאטום אחר';
+const E_DO = 'העיגול מסמן את הגשר הקבוע. קיבלנו את המספרים בדאטום A, אבל המפה קוראת אותם כ־B. העתיקו ללא המרה: המעוין יראה לאן המפה מפנה אותנו.';
 const E_SENT = 'המספרים שנשלחו למפה';
 const E_MAP = 'המפה מפרשת את הנתונים בדאטום B';
 const E_COPY = 'העתקת המספרים ללא המרה';
@@ -65,10 +65,10 @@ const E_RELABEL = 'שינוי הכיתוב בלבד';
 const E_RELABEL_HELP = 'מחליפים את האות בכותרת של עותק הנתונים; המספרים אינם משתנים.';
 const E_UNLABEL = 'ביטול שינוי הכיתוב';
 const E_CONVERT = 'המרת הנתונים מ־A ל־B';
-const E_RAW = 'העיגול מסמן את הגשר האמיתי. המעוין מסמן לאן מפנים המספרים כשהמפה קוראת אותם בדאטום B. הם הועתקו מ־A ללא המרה, ולכן מתקבל פער של 60 מטר. זהו פער בסימון, לא תזוזה של הגשר.';
-const E_LABELLED = 'הכיתוב השתנה, אבל המספרים עדיין נלקחו מדאטום A. המפה ממשיכה לקרוא אותם כ־B, ולכן הפער נשאר 60 מטר.';
+const E_RAW = 'המעוין נמצא 60 מטר מהגשר: מספרי A נקראו כ־B ללא המרה. הגשר לא זז — הסימון שגוי. השוו עכשיו בין שינוי הכיתוב להמרת המספרים.';
+const E_LABELLED = 'החלפנו את הכיתוב מ־A ל־B, אבל המספרים לא השתנו. לכן המעוין נשאר 60 מטר מהגשר. כדי לתקן צריך להמיר את המספרים.';
 const E_MOVING = 'המחשת המעבר';
-const E_FIXED = 'המספרים הומרו לייצוג המתאים לדאטום B. כשהמפה קוראת אותם, הסימון חוזר לאותו גשר. השתנה הייצוג — המקום בשטח נשאר קבוע.';
+const E_FIXED = 'ההמרה שינתה את המספרים לייצוג בדאטום B, ולכן המעוין חזר לגשר. הגשר עצמו נשאר במקומו.';
 const E_MATCH = 'הסימון תואם למיקום הגשר';
 const E_NEXT = 'נסו על נתונים נוספים';
 // stage 3
@@ -81,8 +81,7 @@ const P_SUMMARY =
 // map
 const M_FOUND = 'המיקום לפי המספרים';
 const M_DISTANCE = 'הפער מהמקום בשטח';
-const ON_GROUND: Record<PlaceId, string> = { bridge: 'הגשר בשטח', junction: 'הצומת בשטח' };
-const gridName = (d: Datum) => `רשת דאטום ${d}`;
+const ON_GROUND: Record<PlaceId, string> = { bridge: 'הגשר', junction: 'הצומת' };
 const sourceName = (d: Datum) => `נתוני המקור · דאטום ${d}`;
 const targetName = (d: Datum) => `מפת היעד · דאטום ${d}`;
 
@@ -149,7 +148,7 @@ export function DatumFieldChallenge() {
         A ו־B הם דאטומים בדיוניים; ההבדל ביניהם מוצג כאן כהזזה קבועה לצורך ההמחשה בלבד.
       </p>
 
-      <div className="surface-elevated p-6 lg:p-8">
+      <div className="surface-elevated p-6 lg:px-8 lg:pt-8">
         <StageTabs mode={s.mode} uid={uid} onSelect={(mode) => dispatch({ type: 'setMode', mode })} />
 
         <div
@@ -157,7 +156,7 @@ export function DatumFieldChallenge() {
           id={`${uid}-panel`}
           aria-labelledby={`${uid}-tab-${s.mode}`}
           data-stage={s.mode}
-          className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8"
+          className="grid items-stretch gap-6 lg:grid-cols-2 lg:gap-8"
         >
           {/* the question, the data, the action and its feedback — inline start (visual right) */}
           <div className="flex min-w-0 flex-col" data-activity-panel="">
@@ -423,7 +422,7 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
             />
             <Experiment label={E_CONVERT} on={moving || phase === 'converted'} inactive={moving} onClick={() => act({ type: 'convert' })} />
           </div>
-          <p id={helpId} className={cn(BODY, 'mt-1.5')}>
+          <p id={helpId} className="sr-only">
             <span className="font-display font-bold">{E_RELABEL}:</span> {E_RELABEL_HELP}
           </p>
         </div>
@@ -833,9 +832,9 @@ function Feedback({ tone, children, after }: { tone: 'info' | 'wrong' | 'right';
   );
 }
 
-/** Continue directly after the explanation, independent of the map's height. */
+/** At desktop, the action ends level with the illustration in every state. */
 function Footer({ children }: { children: ReactNode }) {
-  return <div data-activity-navigation="" className="mt-4 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-4">{children}</div>;
+  return <div data-activity-navigation="" className="mt-4 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-4 lg:mt-auto">{children}</div>;
 }
 
 function NextButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
@@ -858,8 +857,7 @@ type MapScene = {
   results: { at: EN; label: MapLabel; moving?: boolean }[];
   /** The gap in metres, or null while the marker is still on its way. */
   measure: { from: EN; to: EN; gap: number | null } | null;
-  legend: ('target' | 'result' | 'measure' | 'grid')[];
-  targetName: string;
+  legend: ('result' | 'measure')[];
 };
 
 function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: number): MapScene {
@@ -871,8 +869,7 @@ function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: num
       targets: [{ at: bridge, label: { text: 'הגשר', numbers: numbersOf('bridge', s.compare.datum) } }],
       results: [],
       measure: null,
-      legend: ['target', 'grid'],
-      targetName: ON_GROUND.bridge,
+      legend: [],
     };
   }
   if (s.mode === 'error') {
@@ -885,12 +882,11 @@ function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: num
     return {
       datum: gridDatum,
       gridT,
-      targets: [{ at: bridge, label: { text: ON_GROUND.bridge } }],
+      targets: [{ at: bridge, label: { text: '' } }],
       results,
       // the gap is read only at rest: no number for a marker still on its way
       measure: at && gap >= 1 ? { from: bridge, to: at, gap: moving ? null : gap } : null,
-      legend: ['target', 'result', 'measure', 'grid'],
-      targetName: ON_GROUND.bridge,
+      legend: results.length ? ['result', 'measure'] : [],
     };
   }
   const p = s.practice;
@@ -904,8 +900,7 @@ function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: num
         return { at: interpret(right, c.target), label: { text: '' } };
       }),
       measure: null,
-      legend: ['target', 'result', 'grid'],
-      targetName: 'הגשר והצומת בשטח',
+      legend: ['result'],
     };
   }
   const c = CASES[p.index];
@@ -920,8 +915,7 @@ function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: num
     targets: [{ at: target, label: { text: name } }],
     results: at && option ? [{ at, label: { text: p.checked === p.choice ? M_FOUND : P_PREVIEW, numbers: option } }] : [],
     measure: at && gap >= 1 ? { from: target, to: at, gap } : null,
-    legend: ['target', 'result', 'measure', 'grid'],
-    targetName: name,
+    legend: at ? ['result', 'measure'] : [],
   };
 }
 
@@ -957,7 +951,7 @@ function FieldMap({ scene }: { scene: MapScene }) {
   const nLines = grid.n.map((l) => ({ v: l.value, y: yOfN(l.ground) }));
 
   return (
-    <figure className="m-0 flex min-w-0 flex-col" data-map={load}>
+    <figure className="m-0 flex min-w-0 flex-col justify-between" data-map={load}>
       {/* the map keeps its own orientation: west on the left, whatever the reading direction */}
       <div dir="ltr" className="grid grid-cols-[3rem_minmax(0,1fr)]">
         {/* N values, on the west margin */}
@@ -1037,9 +1031,11 @@ function FieldMap({ scene }: { scene: MapScene }) {
       </div>
 
       {/* under the map itself: its start (right) edge, clear of the N margin on the left */}
-      <figcaption className="me-12 mt-1">
-        <Legend scene={scene} />
-      </figcaption>
+      {scene.legend.length > 0 && (
+        <figcaption className="me-12 mt-1">
+          <Legend scene={scene} />
+        </figcaption>
+      )}
     </figure>
   );
 }
@@ -1078,6 +1074,7 @@ function MapLayers({ scene, eLines, nLines, k }: { scene: MapScene; eLines: { v:
 
       {/* labels: the result's on the side away from the target, the target's on the other side */}
       {scene.targets.map((t, i) => {
+        if (!t.label.text) return null;
         const r = scene.results[i];
         const below = !r || distance(r.at, t.at) < 1 || r.at.n >= t.at.n;
         return <Chip key={`tl${i}`} at={t.at} side={below ? 'below' : 'above'} label={t.label} kind="target" />;
@@ -1206,12 +1203,6 @@ function Legend({ scene }: { scene: MapScene }) {
   const text = 'text-sm leading-snug text-fg-muted';
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1" data-legend="">
-      {scene.legend.includes('target') && (
-        <li className={item}>
-          <TargetGlyph size={18} />
-          <span className={text}>{scene.targetName}</span>
-        </li>
-      )}
       {scene.legend.includes('result') && (
         <li className={item}>
           <span className="grid size-[18px] place-items-center">
@@ -1226,14 +1217,6 @@ function Legend({ scene }: { scene: MapScene }) {
             <path d="M2 6h18M2 2v8M20 2v8" />
           </svg>
           <span className={text}>{M_DISTANCE}</span>
-        </li>
-      )}
-      {scene.legend.includes('grid') && (
-        <li className={item}>
-          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden className="stroke-fg" strokeOpacity={0.55} fill="none" strokeWidth={1}>
-            <path d="M6 1v16M12 1v16M1 6h16M1 12h16" />
-          </svg>
-          <span className={text}>{gridName(scene.datum)}</span>
         </li>
       )}
     </ul>

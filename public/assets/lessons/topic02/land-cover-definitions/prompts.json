@@ -1,0 +1,17 @@
+{
+  "generator": "Built-in image_gen",
+  "displaySize": {
+    "width": 132,
+    "height": 90
+  },
+  "prompts": {
+    "natural": "Use case: photorealistic-natural. Asset type: tiny thumbnail for a Hebrew geography lesson's natural land-cover definition, displayed at exactly 88 x 60 pixels. Create one realistic landscape photograph, horizontal aspect ratio 22:15 (approximately 1.47:1). Oblique elevated close landscape view of wild Mediterranean woodland and shrubland: several mature irregularly spaced native oak-like trees, dense rounded shrubs of mixed height, patches of low natural grasses, exposed cream limestone between them. Clearly unsystematic growth, no planted rows or cultivation. The trees and shrubs form a few large readable masses, vegetation dominates the picture and its natural irregularity is recognizable at tiny thumbnail size. Warm soft daylight and restrained cream earth / olive-green palette to match a refined geography educational website, lifelike bark and foliage with natural soft shadows, documentary geographic photograph quality. No people, text, labels, icons, maps, grid, contour lines, arrows, collage, houses, roads, fences, pylons, ploughed land, orchard, planted rows, papercraft, miniature isolated models, cutaway terrain slabs, toy or cartoon style. This is an independent full landscape photo, not a crop of an interactive diagram.",
+    "artificial": "Use case: photorealistic-natural. Asset type: tiny thumbnail for a Hebrew geography lesson's human-created land-cover definition, displayed at exactly 88 x 60 pixels. Create one realistic landscape photograph, horizontal aspect ratio 22:15 (approximately 1.47:1). Oblique elevated view over a compact Mediterranean rural village and cultivated landscape. Several clearly readable pale stone homes with roofs in the upper half, a curving paved gray road, an orderly rectangular orchard with straight regular rows and fixed tree spacing in the foreground, and one distinct ploughed field parcel beside it. The visual idea is things people built, planted, and organized on the land. Few bold coherent groupings so houses, road and orderly planted rows remain visible at tiny thumbnail size. Natural limestone ground, restrained sand/cream and olive-green colors, soft warm daylight, realistic scale, believable textured materials, geographic documentary landscape photography matching an elegant cream and olive educational website. No text, labels, people, vehicles, military objects, flags, icons, maps, contour lines, diagram overlays, collage, isolated diorama slabs, toy houses, papercraft or cartoon rendering. This is an independent full landscape photograph, not a crop of the interactive map below."
+  },
+  "export": {
+    "format": "webp",
+    "width": 352,
+    "height": 240,
+    "quality": 88
+  }
+}

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
-import { Icon, type IconName } from '@/components/Icon';
+import type { IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
 // One generated terrain shown three ways (3D model / aerial photo / map), plus
@@ -184,8 +184,10 @@ export function TopographyScene() {
             <div className="flex min-w-0 flex-col">
               {/* All four texts share one grid cell, so the column — and the
                   viewer beside it — keeps the height of the tallest view:
-                  switching never makes the layout jump. */}
-              <div className="grid [&>*]:[grid-area:1/1]">
+                  switching never makes the layout jump. The desktop floor is
+                  the original text height measured at 1440px, preserving the
+                  viewer and pager geometry after flattening the text styling. */}
+              <div className="grid lg:min-h-[568px] [&>*]:[grid-area:1/1]">
                 {VIEWS.map((v, i) => {
                   const isActive = i === idx;
                   return (
@@ -201,65 +203,50 @@ export function TopographyScene() {
                       transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
                       className="space-y-4"
                     >
-                      <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
+                      <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
                         {v.label}
                       </div>
 
                       <div>
-                        <div className="mb-1 font-display text-base font-bold text-fg">
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           תיאור התצוגה
                         </div>
-                        <p className="text-base leading-relaxed text-fg">{v.whatItIs}</p>
+                        <p className="text-base leading-relaxed text-black">{v.whatItIs}</p>
                       </div>
 
                       <div>
-                        <div className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg">
-                          <Icon name="check" size={18} strokeWidth={2.25} className="shrink-0 text-fg-muted" />
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           יתרונות
                         </div>
-                        <ul className="space-y-1.5 text-base leading-relaxed">
+                        <ul className="space-y-1.5 text-base leading-relaxed text-black">
                           {v.pros.map((p) => (
                             <li key={p} className="flex gap-2">
-                              <span className="text-fg-muted">·</span>
-                              <span className="text-fg">{p}</span>
+                              <span aria-hidden>·</span>
+                              <span>{p}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
 
                       <div>
-                        <div className="mb-2 flex items-center gap-2 font-display text-base font-bold text-fg">
-                          <svg
-                            width="18"
-                            height="18"
-                            className="shrink-0 text-fg-muted"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.25"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden
-                          >
-                            <path d="M18 6 6 18M6 6l12 12" />
-                          </svg>
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           מגבלות
                         </div>
-                        <ul className="space-y-1.5 text-base leading-relaxed">
+                        <ul className="space-y-1.5 text-base leading-relaxed text-black">
                           {v.cons.map((c) => (
                             <li key={c} className="flex gap-2">
-                              <span className="text-fg-muted">·</span>
-                              <span className="text-fg">{c}</span>
+                              <span aria-hidden>·</span>
+                              <span>{c}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
 
-                      <div className="rounded-xl bg-bg-accent/60 p-4">
-                        <div className="mb-1 font-display text-base font-bold text-fg">
+                      <div className="border-t border-border-subtle pt-4">
+                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
                           שימוש בתכנון
                         </div>
-                        <p className="text-base leading-relaxed text-fg text-pretty">{v.whyItMatters}</p>
+                        <p className="text-base leading-relaxed text-black">{v.whyItMatters}</p>
                       </div>
                     </motion.div>
                   );

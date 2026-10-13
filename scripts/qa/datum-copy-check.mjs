@@ -2,7 +2,7 @@
 // original DatumFit block (CoordinatesScene.tsx at git blob 6eb1e4f, i.e.
 // commit 9ee44d3 and before) must appear verbatim in the new block — except
 // the changes the interaction brief approved (APPROVED_REMOVED, below) — the
-// brief's own wordings must be present, the removed controls and any score
+// brief's own wordings (or the user's later copy edits) must be present, the removed controls and any score
 // must stay out, and every Hebrew string the new block adds is listed.
 // Run: node scripts/qa/datum-copy-check.mjs
 import { execSync } from 'node:child_process';
@@ -64,16 +64,28 @@ const APPROVED_REMOVED = new Map([
   ['מתאימים את האליפסואיד מרחבית לכלל כדור הארץ.', 'user-requested accordion copy simplification, 2026-10-12'],
   ['מתאימים את האליפסואיד מרחבית רק לאזור מסוים על פני כדור הארץ (מסומן בקו עבה).', 'user-requested accordion copy simplification, 2026-10-12'],
   ['הזיזו, סובבו ושנו את קנה המידה של האליפסואיד כדי להלביש אותו על הגיאואיד.', 'user-requested experiment copy simplification, 2026-10-12'],
+  ['הוא מכלול הפרמטרים המגדירים ומעגנים את האליפסואיד ביחס לפני כדור הארץ.', 'user-requested clearer datum definition, 2026-10-13'],
+  ['ההבדל בין אליפסואיד לדאטום', 'user-requested clarity audit: seven parameters describe a coordinate transformation, 2026-10-13'],
+  ['תהליך המעבר מאליפסואיד לדאטום נעשה בשבעה פרמטרים:', 'corrected to a method for converting coordinates between datums, 2026-10-13'],
+  ['– הזזה של הדאטום עצמו במרחב (', 'shortened to translation along the axes, 2026-10-13'],
+  ['– סיבוב של הדאטום סביב הצירים שלו (', 'shortened to rotation around the axes, 2026-10-13'],
+  ['– שינוי הגודל של הדאטום.', 'corrected to coordinate scale, 2026-10-13'],
+  ['כמו פקק שצריך להתאים לבקבוק שלו.', 'unnecessary analogy removed at user request, 2026-10-13'],
+  ['הדאטומים השונים נבדלים ביניהם בפרמטרים הבאים:', 'clarified ellipsoid choice and anchoring, 2026-10-13'],
+  ['רדיוס (', 'clarified as ellipsoid size, 2026-10-13'],
+  ['פחיסות (', 'clarified as ellipsoid flattening, 2026-10-13'],
+  ['שלושה פרמטרי הזזה במרחב (', 'clarified as ellipsoid position, 2026-10-13'],
 ]);
 /** Required copy, including the user's clearer accordion wordings (2026-10-12). */
 const REQUIRED_NEW = [
-  'האליפסואיד הוא מודל מתמטי המתאר בקירוב את צורת כדור הארץ. הדאטום קובע את מיקומו ואת כיוונו ביחס לכדור הארץ.',
-  'בחרו בפני השטח, בגיאואיד או באליפסואיד כדי לראות את ההבדלים ביניהם.',
-  'כדי להתאים את האליפסואיד לכדור הארץ, משנים את מיקומו, את כיוונו ואת קנה המידה שלו. בהדגמה נראה בנפרד את השפעת ההזזה, הסיבוב ושינוי הגודל.',
+  'האליפסואיד הוא מודל מתמטי של צורת כדור הארץ. הדאטום מגדיר כיצד הוא מעוגן לכדור הארץ — מה מיקומו ומה כיוונו.',
+  'בחרו משטח והשוו במודל בין פני השטח, הגיאואיד והאליפסואיד.',
+  'הפעילו את ההדגמה כדי לראות כיצד הזזה, סיבוב ושינוי קנה מידה משפיעים על האליפסואיד. בכל שלב משתנה רק אחד מהם.',
   'בדאטום עולמי מתאימים את האליפסואיד לצורת כדור הארץ כולו.',
-  'בדאטום מקומי מתמקדים בהתאמת האליפסואיד לאזור מסוים על פני כדור הארץ. בהמחשה האזור מסומן בקו עבה.',
-  'בניסוי מוצג חתך דו־ממדי. אפשר להזיז את האליפסואיד בשני כיוונים, לסובב אותו ולשנות את גודלו. השינויים הוגדלו כדי שיהיה קל להבחין בהם.',
-  'השתמשו במחוונים כדי לשנות את מיקום האליפסואיד, את כיוונו ואת גודלו, ובחנו כיצד משתנה הפער בינו לבין הגיאואיד.',
+  'בדאטום מקומי מתאימים את האליפסואיד לאזור מסוים, המסומן כאן בקו עבה.',
+  'שנו מחוון אחד בכל פעם ובחנו את הפער בין האליפסואיד לגיאואיד. זהו ניסוי בחתך דו־ממדי; השינויים מוגדלים להמחשה.',
+  'אחת השיטות להמרת קואורדינטות בין דאטומים משתמשת בשבעה פרמטרים:',
+  'השוו את הפער בתקריב בתוך האזור המסומן ומחוצה לו.',
   'הזזה אופקית (X)', 'הזזה אנכית (Y)', 'סיבוב', 'קנה מידה',
   'תחום ההתאמה: כלל כדור הארץ.', 'תחום ההתאמה: האזור המסומן.',
   'הפעלת ההדגמה', 'עצירת ההדגמה', 'המשך ההדגמה', 'הדגמה חוזרת', 'לשלב הבא', 'הזזה',

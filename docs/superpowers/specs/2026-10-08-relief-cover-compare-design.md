@@ -1,6 +1,7 @@
 # Topic 02 · Relief vs. land cover (`#scene-relief-cover`, screen 3): "same hill, three landscapes"
 
 **Status:** implemented through plan Task 7 (pushed to main); Task 8 fixes, Task 9 (final checks, worktree `next build`) NOT done — not build-verified. Open items: `docs/superpowers/plans/2026-10-08-relief-cover-compare-todo.md` · **Date:** 2026-10-08
+**Revision 2026-10-13:** the two boards were redone — a live 3D model and a topographic map of a new terrain (entry of that date in `design/docs/assumptions.md`). §6 "Terrain block" and "Contour map" describe the earlier papercut version; the flow, copy and layout here still hold.
 **Scope:** screen 3 of `src/components/lessons/topic-02/ReliefCoverIntroScene.tsx` ("השוואה בין תבליט לתכסית"). The engine is extracted out of `LandformsVisuals.tsx`. New files are listed in §8.
 
 ## 1. Problem

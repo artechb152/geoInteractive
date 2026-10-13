@@ -40,6 +40,8 @@ type Props = {
   overlay?: (ctx: OverlayContext) => ReactNode;
   /** One T6 line under the map. */
   note?: ReactNode;
+  /** Display the explanatory lines and credits below the map. */
+  showFooter?: boolean;
   /**
    * Opening view of the sheet (centre defaults to the sheet centre), clamped: applied after the first
    * measurement and again whenever `sheetKey` changes (without it a new sheet opens at k = 1).
@@ -68,7 +70,7 @@ type Props = {
  */
 export function SheetViewport({
   id, label, sheetKey, groundWidthM, base, top, display, curtain, attribution, preload, onPick, overlay, note, initialView, onSize,
-  maxK, zoomInto, onZoomOutPast, morph = true,
+  maxK, zoomInto, onZoomOutPast, morph = true, showFooter = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const hintId = useId();
@@ -166,7 +168,7 @@ export function SheetViewport({
         role="group"
         aria-roledescription="מפה"
         aria-label={label}
-        aria-describedby={hintId}
+        aria-describedby={showFooter ? hintId : undefined}
         tabIndex={0}
         data-qa="sheet-viewport"
         data-view={`${view.k.toFixed(3)},${view.x.toFixed(1)},${view.y.toFixed(1)}`}
@@ -237,12 +239,16 @@ export function SheetViewport({
       </div>
 
       {display === 'curtain' && curtain && <CurtainSlider {...curtain} />}
-      <p id={hintId} data-qa="map-hint" className="mt-2 text-sm leading-snug text-fg-muted">
-        לתקריב: גלגלת העכבר או המקשים <kbd className="font-sans">+</kbd> ו־<kbd className="font-sans">−</kbd>. להזזה (כשהמפה מוגדלת): חיצים. לאיפוס:{' '}
-        <kbd className="font-sans">0</kbd>.
-      </p>
-      {note && <p className="mt-1 text-sm leading-snug text-fg-muted">{note}</p>}
-      <p className="mt-1 text-[13px] leading-snug text-fg-muted">{attribution}</p>
+      {showFooter && (
+        <>
+          <p id={hintId} data-qa="map-hint" className="mt-2 text-sm leading-snug text-fg-muted">
+            לתקריב: גלגלת העכבר או המקשים <kbd className="font-sans">+</kbd> ו־<kbd className="font-sans">−</kbd>. להזזה (כשהמפה מוגדלת): חיצים. לאיפוס:{' '}
+            <kbd className="font-sans">0</kbd>.
+          </p>
+          {note && <p className="mt-1 text-sm leading-snug text-fg-muted">{note}</p>}
+          <p className="mt-1 text-[13px] leading-snug text-fg-muted">{attribution}</p>
+        </>
+      )}
       <p data-qa="zoom-status" aria-live="polite" className="sr-only">
         {zoomNote}
       </p>

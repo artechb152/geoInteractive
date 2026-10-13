@@ -1,17 +1,12 @@
 'use client';
 
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import Image from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { SortQuiz, type SortItem } from './SortQuiz';
 import { LandCoverMap } from './LandCoverMap';
-import {
-  CatGlyph,
-  NaturalVignette,
-  PlantedVignette,
-  SeasonGlyph,
-  VegetationLadder,
-} from './LandCoverVisuals';
+import { VegetationLadder, type LadderItem } from './LandCoverVisuals';
 import { cn } from '@/lib/utils';
 
 /** T1 section title (cleanup spec §3) — replaces the labelled SoftDivider; spacing instead of rules. */
@@ -30,7 +25,6 @@ const OPTION_ON = 'border-accent bg-accent/10 text-fg';
 
 type Cat = 'vegetation' | 'human' | 'infra';
 type Origin = 'natural' | 'artificial';
-type Season = 'winter' | 'summer';
 
 type CoverFeature = {
   id: string;
@@ -62,7 +56,7 @@ const FEATURES: CoverFeature[] = [
   // צומח
   { id: 'grove',     label: 'חורש',          cat: 'vegetation', origin: 'natural',    desc: 'צומח הכולל עצים שגובהם מעל 2 מטרים, לצד שיחים ומטפסים בפיזור לא סדור. לפי צפיפות כיסוי צמרות העצים מבחינים בין חורש פתוח, חצי־סגור וסגור.' },
   { id: 'garrigue',  label: 'גריגה',         cat: 'vegetation', origin: 'natural',    desc: 'שיחים בגובה של כ־0.5–2 מטרים, במשטחים רציפים או ליד עצים.' },
-  { id: 'batha',     label: 'בתה ועשבוני',   cat: 'vegetation', origin: 'natural',    desc: 'תצורות צומח נמוכות ללא עצים: בבתה בולטים בני־שיח נמוכים, עד כחצי מטר, ובצומח עשבוני בולטים עשבים. באיור מוצג השינוי העונתי בין צומח ירוק בחורף לצומח יבש בקיץ.' },
+  { id: 'batha',     label: 'בתה ועשבוני',   cat: 'vegetation', origin: 'natural',    desc: 'תצורות צומח נמוכות ללא עצים: בבתה בולטים בני־שיח נמוכים, עד כחצי מטר, ובצומח עשבוני בולטים עשבים.' },
   { id: 'planted',   label: 'יער נטוע',      cat: 'vegetation', origin: 'artificial', desc: 'יער שהאדם נטע, ובו עצים שעשויים להגיע לגובה של 5–6 מטרים ואף יותר. שורות סדורות ומרווחים קבועים בין העצים עשויים להעיד על נטיעה מתוכננת. לפי מקורו, היער מסווג כתכסית מלאכותית.' },
   // פעילות האדם
   { id: 'village',   label: 'יישוב ומבנים',  cat: 'human',      origin: 'artificial', desc: 'שטח בנוי הכולל בתים, מבני ציבור וחצרות. בכפר המוצג באיור יש גם כיכר מרכזית.' },
@@ -77,20 +71,19 @@ const FEATURES: CoverFeature[] = [
   { id: 'fence',     label: 'גדר',           cat: 'infra',      origin: 'artificial', desc: 'מתקן לתיחום שטח ולהסדרת הכניסה אליו. באיור הגדר מקיפה את המטע וכוללת שער אחד.' },
 ];
 
-const ORIGIN_LABEL: Record<Origin, string> = { natural: 'טבעית', artificial: 'מלאכותית' };
-
-const SEASON_NOTE: Record<Season, string> = {
-  winter: 'בתצוגת החורף העשב, הבתה והשדות מוצגים בירוק, והשיחים בגוון ירוק כהה. השוו לתצוגת הקיץ כדי לזהות את השינויים במראה הצומח.',
-  summer: 'בתצוגת הקיץ העשב והשדות מוצגים כיבשים, צבע הקרקע בולט יותר והשיחים מאפירים. עצים ירוקי־עד, כגון עצי הדר, נשארים ירוקים. בשטח, השינוי תלוי גם בסוג הצומח ובהשקיה.',
+const ORIGIN_IMAGE_BASE = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic02/land-cover-definitions`;
+const ORIGIN_IMAGE_ALT: Record<Origin, string> = {
+  natural: 'חורש ושיחים ים־תיכוניים שגדלו בפיזור טבעי ללא שורות נטיעה',
+  artificial: 'בתים וכביש לצד מטע בשורות ושדה מעובד, שנוצרו בידי אדם',
 };
 
 /** Mediterranean vegetation, low → high (content/topic-04.md, 4.4). */
-const VEG_LADDER: { label: string; height: string; planted?: boolean }[] = [
-  { label: 'עשבוני',    height: 'נמוך, ללא עצים' },
-  { label: 'בתה',       height: 'עד כחצי מטר' },
-  { label: 'גריגה',     height: 'כ־0.5–2 מטרים' },
-  { label: 'חורש',      height: 'עצים מעל 2 מטרים' },
-  { label: 'יער נטוע',  height: 'לעיתים מעל 5–6 מטרים · נטוע', planted: true },
+const VEG_LADDER: LadderItem[] = [
+  { label: 'עשבוני', height: 'נמוך, ללא עצים', description: 'תצורת צומח שבה בולטים עשבים, ללא עצים. עשבים חד־שנתיים מוריקים לאחר נביטת החורף ומתייבשים בקיץ, כך שצבע הקרקע נעשה בולט יותר.' },
+  { label: 'בתה', height: 'עד כחצי מטר', description: 'תצורת צומח המשלבת בני־שיח נמוכים ועשבים. השינוי העונתי בצבע בולט, ובין הצמחים ניתן להבחין בשבילים ובמרעולים.' },
+  { label: 'גריגה', height: 'כ־0.5–2 מטרים', description: 'תצורת צומח שבה בולטים שיחים, במשטחים רציפים או בסמוך לעצים. לעומת הבתה, השיחים גבוהים יותר, וצבעם משתנה בין החורף לקיץ.' },
+  { label: 'חורש', height: 'עצים מעל 2 מטרים', description: 'תצורת צומח המשלבת עצים, שיחים ומטפסים. בחורש פתוח נראים קרקע או סלע בין העצים; בחורש סגור הצמרות נוגעות זו בזו והקרקע מוסתרת כמעט לחלוטין.' },
+  { label: 'יער נטוע', height: 'לעיתים מעל 5–6 מטרים · נטוע', planted: true, description: 'עצים שניטעו בידי אדם. שורות סדורות ומרווחים קבועים עשויים להעיד על נטיעה מתוכננת; לפי מקורו, היער מסווג כתכסית מלאכותית.' },
 ];
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -108,25 +101,32 @@ const QUIZ_ITEMS: SortItem<Origin>[] = [
 
 export function LandCoverScene() {
   const [cat, setCat] = useState<Cat>('vegetation');
+  /** +1 when the new topic is a later tab (further left in RTL), −1 when an earlier one */
+  const [dir, setDir] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [season, setSeason] = useState<Season>('winter');
   const reduce = useReducedMotion();
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const activeCat = CATS.find((c) => c.id === cat)!;
   const selected = FEATURES.find((f) => f.id === selectedId) ?? null;
-  const swap = { duration: reduce ? 0 : 0.28, ease: EASE };
+  const slide = { duration: reduce ? 0 : 0.38, ease: EASE };
+
+  const toCat = (id: Cat) => {
+    if (id === cat) return;
+    setDir(CATS.findIndex((c) => c.id === id) > CATS.findIndex((c) => c.id === cat) ? 1 : -1);
+    setCat(id);
+  };
 
   const selectFeature = (id: string) => {
     const f = FEATURES.find((x) => x.id === id);
     if (!f) return;
-    setCat(f.cat);
+    toCat(f.cat);
     setSelectedId(id);
   };
 
   const chooseCat = (id: Cat) => {
-    setCat(id);
+    toCat(id);
     setSelectedId(null);
   };
 
@@ -158,13 +158,11 @@ export function LandCoverScene() {
             title="תכסית טבעית"
             tone="natural"
             body="תכסית שמקורה בתהליכים טבעיים, כגון עשב, שיחים וחורש שגדלו ללא זריעה או נטיעה בידי אדם."
-            examples={['עשבוני ובתה', 'גריגה', 'חורש']}
           />
           <OriginCard
             title="תכסית מלאכותית"
             tone="artificial"
             body="תכסית שהאדם יצר או עיצב באמצעות בנייה, חקלאות והקמת תשתיות, ובה יישובים, שדות ודרכים."
-            examples={['בתים', 'שדות ומטעים', 'כבישים', 'קווי חשמל', 'גדרות']}
           />
         </div>
         <div className="mt-6 rounded-xl bg-bg-accent/60 p-4">
@@ -179,57 +177,79 @@ export function LandCoverScene() {
       {/* ── Screen 2: three types, on one map sample ── */}
       <h3 className={SECTION_TITLE}>זיהוי סוגי תכסית בשטח</h3>
 
-      {/* One workspace: tabs + explanation/controls + map — the screen's visual focus */}
+      {/* One workspace: tabs + explanation/items beside the map — the screen's visual focus.
+          The tabs head the controls column, so the map's top edge lines up with them. */}
       <div className="surface-elevated p-5 sm:p-6">
-        <div className="flex flex-wrap gap-2 mb-6" role="tablist" aria-label="סוגי תכסית">
-          {CATS.map((c, i) => {
-            const on = cat === c.id;
-            return (
-              <button
-                key={c.id}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                id={`${uid}-tab-${c.id}`}
-                type="button"
-                role="tab"
-                aria-selected={on}
-                aria-controls={`${uid}-panel`}
-                tabIndex={on ? 0 : -1}
-                onClick={() => chooseCat(c.id)}
-                onKeyDown={(e) => onTabKey(e, i)}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 font-display font-bold text-sm cursor-pointer',
-                  'transition-colors duration-200 ease-snap motion-reduce:transition-none',
-                  on ? OPTION_ON : OPTION_IDLE,
-                )}
-              >
-                <CatGlyph cat={c.id} className="text-fg-muted" />
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
+        <div className="grid lg:grid-cols-[1fr_1.6fr] gap-6 lg:gap-8 items-stretch">
+          {/* Tabs + explanation + items + the result inset (first child → right in RTL); the inset
+              stretches, so the column ends level with the map's tile */}
+          <div className="flex flex-col gap-5">
+            {/* the topics: a tab bar (text on a hairline, the active one underlined) — set apart from
+                the item buttons below, which pick one specific thing */}
+            <div className="flex gap-7 border-b border-border" role="tablist" aria-label="סוגי תכסית">
+              {CATS.map((c, i) => {
+                const on = cat === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    ref={(el) => {
+                      tabRefs.current[i] = el;
+                    }}
+                    id={`${uid}-tab-${c.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={on}
+                    aria-controls={`${uid}-panel`}
+                    tabIndex={on ? 0 : -1}
+                    onClick={() => chooseCat(c.id)}
+                    onKeyDown={(e) => onTabKey(e, i)}
+                    className={cn(
+                      'relative -mb-px cursor-pointer pb-3 pt-1 font-display text-base font-bold',
+                      'transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:ring-offset-bg-elevated',
+                      on ? 'text-fg' : 'text-fg-muted hover:text-fg',
+                    )}
+                  >
+                    {c.label}
+                    {on && (
+                      <motion.span
+                        layoutId={`${uid}-tab-ink`}
+                        aria-hidden
+                        className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-accent"
+                        transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 42 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-        <div className="grid lg:grid-cols-[1fr_1.6fr] gap-6 lg:gap-8 items-start">
-          {/* Explanation + items (first child → right in RTL) */}
-          <div className="space-y-6">
+            {/* the topic's content slides in from the side of its tab (no cross-fade); the padding keeps
+                the item buttons' focus ring inside the clip */}
             <div
               id={`${uid}-panel`}
               role="tabpanel"
               aria-labelledby={`${uid}-tab-${cat}`}
+              className="relative -m-1.5 overflow-hidden p-1.5"
             >
-              <AnimatePresence mode="wait" initial={false}>
+              <AnimatePresence mode="popLayout" initial={false} custom={dir}>
                 <motion.div
                   key={cat}
-                  initial={reduce ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
-                  transition={swap}
+                  custom={dir}
+                  variants={{
+                    // RTL: a later tab sits to the left, so its content comes in from the left
+                    enter: (d: number) => ({ x: d > 0 ? '-100%' : '100%' }),
+                    center: { x: 0 },
+                    leave: (d: number) => ({ x: d > 0 ? '100%' : '-100%' }),
+                  }}
+                  initial={reduce ? false : 'enter'}
+                  animate="center"
+                  exit={reduce ? undefined : 'leave'}
+                  transition={slide}
                 >
-                  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">{activeCat.label}</h3>
-                  <p className="text-base text-fg-muted leading-relaxed mb-4">{activeCat.def}</p>
-                  <div className="flex flex-wrap gap-2">
+                  <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-1.5">{activeCat.label}</h3>
+                  <p className="text-base text-fg-muted leading-relaxed mb-3">{activeCat.def}</p>
+                  {/* same item recipe as „זיהוי תבליט ותכסית בשטח”: the category's items fill one row, equal widths */}
+                  <div className="flex gap-1.5">
                     {FEATURES.filter((f) => f.cat === cat).map((f) => (
                       <button
                         key={f.id}
@@ -237,16 +257,11 @@ export function LandCoverScene() {
                         aria-pressed={selectedId === f.id}
                         onClick={() => setSelectedId(f.id)}
                         className={cn(
-                          'inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-display font-semibold cursor-pointer',
-                          'transition-colors duration-200 ease-snap motion-reduce:transition-none',
+                          'flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-xl border px-1.5 py-2 text-sm font-display font-bold cursor-pointer',
+                          'transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:ring-offset-bg-elevated',
                           selectedId === f.id ? OPTION_ON : OPTION_IDLE,
                         )}
                       >
-                        {/* origin key: sage = natural, grey = man-made (same key as the result line below) */}
-                        <span
-                          aria-hidden
-                          className={cn('size-2 rounded-full shrink-0', f.origin === 'natural' ? 'bg-brand' : 'bg-fg-dim')}
-                        />
                         {f.label}
                       </button>
                     ))}
@@ -255,104 +270,54 @@ export function LandCoverScene() {
               </AnimatePresence>
             </div>
 
-            <div aria-live="polite">
+            {/* The inset is always there (as in „זיהוי תבליט ותכסית בשטח”); only its text swaps — the new
+                text slides in from the reading side and the box flashes once in the selection tint. */}
+            <div aria-live="polite" className="relative isolate flex-1 rounded-xl bg-bg-accent/60 p-4 min-h-[112px]">
+              {selected && !reduce && (
+                <motion.span
+                  key={selected.id}
+                  aria-hidden
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.7, ease: EASE }}
+                  className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-accent/10"
+                />
+              )}
               <AnimatePresence mode="wait" initial={false}>
-                {selected ? (
-                  <motion.div
-                    key={selected.id}
-                    initial={reduce ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
-                    transition={swap}
-                    className={cn(
-                      // result inset — tinted by the origin data colour it reports (same key as the dots)
-                      'min-h-[148px] rounded-xl p-4',
-                      selected.origin === 'natural' ? 'bg-brand/10' : 'bg-fg-dim/10',
-                    )}
-                  >
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2">
-                      <h4 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h4>
-                      <span className="inline-flex items-center gap-1.5 text-sm text-fg-muted">
-                        <CatGlyph cat={selected.cat} className="text-fg-muted" />
-                        {CATS.find((c) => c.id === selected.cat)!.label}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-sm text-fg-muted">
-                        <span
-                          aria-hidden
-                          className={cn('size-2 rounded-full shrink-0', selected.origin === 'natural' ? 'bg-brand' : 'bg-fg-dim')}
-                        />
-                        תכסית {ORIGIN_LABEL[selected.origin]}
-                      </span>
-                    </div>
-                    <p className="text-base text-fg leading-relaxed">{selected.desc}</p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={reduce ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={reduce ? { opacity: 0 } : { opacity: 0, y: -6 }}
-                    transition={swap}
-                    className="min-h-[148px]"
-                  >
-                    <p className="text-sm text-fg-muted leading-relaxed">
-                      בחרו רכיב באיור או ברשימה כדי לקרוא את תיאורו, את סוגו ואת מקורו כתכסית טבעית או מלאכותית.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-sm font-display font-semibold text-fg-muted">עונה</span>
-                <div className="inline-flex gap-1.5" role="group" aria-label="בחירת עונה">
-                  {(['winter', 'summer'] as Season[]).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      aria-pressed={season === s}
-                      onClick={() => setSeason(s)}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm font-display font-bold cursor-pointer',
-                        'transition-colors duration-200 ease-snap motion-reduce:transition-none',
-                        season === s ? OPTION_ON : OPTION_IDLE,
-                      )}
-                    >
-                      <SeasonGlyph season={s} className="text-fg-muted" />
-                      {s === 'winter' ? 'חורף' : 'קיץ'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.p
-                  key={season}
-                  initial={reduce ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={swap}
-                  className="text-sm text-fg-muted leading-relaxed"
+                <motion.div
+                  key={selected?.id ?? 'empty'}
+                  initial={{ opacity: 0, x: reduce ? 0 : 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: reduce ? 0 : -6 }}
+                  transition={{ duration: 0.18, ease: EASE }}
                 >
-                  {SEASON_NOTE[season]}
-                </motion.p>
+                  {selected ? (
+                    <>
+                      <h4 className="mb-1 font-display text-lg font-bold leading-snug text-fg md:text-xl">{selected.label}</h4>
+                      <p className="text-base text-fg leading-relaxed">{selected.desc}</p>
+                    </>
+                  ) : (
+                    <p className="text-base text-fg-muted leading-relaxed">
+                      בחרו רכיב באיור או ברשימה כדי לקרוא את תיאורו ואת מאפייניו בשטח.
+                    </p>
+                  )}
+                </motion.div>
               </AnimatePresence>
             </div>
           </div>
 
-          {/* Map sample — sits directly in the workspace; the paper tile is its own neat-line */}
-          <div>
+          {/* Map sample — sits directly in the workspace; the paper tile is its own neat-line.
+              The negative margins cancel the viewBox's margins around the tile (6 units above, 5 below
+              its rim, of 412 across — a % margin is a share of the column's width), so the tile's top
+              meets the tabs' top and its bottom the inset's. */}
+          <div className="self-start lg:-mt-[1.456%] lg:-mb-[1.214%]">
             <LandCoverMap
               features={FEATURES}
               cat={cat}
               selectedId={selectedId}
-              season={season}
               onSelect={selectFeature}
               ariaLabel="מבט מלמעלה על שטח לדוגמה: חורש, גריגה, בתה, יער נטוע, כפר, שדות, מטע, טרסות, כביש, דרך עפר, קו מתח, מאגר מים וגדר"
             />
-            <p className="mt-3 text-sm text-fg-muted leading-snug text-center">
-              מבט מלמעלה על שטח לדוגמה · המחשה סכמטית, ללא שימוש בסימני מפה מוסכמים
-            </p>
           </div>
         </div>
       </div>
@@ -419,38 +384,26 @@ function OriginCard({
   title,
   tone,
   body,
-  examples,
 }: {
   title: string;
   tone: Origin;
   body: string;
-  examples: string[];
 }) {
   return (
-    <article>
-      <div className="flex items-start justify-between gap-4 mb-2">
-        <h3 className="flex items-center gap-2 font-display text-lg font-bold leading-snug text-fg md:text-xl pt-1">
-          {/* legend key for the origin dots on the feature pills and in the result (sage = natural, grey = man-made) */}
-          <span
-            aria-hidden
-            className={cn('size-2.5 rounded-full shrink-0', tone === 'natural' ? 'bg-brand' : 'bg-fg-dim')}
-          />
+    <article className="flex items-start gap-4">
+      <div className="min-w-0 flex-1">
+        <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl pt-1">
           {title}
         </h3>
-        {/* the vignette carries the identification cue (irregular crowns vs. rows) — kept, bare */}
-        <span aria-hidden className="shrink-0 -mt-1">
-          {tone === 'natural' ? <NaturalVignette /> : <PlantedVignette />}
-        </span>
+        <p className="mt-1 text-base text-fg-muted leading-relaxed">{body}</p>
       </div>
-      <p className="text-base text-fg-muted leading-relaxed mb-3">{body}</p>
-      {/* static examples: plain inline list, `·` separators drawn by CSS (not chips) */}
-      <ul className="flex flex-wrap gap-y-1 text-sm font-semibold text-fg">
-        {examples.map((e) => (
-          <li key={e} className="after:mx-2 after:font-normal after:text-fg-dim after:content-['·'] last:after:content-none">
-            {e}
-          </li>
-        ))}
-      </ul>
+      <Image
+        src={`${ORIGIN_IMAGE_BASE}/${tone}.webp`}
+        alt={ORIGIN_IMAGE_ALT[tone]}
+        width={132}
+        height={90}
+        className="block h-[90px] w-[132px] shrink-0 rounded-lg bg-paper-card object-cover"
+      />
     </article>
   );
 }

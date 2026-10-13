@@ -2408,3 +2408,68 @@ Brief: `design/mockups/combatnav-concepts-2026-10-12/claude-terrain-navigation-p
 - **Dead reckoning** keeps its approved text and its existing board, now as its own section below (no accordion); `DeadReckoningSection` in `CombatNavScene.tsx` marks where a chosen `DeadReckoningActivity` will replace the board.
 - **Fallback (no WebGL):** the static pictures in `public/assets/lessons/topic06/terrain-nav/` are rendered from this model at the opening view and at each leg's opening look; the map and every action still work.
 - **Shared code:** the ground textures are the lesson's existing Poly Haven set (`location-check/textures`), read-only; `smoothCurve`, `rng` and the measurement helpers are imported from the location-check modules unchanged.
+
+## 2026-10-13 — Topic 02 opening relief/cover definitions
+
+- The requested tighter title/subtitle spacing uses the existing `mt-1` (4 px), with both lines grouped beside the 138 × 60 px thumbnail. The beige explanation inset is removed, and the card height follows its remaining content.
+- Follow-up: the user requested independent realistic imagery at the same size, rather than crops from the interactive terrain below. The two generated Mediterranean landscapes show exposed hills/valley for relief and woodland/orchard/field/houses/road for cover. Assets and the built-in generation prompts are stored in `public/assets/lessons/topic02/relief-cover-definitions/`.
+
+## 2026-10-13 — Topic 02 "השוואה בין תבליט לתכסית": live 3D model + topographic map
+
+Request: the "בשטח" board looked too much like the landforms (תבניות נוף) papercut block on the next page, its land cover was flat SVG, and the map should read like a real topographic map. Approved choices: a live model (not Blender stills) and a new terrain. Code: `reliefCoverCompare.data.ts` (one source), `reliefCoverMesh.ts`, `ReliefCover3D.tsx`, `ReliefCoverModel.tsx`, `ReliefCoverVisuals.tsx` (map + legend swatches), wired in `ReliefCoverCompare.tsx`. Tests: `scripts/qa/relief-cover-compare.test.mjs`; browser QA: `scripts/qa/shot-relief-cover.mjs`; stills: `scripts/qa/capture-relief-cover-fallback.mjs`. The flow, copy, cells and summary table are unchanged; `ReliefCoverIntroScene.tsx` was not touched.
+
+- **A fictional sheet**, 480 × 320 m, local grid (numbers are metres from the sheet's SW corner). Heights 101–176 m: a main summit (176) with a south-east spur, a western summit (152) across a saddle, gullies, a south-west draining valley and the village plain east.
+- **Contours every 5 m, index every 25 m** (a large-scale sheet; 10 m would leave ~7 lines on this hill). Index numbers sit on their line with the figures' tops uphill (the map convention), placed only where they read without turning the page over. Spot heights (dot + metres) on both summits.
+- **Map symbols** follow the lesson's topographic sheet language (`MAP` in `topographyTerrainStyle.ts`): green tint + one open circle per tree for the grove, a dashed parcel with one dot per tree for the orchard, every building's footprint at its true size and turn, the quarry site in the existing pit-rock tone with ticks along its cut faces. The legend keys and their copy are unchanged; the disclaimer stays.
+- **The quarry** is a hillside cut facing the camera: a 121 m floor and 10 m benches (treads 1 m off the contour levels, so no staircase contours), a curved back wall, sloping side walls, and an uncut yard below it that the map includes in the quarry area (as before). It takes the orchard's three western columns.
+- **Vertical exaggeration 1.6× in the 3D model only** (the map keeps true heights). At true scale the 75 m hill on a 480 m sheet read almost flat from the oblique view, which works against a relief/cover lesson. Trees and houses keep their real size, placed on the exaggerated ground.
+- **Object sizes** are at the upper end of real sizes (old oaks and pines, crowns up to ~13 m; houses 14–19 m), so they read at the board's ~1 px per metre.
+- **Ground look:** the lesson-6 Poly Haven dry-ground and rock textures (read-only, `topic06/location-check/textures`), with straw tones on gentle ground and grey on steep ground; no green on bare ground (green = vegetation only, as in the spec). Quarry rock is the rock texture, desaturated to a pale limestone.
+- **Camera:** opens from the south, north up like the map; drag rotates (±80°, no pan); zoom only by the buttons — the mouse wheel keeps scrolling the page. "מבט מלמעלה" aligns it with the map. A north arrow turns with the camera.
+- **Fallback (no WebGL):** stills of the same model at its opening view, one per state, in `public/assets/lessons/topic02/relief-cover-compare/`.
+- **Archive:** `ReliefCoverIntroSceneV1` (archive route) renders the same `ReliefCoverCompare`, so it shows the new boards too. The old papercut block code was in `ReliefCoverVisuals.tsx` (see git history); the shared engine (`terrainBlock*.ts`) is untouched and still drives the landforms page.
+
+### Follow-up (same day): the "בשטח" model made realistic, like the coordinates globe
+
+Request: the model should look much more realistic, like the site's other realistic examples (the Earth globe in #scene-coordinates-2). The globe is satellite imagery draped on a true shape, so the model now works the same way. Pipeline: `scripts/blender/export_relief_cover_model.mjs` (heights and objects from `reliefCoverCompare.data.ts`) → `render_relief_cover_model.py` (Cycles) → `package_relief_cover_model.mjs` → `public/assets/lessons/topic02/relief-cover-model/*.webp` (~0.6 MB in all). Regions: `DRAPE` in `reliefCoverMesh.ts`.
+
+- **Ground:** straight-down renders draped unlit on the same live mesh. The whole ground to the horizon (4 m/px), a ring around the sheet (0.5 m/px), and the sheet per state (0.25 m/px), showing the shadows its land cover casts and, in state 4, the quarried ground. No green on bare ground (unchanged rule).
+- **Objects are real 3D** (crowns, trunks, shrubs, houses with windows and roofs), built from the same data. Their tops wear one more render of the objects themselves, so crowns and roofs match the shadows on the ground. Walls are shaded by the renders' sun.
+- **Ground textures:** Poly Haven CC0 `rocky_terrain_03`, `dry_ground_rocks`, `rock_face`, fetched into `qa-output/` by the render script (not committed). Over a 500 m sheet any photo tile repeated visibly as a grid, so the plain's colour and grain are procedural. The photos give the rock outcrops, soil patches and the quarry's fresh limestone.
+- **Limestone ledges along the contours** on the slopes (broken bands, as on Judean hillsides). This is relief, not cover, and it echoes the map's contour lines. Assumption: acceptable as relief detail. It can be removed in the material if unwanted.
+- **Sun 225° / 55°** (south-west, late morning), plus a shadowless sky fill. At the old 248° / 42°, slopes of the 1.6×-exaggerated hill fell into black self-shadow from straight above. The light is baked, so it does not turn with the camera (like imagery).
+- **Changes:** the next state's ground sweeps in from the near (south) side along a ragged front. Objects grow out of the ground (or shrink away) as the front passes them, and the quarry morph is unchanged. Reduced motion: instant.
+- **Fallback stills** were re-captured from the new model.
+
+## 2026-10-13 — Topic 02 opening land-cover definitions
+
+- User requested the same realistic image treatment for the natural/artificial cover definitions, removal of the two example lists in the attached crop, and removal of the dots beside those two headings. The original 88 × 60 px image size is retained. New independent landscape images distinguish irregular wild vegetation from houses/road/ordered orchard/field; image prompts and WebP exports live in `public/assets/lessons/topic02/land-cover-definitions/`.
+
+### Follow-up — larger images and explanations beside them
+
+- For the requested modest image enlargement, the relief/cover thumbnails increase from 138 × 60 to 184 × 80 px and natural/artificial cover from 88 × 60 to 132 × 90 px, preserving each asset's aspect ratio. In both cards, each heading and all its supporting text now form a column at inline-start (right), beside the image at inline-end. The land-cover definition sits 4 px below its heading (`mt-1`), independent of image height. The generated images are reused unchanged.
+
+### Follow-up (same day): a cleaner block
+
+On request, removed: the map key and the disclaimer, the "בשטח / במפה" captions above the boards, and the model's north arrow and view buttons. Drag still turns the model, but there is no zoom now. "המשך" now ends the state's cells at their bottom-left instead of a row of its own. The contour chip ("קווי הגובה: …") lost its caption line and now sits under the map, at its left. Its row keeps its height in every state, so the card never moves. The map-key and disclaimer strings remain in the scene's copy, unused.
+
+## 2026-10-13 — Topic 02 vegetation ladder hover explanations
+
+- The requested short explanations reuse the lesson's existing beige inset (`rounded-xl bg-bg-accent/60 p-4 min-h-[112px]`) below the vegetation names. The reserved height keeps the diagram and adjacent content stable when switching formations. Text follows the lesson body style (16 px, relaxed line height, black).
+- Copy is condensed from `content/topic-04.md` §4.4 and the current land-cover descriptions. Hovering either a rendered formation or its label shows its identifying characteristics; keyboard focus on the label gives the same explanation and highlight. The diagram's orientation and assets stay unchanged.
+
+## 2026-10-13 — Topic 02 "זיהוי סוגי תכסית בשטח": brighter map, topic tabs
+
+- **Brighter, still realistic:** the rendered land gets a bright "development" in the SVG (`LandCoverMap.tsx`, filter `bright`). It lifts shadows and mid-tones and adds a little colour, like a lightened aerial photo, closer to the papercut version's lightness. Regions outside the active tab now fade to a pale, greyed wash (opacity 0.7 plus a lift toward white) instead of 38 % over the dark ground, which had read as a shadow over the whole map. The renders themselves are unchanged.
+- **Topics vs. items:** the three topics are now a tab bar (text on a hairline, the active one underlined by a sliding accent line). The item buttons below keep the bordered option style, so a topic and a specific item no longer look alike.
+- **No cross-fade:** the topic's content slides in from its tab's side (a later tab is to the left in RTL, so its content enters from the left). Reduced motion: instant.
+
+## 2026-10-13 — Topic 02 datum: clearer copy and matching column heights
+
+- User requested wording simplification and removal of the unused area below the right information column. The existing 32:68 columns, model, controls and station behavior remain; the open station takes the remaining desktop height, with its action hint at the bottom. Both columns stretch together; the visual stage retains its 440 px minimum and can grow for the manual experiment.
+- Condensed duplicated experiment instructions and removed the bottle/cork analogy. Clarified ellipsoid versus datum, and corrected the seven-parameter text to describe a coordinate transformation between datums rather than a universal process for creating a datum. Reference: https://proj.org/en/stable/operations/transformations/helmert.html . The datum copy inventory records these user-authorized edits.
+
+## 2026-10-13 — Topic 02 base-60 calculator placement
+
+- User requested moving the calculator away from the left screen edge and keeping it from following the rest of the page. Placement decision: reuse the existing steps column at inline-start (visual right), with the toggle directly below the three step cards and the open calculator in normal document flow beneath it. The diagram and answer fields retain their existing dimensions and positions.
+- The calculator uses its existing surface, 19rem width, typography, keys and spacing; no new color tokens. It is unmounted when the current track completes, so it closes automatically and cannot persist into the following lesson content. Returning to an unfinished step restores the closed toggle.
