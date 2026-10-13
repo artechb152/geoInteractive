@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import type { IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -79,6 +80,19 @@ cons: [
 whyItMatters: 'בתכנון משלבים בין מקורות המידע: המפה למדידה ולניווט, התצלום לזיהוי פרטים והמודל להמחשת התבליט. השילוב ביניהם מספק תמונה שלמה של השטח.',
  },
 ];
+/**
+ * Laptop fit — the 1920×1080 view is the reference composition (scale 1).
+ * Width: the section's content box there, 1088 px (max-w-6xl minus lg:px-8).
+ * Height: the composition (scene header → tabs → card) is 977 px tall and
+ * already reaches the fold at 1920×1080, so it is fitted against that view's
+ * height budget instead — 1080 − 104 px above (site header + shell gap,
+ * measured) − 24 px kept clear below = 952 px, as in the sibling topic-02
+ * screens. 1920×1080 stays at scale 1, and a laptop shows the whole card
+ * with the same 24 px band under it. The pager row is reached by scrolling.
+ */
+const FIT_REFERENCE_WIDTH = 1088;
+const FIT_REFERENCE_HEIGHT = 952;
+const FIT_BOTTOM = 24;
 /** Describe the simulated terrain shown in each view. */
 const ALTS: Record<View, string> = {
   '3d': 'מודל תלת־ממדי הממחיש את צורת פני השטח ואת הפרשי הגובה',
@@ -124,209 +138,216 @@ export function TopographyScene() {
 
   return (
     <section id="scene-topography" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="02.1"
-        eyebrow="טופוגרפיה"
-        title="ממרחב למישור: כיצד מייצגים את פני השטח?"
-        intro="טופוגרפיה עוסקת בתיאור צורת פני השטח, הגבהים והשיפועים. כאן מוצג אותו שטח בשלוש דרכים. עברו בין התצוגות והשוו בין היתרונות, המגבלות והשימושים של כל אחת."
-      />
+      <LessonViewportFit
+        referenceWidth={FIT_REFERENCE_WIDTH}
+        referenceHeight={FIT_REFERENCE_HEIGHT}
+        reserveBottom={FIT_BOTTOM}
+        className="mb-12"
+      >
+        <SceneHeader
+          step="02.1"
+          eyebrow="טופוגרפיה"
+          title="ממרחב למישור: כיצד מייצגים את פני השטח?"
+          intro="טופוגרפיה עוסקת בתיאור צורת פני השטח, הגבהים והשיפועים. כאן מוצג אותו שטח בשלוש דרכים. עברו בין התצוגות והשוו בין היתרונות, המגבלות והשימושים של כל אחת."
+        />
 
-      <div className="mb-12" onKeyDown={onKeyDown}>
-        {/* Segmented view switcher — the four views are directly selectable.
-            The running number (formerly an absolute "01" badge that overlapped
-            the card's corner) now lives inside each segment. */}
-        <div
-          role="tablist"
-          aria-label="ניווט בין תצוגות"
-          className="mx-auto mb-4 flex max-w-4xl flex-col gap-2 sm:flex-row"
-        >
-          {VIEWS.map((v, i) => {
-            const isActive = i === idx;
-            return (
-              <button
-                key={v.id}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                type="button"
-                role="tab"
-                id={tabId(i)}
-                aria-selected={isActive}
-                aria-controls={panelId}
-                tabIndex={isActive ? 0 : -1}
-                onClick={() => select(i)}
-                className={cn(
-                  // Tabs sit on the textured page, so the translucent option tints ride
-                  // on an opaque white base via ::before (same recipe as Geology/Density).
-                  'relative isolate flex flex-1 items-center justify-center gap-2 rounded-xl border bg-bg-elevated px-3 py-2.5 font-display text-base font-bold text-fg transition-colors duration-200 ease-snap cursor-pointer',
-                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                  isActive
-                    ? 'border-accent before:bg-accent/10'
-                    : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
-                )}
-              >
-                <span>{v.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* One card, one screen: the explanation (first in DOM → visual right,
-            where RTL reading starts) beside a large live viewer. The pager sits
-            at the end of the text, so reading ends at "next". */}
-        <div
-          role="tabpanel"
-          id={panelId}
-          aria-labelledby={tabId(idx)}
-          className="surface-elevated p-5 sm:p-6"
-        >
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8">
-            <div className="flex min-w-0 flex-col">
-              {/* All four texts share one grid cell, so the column — and the
-                  viewer beside it — keeps the height of the tallest view:
-                  switching never makes the layout jump. The desktop floor is
-                  the original text height measured at 1440px, preserving the
-                  viewer and pager geometry after flattening the text styling. */}
-              <div className="grid lg:min-h-[568px] [&>*]:[grid-area:1/1]">
-                {VIEWS.map((v, i) => {
-                  const isActive = i === idx;
-                  return (
-                    <motion.div
-                      key={v.id}
-                      aria-hidden={!isActive}
-                      initial={false}
-                      animate={
-                        isActive
-                          ? { opacity: 1, visibility: 'visible' }
-                          : { opacity: 0, transitionEnd: { visibility: 'hidden' } }
-                      }
-                      transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
-                      className="space-y-4"
-                    >
-                      <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
-                        {v.label}
-                      </div>
-
-                      <div>
-                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          תיאור התצוגה
-                        </div>
-                        <p className="text-base leading-relaxed text-black">{v.whatItIs}</p>
-                      </div>
-
-                      <div>
-                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          יתרונות
-                        </div>
-                        <ul className="space-y-1.5 text-base leading-relaxed text-black">
-                          {v.pros.map((p) => (
-                            <li key={p} className="flex gap-2">
-                              <span aria-hidden>·</span>
-                              <span>{p}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div>
-                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          מגבלות
-                        </div>
-                        <ul className="space-y-1.5 text-base leading-relaxed text-black">
-                          {v.cons.map((c) => (
-                            <li key={c} className="flex gap-2">
-                              <span aria-hidden>·</span>
-                              <span>{c}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="border-t border-border-subtle pt-4">
-                        <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                          שימוש בתכנון
-                        </div>
-                        <p className="text-base leading-relaxed text-black">{v.whyItMatters}</p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              {/* Prev / progress dots / Next — matches the LandformsScene pager convention.
-                  RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
-              <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+        <div onKeyDown={onKeyDown}>
+          {/* Segmented view switcher — the four views are directly selectable.
+              The running number (formerly an absolute "01" badge that overlapped
+              the card's corner) now lives inside each segment. */}
+          <div
+            role="tablist"
+            aria-label="ניווט בין תצוגות"
+            className="mx-auto mb-4 flex max-w-4xl flex-col gap-2 sm:flex-row"
+          >
+            {VIEWS.map((v, i) => {
+              const isActive = i === idx;
+              return (
                 <button
+                  key={v.id}
+                  ref={(el) => {
+                    tabRefs.current[i] = el;
+                  }}
                   type="button"
-                  onClick={() => select(Math.max(0, idx - 1))}
-                  disabled={isFirst}
-                  aria-label="התצוגה הקודמת"
+                  role="tab"
+                  id={tabId(i)}
+                  aria-selected={isActive}
+                  aria-controls={panelId}
+                  tabIndex={isActive ? 0 : -1}
+                  onClick={() => select(i)}
                   className={cn(
-                    'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                    isFirst
-                      ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                      : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
+                    // Tabs sit on the textured page, so the translucent option tints ride
+                    // on an opaque white base via ::before (same recipe as Geology/Density).
+                    'relative isolate flex flex-1 items-center justify-center gap-2 rounded-xl border bg-bg-elevated px-3 py-2.5 font-display text-base font-bold text-fg transition-colors duration-200 ease-snap cursor-pointer',
+                    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                    isActive
+                      ? 'border-accent before:bg-accent/10'
+                      : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
                   )}
                 >
-                  <ChevronRight size={22} strokeWidth={2} aria-hidden />
+                  <span>{v.label}</span>
                 </button>
+              );
+            })}
+          </div>
 
-                {/* Progress dots — a mouse shortcut mirroring the tab row above
-                    (hidden from assistive tech, which uses the tablist). */}
-                <div className="flex items-center gap-2" aria-hidden>
+          {/* One card, one screen: the explanation (first in DOM → visual right,
+              where RTL reading starts) beside a large live viewer. The pager sits
+              at the end of the text, so reading ends at "next". */}
+          <div
+            role="tabpanel"
+            id={panelId}
+            aria-labelledby={tabId(idx)}
+            className="surface-elevated p-5 sm:p-6"
+          >
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8">
+              <div className="flex min-w-0 flex-col">
+                {/* All four texts share one grid cell, so the column — and the
+                    viewer beside it — keeps the height of the tallest view:
+                    switching never makes the layout jump. The desktop floor is
+                    the original text height measured at 1440px, preserving the
+                    viewer and pager geometry after flattening the text styling. */}
+                <div className="grid lg:min-h-[568px] [&>*]:[grid-area:1/1]">
                   {VIEWS.map((v, i) => {
                     const isActive = i === idx;
                     return (
-                      <button
+                      <motion.div
                         key={v.id}
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => select(i)}
-                        className="group flex h-6 items-center justify-center px-0.5 cursor-pointer"
+                        aria-hidden={!isActive}
+                        initial={false}
+                        animate={
+                          isActive
+                            ? { opacity: 1, visibility: 'visible' }
+                            : { opacity: 0, transitionEnd: { visibility: 'hidden' } }
+                        }
+                        transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="space-y-4"
                       >
-                        <span
-                          className={cn(
-                            'block h-2.5 rounded-full transition-all duration-300 ease-snap',
-                            isActive ? 'w-8 bg-accent' : 'w-2.5 bg-border-strong/70 group-hover:bg-fg-dim',
-                          )}
-                        />
-                      </button>
+                        <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
+                          {v.label}
+                        </div>
+
+                        <div>
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                            תיאור התצוגה
+                          </div>
+                          <p className="text-base leading-relaxed text-black">{v.whatItIs}</p>
+                        </div>
+
+                        <div>
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                            יתרונות
+                          </div>
+                          <ul className="space-y-1.5 text-base leading-relaxed text-black">
+                            {v.pros.map((p) => (
+                              <li key={p} className="flex gap-2">
+                                <span aria-hidden>·</span>
+                                <span>{p}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                            מגבלות
+                          </div>
+                          <ul className="space-y-1.5 text-base leading-relaxed text-black">
+                            {v.cons.map((c) => (
+                              <li key={c} className="flex gap-2">
+                                <span aria-hidden>·</span>
+                                <span>{c}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="border-t border-border-subtle pt-4">
+                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                            שימוש בתכנון
+                          </div>
+                          <p className="text-base leading-relaxed text-black">{v.whyItMatters}</p>
+                        </div>
+                      </motion.div>
                     );
                   })}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => select(Math.min(total - 1, idx + 1))}
-                  disabled={isLast}
-                  aria-label="התצוגה הבאה"
-                  className={cn(
-                    'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                    isLast
-                      ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                      : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
-                  )}
-                >
-                  <ChevronLeft size={22} strokeWidth={2} aria-hidden />
-                </button>
-              </div>
-            </div>
+                {/* Prev / progress dots / Next — matches the LandformsScene pager convention.
+                    RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
+                <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+                  <button
+                    type="button"
+                    onClick={() => select(Math.max(0, idx - 1))}
+                    disabled={isFirst}
+                    aria-label="התצוגה הקודמת"
+                    className={cn(
+                      'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                      isFirst
+                        ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
+                        : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
+                    )}
+                  >
+                    <ChevronRight size={22} strokeWidth={2} aria-hidden />
+                  </button>
 
-            {/* The viewer — second in DOM → visual left. It stretches to the
-                text column's height (never below 560 px). */}
-            <div className="relative min-h-[560px]">
-              <div className="absolute inset-0">
-                <TopographyTerrain3D
-                  view={meta.id === 'all' ? lastSingle : meta.id}
-                  stacked={stacked}
-                  onSelectView={(v) => select(VIEWS.findIndex((x) => x.id === v))}
-                  ariaLabel={ALTS[meta.id]}
-                />
+                  {/* Progress dots — a mouse shortcut mirroring the tab row above
+                      (hidden from assistive tech, which uses the tablist). */}
+                  <div className="flex items-center gap-2" aria-hidden>
+                    {VIEWS.map((v, i) => {
+                      const isActive = i === idx;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          tabIndex={-1}
+                          onClick={() => select(i)}
+                          className="group flex h-6 items-center justify-center px-0.5 cursor-pointer"
+                        >
+                          <span
+                            className={cn(
+                              'block h-2.5 rounded-full transition-all duration-300 ease-snap',
+                              isActive ? 'w-8 bg-accent' : 'w-2.5 bg-border-strong/70 group-hover:bg-fg-dim',
+                            )}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => select(Math.min(total - 1, idx + 1))}
+                    disabled={isLast}
+                    aria-label="התצוגה הבאה"
+                    className={cn(
+                      'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                      isLast
+                        ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
+                        : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
+                    )}
+                  >
+                    <ChevronLeft size={22} strokeWidth={2} aria-hidden />
+                  </button>
+                </div>
+              </div>
+
+              {/* The viewer — second in DOM → visual left. It stretches to the
+                  text column's height (never below 560 px). */}
+              <div className="relative min-h-[560px]">
+                <div className="absolute inset-0">
+                  <TopographyTerrain3D
+                    view={meta.id === 'all' ? lastSingle : meta.id}
+                    stacked={stacked}
+                    onSelectView={(v) => select(VIEWS.findIndex((x) => x.id === v))}
+                    ariaLabel={ALTS[meta.id]}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </LessonViewportFit>
     </section>
   );
 }

@@ -6,6 +6,7 @@ import { Bvh, Html, Line, OrbitControls, useGLTF, useProgress, useTexture } from
 import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { TOPO } from './topographyTerrain.data';
 import {
   COLLAR,
@@ -831,6 +832,10 @@ export default function TopographyTerrain3D({
   const [fullscreen, setFullscreen] = useState(false);
   const [feature, setFeature] = useState<FeatureId | null>(null);
   const reduce = !!useReducedMotion();
+  // Inside the scene's laptop fit the viewer is CSS-scaled: OrbitControls reads
+  // drag deltas in screen px but divides by the untransformed height, so the
+  // rotate speed is compensated to feel the same at every scale.
+  const fitScale = useLessonViewportScale();
   const controlsRef = useRef(null) as ControlsRef;
   const mode: Mode = stacked ? 'stack' : view;
 
@@ -872,6 +877,7 @@ export default function TopographyTerrain3D({
         {activated && (
           <Canvas
             aria-hidden
+            resize={LESSON_FIT_CANVAS_RESIZE}
             shadows={{ type: THREE.PCFShadowMap }}
             dpr={[1.5, 2]}
             gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
@@ -930,6 +936,7 @@ export default function TopographyTerrain3D({
               enableZoom={orbit}
               enableRotate={orbit}
               maxPolarAngle={Math.PI / 2.1}
+              rotateSpeed={fullscreen ? 1 : 1 / fitScale}
               enableDamping
               dampingFactor={0.08}
             />
