@@ -1,0 +1,426 @@
+{
+ "1920x1080": {
+  "states": {
+   "reference-bodies:surface": {
+    "scale": 1,
+    "h": 698,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid": {
+    "scale": 1,
+    "h": 730,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid-linked": {
+    "scale": 1,
+    "h": 730,
+    "fitsView": true
+   },
+   "reference-bodies:geoid-clear": {
+    "scale": 1,
+    "h": 730,
+    "fitsView": true
+   },
+   "reference-bodies:undulation": {
+    "scale": 1,
+    "h": 917,
+    "fitsView": true
+   },
+   "reference-bodies:undulation-wrong": {
+    "scale": 1,
+    "h": 917,
+    "fitsView": true
+   },
+   "datum:step1": {
+    "scale": 1,
+    "h": 796,
+    "fitsView": true
+   },
+   "datum:step2": {
+    "scale": 1,
+    "h": 844,
+    "fitsView": true
+   },
+   "datum:step2-experiment": {
+    "scale": 1,
+    "h": 996,
+    "fitsView": true
+   },
+   "datum:step3-local": {
+    "scale": 1,
+    "h": 850,
+    "fitsView": true
+   },
+   "datum-parameters:cards": {
+    "scale": 1,
+    "h": 233,
+    "fitsView": true
+   },
+   "datum-field:compare-B": {
+    "scale": 1,
+    "h": 879,
+    "fitsView": true
+   },
+   "datum-field:error-raw": {
+    "scale": 1,
+    "h": 902,
+    "fitsView": true
+   },
+   "datum-field:error-relabeled": {
+    "scale": 1,
+    "h": 902,
+    "fitsView": true
+   },
+   "datum-field:error-converted": {
+    "scale": 1,
+    "h": 902,
+    "fitsView": true
+   },
+   "datum-field:practice-checked": {
+    "scale": 1,
+    "h": 902,
+    "fitsView": true
+   },
+   "summary:end": {
+    "scale": 1,
+    "h": 310,
+    "fitsView": true
+   }
+  },
+  "pointer": {
+   "landTurnAz": -19.2,
+   "stationPicked": true,
+   "chipLeaderGap": [
+    0,
+    0,
+    0,
+    542.2,
+    372
+   ],
+   "markerInspectDelta": 0.142,
+   "markerEndVsPointer": 26,
+   "experimentScale": 1,
+   "experimentDragDx": 58
+  },
+  "errors": [],
+  "hScroll": 0
+ },
+ "1536x864": {
+  "states": {
+   "reference-bodies:surface": {
+    "scale": 0.855,
+    "h": 597,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid": {
+    "scale": 0.855,
+    "h": 624,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid-linked": {
+    "scale": 0.855,
+    "h": 624,
+    "fitsView": true
+   },
+   "reference-bodies:geoid-clear": {
+    "scale": 0.855,
+    "h": 624,
+    "fitsView": true
+   },
+   "reference-bodies:undulation": {
+    "scale": 0.855,
+    "h": 784,
+    "fitsView": true
+   },
+   "reference-bodies:undulation-wrong": {
+    "scale": 0.855,
+    "h": 784,
+    "fitsView": true
+   },
+   "datum:step1": {
+    "scale": 0.9224,
+    "h": 734,
+    "fitsView": true
+   },
+   "datum:step2": {
+    "scale": 0.9224,
+    "h": 779,
+    "fitsView": true
+   },
+   "datum:step2-experiment": {
+    "scale": 0.7871,
+    "h": 784,
+    "fitsView": true
+   },
+   "datum:step3-local": {
+    "scale": 0.9224,
+    "h": 784,
+    "fitsView": true
+   },
+   "datum-parameters:cards": {
+    "scale": 1,
+    "h": 233,
+    "fitsView": true
+   },
+   "datum-field:compare-B": {
+    "scale": 0.8692,
+    "h": 764,
+    "fitsView": true
+   },
+   "datum-field:error-raw": {
+    "scale": 0.8692,
+    "h": 784,
+    "fitsView": true
+   },
+   "datum-field:error-relabeled": {
+    "scale": 0.8692,
+    "h": 784,
+    "fitsView": true
+   },
+   "datum-field:error-converted": {
+    "scale": 0.8692,
+    "h": 784,
+    "fitsView": true
+   },
+   "datum-field:practice-checked": {
+    "scale": 0.8692,
+    "h": 784,
+    "fitsView": true
+   },
+   "summary:end": {
+    "scale": 1,
+    "h": 310,
+    "fitsView": true
+   }
+  },
+  "pointer": {
+   "landTurnAz": -19.2,
+   "stationPicked": true,
+   "chipLeaderGap": [
+    0,
+    0,
+    0,
+    500.2,
+    343.1
+   ],
+   "markerInspectDelta": 0.142,
+   "markerEndVsPointer": 24,
+   "experimentScale": 0.7871,
+   "experimentDragDx": 58
+  },
+  "errors": [],
+  "hScroll": 0
+ },
+ "1440x1122": {
+  "states": {
+   "reference-bodies:surface": {
+    "scale": 0.9669,
+    "h": 675,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid": {
+    "scale": 0.9669,
+    "h": 706,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid-linked": {
+    "scale": 0.9669,
+    "h": 706,
+    "fitsView": true
+   },
+   "reference-bodies:geoid-clear": {
+    "scale": 0.9669,
+    "h": 706,
+    "fitsView": true
+   },
+   "reference-bodies:undulation": {
+    "scale": 0.9669,
+    "h": 887,
+    "fitsView": true
+   },
+   "reference-bodies:undulation-wrong": {
+    "scale": 0.9669,
+    "h": 887,
+    "fitsView": true
+   },
+   "datum:step1": {
+    "scale": 0.9669,
+    "h": 770,
+    "fitsView": true
+   },
+   "datum:step2": {
+    "scale": 0.9669,
+    "h": 816,
+    "fitsView": true
+   },
+   "datum:step2-experiment": {
+    "scale": 0.9669,
+    "h": 963,
+    "fitsView": true
+   },
+   "datum:step3-local": {
+    "scale": 0.9669,
+    "h": 822,
+    "fitsView": true
+   },
+   "datum-parameters:cards": {
+    "scale": 0.9669,
+    "h": 225,
+    "fitsView": true
+   },
+   "datum-field:compare-B": {
+    "scale": 0.9669,
+    "h": 850,
+    "fitsView": true
+   },
+   "datum-field:error-raw": {
+    "scale": 0.9669,
+    "h": 872,
+    "fitsView": true
+   },
+   "datum-field:error-relabeled": {
+    "scale": 0.9669,
+    "h": 872,
+    "fitsView": true
+   },
+   "datum-field:error-converted": {
+    "scale": 0.9669,
+    "h": 872,
+    "fitsView": true
+   },
+   "datum-field:practice-checked": {
+    "scale": 0.9669,
+    "h": 872,
+    "fitsView": true
+   },
+   "summary:end": {
+    "scale": 0.9669,
+    "h": 300,
+    "fitsView": true
+   }
+  },
+  "pointer": {
+   "landTurnAz": -19.2,
+   "stationPicked": true,
+   "chipLeaderGap": [
+    0,
+    0,
+    0,
+    524.3,
+    359.7
+   ],
+   "markerInspectDelta": 0.142,
+   "markerEndVsPointer": 26,
+   "experimentScale": 0.9669,
+   "experimentDragDx": 60
+  },
+  "errors": [],
+  "hScroll": 0
+ },
+ "1366x768": {
+  "states": {
+   "reference-bodies:surface": {
+    "scale": 0.7503,
+    "h": 524,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid": {
+    "scale": 0.7503,
+    "h": 548,
+    "fitsView": true
+   },
+   "reference-bodies:ellipsoid-linked": {
+    "scale": 0.7503,
+    "h": 548,
+    "fitsView": true
+   },
+   "reference-bodies:geoid-clear": {
+    "scale": 0.7503,
+    "h": 548,
+    "fitsView": true
+   },
+   "reference-bodies:undulation": {
+    "scale": 0.7503,
+    "h": 688,
+    "fitsView": true
+   },
+   "reference-bodies:undulation-wrong": {
+    "scale": 0.7503,
+    "h": 688,
+    "fitsView": true
+   },
+   "datum:step1": {
+    "scale": 0.8094,
+    "h": 644,
+    "fitsView": true
+   },
+   "datum:step2": {
+    "scale": 0.8094,
+    "h": 683,
+    "fitsView": true
+   },
+   "datum:step2-experiment": {
+    "scale": 0.6908,
+    "h": 688,
+    "fitsView": true
+   },
+   "datum:step3-local": {
+    "scale": 0.8094,
+    "h": 688,
+    "fitsView": true
+   },
+   "datum-parameters:cards": {
+    "scale": 0.8989,
+    "h": 209,
+    "fitsView": true
+   },
+   "datum-field:compare-B": {
+    "scale": 0.7627,
+    "h": 670,
+    "fitsView": true
+   },
+   "datum-field:error-raw": {
+    "scale": 0.7627,
+    "h": 688,
+    "fitsView": true
+   },
+   "datum-field:error-relabeled": {
+    "scale": 0.7627,
+    "h": 688,
+    "fitsView": true
+   },
+   "datum-field:error-converted": {
+    "scale": 0.7627,
+    "h": 688,
+    "fitsView": true
+   },
+   "datum-field:practice-checked": {
+    "scale": 0.7627,
+    "h": 688,
+    "fitsView": true
+   },
+   "summary:end": {
+    "scale": 0.8989,
+    "h": 279,
+    "fitsView": true
+   }
+  },
+  "pointer": {
+   "landTurnAz": -19.2,
+   "stationPicked": true,
+   "chipLeaderGap": [
+    0,
+    0,
+    0,
+    438.9,
+    301.1
+   ],
+   "markerInspectDelta": 0.142,
+   "markerEndVsPointer": 21,
+   "experimentScale": 0.6908,
+   "experimentDragDx": 58
+  },
+  "errors": [],
+  "hScroll": 0
+ }
+}

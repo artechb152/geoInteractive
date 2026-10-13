@@ -18,6 +18,7 @@ import { C_ELL, C_GEO, C_H } from './referenceBodiesStyle';
 import { DatumGuided } from './datum/DatumGuided';
 import { DatumFieldChallenge } from './datum-field/DatumFieldChallenge';
 import { CoordinatesDefinitions } from './CoordinatesDefinitions';
+import { FitScreen } from './coordinates1Fit';
 
 /* ─────────── קואורדינטות 1 — גיאודזיה, גופי ייחוס ודאטום ───────────
    Content source: ONLY the deck "מבוא לגיאודזיה חלק א׳" (project root) —
@@ -38,11 +39,20 @@ export function CoordinatesScene() {
         intro="לפני שמגדירים קואורדינטות, צריך להגדיר את הגוף שעליו מודדים. בחלק זה נכיר את הגיאודזיה, את גופי הייחוס – אליפסואיד וגיאואיד – ואת הדאטום."
       />
 
-      <CoordinatesDefinitions />
-      <ReferenceBodies />
+      {/* laptop fit: one FitScreen per learning screen (the datum block fits its two screens itself) */}
+      <FitScreen name="definitions" height={750} className="mb-12">
+        <CoordinatesDefinitions />
+      </FitScreen>
+      <FitScreen name="reference-bodies" height={917}>
+        <ReferenceBodies />
+      </FitScreen>
       <DatumGuided />
-      <DatumFieldChallenge />
-      <Part1Summary />
+      <FitScreen name="datum-field" height={902}>
+        <DatumFieldChallenge />
+      </FitScreen>
+      <FitScreen name="summary" height={310} className="">
+        <Part1Summary />
+      </FitScreen>
     </section>
   );
 }
@@ -110,43 +120,11 @@ const LABELS: IllustrationLabels = {
 };
 
 /* ── One screen ──
-   The activity card fits the screen under the site's fixed header: the two
-   figures take the height that is left once the active view's own text, the
-   captions and (in the task) the answer strip are counted — between a readable
-   floor and a ceiling past which the models would only gain empty paper. Only
-   the active view's text takes room, so no view carries another's height. */
-const SCREEN_GAP = 12;
-const VIEW_H = { min: 200, max: 290, stacked: 290 } as const;
-const clampTo = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-function useScreenFit(cardRef: React.RefObject<HTMLDivElement | null>) {
-  const [views, setViews] = useState<number>(VIEW_H.max);
-  const cur = useRef(views);
-  cur.current = views;
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
-    const measure = () => {
-      if (window.innerWidth < 1024) {
-        setViews(VIEW_H.stacked);
-        return;
-      }
-      const header = document.querySelector('header.fixed')?.getBoundingClientRect().height ?? 0;
-      const chrome = card.getBoundingClientRect().height - cur.current;
-      const next = clampTo(Math.floor(window.innerHeight - header - 2 * SCREEN_GAP - chrome), VIEW_H.min, VIEW_H.max);
-      if (next !== cur.current) setViews(next);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(card);
-    window.addEventListener('resize', measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, [cardRef]);
-  return views;
-}
+   The two figures are 290px tall: the height they had at the 1920 × 1080
+   reference in every view (the figures' ceiling, past which the models would
+   only gain empty paper). The screen no longer sizes itself from the viewport;
+   on a laptop the whole screen shrinks uniformly instead (FitScreen). */
+const VIEWS_H = 290;
 
 const isLandTab = (t: BodyTab): t is LandTab => t !== 'ellipsoid';
 const lerpLand = (a: LandView, b: LandView, t: number): LandView => ({ az: a.az + (b.az - a.az) * t, elev: a.elev + (b.elev - a.elev) * t });
@@ -183,9 +161,7 @@ function ReferenceBodies() {
   const shownLand = useRef<LandTab>('surface');
   const zoomTimer = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const reduce = !!useReducedMotion();
-  const viewsH = useScreenFit(cardRef);
   const source = useLandscapeSource();
   const live = source.mode === '3d' && source.ready;
   const uid = useId();
@@ -349,7 +325,7 @@ function ReferenceBodies() {
         הנמדדים ביחס אליהם.
       </p>
 
-      <div ref={cardRef} className="surface-elevated p-6 lg:p-8">
+      <div className="surface-elevated p-6 lg:p-8">
         <div role="tablist" aria-label="שכבות החתך" onKeyDown={onTabKey} className="mb-4 flex gap-2">
           {BODY_TABS.map((b, i) => (
             <button
@@ -404,7 +380,7 @@ function ReferenceBodies() {
             onWheelZoom={wheelZoom}
             phase={phase}
             onZoom={zoomIn}
-            height={viewsH}
+            height={VIEWS_H}
             modelControls={modelControls[tab]}
             sectionControls={sectionControls}
             reduce={reduce}

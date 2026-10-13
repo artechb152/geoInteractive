@@ -37,6 +37,7 @@ import {
 } from './datumDemo';
 import { GapInset, SectionSvg } from './DatumSection';
 import { GlobeOverlays, INSET, MARKER_R, makeOverlayRefs } from './datumOverlays';
+import { FitScreen } from '../coordinates1Fit';
 
 const DatumGlobe3D = dynamic(() => import('./DatumGlobe3D'), { ssr: false, loading: () => null });
 
@@ -390,275 +391,282 @@ export function DatumGuided() {
 
   return (
     <div className="my-10">
-      <h3 className={H3}>דאטום: התאמת האליפסואיד לכדור הארץ</h3>
-      <p className={LEAD}>
-        <strong className="text-fg">דאטום</strong> מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ. כך אפשר לחשב מיקומים ביחס לאותו בסיס.
-      </p>
+      {/* laptop fit: the guided stage and the parameter cards are two screens, each shrunk on its own */}
+      <FitScreen name="datum" height={850} fitTallerStates className="">
+        <div>
+          <h3 className={H3}>דאטום: התאמת האליפסואיד לכדור הארץ</h3>
+          <p className={LEAD}>
+            <strong className="text-fg">דאטום</strong> מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ. כך אפשר לחשב מיקומים ביחס לאותו בסיס.
+          </p>
 
-      <div className="surface-elevated p-6 lg:p-8">
-        <div className="grid md:grid-cols-[32fr_68fr] gap-6 items-stretch">
-          {/* ── stations (right) ── */}
-          <div className="flex flex-col gap-1">
-            {STEPS.map((st, idx) => {
-              const i = idx as Step;
-              const active = step === i;
-              const open = expanded === i;
-              return (
-                <div
-                  key={st.title}
-                  className={cn(
-                    'relative isolate flex flex-col overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
-                    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                    active ? 'border-brand/45 bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-brand/30 hover:before:bg-brand/[0.03]',
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => clickStep(i)}
-                    aria-expanded={open}
-                    aria-controls={`datum-step-${i}`}
-                    aria-current={active ? 'step' : undefined}
-                    className="w-full p-4 text-start flex shrink-0 items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
-                  >
-                    <span
+          <div className="surface-elevated p-6 lg:p-8">
+            <div className="grid md:grid-cols-[32fr_68fr] gap-6 items-stretch">
+              {/* ── stations (right) ── */}
+              <div className="flex flex-col gap-1">
+                {STEPS.map((st, idx) => {
+                  const i = idx as Step;
+                  const active = step === i;
+                  const open = expanded === i;
+                  return (
+                    <div
+                      key={st.title}
                       className={cn(
-                        'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
-                        active ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted',
+                        'relative isolate flex flex-col overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
+                        'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                        active ? 'border-brand/45 bg-bg-elevated' : 'border-border bg-bg-elevated hover:border-brand/30 hover:before:bg-brand/[0.03]',
                       )}
                     >
-                      <span className="font-display text-base font-bold">{i + 1}</span>
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">{st.title}</div>
-                    </div>
-                    <motion.span
-                      animate={{ rotate: open ? 180 : 0 }}
-                      transition={{ duration: reduce ? 0 : 0.25 }}
-                      className={cn('shrink-0 inline-flex', open ? 'text-brand-dark' : 'text-fg-dim')}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </motion.span>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {open && (
-                      <motion.div
-                        key={`datum-panel-${i}`}
-                        id={`datum-step-${i}`}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: reduce ? 0 : 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="overflow-hidden"
+                      <button
+                        type="button"
+                        onClick={() => clickStep(i)}
+                        aria-expanded={open}
+                        aria-controls={`datum-step-${i}`}
+                        aria-current={active ? 'step' : undefined}
+                        className="w-full p-4 text-start flex shrink-0 items-center gap-3 cursor-pointer rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
                       >
-                        <div className="px-4 pb-4 pt-1">
-                          {i === 0 && (
-                            <>
-                              <p className={BODY}>האליפסואיד הוא מודל מתמטי של צורת כדור הארץ. הדאטום מגדיר כיצד הוא מעוגן לכדור הארץ — מה מיקומו ומה כיוונו.</p>
-                              <p className={cn(BODY, 'mt-3')}>בחרו משטח והשוו במודל בין פני השטח, הגיאואיד והאליפסואיד.</p>
-                            </>
+                        <span
+                          className={cn(
+                            'size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ease-snap',
+                            active ? 'bg-brand-dark text-bg-elevated' : 'bg-bg-accent text-fg-muted',
                           )}
-                          {i === 1 && (
-                            <>
-                              <p className={BODY}>הפעילו את ההדגמה כדי לראות כיצד הזזה, סיבוב ושינוי קנה מידה משפיעים על האליפסואיד. בכל שלב משתנה רק אחד מהם.</p>
-                              {manual ? (
-                                <Experiment
-                                  ref={labRef}
-                                  pose={lab.pose}
-                                  dispatch={dispatch}
-                                  reduce={reduce}
-                                  onParam={onParam}
-                                  onBack={() => {
-                                    focusNext.current = 'try';
-                                    setParam(null);
-                                    dispatch({ type: 'backToDemo', instant: reduce });
-                                  }}
-                                />
-                              ) : (
-                                <div ref={tryRef} className="mt-4">
-                                  <Button
-                                    variant="secondary"
-                                    size="md"
-                                    className="w-full px-4"
-                                    onClick={() => {
-                                      focusNext.current = 'lab';
-                                      dispatch({ type: 'tryYourself' });
-                                    }}
-                                  >
-                                    נסו בעצמכם
-                                  </Button>
-                                </div>
-                              )}
-                            </>
-                          )}
-                          {i === 2 && (
-                            <>
-                              <div role="radiogroup" aria-label="סוג הדאטום" className="grid grid-cols-2 gap-2 mb-3">
-                                {DATUM_MODES.map((m) => (
-                                  <button
-                                    key={m.id}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={state.mode === m.id}
-                                    onClick={() => dispatch({ type: 'setMode', mode: m.id, instant: reduce })}
-                                    className={cn(
-                                      'rounded-xl border px-3 py-2 font-display text-base font-bold text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                                      state.mode === m.id ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                                    )}
-                                  >
-                                    {m.label}
-                                  </button>
-                                ))}
-                              </div>
-                              <p className={BODY}>{DATUM_MODES.find((m) => m.id === state.mode)!.body}</p>
-                              <p className={cn(BODY, 'mt-3')}>השוו את הפער בתקריב בתוך האזור המסומן ומחוצה לו.</p>
-                            </>
-                          )}
+                        >
+                          <span className="font-display text-base font-bold">{i + 1}</span>
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">{st.title}</div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-            {!showExperiment && stationPanel}
-          </div>
+                        <motion.span
+                          animate={{ rotate: open ? 180 : 0 }}
+                          transition={{ duration: reduce ? 0 : 0.25 }}
+                          className={cn('shrink-0 inline-flex', open ? 'text-brand-dark' : 'text-fg-dim')}
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </motion.span>
+                      </button>
 
-          {/* ── the visualisation (left): the globe and linked close-up ── */}
-          <div className="min-w-0 flex flex-col">
-            <div
-              ref={stageRef}
-              role="group"
-              aria-label="דאטום: התאמת האליפסואיד לכדור הארץ"
-              aria-describedby="datum-stage-desc"
-              onPointerDown={() => setZoomOn(true)}
-              onFocus={() => setZoomOn(true)}
-              data-station={step}
-              data-look={look}
-              data-playback={step === 1 ? (manual ? 'manual' : lab.playback) : ''}
-              data-phase={activePhase ?? ''}
-              data-guide={guide?.kind ?? ''}
-              data-pose={`${pose.dx.toFixed(2)},${pose.dy.toFixed(2)},${pose.rot.toFixed(2)},${pose.s.toFixed(3)}`}
-              data-inspect={inspect.toFixed(3)}
-              className="relative h-[440px] w-full overflow-hidden rounded-xl bg-bg-elevated md:flex-1 md:min-h-[440px]"
-            >
-              <p id="datum-stage-desc" className="sr-only">
-                {description}
-              </p>
+                      <AnimatePresence initial={false}>
+                        {open && (
+                          <motion.div
+                            key={`datum-panel-${i}`}
+                            id={`datum-step-${i}`}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: reduce ? 0 : 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-4 pt-1">
+                              {i === 0 && (
+                                <>
+                                  <p className={BODY}>האליפסואיד הוא מודל מתמטי של צורת כדור הארץ. הדאטום מגדיר כיצד הוא מעוגן לכדור הארץ — מה מיקומו ומה כיוונו.</p>
+                                  <p className={cn(BODY, 'mt-3')}>בחרו משטח והשוו במודל בין פני השטח, הגיאואיד והאליפסואיד.</p>
+                                </>
+                              )}
+                              {i === 1 && (
+                                <>
+                                  <p className={BODY}>הפעילו את ההדגמה כדי לראות כיצד הזזה, סיבוב ושינוי קנה מידה משפיעים על האליפסואיד. בכל שלב משתנה רק אחד מהם.</p>
+                                  {manual ? (
+                                    <Experiment
+                                      ref={labRef}
+                                      pose={lab.pose}
+                                      dispatch={dispatch}
+                                      reduce={reduce}
+                                      onParam={onParam}
+                                      onBack={() => {
+                                        focusNext.current = 'try';
+                                        setParam(null);
+                                        dispatch({ type: 'backToDemo', instant: reduce });
+                                      }}
+                                    />
+                                  ) : (
+                                    <div ref={tryRef} className="mt-4">
+                                      <Button
+                                        variant="secondary"
+                                        size="md"
+                                        className="w-full px-4"
+                                        onClick={() => {
+                                          focusNext.current = 'lab';
+                                          dispatch({ type: 'tryYourself' });
+                                        }}
+                                      >
+                                        נסו בעצמכם
+                                      </Button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              {i === 2 && (
+                                <>
+                                  <div role="radiogroup" aria-label="סוג הדאטום" className="grid grid-cols-2 gap-2 mb-3">
+                                    {DATUM_MODES.map((m) => (
+                                      <button
+                                        key={m.id}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={state.mode === m.id}
+                                        onClick={() => dispatch({ type: 'setMode', mode: m.id, instant: reduce })}
+                                        className={cn(
+                                          'rounded-xl border px-3 py-2 font-display text-base font-bold text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                                          state.mode === m.id ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                                        )}
+                                      >
+                                        {m.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <p className={BODY}>{DATUM_MODES.find((m) => m.id === state.mode)!.body}</p>
+                                  <p className={cn(BODY, 'mt-3')}>השוו את הפער בתקריב בתוך האזור המסומן ומחוצה לו.</p>
+                                </>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+                {!showExperiment && stationPanel}
+              </div>
 
-              {show3d && (
-                <>
-                  {/* the static render under the canvas until the first 3-D frame — never an empty card */}
-                  {!ready && <StaticGlobe className="absolute inset-0" />}
-                  {activated && (
-                    <div className="absolute inset-0">
-                      <DatumGlobe3D
+              {/* ── the visualisation (left): the globe and linked close-up ── */}
+              <div className="min-w-0 flex flex-col">
+                <div
+                  ref={stageRef}
+                  role="group"
+                  aria-label="דאטום: התאמת האליפסואיד לכדור הארץ"
+                  aria-describedby="datum-stage-desc"
+                  onPointerDown={() => setZoomOn(true)}
+                  onFocus={() => setZoomOn(true)}
+                  data-station={step}
+                  data-look={look}
+                  data-playback={step === 1 ? (manual ? 'manual' : lab.playback) : ''}
+                  data-phase={activePhase ?? ''}
+                  data-guide={guide?.kind ?? ''}
+                  data-pose={`${pose.dx.toFixed(2)},${pose.dy.toFixed(2)},${pose.rot.toFixed(2)},${pose.s.toFixed(3)}`}
+                  data-inspect={inspect.toFixed(3)}
+                  className="relative h-[440px] w-full overflow-hidden rounded-xl bg-bg-elevated md:flex-1 md:min-h-[440px]"
+                >
+                  <p id="datum-stage-desc" className="sr-only">
+                    {description}
+                  </p>
+
+                  {show3d && (
+                    <>
+                      {/* the static render under the canvas until the first 3-D frame — never an empty card */}
+                      {!ready && <StaticGlobe className="absolute inset-0" />}
+                      {activated && (
+                        <div className="absolute inset-0">
+                          <DatumGlobe3D
+                            pose={pose}
+                            mode={mode}
+                            look={look}
+                            draggable={step === 1 && manual}
+                            guide={guide}
+                            inspect={inspect}
+                            altInspect={step === 2 ? PROBES[otherProbe] : null}
+                            markerDraggable={step !== 2}
+                            active={inView}
+                            reduce={reduce}
+                            zoomEnabled={zoomOn}
+                            capture={capture}
+                            showMarker
+                            refs={refs}
+                            onMovePose={onMovePose}
+                            onInspect={onInspect}
+                            onReady={onReady}
+                            onFail={onFail}
+                          />
+                        </div>
+                      )}
+                      {!capture && <GlobeOverlays refs={refs} emph={step === 0 ? state.surface : null} labels={SURFACE_LABEL} />}
+                      {!capture && (
+                        <InspectMarker
+                          markerRef={refs.marker}
+                          t={inspect}
+                          interactive={step !== 2}
+                          onKey={(dt) => dispatch({ type: 'setInspect', t: state.inspect + dt })}
+                        />
+                      )}
+                      {!capture && (
+                        <ProbeMarker markerRef={refs.markerAlt} shown={step === 2} onPick={() => dispatch({ type: 'setProbe', probe: otherProbe })} />
+                      )}
+                    </>
+                  )}
+
+                  {webgl === 'no' && (
+                    // No WebGL: the static render, plainly a picture, beside the live section the controls drive.
+                    // Both sit side by side across the top; the close-up keeps its slot below.
+                    <div className="absolute inset-x-0 top-0 grid grid-cols-2 items-start gap-3 pt-2">
+                      <SectionSvg
                         pose={pose}
                         mode={mode}
                         look={look}
-                        draggable={step === 1 && manual}
                         guide={guide}
-                        inspect={inspect}
-                        altInspect={step === 2 ? PROBES[otherProbe] : null}
-                        markerDraggable={step !== 2}
-                        active={inView}
-                        reduce={reduce}
-                        zoomEnabled={zoomOn}
-                        capture={capture}
-                        showMarker
-                        refs={refs}
-                        onMovePose={onMovePose}
-                        onInspect={onInspect}
-                        onReady={onReady}
-                        onFail={onFail}
+                        probes={step === 2 ? { on: PROBES[state.probe], off: PROBES[otherProbe] } : null}
+                        description={description}
+                        className="aspect-[3/2] w-full"
                       />
+                      <StaticGlobe className="relative block h-auto w-full" />
                     </div>
                   )}
-                  {!capture && <GlobeOverlays refs={refs} emph={step === 0 ? state.surface : null} labels={SURFACE_LABEL} />}
+
+                  {/* the linked close-up: lower left, beside the globe (illustration side, not mirrored) */}
                   {!capture && (
-                    <InspectMarker
-                      markerRef={refs.marker}
-                      t={inspect}
-                      interactive={step !== 2}
-                      onKey={(dt) => dispatch({ type: 'setInspect', t: state.inspect + dt })}
+                    <GapInset
+                      pose={pose}
+                      inspect={inspect}
+                      mode={mode}
+                      emph={step === 0 && state.surface !== 'surface' ? state.surface : step === 1 ? 'ellipsoid' : null}
+                      size={INSET.size}
+                      live={show3d && ready}
+                      className="absolute"
+                      style={{ left: INSET.left, bottom: INSET.bottom }}
                     />
                   )}
-                  {!capture && (
-                    <ProbeMarker markerRef={refs.markerAlt} shown={step === 2} onPick={() => dispatch({ type: 'setProbe', probe: otherProbe })} />
-                  )}
-                </>
-              )}
-
-              {webgl === 'no' && (
-                // No WebGL: the static render, plainly a picture, beside the live section the controls drive.
-                // Both sit side by side across the top; the close-up keeps its slot below.
-                <div className="absolute inset-x-0 top-0 grid grid-cols-2 items-start gap-3 pt-2">
-                  <SectionSvg
-                    pose={pose}
-                    mode={mode}
-                    look={look}
-                    guide={guide}
-                    probes={step === 2 ? { on: PROBES[state.probe], off: PROBES[otherProbe] } : null}
-                    description={description}
-                    className="aspect-[3/2] w-full"
-                  />
-                  <StaticGlobe className="relative block h-auto w-full" />
                 </div>
-              )}
-
-              {/* the linked close-up: lower left, beside the globe (illustration side, not mirrored) */}
-              {!capture && (
-                <GapInset
-                  pose={pose}
-                  inspect={inspect}
-                  mode={mode}
-                  emph={step === 0 && state.surface !== 'surface' ? state.surface : step === 1 ? 'ellipsoid' : null}
-                  size={INSET.size}
-                  live={show3d && ready}
-                  className="absolute"
-                  style={{ left: INSET.left, bottom: INSET.bottom }}
-                />
-              )}
+                {showExperiment && stationPanel}
+              </div>
             </div>
-            {showExperiment && stationPanel}
           </div>
         </div>
-      </div>
+      </FitScreen>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <div className="surface p-5 sm:p-6">
-          <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">הזזה, סיבוב וקנה מידה</h4>
-          <p className="text-base leading-relaxed text-fg mb-2">אחת השיטות להמרת קואורדינטות בין דאטומים משתמשת בשבעה פרמטרים:</p>
-          <ul className="space-y-1.5 text-base leading-relaxed text-fg">
-            <li>
-              <strong>שלושה פרמטרי הזזה</strong> – לאורך הצירים (<L>X, Y, Z</L>).
-            </li>
-            <li>
-              <strong>שלושה פרמטרי סיבוב</strong> – סביב הצירים (<L>X, Y, Z</L>).
-            </li>
-            <li>
-              <strong>פרמטר קנה מידה</strong> – שינוי אחיד בקנה המידה של הקואורדינטות.
-            </li>
-          </ul>
+      <FitScreen name="datum-parameters" height={233} className="mt-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="surface p-5 sm:p-6">
+            <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">הזזה, סיבוב וקנה מידה</h4>
+            <p className="text-base leading-relaxed text-fg mb-2">אחת השיטות להמרת קואורדינטות בין דאטומים משתמשת בשבעה פרמטרים:</p>
+            <ul className="space-y-1.5 text-base leading-relaxed text-fg">
+              <li>
+                <strong>שלושה פרמטרי הזזה</strong> – לאורך הצירים (<L>X, Y, Z</L>).
+              </li>
+              <li>
+                <strong>שלושה פרמטרי סיבוב</strong> – סביב הצירים (<L>X, Y, Z</L>).
+              </li>
+              <li>
+                <strong>פרמטר קנה מידה</strong> – שינוי אחיד בקנה המידה של הקואורדינטות.
+              </li>
+            </ul>
+          </div>
+          <div className="surface p-5 sm:p-6">
+            <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">ההבדל בין הדאטומים השונים</h4>
+            <p className="text-base leading-relaxed text-fg mb-2">דאטומים עשויים להשתמש באליפסואידים שונים ובעיגון שונה לכדור הארץ. בין ההבדלים:</p>
+            <ul className="space-y-1.5 text-base leading-relaxed text-fg">
+              <li>
+                גודל האליפסואיד (<L>a</L>)
+              </li>
+              <li>
+                פחיסות האליפסואיד (<L>f</L>)
+              </li>
+              <li>
+                מיקום האליפסואיד במרחב (<L>∆x, ∆y, ∆z</L>)
+              </li>
+            </ul>
+          </div>
         </div>
-        <div className="surface p-5 sm:p-6">
-          <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">ההבדל בין הדאטומים השונים</h4>
-          <p className="text-base leading-relaxed text-fg mb-2">דאטומים עשויים להשתמש באליפסואידים שונים ובעיגון שונה לכדור הארץ. בין ההבדלים:</p>
-          <ul className="space-y-1.5 text-base leading-relaxed text-fg">
-            <li>
-              גודל האליפסואיד (<L>a</L>)
-            </li>
-            <li>
-              פחיסות האליפסואיד (<L>f</L>)
-            </li>
-            <li>
-              מיקום האליפסואיד במרחב (<L>∆x, ∆y, ∆z</L>)
-            </li>
-          </ul>
-        </div>
-      </div>
+      </FitScreen>
     </div>
   );
 }

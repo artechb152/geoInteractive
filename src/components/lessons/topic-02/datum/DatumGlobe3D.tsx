@@ -52,6 +52,7 @@ import { bodyMaterial, clearDepthBefore, depthMaterial, earthMaterial, setUnifor
 import { InsetPass } from './DatumInset3D';
 import type { Guide, Look, Surface } from './datumDemo';
 import { INSET, MARKER_R, type ChipId, type OverlayRefs } from './datumOverlays';
+import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 
 /* ── palette: lesson tokens only (tailwind.config.ts) ── */
 const C = {
@@ -1060,6 +1061,9 @@ function OverlaySync({
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
   cameraOut.current = camera;
+  // the laptop fit's scale: screen rects are divided by it to land in the stage's own px (as `size`)
+  const fitScale = useRef(1);
+  fitScale.current = useLessonViewportScale();
   const v = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => invalidate(), [pose, inspect, altInspect, showMarker, capture, emph, invalidate]);
@@ -1105,11 +1109,14 @@ function OverlaySync({
       // a point on the wall is tested just in front of it (the wall itself is not an occluder)
       const seen = id === 'geoid' ? camPos.z > 0.05 && isVisible([a[0], a[1], a[2] + 0.5]) : isVisible(a);
       const visible = !capture && pr.front && seen && pr.x > 0 && pr.x < size.width && pr.y > 0 && pr.y < size.height;
+      const k = fitScale.current;
       const cr = chip.getBoundingClientRect();
-      const cx0 = cr.left - sr.left;
-      const cy0 = cr.top - sr.top;
-      const ex = pr.x > cx0 + cr.width ? cx0 + cr.width : pr.x < cx0 ? cx0 : cx0 + cr.width / 2;
-      const ey = pr.x > cx0 + cr.width || pr.x < cx0 ? cy0 + cr.height / 2 : pr.y > cy0 ? cy0 + cr.height : cy0;
+      const cx0 = (cr.left - sr.left) / k;
+      const cy0 = (cr.top - sr.top) / k;
+      const cw = cr.width / k;
+      const ch = cr.height / k;
+      const ex = pr.x > cx0 + cw ? cx0 + cw : pr.x < cx0 ? cx0 : cx0 + cw / 2;
+      const ey = pr.x > cx0 + cw || pr.x < cx0 ? cy0 + ch / 2 : pr.y > cy0 ? cy0 + ch : cy0;
       line.setAttribute('x1', ex.toFixed(1));
       line.setAttribute('y1', ey.toFixed(1));
       line.setAttribute('x2', pr.x.toFixed(1));
@@ -1218,6 +1225,8 @@ class GlobeBoundary extends Component<{ onFail: () => void; children: ReactNode 
 export default function DatumGlobe3D(props: DatumGlobeProps) {
   const { pose, mode, look, draggable, guide, inspect, altInspect, markerDraggable, active, reduce, zoomEnabled, capture, showMarker, refs, onMovePose, onInspect, onReady, onFail } = props;
   const controlsRef = useRef<OrbitControlsLike | null>(null);
+  // under the laptop fit a drag covers fewer screen px: the turn speed is divided by the scale
+  const fitScale = useLessonViewportScale();
   const markerDrag = useRef(markerDraggable);
   markerDrag.current = markerDraggable;
   const cameraRef = useRef<THREE.Camera | null>(null);
@@ -1312,6 +1321,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
       <Canvas
         flat
         dpr={[1, 2]}
+        resize={LESSON_FIT_CANVAS_RESIZE}
         camera={{ position: camPosition(CAM.az, CAM.el, CAM.dist), fov: FOV, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: capture }}
         frameloop={active ? 'demand' : 'never'}
@@ -1343,7 +1353,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
           enablePan={false}
           enableZoom={zoomEnabled}
           zoomSpeed={0.7}
-          rotateSpeed={0.7}
+          rotateSpeed={0.7 / fitScale}
           minDistance={CAM.dist * 0.82}
           maxDistance={CAM.dist * 1.35}
           minPolarAngle={Math.PI / 2 - 0.75}

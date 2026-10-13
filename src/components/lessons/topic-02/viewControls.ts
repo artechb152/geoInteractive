@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 
 /** Pointer travel (px) before a press becomes a drag: a shorter press stays a click (a station is picked). */
 const DRAG_START = 5;
@@ -9,7 +10,8 @@ const DRAG_START = 5;
  * DRAG_START px; only then is the pointer captured — so a short press on a
  * station pin is still that pin's click, and a drag that starts on a pin turns
  * the view and never picks a station when it ends (the release goes to the stage).
- * `onTurn` gets the movement (px) since the last call.
+ * `onTurn` gets the movement (px) since the last call, in the stage's own px
+ * (screen px ÷ the laptop fit's scale), so a drag turns the view as much at any fit.
  */
 export function useDragTurn(onTurn: (dx: number, dy: number) => void, onStart?: () => void) {
   const s = useRef<{ id: number; x0: number; y0: number; x: number; y: number; on: boolean } | null>(null);
@@ -18,6 +20,8 @@ export function useDragTurn(onTurn: (dx: number, dy: number) => void, onStart?: 
   turn.current = onTurn;
   const start = useRef(onStart);
   start.current = onStart;
+  const fit = useRef(1);
+  fit.current = useLessonViewportScale();
 
   const onPointerDown = useCallback((e: PointerEvent<HTMLElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -33,7 +37,7 @@ export function useDragTurn(onTurn: (dx: number, dy: number) => void, onStart?: 
       setDragging(true);
       start.current?.();
     }
-    turn.current(e.clientX - d.x, e.clientY - d.y);
+    turn.current((e.clientX - d.x) / fit.current, (e.clientY - d.y) / fit.current);
     d.x = e.clientX;
     d.y = e.clientY;
   }, []);

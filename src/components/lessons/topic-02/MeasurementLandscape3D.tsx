@@ -9,6 +9,7 @@ import { N_Z_PER_M, Z_PER_M, geoidZ, undulationAt, type Vec3 } from './measureme
 import type { StationId } from './measurementMission.data';
 import { MODEL_URLS, surveyLine3D, surveyPlaneLines, topZ, type HeightGrid, type LandCamera, type ModelState } from './measurementView';
 import { C_ACCENT, C_ELL, C_GEO, C_INK, C_SEA } from './referenceBodiesStyle';
+import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 
 /**
  * The turnable landscape (WebGL): the renders' own ground, live.
@@ -763,6 +764,7 @@ export default function MeasurementLandscape3D({
         aria-hidden
         flat
         dpr={[1, 2]}
+        resize={LESSON_FIT_CANVAS_RESIZE}
         frameloop={active ? 'demand' : 'never'}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         camera={{ manual: true, fov: cam.fovY, near: cam.near, far: cam.far, position: cam.eye, up: [0, 0, 1] }}

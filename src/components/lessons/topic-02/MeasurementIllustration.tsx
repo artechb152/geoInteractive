@@ -12,6 +12,7 @@ import { MeasurementSection, type BodyTab } from './MeasurementSection';
 import { landCamera, livePins, type LandView, type ModelState } from './measurementView';
 import { C_ACCENT } from './referenceBodiesStyle';
 import { ViewButton } from './StageControls';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 
 export type IllustrationLabels = {
   terrain: string;
@@ -200,20 +201,28 @@ export function MeasurementIllustration({
   // the marked area's frame flies from the body to the enlargement when it opens
   const [flight, setFlight] = useState<{ key: number; from: DOMRectLike; to: DOMRectLike } | null>(null);
   const flights = useRef(0);
+  const fitScale = useLessonViewportScale();
   useLayoutEffect(() => {
     if (phase !== 'zooming' || reduce || !gridRef.current || !stageRef.current || !colRef.current) {
       setFlight(null);
       return;
     }
+    // screen offsets ÷ the laptop fit's scale = the grid's own px
     const g = gridRef.current.getBoundingClientRect();
     const s = stageRef.current.getBoundingClientRect();
     const c = colRef.current.getBoundingClientRect();
+    const sx = (s.left - g.left) / fitScale;
+    const sy = (s.top - g.top) / fitScale;
     const p = patchView(ell, modelW, stageH, ellZoom);
     const from = p.front
-      ? { x: s.left - g.left + p.box.x, y: s.top - g.top + p.box.y, w: p.box.w, h: p.box.h }
-      : { x: s.left - g.left + modelW / 2 - 20, y: s.top - g.top + stageH / 2 - 10, w: 40, h: 20 };
+      ? { x: sx + p.box.x, y: sy + p.box.y, w: p.box.w, h: p.box.h }
+      : { x: sx + modelW / 2 - 20, y: sy + stageH / 2 - 10, w: 40, h: 20 };
     const z = zoomGeometry(zoomHeight(stageH), { left: SECTION.plotLeft, right: sectionW - SECTION.padRight }, ell).box;
-    setFlight({ key: ++flights.current, from, to: { x: c.left - g.left + z.x, y: c.top - g.top + z.y, w: z.w, h: z.h } });
+    setFlight({
+      key: ++flights.current,
+      from,
+      to: { x: (c.left - g.left) / fitScale + z.x, y: (c.top - g.top) / fitScale + z.y, w: z.w, h: z.h },
+    });
     // the angle at the moment of the click is where the frame leaves from
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, reduce]);
