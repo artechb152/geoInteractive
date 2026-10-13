@@ -7,6 +7,7 @@ import { EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
+import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { MOUNTAIN } from './contourMountain.data';
 import { ACCENT, CONTOUR_INK, CUT_COLOR, INDEX_LEVEL_M } from './contourMountainStyle';
 import { createTerrainMaterial, createTriplanarMaterial } from './contourMountainMaterials';
@@ -549,6 +550,11 @@ export default function ContourCake3D({
   const [rearranged, setRearranged] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const reduce = !!useReducedMotion();
+  // OrbitControls turn screen px into angle via the untransformed canvas size;
+  // dividing by the laptop-fit scale keeps the full-size feel per px of the
+  // shrunk card. Full screen leaves the scaled card, so it runs at 1.
+  const fitScale = useLessonViewportScale();
+  const controlsScale = fullscreen ? 1 : fitScale;
   const controlsRef = useRef(null) as ControlsRef;
   const gapsRef = useRef<number[]>(defaultGaps());
   const liftRef = useRef(0);
@@ -611,6 +617,9 @@ export default function ContourCake3D({
     >
       {activated && (
         <Canvas
+          // ContoursScene shrinks this card with LessonViewportFit on laptops:
+          // size the canvas from its untransformed box, not the scaled rect.
+          resize={LESSON_FIT_CANVAS_RESIZE}
           flat
           shadows={{ type: THREE.PCFShadowMap }}
           camera={{ position: START_POSITION, fov: FOV, near: 0.01, far: 80 }}
@@ -675,6 +684,8 @@ export default function ContourCake3D({
             target={START_TARGET}
             enablePan
             screenSpacePanning
+            rotateSpeed={1 / controlsScale}
+            panSpeed={1 / controlsScale}
             enableZoom
             zoomToCursor
             zoomSpeed={0.9}

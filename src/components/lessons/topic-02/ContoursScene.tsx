@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { SceneHeader } from './SceneHeader';
 import { ContoursDensitySection } from './ContoursDensitySection';
+import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import type { MountainView } from './ContourCake3D';
 import { MOUNTAIN } from './contourMountain.data';
@@ -40,6 +41,23 @@ const VIEWS: { id: MountainView; label: string; caption: string }[] = [
 // The density section's data (SHAPES), tabs, map and glossary moved verbatim
 // into ContoursDensitySection.tsx / ContoursShapeMap.tsx.
 
+/**
+ * Laptop fit — each of the two screens (3D model + map card; density section)
+ * is its own LessonViewportFit, laid out at the 1920×1080 reference width (the
+ * section's content box: max-w-6xl 1152 − lg:px-8) and shrunk uniformly where
+ * it doesn't fit. The first screen's top is measured ('auto'); the second is
+ * read after scrolling it up under the fixed site header (--header-h, 5rem
+ * from lg), so its reserve is that header plus a 24px gap. 24px below both.
+ * SceneHeader's clamp(…3.8vw…) title is already at its 46px cap from 1210px.
+ */
+const FIT_WIDTH = 1088;
+const FIT_TOP = 80 + 24;
+const FIT_BOTTOM = 24;
+/** Heights at FIT_WIDTH, px (measured 2026-10-13). The model screen is the same in all three views;
+    the density screen is tallest on „מצוק” (longest description) — keeps the scale steady across tabs. */
+const FIT_HEIGHT_MODEL = 852;
+const FIT_HEIGHT_DENSITY = 814;
+
 export function ContoursScene() {
   const [activeRing, setActiveRing] = useState<number | null>(null);
   const [view, setView] = useState<MountainView>('whole');
@@ -50,84 +68,97 @@ export function ContoursScene() {
 
   return (
     <section id="scene-contours" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <SceneHeader
-        step="02.4"
-        title="קווי גובה: כיצד קוראים את צורת השטח במפה?"
-        intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה. בהדמיה ההר מחולק לשכבות אופקיות: גבול החיתוך של כל שכבה יוצר קו גובה. עברו בין התצוגות ובחנו את הקשר בין המודל למפה."
-      />
+      {/* ── Screen 1: the 3D model and its contour map ── */}
+      <LessonViewportFit referenceWidth={FIT_WIDTH} referenceHeight={FIT_HEIGHT_MODEL} reserveBottom={FIT_BOTTOM}>
+        <SceneHeader
+          step="02.4"
+          title="קווי גובה: כיצד קוראים את צורת השטח במפה?"
+          intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה. בהדמיה ההר מחולק לשכבות אופקיות: גבול החיתוך של כל שכבה יוצר קו גובה. עברו בין התצוגות ובחנו את הקשר בין המודל למפה."
+        />
 
-      <div className="surface-elevated p-6 lg:p-8 mb-6">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          <div className="space-y-3">
-            <div className="text-sm font-display font-semibold text-fg-muted">
-              מודל תלת־ממדי · חלוקה לשכבות גובה
-            </div>
-            <div className="p-4">
-              <ContourCake3D view={view} viewNonce={viewNonce} activeRing={activeRing} setActiveRing={setActiveRing} />
-            </div>
-            <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="אופן הצגת ההר">
-              {VIEWS.map((v, i) => (
-                <button
-                  key={v.id}
-                  type="button"
-                  aria-pressed={view === v.id}
-                  onClick={() => {
-                    setView(v.id);
-                    setViewNonce((n) => n + 1);
-                  }}
-                  className={cn(
-                    'rounded-xl border px-3.5 py-2 font-display font-bold text-sm text-fg transition-colors duration-200 ease-snap cursor-pointer flex items-center gap-2',
-                    view === v.id
-                      ? 'border-accent bg-accent/10'
-                      : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  )}
-                >
-                  <span
+        {/* No mb-6: it collapsed into the density title's mt-12, which now sits on screen 2's wrapper. */}
+        <div className="surface-elevated p-6 lg:p-8">
+          <div className="grid lg:grid-cols-2 gap-8 items-start">
+            <div className="space-y-3">
+              <div className="text-sm font-display font-semibold text-fg-muted">
+                מודל תלת־ממדי · חלוקה לשכבות גובה
+              </div>
+              <div className="p-4">
+                <ContourCake3D view={view} viewNonce={viewNonce} activeRing={activeRing} setActiveRing={setActiveRing} />
+              </div>
+              <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="אופן הצגת ההר">
+                {VIEWS.map((v, i) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    aria-pressed={view === v.id}
+                    onClick={() => {
+                      setView(v.id);
+                      setViewNonce((n) => n + 1);
+                    }}
                     className={cn(
-                      'size-6 rounded-full text-[13px] tabular-nums flex items-center justify-center transition-colors duration-200',
-                      view === v.id ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                      'rounded-xl border px-3.5 py-2 font-display font-bold text-sm text-fg transition-colors duration-200 ease-snap cursor-pointer flex items-center gap-2',
+                      view === v.id
+                        ? 'border-accent bg-accent/10'
+                        : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                     )}
-                    aria-hidden
                   >
-                    {i + 1}
-                  </span>
-                  {v.label}
-                </button>
-              ))}
+                    <span
+                      className={cn(
+                        'size-6 rounded-full text-[13px] tabular-nums flex items-center justify-center transition-colors duration-200',
+                        view === v.id ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                      )}
+                      aria-hidden
+                    >
+                      {i + 1}
+                    </span>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-base text-fg leading-relaxed text-center min-h-[3.25rem]" aria-live="polite">
+                {viewInfo.caption}
+              </p>
+              <div className="text-sm text-fg-muted leading-snug text-center">
+                {view === 'top'
+                  ? 'בתצוגה זו הצפון כלפי מעלה · השתמשו בגלגלת לשינוי התקריב'
+                  : view === 'sliced'
+                    ? 'גררו שכבה לשינוי גובהה · גלגלת לשינוי התקריב · גררו את הרקע לסיבוב'
+                    : 'גררו לסיבוב · גלגלת לשינוי התקריב · גררו בלחצן הימני להזזה'}
+              </div>
             </div>
-            <p className="text-base text-fg leading-relaxed text-center min-h-[3.25rem]" aria-live="polite">
-              {viewInfo.caption}
-            </p>
-            <div className="text-sm text-fg-muted leading-snug text-center">
-              {view === 'top'
-                ? 'בתצוגה זו הצפון כלפי מעלה · השתמשו בגלגלת לשינוי התקריב'
-                : view === 'sliced'
-                  ? 'גררו שכבה לשינוי גובהה · גלגלת לשינוי התקריב · גררו את הרקע לסיבוב'
-                  : 'גררו לסיבוב · גלגלת לשינוי התקריב · גררו בלחצן הימני להזזה'}
-            </div>
-          </div>
 
-          <div className="space-y-3">
-            <div className="text-sm font-display font-semibold text-fg-muted">
-              מבט מלמעלה · קווי הגובה במפה
-            </div>
-            <div className="p-4">
-              <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
-            </div>
-            <MapLegend />
-            <div className="text-sm text-fg-muted leading-snug text-center">
-              העבירו את הסמן על המפה כדי להדגיש את השכבה המתאימה במודל
+            <div className="space-y-3">
+              <div className="text-sm font-display font-semibold text-fg-muted">
+                מבט מלמעלה · קווי הגובה במפה
+              </div>
+              <div className="p-4">
+                <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
+              </div>
+              <MapLegend />
+              <div className="text-sm text-fg-muted leading-snug text-center">
+                העבירו את הסמן על המפה כדי להדגיש את השכבה המתאימה במודל
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </LessonViewportFit>
 
-      <h3 className="mt-12 mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-        הערכת תלילות לפי צפיפות קווי הגובה
-      </h3>
+      {/* ── Screen 2: steepness from contour density ── */}
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={FIT_HEIGHT_DENSITY}
+        reserveTop={FIT_TOP}
+        reserveBottom={FIT_BOTTOM}
+        className="mt-12"
+      >
+        <h3 className="mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+          הערכת תלילות לפי צפיפות קווי הגובה
+        </h3>
 
-      {/* Tabs + info card + contour map/profile + glossary — see ContoursDensitySection. */}
-      <ContoursDensitySection />
+        {/* Tabs + info card + contour map/profile + glossary — see ContoursDensitySection. */}
+        <ContoursDensitySection />
+      </LessonViewportFit>
     </section>
   );
 }
