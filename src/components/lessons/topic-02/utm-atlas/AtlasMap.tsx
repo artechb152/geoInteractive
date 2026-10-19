@@ -44,6 +44,7 @@ export function AtlasMap({
   basemap,
   marks,
   topLabels,
+  showTop = true,
   chips = [],
   children,
   frameRef,
@@ -60,6 +61,8 @@ export function AtlasMap({
   basemap: Basemap | null;
   marks: Marks;
   topLabels: TopLabel[];
+  /** The row of labels above the frame (off for the small world locator of the metres view). */
+  showTop?: boolean;
   chips?: Chip[];
   children?: ReactNode;
   frameRef: RefObject<HTMLDivElement | null>;
@@ -137,7 +140,7 @@ export function AtlasMap({
   return (
     <div className="min-w-0" data-map={kind}>
       {/* labels above the frame: zone numbers (world) or boundary longitudes (enlargement) */}
-      <div dir="ltr" aria-hidden className="relative h-6 font-display text-[13px] leading-6">
+      <div dir="ltr" aria-hidden className={cn('relative h-6 font-display text-[13px] leading-6', !showTop && 'hidden')}>
         {topLabels.map((t) => (
           <span
             key={t.key}

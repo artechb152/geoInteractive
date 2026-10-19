@@ -22,7 +22,7 @@ export type Flow = {
   reached: number; // furthest state index reached
   view: number; // state index on screen
   answers: Partial<Record<StateId, Answer>>; // the prediction that led INTO each state
-  asking: boolean; // the next prediction is open ("המשך" pressed)
+  asking: boolean; // the next prediction is open (at the start, and after "לשלב הבא")
 };
 export type FlowAction =
   | { type: 'continue' }
@@ -30,7 +30,8 @@ export type FlowAction =
   | { type: 'view'; index: number }
   | { type: 'reset' };
 
-export const INITIAL_FLOW: Flow = { reached: 0, view: 0, answers: {}, asking: false };
+/** The first question is open from the start: the bare hill is on show, the grove is next. */
+export const INITIAL_FLOW: Flow = { reached: 0, view: 0, answers: {}, asking: true };
 const LAST = STATES.length - 1;
 
 export function flowReducer(s: Flow, a: FlowAction): Flow {

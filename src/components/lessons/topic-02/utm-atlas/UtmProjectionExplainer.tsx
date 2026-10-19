@@ -49,7 +49,8 @@ const STEP_TEXT: Record<Step, ReactNode> = {
   ),
 };
 
-export function UtmProjectionExplainer() {
+/** `header` — the block's heading and lead, set at the top of the card (one envelope per activity). */
+export function UtmProjectionExplainer({ header }: { header?: ReactNode }) {
   const [step, setStep] = useState<Step>('globe');
   const uid = useId();
   const { onKeyDown, register } = useRovingKeys(STEPS, step, setStep);
@@ -69,63 +70,66 @@ export function UtmProjectionExplainer() {
   }, [land, frame]);
 
   return (
-    <div className="surface-elevated mb-6 grid items-center gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.55fr)] lg:gap-10 lg:p-8" data-activity="utm-projection">
-      <div className="min-w-0">
-        <h4 className={cn(HEADING, 'mb-4')}>מהכדור למפה: היטל מרקטור רוחבי</h4>
-        <div role="tablist" aria-orientation="vertical" aria-label="שלבי ההיטל" className="flex flex-col gap-2" onKeyDown={onKeyDown}>
-          {STEPS.map((s, i) => {
-            const on = s === step;
-            return (
-              <button
-                key={s}
-                ref={register(s)}
-                type="button"
-                role="tab"
-                id={`${uid}-tab-${s}`}
-                aria-selected={on}
-                aria-controls={`${uid}-panel`}
-                tabIndex={on ? 0 : -1}
-                data-step={s}
-                onClick={() => setStep(s)}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl border px-3 py-1.5 text-start transition-colors duration-200 ease-snap motion-reduce:transition-none cursor-pointer',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
-                  on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                )}
-              >
-                <span
+    <div className="surface-elevated mb-6 p-6 lg:p-8" data-activity="utm-projection">
+      {header}
+      <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.55fr)] lg:gap-10">
+        <div className="min-w-0">
+          <h4 className={cn(HEADING, 'mb-4')}>מהכדור למפה: היטל מרקטור רוחבי</h4>
+          <div role="tablist" aria-orientation="vertical" aria-label="שלבי ההיטל" className="flex flex-col gap-2" onKeyDown={onKeyDown}>
+            {STEPS.map((s, i) => {
+              const on = s === step;
+              return (
+                <button
+                  key={s}
+                  ref={register(s)}
+                  type="button"
+                  role="tab"
+                  id={`${uid}-tab-${s}`}
+                  aria-selected={on}
+                  aria-controls={`${uid}-panel`}
+                  tabIndex={on ? 0 : -1}
+                  data-step={s}
+                  onClick={() => setStep(s)}
                   className={cn(
-                    'grid size-8 shrink-0 place-items-center rounded-xl font-display text-sm font-bold transition-colors duration-200 motion-reduce:transition-none',
-                    on ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                    'flex items-center gap-3 rounded-xl border px-3 py-1.5 text-start transition-colors duration-200 ease-snap motion-reduce:transition-none cursor-pointer',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
+                    on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   )}
                 >
-                  <L>{i + 1}</L>
-                </span>
-                <span className="min-w-0 flex-1 font-display text-base font-bold leading-tight text-fg">{TITLE[s]}</span>
-              </button>
-            );
-          })}
+                  <span
+                    className={cn(
+                      'grid size-8 shrink-0 place-items-center rounded-xl font-display text-sm font-bold transition-colors duration-200 motion-reduce:transition-none',
+                      on ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+                    )}
+                  >
+                    <L>{i + 1}</L>
+                  </span>
+                  <span className="min-w-0 flex-1 font-display text-base font-bold leading-tight text-fg">{TITLE[s]}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div id={`${uid}-panel`} role="tabpanel" tabIndex={0} aria-labelledby={`${uid}-tab-${step}`} className="mt-4 rounded-xl bg-bg-accent/60 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <p className={BODY} data-step-text={step}>
+              {STEP_TEXT[step]}
+            </p>
+          </div>
         </div>
-        <div id={`${uid}-panel`} role="tabpanel" tabIndex={0} aria-labelledby={`${uid}-tab-${step}`} className="mt-4 rounded-xl bg-bg-accent/60 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-          <p className={BODY} data-step-text={step}>
-            {STEP_TEXT[step]}
-          </p>
-        </div>
-      </div>
 
-      <figure className="min-w-0">
-        <div dir="ltr" role="img" aria-label={FIGURE_LABEL[step]} className="relative overflow-hidden rounded-xl border border-border/70 bg-paper-card [container-type:inline-size]">
-          <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" aria-hidden>
-            <Layer on={step !== 'map'}>
-              <GlobeScene landPath={globeLand} cylinder={step === 'cylinder'} />
-            </Layer>
-            <Layer on={step === 'map'}>
-              <MapScene landPath={tmLand} frame={frame} />
-            </Layer>
-          </svg>
-          <Labels step={step} frame={frame} />
-        </div>
-      </figure>
+        <figure className="min-w-0">
+          <div dir="ltr" role="img" aria-label={FIGURE_LABEL[step]} className="relative overflow-hidden rounded-xl border border-border/70 bg-paper-card [container-type:inline-size]">
+            <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" aria-hidden>
+              <Layer on={step !== 'map'}>
+                <GlobeScene landPath={globeLand} cylinder={step === 'cylinder'} />
+              </Layer>
+              <Layer on={step === 'map'}>
+                <MapScene landPath={tmLand} frame={frame} />
+              </Layer>
+            </svg>
+            <Labels step={step} frame={frame} />
+          </div>
+        </figure>
+      </div>
     </div>
   );
 }

@@ -22,14 +22,14 @@ const CHECKPOINTS: Checkpoint[] = [
 // Laptop fit — every screen of this part is laid out at the 1920×1080 reference
 // width and shrunk uniformly (never enlarged) to the room the site header and the
 // lesson side nav leave. width = the section's content box at the reference
-// viewport (max-w-6xl 1152 − 2 × lg:px-8). Screens 2–4 sit below the fold, so
+// viewport (max-w-lesson 1408 − 2 × lg:px-8). Screens 2–4 sit below the fold, so
 // their height budget is one viewport minus the fixed site header (--header-h,
 // 80px) and the 24px page inset above and below, not their page offset.
-const PLANNING_FIT = { width: 1088, reserveTop: 104, reserveBottom: 24 } as const;
+const PLANNING_FIT = { width: 1344, reserveTop: 104, reserveBottom: 24 } as const;
 
 export function PlanningScene() {
 return (
- <section id="scene-planning" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <section id="scene-planning" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
  {/* Screen 1 · title + concept. Each screen of this part shrinks on its own, like a slide (see PLANNING_FIT). */}
  <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveBottom={PLANNING_FIT.reserveBottom}>
  <SceneHeader
@@ -125,7 +125,7 @@ const onListKey = (e: React.KeyboardEvent<HTMLOListElement>) => {
 };
 
 return (
- <div data-qa="route-builder" className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 items-start">
+ <div data-qa="route-builder" className="surface-elevated p-6 lg:p-8 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 items-start">
  <div>
  <div id={titleId} className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
  סיפור דרך בחמש נקודות
@@ -151,7 +151,7 @@ return (
  onClick={() => go(i)}
  aria-current={isActive ? 'step' : undefined}
  className={cn(
- // the list sits on the textured page: tint is a layer over a solid white base (same recipe as lesson 2's on-page options)
+ // tint is a layer over a solid white base (same recipe as lesson 2's options)
  'group relative isolate w-full p-4 text-start flex items-start gap-3 rounded-xl border bg-bg-elevated cursor-pointer transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
  isActive
    ? 'border-accent before:bg-accent/10'
@@ -191,7 +191,7 @@ isActive
  </ol>
  </div>
 
- <div className="lg:sticky lg:top-24 surface-elevated p-5 sm:p-6">
+ <div className="lg:sticky lg:top-24">
  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
  <span className="text-sm font-display font-semibold text-fg-muted">
  סיפור דרך · 5 נקודות · 4 קטעי דרך

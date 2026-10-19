@@ -86,16 +86,16 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
 
 // Laptop fit (LessonViewportFit): each of the two screens of this part is
 // shrunk uniformly, like a slide, from its 1920×1080 composition. The section
-// keeps its max-w-6xl and lg:px-8, so the reference width is the section's
-// content box there (1152 − 2·32). Heights are the screens measured at that
-// width: screen 1 = header 151 + mb-8 + accordion/stage row 604 (the row
+// uses max-w-lesson and lg:px-8, so the reference width is the section's
+// content box there (1408 − 2·32). Heights are the screens measured at that
+// width (2026-10-19): screen 1 = header + mb-8 + accordion/stage row (the row
 // height is the same with every step open; all-closed is shorter), screen 2
-// = h3 + 2×2 info cards + ReadyCallout. Any column narrower than 1088px
+// = h3 + 2×2 info cards + ReadyCallout. Any column narrower than 1344px
 // (1440 with the side nav: 1052px) shrinks the screens too, so they keep the
 // 1920 line breaks instead of reflowing.
-const FIT_WIDTH = 1088;
-const FIT_HEIGHT_STEPS = 787;
-const FIT_HEIGHT_CASES = 658;
+const FIT_WIDTH = 1344;
+const FIT_HEIGHT_STEPS = 777;
+const FIT_HEIGHT_CASES = 632;
 // Viewport px above a screen when it is read in place: the site header
 // (--header-h, 5rem from lg) plus the shell's 24px top gap that sits above
 // the section at scroll 0. Mirrored below screen 1, whose bottom would
@@ -117,7 +117,7 @@ export function OnboardingScene() {
   };
 
   return (
-    <section id="scene-onboarding" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-onboarding" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <LessonViewportFit
         referenceWidth={FIT_WIDTH}
         referenceHeight={FIT_HEIGHT_STEPS}
@@ -128,7 +128,8 @@ export function OnboardingScene() {
           intro="כיצד מגיעים מנקודת המוצא ליעד בשטח לא מוכר? נבחן ארבעה שלבים: תכנון המסלול, קביעת כיוון, בדיקת המיקום בתנועה ואימות ההגעה. בחרו בכל שלב כדי לעקוב אחר ההסבר וההמחשה."
         />
 
-        <div className="grid md:grid-cols-[2fr_3fr] gap-6">
+        {/* One card holds the four stages and the illustration they drive (one envelope per activity). */}
+        <div className="surface-elevated p-5 sm:p-6 grid md:grid-cols-[2fr_3fr] gap-6">
           <div className="space-y-3">
             {STEPS.map((s, i) => {
               const active = phase === s.id;
@@ -223,7 +224,7 @@ export function OnboardingScene() {
             })}
           </div>
 
-          <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px]">
+          <div className="rounded-xl bg-bg-accent relative overflow-hidden min-h-[280px]">
             <MissionStage phase={phase} />
           </div>
         </div>

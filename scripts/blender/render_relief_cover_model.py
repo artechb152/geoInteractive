@@ -21,7 +21,8 @@ Regions: DRAPE in reliefCoverMesh.ts. Sun: SUN_AZ / SUN_EL below (the page has n
         --python scripts/blender/render_relief_cover_model.py -- [pass ...]
     node scripts/blender/package_relief_cover_model.mjs
 
-Ground textures: Poly Haven (CC0) — rocky_terrain_03, dry_ground_rocks, rock_face — fetched once into qa-output/relief-cover-model/polyhaven/.
+Ground: procedural (soil, stones, limestone ledges) plus drainage from erosion_image(); the quarry's
+cut faces use Poly Haven (CC0) rock_face, fetched once into qa-output/relief-cover-model/polyhaven/.
 Quick look: RCM_PX=0.25 RCM_SAMPLES=0.25 renders small drafts. `look` renders a small
 oblique preview of the sheet (look-dev only).
 """
@@ -42,10 +43,10 @@ os.makedirs(PH, exist_ok=True)
 
 PXF = float(os.environ.get('RCM_PX', 1))
 SAMPLE_SCALE = float(os.environ.get('RCM_SAMPLES', 1))
-# from north, clockwise; degrees above the horizon. A late-morning aerial: high enough that no
-# slope of the VEX-high hill falls into its own black shadow, from the south-west so the slopes
-# facing the page's opening view are lit and the relief still reads by light and shade.
-SUN_AZ, SUN_EL = 225.0, 55.0
+# from north, clockwise; degrees above the horizon. A mid-morning aerial: low enough to model the
+# relief and its rills by light and shade (a weak sky and a shadowless fill keep the shade open),
+# from the south-west so the slopes facing the page's opening view are lit.
+SUN_AZ, SUN_EL = 225.0, float(os.environ.get('RCM_SUN_EL', 42.0))
 
 M = json.load(open(os.path.join(DATA, 'model.json'), encoding='utf-8'))
 VEX, DATUM = M['vex'], M['datum']
@@ -61,7 +62,6 @@ def W(x, y, h, lift=0.0):
 
 
 # ── Textures ────────────────────────────────────────────────────────────────
-PH_SETS = {'rocky_terrain_03': 90.0, 'dry_ground_rocks': 4.0, 'rock_face': 2.38}   # tile size (m)
 
 
 def ph(name):
@@ -74,20 +74,6 @@ def ph(name):
 
 
 # ── Node helpers (on top of render_relief_cover's) ──────────────────────────
-def uv_vec(ns, lk, tile, deg=0.0, off=(0.0, 0.0)):
-    """The ground's metre UV, scaled to one tile of `tile` metres, turned and shifted."""
-    u = ns.new('ShaderNodeUVMap'); u.uv_map = 'uv'
-    v = u.outputs[0]
-    if deg:
-        r = ns.new('ShaderNodeVectorRotate'); r.rotation_type = 'Z_AXIS'; r.inputs['Angle'].default_value = math.radians(deg)
-        lk.new(v, r.inputs['Vector']); v = r.outputs[0]
-    m = ns.new('ShaderNodeMapping')
-    m.inputs['Scale'].default_value = (1 / tile, 1 / tile, 1)
-    m.inputs['Location'].default_value = (off[0], off[1], 0)
-    lk.new(v, m.inputs['Vector'])
-    return m.outputs[0]
-
-
 def img(ns, lk, path, vec, proj='FLAT'):
     t = ns.new('ShaderNodeTexImage'); t.image = rc.image(path); t.projection = proj
     if proj == 'BOX':
@@ -138,65 +124,197 @@ def math_(ns, lk, op, a, b=None, c=None, clamp=False):
 
 
 # ── Materials ───────────────────────────────────────────────────────────────
-def ground_material():
-    """Summer hill country: straw-dry grass, patches of terra-rossa soil, grey limestone
-    breaking through on the steeper ground — no green (inside this lesson green means
-    vegetation). Where the quarry cut (attribute 'rock'): fresh pale limestone and a dusty yard."""
-    m = rc.new_material('Ground', '#B9A57A', rough=.95)
+def voronoi(ns, lk, scale_m, w=0.0, warp=None):
+    """F1 distance of a 4D Voronoi (cells `scale_m` across), optionally on warped coordinates."""
+    tc = ns.new('ShaderNodeTexCoord')
+    v = ns.new('ShaderNodeTexVoronoi'); v.voronoi_dimensions = '4D'
+    v.inputs['Scale'].default_value = 1 / scale_m; v.inputs['Randomness'].default_value = 1; v.inputs['W'].default_value = w
+    vec = tc.outputs['Object']
+    if warp is not None:
+        add = ns.new('ShaderNodeVectorMath'); add.operation = 'MULTIPLY_ADD'
+        lk.new(warp, add.inputs[0]); add.inputs[1].default_value = (scale_m * .6,) * 3; lk.new(vec, add.inputs[2])
+        vec = add.outputs[0]
+    lk.new(vec, v.inputs['Vector'])
+    return v.outputs['Distance']
+
+
+def smoothstep_(ns, lk, v, lo, hi):
+    mr = ns.new('ShaderNodeMapRange'); mr.clamp = True; mr.interpolation_type = 'SMOOTHSTEP'
+    mr.inputs['From Min'].default_value = lo; mr.inputs['From Max'].default_value = hi
+    lk.new(v, mr.inputs['Value'])
+    return mr.outputs[0]
+
+
+FLOW_P = float(os.environ.get('RCM_FLOW_P', 9.0))
+
+
+def erosion_image(step=1.0, k=None, cap=4.0):
+    """Drainage for the bake: over the `mid` region, every 1 m, the hill (unquarried) is roughened
+    a little, water is routed downhill (D8) and each cell is cut by stream power, √(area) × slope.
+    Dendritic rills and gullies follow — what makes a hillside read as real ground. It only shades
+    and colours the renders (bump); the live mesh and the map's contours keep the smooth hill.
+    Image (non-colour, float): R = incision depth (m), G = drainage area (log, 0…1)."""
+    k = float(os.environ.get('RCM_EROSION', .3)) if k is None else k
+    reg = M['drape']['mid']
+    xs = np.arange(reg['x0'], reg['x1'] + 1e-6, step)
+    ys = np.arange(reg['y0'], reg['y1'] + 1e-6, step)
+
+    def lerp_idx(g, v):
+        i = np.clip(np.searchsorted(g, v) - 1, 0, len(g) - 2)
+        return i, np.clip((v - g[i]) / (g[i + 1] - g[i]), 0, 1)
+    ix, fx = lerp_idx(GX, xs)
+    iy, fy = lerp_idx(GY, ys)
+    H0 = GROUND[:, :, 0].astype(np.float64)
+    top = H0[iy][:, ix] * (1 - fx) + H0[iy][:, ix + 1] * fx
+    bot = H0[iy + 1][:, ix] * (1 - fx) + H0[iy + 1][:, ix + 1] * fx
+    h = top * (1 - fy[:, None]) + bot * fy[:, None]
+    rng = np.random.default_rng(7)
+    def smooth_noise(r):
+        a = rng.standard_normal(h.shape)
+        for _ in range(3):
+            a = rc.box_blur(a, r)
+        return a / (a.std() + 1e-9)
+    hr = h + 1.1 * smooth_noise(7) + .35 * smooth_noise(2)
+    ny, nx = hr.shape
+    # multiple-flow routing: each cell passes its water to every lower neighbour in proportion to
+    # drop^FLOW_P — channels branch and merge as on real ground (single-direction D8 draws straight,
+    # parallel lines on a smooth hill)
+    pad = np.pad(hr, 1, mode='edge')
+    idx = np.arange(ny * nx).reshape(ny, nx)
+    pidx = np.pad(idx, 1, mode='edge')
+    best = np.zeros_like(hr)
+    recvs, wts = [], []
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            if not di and not dj:
+                continue
+            d = math.hypot(di, dj) * step
+            drop = (hr - pad[1 + di:1 + di + ny, 1 + dj:1 + dj + nx]) / d
+            best = np.maximum(best, drop)
+            recvs.append(pidx[1 + di:1 + di + ny, 1 + dj:1 + dj + nx].ravel())
+            wts.append(np.where(drop > 0, drop, 0.0).ravel() ** FLOW_P)
+    W = np.stack(wts)
+    tot = W.sum(0)
+    W = np.where(tot > 0, W / np.where(tot > 0, tot, 1), 0)
+    R = np.stack(recvs)
+    order = np.argsort(-hr.ravel())
+    acc = np.full(ny * nx, step * step)
+    Rl, Wl = R.T.tolist(), W.T.tolist()
+    accl = acc.tolist()
+    for i in order.tolist():
+        a = accl[i]
+        for r, w in zip(Rl[i], Wl[i]):
+            if w:
+                accl[r] += a * w
+    A = np.array(accl).reshape(ny, nx)
+    cut = np.clip(k * np.sqrt(A) * best, 0, cap)
+    cut = rc.box_blur(cut, 1)
+    area = np.clip(np.log10(A) / 4.0, 0, 1)
+    print('erosion', nx, ny, 'max cut', round(float(cut.max()), 2), 'p99', round(float(np.percentile(cut, 99)), 2), flush=True)
+    px = np.zeros((ny, nx, 4), np.float32)
+    px[..., 0] = cut[::-1]           # image rows run south → north (Blender's v = 0 at the bottom)
+    px[..., 1] = area[::-1]
+    px[..., 3] = 1
+    im = bpy.data.images.new('Erosion', nx, ny, float_buffer=True)
+    im.colorspace_settings.name = 'Non-Color'
+    im.pixels.foreach_set(px.ravel())
+    w, hh = reg['x1'] - reg['x0'], reg['y1'] - reg['y0']
+    return im, (1 / w, 1 / hh, (CX - reg['x0']) / w, (reg['y1'] - CY) / hh)
+
+
+def erosion_sample(ns, lk, im, xf):
+    """The erosion image at this point of the ground: (incision m, drainage 0…1, inside 0…1)."""
+    tc = ns.new('ShaderNodeTexCoord')
+    mp = ns.new('ShaderNodeMapping')
+    mp.inputs['Scale'].default_value = (xf[0], xf[1], 1); mp.inputs['Location'].default_value = (xf[2], xf[3], 0)
+    lk.new(tc.outputs['Object'], mp.inputs['Vector'])
+    t = ns.new('ShaderNodeTexImage'); t.image = im; t.interpolation = 'Cubic'; t.extension = 'EXTEND'
+    lk.new(mp.outputs[0], t.inputs['Vector'])
+    sep = ns.new('ShaderNodeSeparateColor'); lk.new(t.outputs['Color'], sep.inputs[0])
+    # fade out towards the region's edge (beyond it the ground is seen from far, at 4 m/px)
+    uv = ns.new('ShaderNodeSeparateXYZ'); lk.new(mp.outputs[0], uv.inputs[0])
+    e = math_(ns, lk, 'MINIMUM', math_(ns, lk, 'MINIMUM', uv.outputs['X'], math_(ns, lk, 'SUBTRACT', 1.0, uv.outputs['X'])),
+              math_(ns, lk, 'MINIMUM', uv.outputs['Y'], math_(ns, lk, 'SUBTRACT', 1.0, uv.outputs['Y'])))
+    inside = smoothstep_(ns, lk, e, 0.0, .08)
+    return sep.outputs[0], sep.outputs[1], inside
+
+
+def ground_material(ero, ero_xf):
+    """A bare limestone hillside in summer, as an aerial photo shows it: warm terra-rossa soil
+    gathered in the hollows and valleys, paler stony ground on the spurs and summits, broken
+    limestone ledges that follow the slope (each a sunlit lip over a shaded riser), scattered
+    stones. No green and no grass (inside this lesson both mean land cover). Where the quarry cut
+    (attribute 'rock'): fresh pale limestone and a dusty yard."""
+    m = rc.new_material('Ground', '#A8957A', rough=.95)
     ns, lk, bs = rc.nodes(m)
-    soil_p = ph('dry_ground_rocks'); out_p = ph('rocky_terrain_03'); face_p = ph('rock_face')
-    # dry grass. From the model's distance the ground reads by its 10–200 m variation, not its
-    # grain: broad noise sets the tone, the photos (two scales, turned) only add grain, softly,
-    # so no tile repeat shows.
-    # grain: procedural, never a photo — over a 500 m sheet any photo tile shows as a grid.
-    # Stones: the near cells of a fine Voronoi.
-    tc_g = ns.new('ShaderNodeTexCoord')
-    # (at 0.25 m/px only detail of a metre or more survives the render)
-    vor = ns.new('ShaderNodeTexVoronoi'); vor.inputs['Scale'].default_value = 1 / 2.4; vor.inputs['Randomness'].default_value = 1
-    lk.new(tc_g.outputs['Object'], vor.inputs['Vector'])
-    stones = rc.ramp(ns, lk, vor.outputs['Distance'], .2, .08)
-    grain = math_(ns, lk, 'MULTIPLY_ADD', stones, .2, math_(ns, lk, 'MULTIPLY', noise(ns, lk, 2.6, 8, .7, 6.6), .75))
-    broad = noise(ns, lk, 70, 4, .55, 1.7)
-    mid_ = noise(ns, lk, 14, 5, .6, 3.3)
-    t = math_(ns, lk, 'MULTIPLY_ADD', broad, .5, 0.0)
-    t = math_(ns, lk, 'MULTIPLY_ADD', mid_, .45, math_(ns, lk, 'SUBTRACT', t, .2))
-    t = math_(ns, lk, 'MULTIPLY_ADD', grain, .55, math_(ns, lk, 'SUBTRACT', t, .2))
-    # tussocks and stones at the metre scale — what a close look finds
-    fine = noise(ns, lk, 1.2, 6, .7, 2.9)
-    t = math_(ns, lk, 'MULTIPLY_ADD', fine, .3, math_(ns, lk, 'SUBTRACT', t, .15))
-    straw = palette(ns, lk, t, [(0.0, '#6B624F'), (.3, '#8C7F64'), (.55, '#A59577'), (.8, '#BBAC8C'), (1.0, '#CBBEA0')])
-    # soil: terra rossa with pebbles, in grazed patches and along gentle ground
-    s1 = img(ns, lk, soil_p, uv_vec(ns, lk, 4.0, 11))
-    s_l = rc.ramp(ns, lk, lum(ns, lk, s1), .09, .33)
-    soil = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', s_l, .4, math_(ns, lk, 'MULTIPLY', mid_, .6)),
-                   [(0.0, '#625446'), (.4, '#82705E'), (.75, '#9C8B77'), (1.0, '#B4A691')])
-    # outcrops: the rock slabs of rocky_terrain_03 (where its red beats its green), turned grey
-    o = img(ns, lk, out_p, uv_vec(ns, lk, 42.0, -21, (.17, .4)))
-    sep = ns.new('ShaderNodeSeparateColor'); lk.new(o, sep.inputs[0])
-    slab = rc.ramp(ns, lk, math_(ns, lk, 'SUBTRACT', sep.outputs[0], sep.outputs[1]), .005, .05)
-    o_l = rc.ramp(ns, lk, lum(ns, lk, o), .02, .15)
-    stone = palette(ns, lk, o_l, [(0.0, '#57534B'), (.35, '#7B766B'), (.7, '#958F82'), (1.0, '#A9A396')])
-    # where each goes: steep ground (the VEX-high mesh's own normal) and broad noise
+    # no sheen: dry soil and rock reflect next to nothing, and at the page's oblique view a rough
+    # specular layer mirrors the bright sky over everything as a pale veil
+    bs.inputs['Specular IOR Level'].default_value = float(os.environ.get('RCM_SPEC', 0.0))
+    face_p = ph('rock_face')
     geo = ns.new('ShaderNodeNewGeometry')
     nz = ns.new('ShaderNodeSeparateXYZ'); lk.new(geo.outputs['Normal'], nz.inputs[0])
-    steep = rc.ramp(ns, lk, nz.outputs['Z'], .97, .8)
-    patch = noise(ns, lk, 30, 6, .6, 1.3)
-    soil_m = math_(ns, lk, 'MULTIPLY', rc.ramp(ns, lk, patch, .6, .74), rc.ramp(ns, lk, steep, .9, .2))
-    rock_n = noise(ns, lk, 26, 5, .6, 4.1)
-    rock_f = math_(ns, lk, 'MULTIPLY_ADD', steep, .45, math_(ns, lk, 'SUBTRACT', rock_n, .42))
-    rock_m = math_(ns, lk, 'MULTIPLY', math_(ns, lk, 'MULTIPLY', slab, .6), rc.ramp(ns, lk, rock_f, .36, .6))
-    # limestone ledges: broken bands that follow the contours on the slopes (bedding outcrops, as
-    # on any Judean hillside) — relief, not cover
     pz = ns.new('ShaderNodeSeparateXYZ'); lk.new(geo.outputs['Position'], pz.inputs[0])
-    wob = math_(ns, lk, 'MULTIPLY_ADD', noise(ns, lk, 18, 3, .5, 5.2), 2.2, pz.outputs['Z'])
-    band = math_(ns, lk, 'PINGPONG', wob, 3.2)
-    ledge = rc.ramp(ns, lk, band, 1.3, .5)
-    ledge = math_(ns, lk, 'MULTIPLY', ledge, rc.ramp(ns, lk, noise(ns, lk, 13, 4, .6, 7.3), .48, .62))
-    ledge = math_(ns, lk, 'MULTIPLY', ledge, rc.ramp(ns, lk, steep, .12, .5))
-    ledge_c = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', fine, .5, math_(ns, lk, 'MULTIPLY', o_l, .5)), [(0.0, '#857F73'), (.5, '#9E988B'), (1.0, '#B7B1A4')])
-    col = rc.mix_rgb(ns, lk, soil_m, straw, soil)
-    col = rc.mix_rgb(ns, lk, rock_m, col, stone)
-    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', ledge, .75), col, ledge_c)
+    steep = rc.ramp(ns, lk, nz.outputs['Z'], .985, .82)            # 0 flat … 1 the steepest flanks
+    high = rc.ramp(ns, lk, pz.outputs['Z'], 8.0, 95.0)             # 0 the plain … 1 the summits
+    # where soil gathers: hollows and valleys — what a wide occlusion sees as enclosed (Cycles'
+    # pointiness would follow the mesh grid's uneven rows and stripe the ground)
+    enc = ns.new('ShaderNodeAmbientOcclusion'); enc.samples = 8; enc.inputs['Distance'].default_value = 40.0; enc.only_local = True
+    hollow = rc.ramp(ns, lk, enc.outputs['AO'], .97, .8)
+    # broad tone, kept quiet: the old version's 70 m blotches read as cloud shadows
+    broad = noise(ns, lk, 55, 3, .5, 1.7)
+    mid_ = noise(ns, lk, 11, 5, .6, 3.3)
+    warp = ns.new('ShaderNodeTexNoise'); warp.noise_dimensions = '3D'; warp.inputs['Scale'].default_value = 1 / 9; warp.inputs['Detail'].default_value = 3
+    lk.new(ns.new('ShaderNodeTexCoord').outputs['Object'], warp.inputs['Vector'])
+    # soil: terra rossa, warmer and darker where it is deep (hollows, valley floors)
+    # grain: procedural (a photo tile of a few metres repeats as a fine weave at these scales)
+    s_l = math_(ns, lk, 'MULTIPLY_ADD', noise(ns, lk, 1.6, 6, .65, 2.9), .7,
+                math_(ns, lk, 'MULTIPLY', smoothstep_(ns, lk, voronoi(ns, lk, 3.1, 4.4), .5, .1), .3))
+    soil_t = math_(ns, lk, 'MULTIPLY_ADD', mid_, .3, math_(ns, lk, 'MULTIPLY_ADD', broad, .2, math_(ns, lk, 'MULTIPLY', s_l, .5)))
+    soil = palette(ns, lk, soil_t, [(0.0, '#746553'), (.35, '#8B7B65'), (.65, '#A1917A'), (1.0, '#B5A790')])
+    deep = palette(ns, lk, soil_t, [(0.0, '#66503F'), (.5, '#7A624D'), (1.0, '#8F7660')])
+    deep_m = math_(ns, lk, 'MULTIPLY', math_(ns, lk, 'MAXIMUM', hollow, math_(ns, lk, 'MULTIPLY', rc.ramp(ns, lk, high, .25, 0.0), .6)),
+                   rc.ramp(ns, lk, steep, .7, .2))
+    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', deep_m, .8), soil, deep)
+    # thin soil on the spurs and summits: limestone shows through, paler and greyer
+    thin = palette(ns, lk, soil_t, [(0.0, '#7E7262'), (.5, '#928674'), (1.0, '#A59987')])
+    thin_m = math_(ns, lk, 'MULTIPLY', math_(ns, lk, 'MULTIPLY_ADD', high, .7, math_(ns, lk, 'MULTIPLY', steep, .3)),
+                   math_(ns, lk, 'SUBTRACT', 1.0, hollow))
+    col = rc.mix_rgb(ns, lk, smoothstep_(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', noise(ns, lk, 18, 4, .6, 9.9), .3, thin_m), .4, 1.0), col, thin)
+    # stony ground: pale weathered limestone rubble on the spurs, summits and steep flanks
+    rub = voronoi(ns, lk, 2.2, 2.1, warp.outputs['Color'])
+    rub_c = smoothstep_(ns, lk, rub, .42, .2)                        # 1 at a stone's middle
+    stony_f = math_(ns, lk, 'MULTIPLY_ADD', high, .35, math_(ns, lk, 'MULTIPLY_ADD', steep, .45, math_(ns, lk, 'MULTIPLY', noise(ns, lk, 24, 4, .6, 4.1), .5)))
+    stony = smoothstep_(ns, lk, math_(ns, lk, 'SUBTRACT', stony_f, math_(ns, lk, 'MULTIPLY', hollow, .4)), .35, .7)
+    stone_col = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', mid_, .5, math_(ns, lk, 'MULTIPLY', s_l, .5)),
+                        [(0.0, '#8A8478'), (.5, '#A09A8D'), (1.0, '#B5AFA2')])
+    stones = math_(ns, lk, 'MULTIPLY', rub_c, math_(ns, lk, 'MULTIPLY_ADD', stony, .75, .12))
+    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', stones, .7), col, stone_col)
+    # limestone ledges: bedding outcrops that follow the contours on the slopes, broken into
+    # lengths — each a raised band of grey rock (relief, not cover)
+    zt = math_(ns, lk, 'MULTIPLY_ADD', noise(ns, lk, 30, 3, .5, 5.2), 4.0, math_(ns, lk, 'DIVIDE', pz.outputs['Z'], VEX))
+    zt = math_(ns, lk, 'MULTIPLY_ADD', noise(ns, lk, 7, 3, .5, 6.4), 1.4, zt)
+    k = math_(ns, lk, 'FRACT', math_(ns, lk, 'DIVIDE', zt, 5.0))
+    lip = math_(ns, lk, 'MULTIPLY', smoothstep_(ns, lk, k, .5, .78), smoothstep_(ns, lk, k, .97, .84))
+    runs = math_(ns, lk, 'MULTIPLY', smoothstep_(ns, lk, noise(ns, lk, 16, 3, .55, 7.3), .45, .55),
+                 smoothstep_(ns, lk, noise(ns, lk, 4.5, 3, .5, 8.1), .36, .48))
+    on_slope = rc.ramp(ns, lk, steep, .2, .55)
+    ledge = math_(ns, lk, 'MULTIPLY', math_(ns, lk, 'MULTIPLY', lip, runs), on_slope)
+    # the riser below each lip: the step's own shadow line
+    riser = math_(ns, lk, 'MULTIPLY', math_(ns, lk, 'MULTIPLY', smoothstep_(ns, lk, k, .34, .46), smoothstep_(ns, lk, k, .56, .5)),
+                  math_(ns, lk, 'MULTIPLY', runs, on_slope))
+    ledge_col = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', rub_c, .4, math_(ns, lk, 'MULTIPLY', mid_, .6)),
+                        [(0.0, '#8F897D'), (.5, '#A39D91'), (1.0, '#B8B2A6')])
+    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', ledge, .9), col, ledge_col)
+    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', riser, .35), col, (.16, .13, .1, 1))
+    # drainage (erosion_image): rills and gullies cut downhill, their beds holding darker, redder
+    # soil and their flanks washed to stone
+    cut, area, inside = erosion_sample(ns, lk, ero, ero_xf)
+    cut = math_(ns, lk, 'MULTIPLY', cut, inside)
+    bed = smoothstep_(ns, lk, cut, .06, .7)
+    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', bed, .35), col, deep)
+    wash = math_(ns, lk, 'MULTIPLY', smoothstep_(ns, lk, cut, .02, .12), math_(ns, lk, 'SUBTRACT', 1.0, bed))
+    col = rc.mix_rgb(ns, lk, math_(ns, lk, 'MULTIPLY', math_(ns, lk, 'MULTIPLY', wash, on_slope), .3), col, stone_col)
+    rill = cut
     # the quarry: a dusty yard, then freshly cut limestone — tool-marked, stained, darker in the
     # corners of the benches (occlusion, below)
     rock = rc.attr(ns, 'rock')
@@ -209,25 +327,33 @@ def ground_material():
     f_l = rc.mix_rgb(ns, lk, .55, f_l, noise(ns, lk, 3, 6, .7, 9.4))
     stain = noise(ns, lk, 9, 5, .6, 8.8)
     fresh = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', f_l, .55, math_(ns, lk, 'MULTIPLY', stain, .45)),
-                    [(0.0, '#777164'), (.35, '#9D9585'), (.65, '#B8B0A0'), (1.0, '#CEC7B7')])
-    dust = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', s_l, .5, math_(ns, lk, 'MULTIPLY', stain, .5)), [(0.0, '#857C6D'), (1.0, '#B1A897')])
-    col = rc.mix_rgb(ns, lk, rc.ramp(ns, lk, rock, .02, .3), col, dust)
-    col = rc.mix_rgb(ns, lk, rc.ramp(ns, lk, rock, .35, .85), col, fresh)
-    # occlusion: hollows, bench corners, the feet of walls and trees
-    ao = ns.new('ShaderNodeAmbientOcclusion'); ao.samples = 8; ao.inputs['Distance'].default_value = 5.0
+                    [(0.0, '#6E685C'), (.35, '#8E8779'), (.65, '#A59E8F'), (1.0, '#B7B0A1')])
+    dust = palette(ns, lk, math_(ns, lk, 'MULTIPLY_ADD', s_l, .5, math_(ns, lk, 'MULTIPLY', stain, .5)), [(0.0, '#837A69'), (1.0, '#A69D8C')])
+    rock_yard = rc.ramp(ns, lk, rock, .02, .3)
+    rock_cut = rc.ramp(ns, lk, rock, .35, .85)
+    col = rc.mix_rgb(ns, lk, rock_yard, col, dust)
+    col = rc.mix_rgb(ns, lk, rock_cut, col, fresh)
+    # occlusion: valleys and hollows (wide), bench corners and the feet of walls and trees (near)
+    ao_w = ns.new('ShaderNodeAmbientOcclusion'); ao_w.samples = 8; ao_w.inputs['Distance'].default_value = 30.0
+    lk.new(col, ao_w.inputs['Color'])
+    col = rc.mix_rgb(ns, lk, .35, col, ao_w.outputs['Color'])
+    ao = ns.new('ShaderNodeAmbientOcclusion'); ao.samples = 8; ao.inputs['Distance'].default_value = 4.0
     lk.new(col, ao.inputs['Color'])
-    col = rc.mix_rgb(ns, lk, .55, col, ao.outputs['Color'], 'MIX')
+    col = rc.mix_rgb(ns, lk, .5, col, ao.outputs['Color'])
     lk.new(col, bs.inputs['Base Color'])
-    # relief of the surface itself: slab edges, bench faces (soft — a sharp bump repeats with its tile)
-    h = math_(ns, lk, 'MULTIPLY_ADD', rock_m, o_l, math_(ns, lk, 'MULTIPLY', rc.ramp(ns, lk, rock, .35, .85), f_l))
-    rc.bump_from(ns, lk, bs, h, .35, .03)
+    # the surface's own relief: ledges stand ~0.8 m proud, stones ~0.3 m, rills cut in; nothing on
+    # the quarry's cut faces but their tool-marked rock
+    nat = math_(ns, lk, 'SUBTRACT', 1.0, rock_cut)
+    h = math_(ns, lk, 'MULTIPLY_ADD', ledge, .8, math_(ns, lk, 'MULTIPLY_ADD', stones, .3, math_(ns, lk, 'MULTIPLY', rill, -1.0)))
+    h = math_(ns, lk, 'MULTIPLY_ADD', math_(ns, lk, 'MULTIPLY', h, nat), 1.0, math_(ns, lk, 'MULTIPLY', rock_cut, math_(ns, lk, 'MULTIPLY', f_l, .25)))
+    rc.bump_from(ns, lk, bs, h, float(os.environ.get('RCM_BUMP', 1.0)), 1.0)
     return m
 
 
 def materials():
     imgs = {k: rc.leaf_atlas(k) for k in ('oak', 'olive', 'scrub')}
     return {
-        'ground': ground_material(),
+        'ground': ground_material(*erosion_image()),
         'bark': rc.bark_material('Bark', '#4A3F33'),
         'bark_olive': rc.bark_material('Olive bark', '#6A6455'),
         'leaves_oak': rc.leaf_material('Oak leaves', imgs['oak'], '#5E6B2E'),
@@ -463,24 +589,24 @@ def setup():
         sc.view_settings.view_transform = os.environ.get('RCM_VIEW', 'Standard')
     except TypeError:
         sc.view_settings.view_transform = 'AgX'
-    sc.view_settings.exposure = float(os.environ.get('RCM_EXP', -0.9))
+    sc.view_settings.exposure = float(os.environ.get('RCM_EXP', -0.6))
     world = bpy.data.worlds.new('Sky'); sc.world = world; world.use_nodes = True
     ns, lk = world.node_tree.nodes, world.node_tree.links
     env = ns.new('ShaderNodeTexEnvironment'); env.image = rc.image(os.path.join(ROOT, 'public/assets/lessons/topic02/contour-mountain/env/sky.hdr'))
-    bg = ns['Background']; bg.inputs[1].default_value = float(os.environ.get('RCM_SKY', .6))
+    bg = ns['Background']; bg.inputs[1].default_value = float(os.environ.get('RCM_SKY', .12))
     lk.new(env.outputs[0], bg.inputs[0])
     az, el = math.radians(SUN_AZ), math.radians(SUN_EL)
     to_sun = Vector((math.sin(az) * math.cos(el), math.cos(az) * math.cos(el), math.sin(el)))
     sun_data = bpy.data.lights.new('Sun', 'SUN'); sun = bpy.data.objects.new('Sun', sun_data)
     sc.collection.objects.link(sun)
     sun.rotation_euler = to_sun.to_track_quat('Z', 'Y').to_euler()
-    sun_data.energy = float(os.environ.get('RCM_SUN', 3.2)); sun_data.angle = math.radians(1.2); sun_data.color = (1, .95, .87)
+    sun_data.energy = float(os.environ.get('RCM_SUN', 4.5)); sun_data.angle = math.radians(1.2); sun_data.color = (1, .95, .87)
     # skylight from the side away from the sun (no shadows): shade is never black outdoors
     fill_d = bpy.data.lights.new('Sky fill', 'SUN'); fill = bpy.data.objects.new('Sky fill', fill_d)
     sc.collection.objects.link(fill)
     away = Vector((-to_sun.x, -to_sun.y, 1.3)).normalized()
     fill.rotation_euler = away.to_track_quat('Z', 'Y').to_euler()
-    fill_d.energy = float(os.environ.get('RCM_FILL', 1.5)); fill_d.angle = math.radians(40); fill_d.color = (.86, .91, 1.0)
+    fill_d.energy = float(os.environ.get('RCM_FILL', .5)); fill_d.angle = math.radians(40); fill_d.color = (.86, .91, 1.0)
     fill_d.use_shadow = False
     cam_data = bpy.data.cameras.new('Drape'); cam_data.type = 'ORTHO'; cam_data.clip_end = 4000
     cam = bpy.data.objects.new('Drape', cam_data); sc.collection.objects.link(cam); sc.camera = cam

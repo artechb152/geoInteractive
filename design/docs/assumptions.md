@@ -2453,6 +2453,44 @@ Request: the model should look much more realistic, like the site's other realis
 
 On request, removed: the map key and the disclaimer, the "בשטח / במפה" captions above the boards, and the model's north arrow and view buttons. Drag still turns the model, but there is no zoom now. "המשך" now ends the state's cells at their bottom-left instead of a row of its own. The contour chip ("קווי הגובה: …") lost its caption line and now sits under the map, at its left. Its row keeps its height in every state, so the card never moves. The map-key and disclaimer strings remain in the scene's copy, unused.
 
+### Follow-up (2026-10-19): opening instruction and the "contours changed" chip
+
+Browser review at 1440 × 1122 (all four states, a wrong and a right prediction, revisit, reset). The board is clearly unlike the landforms page: open ground to the horizon and a real topographic sheet (grid, spot heights, scale) against the landforms page's papercut slab and abstract rings. Two gaps were fixed in `ReliefCoverCompare.tsx` only:
+
+- **The opening state never said what the activity asks.** It now shows, under the model and until the first prediction: „הגבעה תשתנה שלב אחר שלב. לפני כל שינוי חזו מה ישתנה: התבליט, התכסית או שניהם.” This is interface copy only (no lesson content). It sits in the row that already held the chip, so no height changes and the laptop fit (`FIT_HEIGHT.compare`) still holds. Assumption: it lives as a constant in the component because `ReliefCoverIntroScene.tsx` (`COMPARE_COPY`) has another owner; it can move there later.
+- **"קווי הגובה השתנו" looked the same as "ללא שינוי".** The changed chip now wears the relief key (sand dot and a sand tint), because the relief is what changed. Orange stays reserved for action.
+- **Open (not changed):** the model's baked ground drape (`relief-cover-model/*.webp`) reads as a soft, hazy sepia with blotchy noise, not sharp imagery. The live model matches its renders, so this is the asset, not a loading fault. A sharper re-render is a separate Blender task. → Done below.
+
+### Follow-up (2026-10-19): a more polished "בשטח" model (re-baked ground)
+
+Request: make the 3D model look more polished. Only the bake changed (`render_relief_cover_model.py` → `package_relief_cover_model.mjs`), plus the matching sun in `ReliefCover3D.tsx`. The terrain data, the live mesh, the map, the objects and the interaction are unchanged.
+
+- **Why it looked hazy:** the sky light (HDR, strength 0.6) plus a strong shadowless fill was as bright as the sun. Every slope came out nearly the same tone, so the relief barely read. Now: sky 0.12, fill 0.5, sun 4.5 at **42°** (was 55°), exposure −0.6. The shade stays open with no black self-shadow.
+- **Drainage (new, `erosion_image`):** at 1 m over the `mid` region, the hill is roughened slightly, water is routed downhill (multiple-flow, weight = drop⁹) and each cell is cut by √area × slope (k 0.3, at most 4 m). The cut drives only the bake's bump and the soil colour in the beds. The live mesh and the map's contours keep the smooth hill, so the map ↔ model match is unchanged.
+- **Ground material:** procedural throughout, because the 3.2 m soil photo tile aliased into a fine weave.
+  - Terra-rossa soil, darker and warmer in hollows and gully beds.
+  - Thinner, greyer soil on spurs and summits; pale stones.
+  - Short, broken limestone ledges (a lip over a shaded riser).
+  - No green and no grass on bare ground (unchanged rule).
+  - The old continuous white contour bands are gone. **Assumption:** bands that follow every contour can read as drawn contour lines or as man-made terraces (land cover).
+- **Quarry:** the fresh rock and yard palette is darker than before, because under the new light it glared white and the benches did not read.
+- **Fallback stills** were re-captured from the new live model (`capture-relief-cover-fallback.mjs`).
+- **Re-bake (model):** `& 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe' --background --python scripts/blender/render_relief_cover_model.py` (≈ 6 min on the RTX A5000), then `node scripts/blender/package_relief_cover_model.mjs`. Look-dev: the `look:<state>` pass and the `RCM_*` variables (`RCM_SUN_EL`, `RCM_EROSION`, `RCM_FLOW_P`, `RCM_BUMP` …).
+
+### Follow-up (2026-10-19): one action panel under the boards (UX)
+
+Request: the button was awkward, the question opened too low (the page had to scroll to answer), and the questions were unclear. At 1366 × 768 the answers were cut off at the viewport's bottom edge. `ReliefCoverCompare.tsx` only; the boards, stepper, map, model, cells and summary table are unchanged.
+
+- **One panel, one place:** right under the boards, above the state's cells. It shows the next change and its question, then the feedback with "לשלב הבא: …", then the next question. Measured: at 1366 × 768 the answers end at 635 px and "לשלב הבא" is on screen after an answer, with no scroll (the same at 1536 × 864 and 1440 × 1122).
+- **No extra click:** the first question is open from the start (`INITIAL_FLOW.asking = true`). The old "המשך" step before each question is gone; "לשלב הבא" after the feedback opens the next one.
+- **Questions say what happens:** each one states the coming change before it asks. Answers carry their meaning: תבליט "צורת פני הקרקע", תכסית "מה שנמצא על פני הקרקע", שניהם "גם הצורה וגם מה שעליה".
+  - **Assumption:** the scenarios only describe what happens to the hill, never which layer changes.
+  - The quarry's scenario mentions that it spreads into the orchard, so "both" can be inferred and is not a trick.
+- **Feedback states the verdict per layer** ("תבליט: לא השתנה · תכסית: השתנתה") and the learner's own choice ("בחרתם „שניהם”. התשובה הנכונה: תכסית"), then the existing explanation. While the boards change, the panel says "צפו בשינוי בדגם ובמפה…".
+- **Revisit:** an earlier step shows its result and "חזרה לשלב N: …". The last step offers "לטבלת הסיכום", which scrolls to the summary and focuses it.
+- **Copy:** the panel's interface strings are `TASK` in `ReliefCoverCompare.tsx`, because `ReliefCoverIntroScene.tsx` is owned elsewhere. Its `COMPARE_COPY.question` and `.next` are no longer shown.
+- **Open for the fit owner:** the screen's opening height grew by the panel (≈ 90 px at 1440). `FIT_HEIGHT.compare` (819) in `ReliefCoverIntroScene.tsx` may want re-measuring. The panel itself stays on screen at laptop sizes either way, because it sits right under the boards.
+
 ## 2026-10-13 — Topic 02 vegetation ladder hover explanations
 
 - The requested short explanations reuse the lesson's existing beige inset (`rounded-xl bg-bg-accent/60 p-4 min-h-[112px]`) below the vegetation names. The reserved height keeps the diagram and adjacent content stable when switching formations. Text follows the lesson body style (16 px, relaxed line height, black).
@@ -2593,3 +2631,142 @@ On request, removed: the map key and the disclaimer, the "בשטח / במפה" c
 - **Pointer math under the fit.** Both 3-D canvases (the measurement landscape and the datum globe) measure their untransformed size (`LESSON_FIT_CANVAS_RESIZE`). The landscape/ellipsoid drag-turn (`viewControls.useDragTurn`) divides pointer deltas by the scale. The globe's `OrbitControls` rotate speed is divided by the scale. The globe's chip leaders and the ellipsoid enlargement's flight convert screen-rect offsets to the composition's own px. The marker drag and the R3F hit tests use rect ratios / offset coordinates and needed no change.
 - **Resulting scales.** 1920 × 1080: 1 for all screens; positions differ by up to 1 px (the fit takes the integer `offsetHeight`). 1440 × 1122: 0.967 for all (width-bound; the column is 1052 px). 1536 × 864: 1 / 0.855 / 0.922 / 1 / 0.869 / 1. 1366 × 768: 0.899 / 0.750 / 0.809 / 0.899 / 0.763 / 0.899. At 0.75, 16 px body text renders at ≈12 px. This follows the requested uniform shrink; legibility is open for review.
 - QA: `scripts/qa/probe-coordinates1-fit.mjs` (geometry per screen) and `scripts/qa/probe-coordinates1-states.mjs` (every tab, stage and feedback state, plus pointer readings). Output is in `design/screenshots/topic02-coordinates1-fit/` (`before-*`, `after-*`, `states-*`).
+
+## 2026-10-19 — Topics 02 and 06: one content width for every sub-topic
+
+- **Reference.** Lesson 2 "לפני שמתחילים" (`#scene-onboarding`): `max-w-lesson mx-auto px-4 sm:px-6 lg:px-8`, laid out at 1344 px and laptop-fitted. Measured content box: 1052 px (x 64–1116) at 1440 × 1122, where the lesson column is only 1116 px wide. At 1920 × 1080 it is 1344 px (x 158–1502).
+- **What differed.** At 1440 × 1122 every sub-topic of both lessons already had the same bounds (x 64–1116), because `max-w-6xl` (1152) and `max-w-lesson` (1408) are both wider than that column. The difference was only at wider screens: the other sub-topics stopped at 1088 px (`max-w-6xl`), and their `LessonViewportFit` reference width was 1088.
+- **Decision (user, 2026-10-19): unify fully.** Every sub-topic section in lessons 2 and 6 now uses `max-w-lesson`, and every `LessonViewportFit` reference width is 1344. The opening (`HookSceneLayout`) is a shared full-bleed cover, and lesson 6's "דגשים לתכנון ולניווט" (`PlanningTipsScene`) is being removed from the lesson by another session; neither was changed.
+- **Consequence at 1440 × 1122.** The fitted screens are now laid out at 1344 and shrunk to 0.783, as the reference is, instead of 0.967. Their type renders about 19 % smaller than before; 16 px body text renders at about 12.5 px.
+- **Reference heights.** All of them were re-measured at 1344 px, at 1920 × 1080, on 2026-10-19 (tallest states where the constant is a tallest state). A screen taller than the 1920 × 1080 view budget is fitted to that budget, so 1920 stays at scale 1 at the full 1344 px width and its foot scrolls. This applies to scale (1069 → 916), topography (977 → 952) and the first two screens of principles (990 / 1321 → 952). Short laptops (1366 × 768, 1536 × 864) still shrink the tall screens by height, so those are narrower than the column, as the practical-meaning screen already was.
+
+## 2026-10-19 — Topic 02 "תבליט ותכסית", task 4: SortQuiz stage layout
+
+- **Opt-in, not a replacement.** `SortQuiz` gained `layout?: 'grid' | 'stage'` (default `grid`). Only task 4 (`ReliefCoverIntroScene`) passes `layout="stage"`. Task 9 (`LandCoverScene`) and the archive V1 scenes still get the original card grid. To move task 9 to the new design, add `layout="stage"` to its `<SortQuiz>` and re-measure `FIT_HEIGHT_QUIZ` at 1344 px wide, 1920 × 1080 (the stage is about 21 px taller than the grid was in task 4).
+- **Same items, explanations, scoring and free order.** A strip of item tokens replaces the progress bar. It also lets the learner move between items, so they can answer in any order and reread explanations after finishing. The tokens are a quieter fill than the white bordered choice buttons, so the strip reads as progress, not as the action. After an answer, focus moves to "next".
+- **New interface strings (judgment call):** `פריט N מתוך M`, `לפריט הבא`, the completion helper `בחרו פריט בשורה שלמעלה כדי לקרוא שוב את ההסבר.` / `כל הפריטים סווגו נכון.`, and sr-only `נכון` / `לא נכון` on the tokens. No lesson wording changed.
+- **The feedback slot reserves 88 px** under the choices so the stage doesn't jump between answered and unanswered items. The initial state therefore has some empty space under the choices.
+
+## 2026-10-19 — Terrain classification mockup alternatives
+
+- Scope: two image mockups only, in design/mockups/terrain-classification-2026-10-19; no lesson implementation changes. The user explicitly requested a redesigned exercise, so the alternatives intentionally vary its composition while preserving the site chrome, existing palette, eight items and classification explanations.
+- Review: the public topic-02 page currently shows the grid quiz; local ReliefCoverIntroScene.tsx already selects layout=stage. The live topic-01 archive is password protected, so its exercises were reviewed in the available AsymmetricScene.tsx source (photo tactic matching and organization category bins), not through the protected page.
+- Design calls: A uses one current image and two photo category choices. B uses a common landscape with eight hotspots and two category receptacles. Both preserve click/keyboard interaction; drag in B is optional. No new UI color tokens.
+- Image-generated frames are concept references, not exact type/copy/geometry specifications. The handoff gives exact content and states. In particular, the final saddle asset must depict a low point on a ridge between two summits, not a valley. Site chrome must reuse the existing implementation rather than copying generator deviations.
+- Intended desktop target: 1440x1122. Generated PNG dimensions are recorded by artifact verification; no page code was changed or browser rendering claimed for the redesigned concepts.
+
+## 2026-10-19 — Terrain classification: quieter revision of concept 1
+
+- User refinement: less complex imagery, retain the selected object's silhouette outline, preserve the current exercise layout.
+- Current-layout interpretation: local SortQuizStage (top text-token navigation; current item on right; two side-by-side choices on left; feedback below choices). This interpretation was stated in commentary before generating.
+- Revised image: design/mockups/terrain-classification-2026-10-19/03-clean-current-layout-v2.png. One isolated house on cream replaces the busy panorama; restrained single-object illustrations replace category landscape photos.
+- Mockup only. Existing stage geometry, button dimensions, header/sidebar and authoritative source copy take precedence over image-generator deviations. CLAUDE-HANDOFF-V2.txt explicitly documents this, including keeping original h-14 choice controls and NEXT_STEPS copy.
+
+## 2026-10-19 — Terrain classification: final no-counter mockup and production assets
+
+- User requested removal of the entire "בהמשך השיעור" block, the item-position pill and score pill from the mockup, plus a complete Claude implementation prompt and all required production illustrations.
+- Final reference: design/mockups/terrain-classification-2026-10-19/04-final-clean-no-counters.png (1421x1107); desktop implementation acceptance target remains 1440x1122.
+- Production assets: public/assets/lessons/topic02/terrain-classification/. Eight item PNGs include orange feature contours; two category-choice PNGs have no outline. All ten are 1536x1024 RGBA. They were generated with built-in image_gen, visually reviewed on white in the handoff gallery, and checked for decodability and alpha (corner alpha maximum 1/255).
+- Handoff: design/handoff/terrain-classification-2026-10-19/CLAUDE-IMPLEMENTATION-PROMPT.txt, asset-manifest.json, generation-prompts.json, asset-preview.html and ASSET-QA.json.
+- Final prompt supersedes earlier handoffs. It specifies no numerical item/score displays even on completion, semantic completion text, source-order item navigation, one immutable first answer per item until reset, explicit next, preserved keyboard interaction and optional props scoped to this quiz so other SortQuiz consumers keep their defaults.
+- Illustrated choice cards in the final mockup replace the old V2 suggestion to keep h-14 text controls. The two-column stage and top text-token row remain unchanged in composition. The prompt calls for measuring the actual final state and updating viewport-fit height.
+- Only mockups, illustration files and handoff documentation were produced in this task. No lesson source code was implemented or tested as an implementation.
+
+
+## 2026-10-19 — Terrain classification: final version implemented
+
+- **Scope.** The quiz in `ReliefCoverIntroScene.tsx` now passes `visuals`, `showScore={false}`, `showPosition={false}`, `showFinalScore={false}`, `hint` and `doneText` to the existing `SortQuiz` stage. All of these are opt-in. The grid layout, task 9 (`LandCoverScene`) and the archive V1 scenes behave as before. The roadmap screen (`NEXT_STEPS`, `FIT_HEIGHT.roadmap`) is gone from this section only.
+- **Assets are shipped as WebP siblings.** `scripts/media/package-terrain-classification.cjs` converts the ten handoff PNGs at full 1536×1024 size, keeping alpha, with no crop and no recolour. Total size drops from ~23 MB to ~2.6 MB. The PNG sources stay in place. The page loads the `.webp` files. After the item on stage loads, only the next unanswered item is prefetched.
+- **Sizes follow the lesson fit, not the mockup's type scale.** The screen is laid out at the 1344 px reference width and shown at 0.7827 at 1440×1122. The mockup's type is larger than the site's scaled type. The existing section title, card title and body classes are kept unchanged. The handoff's final-px targets are met at 1440: choice cards ≈175 px tall (224 ref), choice art ≈117 px (150 ref), choice label ≈19 px (`text-2xl`), stage illustration ≈404×270 px (the 5fr column, 3:2, `object-contain`). Tokens are `h-14 text-lg`.
+- **The stage keeps its 5fr / 7fr split.** The mockup shows a roughly 50/50 split. The handoff's own instruction to keep the stage ratios takes precedence. As a result, the illustrated choice cards are wider than in the mockup (≈278 px vs ≈235 px).
+- **Restart is always in the header** when there is no final score (ghost button with the existing refresh icon). This holds from the opening state onwards, so the header never jumps.
+- **Wrong-answer feedback in the stage now names the correct category:** "לא בדיוק. הסיווג הנכון: X." The stage has no other consumer. A filled check / x mark sits beside the feedback, the token and the chosen card, so the result reads without colour. The right/wrong shake and bounce on the item name were removed from the stage, leaving only a 0.25 s fade/rise on item change (none under reduced motion).
+- **`FIT_HEIGHT.quiz` is 709**, re-measured at 1920×1080 (scale 1). The feedback slot (150 px ref) holds the longest explanation plus the completion line, so the screen height is the same in every state (555 px at 1440×1122 in all states).
+- **Known stale QA step (not changed here):** the quiz step at the end of `scripts/qa/shot-relief-cover-fit.mjs --states` still targets the old grid (`ul > li`). The new acceptance run is `scripts/qa/terrain-classification.test.mjs`.
+
+## 2026-10-19 — "אליפסואיד, גיאואיד וגליות": polishing pass (task, section labels)
+
+Brief: the user's message of 2026-10-19. Review the existing interaction at 1440 × 1122 (every tab, control, the task and its feedback) and fix it in place, without rebuilding. Files: `MeasurementSection.tsx` and `MeasurementPanel.tsx` only. `CoordinatesScene.tsx` (tabs, view text, captions, aria descriptions), `CoordinatesDefinitions`, the datum and `coordinates1Fit` were not touched.
+
+- **Station A in the section.** A's arrows are short (H ≈ 18, h ≈ 11, N ≈ 7 px at 1440). The h letter was pushed 22 px above N and floated away from its arrow, and the letters overlapped the level ticks. Now, when the h arrow is shorter than two letter heights, h and N stand one above the other (17 px apart) beside the stack, each tied to the middle of its own arrow by a 1 px leader in its own colour. B and C are drawn as before. The level ticks, in the task and the geoid view, now start just past H's arrow so they no longer run under its letter.
+- **Task.** The readings are now headed "נתוני תחנה X", so the numbers say which station they belong to after "לתחנה הבאה". The N value shows what its sign means, in the section's terms: "הגיאואיד מעל האליפסואיד" / "מתחת לאליפסואיד" / "הגיאואיד והאליפסואיד נפגשים". This follows the data's convention (N > 0: the geoid above the ellipsoid). Data, formula, checks and hints are unchanged. Typo fixed: "השוו בין חצי הגובה" → "חיצי הגובה".
+- **Heights unchanged.** The card is 781 px and the screen 917 px at 1920 × 1080, before and after. `FitScreen`'s 917 still holds.
+- **Verified:** `measurement-mission.test.mjs` 28/28; `shot-measurement-mission.mjs` PASS on :3001. `measurement-round6.mjs` stopped at its "navigate home and back" step (a `load` timeout on the shared dev server). That step does not touch these files.
+- **Open (needs a decision):**
+  - A's arrows are still small at the one height mapping. A local magnifier at the picked station would fix it, but it is a new element.
+  - Before the reveal, the geoid view's section shows H at the picked station while the model shows it only after the reveal.
+  - The geoid view's instruction ("חשפו … ובחרו תחנה") ends a three-line paragraph, far from its button. It lives in `CoordinatesScene.tsx`.
+
+## 2026-10-19 — Land-cover origin classification: mockup, assets and final handoff
+
+- Reviewed the actual local bottom exercise at http://localhost:3000/lessons/topic-02/#scene-landcover and LandCoverScene.tsx. Current UI is a grid; this handoff applies the user's approved one-item stage workflow to natural/artificial classification.
+- Eight source items and why texts are unchanged: grove, citrus orchard, garrigue, planted forest, terraces, batha, irrigation reservoir, wheat field. Correct mapping is 3 natural and 5 artificial, not 4/4.
+- Active product assets: public/assets/lessons/topic02/landcover-origin-classification/ — ten 1536x1024 RGBA PNGs. Item assets include orange feature contours; category-choice assets have no contour. Grove is reused from the earlier terrain pack; the other nine current assets were generated for this pack.
+- User refinement: natural/artificial choice illustrations were too similar. Final natural illustration uses an irregular tree, shrub and rock; artificial uses a stone house and orderly planting bed. Current files retain choice-natural.png and choice-artificial.png; superseded files are backed up in the handoff archive.
+- Final mockup: design/mockups/landcover-origin-classification-2026-10-19/02-refined-choices-final.png. The older 01 mockup is superseded. No score or item-position counters; the existing lesson chrome remains.
+- Complete Claude prompt, manifest, generation prompts, white-background gallery and alpha/decoding QA are in design/handoff/landcover-origin-classification-2026-10-19/.
+- All ten active images passed decoding, dimension and alpha checks, and were reviewed on white in the browser. The final prompt contains the current mockup path, all ten image filenames, source explanations, independent per-quiz answer state, keyboard handling, feedback, completion and reset behavior.
+- Scope: image assets, mockups and handoff documentation only. No lesson source changes or implementation-build claims.
+
+
+## 2026-10-19 — Land-cover origin classification: implementation
+
+- `LandCoverScene.tsx` now calls the shared illustrated `SortQuiz` stage (`layout="stage"`, `visuals`, no score / position / final score). It uses the same props as „סיווג מרכיבי השטח”. No new mechanism; each scene keeps its own `useState`, so the shared `q-grove` id never shares an answer.
+- WebP siblings with alpha, made by `scripts/media/package-landcover-origin-classification.cjs` (same settings as the terrain pack). They total 3.6 MB; the PNG sources (26 MB) stay in place. The page loads the WebPs.
+- **Wrong-answer copy.** The brief asks for „הסיווג הנכון: תכסית טבעית/מלאכותית.” The shared stage printed the option label („…: מלאכותית.”). `SortOption` got an optional `feedbackLabel` (default: `label`), so the shared component has no „תכסית” text and the sibling quiz is unchanged.
+- **Followed the approved sibling instead of the mockup** in two small things: the name strip uses 8 equal columns (the mockup sizes tokens to their text), and the item title uses the stage's `text-4xl`. At 1440 (fit scale 0.783) the measured sizes are within the brief's ranges: illustration 404 px wide, choice cards 174 px tall, choice art 117 px, labels 19 px.
+- `FIT_HEIGHT_QUIZ` 628 → 709, measured at 1344 px in every state. With the done line plus the longest wrong feedback, 28 px of the reserved slot is still free, so answering never changes the screen height.
+- Verified: `scripts/qa/landcover-origin-classification.test.mjs` all checks pass (motion + reduced motion). `terrain-classification.test.mjs` still passes. `tsc` is clean for `src`. `next build` passes in a temporary worktree. Screenshots are in `design/screenshots/landcover-origin-classification/`.
+
+## 2026-10-19 — Terrain classification: centered choices + auto-advance (user request)
+
+- **Choices centered on the illustration.** The user picked "choice cards ↔ main illustration". With `centerChoices`, the stage becomes one three-row grid: name | illustration with the choice cards vertically centered on it | feedback under the choices. The illustration's frame and the choice group share the same vertical center (checked: Δ 0 px). `FIT_HEIGHT.quiz` is now 845 (re-measured at 1920×1080). The screen still fits at 1920×1080, 1536×864, 1440×1122 and 1366×768.
+- **Auto-advance is immediate** (user's choice over a ~3 s delay). With `autoAdvance`, an answer moves straight to the next unanswered item, so the explanation is not on screen in that moment. The result shows as ✓/✗ on the strip. The explanation is one click away on the item's token, where the saved answer, the explanation and „לפריט הבא” still appear. The last unanswered item stays on stage with its feedback and the completion line.
+- **Screen readers** hear a short result through an sr-only line in the existing live region: „X: נכון.” / „X: לא בדיוק. הסיווג הנכון: Y.”. Any manual move clears it.
+- **Double-click guard.** Choice clicks within 450 ms after an auto-advance are ignored, so the second click of a double click can't answer the next item.
+- **Both props are opt-in.** They are used only by this quiz. Task 9 (`LandCoverScene`, which another session moved to the illustrated stage the same day) keeps the top-aligned choices and the explicit „לפריט הבא”. To match this quiz, it can pass `centerChoices autoAdvance` and re-measure its fit height.
+
+## 2026-10-19 — Task 9 („טבעית או מלאכותית?”): choices centered too (user request)
+
+- `LandCoverScene` now passes `centerChoices`, like the relief/cover quiz. The choice cards are vertically centered on the item's illustration (Δ 0 px at 1920, 1536, 1440 and 1366), and the feedback sits below. Only centering was requested: task 9 keeps the explicit „לפריט הבא” (no `autoAdvance`).
+- `FIT_HEIGHT_QUIZ` 709 → 845, measured at 1920×1080. Every wrong-answer explanation fits the reserved slot, including the longest one (מאגר מים) together with the completion line. The height is the same in all states, and the screen fits the viewport at all four sizes.
+
+## 2026-10-19 — „אותה גבעה, שלושה נופים”: map ↔ model swap + axes marker (user request)
+
+- **Boards swapped.** The map now sits at the start (right, RTL) and the 3D model beside it (left). The row underneath moved with them: the "same/changed contours" chip stays under the map (now start-aligned, at its outer edge), and the opening hint stays under the model.
+- **X·Y·Z axes marker** (`AxisGizmo.tsx`) in the middle of the live model, as in 3D editors and games, so learners know the model turns. It shows once the model is ready and fades out on the first press on the board. Without WebGL (the still image) it isn't shown. The axes rock gently around the vertical; under reduced motion they stay still.
+- **Colors are an assumption.** The spec has no gizmo colors, so the conventional ones are used inline: X `#D2453A` red, Y `#4E9A2F` green, Z `#2F6FD2` blue, on a white disc at 62% for legibility over the terrain. They aren't tokens because they're the universal axes convention, not part of the palette.
+- The marker carries `data-overlay`, so `capture-relief-cover-fallback.mjs` keeps it out of the fallback stills.
+
+## 2026-10-19 — One loading animation for every 3D model in lessons 2 and 6 (user request)
+
+- **One component.** `src/components/lesson/ModelLoading.tsx` is now the only loader. The rule is in CLAUDE.md ("3D models (loading)"). It replaces four copies of the title + bar overlay (contour mountain, topography, globe, location-check observation), two text-only pills (relief-cover model, terrain-nav model) and the projections stage's pulsing disc. It is new on the datum globe and the measurement landscape, which showed a still with no indicator.
+- **Text tier.** `font-display text-base font-bold text-black` is taken from the newest loader (lesson 6 observation). The older lesson-2 copies used `text-sm text-fg-muted`; the lessons have since moved to black body text.
+- **Bar.** It always runs the site's existing loading sheen (`animate-asset-sheen`, as in `IsometricAsset`), which is static under reduced motion. drei counts whole files, so one big model file would otherwise hold a measured bar frozen at 0%. Where the loads are counted (drei `useProgress`, inside the 3D chunk, only while `active`), a solid fill grows over the sheen. The globe explorer keeps its staged 25% → 70%.
+- **Lazy chunks.** The contour and topography `next/dynamic` placeholders now show the same loader in the model's frame. The contour placeholder's text changed from „טוען מודל תלת־ממדי…” to „טוען הר תלת־ממדי…”, so it doesn't switch wording when the chunk arrives. `shot-contours-fit.mjs` still waits for „טוען מודל”; it no longer matches anything, so it stops waiting early.
+- **Placement.**
+  - Centred on the frame, except on the measurement landscape (below).
+  - On the datum globe it sits on a small card over the static render.
+  - On the measurement landscape, whose stills stay interactive while the model loads, the card sits at the foot of the stage.
+  - The projections disc stays as the globe's place-holder but no longer pulses: one animation at a time.
+- **Location-check observation.** The loader now also covers the moment before the canvas is activated (formerly an empty `bg-bg-accent` frame).
+
+## 2026-10-19 — Topic 02 "אטלס הפלחים": focus pass (user request)
+
+Brief: the user's pasted message of 2026-10-19 (the UTM zone atlas only). Code: `utm-atlas/UtmZoneAtlas.tsx`, `AtlasMap.tsx` (optional top-label row), `atlasControls.tsx` (`ZoneStepper`); `FitScreen name="utm-atlas"` height 1010 → 816. QA: `scripts/qa/shot-utm-atlas.mjs` rewritten for the new structure (107 checks), screenshots and before/after in `design/screenshots/utm-atlas-2026-10-19/`.
+
+- **The two existing views are the two goals.** "פלחים" (title: "באיזה פלח ובאיזה חצי כדור נמצאת הנקודה?") — the world map leads (800 × 533 at the 1344 px reference), the enlargement is small beside it (440 × 293); the card shows only the zone and the hemisphere. "מודדים במטרים" (title: "כיצד מתארים את הנקודה במטרים בתוך הפלח?") — the enlargement with its grid leads, the world map is a 304 px locator without labels; the card shows E and N with units, then the zone, the hemisphere and WGS84. The leading map is always at inline-start; both maps stay mounted, so the point, pins and windows carry over. Titles are the brief's two questions; one instruction line each.
+- **Assumption: the "one primary action" of an exploration view is the map pick** (the instruction names it). "נסו נקודה אחרת" and "תרגול: מצאו את גריניץ׳" are secondary buttons under the small map; no orange button competes in exploration. Practice keeps its primary "בדיקת הבחירה", which becomes the way forward when solved (focus moves to it).
+- **Moved / removed.** Zone range cell (the boundaries stay on the enlargement), lat/lon cell, the map titles, the world map's long caption (now "מפת איתור, לא מפת UTM. כל רצועה היא פלח."), the grid caption's E/N sentence (the axes say it), the world 84°N / 80°S chips, the zones-view scale bar. "0°" on the world map → "קו המשווה". Coverage, numbering from 180°W and the Norway / Svalbard exceptions → the closed "מידע נוסף על UTM" (shared Radix accordion, Table 2 classes). Feedback lines rewritten short, one per view, explaining the result or the last change.
+- **Assumption: the exploration hemisphere switch was dropped.** The hemisphere changes by picking across the equator (both views) or a southern preset; the false-northing explanation now comes with that crossing in the metres view. The transfer practice keeps its own N/S choice. The five-zone row left the exploration: neighbour zones are the arrows around the zone in the metres card (`data-zone-step`), where "same E/N, another place" is the point.
+- **Connectors** only while the world map leads; in the metres view the locator's window is a few px wide and lines would cross the readings — the frame, the pin "A" and the highlighted zone carry the link.
+- **Fit.** 816 px tall at 1344 in both views (was 1010) — switching views does not move the page. 1440 × 1122: card 96–735 px. 1920 × 1080: 96–912 (before: past the bottom). 1536 × 730: the closed "מידע נוסף" row is below the fold (tall-screen policy). Labels keep 13 / 16 px; no inner scroll.
+
+## Lessons 2 & 6 — one white card per activity (2026-10-19)
+
+Every activity's title, lead/instructions, controls, visualisation and feedback now sit inside the activity's own `.surface-elevated` card (pattern: LandformsScene "ארבעה סוגי מדרונות": T1 h3 + lead at the top of the card). Chapter headers (SceneHeader) and general theory stay outside.
+
+- **Moved into the card:** relief-cover (layers workspace, compare + its summary/table, practice title via `SortQuiz heading`), land cover (map workspace, ladder title, practice title), topography (view tabs), coordinates 1 (ellipsoid/geoid/undulation, datum, datum-field simulation), coordinates 2 (projections, geographic globe, base-60, UTM explainer, reference systems), contours (steepness tabs + kind text + glossary + map/profile → one card), both "לפני שמתחילים" screens (step list + illustration), lesson 6 techniques (each technique's title, principle, demo, "מתי משתמשים" and the demo walk-through → one card; the dead-reckoning board is an inset), route-story builder (title, instruction, five points and map).
+- **Assumption: left outside on purpose** — they are chapter-level theory, not part of one interaction: the definition cards that open relief-cover / land cover / coordinates 1; the two datum-parameter cards ("הזזה, סיבוב וקנה מידה", "ההבדל בין הדאטומים השונים"); "הגורמים המשפיעים על הצומח" beside the vegetation ladder (explains vegetation, not how to read the ladder); "כיצד מפרשים קואורדינטות?" (a static comparison + definitions screen, its heading covers both boxes); the opening term pairs of lesson 6 techniques / principles / planning (used by every activity of the chapter); summary/conclusion cards.
+- **Assumption: SceneHeader intros that also carry an instruction** (landforms, topography, contours, both onboarding screens) stay in the header — wording is frozen and the header is the screen title, so the sentence was not split.
+- Insets replace inner cards where a former card now sits inside a workspace (contours kind text, terrain-nav "מתי משתמשים"/walk-through, dead-reckoning board); the relief-cover summary table keeps a plain hairline frame.

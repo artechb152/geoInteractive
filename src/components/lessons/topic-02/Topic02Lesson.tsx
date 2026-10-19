@@ -13,6 +13,7 @@ import { ContoursScene } from './ContoursScene';
 import { PracticalMeaningScene } from './PracticalMeaningScene';
 import { RecapScene } from './RecapScene';
 import { PagedLearn, type PagedScene } from '@/components/lesson/PagedLearn';
+import { LessonFitUniform } from '@/components/lesson/LessonViewportFit';
 
 const SCENES: PagedScene[] = [
   { id: 'hook',        label: 'פתיחה',                Comp: HookScene },
@@ -30,5 +31,10 @@ const SCENES: PagedScene[] = [
 ];
 
 export function Topic02Lesson() {
-  return <PagedLearn scenes={SCENES} />;
+  // One content width for every sub-topic: all screens shrink by the same scale on a laptop.
+  return (
+    <LessonFitUniform>
+      <PagedLearn scenes={SCENES} />
+    </LessonFitUniform>
+  );
 }

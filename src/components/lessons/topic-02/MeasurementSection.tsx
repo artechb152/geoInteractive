@@ -6,6 +6,9 @@ import { C_ACCENT, C_ELL, C_GEO, C_GROUND, C_GROUND_DIM, C_H, C_INK, C_SEA } fro
 
 export type BodyTab = 'surface' | 'ellipsoid' | 'geoid' | 'undulation';
 
+/** Distance between two stacked height letters' centres (px; the letters are 16 px). */
+const LETTER_GAP = 17;
+
 /**
  * The section along the survey line over SURVEY_SPAN (the dashed line on the
  * landscape, the line across the ellipsoid's marked area): ground, geoid
@@ -59,6 +62,10 @@ export function MeasurementSection({
   const yN = st ? (st.ellipsoid + st.geoid) / 2 : 0;
   let yh = st ? st.ground + (st.ellipsoid - st.ground) * 0.3 : 0;
   if (st && N !== 0 && Math.abs(yh - yN) < 22) yh = yN - 22;
+  // Too short to carry a letter each (A: h ≈ 11 px, N ≈ 7 px): h and N stand one above the other beside the
+  // stack, at and above its top, clear of the lines, each tied to the middle of its own arrow by a short leader.
+  const tight = !!st && N !== 0 && Math.abs(st.ellipsoid - st.ground) < 2 * LETTER_GAP;
+  const tag = st && tight ? { x: st.x + 34, h: Math.min(st.ground, st.geoid, st.ellipsoid) - LETTER_GAP, N: Math.min(st.ground, st.geoid, st.ellipsoid) } : null;
   const firm = (layer: 'ellipsoid' | 'geoid') => tab === layer || (tab === 'geoid' && revealed);
   const weight = (layer: 'ellipsoid' | 'geoid') => (firm(layer) ? 3.5 : 2.25);
   const groundFirm = tab === 'surface' || mission;
@@ -120,14 +127,21 @@ export function MeasurementSection({
             <line x1={ax.H} y1={st.geoid} x2={ax.H} y2={st.ground + 1} stroke={C_H} markerEnd="url(#msArH)" />
             <line x1={ax.h} y1={st.ellipsoid} x2={ax.h} y2={st.ground + 1} stroke={C_ELL} markerEnd="url(#msArE)" />
             {N !== 0 && <line x1={ax.N} y1={st.ellipsoid} x2={ax.N} y2={st.geoid + (st.geoid < st.ellipsoid ? 1 : -1)} stroke={C_GEO} markerEnd="url(#msArG)" />}
-            <line x1={st.x - 24} y1={st.geoid} x2={st.x + 30} y2={st.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
-            <line x1={st.x - 24} y1={st.ellipsoid} x2={st.x + 30} y2={st.ellipsoid} stroke={C_ELL} strokeWidth="1.5" strokeDasharray="4 3" />
+            {/* the levels' ticks start just past H's arrow, so they never run under its letter */}
+            <line x1={st.x - 17} y1={st.geoid} x2={st.x + 30} y2={st.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
+            <line x1={st.x - 17} y1={st.ellipsoid} x2={st.x + 30} y2={st.ellipsoid} stroke={C_ELL} strokeWidth="1.5" strokeDasharray="4 3" />
+            {tag && ax && (
+              <g strokeWidth="1" data-section-leaders>
+                <line x1={tag.x - 4} y1={tag.h} x2={ax.h + 2} y2={(st.ellipsoid + st.ground) / 2} stroke={C_ELL} />
+                <line x1={tag.x - 4} y1={tag.N} x2={ax.N + 2} y2={yN} stroke={C_GEO} />
+              </g>
+            )}
           </g>
         )}
 
         {gs && (
           <g strokeWidth="2.5" data-geoid-h>
-            <line x1={gs.x - 22} y1={gs.geoid} x2={gs.x + 14} y2={gs.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
+            <line x1={gs.x - 14} y1={gs.geoid} x2={gs.x + 14} y2={gs.geoid} stroke={C_GEO} strokeWidth="1.5" strokeDasharray="4 3" />
             <line x1={gs.x - 10} y1={gs.geoid} x2={gs.x - 10} y2={gs.ground + 1} stroke={C_H} markerEnd="url(#msArH)" />
           </g>
         )}
@@ -144,11 +158,11 @@ export function MeasurementSection({
           <span className="absolute" style={{ ...pos(ax.H - 7, (st.geoid + st.ground) / 2), transform: 'translate(-100%, -50%)', color: C_H }}>
             H
           </span>
-          <span className="absolute" style={{ ...pos(ax.letters, N === 0 ? (st.ellipsoid + st.ground) / 2 : yh), transform: 'translate(0, -50%)', color: C_ELL }}>
+          <span className="absolute" style={{ ...(tag ? pos(tag.x, tag.h) : pos(ax.letters, N === 0 ? (st.ellipsoid + st.ground) / 2 : yh)), transform: 'translate(0, -50%)', color: C_ELL }}>
             h
           </span>
           {N !== 0 && (
-            <span className="absolute" style={{ ...pos(ax.letters, yN), transform: 'translate(0, -50%)', color: C_GEO }}>
+            <span className="absolute" style={{ ...(tag ? pos(tag.x, tag.N) : pos(ax.letters, yN)), transform: 'translate(0, -50%)', color: C_GEO }}>
               N
             </span>
           )}

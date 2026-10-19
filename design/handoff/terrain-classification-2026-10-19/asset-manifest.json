@@ -1,0 +1,139 @@
+{
+  "version": 3,
+  "generatedAt": "2026-10-19",
+  "generator": "built-in image_gen",
+  "background": "transparent",
+  "assetDirectory": "public/assets/lessons/topic02/terrain-classification",
+  "publicUrlBase": "/assets/lessons/topic02/terrain-classification",
+  "mockup": "design/mockups/terrain-classification-2026-10-19/04-final-clean-no-counters.png",
+  "items": [
+    {
+      "key": "hill",
+      "id": "q-hill",
+      "label": "גבעה",
+      "answer": "relief",
+      "file": "item-hill.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-hill.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-hill.png",
+      "alt": "גבעה מעוגלת הבולטת מעל סביבתה, מסומנת בקו מתאר כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "grove",
+      "id": "q-grove",
+      "label": "חורש",
+      "answer": "cover",
+      "file": "item-grove.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-grove.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-grove.png",
+      "alt": "חורש טבעי קטן עם עצים ושיחים בפיזור לא סדור, מסומן בקו כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "house",
+      "id": "q-house",
+      "label": "בית",
+      "answer": "cover",
+      "file": "item-house.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-house.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-house.png",
+      "alt": "בית אבן יחיד עם גג רעפים, מסומן בקו מתאר כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "valley",
+      "id": "q-valley",
+      "label": "עמק",
+      "answer": "relief",
+      "file": "item-valley.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-valley.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-valley.png",
+      "alt": "עמק מוארך ונמוך בין שתי גבעות, קרקעית העמק מסומנת בקו כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "road",
+      "id": "q-road",
+      "label": "כביש",
+      "answer": "cover",
+      "file": "item-road.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-road.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-road.png",
+      "alt": "קטע כביש סלול על הקרקע, מסומן בקו מתאר כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "slope",
+      "id": "q-slope",
+      "label": "מדרון",
+      "answer": "relief",
+      "file": "item-slope.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-slope.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-slope.png",
+      "alt": "משטח קרקע משופע המחבר אזור גבוה לנמוך, מסומן בקו כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "olive-orchard",
+      "id": "q-olives",
+      "label": "מטע זיתים",
+      "answer": "cover",
+      "file": "item-olive-orchard.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-olive-orchard.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-olive-orchard.png",
+      "alt": "מטע זיתים נטוע בשורות סדורות, גבול המטע מסומן בקו כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    },
+    {
+      "key": "saddle",
+      "id": "q-saddle",
+      "label": "אוכף",
+      "answer": "relief",
+      "file": "item-saddle.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/item-saddle.png",
+      "src": "/assets/lessons/topic02/terrain-classification/item-saddle.png",
+      "alt": "אוכף בקו רכס בין שתי כיפות סמוכות, הקטע הנמוך ביניהן מסומן בקו כתום",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": true
+    }
+  ],
+  "choices": [
+    {
+      "key": "choice-relief",
+      "label": "תבליט",
+      "file": "choice-relief.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/choice-relief.png",
+      "src": "/assets/lessons/topic02/terrain-classification/choice-relief.png",
+      "alt": "איור גבעה פשוטה לבחירת תבליט",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": false
+    },
+    {
+      "key": "choice-cover",
+      "label": "תכסית",
+      "file": "choice-cover.png",
+      "path": "public/assets/lessons/topic02/terrain-classification/choice-cover.png",
+      "src": "/assets/lessons/topic02/terrain-classification/choice-cover.png",
+      "alt": "איור שני עצים לבחירת תכסית",
+      "width": 1536,
+      "height": 1024,
+      "outlineBakedIn": false
+    }
+  ]
+}

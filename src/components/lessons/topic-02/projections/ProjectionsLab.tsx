@@ -18,6 +18,7 @@ import { useReducedMotion } from 'framer-motion';
 import { ArrowLeft, BookOpen, CircleCheck, Lightbulb, Pause, Play, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/Icon';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { cn } from '@/lib/utils';
 import { loadGlobeImages } from '../geo-globe/globeAssets';
 import { useRovingKeys } from '../scale/controls';
@@ -36,9 +37,9 @@ import {
 
 const Stage3D = dynamic(() => import('./ProjectionStage3D'), { ssr: false, loading: () => null });
 
-// the scene's own heading and lead (CoordinatesPart2Scene H3 / LEAD)
-const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
-const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+// the activity's heading and lead, at the top of its own card (one envelope per activity)
+const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 /** the legend's text (DatumFieldChallenge Legend, lessons-02-06 spec T6) */
 const T6 = 'text-sm leading-snug text-fg-muted';
 const T5 = 'text-sm font-display font-semibold text-fg-muted';
@@ -247,11 +248,6 @@ export function ProjectionsLab() {
 
   return (
     <div className="my-10" data-screen="projections">
-      <h3 className={H3}>היטלים: מכדור למפה</h3>
-      <p className={LEAD}>
-        <strong className="text-fg">היטל</strong> הוא מעבר ממשטח מעוקל לייצוג שטוח. בחרו משטח ופתחו אותו כדי לראות איזו מפה מתקבלת.
-      </p>
-
       <div
         ref={cardRef}
         className="surface-elevated p-6 lg:p-8"
@@ -270,6 +266,11 @@ export function ProjectionsLab() {
         data-flat={flat ? 'true' : 'false'}
         data-earth={pixels?.source ?? ''}
       >
+        <h3 className={H3}>היטלים: מכדור למפה</h3>
+        <p className={LEAD}>
+          <strong className="text-fg">היטל</strong> הוא מעבר ממשטח מעוקל לייצוג שטוח. בחרו משטח ופתחו אותו כדי לראות איזו מפה מתקבלת.
+        </p>
+
         {/* ── row 1: the methods, or the practice's heading (one height) ── */}
         {learning ? (
           <div role="tablist" aria-label="שיטת ההטלה" className="grid h-14 grid-cols-3 gap-2" onKeyDown={tabKeys.onKeyDown}>
@@ -335,11 +336,15 @@ export function ProjectionsLab() {
                     <p id={descId} className="sr-only">
                       {stageDescription(view.m, view.p)} {flat ? '' : 'גררו או השתמשו בחצים כדי לסובב את המבט. Home מחזיר למבט ההתחלתי.'}
                     </p>
-                    {/* until the first 3-D frame: a quiet disc where the globe will stand — never an empty box */}
+                    {/* until the first 3-D frame: a quiet disc where the globe will stand — never an empty box — and the
+                        lessons' model loading indicator over it */}
                     {!flat && !ready && (
-                      <div aria-hidden className="absolute inset-0 grid place-items-center">
-                        <div className="size-[248px] rounded-full bg-bg-accent motion-safe:animate-pulse" />
-                      </div>
+                      <>
+                        <div aria-hidden className="absolute inset-0 grid place-items-center">
+                          <div className="size-[248px] rounded-full bg-bg-accent" />
+                        </div>
+                        <ModelLoading label="טוען גלובוס תלת־ממדי…" />
+                      </>
                     )}
                     {show3d && (
                       <div className={cn('absolute inset-0 transition-opacity duration-300 motion-reduce:transition-none', ready ? 'opacity-100' : 'opacity-0')}>

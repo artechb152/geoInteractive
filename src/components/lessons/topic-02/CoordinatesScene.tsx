@@ -31,7 +31,7 @@ import { FitScreen } from './coordinates1Fit';
 
 export function CoordinatesScene() {
   return (
-    <section id="scene-coordinates" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <section id="scene-coordinates" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <SceneHeader
         step="02.3"
         eyebrow="קואורדינטות · גיאודזיה"
@@ -40,14 +40,14 @@ export function CoordinatesScene() {
       />
 
       {/* laptop fit: one FitScreen per learning screen (the datum block fits its two screens itself) */}
-      <FitScreen name="definitions" height={750} className="mb-12">
+      <FitScreen name="definitions" height={787} className="mb-12">
         <CoordinatesDefinitions />
       </FitScreen>
       <FitScreen name="reference-bodies" height={917}>
         <ReferenceBodies />
       </FitScreen>
       <DatumGuided />
-      <FitScreen name="datum-field" height={902}>
+      <FitScreen name="datum-field" height={1033}>
         <DatumFieldChallenge />
       </FitScreen>
       <FitScreen name="summary" height={310} className="">
@@ -57,8 +57,9 @@ export function CoordinatesScene() {
   );
 }
 
-const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
-const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+// the activity's heading and lead, at the top of its own card (one envelope per activity)
+const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 
 /* ─────────────────── אליפסואיד · גיאואיד · גליות (deck slides 6–14) ─────────────────── */
 
@@ -318,14 +319,14 @@ function ReferenceBodies() {
 
   return (
     <div className="my-10">
-      <h3 className={H3}>אליפסואיד, גיאואיד וגליות</h3>
-      <p className={LEAD}>
-        כדי לקבוע מיקום וגובה משתמשים בשני גופי ייחוס: <strong className="text-fg">אליפסואיד</strong>, המתאר בקירוב את צורת כדור הארץ, ו
-        <strong className="text-fg">גיאואיד</strong>, המשמש ייחוס לגובה מעל פני הים. עברו בין התצוגות והשוו בין פני השטח, גופי הייחוס והגבהים
-        הנמדדים ביחס אליהם.
-      </p>
-
       <div className="surface-elevated p-6 lg:p-8">
+        <h3 className={H3}>אליפסואיד, גיאואיד וגליות</h3>
+        <p className={LEAD}>
+          כדי לקבוע מיקום וגובה משתמשים בשני גופי ייחוס: <strong className="text-fg">אליפסואיד</strong>, המתאר בקירוב את צורת כדור הארץ, ו
+          <strong className="text-fg">גיאואיד</strong>, המשמש ייחוס לגובה מעל פני הים. עברו בין התצוגות והשוו בין פני השטח, גופי הייחוס והגבהים
+          הנמדדים ביחס אליהם.
+        </p>
+
         <div role="tablist" aria-label="שכבות החתך" onKeyDown={onTabKey} className="mb-4 flex gap-2">
           {BODY_TABS.map((b, i) => (
             <button

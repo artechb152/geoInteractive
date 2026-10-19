@@ -35,9 +35,9 @@ const MAP_SRC = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/assets/lessons/topic
 const MAP_ALT =
   'מפת שטח במבט־על: עמק ובו נחל מתפתל מצפון לדרום, גשר מעל הנחל במזרח המפה, דרך ממערב למזרח, צומת דרכים מערבית לגשר וגבעות מתונות מסביב.';
 
-// The scene's block heading and lead (CoordinatesScene H3 / LEAD), and the lesson-content tiers (Table 2).
-const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
-const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+// The activity's heading and lead, at the top of its own card (one envelope per activity), and the lesson-content tiers (Table 2).
+const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 const HEADING = 'font-display font-bold leading-tight text-black text-base md:text-lg';
 const LABEL = 'text-base font-display font-bold text-black';
 const BODY = 'text-base leading-relaxed text-black';
@@ -141,14 +141,14 @@ export function DatumFieldChallenge() {
 
   return (
     <div ref={rootRef} className="my-10" data-datum-activity="">
-      <h3 className={H3}>הדמיה: מה קורה כשהדאטום לא תואם?</h3>
-      <p className={LEAD}>
-        <strong className="text-fg">לא ניתן לדבר על קואורדינטות של נקודה בלי שנדע מהו הדאטום ומהו ההיטל שלה</strong> (על ההיטל – בחלק הבא).{' '}
-        מפות ממקורות שונים עשויות להשתמש בדאטומים שונים. בהדגמה נראה איך מתארים את אותו גשר בשני דאטומים, ומדוע העתקת המספרים ביניהם ללא המרה עלולה להוביל למקום אחר.{' '}
-        A ו־B הם דאטומים בדיוניים; ההבדל ביניהם מוצג כאן כהזזה קבועה לצורך ההמחשה בלבד.
-      </p>
-
       <div className="surface-elevated p-6 lg:px-8 lg:pt-8">
+        <h3 className={H3}>הדמיה: מה קורה כשהדאטום לא תואם?</h3>
+        <p className={LEAD}>
+          <strong className="text-fg">לא ניתן לדבר על קואורדינטות של נקודה בלי שנדע מהו הדאטום ומהו ההיטל שלה</strong> (על ההיטל – בחלק הבא).{' '}
+          מפות ממקורות שונים עשויות להשתמש בדאטומים שונים. בהדגמה נראה איך מתארים את אותו גשר בשני דאטומים, ומדוע העתקת המספרים ביניהם ללא המרה עלולה להוביל למקום אחר.{' '}
+          A ו־B הם דאטומים בדיוניים; ההבדל ביניהם מוצג כאן כהזזה קבועה לצורך ההמחשה בלבד.
+        </p>
+
         <StageTabs mode={s.mode} uid={uid} onSelect={(mode) => dispatch({ type: 'setMode', mode })} />
 
         <div

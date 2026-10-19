@@ -121,9 +121,10 @@ export function OnboardingScene() {
           intro="מפה משלבת כמה סוגי מידע: מבנה הקרקע, דרכים, יישובים, גבולות ומיקום כוחות. כל שכבה מוסיפה מידע שמסייע להבין את המרחב ולתכנן בו פעילות. בחרו את השכבות לפי הסדר ובדקו כיצד כל אחת מוסיפה לתמונת השטח."
         />
 
-        {/* Preserve the existing 32:68 accordion/map split. Longer approved
+        {/* One card holds the layer list and the map it builds (one envelope per activity).
+            Preserve the existing 32:68 accordion/map split. Longer approved
             labels wrap naturally without reducing the type size. */}
-        <div className="grid md:grid-cols-[32fr_68fr] gap-6">
+        <div className="surface-elevated p-5 sm:p-6 grid md:grid-cols-[32fr_68fr] gap-6">
           <div className="space-y-1">
             {LAYERS.map((l, i) => {
               const active = activeIndex === i;
@@ -133,8 +134,7 @@ export function OnboardingScene() {
                 <div
                   key={l.id}
                   className={cn(
-                    // Rows sit on the textured page — the hover tint lives on a ::before
-                    // layer over the opaque white base, so it never lets the page show through.
+                    // The hover tint lives on a ::before layer over the opaque white base.
                     'relative isolate overflow-hidden rounded-xl border transition-colors duration-200 ease-snap',
                     'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                     active
@@ -221,7 +221,7 @@ export function OnboardingScene() {
           {/* Visualization — WebP frame-sequence player, same technology as
               topic-01/SceneOnboardingFramePlayer.tsx. min-h is only a floor;
               the canvas cover-fits whatever box it's given. */}
-          <div className="surface-elevated bg-bg-accent relative overflow-hidden min-h-[280px] [&_canvas]:!w-full [&_canvas]:!h-full">
+          <div className="rounded-xl bg-bg-accent relative overflow-hidden min-h-[280px] [&_canvas]:!w-full [&_canvas]:!h-full">
             <SceneOnboardingFramePlayer targetState={LAYERS[activeIndex].id} />
           </div>
         </div>

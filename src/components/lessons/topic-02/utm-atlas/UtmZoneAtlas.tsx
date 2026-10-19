@@ -1,30 +1,38 @@
 'use client';
 /* ─────────── היטל UTM — "אטלס הפלחים" (חלופה 2) ───────────
    Brief: design/mockups/utm-concepts-2026-10-12/README.md; mockup 02-zone-atlas.png.
+   Focus pass 2026-10-19: the two existing views are the two learning goals, one at a time.
+   - "פלחים" asks which zone and hemisphere: the world locator map leads, the enlargement is
+     small beside it; the answer card shows only the zone and the hemisphere.
+   - "מודדים במטרים" asks how the same point is written in metres: the enlargement with the
+     zone's grid leads, the world map is a small locator; E and N together, with the zone,
+     the hemisphere and the datum beside them as the context they need.
+   One short title, one instruction and one feedback line per view; secondary actions sit
+   under the small map; coverage, numbering and exceptions are in "מידע נוסף על UTM".
 
-   One point drives everything (utmAtlas.ts): the world locator map, the
-   enlargement, the zone, the hemisphere, the zone's range, E/N and the
-   explanation are all derived from it. Practice ("מצאו את גריניץ׳", then three
-   new points) runs in the same card on its own state, so going back to the
-   exploration finds the point where it was. */
+   One point drives everything (utmAtlas.ts): both maps, the zone, the hemisphere, E/N and
+   the explanation are all derived from it, and switching views keeps it. Practice ("מצאו את
+   גריניץ׳", then three new points) runs in the same card on its own state, so going back to
+   the exploration finds the point where it was. */
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import { L } from '../Ltr';
 import { fromUtm } from '../reference-systems/utm';
 import { AtlasMap, type Chip, type Marks, type TopLabel } from './AtlasMap';
-import { BODY, Cell, Changing, Feedback, HEADING, HEMI_ITEMS, LABEL, Segmented, VALUE, ZoneRow } from './atlasControls';
+import { BODY, Cell, Changing, Feedback, HEADING, HEMI_ITEMS, LABEL, Segmented, VALUE, ZoneRow, ZoneStepper } from './atlasControls';
 import {
   FRAME_ASPECT, WORLD_VIEW, fracX, fracY, gridStep, latForN, lonForE, readingLines, regionView, scaleBarKm, viewBottom, viewTop, zoneGrid, zoneWindow,
   KM_PER_DEG, type View,
 } from './atlasGeometry';
 import { useBasemap } from './useBasemap';
 import {
-  DATUM, GREENWICH_ZONE, HEMI_NAME, NORTH_LIMIT, OPENING, PRESETS, SOUTH_LIMIT, TRANSFER, centralMeridian, clampLat, fmtLat, fmtLon, fmtRange,
-  inCoverage, moveToHemisphere, moveToZone, normLon, readUtm, regularZone, utmZoneOf, wrapZone, zoneBoundarySegments, zoneEast,
+  DATUM, GREENWICH_ZONE, HEMI_NAME, NORTH_LIMIT, OPENING, PRESETS, SOUTH_LIMIT, TRANSFER, centralMeridian, clampLat, fmtLat, fmtLon,
+  inCoverage, moveToZone, normLon, readUtm, regularZone, utmZoneOf, wrapZone, zoneBoundarySegments, zoneEast,
   zoneRangeAt, zoneStep, zoneWest, type Hemisphere, type LatLon, type Place, type UtmReading,
 } from './utmAtlas';
 
@@ -35,7 +43,6 @@ type Event =
   | { kind: 'start' }
   | { kind: 'pick'; prev: UtmReading }
   | { kind: 'zone'; prev: UtmReading }
-  | { kind: 'hemi'; prev: UtmReading }
   | { kind: 'preset'; place: Place }
   | { kind: 'outside'; lat: number }
   | { kind: 'view'; to: InsetKind };
@@ -44,13 +51,19 @@ type Check = { zone: number; hemi: Hemisphere | null; zoneOk: boolean; hemiOk: b
 
 const RAD = Math.PI / 180;
 /** Keeps a unit on the line of its number ("500000 מ׳"). */
-const NBSP = ' ';
+const NBSP = ' ';
 const GREENWICH_LAT = 51.48;
 const TRANSFER_LETTERS = ['B', 'C', 'D'];
 const VIEW_ITEMS = [
   { id: 'zones' as const, label: 'פלחים' },
   { id: 'grid' as const, label: 'מודדים במטרים' },
 ];
+
+/* the two-column stage: the leading map at inline-start, the answer column beside it */
+const MAIN = 'col-start-1 row-span-3 row-start-1 min-w-0 self-start';
+const SIDE_MAP = 'col-start-2 row-start-2 min-w-0';
+const VALUE_BOX = 'rounded-lg bg-bg-accent px-4 py-1.5';
+const UNIT = 'text-base font-semibold text-fg-muted';
 
 /* ── small helpers ───────────────────────────────────────────────────────── */
 
@@ -124,9 +137,6 @@ export function UtmZoneAtlas() {
   const [insetKind, setInsetKind] = useState<InsetKind>('zones');
   const reading = useMemo(() => readUtm(point), [point]);
   const [exploreView, setExploreView] = useState<{ view: View; zone: number }>(() => ({ view: windowFor(readUtm(OPENING), 'zones'), zone: 36 }));
-  const [rowCenter, setRowCenter] = useState(36);
-  /** The zone row stays put while the chosen zone is on it; it pages only when it must. */
-  const follow = (set: (f: (c: number) => number) => void, z: number) => set((c) => (Math.abs(zoneStep(c, z)) <= 2 ? c : z));
   const [presetIdx, setPresetIdx] = useState(0);
   const gesture = useRef<UtmReading | null>(null);
   const [announce, setAnnounce] = useState('');
@@ -138,17 +148,23 @@ export function UtmZoneAtlas() {
   const [check, setCheck] = useState<Check | null>(null);
   const [item, setItem] = useState(0);
   const [practiceRow, setPracticeRow] = useState(GREENWICH_ZONE);
+  /** The practice zone row stays put while the chosen zone is on it; it pages only when it must. */
+  const follow = (z: number) => setPracticeRow((c) => (Math.abs(zoneStep(c, z)) <= 2 ? c : z));
 
   const worldRef = useRef<HTMLDivElement>(null);
   const insetRef = useRef<HTMLDivElement>(null);
-  const rowRef = useRef<HTMLDivElement>(null);
   const insetPinRef = useRef<HTMLButtonElement>(null);
   const worldPinRef = useRef<HTMLButtonElement>(null);
-  const panelHeadingRef = useRef<HTMLHeadingElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const sideRef = useRef<HTMLDivElement>(null);
+  const focusTitle = () => requestAnimationFrame(() => titleRef.current?.focus({ preventScroll: true }));
 
   const target = mode === 'transfer' || mode === 'done' ? TRANSFER[Math.min(item, TRANSFER.length - 1)] : null;
   const targetReading = useMemo(() => (target ? readUtm(target) : null), [target]);
   const revealed = mode === 'done' || (mode === 'transfer' && Boolean(check?.zoneOk && check?.hemiOk));
+  /** The metres view: the enlargement and its grid lead, the world map is the small locator. */
+  const gridMode = mode === 'explore' && insetKind === 'grid';
+  const worldLeads = !gridMode;
 
   /* ── the enlargement's window per mode ── */
   const insetTarget: View = useMemo(() => {
@@ -164,14 +180,17 @@ export function UtmZoneAtlas() {
   /* ── exploration actions ── */
   const recenter = (r: UtmReading, kind = insetKind, force = false) => {
     setExploreView((cur) => (!force && keepsPoint(cur.view, r, kind, cur.zone) ? cur : { view: windowFor(r, kind), zone: r.zone }));
-    follow(setRowCenter, r.zone);
   };
 
   /** One short announcement per settled change: held arrow keys or a burst of clicks say it once. */
   const sayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const say = (r: UtmReading) => {
     if (sayTimer.current) clearTimeout(sayTimer.current);
-    sayTimer.current = setTimeout(() => setAnnounce(`פלח ${r.zone} ${HEMI_NAME[r.hemisphere]}, מזרח ${r.eText}, צפון ${r.nText} מטרים.`), 500);
+    const text =
+      insetKind === 'grid'
+        ? `מזרח ${r.eText}, צפון ${r.nText} מטרים, בפלח ${r.zone} ${HEMI_NAME[r.hemisphere]}.`
+        : `פלח ${r.zone}, חצי הכדור ה${HEMI_NAME[r.hemisphere]}.`;
+    sayTimer.current = setTimeout(() => setAnnounce(text), 500);
   };
   useEffect(() => () => void (sayTimer.current && clearTimeout(sayTimer.current)), []);
 
@@ -191,7 +210,6 @@ export function UtmZoneAtlas() {
     const r = readUtm(next);
     setPoint(next);
     setEvent({ kind: 'pick', prev });
-    follow(setRowCenter, r.zone);
     if (source === 'world') recenter(r, insetKind, true);
     if (phase === 'end') {
       if (source === 'inset') recenter(r);
@@ -235,16 +253,6 @@ export function UtmZoneAtlas() {
     say(r);
   };
 
-  const goHemisphere = (h: Hemisphere) => {
-    if (h === reading.hemisphere) return;
-    const next = moveToHemisphere(point, h);
-    const r = readUtm(next);
-    setPoint(next);
-    setEvent({ kind: 'hemi', prev: reading });
-    recenter(r, insetKind, true);
-    say(r);
-  };
-
   const nextPreset = () => {
     const place = presetIdx < PRESETS.length ? PRESETS[presetIdx] : OPENING;
     const next = { lat: place.lat, lon: place.lon };
@@ -270,7 +278,7 @@ export function UtmZoneAtlas() {
     setHemiPick(null);
     setCheck(null);
     setPracticeRow(GREENWICH_ZONE);
-    requestAnimationFrame(() => panelHeadingRef.current?.focus({ preventScroll: true }));
+    focusTitle();
   };
   const startTransfer = (i = 0) => {
     setMode('transfer');
@@ -279,18 +287,18 @@ export function UtmZoneAtlas() {
     setHemiPick(null);
     setCheck(null);
     setPracticeRow(GREENWICH_ZONE);
-    requestAnimationFrame(() => panelHeadingRef.current?.focus({ preventScroll: true }));
+    focusTitle();
   };
   const backToExplore = () => {
     setMode('explore');
     setCheck(null);
-    requestAnimationFrame(() => panelHeadingRef.current?.focus({ preventScroll: true }));
+    focusTitle();
   };
   const choose = (z: number) => {
     if (revealed || (mode === 'greenwich' && check?.zoneOk)) return;
     setPick(z);
     setCheck(null);
-    follow(setPracticeRow, z);
+    follow(z);
   };
   const chooseHemi = (h: Hemisphere) => {
     if (revealed) return;
@@ -306,7 +314,7 @@ export function UtmZoneAtlas() {
     if (item + 1 < TRANSFER.length) startTransfer(item + 1);
     else {
       setMode('done');
-      requestAnimationFrame(() => panelHeadingRef.current?.focus({ preventScroll: true }));
+      focusTitle();
     }
   };
   const practicePointer = (p: LatLon, phase: 'start' | 'move' | 'end') => {
@@ -324,12 +332,13 @@ export function UtmZoneAtlas() {
 
   const worldMarks: Marks = { equator: 'plain' };
   const insetMarks: Marks = { equator: 'plain' };
-  const worldChips: Chip[] = [
-    { key: 'lat84', lat: NORTH_LIMIT, fx: 0.012, children: <L>84°N</L>, style: { transform: 'translateY(3px)' } },
-    { key: 'lat0', lat: 0, fx: 0.012, children: <L>0°</L>, style: { transform: 'translateY(calc(-100% - 3px))' } },
-    { key: 'lat80', lat: SOUTH_LIMIT, fx: 0.012, children: <L>80°S</L>, style: { transform: 'translateY(calc(-100% - 3px))' } },
-    { key: 'outside', lat: -85, fx: 0.5, style: { transform: 'translate(-50%, -50%)' }, children: <span dir="rtl">מחוץ לתחום <L>UTM</L></span> },
-  ];
+  /* the small locator carries no labels; leading, it names the equator and the veiled polar bands */
+  const worldChips: Chip[] = gridMode
+    ? []
+    : [
+        { key: 'equator', lat: 0, fx: 0.012, children: <span dir="rtl">קו המשווה</span>, style: { transform: 'translateY(calc(-100% - 3px))' } },
+        { key: 'outside', lat: -85, fx: 0.5, style: { transform: 'translate(-50%, -50%)' }, children: <span dir="rtl">מחוץ לתחום <L>UTM</L></span> },
+      ];
   const insetChips: Chip[] = [];
   let focusZone: number | null = null;
 
@@ -345,7 +354,7 @@ export function UtmZoneAtlas() {
       insetMarks.boundary = { lon: crossed.lon, s: Math.max(SOUTH_LIMIT, viewBottom(inset)), n: Math.min(NORTH_LIMIT, viewTop(inset)) };
       insetChips.push({ key: 'crossed', lon: crossed.lon, fy: 0.78, tone: 'accent', style: { transform: 'translate(-50%, -50%)' }, children: <span dir="rtl">גבול <L>{fmtLon(crossed.lon)}</L></span> });
     }
-    if ((event.kind === 'hemi' || (event.kind === 'pick' && event.prev.hemisphere !== reading.hemisphere)) && mode === 'explore') {
+    if (event.kind === 'pick' && event.prev.hemisphere !== reading.hemisphere) {
       worldMarks.equator = 'highlight';
       insetMarks.equator = 'highlight';
     }
@@ -394,7 +403,7 @@ export function UtmZoneAtlas() {
     }
   }
 
-  /* world: zone numbers along the top */
+  /* world: zone numbers along the top (the small locator shows none) */
   const worldTop: TopLabel[] = [1, 15, 30, 45, 60]
     .filter((z) => focusZone == null || Math.abs(zoneStep(z, focusZone)) >= 4)
     .map((z) => ({ key: `z${z}`, fx: fracX(WORLD_VIEW, zoneWest(z) + 3), text: z }));
@@ -421,7 +430,7 @@ export function UtmZoneAtlas() {
   }, [inset, focusZone]);
 
   const showZoneNumbers = mode !== 'transfer' || revealed;
-  if (showZoneNumbers && !(mode === 'explore' && insetKind === 'grid')) {
+  if (showZoneNumbers && !gridMode) {
     const midLat = Math.max(SOUTH_LIMIT, Math.min(NORTH_LIMIT - 0.01, inset.lat0));
     const seen = new Set<number>();
     for (let lon = inset.lon0 - inset.w / 2; lon <= inset.lon0 + inset.w / 2; lon += 0.5) {
@@ -444,10 +453,9 @@ export function UtmZoneAtlas() {
   }
 
   /* grid view: the zone's own grid, its labels and the point's reading lines */
-  const gridMode = mode === 'explore' && insetKind === 'grid';
   const grid = useMemo(() => (gridMode ? zoneGrid(reading.zone, inset) : null), [gridMode, reading.zone, inset]);
   const [frames, setFrames] = useState<{ world: DOMRect; inset: DOMRect; box: DOMRect } | null>(null);
-  const insetPx = frames?.inset.width ?? 488;
+  const insetPx = frames?.inset.width ?? 800;
   if (gridMode && grid) {
     insetMarks.grid = grid;
     insetMarks.focusZone = null;
@@ -497,11 +505,16 @@ export function UtmZoneAtlas() {
     ro.observe(el);
     if (worldRef.current) ro.observe(worldRef.current);
     if (insetRef.current) ro.observe(insetRef.current);
+    // the answer column above the small enlargement grows with feedback: the enlargement moves down
+    if (sideRef.current) ro.observe(sideRef.current);
     return () => ro.disconnect();
-  }, [mode, fitScale]);
+  }, [mode, fitScale, insetKind]);
 
+  /* Only while the world map leads: the enlargement then sits beside it, under the answer card.
+     In the metres view the locator's window is a few pixels wide; its frame, the pin and the
+     highlighted zone carry the link, and lines would cross the readings. */
   const connectors = useMemo(() => {
-    if (!frames || mode === 'done') return null;
+    if (!frames || mode === 'done' || !worldLeads) return null;
     const { world, inset: ins, box } = frames;
     const x = (f: number) => world.left - box.left + f * world.width;
     const y = (f: number) => world.top - box.top + f * world.height;
@@ -513,38 +526,40 @@ export function UtmZoneAtlas() {
       [x(lx), y(fy0), right, ins.top - box.top],
       [x(lx), y(fy1), right, ins.bottom - box.top],
     ];
-  }, [frames, inset, mode]);
+  }, [frames, inset, mode, worldLeads]);
 
   /* ── text ── */
-  const insetTitle =
-    mode === 'explore' ? (
-      <>
-        תקריב · פלח {reading.zone}
-      </>
-    ) : mode === 'greenwich' ? (
-      'תקריב · סביב גריניץ׳'
-    ) : (
-      'תקריב · סביב הנקודה'
-    );
-  const worldTitle =
+  const letter = TRANSFER_LETTERS[Math.min(item, TRANSFER.length - 1)];
+  const title =
     mode === 'explore'
-      ? 'בחרו נקודה בעולם ובחנו את הפלח שלה'
+      ? gridMode
+        ? 'כיצד מתארים את הנקודה במטרים בתוך הפלח?'
+        : 'באיזה פלח ובאיזה חצי כדור נמצאת הנקודה?'
       : mode === 'greenwich'
-        ? 'תרגול: מצאו את גריניץ׳'
+        ? 'משימה 1 מתוך 4 · גריניץ׳'
         : mode === 'transfer'
-          ? 'תרגול: נקודה חדשה'
-          : 'תרגול: סיום';
-
-  const step = gridStep(inset);
-  const insetCaption =
-    mode !== 'explore' ? (
-      <>לכל פלח רשת מקומית משלו. בתקריב מסומנים גבולות הפלחים, ומעליהם קווי האורך.</>
-    ) : insetKind === 'zones' ? (
-      <>לכל פלח רשת מקומית משלו. בתקריב: הפלח של הנקודה ושני שכניו.</>
-    ) : (
+          ? `משימה ${item + 2} מתוך 4 · נקודה ${letter}`
+          : 'סיימתם את התרגול';
+  const instruction: ReactNode =
+    mode === 'explore' ? (
+      gridMode ? (
+        <>
+          גררו את A בתקריב ובדקו איך משתנים <L>E</L> ו־<L>N</L>.
+        </>
+      ) : (
+        'בחרו נקודה במפה ובדקו באיזה פלח היא נמצאת.'
+      )
+    ) : mode === 'greenwich' ? (
       <>
-        רשת פלח {reading.zone}, קו בכל <L>{step / 1000}</L> ק״מ; המספרים במטרים. מזרחה <L>E</L> גדל, צפונה <L>N</L> גדל.
+        בחרו את הפלח שגבולו המערבי הוא קו גריניץ׳, <L>0°</L>. בחרו פלח בכפתורים או במפה, ואז לחצו ״בדיקת הבחירה״.
       </>
+    ) : mode === 'transfer' ? (
+      <>
+        הנקודה {letter}: {target!.name}, <L>{latLonText(target!.lat, target!.lon)}</L>. באיזה פלח ובאיזה חצי כדור היא נמצאת? בחרו פלח בכפתורים או במפה, ואז
+        לחצו ״בדיקת הבחירה״.
+      </>
+    ) : (
+      'זיהיתם פלח וחצי כדור לשלוש נקודות חדשות.'
     );
 
   const pinHelpId = `${uid}-pin-help`;
@@ -554,10 +569,11 @@ export function UtmZoneAtlas() {
       : 'מפת איתור עולמית עם 60 פלחי UTM.';
   const insetDesc =
     mode === 'explore'
-      ? insetKind === 'grid'
+      ? gridMode
         ? `תקריב של פלח ${reading.zone} עם רשת המטרים שלו. A: מזרח ${reading.eText}, צפון ${reading.nText}.`
-        : `תקריב של פלח ${reading.zone} ושכניו, ${fmtRange(reading.range)}. נקודה A מסומנת.`
+        : `תקריב של פלח ${reading.zone} ושכניו. נקודה A מסומנת.`
       : 'תקריב אזורי עם גבולות הפלחים.';
+  const step = gridStep(inset);
 
   return (
     <div
@@ -569,45 +585,56 @@ export function UtmZoneAtlas() {
       data-zone={reading.zone}
       data-hemisphere={reading.hemisphere}
       data-inset={insetKind}
+      data-lead={worldLeads ? 'world' : 'inset'}
       data-event={event.kind}
     >
-      {/* maps */}
-      <div ref={mapsRef} className="relative grid gap-6 lg:grid-cols-2 lg:gap-x-12">
-        <section aria-labelledby={`${uid}-world`} className="min-w-0">
-          <h4 id={`${uid}-world`} className={cn(HEADING, 'mb-2 text-center')}>
-            {worldTitle}
+      {/* what this view teaches, its one action, and the switch between the two views */}
+      <div className="flex items-start justify-between gap-6">
+        <div className="min-w-0">
+          <h4 ref={titleRef} tabIndex={-1} className={cn(HEADING, 'outline-none')} data-title>
+            {title}
           </h4>
-          <AtlasMap
-            kind="world"
-            name="מפת איתור עולמית"
-            description={worldDesc}
-            view={WORLD_VIEW}
-            basemap={basemap}
-            marks={worldMarks}
-            topLabels={worldTop}
-            chips={worldChips}
-            frameRef={worldRef}
-            pinRef={worldPinRef}
-            onPointer={mode === 'explore' ? (p, phase, onPin) => placeAt(p, phase, 'world', onPin) : mode === 'done' ? undefined : practicePointer}
-            onPinKey={mode === 'explore' ? (e) => nudge(e, 'world') : undefined}
-            pinAria={mode === 'explore' ? `נקודה A במפת העולם, ${latLonText(point.lat, point.lon)}` : undefined}
-            pinDescribedBy={pinHelpId}
-          />
-          <p className={cn(BODY, 'mt-3')}>
-            מפת איתור, לא מפת <L>UTM</L>. הקווים הדקים מחלקים את העולם ל־60 פלחים, בדרך כלל ברוחב <L>6°</L> של אורך, ממוספרים מזרחה החל מ־
-            <L>180°W</L>. <L>UTM</L> משמשת בין <L>80°S</L> ל־<L>84°N</L>.
+          <p className={cn(BODY, 'mt-1')} data-prompt={mode === 'greenwich' || mode === 'transfer' || undefined} data-instruction>
+            {instruction}
+          </p>
+        </div>
+        {mode === 'explore' ? (
+          <Segmented items={VIEW_ITEMS} value={insetKind} onChange={switchInset} label="מה בודקים" className="w-[17rem] shrink-0" />
+        ) : mode !== 'done' ? (
+          <Button variant="secondary" size="sm" className="shrink-0" onClick={backToExplore}>
+            חזרה לחקירה
+          </Button>
+        ) : null}
+      </div>
+
+      {/* the stage: the leading map at inline-start; the answer, the small map and the secondary actions beside it */}
+      <div ref={mapsRef} className="relative mt-5 grid grid-cols-[minmax(0,1fr)_27.5rem] grid-rows-[auto_auto_1fr] gap-x-10 gap-y-4">
+        <section aria-label="מפת איתור עולמית" className={cn(worldLeads ? MAIN : SIDE_MAP, !worldLeads && 'flex items-end gap-4')} data-map-role={worldLeads ? 'main' : 'locator'}>
+          <div className={worldLeads ? undefined : 'w-[19rem] shrink-0'}>
+            <AtlasMap
+              kind="world"
+              name="מפת איתור עולמית"
+              description={worldDesc}
+              view={WORLD_VIEW}
+              basemap={basemap}
+              marks={worldMarks}
+              topLabels={worldTop}
+              showTop={worldLeads}
+              chips={worldChips}
+              frameRef={worldRef}
+              pinRef={worldPinRef}
+              onPointer={mode === 'explore' ? (p, phase, onPin) => placeAt(p, phase, 'world', onPin) : mode === 'done' ? undefined : practicePointer}
+              onPinKey={mode === 'explore' ? (e) => nudge(e, 'world') : undefined}
+              pinAria={mode === 'explore' ? `נקודה A במפת העולם, ${latLonText(point.lat, point.lon)}` : undefined}
+              pinDescribedBy={pinHelpId}
+            />
+          </div>
+          <p className={cn(BODY, worldLeads && 'mt-2')} data-locator-note>
+            מפת איתור, לא מפת <L>UTM</L>.{worldLeads && ' כל רצועה היא פלח.'}
           </p>
         </section>
 
-        <section aria-labelledby={`${uid}-inset`} className="min-w-0">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <h4 id={`${uid}-inset`} className={HEADING}>
-              {insetTitle}
-            </h4>
-            {mode === 'explore' && (
-              <Segmented items={VIEW_ITEMS} value={insetKind} onChange={switchInset} label="תצוגת התקריב" className="w-[17rem]" />
-            )}
-          </div>
+        <section aria-label="תקריב אזורי" className={worldLeads ? SIDE_MAP : MAIN} data-map-role={worldLeads ? 'side' : 'main'}>
           <AtlasMap
             kind="inset"
             name="תקריב אזורי"
@@ -624,11 +651,57 @@ export function UtmZoneAtlas() {
             pinAria={mode === 'explore' ? `נקודה A בתקריב, ${latLonText(point.lat, point.lon)}` : undefined}
             pinDescribedBy={pinHelpId}
           >
-            <ScaleBar view={inset} />
+            {gridMode && <ScaleBar view={inset} />}
             {gridMode && <Axes />}
           </AtlasMap>
-          <p className={cn(BODY, 'mt-3')}>{insetCaption}</p>
+          {gridMode && (
+            <p className={cn(BODY, 'mt-2')} data-grid-note>
+              רשת פלח {reading.zone}: קו בכל <L>{step / 1000}</L> ק״מ, המספרים במטרים.
+            </p>
+          )}
         </section>
+
+        <div ref={sideRef} className="col-start-2 row-start-1 min-w-0" data-panel={mode}>
+          {mode === 'explore' ? (
+            gridMode ? (
+              <MetresCard reading={reading} event={event} reduce={reduce} onStep={(d) => goZone(wrapZone(reading.zone + d))} />
+            ) : (
+              <ZonesCard reading={reading} event={event} reduce={reduce} />
+            )
+          ) : mode === 'done' ? (
+            <DoneCard onBack={backToExplore} onAgain={startGreenwich} />
+          ) : (
+            <PracticeCard
+              mode={mode}
+              item={item}
+              target={target}
+              targetReading={targetReading}
+              pick={pick}
+              hemiPick={hemiPick}
+              check={check}
+              rowCenter={practiceRow}
+              onPick={choose}
+              onPage={(d) => setPracticeRow((c) => wrapZone(c + d))}
+              onHemi={chooseHemi}
+              onCheck={runCheck}
+              onTransfer={() => startTransfer(0)}
+              onNext={nextItem}
+            />
+          )}
+        </div>
+
+        {mode === 'explore' && (
+          <div className="col-start-2 row-start-3 flex flex-wrap items-start gap-3 self-start" data-secondary>
+            <Button variant="secondary" size="sm" onClick={nextPreset}>
+              נסו נקודה אחרת
+            </Button>
+            {!gridMode && (
+              <Button variant="secondary" size="sm" onClick={startGreenwich}>
+                תרגול: מצאו את גריניץ׳
+              </Button>
+            )}
+          </div>
+        )}
 
         {connectors && (
           <svg aria-hidden className="pointer-events-none absolute inset-0 z-[4] hidden size-full overflow-visible lg:block" data-connectors>
@@ -652,150 +725,117 @@ export function UtmZoneAtlas() {
         </p>
       )}
 
-      {/* panel */}
-      <div className="mt-6" data-panel={mode}>
-        {mode === 'explore' ? (
-          <ExplorePanel
-            headingRef={panelHeadingRef}
-            reading={reading}
-            event={event}
-            reduce={reduce}
-            rowCenter={rowCenter}
-            insetKind={insetKind}
-            rowRef={rowRef}
-            onZone={goZone}
-            onPage={(d) => setRowCenter((c) => wrapZone(c + d))}
-            onHemisphere={goHemisphere}
-            onPreset={nextPreset}
-            onGreenwich={startGreenwich}
-          />
-        ) : mode === 'done' ? (
-          <DonePanel headingRef={panelHeadingRef} onBack={backToExplore} onAgain={startGreenwich} />
-        ) : (
-          <PracticePanel
-            headingRef={panelHeadingRef}
-            mode={mode}
-            item={item}
-            target={target}
-            targetReading={targetReading}
-            pick={pick}
-            hemiPick={hemiPick}
-            check={check}
-            rowCenter={practiceRow}
-            onPick={choose}
-            onPage={(d) => setPracticeRow((c) => wrapZone(c + d))}
-            onHemi={chooseHemi}
-            onCheck={runCheck}
-            onBack={backToExplore}
-            onTransfer={() => startTransfer(0)}
-            onNext={nextItem}
-          />
-        )}
-      </div>
+      {/* secondary background, closed by default */}
+      <Accordion type="single" collapsible className="mt-5">
+        <AccordionItem value="more" className="border-border bg-bg-elevated hover:border-brand/30 data-[state=open]:border-brand/45" data-more>
+          <AccordionTrigger>
+            <span className="flex-1 font-display text-base font-bold leading-tight text-black transition-colors md:text-lg">
+              מידע נוסף על <L>UTM</L>
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <ul className="list-disc space-y-1.5 ps-5 text-base leading-relaxed text-black">
+              <li>
+                הפלחים ממוספרים מזרחה, מפלח 1 שמתחיל ב־<L>180°W</L> ועד פלח 60. כל פלח רחב בדרך כלל <L>6°</L> של אורך.
+              </li>
+              <li>
+                <L>UTM</L> משמשת בין <L>80°S</L> ל־<L>84°N</L>. באזורי הקטבים, המוצללים במפה, משתמשים במערכת אחרת.
+              </li>
+              <li>
+                חריגים: בדרום־מערב נורווגיה פלח 32 מורחב מערבה עד <L>3°E</L>. באזור סבאלברד הפלחים 31, 33, 35 ו־37 רחבים יותר, ופלחים 32, 34 ו־36
+                לא קיימים.
+              </li>
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
 
-/* ── exploration panel (the mockup's two data rows, feedback and actions) ─── */
+/* ── exploration: the answer card of each view ───────────────────────────── */
 
-function ExplorePanel({
-  headingRef,
-  reading,
-  event,
-  reduce,
-  rowCenter,
-  insetKind,
-  rowRef,
-  onZone,
-  onPage,
-  onHemisphere,
-  onPreset,
-  onGreenwich,
-}: {
-  headingRef: React.RefObject<HTMLHeadingElement | null>;
-  reading: UtmReading;
-  event: Event;
-  reduce: boolean;
-  rowCenter: number;
-  insetKind: InsetKind;
-  rowRef: React.RefObject<HTMLDivElement | null>;
-  onZone: (z: number) => void;
-  onPage: (d: number) => void;
-  onHemisphere: (h: Hemisphere) => void;
-  onPreset: () => void;
-  onGreenwich: () => void;
-}) {
-  const hemiId = useId();
-  const box = 'rounded-lg bg-bg-accent px-4 py-1.5';
+/** "פלחים": only the zone and the hemisphere, then why. */
+function ZonesCard({ reading, event, reduce }: { reading: UtmReading; event: Event; reduce: boolean }) {
   return (
-    <div className="flex flex-col gap-4">
-      <h4 ref={headingRef} tabIndex={-1} className="sr-only">
-        נתוני הנקודה A
-      </h4>
-      <div className="grid grid-cols-2 rounded-xl border border-border/80 lg:grid-cols-4 lg:[&>*+*]:border-s lg:[&>*+*]:border-border/60" data-row="place">
-        <Cell label="פלח נבחר">
-          <span className={cn(VALUE, box, 'min-w-[4.5rem]')} data-value="zone">
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 rounded-xl border border-border/80 [&>*+*]:border-s [&>*+*]:border-border/60" data-row="place">
+        <Cell label="פלח">
+          <span className={cn(VALUE, VALUE_BOX, 'min-w-[4.5rem]')} data-value="zone">
             <Changing value={String(reading.zone)} reduce={reduce}>
               {reading.zone}
             </Changing>
           </span>
         </Cell>
-        <Cell label="חצי כדור" id={hemiId}>
-          <Segmented items={HEMI_ITEMS} value={reading.hemisphere} onChange={onHemisphere} labelledBy={hemiId} className="w-[13.5rem]" />
-        </Cell>
-        <Cell label="תחום האורך של הפלח">
-          <span className={cn(VALUE, box)} data-value="range">
-            <L>{fmtRange(reading.range)}</L>
-          </span>
-        </Cell>
-        <Cell label="הנקודה ברוחב ובאורך">
-          <span className={cn(VALUE, 'py-1.5 text-lg')} data-value="latlon">
-            <L>{latLonText(reading.lat, reading.lon)}</L>
+        <Cell label="חצי כדור">
+          <span className={cn(VALUE, VALUE_BOX)} data-value="hemisphere">
+            <Changing value={reading.hemisphere} reduce={reduce}>
+              {HEMI_NAME[reading.hemisphere]} <L>{reading.hemisphere}</L>
+            </Changing>
           </span>
         </Cell>
       </div>
-
-      <div className="grid grid-cols-2 rounded-xl border border-border/80 lg:grid-cols-[minmax(0,1.75fr)_1fr_1fr_0.8fr] lg:[&>*+*]:border-s lg:[&>*+*]:border-border/60" data-row="grid">
-        <Cell label="פלחים סמוכים" className="col-span-2 lg:col-span-1">
-          <div ref={rowRef}>
-            <ZoneRow center={rowCenter} selected={reading.zone} onSelect={onZone} onPage={onPage} label="פלחים סמוכים: בחירה מעבירה את הנקודה לפלח" />
-          </div>
-        </Cell>
-        <Cell label={<>מזרח <L>E</L></>}>
-          <span className={VALUE} data-value="e">
-            <Changing value={reading.eText} reduce={reduce}>
-              <L>{reading.eText}</L>
-            </Changing>{' '}
-            <span className="text-base font-semibold text-fg-muted">מ׳</span>
-          </span>
-        </Cell>
-        <Cell label={<>צפון <L>N</L></>}>
-          <span className={VALUE} data-value="n">
-            <Changing value={reading.nText} reduce={reduce}>
-              <L>{reading.nText}</L>
-            </Changing>{' '}
-            <span className="text-base font-semibold text-fg-muted">מ׳</span>
-          </span>
-        </Cell>
-        <Cell label="דאטום">
-          <span className={VALUE} data-value="datum">
-            <L>{DATUM}</L>
-          </span>
-        </Cell>
-      </div>
-
-      <Feedback tone="info" className="min-h-[5.25rem]">
-        <p data-explain={event.kind}>{explain(reading, event, insetKind)}</p>
+      <Feedback tone="info" className="min-h-[5rem]">
+        <p data-explain={event.kind}>{explainZones(reading, event)}</p>
       </Feedback>
+    </div>
+  );
+}
 
-      <div className="flex flex-wrap items-center justify-center gap-4">
-        <Button variant="primary" size="md" className="min-w-[15rem]" onClick={onPreset}>
-          נסו נקודה אחרת
-        </Button>
-        <Button variant="secondary" size="md" className="min-w-[15rem]" onClick={onGreenwich}>
-          מצאו את גריניץ׳
-        </Button>
+/** "מודדים במטרים": E and N together, with the zone, the hemisphere and the datum they are read in. */
+function MetresCard({ reading, event, reduce, onStep }: { reading: UtmReading; event: Event; reduce: boolean; onStep: (d: -1 | 1) => void }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="rounded-xl border border-border/80">
+        <div className="grid grid-cols-2 [&>*+*]:border-s [&>*+*]:border-border/60" data-row="metres">
+          <Cell
+            label={
+              <>
+                מזרח <L>E</L>
+              </>
+            }
+          >
+            <span className={VALUE} data-value="e">
+              <Changing value={reading.eText} reduce={reduce}>
+                <L>{reading.eText}</L>
+              </Changing>{' '}
+              <span className={UNIT}>מ׳</span>
+            </span>
+          </Cell>
+          <Cell
+            label={
+              <>
+                צפון <L>N</L>
+              </>
+            }
+          >
+            <span className={VALUE} data-value="n">
+              <Changing value={reading.nText} reduce={reduce}>
+                <L>{reading.nText}</L>
+              </Changing>{' '}
+              <span className={UNIT}>מ׳</span>
+            </span>
+          </Cell>
+        </div>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] border-t border-border/60 [&>*+*]:border-s [&>*+*]:border-border/60" data-row="context">
+          <Cell label="פלח" className="px-3">
+            <ZoneStepper zone={reading.zone} onStep={onStep} reduce={reduce} />
+          </Cell>
+          <Cell label="חצי כדור" className="px-3">
+            <span className={cn(VALUE, 'py-1.5 text-lg')} data-value="hemisphere">
+              {HEMI_NAME[reading.hemisphere]} <L>{reading.hemisphere}</L>
+            </span>
+          </Cell>
+          <Cell label="דאטום" className="px-3">
+            <span className={cn(VALUE, 'py-1.5 text-lg')} data-value="datum">
+              <L>{DATUM}</L>
+            </span>
+          </Cell>
+        </div>
       </div>
+      <Feedback tone="info" className="min-h-[5rem]">
+        <p data-explain={event.kind}>{explainMetres(reading, event)}</p>
+      </Feedback>
     </div>
   );
 }
@@ -803,64 +843,37 @@ function ExplorePanel({
 const EXCEPTION_NOTE = {
   norway: (
     <>
-      חריג: בדרום־מערב נורווגיה פלח 32 מורחב מערבה עד <L>3°E</L>.
+      בדרום־מערב נורווגיה פלח 32 מורחב מערבה עד <L>3°E</L>.
     </>
   ),
-  svalbard: (
-    <>
-      חריג: באזור סבאלברד הפלחים 31, 33, 35 ו־37 רחבים יותר, ופלחים 32, 34 ו־36 לא קיימים.
-    </>
-  ),
+  svalbard: <>באזור סבאלברד הפלחים 31, 33, 35 ו־37 רחבים יותר.</>,
 };
 
-/** The explanation under the data: where the point is, then what the last action changed. */
-function explain(r: UtmReading, ev: Event, insetKind: InsetKind): ReactNode {
-  const where = (
-    <>
-      A נמצאת בפלח {r.zone}, בחצי הכדור ה{HEMI_NAME[r.hemisphere]}.{' '}
-    </>
-  );
-  const side =
-    Math.abs(r.e - 500000) < 0.5 ? (
-      <>
-        היא על קו האמצע של הפלח, ולכן <L>E</L> שלה הוא בדיוק <L>500000</L>{NBSP}מ׳.
-      </>
-    ) : (
-      <>
-        <L>E</L> {r.e > 500000 ? 'גדול' : 'קטן'} מ־<L>500000</L>{NBSP}מ׳, כי הנקודה {r.e > 500000 ? 'מזרחית' : 'מערבית'} לקו האמצע של הפלח.
-      </>
-    );
-  const note = r.exception ? <> {EXCEPTION_NOTE[r.exception]}</> : null;
+const OUTSIDE = (
+  <>
+    מחוץ לתחום: <L>UTM</L> משמשת בין <L>80°S</L> ל־<L>84°N</L>, ולכן אין כאן פלח. הנקודה נשארה במקומה.
+  </>
+);
 
+const sideOfEquator = (r: UtmReading) => (r.hemisphere === 'N' ? 'מצפון' : 'מדרום');
+
+/** Why the point has its zone and hemisphere: the zone's longitudes and its side of the equator. */
+const whyZone = (r: UtmReading) => (
+  <>
+    בין <L>{fmtLon(r.range.w)}</L> ל־<L>{fmtLon(r.range.e)}</L>, בתחום פלח {r.zone}, ו{sideOfEquator(r)} לקו המשווה.
+  </>
+);
+
+/** The zones view's feedback: where the point is, or what the last action changed. */
+function explainZones(r: UtmReading, ev: Event): ReactNode {
+  const note = r.exception ? <> {EXCEPTION_NOTE[r.exception]}</> : null;
   switch (ev.kind) {
-    case 'start':
-      return (
-        <>
-          {where}
-          {side}
-        </>
-      );
     case 'outside':
-      return (
-        <>
-          <L>UTM</L> משמשת בין <L>80°S</L> ל־<L>84°N</L>. באזורי הקטבים משתמשים במערכת אחרת, ולכן אין כאן ערכי <L>UTM</L>. הנקודה נשארה במקומה.
-        </>
-      );
-    case 'view':
-      return ev.to === 'grid' ? (
-        <>
-          A לא זזה: אותו מקום נכתב עכשיו כמזרח <L>E</L> וצפון <L>N</L> במטרים, ברשת של פלח {r.zone}. הזיזו את הנקודה ובדקו אילו מספרים משתנים.
-        </>
-      ) : (
-        <>
-          {where}
-          {side}
-        </>
-      );
+      return OUTSIDE;
     case 'preset':
       return (
         <>
-          A הועברה ל{ev.place.name}: פלח {r.zone}, חצי הכדור ה{HEMI_NAME[r.hemisphere]}. {side}
+          A הועברה ל{ev.place.name}: {whyZone(r)}
           {r.exception === 'norway' ? (
             <>
               {' '}
@@ -871,50 +884,93 @@ function explain(r: UtmReading, ev: Event, insetKind: InsetKind): ReactNode {
           )}
         </>
       );
+    case 'pick': {
+      const p = ev.prev;
+      const hemiChanged = p.hemisphere !== r.hemisphere;
+      if (p.zone === r.zone && !hemiChanged)
+        return (
+          <>
+            A עדיין {whyZone(r)}
+            {note}
+          </>
+        );
+      const lon = Math.abs(zoneStep(p.zone, r.zone)) === 1 ? sharedBoundary(p.zone, r.zone, r.lat) : null;
+      if (lon != null && !hemiChanged)
+        return (
+          <>
+            A חצתה את קו האורך <L>{fmtLon(lon)}</L> ועברה מפלח {p.zone} לפלח {r.zone}.{note}
+          </>
+        );
+      if (p.zone === r.zone)
+        return (
+          <>
+            A חצתה את קו המשווה, ולכן היא עכשיו בחצי הכדור ה{HEMI_NAME[r.hemisphere]}.{note}
+          </>
+        );
+      return (
+        <>
+          A עברה לפלח {r.zone}: {whyZone(r)}
+          {note}
+        </>
+      );
+    }
+    default:
+      return (
+        <>
+          A נמצאת {whyZone(r)}
+          {note}
+        </>
+      );
+  }
+}
+
+/** E against the zone's central meridian (E = 500000 m there). */
+const sideOfMiddle = (r: UtmReading) =>
+  Math.abs(r.e - 500000) < 0.5 ? (
+    <>
+      A על קו האמצע של הפלח, ולכן <L>E</L> הוא בדיוק <L>500000</L>
+      {NBSP}מ׳.
+    </>
+  ) : (
+    <>
+      <L>E</L> {r.e > 500000 ? 'גדול' : 'קטן'} מ־<L>500000</L>
+      {NBSP}מ׳, כי A {r.e > 500000 ? 'מזרחית' : 'מערבית'} לקו האמצע של הפלח.
+    </>
+  );
+
+/** The metres view's feedback: what the last action did to E and N. */
+function explainMetres(r: UtmReading, ev: Event): ReactNode {
+  switch (ev.kind) {
+    case 'outside':
+      return OUTSIDE;
+    case 'view':
+      return <>A לא זזה: אותו מקום נכתב עכשיו במטרים, ברשת של פלח {r.zone}.</>;
+    case 'preset':
+      return (
+        <>
+          A הועברה ל{ev.place.name}, בפלח {r.zone}. {sideOfMiddle(r)}
+        </>
+      );
     case 'zone': {
       const d = zoneStep(ev.prev.zone, r.zone);
       const same = Math.abs(r.e - ev.prev.e) < 0.5 && Math.abs(r.n - ev.prev.n) < 0.5;
       return same ? (
         <>
-          A הועברה <L>{Math.abs(d) * 6}°</L> {d > 0 ? 'מזרחה' : 'מערבה'}, לפלח {r.zone}. <L>E</L> ו־<L>N</L> נשארו זהים, כי היא באותו מרחק מקו האמצע של הפלח החדש,
-          אבל זה מקום אחר. לכן תמיד מציינים את הפלח.
+          A הועברה <L>{Math.abs(d) * 6}°</L> {d > 0 ? 'מזרחה' : 'מערבה'}, לפלח {r.zone}. <L>E</L> ו־<L>N</L> לא השתנו, אבל זה מקום אחר: לכן תמיד
+          מציינים את הפלח.
         </>
       ) : (
         <>
-          A הועברה לפלח {r.zone}, ולכן היא נמדדת ברשת של פלח {r.zone}. {side}
-          {note}
+          A הועברה לפלח {r.zone}, ולכן היא נמדדת ברשת שלו. {sideOfMiddle(r)}
         </>
       );
     }
-    case 'hemi':
-      return (
-        <>
-          A הועברה ל־<L>{fmtLat(r.lat, 2)}</L>, באותו קו אורך, מעבר לקו המשווה.{' '}
-          {r.hemisphere === 'S' ? (
-            <>
-              בחצי הכדור הדרומי <L>N</L> נמדד מ־<L>10000000</L>{NBSP}מ׳ בקו המשווה וקטן דרומה, ולכן <L>N = {r.nText}</L>{NBSP}מ׳.
-            </>
-          ) : (
-            <>
-              בחצי הכדור הצפוני <L>N</L> נמדד מ־<L>0</L> בקו המשווה וגדל צפונה, ולכן <L>N = {r.nText}</L>{NBSP}מ׳.
-            </>
-          )}
-          {r.zone !== ev.prev.zone ? <> גם הפלח השתנה, ל־{r.zone}.</> : null}
-          {note}
-        </>
-      );
     case 'pick': {
       const p = ev.prev;
       if (p.zone === r.zone && p.hemisphere === r.hemisphere) {
         const dE = r.e - p.e;
         const dN = r.n - p.n;
-        if (Math.abs(dE) < 0.5 && Math.abs(dN) < 0.5)
-          return (
-            <>
-              {where}
-              {side}
-            </>
-          );
+        if (Math.abs(dE) < 0.5 && Math.abs(dN) < 0.5) return sideOfMiddle(r);
         return (
           <>
             A זזה בתוך פלח {r.zone}: <L>E</L> {grew(dE)}
@@ -931,50 +987,40 @@ function explain(r: UtmReading, ev: Event, insetKind: InsetKind): ReactNode {
                 ב־<L>{km(dN)}</L> ק״מ
               </>
             )}
-            . {insetKind === 'grid' ? 'ברשת רואים זאת ישירות: ' : ''}מזרחה <L>E</L> גדל, צפונה <L>N</L> גדל.
-            {note}
+            . מזרחה <L>E</L> גדל, צפונה <L>N</L> גדל.
           </>
         );
       }
-      if (p.hemisphere !== r.hemisphere) {
-        return (
+      if (p.hemisphere !== r.hemisphere)
+        return r.hemisphere === 'S' ? (
           <>
-            A חצתה את קו המשווה ועברה לחצי הכדור ה{HEMI_NAME[r.hemisphere]}
-            {p.zone !== r.zone ? <>, בפלח {r.zone}</> : null}.{' '}
-            {r.hemisphere === 'S' ? (
-              <>
-                כאן <L>N</L> נמדד מ־<L>10000000</L>{NBSP}מ׳ בקו המשווה וקטן דרומה.
-              </>
-            ) : (
-              <>
-                כאן <L>N</L> נמדד מ־<L>0</L> בקו המשווה וגדל צפונה.
-              </>
-            )}
-            {note}
+            A עברה לחצי הכדור הדרומי. כאן <L>N</L> נמדד מ־<L>10000000</L>
+            {NBSP}מ׳ בקו המשווה וקטן דרומה.
+          </>
+        ) : (
+          <>
+            A עברה לחצי הכדור הצפוני. כאן <L>N</L> נמדד מ־<L>0</L> בקו המשווה וגדל צפונה.
           </>
         );
-      }
-      const step = zoneStep(p.zone, r.zone);
-      const lon = Math.abs(step) === 1 ? sharedBoundary(p.zone, r.zone, r.lat) : null;
+      const lon = Math.abs(zoneStep(p.zone, r.zone)) === 1 ? sharedBoundary(p.zone, r.zone, r.lat) : null;
       return lon != null ? (
         <>
-          A חצתה את קו האורך <L>{fmtLon(lon)}</L> ועברה מפלח {p.zone} לפלח {r.zone}. מעכשיו המספרים נמדדים ברשת של פלח {r.zone}, ולכן <L>E</L> השתנה מ־
-          <L>{p.eText}</L> ל־<L>{r.eText}</L>.{note}
+          A חצתה את <L>{fmtLon(lon)}</L> לפלח {r.zone}, ולכן היא נמדדת ברשת שלו: <L>E</L> השתנה מ־<L>{p.eText}</L> ל־<L>{r.eText}</L>.
         </>
       ) : (
         <>
-          A עברה מפלח {p.zone} לפלח {r.zone}, בחצי הכדור ה{HEMI_NAME[r.hemisphere]}. בפלח החדש היא נמדדת ברשת אחרת. {side}
-          {note}
+          A עברה לפלח {r.zone}, ולכן היא נמדדת ברשת שלו. {sideOfMiddle(r)}
         </>
       );
     }
+    default:
+      return sideOfMiddle(r);
   }
 }
 
 /* ── practice ─────────────────────────────────────────────────────────────── */
 
-function PracticePanel({
-  headingRef,
+function PracticeCard({
   mode,
   item,
   target,
@@ -987,11 +1033,9 @@ function PracticePanel({
   onPage,
   onHemi,
   onCheck,
-  onBack,
   onTransfer,
   onNext,
 }: {
-  headingRef: React.RefObject<HTMLHeadingElement | null>;
   mode: 'greenwich' | 'transfer';
   item: number;
   target: Place | null;
@@ -1004,7 +1048,6 @@ function PracticePanel({
   onPage: (d: number) => void;
   onHemi: (h: Hemisphere) => void;
   onCheck: () => void;
-  onBack: () => void;
   onTransfer: () => void;
   onNext: () => void;
 }) {
@@ -1015,9 +1058,9 @@ function PracticePanel({
   const verdict = check ? (check.zoneOk ? 'right' : 'wrong') : null;
 
   /* A short verdict for screen readers (the explanation stays readable text, not a live region);
-     a solved check disables its button, so focus moves on to the way forward. */
+     a solved check swaps its button for the way forward, and focus moves there. */
   const [status, setStatus] = useState('');
-  const nextRef = useRef<HTMLDivElement>(null);
+  const actionRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!check) {
       setStatus('');
@@ -1028,73 +1071,38 @@ function PracticePanel({
       ? `נכון: פלח ${check.zone}${check.hemi ? `, חצי הכדור ה${HEMI_NAME[check.hemi]}` : ''}.`
       : 'לא נכון. ההסבר מופיע מתחת לבחירה; נסו שוב.';
     setStatus((s) => (s === text ? `${text}​` : text));
-    if (ok) requestAnimationFrame(() => nextRef.current?.querySelector('button')?.focus());
+    if (ok) requestAnimationFrame(() => actionRef.current?.querySelector('button')?.focus());
   }, [check]);
 
   return (
-    <div className="flex flex-col gap-4" data-practice={mode}>
+    <div className="flex flex-col gap-3" data-practice={mode}>
       <p role="status" className="sr-only" data-verdict>
         {status}
       </p>
-      <div className="rounded-xl border border-border/80 px-5 py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h4 ref={headingRef} tabIndex={-1} className={cn(HEADING, 'outline-none')}>
-            {mode === 'greenwich' ? 'משימה 1 מתוך 4 · גריניץ׳' : `משימה ${item + 2} מתוך 4 · נקודה ${letter}`}
-          </h4>
-        </div>
-        <p className={cn(BODY, 'mt-1.5')} data-prompt>
-          {mode === 'greenwich' ? (
-            <>
-              בחרו את הפלח שגבולו המערבי הוא קו גריניץ׳, <L>0°</L>.
-            </>
-          ) : (
-            <>
-              הנקודה {letter}: {target!.name}, <L>{latLonText(target!.lat, target!.lon)}</L>. באיזה פלח ובאיזה חצי כדור היא נמצאת?
-            </>
-          )}{' '}
-          בחרו פלח בכפתורים או במפה, ואז לחצו ״בדיקת הבחירה״.
-        </p>
-
-        <div className="mt-4 flex flex-wrap items-end gap-x-8 gap-y-4">
-          <div>
-            <div className={cn(LABEL, 'mb-2')}>פלח</div>
-            <ZoneRow center={rowCenter} selected={pick} onSelect={onPick} onPage={onPage} label="בחירת פלח" verdict={verdict} />
-          </div>
-          {mode === 'transfer' && (
-            <div>
-              <div id={hemiId} className={cn(LABEL, 'mb-2')}>
-                חצי כדור
-              </div>
-              <Segmented items={HEMI_ITEMS} value={hemiPick} onChange={onHemi} labelledBy={hemiId} className="w-[13.5rem]" />
+      <div className="rounded-xl border border-border/80 p-4">
+        <div className={cn(LABEL, 'mb-2')}>פלח</div>
+        <ZoneRow center={rowCenter} selected={pick} onSelect={onPick} onPage={onPage} label="בחירת פלח" verdict={verdict} />
+        {mode === 'transfer' && (
+          <>
+            <div id={hemiId} className={cn(LABEL, 'mb-2 mt-4')}>
+              חצי כדור
             </div>
-          )}
-          <Button variant="primary" size="md" className="ms-auto min-w-[12rem]" onClick={onCheck} disabled={!ready || solved}>
-            בדיקת הבחירה
-          </Button>
-        </div>
-      </div>
-
-      <div className="min-h-[5.25rem]">
-        {check && (mode === 'greenwich' ? <GreenwichFeedback check={check} /> : <TransferFeedback check={check} target={target!} r={targetReading!} letter={letter} />)}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-4">
-        <div ref={nextRef} className="contents">
-          {mode === 'greenwich' && solved && (
-            <Button variant="primary" size="md" className="min-w-[15rem]" onClick={onTransfer}>
-              לנקודות חדשות
+            <Segmented items={HEMI_ITEMS} value={hemiPick} onChange={onHemi} labelledBy={hemiId} className="w-[13.5rem]" />
+          </>
+        )}
+        <div ref={actionRef} className="mt-4">
+          {solved ? (
+            <Button variant="primary" size="md" className="min-w-[12rem]" onClick={mode === 'greenwich' ? onTransfer : onNext}>
+              {mode === 'greenwich' ? 'לנקודות חדשות' : item + 1 < TRANSFER.length ? 'לנקודה הבאה' : 'לסיום התרגול'}
             </Button>
-          )}
-          {mode === 'transfer' && solved && (
-            <Button variant="primary" size="md" className="min-w-[15rem]" onClick={onNext}>
-              {item + 1 < TRANSFER.length ? 'לנקודה הבאה' : 'לסיום התרגול'}
+          ) : (
+            <Button variant="primary" size="md" className="min-w-[12rem]" onClick={onCheck} disabled={!ready}>
+              בדיקת הבחירה
             </Button>
           )}
         </div>
-        <Button variant="secondary" size="md" className="min-w-[15rem]" onClick={onBack}>
-          חזרה לחקירה
-        </Button>
       </div>
+      {check && (mode === 'greenwich' ? <GreenwichFeedback check={check} /> : <TransferFeedback check={check} target={target!} r={targetReading!} letter={letter} />)}
     </div>
   );
 }
@@ -1105,8 +1113,7 @@ function GreenwichFeedback({ check }: { check: Check }) {
     return (
       <Feedback tone="right">
         <p>
-          נכון. פלח 31 משתרע מ־<L>0°</L> עד <L>6°E</L>, ולכן גבולו המערבי הוא גריניץ׳. המספור מתחיל ב־<L>180°W</L>. 30 פלחים של <L>6°</L> מגיעים בדיוק ל־
-          <L>0°</L>, ופלח 31 מתחיל שם.
+          נכון. פלח 31 משתרע מ־<L>0°</L> עד <L>6°E</L>, ולכן גבולו המערבי הוא גריניץ׳: 30 פלחים של <L>6°</L> מ־<L>180°W</L> מגיעים בדיוק ל־<L>0°</L>.
         </p>
       </Feedback>
     );
@@ -1130,13 +1137,15 @@ function GreenwichFeedback({ check }: { check: Check }) {
 function TransferFeedback({ check, target, r, letter }: { check: Check; target: Place; r: UtmReading; letter: string }) {
   const lonT = <L>{fmtLon(target.lon, 2)}</L>;
   const latT = <L>{fmtLat(target.lat, 2)}</L>;
-  const northOf = r.hemisphere === 'N' ? 'מצפון' : 'מדרום';
+  const northOf = sideOfEquator(r);
   if (check.zoneOk && check.hemiOk)
     return (
       <Feedback tone="right">
         <p>
-          נכון: פלח {r.zone}, חצי הכדור ה{HEMI_NAME[r.hemisphere]}. {lonT} נמצא בין <L>{fmtLon(r.range.w)}</L> ל־<L>{fmtLon(r.range.e)}</L>, ו־{latT} {northOf}{' '}
-          לקו המשווה. ברשת של פלח {r.zone}, הנקודה {letter} היא <L>E {r.eText}</L>{NBSP}מ׳, <L>N {r.nText}</L>{NBSP}מ׳ (<L>{DATUM}</L>).
+          נכון: {lonT} נמצא בין <L>{fmtLon(r.range.w)}</L> ל־<L>{fmtLon(r.range.e)}</L>, ו־{latT} {northOf} לקו המשווה. ברשת של פלח {r.zone}, הנקודה {letter}{' '}
+          היא <L>E {r.eText}</L>
+          {NBSP}מ׳, <L>N {r.nText}</L>
+          {NBSP}מ׳ (<L>{DATUM}</L>).
         </p>
       </Feedback>
     );
@@ -1160,22 +1169,19 @@ function TransferFeedback({ check, target, r, letter }: { check: Check; target: 
   );
 }
 
-function DonePanel({ headingRef, onBack, onAgain }: { headingRef: React.RefObject<HTMLHeadingElement | null>; onBack: () => void; onAgain: () => void }) {
+function DoneCard({ onBack, onAgain }: { onBack: () => void; onAgain: () => void }) {
   return (
-    <div className="flex flex-col gap-4" data-practice="done">
+    <div className="flex flex-col gap-3" data-practice="done">
       <Feedback tone="right">
-        <h4 ref={headingRef} tabIndex={-1} className={cn(HEADING, 'mb-1 outline-none')}>
-          סיימתם את התרגול
-        </h4>
         <p>
-          זיהיתם פלח וחצי כדור לשלוש נקודות חדשות. כדי לפרש מספרי <L>E</L> ו־<L>N</L> צריך לדעת שלושה דברים: הפלח, חצי הכדור והדאטום.
+          כדי לפרש מספרי <L>E</L> ו־<L>N</L> צריך לדעת שלושה דברים: הפלח, חצי הכדור והדאטום.
         </p>
       </Feedback>
-      <div className="flex flex-wrap items-center justify-center gap-4">
-        <Button variant="primary" size="md" className="min-w-[15rem]" onClick={onBack}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="primary" size="md" onClick={onBack}>
           חזרה לחקירה
         </Button>
-        <Button variant="secondary" size="md" className="min-w-[15rem]" onClick={onAgain}>
+        <Button variant="secondary" size="md" onClick={onAgain}>
           תרגול מחדש
         </Button>
       </div>

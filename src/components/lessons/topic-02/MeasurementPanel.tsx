@@ -13,7 +13,8 @@ const STATION_BUTTONS: readonly StationId[] = ['A', 'B', 'C'];
 /**
  * The measurement task (the "גליות וגובה" view), as one strip under the two
  * figures, in two grid columns that follow them: at inline-start (right, under
- * the model) the picked station's h and N, each beside what it means; at
+ * the model) the picked station's name, then its h and N, each beside what it
+ * means (N also with what its sign says); at
  * inline-end (left, under the section) the question with H's meaning and the
  * lesson's own formula (passed in as `formula`), the answer field and its two
  * actions, and the feedback right under the field. Reading and focus run the
@@ -53,30 +54,38 @@ export function MeasurementPanel({
   return (
     <div className="grid gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)]">
       {/* inline-start (right, under the model): the station's two readings, each with what it means */}
-      <dl className="grid min-w-0 content-start gap-2" data-task="readings">
-        <div className="rounded-xl border border-border-subtle bg-bg-accent/50 px-3 py-1.5">
-          <dt className="text-sm leading-5 text-fg-muted">
-            <strong className="font-display text-fg">
-              גובה אליפסואידלי (<span style={{ color: C_ELL }}><L>h</L></span>)
-            </strong>{' '}
-            – הגובה מעל האליפסואיד.
-          </dt>
-          <dd className="font-display text-xl font-bold tabular-nums text-fg">
-            <L>{h}</L> מ׳
-          </dd>
-        </div>
-        <div className="rounded-xl border border-border-subtle bg-bg-accent/50 px-3 py-1.5">
-          <dt className="text-sm leading-5 text-fg-muted">
-            <strong className="font-display text-fg">
-              גליות (<span style={{ color: C_GEO }}><L>N</L></span>)
-            </strong>{' '}
-            – הפרש הגובה בין הגיאואיד לאליפסואיד.
-          </dt>
-          <dd className="font-display text-xl font-bold tabular-nums text-fg">
-            <L>{signed(N)}</L> מ׳
-          </dd>
-        </div>
-      </dl>
+      <div className="grid min-w-0 content-start gap-2" data-task="readings">
+        {/* whose readings these are: "לתחנה הבאה" changes them, and the field's question is about the same station */}
+        <p className="text-base font-display font-bold text-black">נתוני תחנה {id}</p>
+        <dl className="grid gap-2">
+          <div className="rounded-xl border border-border-subtle bg-bg-accent/50 px-3 py-1.5">
+            <dt className="text-sm leading-5 text-fg-muted">
+              <strong className="font-display text-fg">
+                גובה אליפסואידלי (<span style={{ color: C_ELL }}><L>h</L></span>)
+              </strong>{' '}
+              – הגובה מעל האליפסואיד.
+            </dt>
+            <dd className="font-display text-xl font-bold tabular-nums text-fg">
+              <L>{h}</L> מ׳
+            </dd>
+          </div>
+          <div className="rounded-xl border border-border-subtle bg-bg-accent/50 px-3 py-1.5">
+            <dt className="text-sm leading-5 text-fg-muted">
+              <strong className="font-display text-fg">
+                גליות (<span style={{ color: C_GEO }}><L>N</L></span>)
+              </strong>{' '}
+              – הפרש הגובה בין הגיאואיד לאליפסואיד.
+            </dt>
+            <dd className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-display text-xl font-bold tabular-nums text-fg">
+                <L>{signed(N)}</L> מ׳
+              </span>
+              {/* what the sign says, in the section's terms (N > 0: the geoid above the ellipsoid) */}
+              <span className="text-sm text-fg-muted">{N > 0 ? 'הגיאואיד מעל האליפסואיד' : N < 0 ? 'הגיאואיד מתחת לאליפסואיד' : 'הגיאואיד והאליפסואיד נפגשים'}</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       {/* inline-end (left, under the section): the question, the formula, the answer, its actions, and the
           feedback right under the field */}
@@ -148,7 +157,7 @@ export function MeasurementPanel({
         {/* the feedback, right under the answer: its slot holds the tallest one (C right: the sum and N = 0), so no
             check moves the field or the page; until the first check it says what to compare */}
         <div className="min-h-[6.75rem]" data-task="feedback">
-          {!cur.verdict && <p className="text-base leading-relaxed text-fg-muted">השוו בין חצי הגובה בחתך לבין נתוני התחנה שנבחרה.</p>}
+          {!cur.verdict && <p className="text-base leading-relaxed text-fg-muted">השוו בין חיצי הגובה בחתך לבין נתוני התחנה שנבחרה.</p>}
           <div id={feedbackId} aria-live="polite">
             {cur.verdict && (
               <Feedback

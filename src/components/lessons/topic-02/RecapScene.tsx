@@ -32,7 +32,7 @@ const TERMS = [
 
 export function RecapScene() {
   return (
-    <section id="scene-recap" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-recap" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="02.5"
         eyebrow="סיכום"

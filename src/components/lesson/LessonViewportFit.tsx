@@ -86,6 +86,34 @@ export function useLessonViewportScale() {
  */
 export const LESSON_FIT_CANVAS_RESIZE = { offsetSize: true } as const;
 
+/**
+ * Tallest `referenceHeight` a lesson screen is fitted against, px. A screen
+ * taller than this is fitted as this height (its foot scrolls on a laptop), so
+ * tall screens aren't bound by the height to a narrower width than the
+ * screens around them. 704 keeps the common 1536 × 730 laptop view (a
+ * 1920 × 1080 display at 125%, under its 104 px top and 24 px bottom reserves)
+ * bound by the width: (730 − 128) / 704 ≥ 1148 / 1344.
+ */
+export const LESSON_FIT_MAX_HEIGHT = 704;
+
+/** Shared fit of a lesson wrapped in `LessonFitUniform` (see there). */
+type UniformFit = { height: number; reserveTop: number; reserveBottom: number };
+const LESSON_FIT_UNIFORM: UniformFit = { height: LESSON_FIT_MAX_HEIGHT, reserveTop: 80 + 24, reserveBottom: 24 };
+const LessonFitUniformContext = createContext<UniformFit | null>(null);
+
+/**
+ * Wrap a lesson in this so every LessonViewportFit inside it shrinks by the
+ * same scale — min(1, available width / reference width, (viewport height −
+ * the sticky site header and a 24 px gap − 24 px below) / LESSON_FIT_MAX_HEIGHT)
+ * — instead of each screen fitting its own height: all sub-topics of the
+ * lesson keep one content width. The screens' own `referenceHeight` and
+ * reserves are ignored inside it (they still apply where a scene is rendered
+ * on its own, e.g. the archive). Taller screens scroll.
+ */
+export function LessonFitUniform({ children }: { children: ReactNode }) {
+  return <LessonFitUniformContext.Provider value={LESSON_FIT_UNIFORM}>{children}</LessonFitUniformContext.Provider>;
+}
+
 type Reserve = number | 'auto';
 
 export type LessonViewportFitProps = {
@@ -179,6 +207,7 @@ export function LessonViewportFit({
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<FitState>({ scale: 1, contentHeight: null });
+  const uniform = useContext(LessonFitUniformContext);
 
   const measure = useCallback(() => {
     const outer = outerRef.current;
@@ -187,20 +216,26 @@ export function LessonViewportFit({
 
     const ocs = getComputedStyle(outer);
     const availableWidth = outer.clientWidth - px(ocs.paddingLeft) - px(ocs.paddingRight);
-    const top = reserveTop === 'auto' ? layoutTopInDocument(outer) + outer.clientTop + px(ocs.paddingTop) : reserveTop;
-    const bottom =
-      reserveBottom === 'auto'
-        ? layoutSpaceBelow(outer) + px(ocs.paddingBottom) + px(ocs.borderBottomWidth)
-        : reserveBottom;
-    const availableHeight = window.innerHeight - top - bottom;
-
     const contentHeight = inner.offsetHeight;
-    const basisHeight =
-      referenceHeight === undefined
-        ? contentHeight
-        : fitTallerStates
-          ? Math.max(referenceHeight, contentHeight)
-          : referenceHeight;
+    let availableHeight: number;
+    let basisHeight: number;
+    if (uniform) {
+      availableHeight = window.innerHeight - uniform.reserveTop - uniform.reserveBottom;
+      basisHeight = uniform.height;
+    } else {
+      const top = reserveTop === 'auto' ? layoutTopInDocument(outer) + outer.clientTop + px(ocs.paddingTop) : reserveTop;
+      const bottom =
+        reserveBottom === 'auto'
+          ? layoutSpaceBelow(outer) + px(ocs.paddingBottom) + px(ocs.borderBottomWidth)
+          : reserveBottom;
+      availableHeight = window.innerHeight - top - bottom;
+      basisHeight =
+        referenceHeight === undefined
+          ? contentHeight
+          : fitTallerStates
+            ? Math.max(referenceHeight, contentHeight)
+            : referenceHeight;
+    }
 
     const widthScale = availableWidth / referenceWidth;
     const heightScale = basisHeight > 0 ? Math.max(availableHeight / basisHeight, minScale) : 1;
@@ -212,7 +247,7 @@ export function LessonViewportFit({
         ? prev
         : { scale, contentHeight },
     );
-  }, [referenceWidth, referenceHeight, reserveTop, reserveBottom, fitTallerStates, minScale]);
+  }, [uniform, referenceWidth, referenceHeight, reserveTop, reserveBottom, fitTallerStates, minScale]);
 
   useIsomorphicLayoutEffect(() => {
     measure();

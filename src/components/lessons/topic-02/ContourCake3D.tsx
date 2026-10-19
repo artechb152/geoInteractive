@@ -8,6 +8,7 @@ import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
 import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { MOUNTAIN } from './contourMountain.data';
 import { ACCENT, CONTOUR_INK, CUT_COLOR, INDEX_LEVEL_M } from './contourMountainStyle';
 import { createTerrainMaterial, createTriplanarMaterial } from './contourMountainMaterials';
@@ -521,14 +522,7 @@ function Mountain({
 function LoadingOverlay() {
   const { active, progress } = useProgress();
   if (!active && progress >= 100) return null;
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none">
-      <div className="text-sm font-display font-bold text-fg-muted">טוען הר תלת־ממדי…</div>
-      <div className="h-1.5 w-40 rounded-full bg-border/60 overflow-hidden" dir="ltr">
-        <div className="h-full bg-accent transition-[width] duration-300" style={{ width: `${Math.round(progress)}%` }} />
-      </div>
-    </div>
-  );
+  return <ModelLoading label="טוען הר תלת־ממדי…" progress={active ? progress : undefined} />;
 }
 
 export default function ContourCake3D({

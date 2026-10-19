@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { GEOID_ANCHOR, GeoidHeight, GeoidLabel, MeasurementLandscapeRenders, StationPin } from './MeasurementLandscapeRenders';
 import { MEASUREMENT_FALLBACK as FB } from './measurementFallback.data';
 import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
@@ -282,6 +283,9 @@ export function MeasurementLandscape({
           />
         </div>
       )}
+
+      {/* while the model builds: the lessons' model loading indicator, on a card at the foot of the stills (they stay usable) */}
+      {source.status === 'loading' && <ModelLoading card label="טוען מודל תלת־ממדי…" className="justify-end pb-3" />}
 
       {live && (
         <>

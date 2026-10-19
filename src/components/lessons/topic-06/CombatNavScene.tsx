@@ -118,8 +118,8 @@ type VisualProps = {
 // view as the 1920 × 1080 reference.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Content width of the section at the reference viewport (max-w-6xl minus lg:px-8). */
-const SCREEN_REFERENCE_WIDTH = 1088;
+/** Content width of the section at the reference viewport (max-w-lesson minus lg:px-8). */
+const SCREEN_REFERENCE_WIDTH = 1344;
 /**
  * The part scrolls through several screens, so the automatic reserves (which
  * count everything below a wrapper) don't apply: a screen in view sits under
@@ -132,7 +132,7 @@ const SCREEN_RESERVE_BOTTOM = 24;
  * Every screen fits against the height the 1920 × 1080 viewport leaves for it
  * rather than its own height: scale 1 at 1080px tall, and the same scale on
  * every screen of the part, so the type keeps one size from screen to screen.
- * Technique 1 (the lab, ~1410px) is taller than this budget, as it is at the
+ * Technique 1 (the lab, ~1340px) is taller than this budget, as it is at the
  * reference; a laptop shows the same part of it and the rest scrolls.
  */
 const SCREEN_REFERENCE_HEIGHT = 1080 - SCREEN_RESERVE_TOP - SCREEN_RESERVE_BOTTOM;
@@ -161,7 +161,7 @@ const part = document.getElementById(id);
 (part?.closest<HTMLElement>('[data-lesson-viewport-fit]') ?? part)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
 };
 return (
- <section id="scene-combat" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+ <section id="scene-combat" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
  <ScreenFit>
  <SceneHeader
 step="03.3"
@@ -242,13 +242,18 @@ return (
 }
 
 /* ═══ Technique 1 — ניווט לפי השטח ═════════════════════════════════════
-   The principle in a visible paragraph above the lab; the lab itself — a
-   live terrain model and the topographic map drawn from the same data, with
-   learn and practice modes (terrain-nav/TerrainAssociationActivity); when to
-   use the method and the example in cards after it. */
+   One card: the title and the principle head it; the lab itself — a live
+   terrain model and the topographic map drawn from the same data, with learn
+   and practice modes (terrain-nav/TerrainAssociationActivity); when to use the
+   method and the demonstration's walk-through close it, as insets. */
 function TerrainSection({ data, support, onContinue }: { data: MethodData; support: SupportData; onContinue: () => void }) {
 return (
  <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
+ <TerrainAssociationActivity
+ copy={{ badge: support.badge, caption: support.caption, legend: support.legend }}
+ onContinue={onContinue}
+ header={
+ <div className="mb-6">
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}
  </h3>
@@ -256,28 +261,28 @@ return (
  <SubHeading>עקרון הפעולה</SubHeading>
  <p className="text-base leading-relaxed text-black">{data.detail}</p>
  </div>
-
- <div className="mt-6">
- <TerrainAssociationActivity copy={{ badge: support.badge, caption: support.caption, legend: support.legend }} onContinue={onContinue} />
  </div>
-
+ }
+ footer={
  <div className="mt-6 grid gap-6 md:grid-cols-2">
- <div className="surface p-5 sm:p-6">
+ <div className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
  <SubHeading>מתי משתמשים בשיטה</SubHeading>
  <WhenToUse items={data.whenToUse} />
  </div>
  {/* "דוגמה" label removed (2026-09-28 user decision, same as PrinciplesScene) — the scenario reads as an example on its own */}
- <div className="surface p-5 sm:p-6">
+ <div className="rounded-xl bg-bg-accent/60 p-4 sm:p-5">
  <p className="text-base leading-relaxed text-black">{data.example}</p>
  </div>
  </div>
+ }
+ />
  </section>
 );
 }
 
 /* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════
-   The approved text and the existing demonstration board, unchanged except
-   that the text is no longer folded into an accordion.
+   The approved text and the existing demonstration board in one card (one
+   envelope per activity): the text column, the board an inset beside it.
    Integration point: when a dead-reckoning alternative is chosen
    (design/mockups/dead-reckoning-concepts-2026-10-12), its separate
    DeadReckoningActivity replaces the board below; the text stays. */
@@ -288,7 +293,7 @@ const boardRef = useRef<HTMLDivElement>(null);
 // once (the replay control re-runs it).
 const boardSeen = useInView(boardRef, { once: true, amount: 0.3 });
 return (
- <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
+ <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24 surface-elevated p-6 lg:p-8">
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}
  {INLINE_TERM.has(data.id) && (
@@ -301,7 +306,7 @@ return (
 
  {/* Text column 1fr (reads at ~50 chars/line) · board 1.35fr. */}
  <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
- <div className="surface p-5 sm:p-6 space-y-5">
+ <div className="space-y-5">
  <div>
  <SubHeading>עקרון הפעולה</SubHeading>
  <p className="text-base leading-relaxed text-black">{data.detail}</p>
@@ -314,8 +319,8 @@ return (
  <p className="text-base leading-relaxed text-black">{data.example}</p>
  </div>
 
- {/* Explanation board — second child → LEFT in RTL. A clean elevated surface
-     holding the header, diagram and legend; sticky below the fixed site
+ {/* Explanation board — second child → LEFT in RTL. An inset in the technique's
+     card holding the header, diagram and legend; sticky below the fixed site
      header (h-20) and capped to the viewport on desktop — the cap frozen at
      its 1080px-tall result (100vh − 7rem), as the screen is laptop-fitted. */}
  <div className="lg:sticky lg:top-24 self-start">
@@ -323,7 +328,7 @@ return (
 ref={boardRef}
 role="group"
 aria-label={`הסבר חזותי · ${data.label}`}
-className="surface-elevated overflow-hidden flex flex-col lg:max-h-[968px]"
+className="rounded-xl bg-bg-accent/60 overflow-hidden flex flex-col lg:max-h-[968px]"
  >
  <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-5 pb-2">
  <div className="min-w-0">

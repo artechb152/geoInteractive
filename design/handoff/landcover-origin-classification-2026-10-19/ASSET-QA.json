@@ -1,0 +1,196 @@
+{
+  "passed": true,
+  "version": 2,
+  "count": 10,
+  "totalBytes": 27552175,
+  "cornerAlphaTolerance": 2,
+  "naturalItems": 3,
+  "artificialItems": 5,
+  "mockupDimensions": [
+    1421,
+    1107
+  ],
+  "claudePromptCharacters": 16620,
+  "assets": [
+    {
+      "file": "item-grove.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2828660,
+      "transparentFraction": 0.4859,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "file": "item-citrus-orchard.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2764393,
+      "transparentFraction": 0.4833,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-garrigue.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 3031184,
+      "transparentFraction": 0.4373,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-planted-forest.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 3050749,
+      "transparentFraction": 0.4105,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-terraces.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2765447,
+      "transparentFraction": 0.5069,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-batha.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2804811,
+      "transparentFraction": 0.5168,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-reservoir.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2353872,
+      "transparentFraction": 0.5054,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-wheat-field.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2566789,
+      "transparentFraction": 0.5501,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "choice-natural.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 3022929,
+      "transparentFraction": 0.4532,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        1,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "file": "choice-artificial.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2363341,
+      "transparentFraction": 0.5728,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

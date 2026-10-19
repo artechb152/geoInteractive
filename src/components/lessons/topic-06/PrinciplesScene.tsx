@@ -9,7 +9,7 @@ import {
 import { useSpring, useMotionValueEvent, useReducedMotion } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { cn } from '@/lib/utils';
-import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
+import { LESSON_FIT_MAX_HEIGHT, LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { LocationCheckActivity } from './LocationCheckActivity';
 import { BearingMap, CompassInstrument } from './CompassMapVisuals';
 import { NorthLab } from './north-lab/NorthLab';
@@ -27,8 +27,8 @@ import { AZIMUTH_MAX, AZIMUTH_START, backAzimuth, backEquation, formatDeg, short
 // like a slide so laptops show the same view as the 1920 × 1080 reference.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Content width of the section at the reference viewport (max-w-6xl minus lg:px-8). */
-const SCREEN_REFERENCE_WIDTH = 1088;
+/** Content width of the section at the reference viewport (max-w-lesson minus lg:px-8). */
+const SCREEN_REFERENCE_WIDTH = 1344;
 /**
  * The scene scrolls through several screens, so the automatic reserves (which
  * count everything below a wrapper) don't apply: a screen in view sits under
@@ -38,12 +38,13 @@ const SCREEN_REFERENCE_WIDTH = 1088;
 const SCREEN_RESERVE_TOP = 104;
 const SCREEN_RESERVE_BOTTOM = 24;
 /**
- * The three-norths lab (1102px) is taller than the 1920 × 1080 viewport leaves
- * for it, so its fit height is that viewport budget rather than its full
- * height: scale 1 at 1080px tall, and a laptop shows the same part of it the
- * reference does. The rest scrolls, as at the reference.
+ * The compass + map screen (990px), the three-norths lab (1321px) and the
+ * location check (818px) are taller than LESSON_FIT_MAX_HEIGHT, so they are
+ * fitted as that height rather than their full height: a laptop shrinks them
+ * to the same width as the other lesson screens (not a narrower, height-bound
+ * one) and their foot scrolls. 1920 × 1080 stays at scale 1.
  */
-const NORTH_LAB_REFERENCE_HEIGHT = 1080 - SCREEN_RESERVE_TOP - SCREEN_RESERVE_BOTTOM;
+const VIEW_REFERENCE_HEIGHT = LESSON_FIT_MAX_HEIGHT;
 
 function ScreenFit({ referenceHeight, children }: { referenceHeight?: number; children: ReactNode }) {
   return (
@@ -60,7 +61,7 @@ function ScreenFit({ referenceHeight, children }: { referenceHeight?: number; ch
 
 export function PrinciplesScene() {
   return (
-    <section id="scene-principles" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-principles" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
         step="03.1"
         eyebrow="עקרונות הניווט"
@@ -96,18 +97,18 @@ export function PrinciplesScene() {
         </div>
       </div>
 
-      <ScreenFit>
+      <ScreenFit referenceHeight={VIEW_REFERENCE_HEIGHT}>
         <AzimuthExplorer />
       </ScreenFit>
 
       <div className="my-12">
-        <ScreenFit referenceHeight={NORTH_LAB_REFERENCE_HEIGHT}>
+        <ScreenFit referenceHeight={VIEW_REFERENCE_HEIGHT}>
           <NorthLab />
         </ScreenFit>
       </div>
 
       <div className="my-12">
-        <ScreenFit>
+        <ScreenFit referenceHeight={VIEW_REFERENCE_HEIGHT}>
           <GpsDeniedCard />
         </ScreenFit>
       </div>

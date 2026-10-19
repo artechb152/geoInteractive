@@ -6,7 +6,7 @@ import { UtmZoneAtlas } from './utm-atlas/UtmZoneAtlas';
 import { Base60Workbench } from './base60/Base60Workbench';
 import { GlobeExplorer } from './geo-globe/GlobeExplorer';
 import { ProjectionsLab } from './projections/ProjectionsLab';
-import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
+import { LESSON_FIT_MAX_HEIGHT, LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 
 /* ─────────── קואורדינטות 2 — היטלים ומערכות קואורדינטות ───────────
@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 
 export function CoordinatesPart2Scene() {
   return (
-    <section id="scene-coordinates-2" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <section id="scene-coordinates-2" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <SceneHeader
         step="02.3"
         eyebrow="קואורדינטות · היטלים"
@@ -40,10 +40,10 @@ export function CoordinatesPart2Scene() {
         <GeoProsCons />
       </FitScreen>
       <UtmBlock />
-      <FitScreen name="reference-systems" height={857}>
+      <FitScreen name="reference-systems" height={966}>
         <ReferenceSystemBlock />
       </FitScreen>
-      <FitScreen name="reading-coordinates" height={778}>
+      <FitScreen name="reading-coordinates" height={724}>
         <ReadingCoordinatesBlock />
       </FitScreen>
       <FitScreen name="summary" height={244} className="">
@@ -56,16 +56,16 @@ export function CoordinatesPart2Scene() {
 /* ─────────────────── מסכי לפטופ ─────────────────── */
 /* Each learning screen of the part shrinks on its own, uniformly, like a slide (LessonViewportFit),
    so a laptop shows it whole: same columns, line breaks, map ratios and control positions.
-   Reference = 1920 × 1080: the section's content column is 1088px (max-w-6xl less its lg padding).
+   Reference = 1920 × 1080: the section's content column is 1344px (max-w-lesson less its lg padding).
    The free height is the view under the 80px site header (--header-h from md up) less a 16px margin
-   above and below the screen: 968px there. `height` is the screen's laid-out height at 1920 × 1080; a
-   screen taller than those 968px is fitted as 968px, so the 1920 × 1080 view stays at scale 1 and a
-   laptop keeps the same share of the screen in view. The scale never exceeds 1 and stays steady while
-   a state (feedback, practice) changes the screen's height. */
-const FIT_WIDTH = 1088;
+   above and below the screen. `height` is the screen's laid-out height at 1920 × 1080; a screen taller
+   than LESSON_FIT_MAX_HEIGHT is fitted as that height (its foot scrolls on a laptop), so it shrinks to
+   the same width as the other topic-02 screens instead of a narrower, height-bound one. 1920 × 1080
+   stays at scale 1. The scale never exceeds 1 and stays steady while a state (feedback, practice)
+   changes the screen's height. */
+const FIT_WIDTH = 1344;
 const FIT_TOP = 80 + 16;
 const FIT_BOTTOM = 16;
-const FIT_VIEW_HEIGHT = 1080 - FIT_TOP - FIT_BOTTOM;
 
 function FitScreen({
   name,
@@ -84,7 +84,7 @@ function FitScreen({
     <div data-coordinates2-screen={name} className={className}>
       <LessonViewportFit
         referenceWidth={FIT_WIDTH}
-        referenceHeight={Math.min(height, FIT_VIEW_HEIGHT)}
+        referenceHeight={Math.min(height, LESSON_FIT_MAX_HEIGHT)}
         reserveTop={FIT_TOP}
         reserveBottom={FIT_BOTTOM}
         contentClassName="[&>*]:!my-0"
@@ -103,6 +103,9 @@ function L({ children }: { children: React.ReactNode }) {
 
 const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
 const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+/** An activity's heading and lead, at the top of its own card (one envelope per activity). */
+const CARD_H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const CARD_LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 
 /* ─────────────────── היטלים (slides 3–5) ─────────────────── */
 /* "מעבדת פתיחה" (design/mockups/projections-concepts-2026-10-12, חלופה 1): one card —
@@ -157,22 +160,27 @@ function GeoProsCons() {
 function UtmBlock() {
   return (
     <>
-      <FitScreen name="utm-projection" height={565} className="mt-10">
+      <FitScreen name="utm-projection" height={653} className="mt-10">
         <div data-block="utm">
-          <h3 className={H3}>
-            היטל <L>UTM</L>
-          </h3>
-          <p className={LEAD}>
-            <L>
-              <strong className="text-fg">Universal Transverse Mercator</strong>
-            </L>{' '}
-            – מערכת קואורדינטות שמבוססת על <strong className="text-fg">היטל מרקטור רוחבי</strong>. העולם מחולק ל־60 פלחים צרים, ובכל פלח
-            מודדים מיקום במטרים, ברשת מקומית.
-          </p>
-          <UtmProjectionExplainer />
+          <UtmProjectionExplainer
+            header={
+              <>
+                <h3 className={CARD_H3}>
+                  היטל <L>UTM</L>
+                </h3>
+                <p className={CARD_LEAD}>
+                  <L>
+                    <strong className="text-fg">Universal Transverse Mercator</strong>
+                  </L>{' '}
+                  – מערכת קואורדינטות שמבוססת על <strong className="text-fg">היטל מרקטור רוחבי</strong>. העולם מחולק ל־60 פלחים צרים, ובכל פלח
+                  מודדים מיקום במטרים, ברשת מקומית.
+                </p>
+              </>
+            }
+          />
         </div>
       </FitScreen>
-      <FitScreen name="utm-atlas" height={951} className="mb-10">
+      <FitScreen name="utm-atlas" height={816} className="mb-10">
         <div data-block="utm">
           <UtmZoneAtlas />
         </div>
@@ -236,11 +244,16 @@ const SYSTEM_DIFFERENCES: { label: string; geo: React.ReactNode; utm: React.Reac
 function ReferenceSystemBlock() {
   return (
     <div className="my-10">
-      <h3 className={H3}>מערכות ייחוס</h3>
-      <p className={cn(LEAD, 'mb-6')}>
-        אותו מקום יכול להיכתב בשיטות קואורדינטות שונות. בחרו שיטה מעל המפה, ובחרו נקודה במפה או בכפתורים שמתחתיה.
-      </p>
-      <ReferenceSystemsLinkedComparison />
+      <ReferenceSystemsLinkedComparison
+        header={
+          <>
+            <h3 className={CARD_H3}>מערכות ייחוס</h3>
+            <p className={CARD_LEAD}>
+              אותו מקום יכול להיכתב בשיטות קואורדינטות שונות. בחרו שיטה מעל המפה, ובחרו נקודה במפה או בכפתורים שמתחתיה.
+            </p>
+          </>
+        }
+      />
     </div>
   );
 }

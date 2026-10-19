@@ -20,6 +20,28 @@ export const CHOICE =
   'rounded-xl border cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 export const choiceTone = (on: boolean) => (on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]');
 
+const ARROW =
+  'grid h-11 w-9 shrink-0 place-items-center rounded-xl border border-border bg-bg-elevated text-fg-muted hover:border-brand/30 hover:text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+
+/** The point's zone between two arrows that carry it to the neighbour zone (map order: west on the left, never mirrored). */
+export function ZoneStepper({ zone, onStep, reduce }: { zone: number; onStep: (dz: -1 | 1) => void; reduce: boolean }) {
+  return (
+    <div role="group" aria-label={`פלח ${zone}: מעבר לפלח סמוך`} dir="ltr" className="flex items-center gap-1.5" data-zone-stepper>
+      <button type="button" className={ARROW} onClick={() => onStep(-1)} aria-label={`לפלח ${wrapZone(zone - 1)}, מערבה`} data-zone-step={wrapZone(zone - 1)}>
+        <Icon name="arrow-left" size={16} />
+      </button>
+      <span className={cn(VALUE, 'min-w-[3.5rem] rounded-lg bg-bg-accent px-2 py-1.5 text-center')} data-value="zone">
+        <Changing value={String(zone)} reduce={reduce}>
+          {zone}
+        </Changing>
+      </span>
+      <button type="button" className={ARROW} onClick={() => onStep(1)} aria-label={`לפלח ${wrapZone(zone + 1)}, מזרחה`} data-zone-step={wrapZone(zone + 1)}>
+        <Icon name="arrow-right" size={16} />
+      </button>
+    </div>
+  );
+}
+
 /** Five zone buttons in map order (west → east, never mirrored) and two arrows that page the row. */
 export function ZoneRow({
   center,
@@ -38,7 +60,7 @@ export function ZoneRow({
   verdict?: 'right' | 'wrong' | null;
 }) {
   const zones = [-2, -1, 0, 1, 2].map((d) => wrapZone(center + d));
-  const arrow = 'grid h-11 w-9 shrink-0 place-items-center rounded-xl border border-border bg-bg-elevated text-fg-muted hover:border-brand/30 hover:text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+  const arrow = ARROW;
   return (
     <div role="group" aria-label={label} dir="ltr" className="flex items-center gap-1.5" data-zone-row>
       <button type="button" className={arrow} onClick={() => onPage(-5)} aria-label="חמישה פלחים מערבה">

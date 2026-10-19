@@ -4,7 +4,8 @@ import { useId, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { SceneHeader } from './SceneHeader';
 import { ContoursDensitySection } from './ContoursDensitySection';
-import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
+import { LESSON_FIT_MAX_HEIGHT, LessonViewportFit } from '@/components/lesson/LessonViewportFit';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { cn } from '@/lib/utils';
 import type { MountainView } from './ContourCake3D';
 import { MOUNTAIN } from './contourMountain.data';
@@ -13,9 +14,10 @@ import { MAP } from './topographyTerrainStyle';
 
 const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
   ssr: false,
+  // the model's own frame and loading indicator while its chunk loads (ContourCake3D takes over the same box)
   loading: () => (
-    <div className="aspect-video sm:aspect-square max-h-[340px] w-full mx-auto flex items-center justify-center text-fg-dim text-sm">
-      טוען מודל תלת־ממדי…
+    <div className="relative aspect-video sm:aspect-square max-h-[340px] w-full mx-auto bg-white">
+      <ModelLoading label="טוען הר תלת־ממדי…" />
     </div>
   ),
 });
@@ -44,19 +46,22 @@ const VIEWS: { id: MountainView; label: string; caption: string }[] = [
 /**
  * Laptop fit — each of the two screens (3D model + map card; density section)
  * is its own LessonViewportFit, laid out at the 1920×1080 reference width (the
- * section's content box: max-w-6xl 1152 − lg:px-8) and shrunk uniformly where
- * it doesn't fit. The first screen's top is measured ('auto'); the second is
- * read after scrolling it up under the fixed site header (--header-h, 5rem
- * from lg), so its reserve is that header plus a 24px gap. 24px below both.
+ * section's content box: max-w-lesson 1408 − lg:px-8) and shrunk uniformly where
+ * it doesn't fit. The scene header stays outside the fits (as in the
+ * topography screen), and each screen is read after scrolling it up under the
+ * fixed site header (--header-h, 5rem from lg), so its reserve is that header
+ * plus a 24px gap. 24px below both. A screen taller than LESSON_FIT_MAX_HEIGHT
+ * is fitted as that height, so a laptop shrinks it to the same width as the
+ * other topic-02 screens (not a narrower, height-bound one); its foot scrolls.
  * SceneHeader's clamp(…3.8vw…) title is already at its 46px cap from 1210px.
  */
-const FIT_WIDTH = 1088;
+const FIT_WIDTH = 1344;
 const FIT_TOP = 80 + 24;
 const FIT_BOTTOM = 24;
-/** Heights at FIT_WIDTH, px (measured 2026-10-13). The model screen is the same in all three views;
-    the density screen is tallest on „מצוק” (longest description) — keeps the scale steady across tabs. */
-const FIT_HEIGHT_MODEL = 852;
-const FIT_HEIGHT_DENSITY = 814;
+/** Heights at FIT_WIDTH, px (measured 2026-10-19). The model screen (without the scene header) is the same
+    in all three views, and the density screen on all three tabs — the scale stays steady across tabs. */
+const FIT_HEIGHT_MODEL = 619;
+const FIT_HEIGHT_DENSITY = Math.min(890, LESSON_FIT_MAX_HEIGHT);
 
 export function ContoursScene() {
   const [activeRing, setActiveRing] = useState<number | null>(null);
@@ -67,14 +72,19 @@ export function ContoursScene() {
   const viewInfo = VIEWS.find((v) => v.id === view)!;
 
   return (
-    <section id="scene-contours" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <section id="scene-contours" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* ── Screen 1: the 3D model and its contour map ── */}
-      <LessonViewportFit referenceWidth={FIT_WIDTH} referenceHeight={FIT_HEIGHT_MODEL} reserveBottom={FIT_BOTTOM}>
-        <SceneHeader
-          step="02.4"
-          title="קווי גובה: כיצד קוראים את צורת השטח במפה?"
-          intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה. בהדמיה ההר מחולק לשכבות אופקיות: גבול החיתוך של כל שכבה יוצר קו גובה. עברו בין התצוגות ובחנו את הקשר בין המודל למפה."
-        />
+      <SceneHeader
+        step="02.4"
+        title="קווי גובה: כיצד קוראים את צורת השטח במפה?"
+        intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה. בהדמיה ההר מחולק לשכבות אופקיות: גבול החיתוך של כל שכבה יוצר קו גובה. עברו בין התצוגות ובחנו את הקשר בין המודל למפה."
+      />
+      <LessonViewportFit
+        referenceWidth={FIT_WIDTH}
+        referenceHeight={FIT_HEIGHT_MODEL}
+        reserveTop={FIT_TOP}
+        reserveBottom={FIT_BOTTOM}
+      >
 
         {/* No mb-6: it collapsed into the density title's mt-12, which now sits on screen 2's wrapper. */}
         <div className="surface-elevated p-6 lg:p-8">
@@ -152,11 +162,7 @@ export function ContoursScene() {
         reserveBottom={FIT_BOTTOM}
         className="mt-12"
       >
-        <h3 className="mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-          הערכת תלילות לפי צפיפות קווי הגובה
-        </h3>
-
-        {/* Tabs + info card + contour map/profile + glossary — see ContoursDensitySection. */}
+        {/* One card: title, tabs, the selected kind's text, glossary and contour map/profile — see ContoursDensitySection. */}
         <ContoursDensitySection />
       </LessonViewportFit>
     </section>

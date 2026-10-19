@@ -28,6 +28,23 @@ This project must match the provided visual mockups as closely as possible ("pix
 - Never mirror maps, diagrams, or illustrations for RTL.
 - On SVG `<text>`, always set `textAnchor` explicitly (default anchoring clips labels off-frame under RTL).
 
+## 3D models (loading)
+
+Every 3D model in a lesson (R3F `<Canvas>`, raw WebGL scene) shows a loading animation until its first frame is drawn. Never leave an empty box, a frozen half-built canvas, or a silent wait.
+
+- Use the shared `ModelLoading` component (`src/components/lesson/ModelLoading.tsx`), never a bespoke one (no text-only pills, no pulsing shapes, no spinners). It renders a "טוען … תלת־ממדי…" line over a thin bar, centred on the model's frame.
+- Cover the whole wait:
+  - the lazy chunk: the `next/dynamic` `loading:` renders the same frame (size + bg) with `ModelLoading` and the same label, not `() => null`;
+  - assets and first frame: shown while `!ready`, where `ready` comes from the model's own first-frame `onReady` (or drei `useProgress` finishing), not from mount.
+- Progress:
+  - The bar always runs the site's loading sheen, so it never looks frozen.
+  - Pass `progress` only when it is measured: drei `useProgress` inside the 3D chunk, as `progress={active ? progress : undefined}`. It fills over the sheen.
+  - Don't import three/drei into a wrapper just to get progress.
+- Backdrop: pass the frame's bg as `className` to hide a half-built canvas. Over a still or picture standing in for the model, use `card` (and `className="justify-end pb-3"` when the still stays interactive).
+- Label: Hebrew, naming the object, e.g. "טוען הר תלת־ממדי…", "טוען גלובוס תלת־ממדי…".
+- No WebGL: the static fallback picture, with no loader.
+- Verify: in Playwright, hold the model's chunk or assets with `page.route`, screenshot the loader, then release and confirm it disappears once the model is drawn.
+
 ## Target viewport
 
 - Desktop: **1440px width** — this is the only target until desktop is pixel-accurate.

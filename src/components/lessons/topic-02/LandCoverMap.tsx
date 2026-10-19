@@ -143,16 +143,20 @@ function Outline({ shape, mode }: { shape: Shape; mode: 'selected' | 'hover' | '
           <path d={shape.d} fill="none" stroke="#D97E2B" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
         </>
       );
+    // pointed at: the same mark as an area's — a pale band along the line, dashed down its middle
     return (
-      <path
-        d={shape.d}
-        fill="none"
-        stroke={mode === 'focus' ? '#D97E2B' : '#38432E'}
-        strokeOpacity={mode === 'focus' ? 0.35 : 0.14}
-        strokeWidth={shape.w}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <>
+        <path d={shape.d} fill="none" stroke="#FFFFFF" strokeOpacity={0.45} strokeWidth={shape.w} strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d={shape.d}
+          fill="none"
+          stroke={mode === 'focus' ? '#D97E2B' : '#38432E'}
+          strokeWidth={mode === 'focus' ? 1.6 : 1.1}
+          strokeDasharray="3.5 2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </>
     );
   }
   if (mode === 'selected')
@@ -216,17 +220,28 @@ export function LandCoverMap({
   cat,
   selectedId,
   onSelect,
+  hoverId: hoverIdProp,
+  onHover,
   ariaLabel,
 }: {
   features: CoverMapFeature[];
   cat: CoverCat;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Optional, shared with the item list: the region hovered here or the item pointed at there. */
+  hoverId?: string | null;
+  onHover?: (id: string | null) => void;
   ariaLabel: string;
 }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const reduce = !!useReducedMotion();
-  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [ownHoverId, setOwnHoverId] = useState<string | null>(null);
+  const hoverId = hoverIdProp === undefined ? ownHoverId : hoverIdProp;
+  const setHoverId = (next: string | null | ((h: string | null) => string | null)) => {
+    const v = typeof next === 'function' ? next(hoverId) : next;
+    if (hoverIdProp === undefined) setOwnHoverId(v);
+    onHover?.(v);
+  };
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const featureOf = (id: string) => features.find((f) => f.id === id)!;
@@ -272,9 +287,15 @@ export function LandCoverMap({
         onMouseEnter={() => setHoverId(id)}
         onMouseLeave={() => setHoverId((h) => (h === id ? null : h))}
         onFocus={(e: FocusEvent<SVGGElement>) => {
-          if (e.currentTarget.matches(':focus-visible')) setFocusId(id);
+          if (e.currentTarget.matches(':focus-visible')) {
+            setFocusId(id);
+            onHover?.(id);
+          }
         }}
-        onBlur={() => setFocusId((h) => (h === id ? null : h))}
+        onBlur={() => {
+          setFocusId((h) => (h === id ? null : h));
+          if (focusId === id) onHover?.(null);
+        }}
         className="cursor-pointer outline-none"
       >
         {shape.kind === 'area' ? (

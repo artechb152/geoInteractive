@@ -22,8 +22,9 @@ import {
    four writings in a band under both. The track is a diagram: left to right like the number
    it decomposes (whole parts left, fractions right), so it is dir="ltr" and never mirrored. */
 
-const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
-const LEAD_CLS = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+// the activity's heading and lead, at the top of its own card (one envelope per activity)
+const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const LEAD_CLS = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 const HEADING = 'font-display font-bold leading-snug text-black text-lg md:text-xl';
 const LABEL = 'text-base font-display font-bold text-black';
 const BODY = 'text-base leading-relaxed text-black';
@@ -65,10 +66,10 @@ export function Base60Workbench() {
   const t = s[s.axis];
   return (
     <div ref={rootRef} className="my-10" data-base60="">
-      <h3 className={H3}>{TITLE}</h3>
-      <p className={LEAD_CLS}>{LEAD}</p>
-
       <div className="surface-elevated p-6" data-axis={s.axis} data-mode={t.mode} data-done={t.done}>
+        <h3 className={H3}>{TITLE}</h3>
+        <p className={LEAD_CLS}>{LEAD}</p>
+
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.87fr)] lg:gap-0">
           <Steps s={s} act={act} uid={uid} />
 

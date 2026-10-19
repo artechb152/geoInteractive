@@ -85,7 +85,19 @@ export type TerrainNavCopy = {
   readonly legend: readonly { readonly kind: RouteGlyphKind | (string & {}); readonly label: string }[];
 };
 
-export function TerrainAssociationActivity({ copy, onContinue }: { copy: TerrainNavCopy; onContinue?: () => void }) {
+/** `header` / `footer` — the technique's own text, set at the top and the foot of the card
+ *  (one envelope per activity). */
+export function TerrainAssociationActivity({
+  copy,
+  onContinue,
+  header,
+  footer,
+}: {
+  copy: TerrainNavCopy;
+  onContinue?: () => void;
+  header?: ReactNode;
+  footer?: ReactNode;
+}) {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const [view] = useState(createViewStore);
   const [terrainReady, setTerrainReady] = useState(false);
@@ -219,6 +231,8 @@ export function TerrainAssociationActivity({ copy, onContinue }: { copy: Terrain
 
   return (
     <div className="surface-elevated p-6 lg:p-8" data-activity="terrain-association" data-mode={state.mode} aria-labelledby={titleId}>
+      {header}
+
       {/* Task line + mode */}
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
@@ -270,6 +284,8 @@ export function TerrainAssociationActivity({ copy, onContinue }: { copy: Terrain
           leg && letters && <PracticeStrip state={state} leg={leg} letters={letters} dispatch={dispatch} />
         )}
       </div>
+
+      {footer}
     </div>
   );
 }

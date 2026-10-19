@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Maximize2, Minimize2, Minus, Plus, RotateCcw, ScanSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { formatBearing } from './terrainNavGeometry';
 import type { ModelProps } from './TerrainNav3D';
 import type { ViewStore } from './terrainNavViewStore';
@@ -196,11 +197,7 @@ export function TerrainNavModel({
       />
 
       {/* Loading */}
-      {live && !ready && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[#E2E3DA]" data-loading>
-          <span className="rounded-lg bg-bg-elevated/90 px-3 py-1.5 font-display text-base font-semibold text-black shadow-sm">טוען את מודל השטח…</span>
-        </div>
-      )}
+      {live && !ready && <ModelLoading label="טוען את מודל השטח…" className="bg-[#E2E3DA]" />}
 
       {/* The cut between overview and the navigator's eye */}
       <div aria-hidden className={cn('pointer-events-none absolute inset-0 bg-bg transition-opacity duration-200', cut ? 'opacity-100' : 'opacity-0')} />

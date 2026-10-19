@@ -2,12 +2,15 @@
 
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
+import { AxisGizmo } from './AxisGizmo';
 import type { StateId } from './reliefCoverCompare.data';
 
 /**
  * The "בשטח" board of „אותה גבעה, שלושה נופים”: the live model (ReliefCover3D, loaded only near the
- * viewport; drag turns it), or — without WebGL — a still of the same model in the same state
+ * viewport; drag turns it — an X·Y·Z axes marker in its middle says so until the first drag), or — without WebGL — a still of the same model in the same state
  * (captured from it by scripts/qa/capture-relief-cover-fallback.mjs).
  */
 
@@ -45,6 +48,7 @@ export function ReliefCoverModel({ state, reduce, ariaLabel }: { state: StateId;
   const [renderer, setRenderer] = useState<'pending' | 'live' | 'static'>('pending');
   const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
+  const [turned, setTurned] = useState(false);
 
   useEffect(() => setRenderer(hasWebGL() ? 'live' : 'static'), []);
   const fallBack = useCallback(() => setRenderer('static'), []);
@@ -67,6 +71,7 @@ export function ReliefCoverModel({ state, reduce, ariaLabel }: { state: StateId;
       className={cn('relative aspect-[518/352] w-full overflow-hidden', HAZE)}
       data-renderer={renderer}
       data-ready={ready || undefined}
+      onPointerDownCapture={() => setTurned(true)}
     >
       {live && activated && (
         <CanvasErrorBoundary onError={fallBack}>
@@ -81,11 +86,24 @@ export function ReliefCoverModel({ state, reduce, ariaLabel }: { state: StateId;
       {/* the figure's name for assistive tech; the canvas itself is aria-hidden */}
       <div role="img" aria-label={ariaLabel} className="pointer-events-none absolute inset-0" />
 
-      {live && !ready && (
-        <div className={cn('pointer-events-none absolute inset-0 flex items-center justify-center', HAZE)} data-loading>
-          <span className="rounded-lg bg-bg-elevated/90 px-3 py-1.5 font-display text-sm font-semibold text-fg shadow-sm">טוען את מודל השטח…</span>
-        </div>
-      )}
+      {live && !ready && <ModelLoading label="טוען את מודל השטח…" className={HAZE} />}
+
+      {/* "this turns": the axes marker in the middle, until the learner first drags the model */}
+      <AnimatePresence>
+        {live && ready && !turned && (
+          <motion.div
+            key="gizmo"
+            data-qa="rc-gizmo"
+            data-overlay
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            initial={reduce ? false : { opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1, transition: { duration: reduce ? 0 : 0.35, delay: reduce ? 0 : 0.2 } }}
+            exit={{ opacity: 0, scale: 0.9, transition: { duration: reduce ? 0 : 0.25 } }}
+          >
+            <AxisGizmo reduce={reduce} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {live && (
         <div className="pointer-events-none absolute end-2.5 top-2.5" data-overlay>

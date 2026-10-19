@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion';
+import { Minus, Plus, RotateCcw, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistance, formatNumber, niceScaleBar, SHEET_UNITS, type SheetPoint } from './geo';
 import { MIN_K, useMapView, type InitialView } from './useMapView';
@@ -42,6 +42,8 @@ type Props = {
   note?: ReactNode;
   /** Display the explanatory lines and credits below the map. */
   showFooter?: boolean;
+  /** A chip beside the zoom buttons that says the map zooms; it leaves after the first zoom. */
+  zoomHint?: boolean;
   /**
    * Opening view of the sheet (centre defaults to the sheet centre), clamped: applied after the first
    * measurement and again whenever `sheetKey` changes (without it a new sheet opens at k = 1).
@@ -70,10 +72,15 @@ type Props = {
  */
 export function SheetViewport({
   id, label, sheetKey, groundWidthM, base, top, display, curtain, attribution, preload, onPick, overlay, note, initialView, onSize,
-  maxK, zoomInto, onZoomOutPast, morph = true, showFooter = true,
+  maxK, zoomInto, onZoomOutPast, morph = true, showFooter = true, zoomHint = false,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const hintId = useId();
+  const zoomHintId = useId();
+  // Any zoom (wheel, +/− keys, buttons) shows the learner already found it.
+  const [zoomTried, setZoomTried] = useState(false);
+  const showZoomHint = zoomHint && !zoomTried;
+  const tried = () => setZoomTried(true);
   const reduce = !!useReducedMotion();
   const map = useMapView(ref, initialView, { maxK, onZoomOutPast, zoomInRect: zoomInto && { rect: zoomInto.rect, minK: zoomInto.minK } });
   const { view, size } = map;
@@ -168,7 +175,7 @@ export function SheetViewport({
         role="group"
         aria-roledescription="מפה"
         aria-label={label}
-        aria-describedby={showFooter ? hintId : undefined}
+        aria-describedby={showFooter ? hintId : showZoomHint ? zoomHintId : undefined}
         tabIndex={0}
         data-qa="sheet-viewport"
         data-view={`${view.k.toFixed(3)},${view.x.toFixed(1)},${view.y.toFixed(1)}`}
@@ -178,6 +185,8 @@ export function SheetViewport({
           view.k > MIN_K ? 'cursor-grab active:cursor-grabbing' : onPick ? 'cursor-crosshair' : 'cursor-default',
         )}
         {...map.handlers}
+        onWheelCapture={showZoomHint ? tried : undefined}
+        onKeyDownCapture={showZoomHint ? (e) => '+=-_'.includes(e.key) && tried() : undefined}
         // Focusing a handle outside the visible area would scroll this overflow-hidden box and shift the
         // map against its transform; the view only moves through zoom/pan.
         onScroll={(e) => {
@@ -235,7 +244,21 @@ export function SheetViewport({
         <NorthArrow />
         {/* The bar describes the sheet on screen; mid-morph two sheets are visible, so it waits for the morph to end. */}
         {size > 1 && !ghost && <ScaleBar meters={bar.meters} px={bar.px} />}
-        <ZoomButtons k={view.k} maxK={map.maxK} outPast={!!onZoomOutPast} onIn={() => map.zoomBy(1.5)} onOut={() => map.zoomBy(1 / 1.5)} onReset={map.reset} />
+        <ZoomButtons
+          k={view.k}
+          maxK={map.maxK}
+          outPast={!!onZoomOutPast}
+          onIn={() => {
+            tried();
+            map.zoomBy(1.5);
+          }}
+          onOut={() => {
+            tried();
+            map.zoomBy(1 / 1.5);
+          }}
+          onReset={map.reset}
+        />
+        <AnimatePresence>{showZoomHint && <ZoomHint id={zoomHintId} reduce={reduce} />}</AnimatePresence>
       </div>
 
       {display === 'curtain' && curtain && <CurtainSlider {...curtain} />}
@@ -301,6 +324,43 @@ function NorthArrow() {
         <path d="M6 0 L12 16 L6 12 L0 16 Z" fill="#38432E" />
       </svg>
     </div>
+  );
+}
+
+/**
+ * Sits to the left of the + / − pair, centred on it (buttons: 12 px from the corner, 36 px each, 6 px apart, so the
+ * pair spans 54–132 px from the bottom, centre 93) with a caret pointing at them; a few nudges toward them draw the eye. The box is LTR
+ * so the caret stays on the buttons' side (map furniture is physical).
+ */
+function ZoomHint({ id, reduce }: { id: string; reduce: boolean }) {
+  return (
+    <motion.div
+      id={id}
+      dir="ltr"
+      data-qa="zoom-hint"
+      className="pointer-events-none absolute bottom-[93px] right-[56px] flex items-center"
+      style={{ y: '50%' }}
+      initial={{ opacity: 0 }}
+      animate={reduce ? { opacity: 1 } : { opacity: 1, x: [0, 0, 5, 0, 5, 0] }}
+      exit={{ opacity: 0, transition: { duration: 0.2 } }}
+      transition={reduce ? { duration: 0.2 } : { opacity: { duration: 0.3 }, x: { duration: 1.6, delay: 0.8, repeat: 2, repeatDelay: 2.5 } }}
+    >
+      <span
+        dir="rtl"
+        className="flex items-center gap-2.5 whitespace-nowrap rounded-xl border-2 border-accent bg-bg-elevated py-2 pe-3.5 ps-3 text-fg shadow-elevated"
+      >
+        <ZoomIn size={22} aria-hidden className="shrink-0 text-accent" />
+        <span className="flex flex-col gap-1">
+          <span className="text-[15px] font-display font-bold leading-none">אפשר לעשות זום פנימה והחוצה</span>
+          <span className="text-[13px] font-display font-semibold leading-none text-fg-muted">
+            בגלגלת העכבר או בכפתורים <bdi dir="ltr">+ / −</bdi>
+          </span>
+        </span>
+      </span>
+      <svg aria-hidden width="8" height="14" viewBox="0 0 8 14" className="shrink-0" style={{ marginLeft: -1 }}>
+        <path d="M0 0 L8 7 L0 14 Z" className="fill-accent" />
+      </svg>
+    </motion.div>
   );
 }
 

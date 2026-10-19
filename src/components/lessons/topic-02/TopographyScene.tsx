@@ -2,9 +2,9 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import type { IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,11 @@ import { cn } from '@/lib/utils';
 // all of them together, in a single live canvas — client-only, and nothing loads until it nears the viewport.
 const TopographyTerrain3D = dynamic(() => import('./TopographyTerrain3D'), {
   ssr: false,
-  loading: () => <div className="h-full min-h-[560px] w-full rounded-xl bg-bg-accent/40" />,
+  loading: () => (
+    <div className="relative h-full min-h-[560px] w-full rounded-xl bg-bg-accent/40">
+      <ModelLoading card label="טוען שטח תלת־ממדי…" />
+    </div>
+  ),
 });
 type View = '3d' | 'photo' | 'topo' | 'all';
 const VIEWS: { id: View; label: string; icon: IconName; pros: string[]; cons: string[]; whatItIs: string; whyItMatters: string }[] = [
@@ -20,78 +24,79 @@ const VIEWS: { id: View; label: string; icon: IconName; pros: string[]; cons: st
 id: 'topo',
 label: 'מפה טופוגרפית',
 icon: 'layers',
-whatItIs: 'ייצוג של השטח בקנה מידה מוגדר, באמצעות סימנים מוסכמים וקווי גובה. קווי הגובה מתארים את גובה הקרקע ואת צורתה על משטח דו־ממדי.',
+whatItIs: 'שרטוט של השטח במבט־על, בקנה מידה ידוע. קווי גובה מתארים את צורת הקרקע, וסימנים מוסכמים מתארים את מה שנמצא עליה.',
 pros: [
- 'מאפשרת למדוד מרחקים ולהעריך שיפועים',
+ 'אפשר למדוד בה מרחקים ולהעריך שיפועים',
  'מציגה מידע נבחר על התבליט והתכסית',
- 'ניתנת לשימוש בשטח גם בגרסה מודפסת'
+ 'אפשר לעבוד איתה בשטח גם מודפסת'
  ],
 cons: [
- 'קריאת הסימנים וקווי הגובה דורשת למידה ותרגול',
- 'רמת הפירוט והדיוק תלויה בקנה המידה ובנתוני המקור'
+ 'צריך ללמוד לקרוא את הסימנים ואת קווי הגובה',
+ 'הפירוט והדיוק תלויים בקנה המידה ובנתוני המקור'
  ],
-whyItMatters: 'המפה מסייעת להבין את מבנה השטח, להשוות בין מסלולים ולתכנן תנועה. כדי להשתמש בה נכון, יש להכיר את סימניה ולבדוק את מועד העדכון שלה.',
+whyItMatters: 'למדידה, להשוואת מסלולים ולתכנון תנועה. בדקו מתי המפה עודכנה.',
  },
  {
 id: 'photo',
 label: 'תצ״א (תצלום אוויר)',
 icon: 'eye',
-whatItIs: 'תצלום של פני השטח שצולם מכלי טיס, כגון מטוס או רחפן. כאן מוצגת הדמיה של מבט מלמעלה.',
+whatItIs: 'תצלום של פני השטח מכלי טיס, כמו מטוס או רחפן. כאן מוצגת הדמיה של תצלום כזה.',
 pros: [
- 'מציג את מראה השטח במועד הצילום',
- 'מסייע לזהות מבנים, דרכים וצמחייה לפי איכות התצלום'
+ 'מראה את השטח כפי שהיה ביום הצילום',
+ 'אפשר לזהות בו מבנים, דרכים וצמחייה, לפי איכות התצלום'
  ],
 cons: [
- 'קשה להעריך גבהים ושיפועים מתצלום בודד',
- 'שינויים שחלו בשטח לאחר הצילום אינם מופיעים בו',
+ 'מתצלום בודד קשה להעריך גבהים ושיפועים',
+ 'שינויים שקרו אחרי הצילום לא מופיעים בו',
  'צמחייה ומבנים עלולים להסתיר פרטים'
  ],
-whyItMatters: 'תצלום האוויר מסייע לזהות פרטים בשטח ולהכיר את סביבת היעד. לתכנון מסלול יש לשלב אותו עם נתוני גובה ושיפוע ולבדוק את מועד הצילום.',
+whyItMatters: 'לזיהוי פרטים ולהיכרות עם סביבת היעד. לתכנון מסלול משלבים אותו עם נתוני גובה ושיפוע.',
  },
  {
 id: '3d',
 label: 'מודל תלת־ממדי',
 icon: 'mountain',
-whatItIs: 'ייצוג של פני השטח בשלושה ממדים, המבוסס על נתוני גובה ומאפשר לבחון את השטח מזוויות שונות.',
+whatItIs: 'פני השטח בשלושה ממדים, על בסיס נתוני גובה. אפשר לבחון בו את השטח מזוויות שונות.',
 pros: [
  'ממחיש את צורת ההרים, הגבעות והעמקים',
- 'מסייע להבין את הפרשי הגובה ואת היחסים בין צורות השטח'
+ 'מראה את הפרשי הגובה ואת הקשר בין צורות השטח'
  ],
 cons: [
- 'רמת הדיוק תלויה בנתונים שעליהם נבנה',
+ 'הדיוק תלוי בנתונים שעליהם נבנה',
  'מדידת מרחקים ושיפועים דורשת כלים מתאימים',
- 'הצגת מודל דיגיטלי דורשת מכשיר ומקור חשמל'
+ 'מודל דיגיטלי דורש מכשיר ומקור חשמל'
  ],
-whyItMatters: 'המודל מסייע להכיר את השטח לפני היציאה אליו. בתדרוך אפשר לבחון באמצעותו את מבנה השטח ולהמחיש את המסלול המתוכנן.',
+whyItMatters: 'להכרת השטח לפני היציאה אליו, ובתדרוך — להמחשת המסלול המתוכנן.',
  },
  {
 id: 'all',
 label: 'כל התצוגות יחד',
 icon: 'layers',
-whatItIs: 'המודל התלת־ממדי מורם מעל המפה הטופוגרפית של אותו שטח, וכל נקודה במודל מתאימה לנקודה במפה. הצביעו על פרט בשטח כדי לראות אותו בשתי השכבות.',
+whatItIs: 'המודל מורם מעל המפה של אותו שטח, וכל נקודה בו מתאימה לנקודה במפה. הצביעו על פרט כדי לראות אותו בשתי השכבות.',
 pros: [
- 'מקשרת בין קווי הגובה במפה לבין צורת השטח',
- 'מאפשרת לזהות את אותו פרט בכל אחת מהתצוגות'
+ 'מקשרת בין קווי הגובה לבין צורת השטח',
+ 'אפשר לזהות את אותו פרט בכל תצוגה'
  ],
 cons: [
- 'ריבוי השכבות עלול להעמיס על התצוגה',
- 'השילוב מחייב שכל מקורות המידע יהיו מעודכנים ומתואמים'
+ 'ריבוי שכבות עלול להעמיס על התצוגה',
+ 'כל מקורות המידע צריכים להיות מעודכנים ומתואמים'
  ],
-whyItMatters: 'בתכנון משלבים בין מקורות המידע: המפה למדידה ולניווט, התצלום לזיהוי פרטים והמודל להמחשת התבליט. השילוב ביניהם מספק תמונה שלמה של השטח.',
+whyItMatters: 'משלבים את שלושתן: מפה למדידה ולניווט, תצלום לזיהוי פרטים, מודל להמחשת התבליט.',
  },
 ];
 /**
  * Laptop fit — the 1920×1080 view is the reference composition (scale 1).
- * Width: the section's content box there, 1088 px (max-w-6xl minus lg:px-8).
- * Height: the composition (scene header → tabs → card) is 977 px tall and
- * already reaches the fold at 1920×1080, so it is fitted against that view's
- * height budget instead — 1080 − 104 px above (site header + shell gap,
- * measured) − 24 px kept clear below = 952 px, as in the sibling topic-02
- * screens. 1920×1080 stays at scale 1, and a laptop shows the whole card
- * with the same 24 px band under it. The pager row is reached by scrolling.
+ * Width: the section's content box there, 1344 px (max-w-lesson minus lg:px-8).
+ * The scene header stays outside the fit: with it inside, the composition
+ * (header → tabs → card) was 977 px tall, so on a laptop it was bound by the
+ * height and came out narrower than the screens before it. Only the viewer
+ * (tabs → card, 744 px, measured 2026-10-19 — the same on every view) is
+ * fitted, reserving the sticky site header (--header-h, 5rem from lg) plus a
+ * 24 px gap above and 24 px below, as in the sibling topic-02 screens.
  */
-const FIT_REFERENCE_WIDTH = 1088;
-const FIT_REFERENCE_HEIGHT = 952;
+const FIT_REFERENCE_WIDTH = 1344;
+const FIT_REFERENCE_HEIGHT = 744;
+const FIT_TOP = 80 + 24;
 const FIT_BOTTOM = 24;
 /** Describe the simulated terrain shown in each view. */
 const ALTS: Record<View, string> = {
@@ -113,8 +118,6 @@ export function TopographyScene() {
   const total = VIEWS.length;
   const meta = VIEWS[idx];
   const stacked = meta.id === 'all'; // "כל התצוגות יחד": the model lifted off its map
-  const isFirst = idx === 0;
-  const isLast = idx === total - 1;
   const uid = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const tabId = (i: number) => `${uid}-tab-${i}`;
@@ -137,28 +140,31 @@ export function TopographyScene() {
   };
 
   return (
-    <section id="scene-topography" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-topography" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
+      <SceneHeader
+        step="02.1"
+        eyebrow="טופוגרפיה"
+        title="איך מייצגים את פני השטח?"
+        intro="טופוגרפיה מתארת את צורת פני השטח: גבהים ושיפועים. כאן אותו שטח מוצג בשלוש דרכים ובשילוב ביניהן. עברו בין הלשוניות והשוו מה כל תצוגה מראה ומה חסר בה."
+      />
+
       <LessonViewportFit
         referenceWidth={FIT_REFERENCE_WIDTH}
         referenceHeight={FIT_REFERENCE_HEIGHT}
+        reserveTop={FIT_TOP}
         reserveBottom={FIT_BOTTOM}
         className="mb-12"
       >
-        <SceneHeader
-          step="02.1"
-          eyebrow="טופוגרפיה"
-          title="ממרחב למישור: כיצד מייצגים את פני השטח?"
-          intro="טופוגרפיה עוסקת בתיאור צורת פני השטח, הגבהים והשיפועים. כאן מוצג אותו שטח בשלוש דרכים. עברו בין התצוגות והשוו בין היתרונות, המגבלות והשימושים של כל אחת."
-        />
 
-        <div onKeyDown={onKeyDown}>
+        {/* One card, one screen: the view tabs head the card they switch (one envelope per activity). */}
+        <div onKeyDown={onKeyDown} className="surface-elevated p-5 sm:p-6">
           {/* Segmented view switcher — the four views are directly selectable.
               The running number (formerly an absolute "01" badge that overlapped
               the card's corner) now lives inside each segment. */}
           <div
             role="tablist"
             aria-label="ניווט בין תצוגות"
-            className="mx-auto mb-4 flex max-w-4xl flex-col gap-2 sm:flex-row"
+            className="mb-5 flex flex-col gap-2 sm:flex-row"
           >
             {VIEWS.map((v, i) => {
               const isActive = i === idx;
@@ -176,8 +182,8 @@ export function TopographyScene() {
                   tabIndex={isActive ? 0 : -1}
                   onClick={() => select(i)}
                   className={cn(
-                    // Tabs sit on the textured page, so the translucent option tints ride
-                    // on an opaque white base via ::before (same recipe as Geology/Density).
+                    // The translucent option tints ride on an opaque white base via ::before
+                    // (same recipe as Geology/Density).
                     'relative isolate flex flex-1 items-center justify-center gap-2 rounded-xl border bg-bg-elevated px-3 py-2.5 font-display text-base font-bold text-fg transition-colors duration-200 ease-snap cursor-pointer',
                     'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                     isActive
@@ -191,23 +197,22 @@ export function TopographyScene() {
             })}
           </div>
 
-          {/* One card, one screen: the explanation (first in DOM → visual right,
-              where RTL reading starts) beside a large live viewer. The pager sits
-              at the end of the text, so reading ends at "next". */}
+          {/* The explanation (first in DOM → visual right, where RTL reading
+              starts) beside a large live viewer. The tabs are the only view
+              switcher — no prev/next pager duplicating them. */}
           <div
             role="tabpanel"
             id={panelId}
             aria-labelledby={tabId(idx)}
-            className="surface-elevated p-5 sm:p-6"
           >
             <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8">
               <div className="flex min-w-0 flex-col">
                 {/* All four texts share one grid cell, so the column — and the
                     viewer beside it — keeps the height of the tallest view:
                     switching never makes the layout jump. The desktop floor is
-                    the original text height measured at 1440px, preserving the
-                    viewer and pager geometry after flattening the text styling. */}
-                <div className="grid lg:min-h-[568px] [&>*]:[grid-area:1/1]">
+                    the former text floor (568) plus the removed pager row
+                    (pt-5 + 44 px), so the card and viewer keep their size. */}
+                <div className="grid lg:min-h-[632px] [&>*]:[grid-area:1/1]">
                   {VIEWS.map((v, i) => {
                     const isActive = i === idx;
                     return (
@@ -221,23 +226,20 @@ export function TopographyScene() {
                             : { opacity: 0, transitionEnd: { visibility: 'hidden' } }
                         }
                         transition={{ duration: reduce ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
-                        className="space-y-4"
+                        className="space-y-5"
                       >
-                        <div className="font-display font-bold leading-tight transition-colors text-black text-base md:text-lg">
-                          {v.label}
+                        {/* T2 card heading → T4 definition, then T3-labelled blocks. */}
+                        <div>
+                          <h3 className="font-display font-bold leading-tight text-black text-lg md:text-xl">
+                            {v.label}
+                          </h3>
+                          <p className="mt-2 text-base leading-relaxed text-black">{v.whatItIs}</p>
                         </div>
 
                         <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                            תיאור התצוגה
-                          </div>
-                          <p className="text-base leading-relaxed text-black">{v.whatItIs}</p>
-                        </div>
-
-                        <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                          <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider">
                             יתרונות
-                          </div>
+                          </h4>
                           <ul className="space-y-1.5 text-base leading-relaxed text-black">
                             {v.pros.map((p) => (
                               <li key={p} className="flex gap-2">
@@ -249,9 +251,9 @@ export function TopographyScene() {
                         </div>
 
                         <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
+                          <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider">
                             מגבלות
-                          </div>
+                          </h4>
                           <ul className="space-y-1.5 text-base leading-relaxed text-black">
                             {v.cons.map((c) => (
                               <li key={c} className="flex gap-2">
@@ -263,72 +265,14 @@ export function TopographyScene() {
                         </div>
 
                         <div className="border-t border-border-subtle pt-4">
-                          <div className="text-base font-display font-bold text-black mb-1.5 tracking-wider flex items-center gap-1.5">
-                            שימוש בתכנון
-                          </div>
+                          <h4 className="text-base font-display font-bold text-black mb-1.5 tracking-wider">
+                            בתכנון
+                          </h4>
                           <p className="text-base leading-relaxed text-black">{v.whyItMatters}</p>
                         </div>
                       </motion.div>
                     );
                   })}
-                </div>
-
-                {/* Prev / progress dots / Next — matches the LandformsScene pager convention.
-                    RTL: "next" advances left (◀), "prev" retreats right (▶) — design-spec §10. */}
-                <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-                  <button
-                    type="button"
-                    onClick={() => select(Math.max(0, idx - 1))}
-                    disabled={isFirst}
-                    aria-label="התצוגה הקודמת"
-                    className={cn(
-                      'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                      isFirst
-                        ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                        : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
-                    )}
-                  >
-                    <ChevronRight size={22} strokeWidth={2} aria-hidden />
-                  </button>
-
-                  {/* Progress dots — a mouse shortcut mirroring the tab row above
-                      (hidden from assistive tech, which uses the tablist). */}
-                  <div className="flex items-center gap-2" aria-hidden>
-                    {VIEWS.map((v, i) => {
-                      const isActive = i === idx;
-                      return (
-                        <button
-                          key={v.id}
-                          type="button"
-                          tabIndex={-1}
-                          onClick={() => select(i)}
-                          className="group flex h-6 items-center justify-center px-0.5 cursor-pointer"
-                        >
-                          <span
-                            className={cn(
-                              'block h-2.5 rounded-full transition-all duration-300 ease-snap',
-                              isActive ? 'w-8 bg-accent' : 'w-2.5 bg-border-strong/70 group-hover:bg-fg-dim',
-                            )}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => select(Math.min(total - 1, idx + 1))}
-                    disabled={isLast}
-                    aria-label="התצוגה הבאה"
-                    className={cn(
-                      'relative isolate size-11 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                      isLast
-                        ? 'border-border-subtle bg-transparent text-fg-dim opacity-40 cursor-not-allowed'
-                        : 'border-border bg-bg-elevated text-brand-dark hover:border-brand/30 hover:before:bg-brand/[0.03] cursor-pointer',
-                    )}
-                  >
-                    <ChevronLeft size={22} strokeWidth={2} aria-hidden />
-                  </button>
                 </div>
               </div>
 

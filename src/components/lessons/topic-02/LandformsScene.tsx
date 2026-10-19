@@ -129,7 +129,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * Laptop fit — the part's two screens (the landform board under the scene
  * header, then the slope analyzer) each shrink on their own, uniformly, like a
  * slide (LessonViewportFit). Reference = 1920 × 1080: the section's content box
- * is 1088px (max-w-6xl 1152 − lg:px-8), and there both screens fit whole at
+ * is 1344px (max-w-lesson 1408 − lg:px-8), and there both screens fit whole at
  * scale 1. The screens follow one another in a scrolling section, so only the
  * first one's top can be measured ('auto'); the second reserves the sticky
  * site header (--header-h, 5rem from lg) plus the shell's 24px gap above it,
@@ -137,22 +137,22 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  *
  * Inside the fit nothing may size itself from the viewport, so the two
  * height-driven rules the scene had are frozen to their 1920 × 1080 result:
- * the views row is never narrowed (it took the full 1038px there), and the
+ * the views row is never narrowed (it took the full row there), and the
  * slope drawings take 72% of the row (min(72%, (100svh − 360px) × 1.6)).
  */
-const FIT_WIDTH = 1088;
+const FIT_WIDTH = 1344;
 const FIT_TOP = 80 + 24;
 const FIT_BOTTOM = 24;
-/** Laid-out heights at FIT_WIDTH, px (measured 2026-10-13, the same on every tab and on both forms of the valley/saddle tab). */
-const FIT_HEIGHT_BOARD = 700; // scene header + landform board
-const FIT_HEIGHT_SLOPES = 655;
+/** Laid-out heights at FIT_WIDTH, px (measured 2026-10-19, the same on every tab and on both forms of the valley/saddle tab). */
+const FIT_HEIGHT_BOARD = 764; // scene header + landform board
+const FIT_HEIGHT_SLOPES = 769;
 
 export function LandformsScene() {
   const [active, setActive] = useState<TerrainId>('hill');
   const [slope, setSlope] = useState(SLOPES[0].id);
 
   return (
-    <section id="scene-landforms" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="scene-landforms" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       {/* Screen 1 — the scene header and the landform board. The 48px gap to
           the next screen (the board's former mb-12) sits on the wrapper,
           between the screens, outside the scaled composition. */}

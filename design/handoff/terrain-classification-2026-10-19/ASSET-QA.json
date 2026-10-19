@@ -1,0 +1,188 @@
+{
+  "passed": true,
+  "count": 10,
+  "totalBytes": 23966180,
+  "cornerAlphaTolerance": 2,
+  "assets": [
+    {
+      "file": "choice-cover.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2286396,
+      "transparentFraction": 0.6332,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "choice-relief.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 1901576,
+      "transparentFraction": 0.7171,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-grove.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2828660,
+      "transparentFraction": 0.4859,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "file": "item-hill.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2325719,
+      "transparentFraction": 0.6312,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-house.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2541977,
+      "transparentFraction": 0.5221,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-olive-orchard.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2623983,
+      "transparentFraction": 0.567,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-road.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 1984091,
+      "transparentFraction": 0.671,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-saddle.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2640141,
+      "transparentFraction": 0.5429,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-slope.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2493211,
+      "transparentFraction": 0.5458,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "file": "item-valley.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "bytes": 2340426,
+      "transparentFraction": 0.5696,
+      "alphaExtrema": [
+        0,
+        254
+      ],
+      "cornerAlpha": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

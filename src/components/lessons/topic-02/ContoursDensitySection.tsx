@@ -8,8 +8,9 @@ import { ContoursShapeMap, type DensityKind } from './ContoursShapeMap';
 /**
  * "זיהוי תנאי שטח לפי צפיפות" — the density half of the contours scene
  * (split out of ContoursScene so the top 3D/map section can evolve on its
- * own). Tabs pick a terrain kind → the info card and the contour map +
- * A–B profile (ContoursShapeMap) update together: cause → effect.
+ * own). Tabs pick a terrain kind → the kind's text and the contour map +
+ * A–B profile (ContoursShapeMap) update together: cause → effect. The title,
+ * tabs, text, glossary and map share one card (one envelope per activity).
  */
 
 type Shape = {
@@ -67,7 +68,11 @@ export function ContoursDensitySection() {
   };
 
   return (
-    <div data-qa="density-section">
+    <div data-qa="density-section" className="surface-elevated p-6 lg:p-8">
+      <h3 className="mb-5 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
+        הערכת תלילות לפי צפיפות קווי הגובה
+      </h3>
+
       <div
         role="tablist"
         aria-label="הערכת תלילות לפי צפיפות קווי הגובה"
@@ -96,8 +101,7 @@ export function ContoursDensitySection() {
               tabIndex={active ? 0 : -1}
               onClick={() => setShapeId(s.id)}
               className={cn(
-                // Tabs sit on the textured page (not inside a workspace), so the
-                // translucent option tints ride on an opaque white base via ::before.
+                // The translucent option tints ride on an opaque white base via ::before.
                 'relative isolate flex items-center gap-3 rounded-xl border bg-bg-elevated p-4 text-start',
                 'transition-colors duration-200 ease-snap cursor-pointer',
                 'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
@@ -116,13 +120,14 @@ export function ContoursDensitySection() {
       </div>
 
       <div className="grid lg:grid-cols-[1fr_1.4fr] gap-6 items-start">
-        {/* Explanation + glossary (first child → right in RTL) */}
-        <div className="space-y-4">
+        {/* Explanation + glossary (first child → right in RTL): the selected kind's text is the
+            result inset; the glossary is plain text in the same card */}
+        <div className="space-y-6">
           <div
             role="tabpanel"
             id={panelId}
             aria-labelledby={tabId(shape.id)}
-            className="surface p-5 sm:p-6"
+            className="rounded-xl bg-bg-accent/60 p-4 sm:p-5"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -144,7 +149,7 @@ export function ContoursDensitySection() {
         </div>
 
         {/* Contour map + A–B profile (second child → left in RTL; never mirrored) */}
-        <div className="surface-elevated p-5 sm:p-6" dir="ltr">
+        <div dir="ltr">
           <ContoursShapeMap kind={shape.id} label={shape.label} describedBy={descId} />
         </div>
       </div>
@@ -154,7 +159,7 @@ export function ContoursDensitySection() {
 
 function Glossary() {
   return (
-    <div className="surface p-5 sm:p-6">
+    <div>
       <div className="mb-4 font-display text-lg font-bold leading-snug text-fg md:text-xl">מושגים לקריאת קווי גובה</div>
       <dl className="space-y-4">
         <Item term="קו גובה (Contour Line)" def="קו המחבר נקודות הנמצאות באותו גובה. צורת הקווים והמרווחים ביניהם מסייעים להבין את פני השטח." />

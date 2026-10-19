@@ -48,10 +48,10 @@ const HAZE = '#E4E1D6';
  *  objects finish growing at T_END. */
 const SWEEP_MS = 1100;
 const T_END = 1.5;
-/** The renders' sun (render_relief_cover_model.py SUN_AZ / SUN_EL): 225° from north, 55° up. World: X east, Y up, Z south. */
+/** The renders' sun (render_relief_cover_model.py SUN_AZ / SUN_EL): 225° from north, 42° up. World: X east, Y up, Z south. */
 const SUN = (() => {
   const az = THREE.MathUtils.degToRad(225);
-  const el = THREE.MathUtils.degToRad(55);
+  const el = THREE.MathUtils.degToRad(42);
   return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el)).normalize();
 })();
 

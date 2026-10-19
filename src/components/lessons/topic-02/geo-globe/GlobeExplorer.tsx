@@ -24,6 +24,7 @@ import { CircleAlert, CircleCheck, Target } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { Icon } from '@/components/Icon';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { cn } from '@/lib/utils';
 import {
   CHOICE_NAMES, LAT_MAX, LEVELS, LON_MAX, MAX_TRIES, fmtLat, fmtLon, geoReducer, globeViewOf, initialGeoState, latCaption, lonCaption,
@@ -46,9 +47,9 @@ function Bidi({ text }: { text: string }) {
   return <>{parts.map((p, i) => (i % 2 ? <L key={i}>{p}</L> : p))}</>;
 }
 
-// the scene's own heading and lead styles (CoordinatesPart2Scene H3 / LEAD)
-const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
-const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+// the activity's heading and lead, at the top of its own card (one envelope per activity)
+const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 const H4 = 'font-display font-bold leading-tight text-black text-base md:text-lg';
 
 /** The globe's stage: its height sets the globe's size (the camera's field is vertical). */
@@ -261,20 +262,6 @@ export function GlobeExplorer() {
 
   return (
     <div className="my-10" data-screen="geographic-coordinates">
-      <h3 className={H3}>מערכת קואורדינטות גיאוגרפית</h3>
-      <p className={LEAD}>
-        האליפסואיד מחולק ל־360 חלקים לאורך ול־180 חלקים לרוחב, וכל נקודה או עצם מוגדרים בשני פרמטרים זוויתיים, במעלות: רוחב ואורך.{' '}
-        <strong className="text-fg">
-          רוחב (<L>ϕ</L>)
-        </strong>{' '}
-        נמדד מקו המשווה צפונה (ערך חיובי) ודרומה (ערך שלילי); קווי הרוחב נקראים <strong className="text-fg">פרללות</strong>.{' '}
-        <strong className="text-fg">
-          אורך (<L>λ</L>)
-        </strong>{' '}
-        נמדד מקו האורך של גריניץ׳, שנקבע כאפס, מזרחה (ערך חיובי) ומערבה (ערך שלילי); קווי האורך נקראים <strong className="text-fg">מרידיאנים</strong>.
-        שנו את הרוחב ואת האורך ובדקו היכן הקווים נפגשים.
-      </p>
-
       <div
         className="surface-elevated relative p-6"
         data-geo-explorer
@@ -289,6 +276,20 @@ export function GlobeExplorer() {
         data-outcome={state.outcome ?? ''}
         data-stale={said?.stale ? 'true' : 'false'}
       >
+        <h3 className={H3}>מערכת קואורדינטות גיאוגרפית</h3>
+        <p className={LEAD}>
+          האליפסואיד מחולק ל־360 חלקים לאורך ול־180 חלקים לרוחב, וכל נקודה או עצם מוגדרים בשני פרמטרים זוויתיים, במעלות: רוחב ואורך.{' '}
+          <strong className="text-fg">
+            רוחב (<L>ϕ</L>)
+          </strong>{' '}
+          נמדד מקו המשווה צפונה (ערך חיובי) ודרומה (ערך שלילי); קווי הרוחב נקראים <strong className="text-fg">פרללות</strong>.{' '}
+          <strong className="text-fg">
+            אורך (<L>λ</L>)
+          </strong>{' '}
+          נמדד מקו האורך של גריניץ׳, שנקבע כאפס, מזרחה (ערך חיובי) ומערבה (ערך שלילי); קווי האורך נקראים <strong className="text-fg">מרידיאנים</strong>.
+          שנו את הרוחב ואת האורך ובדקו היכן הקווים נפגשים.
+        </p>
+
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           {/* ── the panel (inline-start = right) ── */}
           <div className="flex min-w-0 flex-col gap-3 lg:border-e lg:border-border/70 lg:pe-5">
@@ -335,14 +336,7 @@ export function GlobeExplorer() {
               </p>
 
               {/* until the first 3-D frame: the lesson's shared loading indicator (as in the terrain / contour models) */}
-              {!flat && !ready && (
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2" role="status">
-                  <div className="font-display text-sm font-bold text-fg-muted">טוען גלובוס תלת־ממדי…</div>
-                  <div className="h-1.5 w-40 overflow-hidden rounded-full bg-border/60" dir="ltr">
-                    <div className="h-full bg-accent transition-[width] duration-300" style={{ width: images ? '70%' : '25%' }} />
-                  </div>
-                </div>
-              )}
+              {!flat && !ready && <ModelLoading label="טוען גלובוס תלת־ממדי…" progress={images ? 70 : 25} />}
 
               {/* the contact shadow, behind the canvas so it only shows outside the disc (placed by Globe3D) */}
               {show3d && (

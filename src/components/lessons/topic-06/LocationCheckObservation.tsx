@@ -18,6 +18,7 @@ import { useReducedMotion } from 'framer-motion';
 import { useProgress } from '@react-three/drei';
 import { cn } from '@/lib/utils';
 import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { FORK, READINGS } from './locationCheckScenario';
 import { bearingToViewX, formatBearing, normalizeDegrees, projectToView, signedTurn, type EyePoint } from './locationCheckGeometry';
 import { heightAt, observerEye } from './locationCheckTerrain';
@@ -252,7 +253,7 @@ export function LocationCheckObservation({
           </div>
         )}
 
-        {mode === 'live' && activated && !ready && <LoadingOverlay />}
+        {mode === 'live' && !ready && <LoadingOverlay />}
       </div>
 
       {/* Bottom edge: a short hint over the foreground ground, clear of the groves, the ridge and the fork. */}
@@ -266,15 +267,8 @@ export function LocationCheckObservation({
 }
 
 function LoadingOverlay() {
-  const { progress } = useProgress();
-  return (
-    <div role="status" className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-bg-accent">
-      <div className="font-display text-base font-bold text-black">טוען תצפית תלת־ממדית…</div>
-      <div className="h-1.5 w-40 overflow-hidden rounded-full bg-border/60" dir="ltr">
-        <div className="h-full bg-accent motion-safe:transition-[width] motion-safe:duration-300" style={{ width: `${Math.round(progress)}%` }} />
-      </div>
-    </div>
-  );
+  const { active, progress } = useProgress();
+  return <ModelLoading label="טוען תצפית תלת־ממדית…" progress={active ? progress : undefined} className="bg-bg-accent" />;
 }
 
 /**

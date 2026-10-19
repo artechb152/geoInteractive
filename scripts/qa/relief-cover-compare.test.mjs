@@ -233,12 +233,12 @@ test('answers: grove and buildings change land cover only; the quarry changes bo
 
 test('flow: forward only through a prediction; wrong answers advance; revisit; reset', () => {
   let s = INITIAL_FLOW;
-  assert.equal(flowReducer(s, { type: 'predict', answer: 'cover' }), s, 'no prediction before "המשך"');
+  assert.equal(s.asking, true, 'the first question is open from the start');
+  assert.equal(flowReducer(s, { type: 'continue' }), s, '"next" changes nothing while asking');
   assert.equal(flowReducer(s, { type: 'view', index: 1 }), s, 'an unreached state is locked');
-  s = flowReducer(s, { type: 'continue' });
-  assert.equal(s.asking, true);
   s = flowReducer(s, { type: 'predict', answer: 'relief' }); // wrong on purpose
   assert.deepEqual(s, { reached: 1, view: 1, answers: { grove: 'relief' }, asking: false });
+  assert.equal(flowReducer(s, { type: 'predict', answer: 'cover' }), s, 'no prediction before "לשלב הבא"');
   s = flowReducer(flowReducer(s, { type: 'continue' }), { type: 'predict', answer: 'cover' });
   s = flowReducer(flowReducer(s, { type: 'continue' }), { type: 'predict', answer: 'both' });
   assert.equal(isComplete(s), true);

@@ -88,7 +88,8 @@ const LINES = Object.fromEntries(
   (['geo', 'utm'] as const).map((k) => [k, Object.fromEntries(POINTS.map((p) => [p.id, readingLines(p.id, k)]))]),
 ) as Record<Method, Record<PointId, ReadingLines>>;
 
-export function ReferenceSystemsLinkedComparison() {
+/** `header` — the block's heading and instruction, set at the top of the card (one envelope per activity). */
+export function ReferenceSystemsLinkedComparison({ header }: { header?: React.ReactNode }) {
   const [selected, setSelected] = useState<PointId>(START_POINT);
   const [preview, setPreview] = useState<PointId | null>(null);
   const [method, setMethod] = useState<Method>('geo');
@@ -104,6 +105,7 @@ export function ReferenceSystemsLinkedComparison() {
 
   return (
     <div className="surface-elevated p-6 lg:p-8" data-activity="reference-systems">
+      {header}
       {/* the map (DOM-first → right) with its switch above and its points below; the panel beside it */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-8">
         <div className="flex min-w-0 flex-col gap-3">

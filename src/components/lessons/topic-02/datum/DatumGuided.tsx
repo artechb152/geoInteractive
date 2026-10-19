@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { RANGE, computeBest, gapAt, type BestFits, type DatumMode, type Pose } from './datumGeometry';
 import {
   PHASES, PROBES, datumReducer, demoPose, initialDatumState, inspectOf, isAnimating, lookOf, phaseAt, phaseStart, viewPose,
@@ -55,8 +56,9 @@ function L({ children }: { children: React.ReactNode }) {
   );
 }
 
-const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-4 text-balance';
-const LEAD = 'text-fg leading-relaxed text-pretty mb-8 max-w-3xl';
+// the activity's heading and lead, at the top of its own card (one envelope per activity)
+const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
+const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 const BODY = 'text-base leading-relaxed text-black';
 
 const DATUM_MODES: { id: DatumMode; label: string; body: string }[] = [
@@ -392,14 +394,14 @@ export function DatumGuided() {
   return (
     <div className="my-10">
       {/* laptop fit: the guided stage and the parameter cards are two screens, each shrunk on its own */}
-      <FitScreen name="datum" height={850} fitTallerStates className="">
+      <FitScreen name="datum" height={818} fitTallerStates className="">
         <div>
-          <h3 className={H3}>דאטום: התאמת האליפסואיד לכדור הארץ</h3>
-          <p className={LEAD}>
-            <strong className="text-fg">דאטום</strong> מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ. כך אפשר לחשב מיקומים ביחס לאותו בסיס.
-          </p>
-
           <div className="surface-elevated p-6 lg:p-8">
+            <h3 className={H3}>דאטום: התאמת האליפסואיד לכדור הארץ</h3>
+            <p className={LEAD}>
+              <strong className="text-fg">דאטום</strong> מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ. כך אפשר לחשב מיקומים ביחס לאותו בסיס.
+            </p>
+
             <div className="grid md:grid-cols-[32fr_68fr] gap-6 items-stretch">
               {/* ── stations (right) ── */}
               <div className="flex flex-col gap-1">
@@ -594,6 +596,8 @@ export function DatumGuided() {
                       )}
                     </>
                   )}
+                  {/* until the first 3-D frame: the lessons' model loading indicator, on a card over the static render */}
+                  {webgl !== 'no' && !ready && <ModelLoading card label="טוען גלובוס תלת־ממדי…" />}
 
                   {webgl === 'no' && (
                     // No WebGL: the static render, plainly a picture, beside the live section the controls drive.
@@ -633,7 +637,7 @@ export function DatumGuided() {
         </div>
       </FitScreen>
 
-      <FitScreen name="datum-parameters" height={233} className="mt-6">
+      <FitScreen name="datum-parameters" height={207} className="mt-6">
         <div className="grid gap-6 md:grid-cols-2">
           <div className="surface p-5 sm:p-6">
             <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">הזזה, סיבוב וקנה מידה</h4>

@@ -25,8 +25,10 @@ const tabId = (m: LabMode) => `scale-lab-tab-${m}`;
 const PANEL_ID = 'scale-lab-panel';
 
 // The mode tabs head the controls column and the map spans both rows (controls at inline-start, map at
-// inline-end), so the map starts at the top of the workspace.
-const WORKSPACE_GRID = 'grid gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-rows-[auto_1fr]';
+// inline-end), so the map starts at the top of the workspace. The map column is 600 px so the whole lab
+// (p-6, the square map and the curtain slider under it) stays within LESSON_FIT_MAX_HEIGHT and fits one laptop
+// screen at the lesson's shared width; the controls take the rest.
+const WORKSPACE_GRID = 'grid gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,600px)] lg:grid-rows-[auto_1fr]';
 
 const LETTERS = ['א', 'ב'] as const;
 type Pair = [LatLon | null, LatLon | null];
@@ -230,6 +232,7 @@ export function ScaleLab() {
             }
             attribution={comparing ? ATTRIBUTION.map : layers.attribution}
             showFooter={false}
+            zoomHint
             preload={preload}
             onPick={mode === 'measure' ? place : undefined}
             overlay={(ctx) => {

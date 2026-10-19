@@ -6,19 +6,22 @@
 // Checks (exit 1 on any failure), with motion and with reduced motion:
 //   content  each state card shows exactly its cells (spec §5), verbatim from COMPARE_ROWS;
 //            the summary opens itself at the quarry and shows every cell verbatim
-//   flow     later states locked until predicted; "המשך" opens the question; a wrong answer
-//            advances and is corrected; a revisit keeps its result and asks nothing; reset
+//   flow     the first question is open at load; later states locked until predicted; a wrong
+//            answer advances and is corrected; "לשלב הבא" opens the next question in the same panel;
+//            a revisit keeps its result, asks nothing and offers the way back; reset
 //   a11y     the live region is mounted and empty at load, holds exactly the visible feedback
 //            after a prediction, and is empty after "המשך" and after a revisit; a second click
 //            during the answer's exit changes neither the stored answer nor the announcement
-//            (Ruling 13); focus is not moved on load, lands on the card after a choice and on
-//            the first step after reset
+//            (Ruling 13); focus is not moved on load, lands on the panel after a choice, on the
+//            first answer after "לשלב הבא", on the summary after "לטבלת הסיכום" and on the first step
+//            after reset
 //   map      contour paths identical in states 1–3 and different in state 4; chip per state;
 //            no map key and no disclaimer (removed 2026-10-13)
 //   layout   both boards the same height, no captions above them; the chip under the map, clear of
-//            both frames; the model has no north arrow and no view buttons; "המשך" sits at the
-//            bottom-left of the state's cells, not on a row of its own; stepper and state card do
-//            not move between states; the prediction buttons on one row; no one-word last line in the card's text; the "בשטח" board is the
+//            both frames; the model has no north arrow and no view buttons; the action panel sits
+//            right under the boards, above the cells; stepper and panel do not move between states;
+//            the prediction buttons on one row; at 1366 × 768 the answers and "לשלב הבא" are on
+//            screen without scrolling; no one-word last line in the card's text; the "בשטח" board is the
 //            live 3D model (a canvas, drawn), not the old SVG block
 //   page     no console errors (pageerror, console.error — framer's reduced-motion notice is a
 //            warning and is fine); no horizontal scroll at 1440
@@ -47,8 +50,10 @@ const cellText = (c) => {
   return c.part === undefined ? t : splitExamples(t)[c.part];
 };
 const COPY = {
-  next: 'המשך',
-  question: 'מה ישתנה במעבר מהמצב הנוכחי למצב הבא?',
+  question: 'מה ישתנה בשטח בעקבות זה?',
+  nextPrefix: 'לשלב הבא',
+  backPrefix: 'חזרה לשלב',
+  toSummary: 'לטבלת הסיכום',
   answers: { relief: 'תבליט', cover: 'תכסית', both: 'שניהם' },
   correct: 'נכון',
   wrong: 'התשובה הנכונה:',
@@ -110,7 +115,7 @@ function probe() {
   const model = q('[data-qa="rc-block"] [data-renderer]');
   const renderer = model?.getAttribute('data-renderer') ?? null;
   const hasCanvas = !!model?.querySelector('canvas');
-  const answers = [...root.querySelectorAll('[data-qa="rc-question"] [role="group"] button')].map(box);
+  const answers = [...root.querySelectorAll('[data-qa="rc-task"] [role="group"] button')].map(box);
   // clipped = cut by its own overflow, or sticking out of the component's box
   const rb = root.getBoundingClientRect();
   const clipped = [...root.querySelectorAll('button, [data-qa="rc-chip"], dt, dd, [data-qa="rc-feedback"] p, svg')]
@@ -131,9 +136,9 @@ function probe() {
     captions: root.querySelectorAll('figcaption').length,
     north: !!model?.querySelector('[data-north]'),
     modelButtons: model?.querySelectorAll('button').length ?? 0,
-    cells: box(q('[data-qa="rc-state-card"] dl')),
-    next: box([...root.querySelectorAll('[data-qa="rc-state-card"] button')].find((b) => b.textContent.trim() === 'המשך')),
-    card: box(q('[data-qa="rc-state-card"]')),
+    cells: box(q('[data-qa="rc-cells"]')),
+    boardsBottom: Math.max(...frames.map((f) => f.b)),
+    card: box(q('[data-qa="rc-task"]')),
     chip: box(q('[data-qa="rc-chip"]')),
     orphans,
     renderer,
@@ -200,48 +205,56 @@ async function walk(reduced) {
       check(!hit, `${tag} ${s}: the chip overlaps a board (chip ${JSON.stringify(p.chip)})`);
       check(p.map && p.chip.y >= p.map.b - 1 && p.chip.x >= p.map.x - 1 && p.chip.r <= p.map.r + 1, `${tag} ${s}: the chip is not under the map`);
     }
-    if (p.next) {
-      // RTL: the cells start on the right, "המשך" ends their block on the left, level with their last line
-      check(p.next.r <= p.cells.x + 1 && p.next.b <= p.cells.b + 1 && p.next.y >= p.cells.y, `${tag} ${s}: "המשך" not at the cells' bottom-left (next ${JSON.stringify(p.next)}, cells ${JSON.stringify(p.cells)})`);
-    }
+    // the action panel right under the boards (only the chip's row between them), the cells after it
+    check(p.card && p.card.y > p.boardsBottom && p.card.y - p.boardsBottom < 64, `${tag} ${s}: the action panel is not right under the boards (panel ${JSON.stringify(p.card)}, boards end ${p.boardsBottom})`);
+    check(p.cells && p.cells.y >= p.card.b, `${tag} ${s}: the cells are not below the action panel`);
     check(p.orphans.length === 0, `${tag} ${s}: one-word last line in ${JSON.stringify(p.orphans)}`);
     check(p.clipped.length === 0, `${tag} ${s}: clipped text ${JSON.stringify(p.clipped)}`);
     check(p.renderer === 'live' && p.hasCanvas, `${tag} ${s}: the "בשטח" board is the live 3D model (renderer ${p.renderer}, canvas ${p.hasCanvas})`);
   };
   /** The announcement must say exactly what the visible feedback says. */
   const expectAnnounced = async (s) => {
-    const parts = await root.locator('[data-qa="rc-feedback"] p').evaluateAll((ps) => ps.map((p) => p.textContent.trim()));
-    const want = `${parts[0]}. ${parts.slice(1).join(' ')}`;
+    const head = (await root.locator('[data-qa="rc-head"]').textContent()).trim();
+    const verdicts = (await root.locator('[data-qa="rc-verdict"]').allTextContents()).map((t) => t.trim()).join(', ');
+    const body = await root.locator('[data-qa="rc-feedback"] p:not([data-qa="rc-head"])').evaluateAll((ps) => ps.map((p) => p.textContent.trim()).join(' '));
+    const want = `${head}. ${verdicts}. ${body}`;
     const got = await status.textContent();
     check(got === want, `${tag} ${s}: live region\n  got  ${JSON.stringify(got)}\n  want ${JSON.stringify(want)}`);
   };
-  /** "המשך", then an answer; `then` = a second answer clicked during the first one's exit (Ruling 13). */
+  /** "לשלב הבא" (after the first state), then an answer; `then` = a second answer clicked during the
+   *  first one's exit (Ruling 13). */
   const predict = async (answer, then) => {
-    await root.getByRole('button', { name: COPY.next, exact: true }).click();
-    check(await root.getByText(COPY.question).isVisible(), `${tag}: the question opens after "המשך"`);
-    check((await status.textContent()) === '', `${tag}: live region empty after "המשך"`);
+    const next = root.getByRole('button', { name: new RegExp(`^${COPY.nextPrefix}`) });
+    if (await next.count()) {
+      await next.click();
+      await page.waitForTimeout(450);
+      const a = await page.evaluate(probe);
+      check(a.active === 'BUTTON', `${tag}: focus on the first answer after "לשלב הבא" (got ${a.active})`);
+      check((await status.textContent()) === '', `${tag}: live region empty after "לשלב הבא"`);
+    }
+    check(await root.getByText(COPY.question).isVisible(), `${tag}: the question is open`);
     const p = await page.evaluate(probe);
     check(p.answers.length === 3 && p.answers.every((b) => Math.abs(b.y - p.answers[0].y) < 1), `${tag}: prediction buttons on one row`);
     const qo = p.orphans.filter((o) => o.question);
     check(qo.length === 0, `${tag}: one-word last line in the question ${JSON.stringify(qo)}`);
     if (!then) {
-      await root.getByRole('button', { name: COPY.answers[answer], exact: true }).click();
+      await root.locator(`[data-qa="rc-task"] [data-answer="${answer}"]`).click();
     } else {
       // DOM clicks: the second lands on the exiting buttons (gap > 0) or before React re-renders (gap 0)
       await page.evaluate(
         async ([a, b, gap]) => {
-          const btn = (t) => [...document.querySelectorAll('[data-qa="rc-question"] button')].find((x) => x.textContent.trim() === t);
+          const btn = (t) => document.querySelector(`[data-qa="rc-task"] [data-answer="${t}"]`);
           const second = btn(b);
           btn(a).click();
           if (gap) await new Promise((r) => setTimeout(r, gap));
           second.click();
         },
-        [COPY.answers[answer], COPY.answers[then.answer], then.gap],
+        [answer, then.answer, then.gap],
       );
     }
     await settle(page);
     const q = await page.evaluate(probe);
-    check(q.active === 'rc-state-card', `${tag}: focus on the state card after a choice (got ${q.active})`);
+    check(q.active === 'rc-task', `${tag}: focus on the action panel after a choice (got ${q.active})`);
   };
   const feedback = () => root.locator('[data-qa="rc-feedback"]').innerText();
 
@@ -291,10 +304,14 @@ async function walk(reduced) {
   const L = Object.values(layout);
   const same = (f, what) => check(L.every((p) => JSON.stringify(f(p)) === JSON.stringify(f(L[0]))), `${tag}: ${what} moves between states ${L.map((p) => JSON.stringify(f(p))).join(' | ')}`);
   same((p) => p.steps.map((b) => [Math.round(b.x), Math.round(b.y), Math.round(b.w)]), 'stepper');
-  same((p) => Math.round(p.card.y), 'state card');
+  same((p) => Math.round(p.card.y), 'action panel');
 
   const summary = page.locator('[data-qa="rc-summary"]');
   await page.waitForTimeout(500);
+  await root.getByRole('button', { name: COPY.toSummary }).click();
+  await page.waitForTimeout(900);
+  const ps = await page.evaluate(() => ({ focus: document.activeElement?.tagName, top: Math.round(document.querySelector('[data-qa="rc-summary"]').getBoundingClientRect().top) }));
+  check(ps.focus === 'H4' && ps.top >= 0 && ps.top < 400, `${tag}: "לטבלת הסיכום" brings the summary into view and focus (${JSON.stringify(ps)})`);
   const sum = await summary.innerText();
   for (const r of ROWS) for (const t of [r.label, r.relief, r.cover]) check(sum.includes(t), `${tag}: summary shows "${t.slice(0, 40)}…"`);
   await summary.scrollIntoViewIfNeeded();
@@ -306,14 +323,20 @@ async function walk(reduced) {
   await expectCells('grove');
   check((await feedback()).includes(COPY.wrong), `${tag}: a revisit keeps the stored result`);
   check((await status.textContent()) === '', `${tag}: live region empty after a revisit`);
-  check((await root.getByRole('button', { name: COPY.next, exact: true }).count()) === 0, `${tag}: no question on a revisited state`);
+  check((await root.locator('[data-qa="rc-task"] [role="group"]').count()) === 0, `${tag}: no question on a revisited state`);
   const pv = await page.evaluate(probe);
-  check(pv.active !== 'rc-state-card', `${tag}: a revisit does not pull focus to the card`);
+  check(pv.active !== 'rc-task', `${tag}: a revisit does not pull focus to the panel`);
+  // the way back to the frontier
+  await root.getByRole('button', { name: new RegExp(`^${COPY.backPrefix} 4`) }).click();
+  await settle(page);
+  await expectCells('quarry');
+  check((await steps.nth(3).getAttribute('aria-current')) === 'step', `${tag}: "חזרה לשלב 4" returns to the quarry`);
 
   await root.getByRole('button', { name: COPY.restart }).click();
   await settle(page);
   await expectCells('bare');
   for (const i of [1, 2, 3]) check(await steps.nth(i).isDisabled(), `${tag}: state ${i + 1} locked after reset`);
+  check(await root.getByText(COPY.question).isVisible(), `${tag}: the first question is open again after reset`);
   const pr = await page.evaluate(probe);
   check(pr.firstStepFocused, `${tag}: focus on the first step after reset (got ${pr.active})`);
   check(pr.status === '', `${tag}: live region empty after reset`);
@@ -325,8 +348,31 @@ async function walk(reduced) {
   await ctx.close();
 }
 
+/** At a common laptop size, framed as a learner arrives (the title under the sticky header), the
+ *  question's answers and — after an answer — "לשלב הבא" are on screen without scrolling. */
+async function laptop() {
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  await page.goto(URL, { waitUntil: 'networkidle' });
+  const root = page.locator('[data-qa="relief-cover-compare"]');
+  await root.waitFor({ timeout: 30000 });
+  await page.locator('h3', { hasText: 'השוואה בין תבליט לתכסית' }).evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + scrollY - 104));
+  await settle(page);
+  const onScreen = (sel) =>
+    page.evaluate((q) => [...document.querySelectorAll(q)].every((b) => b.getBoundingClientRect().bottom <= innerHeight && b.getBoundingClientRect().top >= 0), sel);
+  check(await onScreen('[data-qa="rc-task"] [role="group"] button'), 'laptop 1366×768: the answers are not all on screen');
+  const y0 = await page.evaluate(() => scrollY);
+  await root.locator('[data-qa="rc-task"] [data-answer="cover"]').click();
+  await settle(page);
+  check(await onScreen('[data-qa="rc-task"] button'), 'laptop 1366×768: "לשלב הבא" is not on screen after an answer');
+  check((await page.evaluate(() => scrollY)) === y0, 'laptop 1366×768: answering scrolled the page');
+  await page.screenshot({ path: `${outDir}/laptop-1366x768-grove.png` });
+  await ctx.close();
+}
+
 await walk(false);
 await walk(true);
+await laptop();
 await browser.close();
 if (failures.length) {
   console.error(`relief-cover QA: ${failures.length} failure(s)\n- ${failures.join('\n- ')}`);
