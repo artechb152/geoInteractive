@@ -10,6 +10,8 @@ npm run dev          # http://localhost:3000
 npm run build        # מפיק תיקיית out/ סטטית (להטמעה ב-LMS)
 ```
 
+כשכמה הרצות עובדות במקביל: שרת אחד לכל תיקיית build, ושרת נוסף או build רק ב־worktree. ראו [`docs/dev-environment.md`](docs/dev-environment.md).
+
 ## מבנה הפרויקט
 
 ```

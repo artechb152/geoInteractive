@@ -327,13 +327,15 @@ test('at most two pieces of evidence; a changed answer makes the last result sta
   assert.equal(ST.view(s).result, null);
 });
 
-test('hints: two grades, then nothing more; only "הצגת הסבר" reveals the answer', () => {
+test('hints: two grades, then nothing more; only "הצגת הסבר" reveals the answer, and only after a first check', () => {
   let s = run([{ type: 'hint' }]);
   assert.equal(s.hint, 1);
   assert.equal(s.sel.candidate, null);
   s = run([{ type: 'hint' }, { type: 'hint' }, { type: 'hint' }]);
   assert.equal(s.hint, 2);
   assert.equal(s.sel.candidate, null);
+  assert.equal(ST.reducer(s, { type: 'reveal' }), s, 'no explanation before a first check');
+  s = ST.reducer(s, { type: 'check' });
   s = ST.reducer(s, { type: 'reveal' });
   assert.ok(s.revealed);
   assert.deepEqual(s.sel, legSel(P.LEGS[0]));
@@ -361,18 +363,19 @@ test('four legs to the square, the summary, and an explicit restart', () => {
 
 // ---------------------------------------------------------------- the approved copy
 
+// Shortened 2026-10-27 (lesson-6 copy cleanup): the principle ends with when the method fits,
+// and the walk-through under the lab, which repeated the caption, is gone.
 test('the approved copy is in the scene, and nothing folds it away', () => {
   const src = readFileSync(new URL('../../src/components/lessons/topic-06/CombatNavScene.tsx', import.meta.url), 'utf8');
   const approved = [
-    'בוחרים במפה סימנים שניתן לזהות בשטח ובודקים את המיקום ביחס אליהם. הסימנים יכולים להיות תבליט, כגון כיפה, רכס או ערוץ, ותכסית, כגון כפר, כביש או חורשה. משלבים את הזיהוי עם בדיקת כיוון ומרחק. כאשר נעזרים בתוואי רציף, כמו דרך או ערוץ המקבילים למסלול, הוא משמש כ״מעקה״ לניווט.',
-    'כשיש צורות קרקע בולטות שניתן לזהות במפה ובשטח.',
-    'כשהראות מאפשרת להשוות בין הסימנים בשטח לבין המפה.',
-    'בהמחשה, המסלול עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר. בכל כיפה בודקים את מיקומה ביחס לכיפות האחרות ולכפר, ומשווים לכיוון ולמרחק המתוכננים. כך מצמצמים את הסיכון לטעות בין סימנים דומים.',
-    'המסלול עובר בשלוש כיפות ומסתיים בכיכר הכפר. בכל נקודה משווים את הסימנים בשטח למפה לפני שממשיכים.',
+    'בוחרים סימנים שאפשר לזהות במפה ובשטח: תבליט (כמו כיפה או ערוץ) ותכסית (כמו כפר או חורשה), ובודקים את המיקום ביחס אליהם, יחד עם כיוון ומרחק. תוואי רציף לאורך המסלול, כמו דרך או ערוץ, יכול לשמש ״מעקה״. השיטה מתאימה כשיש סימנים בולטים לאורך הדרך והראות מאפשרת להשוות אותם למפה.',
+    'הציר עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר (B).',
     'ניווט עיוור מתבסס על נקודת מוצא ידועה ועל אזימוט ומרחק שנקבעו מראש.',
-    'בהמחשה, היעד נמצא באזימוט 62° ובמרחק 1.2 ק״מ. בהנחה של 1.5 מטר לצעד כפול, מתקבל אומדן של 800 צעדים כפולים.',
   ];
   for (const t of approved) assert.ok(src.includes(t), `missing: ${t.slice(0, 40)}…`);
+  for (const gone of ['בהמחשה, המסלול עובר בשלוש כיפות', 'מתי משתמשים בשיטה']) assert.ok(!src.includes(gone), `repeated copy is back: ${gone}`);
+  // a handrail is one case of the method, not its name
+  assert.ok(src.includes("label: 'ניווט לפי השטח'"), 'the method keeps its name');
   assert.ok(!src.includes('aria-expanded'), 'an accordion is back');
   assert.ok(src.indexOf('<TerrainSection') < src.indexOf('<DeadReckoningSection'), 'terrain association first');
 });

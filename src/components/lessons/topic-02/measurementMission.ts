@@ -16,11 +16,16 @@ export function signed(n: number): string {
   return n > 0 ? `+${n}` : `−${Math.abs(n)}`;
 }
 
-/** The worked subtraction: "148 − 28 = 120", "18 − (−12) = 30", "220 − 0 = 220". */
-export function workedSum(id: StationId): string {
+/** The station's numbers put into H = h − N, not yet worked out: "148 − 28", "18 − (−12)", "220 − 0". */
+export function substitution(id: StationId): string {
   const { h, N } = STATIONS[id];
   const n = N < 0 ? `(−${Math.abs(N)})` : `${N}`;
-  return `${h} − ${n} = ${orthometric(id)}`;
+  return `${h} − ${n}`;
+}
+
+/** The worked subtraction: "148 − 28 = 120", "18 − (−12) = 30", "220 − 0 = 220". */
+export function workedSum(id: StationId): string {
+  return `${substitution(id)} = ${orthometric(id)}`;
 }
 
 export type Parsed = { ok: true; value: number } | { ok: false; reason: 'empty' | 'invalid' };
@@ -46,7 +51,9 @@ export type Verdict =
   | 'invalid' // not a number — not an attempt
   | 'correct'
   | 'gave-h' // typed h: read from the wrong reference surface
-  | 'added-n' // typed h + N: the sign of the operation
+  | 'added-n' // typed h + N: the sign of the operation (at A, N < 0: 18 − 12, the sign of N dropped)
+  | 'reversed' // typed N − h: the subtraction the wrong way round
+  | 'gave-n' // typed N (or its size): the undulation is not a height above the sea
   | 'wrong';
 
 /** Exact comparison: every value here is a whole number, so 120.0 passes and 119.9 does not. */
@@ -58,6 +65,8 @@ export function evaluate(id: StationId, raw: string): Verdict {
   if (p.value === H) return 'correct';
   if (p.value === h) return 'gave-h';
   if (p.value === h + N) return 'added-n';
+  if (p.value === N - h) return 'reversed';
+  if (N !== 0 && Math.abs(p.value) === Math.abs(N)) return 'gave-n';
   return 'wrong';
 }
 

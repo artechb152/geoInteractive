@@ -9,12 +9,12 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react';
-import { Check, Info, ListTree, Maximize2, Minimize2, RotateCcw, X } from 'lucide-react';
+import { Check, CircleDashed, Info, ListTree, Maximize2, Minimize2, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { CANDIDATES, READINGS, type CandidateId } from './locationCheckScenario';
 import { formatBearing, formatMetres } from './locationCheckGeometry';
-import { INITIAL_STATE, directionCheck, distanceCheck, reducer, view, type Evaluation } from './locationCheckState';
+import { INITIAL_STATE, directionCheck, distanceCheck, reducer, view, type Evaluation, type State } from './locationCheckState';
 import { createLookStore, type LookStore } from './locationCheckViewStore';
 import { LocationCheckMap, MAP_ASPECT, MapLegend } from './LocationCheckMap';
 import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, type TapeMarker } from './LocationCheckObservation';
@@ -28,10 +28,11 @@ import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, type Tap
  * (locationCheckState.evaluate): the distance fits both areas, the direction
  * tells them apart. The groves are landmarks only.
  *
- * Desktop layout (RTL), one screen at 1440 × 1122: title, instruction and the
- * two measurements on top; the 3D observation (inline start, right) and the
- * map (left) side by side at one height; the area choice, the check and a
- * fixed-height feedback box at the bottom.
+ * Desktop layout (RTL), one screen at 1440 × 1122: title and instruction on
+ * top; the 3D observation (inline start, right) and the map (left) side by
+ * side at one height; under the observation, in reading order, the area
+ * choice, the check and the reset (level with the map tools under the map);
+ * under both views, the fixed-height result of the last check.
  */
 
 /** A numeric range kept left-to-right inside Hebrew text (U+2066 … U+2069 isolate). */
@@ -49,7 +50,7 @@ function areaValuesText(id: CandidateId) {
 export function LocationCheckActivity() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const [lookStore] = useState(createLookStore);
-  const { stale, result, solved } = view(state);
+  const { result, solved } = view(state);
   const sel = state.selections;
   const uid = useId();
 
@@ -76,11 +77,15 @@ export function LocationCheckActivity() {
   }
 
   return (
-    <div className="surface-elevated p-5 lg:p-6" data-activity="location-check">
+    <div className="surface-elevated p-6 lg:p-8" data-activity="location-check">
       {/* Task */}
       <div className="min-w-0">
-        <h3 className="font-display text-2xl font-bold leading-tight text-black">באיזה אזור אתם נמצאים?</h3>
-        <p className="mt-1.5 text-base leading-relaxed text-black">בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח.</p>
+        <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">באיזה אזור אתם נמצאים?</h3>
+        <p className="mt-1.5 text-base leading-relaxed text-black">כשקליטת אותות הלוויין חסומה או משובשת, אי אפשר להסתמך על GPS, וקובעים את המיקום לפי המפה, המצפן וסימני השטח. בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח.</p>
+        <p className="mt-1.5 text-base leading-relaxed text-black" data-field-readings>
+          נמדד בשטח: כיוון להתפצלות הדרך <bdi dir="ltr" className="font-bold">{formatBearing(READINGS.forkBearingDeg)}</bdi>
+          {' · '}מרחק מהמיקום האחרון <strong>כ־{READINGS.distanceM} מ׳</strong>.
+        </p>
       </div>
 
       {/* The two views, one height: column widths follow their aspects. */}
@@ -88,6 +93,25 @@ export function LocationCheckActivity() {
         <div className="min-w-0">
           <div className="overflow-hidden rounded-xl border border-border/70" data-panel="observation">
             <LocationCheckObservation lookStore={lookStore} markers={markers} />
+          </div>
+          {/* Decision, in reading order: choose an area → check it → start over. Level with the map tools. */}
+          <div className="mt-2.5 flex items-center gap-x-5" data-decision>
+            <ChoiceRow
+              id={`${uid}-area`}
+              title="בחרו אזור"
+              options={CANDIDATES.map((c) => ({ id: c.id, label: c.label }))}
+              value={sel.candidateId}
+              onChange={(id) => dispatch({ type: 'selectCandidate', id })}
+            />
+            <div className="flex items-center gap-2">
+              <Button variant="primary" size="md" onClick={() => dispatch({ type: 'check' })}>
+                בדקו את הבחירה
+              </Button>
+              <Button variant="ghost" size="md" onClick={reset} title="איפוס הפעילות">
+                <RotateCcw className="size-4" aria-hidden />
+                איפוס
+              </Button>
+            </div>
           </div>
         </div>
         <MapColumn
@@ -99,31 +123,8 @@ export function LocationCheckActivity() {
         />
       </div>
 
-      {/* Decision */}
-      <div className="mt-4 grid items-stretch gap-3 lg:grid-cols-[minmax(0,auto)_minmax(0,1fr)]">
-        <div className="flex flex-col justify-between gap-2.5">
-          <ChoiceRow
-            id={`${uid}-area`}
-            title="בחרו אזור"
-            options={CANDIDATES.map((c) => ({ id: c.id, label: c.label }))}
-            value={sel.candidateId}
-            onChange={(id) => dispatch({ type: 'selectCandidate', id })}
-          />
-          <p className="sr-only" aria-live="polite">
-            {sel.candidateId ? areaValuesText(sel.candidateId) : ''}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="primary" size="md" className="flex-1" onClick={() => dispatch({ type: 'check' })}>
-              בדקו את הבחירה
-            </Button>
-            <Button variant="ghost" size="md" onClick={reset} title="איפוס הפעילות">
-              <RotateCcw className="size-4" aria-hidden />
-              איפוס
-            </Button>
-          </div>
-        </div>
-        <Feedback result={result} stale={stale} attempt={state.attempts} />
-      </div>
+      {/* The result, under both views and the decision row — it never moves them. */}
+      <Feedback model={feedbackOf(state)} attempt={state.attempts} />
     </div>
   );
 }
@@ -223,16 +224,11 @@ function ChoiceRow<T extends string>({
               onKeyDown={(e) => onKey(e, i)}
               className={cn(
                 'relative flex h-10 cursor-pointer items-center justify-center whitespace-nowrap rounded-xl px-3.5 font-display text-base leading-none text-black transition-colors duration-200 ease-snap',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                // Selected = thicker border, tint, bold and a check mark — not colour alone.
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+                // Selected = thicker border, tint and bold — not colour alone, and no ✓: only the feedback after a check says right or wrong.
                 on ? 'border-2 border-accent bg-accent/10 font-bold' : 'border border-fg-dim/60 bg-bg-elevated font-semibold hover:border-accent/60 hover:bg-accent/[0.04]',
               )}
             >
-              {on && (
-                <span aria-hidden className="absolute -top-2 end-2 flex size-4 items-center justify-center rounded-full bg-accent text-white">
-                  <Check className="size-3" strokeWidth={3.5} />
-                </span>
-              )}
               {o.label}
             </button>
           );
@@ -278,8 +274,8 @@ function MapColumn({
           className="block h-auto max-h-full w-full"
         />
       </div>
-      {/* Map tools, at the inline end under the map. */}
-      <div className="mt-2.5 flex items-center justify-end gap-2" data-map-tools>
+      {/* Map tools, at the inline end under the map; the row is as tall as the decision row beside it, centred on it. */}
+      <div className="mt-2.5 flex h-12 items-center justify-end gap-2" data-map-tools>
         <InfoPopover
           label="מקרא המפה"
           placement="above"
@@ -308,136 +304,170 @@ function MapColumn({
 
 // ---------------------------------------------------------------- feedback
 
-type Verdict = { title: string; lines: ReactNode[]; chips: { ok: boolean; text: string }[]; details: { ok: boolean; text: ReactNode }[] };
+/**
+ * What the result area shows. A verdict only while the chosen area is the one
+ * that was checked; an area not checked yet — chosen for the first time, or
+ * changed after a check — is named as unchecked. A check made with no area
+ * judged nothing (view() reports it as not stale), so choosing an area after
+ * it is a first choice.
+ */
+type FeedbackModel =
+  | { kind: 'empty' }
+  | { kind: 'missing' }
+  | { kind: 'pending'; area: CandidateId; previous: CandidateId | null }
+  | Exclude<Evaluation, { kind: 'missing' }>;
 
+function feedbackOf(state: State): FeedbackModel {
+  const { result } = view(state);
+  if (result) return result.kind === 'missing' ? { kind: 'missing' } : result;
+  const area = state.selections.candidateId;
+  if (!area) return { kind: 'empty' };
+  const last = state.attempt?.result;
+  return { kind: 'pending', area, previous: last && last.kind !== 'missing' ? last.candidateId : null };
+}
+
+/** A bearing, left-to-right in Hebrew text; same figures as the map's value plates. */
 const Deg = ({ v }: { v: number }) => (
-  <bdi dir="ltr" className="font-mono tabular-nums">
+  <bdi dir="ltr" className="tabular-nums">
     {formatBearing(v)}
   </bdi>
 );
 
-/** Why the chosen area fits the measurements or not. Every number comes from the evaluation (computed from the coordinates). */
-function verdictOf(r: Exclude<Evaluation, { kind: 'missing' }>): Verdict {
+const TOLERANCE = ltr(`${READINGS.forkBearingToleranceDeg}°`);
+
+/** One measurement: the checked area's value on the map beside the field value, and why they match or not. */
+type Row = { ok: boolean; label: string; map: ReactNode; field: ReactNode; why: ReactNode };
+
+/**
+ * The verdict for the checked area. Every number comes from the evaluation
+ * (computed from the coordinates). A wrong check says which measurement to
+ * match again, never which area does.
+ */
+function verdictOf(r: Exclude<Evaluation, { kind: 'missing' }>): { title: string; rows: Row[]; next: ReactNode } {
   const area = CANDIDATE_LABEL[r.candidateId];
   const d = r.direction;
   const dist = r.distance;
-  const metres = Math.round(dist.predictedM);
   const fitsBoth = dist.fitsCandidates === CANDIDATES.length;
-  const chips = [
-    { ok: d.consistent, text: d.consistent ? 'הכיוון מתאים' : 'הכיוון אינו מתאים' },
-    { ok: dist.consistent, text: dist.consistent ? (fitsBoth ? 'המרחק מתאים לשני האזורים' : 'המרחק מתאים') : 'המרחק אינו מתאים' },
-  ];
-  const details = [
+  const rows: Row[] = [
     {
       ok: d.consistent,
-      text: (
+      label: 'כיוון להתפצלות הדרך',
+      map: <Deg v={d.predictedDeg} />,
+      field: <Deg v={d.observedDeg} />,
+      why: (
         <>
-          הכיוון מ{area} להתפצלות הדרך לפי המפה: <Deg v={d.predictedDeg} />. הכיוון שנמדד בשטח: <Deg v={d.observedDeg} /> (סטייה מותרת עד {ltr(`${READINGS.forkBearingToleranceDeg}°`)}).
+          פער {ltr(`${Math.round(d.differenceDeg)}°`)}, מותר עד {TOLERANCE}
         </>
       ),
     },
     {
       ok: dist.consistent,
-      text: `המרחק מהמיקום האחרון ל${area} לפי המפה: ${metres} מ׳. המרחק שהוערך בשטח: כ־${READINGS.distanceM} מ׳ (טווח ${RANGE} מ׳).${fitsBoth ? ' שני האזורים באותו מרחק מהמיקום האחרון.' : ''}`,
+      label: 'מרחק מהמיקום האחרון',
+      map: formatMetres(dist.predictedM),
+      field: `כ־${READINGS.distanceM} מ׳`,
+      why: `${dist.consistent ? 'בטווח' : 'מחוץ לטווח'} ${RANGE} מ׳`,
     },
   ];
   if (r.kind === 'supported') {
     return {
-      title: `${area} מתאים למדידות.`,
-      lines: [
-        <>
-          הכיוון מ{area} להתפצלות הדרך הוא <Deg v={d.predictedDeg} />, כמו שנמדד בשטח.{' '}
-          {fitsBoth ? 'המרחק מתאים לשני האזורים, ולכן הכיוון הוא שמכריע.' : 'גם המרחק מתאים.'}
-        </>,
-      ],
-      chips,
-      details,
+      title: `${area} מתאים לשתי המדידות`,
+      rows,
+      // The measurements support an area, not a point in it; the map's point is the scenario's viewpoint.
+      next: `${fitsBoth ? 'המרחק מתאים לשני האזורים, ולכן הכיוון הוא שמכריע.' : 'גם הכיוון וגם המרחק מתאימים.'} המדידות תומכות באזור, לא בנקודה מדויקת בתוכו. במצב אמיתי ממשיכים לבדוק את ההתאמה לאורך הדרך.`,
     };
   }
-  const outOfRange = `${metres} מ׳ — מחוץ לטווח ${RANGE} מ׳`;
-  const line = !d.consistent ? (
-    dist.consistent ? (
+  const next =
+    !d.consistent && dist.consistent ? (
       <>
-        {fitsBoth ? 'המרחק מתאים לשני האזורים' : 'המרחק מתאים'}, אבל הכיוון מ{area} להתפצלות הדרך הוא <Deg v={d.predictedDeg} /> ולא <Deg v={d.observedDeg} /> כפי שנמדד בשטח.
+        {fitsBoth && 'המרחק מתאים לשני האזורים ואינו מכריע ביניהם. '}בדקו במפה מאיזה אזור הכיוון להתפצלות הדרך קרוב ל־<Deg v={d.observedDeg} />.
       </>
+    ) : d.consistent ? (
+      `בדקו במפה איזה אזור נמצא כ־${READINGS.distanceM} מ׳ מהמיקום האחרון.`
     ) : (
       <>
-        הכיוון מ{area} להתפצלות הדרך הוא <Deg v={d.predictedDeg} /> ולא <Deg v={d.observedDeg} />, והמרחק מהמיקום האחרון הוא {outOfRange}.
+        בדקו במפה איזה אזור נותן גם כיוון קרוב ל־<Deg v={d.observedDeg} /> להתפצלות הדרך וגם מרחק בטווח {RANGE} מ׳.
       </>
-    )
-  ) : (
-    `הכיוון מתאים, אבל המרחק מהמיקום האחרון ל${area} הוא ${outOfRange}.`
-  );
-  return { title: `${area} אינו מתאים למדידות.`, lines: [line], chips, details };
+    );
+  return { title: `${area} אינו מתאים למדידות`, rows, next };
 }
 
-/** Fixed-height result area: the verdict and a short reason; the full reasoning on demand. */
-function Feedback({ result, stale, attempt }: { result: Evaluation | null; stale: boolean; attempt: number }) {
-  let tone = 'border-dashed border-border bg-bg-accent/50';
-  let body: ReactNode = <p className="text-base leading-snug text-black">אחרי שתבחרו אזור ותשוו, לחצו ״בדקו את הבחירה״.</p>;
-  let kind = 'empty';
-  if (stale) {
-    kind = 'stale';
-    tone = 'border-dashed border-border-strong bg-bg-accent';
-    body = <FeedbackTitle icon={<RotateCcw className="size-5" aria-hidden />}>הבחירה השתנתה — בדקו שוב</FeedbackTitle>;
-  } else if (result?.kind === 'missing') {
-    kind = 'missing';
+/** Fixed-height result area: what was checked, each measurement on the map beside the field, and what to do next. */
+function Feedback({ model, attempt }: { model: FeedbackModel; attempt: number }) {
+  let kind: string = model.kind;
+  let key = `${model.kind}-${attempt}`;
+  let tone: string;
+  let body: ReactNode;
+  if (model.kind === 'empty') {
+    tone = 'border-dashed border-border bg-bg-accent/50';
+    body = null;
+  } else if (model.kind === 'missing') {
     tone = 'border-border bg-bg-accent';
-    body = <FeedbackTitle icon={<Info className="size-5" aria-hidden />}>בחרו אזור לפני הבדיקה.</FeedbackTitle>;
-  } else if (result) {
-    kind = result.kind;
-    const v = verdictOf(result);
-    tone = result.kind === 'supported' ? 'border-brand bg-brand/10' : 'border-accent-hot/60 bg-bg-accent';
     body = (
       <>
-        <div className="flex items-start justify-between gap-2">
-          <FeedbackTitle icon={result.kind === 'supported' ? <Check className="size-5" aria-hidden /> : <X className="size-5" aria-hidden />}>{v.title}</FeedbackTitle>
-          <InfoPopover
-            label="פירוט הבדיקה"
-            placement="above"
-            trigger={<span className="inline-flex items-center gap-1 whitespace-nowrap font-display text-base font-semibold underline decoration-accent decoration-2 underline-offset-4">פירוט</span>}
-          >
-            <ul className="space-y-1.5">
-              {v.details.map((row, i) => (
-                <li key={i} className="flex gap-2">
-                  <StateIcon ok={row.ok} />
-                  <span>{row.text}</span>
-                </li>
-              ))}
-            </ul>
-          </InfoPopover>
-        </div>
-        <div className="mt-1 space-y-0.5 text-base leading-snug text-black">
-          {v.lines.map((l, i) => (
-            <p key={i}>{l}</p>
-          ))}
-        </div>
-        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" aria-label="סיכום הבדיקה">
-          {v.chips.map((c) => (
-            <li key={c.text} className="flex items-center gap-1 font-display text-base font-semibold text-black">
-              <StateIcon ok={c.ok} />
-              {c.text}
+        <FeedbackTitle icon={<Info className="size-5" aria-hidden />}>עדיין לא נבחר אזור</FeedbackTitle>
+        <p className="mt-1 text-base leading-snug text-black">בחרו אזור במפה או בכפתורי האזור, ואז לחצו ״בדקו את הבחירה״.</p>
+      </>
+    );
+  } else if (model.kind === 'pending') {
+    // Nothing here may read as a verdict on the new choice.
+    const area = CANDIDATE_LABEL[model.area];
+    kind = model.previous ? 'stale' : 'pending';
+    key = `${kind}-${model.area}`;
+    tone = 'border-dashed border-border-strong bg-bg-accent';
+    body = (
+      <>
+        <FeedbackTitle icon={<CircleDashed className="size-5" aria-hidden />}>
+          {model.previous ? `הבחירה השתנתה — ${area} עדיין לא נבדק` : `${area} נבחר — עדיין לא נבדק`}
+        </FeedbackTitle>
+        <p className="mt-1 text-base leading-snug text-black">
+          {model.previous
+            ? `התוצאה הקודמת הייתה של ${CANDIDATE_LABEL[model.previous]}. לחצו ״בדקו את הבחירה״ כדי לבדוק את ${area}.`
+            : 'לחצו ״בדקו את הבחירה״ כדי להשוות אותו למדידות מהשטח.'}
+          <span className="sr-only"> {areaValuesText(model.area)}</span>
+        </p>
+      </>
+    );
+  } else {
+    const ok = model.kind === 'supported';
+    const v = verdictOf(model);
+    tone = ok ? 'border-brand bg-brand/10' : 'border-accent-hot/60 bg-bg-accent';
+    body = (
+      <>
+        <FeedbackTitle icon={ok ? <Check className="size-5" aria-hidden /> : <X className="size-5" aria-hidden />}>{v.title}</FeedbackTitle>
+        <ul className="mt-1.5 divide-y divide-border/70" aria-label="השוואה למדידות מהשטח">
+          {v.rows.map((row) => (
+            <li key={row.label} className="grid grid-cols-[13.5rem_8rem_12rem_minmax(0,1fr)] items-center gap-x-4 py-1 text-base leading-snug text-black" data-row={row.ok ? 'match' : 'mismatch'}>
+              <span className="flex items-center gap-2">
+                <StateIcon ok={row.ok} />
+                {row.label}
+              </span>
+              <span>
+                במפה <b className="font-bold">{row.map}</b>
+              </span>
+              <span>
+                נמדד בשטח <b className="font-bold">{row.field}</b>
+              </span>
+              <span>
+                <b className="font-bold">{row.ok ? 'מתאים' : 'אינו מתאים'}</b>: {row.why}
+              </span>
             </li>
           ))}
         </ul>
+        <p className="mt-1.5 text-base leading-snug text-black">{v.next}</p>
       </>
     );
   }
   return (
-    // Fixed height: a verdict never lengthens the card or moves the views. Announced once per check.
-    <div role="status" aria-live="polite" aria-atomic="true" className={cn('h-[140px] rounded-xl border px-4 py-3', tone)} data-feedback={kind}>
-      <div key={`${kind}-${attempt}`}>{body}</div>
+    // Fixed height (the tallest state, a check): a result never lengthens the card or moves the controls. Announced once per check or choice.
+    <div role="status" aria-live="polite" aria-atomic="true" className={cn('mt-3 h-[150px] rounded-xl border px-4 py-3', tone)} data-feedback={kind}>
+      <div key={key}>{body}</div>
     </div>
   );
 }
 
+/** Match / no match by shape as well as colour; the row's own words say it in text. */
 function StateIcon({ ok }: { ok: boolean }) {
-  return (
-    <span className="mt-0.5 shrink-0">
-      {ok ? <Check className="size-4 text-brand-dark" aria-hidden /> : <X className="size-4 text-accent-hot" aria-hidden />}
-      <span className="sr-only">{ok ? 'מתאים:' : 'אינו מתאים:'}</span>
-    </span>
-  );
+  return ok ? <Check className="size-4 shrink-0 text-brand-dark" strokeWidth={3} aria-hidden /> : <X className="size-4 shrink-0 text-accent-hot" strokeWidth={3} aria-hidden />;
 }
 
 function FeedbackTitle({ icon, children }: { icon: ReactNode; children: ReactNode }) {

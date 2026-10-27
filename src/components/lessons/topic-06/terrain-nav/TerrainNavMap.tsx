@@ -599,12 +599,16 @@ function MeasureLine({ from, to, text, avoid }: { from: Point; to: Point; text: 
   const ny = -Math.cos(ang);
   const w = plateW(text, FS.small);
   const offset = 30 + w / 2;
+  // A side whose plate would leave the sheet loses to one that stays on it; the plate is then kept inside the neatline.
+  const pad = 12;
+  const outside = (at: { x: number; y: number }) => Math.max(0, w / 2 + pad - at.x) + Math.max(0, at.x + w / 2 + pad - W) + Math.max(0, FS.small - at.y) + Math.max(0, at.y + FS.small - H);
   const sides = [1, -1].map((side) => {
     const at = { x: mid.x + nx * offset * side, y: mid.y + ny * offset * side };
     const clear = Math.min(...avoid.map((p) => worldToMap(p)).map((m) => Math.hypot(m.x - at.x, m.y - at.y)));
-    return { at, clear };
+    return { at, clear, out: outside(at) };
   });
-  const { at } = sides[0].clear >= sides[1].clear ? sides[0] : sides[1];
+  const best = sides[0].out !== sides[1].out ? (sides[0].out < sides[1].out ? sides[0] : sides[1]) : sides[0].clear >= sides[1].clear ? sides[0] : sides[1];
+  const at = { x: Math.min(W - w / 2 - pad, Math.max(w / 2 + pad, best.at.x)), y: Math.min(H - FS.small, Math.max(FS.small, best.at.y)) };
   return (
     <g pointerEvents="none" data-overlay="measure">
       <path d={`M${r1(a.x)} ${r1(a.y)}L${r1(end.x)} ${r1(end.y)}`} stroke={MAP.paper} strokeWidth={11} strokeLinecap="round" strokeOpacity={0.85} />

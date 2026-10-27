@@ -29,11 +29,13 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'coordinates', label: 'קואורדינטות 1' },
     { id: 'coordinates-2', label: 'קואורדינטות 2' },
     { id: 'contours', label: 'קווי גובה' },
+    { id: 'practice', label: 'משמעות מעשית' },
     { id: 'recap', label: 'סיכום' },
   ],
   'topic-06': [
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
+    { id: 'tips', label: 'דגשים לתכנון ולניווט' },
     { id: 'combatnav', label: 'טכניקות ניווט' },
     { id: 'principles', label: 'עקרונות הניווט' },
     { id: 'planning', label: 'תכנון ציר' },
@@ -128,8 +130,6 @@ export const archivedScenes: ArchivedScene[] = [
   { topicId: 'topic-02', id: 'relief-cover-v1', label: 'תבליט ותכסית · גרסה קודמת' },
   // Papercut map of #scene-landcover („זיהוי סוגי תכסית בשטח”), before the realistic redesign.
   { topicId: 'topic-02', id: 'landcover-v1', label: 'תכסית · גרסה קודמת' },
-  // „דגשים לתכנון ולניווט” — taken out of the public topic-06 sequence at the user's request.
-  { topicId: 'topic-06', id: 'tips', label: 'דגשים לתכנון ולניווט' },
 ];
 
 export function isArchivedScene(topicId: string, sceneId: string): boolean {

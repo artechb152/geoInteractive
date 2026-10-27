@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { STATIONS, STATION_ORDER, FIRST_STATION } from '../../src/components/lessons/topic-02/measurementMission.data.ts';
 import {
-  orthometric, signed, workedSum, parseHeight, evaluate, isAttempt, nextStation,
+  orthometric, signed, substitution, workedSum, parseHeight, evaluate, isAttempt, nextStation,
   initialMission, missionReducer, solvedSet,
 } from '../../src/components/lessons/topic-02/measurementMission.ts';
 import { MEASUREMENT_LANDSCAPE as L } from '../../src/components/lessons/topic-02/measurementLandscape.data.ts';
@@ -21,7 +21,7 @@ import {
 } from '../../src/components/lessons/topic-02/measurementLayout.ts';
 import {
   LAND_START, LAND_STARTS, LAND_ELEV, landCamera, projectWith, livePins, heightGrid, groundAt, hiddenBy,
-  clampLand, sameView, nearView, wrapAz, surveyLine3D, surveyPlaneLines, FIT,
+  clampLand, sameView, nearView, wrapAz, surveyLine3D, surveyPlaneLines, FIT, heightLens, HEIGHT_LENS,
 } from '../../src/components/lessons/topic-02/measurementView.ts';
 import {
   ELL_START, ELL_SIDE, ELL_TOP, PATCH, FLAT, SPAN_U, LINE_V, ellipsoidFrame, footprintAt, patchView, zoomGeometry,
@@ -34,6 +34,10 @@ test('H = h − N: B 148/28 → 120, A 18/−12 → 30, C 220/0 → 220', () => 
   assert.equal(workedSum('B'), '148 − 28 = 120');
   assert.equal(workedSum('A'), '18 − (−12) = 30');
   assert.equal(workedSum('C'), '220 − 0 = 220');
+  // the feedback's fix: the numbers put into H = h − N, left to work out
+  assert.equal(substitution('B'), '148 − 28');
+  assert.equal(substitution('A'), '18 − (−12)');
+  assert.equal(substitution('C'), '220 − 0');
   assert.equal(signed(28), '+28');
   assert.equal(signed(-12), '−12');
   assert.equal(signed(0), '0');
@@ -64,6 +68,14 @@ test('evaluate: exact answers only, with the h and h+N hints', () => {
   assert.equal(evaluate('A', '18'), 'gave-h');
   assert.equal(evaluate('A', '6'), 'added-n');
   assert.equal(evaluate('C', '220'), 'correct');
+  // the subtraction the wrong way round, and N typed as the answer
+  assert.equal(evaluate('B', '-120'), 'reversed');
+  assert.equal(evaluate('A', '−30'), 'reversed');
+  assert.equal(evaluate('C', '-220'), 'reversed');
+  assert.equal(evaluate('B', '28'), 'gave-n');
+  assert.equal(evaluate('A', '-12'), 'gave-n');
+  assert.equal(evaluate('A', '12'), 'gave-n');
+  assert.equal(evaluate('C', '0'), 'wrong');
   assert.equal(isAttempt('empty'), false);
   assert.equal(isAttempt('invalid'), false);
   assert.equal(isAttempt('wrong'), true);
@@ -361,10 +373,69 @@ test('one display mapping: model and section draw heights DISPLAY_VE×, the line
   const model = pins.A.y - pins.C.y;
   const section = geo.stations.A.ground - geo.stations.C.ground;
   assert.ok(Math.abs(model / section - 1) < 0.08, `profile: C over A ${model.toFixed(0)} px in the model, ${section.toFixed(0)} px in the section`);
+  // the layout at 1440 × 1122 since 2026-10-26 (model stage 651 × 264, section 603 wide): the stage is too small to
+  // draw the line at the section's length, so the model is drawn smaller — but along the line at the section's own
+  // exaggeration (C over A against C to A), never longer than in the section
+  {
+    const box2 = { w: 651, h: 264 };
+    const geo2 = sectionGeometry(603, 264);
+    const span2 = 603 - SECTION.plotLeft - SECTION.padRight;
+    for (const view of [LAND_STARTS.surface, LAND_STARTS.undulation]) {
+      const p = livePins(landCamera(view, box2, span2), box2, null);
+      const m = (p.A.y - p.C.y) / (p.A.x - p.C.x);
+      const s = (geo2.stations.A.ground - geo2.stations.C.ground) / (geo2.stations.A.x - geo2.stations.C.x);
+      const tilt = Math.cos((view.elev * Math.PI) / 180) / Math.cos((LAND_START.elev * Math.PI) / 180);
+      assert.ok(Math.abs(m / (s * tilt) - 1) < 0.03, `${view.az}/${view.elev}: the relief along the line ${m.toFixed(3)} in the model, ${s.toFixed(3)} in the section`);
+      assert.ok(p.A.x - p.C.x <= geo2.stations.A.x - geo2.stations.C.x, `${view.az}/${view.elev}: C to A longer in the model`);
+    }
+  }
   // without the section beside it (no registration) the model just fits its box
   const free = landCamera(LAND_START, box);
   const fx = FIT.map((p) => projectWith(free.matrix, p, box).x);
   assert.ok(Math.max(...fx) - Math.min(...fx) >= box.w * 0.9, 'unregistered: it fills the box');
+});
+
+test('the model’s close-up of H (the geoid view, see-through): A only, a whole factor, an exact enlargement, clear of the pins', () => {
+  // the layout at 1440 × 1122: model stage 651 × 264, section 603 wide
+  const box = { w: 651, h: 264 };
+  const spanPx = 603 - SECTION.plotLeft - SECTION.padRight;
+  const cam = landCamera(LAND_STARTS.geoid, box, spanPx);
+  const pins = livePins(cam, box, GRID, true);
+  const at = (id, z) => projectWith(cam.matrix, [stationWorld(id)[0], stationWorld(id)[1], z], box);
+  // why A: its H is short, and the ellipsoid (N < 0: between the geoid and the ground) crosses it close to its foot
+  const aH = at('A', stationWorld('A')[2]).y - at('A', geoidZ(STATIONS.A.N)).y;
+  const aN = at('A', 0).y - at('A', geoidZ(STATIONS.A.N)).y;
+  assert.ok(Math.abs(aH) < HEIGHT_LENS.below && Math.abs(aN) < HEIGHT_LENS.below, `A on the model: H ${aH.toFixed(1)}, geoid to ellipsoid ${aN.toFixed(1)} px`);
+  const a = heightLens(cam, box, 'A', pins);
+  assert.ok(a, 'A: a close-up');
+  assert.equal(heightLens(cam, box, 'B', pins), null, 'B reads on the model as it is');
+  assert.equal(heightLens(cam, box, 'C', pins), null, 'C reads on the model as it is');
+  // an exact enlargement: a whole factor, the same in both directions, of the model's own points
+  assert.ok(Number.isInteger(a.k) && a.k >= 2 && a.k <= HEIGHT_LENS.maxK, `a whole factor (${a.k})`);
+  assert.ok(Math.abs(a.view.w / a.frame.w - a.k) < 1e-9 && Math.abs(a.view.h / a.frame.h - a.k) < 1e-9, 'k times larger across and up');
+  assert.ok(Math.hypot(a.ground.x - pins.A.x, a.ground.y - pins.A.y) < 1e-9, 'its ground point is the pin’s');
+  assert.ok(Math.abs(a.geoid.y - at('A', geoidZ(STATIONS.A.N)).y) < 1e-9 && Math.abs(a.ellipsoid.y - at('A', 0).y) < 1e-9, 'the geoid and the ellipsoid under it');
+  // H from the geoid up, crossing the ellipsoid where the data put it: h / H and N / H as in the data
+  const H = a.geoid.y - a.ground.y;
+  assert.ok(Math.abs((a.ellipsoid.y - a.ground.y) / H - STATIONS.A.h / 30) < 0.02 && Math.abs((a.geoid.y - a.ellipsoid.y) / H - -STATIONS.A.N / 30) < 0.02, 'h and N in proportion to H');
+  // the frame holds the station's heights with room, inside the stage; the box at the top corner on A's side, clear of the frame and every pin
+  for (const p of [a.ground, a.geoid, a.ellipsoid]) {
+    assert.ok(p.x - a.frame.x >= HEIGHT_LENS.pad / a.k && a.frame.x + a.frame.w - p.x >= HEIGHT_LENS.pad / a.k, 'room across');
+    assert.ok(p.y - a.frame.y >= HEIGHT_LENS.pad / a.k - 1e-9 && a.frame.y + a.frame.h - p.y >= HEIGHT_LENS.pad / a.k - 1e-9, 'room up and down');
+  }
+  assert.ok(a.frame.x >= 0 && a.frame.y >= 0 && a.frame.x + a.frame.w <= box.w && a.frame.y + a.frame.h <= box.h, 'the frame in the stage');
+  assert.deepEqual([a.box.x + a.box.w, a.box.y], [box.w, 0], 'the top corner on A’s side');
+  assert.ok(a.box.y + a.box.h < a.frame.y, 'the box above the frame');
+  for (const id of IDS) assert.ok(pins[id].y - 54 > a.box.y + a.box.h || pins[id].x + 21 < a.box.x, `the box clear of ${id}'s pin`);
+  assert.ok(a.view.x > a.box.x && a.view.x + a.view.w < a.box.x + a.box.w && a.view.y >= a.box.y + HEIGHT_LENS.title && a.view.y + a.view.h < a.box.y + a.box.h, 'drawn under the title, inside the border');
+  // zoomed in (the wheel) until H reads on the model: no close-up
+  const near = landCamera(LAND_STARTS.geoid, box, spanPx, 3);
+  assert.equal(heightLens(near, box, 'A', livePins(near, box, GRID, true)), null, 'zoomed in, A reads on the model');
+  // the stills without WebGL: A's close-up too, from their own camera
+  const still = landCamera(LAND_START, FB.frame, FB.span);
+  const s = heightLens(still, FB.frame, 'A', livePins(still, FB.frame, GRID));
+  assert.ok(s && Number.isInteger(s.k) && s.k >= 2, 'the stills: A');
+  assert.equal(heightLens(still, FB.frame, 'B', livePins(still, FB.frame, GRID)), null, 'the stills: not B');
 });
 
 test('the model draws the section’s line, and while see-through its two reference lines, over the same span', () => {

@@ -7,13 +7,14 @@
      one image cache), relief as light only, one soft key light riding with the camera. Its
      shader is this lab's own: the sea is re-toned locally (water weight × the image's own
      bathymetric brightness → the reference's natural medium blue) without touching land or
-     the shared images; a 15° graticule; the sample parallel and point (orange); the line /
-     point of contact (sage, dashed) while a surface is shown.
+     the shared images; a 15° graticule; the equal circles (orange, projectionsModel.CIRCLES);
+     the line / point of contact (sage, dashed) while a surface is shown.
    - The surface is one sheet per method in its development's own coordinates
      (projectionsModel.sheetMesh). Its vertices are moved on the CPU, in place, only when the
      progress changes (projectionsModel.sheetPoint: the same function the tests check for
      contact, no cut into the globe and no stretching); the shader reads lat / lon back from the
-     flat coordinates through the method's inverse, so its grid, parallel and point are the map's.
+     flat coordinates through the method's inverse, so its grid and circles are the map's — the
+     circles come in as the sheet opens (projectionsModel.circlesOn).
      Translucent cream, drawn far faces first; the globe stays readable through it.
    - The camera: a base view per method and progress (the plane's rises to straight above the
      pole) plus the learner's drag (bounded), fitted every frame so the globe and the whole sheet
@@ -24,16 +25,16 @@ import { Component, useEffect, useMemo, useRef, type MutableRefObject, type Reac
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
-import { ellipsoidMesh, geodeticToScene } from '../geo-globe/geoCoords';
+import { ellipsoidMesh } from '../geo-globe/geoCoords';
 import { GLOBE_SEA, SRC_RAMP } from './earthRaster';
 import {
-  AZ_LAT_MIN, CAM_FOV, CONE_LAT_MAX, CONE_LAT_MIN, CONE_N, CONE_PHI0, CONE_RHO0, CONE_THETA_MAX, CONTACT_LAT, CYL_LAT_MAX, DEMO, EL_MAX, EL_MIN,
-  FLOOR_Y, OFFSET_AZ_MAX, OFFSET_EL_MAX, OFFSET_EL_MIN, baseView, fitCamera, framePoints, project, sheetMesh, sheetPoint, type Method, type Vec3,
+  AZ_LAT_MIN, CAM_FOV, CIRCLES, CIRCLE_R, CONE_LAT_MAX, CONE_LAT_MIN, CONE_N, CONE_PHI0, CONE_RHO0, CONE_THETA_MAX, CONTACT_LAT, CYL_LAT_MAX, EL_MAX, EL_MIN,
+  FLOOR_Y, OFFSET_AZ_MAX, OFFSET_EL_MAX, OFFSET_EL_MIN, baseView, circlesOn, fitCamera, framePoints, sheetMesh, sheetPoint, type Method, type Vec3,
 } from './projectionsModel';
 
 /* ── palette: lesson tokens (tailwind.config.ts); the Earth's own colours are the imagery's ── */
 const C = {
-  accent: '#D97E2B', // accent — the sample parallel and point
+  accent: '#D97E2B', // accent — the equal circles
   brandDark: '#5B7C5C', // brand-dark — the line / point of contact
   ink: '#38432E', // fg — the contact shadow
   dim: '#8A8873', // fg-dim — the sheet's grid and edges
@@ -51,7 +52,7 @@ export type StageView = {
   m: Method | null;
   /** the process 0–1 */
   p: number;
-  /** the sample parallel and point */
+  /** the equal circles (learning) */
   demo: boolean;
 };
 
@@ -67,6 +68,27 @@ float screenDist(vec2 r, vec2 dx, vec2 dy) {
   float det = dx.x * dy.y - dx.y * dy.x;
   if (abs(det) < 1e-14) return 1e6;
   return length(vec2(dy.y * r.x - dy.x * r.y, -dx.y * r.x + dx.x * r.y) / det);
+}`;
+
+/* The equal circles: angular distance on the sphere from each centre (unit vectors in the scene's
+   axes), so the same three circles are drawn on the globe and — through the sheet's own lat / lon —
+   on every surface, wrapped or flat. Returns (fill, ring). */
+const CIRCLE = /* glsl */ `
+uniform vec3 uCirc[3];
+uniform float uCircR;
+vec2 circleMask(float lat, float lon, float wPx) {
+  float phi = radians(lat);
+  float lam = radians(lon);
+  vec3 q = vec3(cos(phi) * cos(lam), sin(phi), -cos(phi) * sin(lam));
+  float fill = 0.0;
+  float ring = 0.0;
+  for (int i = 0; i < 3; i++) {
+    float d = degrees(acos(clamp(dot(q, uCirc[i]), -1.0, 1.0)));
+    float px = max(length(vec2(dFdx(d), dFdy(d))), 1e-5);
+    ring = max(ring, lineMask(abs(d - uCircR), px, wPx));
+    fill = max(fill, 1.0 - smoothstep(uCircR - px, uCircR + px, d));
+  }
+  return vec2(fill, ring);
 }`;
 
 const EARTH_VERT = /* glsl */ `
@@ -93,11 +115,7 @@ uniform float uPx;
 uniform vec3 uSeaDeep;
 uniform vec3 uSeaBank;
 uniform vec2 uSrcL;
-uniform float uDemo;
-uniform float uSelLat;
-uniform vec3 uPoint;
-uniform vec3 uPointE;
-uniform vec3 uPointN;
+uniform float uCircOn;
 uniform float uContactOn;
 uniform float uContactLat;
 uniform vec3 uGridC;
@@ -107,6 +125,7 @@ varying vec2 vUv;
 varying vec3 vPos;
 varying vec3 vN;
 ${LINE}
+${CIRCLE}
 
 void main() {
   float lat = vUv.y * 180.0 - 90.0;
@@ -155,10 +174,7 @@ void main() {
   float grid = max(lineMask(gLat, pxLat, uPx), lineMask(gLon, pxLon, uPx) * merFade);
   col = mix(col, uGridC * lit, grid * 0.26);
 
-  // the dots' surface coordinates (tangent planes at the point and at the pole), derivatives taken here
-  vec2 tp = vec2(dot(vPos - uPoint, uPointE), dot(vPos - uPoint, uPointN));
-  vec2 tpx = dFdx(tp);
-  vec2 tpy = dFdy(tp);
+  // the pole dot's surface coordinates (the tangent plane at the pole), derivatives taken here
   vec2 tq = vPos.zx;
   vec2 tqx = dFdx(tq);
   vec2 tqy = dFdy(tq);
@@ -174,14 +190,11 @@ void main() {
       col = mix(col, uContactC, clamp(4.6 * uPx - dp, 0.0, 1.0));
     }
   }
-  // the sample parallel and its point
-  if (uDemo > 0.5) {
-    float s = lineMask(abs(lat - uSelLat), pxLat, 2.4 * uPx);
-    col = mix(col, uSelC * (0.86 + 0.14 * body), s);
-    float dp = dot(vPos, uPoint) > 0.0 ? screenDist(tp, tpx, tpy) : 1e6;
-    col = mix(col, vec3(0.16, 0.18, 0.13), clamp(8.4 * uPx - dp, 0.0, 1.0) * 0.35);
-    col = mix(col, vec3(1.0), clamp(7.6 * uPx - dp, 0.0, 1.0));
-    col = mix(col, uSelC, clamp(5.4 * uPx - dp, 0.0, 1.0));
+  // the equal circles: a light fill and an orange ring
+  if (uCircOn > 0.0) {
+    vec2 cm = circleMask(lat, lon, 2.4 * uPx) * uCircOn;
+    col = mix(col, vec3(1.0), cm.x * 0.3);
+    col = mix(col, uSelC * (0.86 + 0.14 * body), cm.y);
   }
 
   gl_FragColor = vec4(col, 1.0);
@@ -202,7 +215,7 @@ void main() {
 }`;
 
 /* The sheet: its flat coordinates ARE the map's — lat / lon come back through the method's
-   inverse (projectionsModel.unproject), so its grid, parallel and point are the map's. */
+   inverse (projectionsModel.unproject), so its grid and circles are the map's. */
 const SHEET_FRAG = /* glsl */ `
 uniform int uMethod;
 uniform float uN;
@@ -211,9 +224,7 @@ uniform float uPhi0;
 uniform float uThetaMax;
 uniform float uLatMin;
 uniform float uLatMax;
-uniform float uSelLat;
-uniform vec2 uPointFlat;
-uniform float uDemo;
+uniform float uCircOn;
 uniform float uContactLat;
 uniform vec3 uPaper;
 uniform vec3 uLineC;
@@ -223,12 +234,12 @@ uniform vec3 uLight;
 uniform float uAlpha;
 uniform float uFade;
 uniform float uPx;
-uniform float uPointOn;
 uniform float uNear;
 varying vec2 vFlat;
 varying vec3 vPos;
 varying vec3 vN;
 ${LINE}
+${CIRCLE}
 
 void main() {
   vec2 f = vFlat;
@@ -295,17 +306,13 @@ void main() {
     col = mix(mix(col, vec3(1.0), ring), uContactC, dot0);
     a = max(a, ring);
   }
-  // the sample parallel and its point
-  if (uDemo > 0.5) {
-    float s = lineMask(abs(lat - uSelLat), pxLat, 2.4 * uPx) * inMap;
-    col = mix(col, uSelC, s);
-    a = max(a, s);
-    // the point rides on the sheet once it leaves the globe (wrapped, it sits on the globe's own)
-    float dp = screenDist(f - uPointFlat, fdx, fdy);
-    float ring = clamp(7.6 * uPx - dp, 0.0, 1.0) * uPointOn;
-    float dot0 = clamp(5.4 * uPx - dp, 0.0, 1.0) * uPointOn;
-    col = mix(mix(col, vec3(1.0), ring), uSelC, dot0);
-    a = max(a, ring);
+  // the equal circles as the map draws them (stretched away from the contact)
+  if (uCircOn > 0.0) {
+    vec2 cm = circleMask(lat, lon, 2.4 * uPx) * inMap * uCircOn;
+    col = mix(col, vec3(1.0), cm.x * 0.6);
+    a = max(a, cm.x * 0.55);
+    col = mix(col, uSelC, cm.y);
+    a = max(a, cm.y);
   }
   gl_FragColor = vec4(col, a * uFade);
   #include <colorspace_fragment>
@@ -334,6 +341,10 @@ const SRC_L = (() => {
 const METHOD_ID: Record<Method, number> = { cyl: 0, cone: 1, az: 2 };
 const COVER: Record<Method, [number, number]> = { cyl: [-CYL_LAT_MAX, CYL_LAT_MAX], cone: [CONE_LAT_MIN, CONE_LAT_MAX], az: [AZ_LAT_MIN, 90] };
 const MESH_RES: Record<Method, [number, number]> = { cyl: [192, 48], cone: [192, 48], az: [192, 40] };
+/** The equal circles' centres as unit vectors in the scene's axes (x toward 0° on the equator, y north,
+    east −z) — the frame the shaders rebuild from lat / lon. */
+const circleDirs = () =>
+  CIRCLES.map((c) => new THREE.Vector3(Math.cos(c.lat * D2R) * Math.cos(c.lon * D2R), Math.sin(c.lat * D2R), -Math.cos(c.lat * D2R) * Math.sin(c.lon * D2R)));
 
 /* ───────────────────────── the globe ───────────────────────── */
 
@@ -361,7 +372,6 @@ function Earth({ images, view }: { images: StageImages; view: StageView }) {
     };
     const color = tex(images.color, true);
     const relief = tex(images.relief, false);
-    const p = geodeticToScene(DEMO.lat, DEMO.lon);
     const mat = new THREE.ShaderMaterial({
       vertexShader: EARTH_VERT,
       fragmentShader: EARTH_FRAG,
@@ -377,13 +387,9 @@ function Earth({ images, view }: { images: StageImages; view: StageView }) {
         uSeaDeep: { value: lin(GLOBE_SEA.deep) },
         uSeaBank: { value: lin(GLOBE_SEA.bank) },
         uSrcL: { value: SRC_L },
-        uDemo: { value: 0 },
-        uSelLat: { value: DEMO.lat },
-        uPoint: { value: new THREE.Vector3(p[0], p[1], p[2]) },
-        uPointE: { value: new THREE.Vector3(-Math.sin(DEMO.lon * D2R), 0, -Math.cos(DEMO.lon * D2R)) },
-        uPointN: {
-          value: new THREE.Vector3(-Math.sin(DEMO.lat * D2R) * Math.cos(DEMO.lon * D2R), Math.cos(DEMO.lat * D2R), Math.sin(DEMO.lat * D2R) * Math.sin(DEMO.lon * D2R)),
-        },
+        uCirc: { value: circleDirs() },
+        uCircR: { value: CIRCLE_R },
+        uCircOn: { value: 0 },
         uContactOn: { value: 0 },
         uContactLat: { value: 0 },
         uGridC: { value: lin(C.white) },
@@ -406,7 +412,7 @@ function Earth({ images, view }: { images: StageImages; view: StageView }) {
 
   useEffect(() => {
     const u = res.mat.uniforms;
-    u.uDemo.value = view.demo ? 1 : 0;
+    u.uCircOn.value = view.demo ? 1 : 0;
     u.uContactOn.value = view.m ? 1 : 0;
     u.uContactLat.value = view.m ? CONTACT_LAT[view.m] : 0;
     invalidate();
@@ -441,7 +447,6 @@ function Sheets({ view, reduce }: { view: StageView; reduce: boolean }) {
       geom.setAttribute('normal', new THREE.BufferAttribute(nrm, 3).setUsage(THREE.DynamicDrawUsage));
       geom.setAttribute('aFlat', new THREE.BufferAttribute(mesh.flat, 2));
       geom.setIndex(new THREE.BufferAttribute(mesh.index, 1));
-      const pt = project(m, DEMO.lat, DEMO.lon);
       const uniforms = () => ({
         uMethod: { value: METHOD_ID[m] },
         uN: { value: CONE_N },
@@ -450,9 +455,9 @@ function Sheets({ view, reduce }: { view: StageView; reduce: boolean }) {
         uThetaMax: { value: CONE_THETA_MAX },
         uLatMin: { value: COVER[m][0] },
         uLatMax: { value: COVER[m][1] },
-        uSelLat: { value: DEMO.lat },
-        uPointFlat: { value: new THREE.Vector2(pt[0], pt[1]) },
-        uDemo: { value: 0 },
+        uCirc: { value: circleDirs() },
+        uCircR: { value: CIRCLE_R },
+        uCircOn: { value: 0 },
         uContactLat: { value: CONTACT_LAT[m] },
         uPaper: { value: lin(C.paper) },
         uLineC: { value: lin(C.dim) },
@@ -460,7 +465,6 @@ function Sheets({ view, reduce }: { view: StageView; reduce: boolean }) {
         uContactC: { value: lin(C.brandDark) },
         uLight: { value: new THREE.Vector3() },
         uAlpha: { value: 0.42 },
-        uPointOn: { value: m === 'az' ? 1 : 0 },
         uNear: { value: m === 'az' ? 1.1 : 0.62 },
         uFade: { value: 0 },
         uPx: { value: 1 },
@@ -530,13 +534,9 @@ function Sheets({ view, reduce }: { view: StageView; reduce: boolean }) {
       }
       for (const mat of [res[m].back, res[m].front]) {
         mat.uniforms.uFade.value = f[m];
-        mat.uniforms.uDemo.value = view.demo ? 1 : 0;
-        if (m !== 'az') {
-          // the sheet's own copy of the point shows once the sheet is (nearly) the flat map —
-          // before that it would sit as a second dot beside the globe's
-          mat.uniforms.uPointOn.value = Math.min(1, Math.max(0, (view.p - 0.72) / 0.22));
-          mat.uniforms.uNear.value = 0.62 + 0.58 * Math.min(1, Math.max(0, (view.p - 0.5) / 0.5));
-        }
+        // the sheet's own circles come in as it opens — wrapped, they would sit beside the globe's
+        mat.uniforms.uCircOn.value = view.demo ? circlesOn(view.p) : 0;
+        if (m !== 'az') mat.uniforms.uNear.value = 0.62 + 0.58 * Math.min(1, Math.max(0, (view.p - 0.5) / 0.5));
         mat.uniforms.uLight.value.copy(KEY_VIEW).applyQuaternion(camera.quaternion);
         mat.uniforms.uPx.value = gl.getPixelRatio();
       }

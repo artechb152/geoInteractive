@@ -22,7 +22,7 @@
 // --capture-fallback writes public/assets/lessons/topic06/terrain-nav/{overview,leg-1…4}.jpg from the live canvas.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
-import { SQUARE_CENTER, START } from '../../src/components/lessons/topic-06/terrain-nav/terrainNavScenario.ts';
+import { SQUARE_CENTER, START, WATER_TOWER } from '../../src/components/lessons/topic-06/terrain-nav/terrainNavScenario.ts';
 import { worldToMap } from '../../src/components/lessons/topic-06/terrain-nav/terrainNavGeometry.ts';
 import { summitOf, heightAt } from '../../src/components/lessons/topic-06/terrain-nav/terrainNavTerrain.ts';
 import { LEGS } from '../../src/components/lessons/topic-06/terrain-nav/terrainNavPractice.ts';
@@ -42,21 +42,19 @@ const fail = (m) => {
 const ok = (m) => console.log('ok  ', m);
 const check = (cond, m) => (cond ? ok(m) : fail(m));
 
+// The shortened copy of 2026-10-27 (lesson-6 copy cleanup).
 const APPROVED = [
-  'בוחרים במפה סימנים שניתן לזהות בשטח ובודקים את המיקום ביחס אליהם.',
-  'כשיש צורות קרקע בולטות שניתן לזהות במפה ובשטח.',
-  'כשהראות מאפשרת להשוות בין הסימנים בשטח לבין המפה.',
-  'בהמחשה, המסלול עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר.',
-  'המסלול עובר בשלוש כיפות ומסתיים בכיכר הכפר. בכל נקודה משווים את הסימנים בשטח למפה לפני שממשיכים.',
+  'בוחרים סימנים שאפשר לזהות במפה ובשטח',
+  'השיטה מתאימה כשיש סימנים בולטים לאורך הדרך והראות מאפשרת להשוות אותם למפה.',
+  'הציר עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר (B).',
   'כיפה — צורת קרקע בולטת (תבליט)',
   'כפר — מבנים על הקרקע (תכסית)',
   'הציר — מסימן לסימן',
   'נקודת מוצא (A)',
   'היעד — הכיכר המרכזית בכפר (B)',
   'ניווט עיוור מתבסס על נקודת מוצא ידועה ועל אזימוט ומרחק שנקבעו מראש.',
-  'כשקשה לזהות סימני שטח בגלל ראות מוגבלת.',
-  'בהמחשה, היעד נמצא באזימוט 62° ובמרחק 1.2 ק״מ.',
-  'הדגמה של תנועה לפי אזימוט ומרחק בתנאי ראות מוגבלת.',
+  'השיטה מתאימה כשהראות מוגבלת או שיש מעט סימנים מובחנים, ובתנאי שנקודת המוצא ידועה.',
+  'במפת התכנון רואים את כל הדרך, ובשטח רק כ־30 מ׳ סביבכם. ההליכה מוצגת ללא סטייה.',
 ];
 
 async function open(browser, { reduced = false, name = 'main', scale = 1 } = {}) {
@@ -96,7 +94,9 @@ try {
   const map = await page.locator('[data-panel="map"]').boundingBox();
   check(model.x > map.x, 'model at the inline start (right), map at the end (left)');
   const share = model.width / (model.width + map.width);
-  check(share > 0.52 && share < 0.58, `model ≈ 55 % of the two views (${(share * 100).toFixed(1)} %)`);
+  check(share > 0.49 && share < 0.55, `model ≈ 52 % of the two views (the map panel holds the route legend) (${(share * 100).toFixed(1)} %)`);
+  const legendBox = await page.locator('[data-panel="map"] [data-legend="route"]').boundingBox();
+  check(legendBox && legendBox.x < map.x + map.width / 2, 'the route legend sits in the map panel, at its outer (left) side');
   check(Math.abs(model.height - map.height) < 1, 'model and map share one height');
   check(Math.abs(model.y - map.y) < 1, 'side by side');
   await shot(page, '01-learn.png');
@@ -109,17 +109,19 @@ try {
   const terrainTop = (await page.locator('#combatnav-handrail').boundingBox()).y;
   const deadTop = (await page.locator('#combatnav-dead').boundingBox()).y;
   check(terrainTop < deadTop, 'terrain association first, dead reckoning below');
-  // The only disclosure left is the map key (symbols, not lesson text).
-  check((await page.locator('#scene-combat [aria-expanded]:not([aria-label="מקרא המפה"])').count()) === 0, 'no accordion in the sub-topic');
+  // The only disclosures: the map key (symbols, not lesson text) and the feature list's "more" toggle (buttons, not lesson text).
+  check((await page.locator('#scene-combat [aria-expanded]:not([aria-label="מקרא המפה"]):not([data-feature-more])').count()) === 0, 'no accordion in the sub-topic');
 
   // ---- registration (labels on the canvas' own projection) and the map's marks
   const panel = model;
+  // The probe projects in the canvas' own CSS px; the lesson's laptop fit scales the card on screen.
+  const fit = await page.locator('[data-panel="model"]').evaluate((el) => el.getBoundingClientRect().width / el.offsetWidth);
   const points = { A: { ...START, lift: 34 }, H1: { ...summitOf('H1'), lift: 34 }, H2: { ...summitOf('H2'), lift: 34 }, H3: { ...summitOf('H3'), lift: 34 }, B: { ...SQUARE_CENTER, lift: 34 } };
   for (const [id, p] of Object.entries(points)) {
     const [x, y] = await page.evaluate(([E, N, h]) => window.__tnProbe(E, N, h), [p.E, p.N, heightAt(p.E, p.N) + p.lift]);
     const box = await page.locator(`[data-model-label="${id}"]`).boundingBox();
-    const dx = box.x - panel.x + box.width / 2 - x;
-    const dy = box.y - panel.y + box.height / 2 - y;
+    const dx = box.x - panel.x + box.width / 2 - x * fit;
+    const dy = box.y - panel.y + box.height / 2 - y * fit;
     check(Math.hypot(dx, dy) <= 2, `model label ${id} on its point (${dx.toFixed(1)}, ${dy.toFixed(1)} px)`);
   }
   for (const id of ['H1', 'H2', 'H3']) {
@@ -131,12 +133,35 @@ try {
     check(Math.abs(cx - m.x) < 0.01 && Math.abs(cy - m.y) < 0.01, `map mark ${id} at worldToMap(summit)`);
   }
 
+  // ---- the feature list (2026-10-27 copy cleanup): the route first, the other 10 on request, from the keyboard too
+  const more = page.locator('[data-feature-more]');
+  check((await page.locator('[data-feature]').count()) === 5 && (await more.getAttribute('aria-expanded')) === 'false', 'list: the 5 route features first, the rest closed');
+  await more.focus();
+  await page.keyboard.press('Enter');
+  check((await page.locator('[data-feature]').count()) === 15 && (await more.getAttribute('aria-expanded')) === 'true', 'list: Enter on the toggle opens all 15');
+  check(await more.evaluate((el) => document.activeElement === el), 'list: focus stays on the toggle');
+  await page.keyboard.press('Enter');
+  check((await page.locator('[data-feature]').count()) === 5, 'list: Enter again closes it');
+  {
+    const svgEl = page.locator('[data-panel="map"] svg[data-map-mode]');
+    const t = worldToMap(WATER_TOWER);
+    const at = await svgEl.evaluate((el, [x, y]) => {
+      const q = new DOMPoint(x, y).matrixTransform(el.getScreenCTM());
+      return [q.x, q.y];
+    }, [t.x, t.y]);
+    await page.mouse.click(at[0], at[1]);
+    await page.waitForTimeout(200);
+    check((await state(page)).learnFeature === 'tower', 'map click on the water tower → tower');
+    check((await page.locator('[data-feature="tower"]').getAttribute('aria-pressed').catch(() => null)) === 'true', 'a hidden feature picked on the map opens the list, pressed');
+  }
+  await shot(page, '01b-learn-list-open.png');
+
   // ---- linking: list → both views; map → both; model → both
   await page.locator('[data-feature="G1"]').click();
   check((await state(page)).learnFeature === 'G1' && (await page.locator('[data-highlight="G1"]').count()) === 1, 'list: G1 selected and highlighted on the map');
   await page.waitForTimeout(500);
   await shot(page, '02-learn-grove.png');
-  const svg = page.locator('[data-panel="map"] svg');
+  const svg = page.locator('[data-panel="map"] svg[data-map-mode]');
   const h2 = worldToMap(summitOf('H2'));
   const h2Screen = await svg.evaluate((el, [x, y]) => {
     const p = new DOMPoint(x, y).matrixTransform(el.getScreenCTM());
@@ -148,7 +173,7 @@ try {
   const s3 = summitOf('H3');
   const [mx, my, inFront] = await page.evaluate(([E, N, h]) => window.__tnProbe(E, N, h), [s3.E, s3.N, s3.heightM]);
   if (inFront) {
-    await page.mouse.click(panel.x + mx, panel.y + my);
+    await page.mouse.click(panel.x + mx * fit, panel.y + my * fit);
     await page.waitForTimeout(200);
     check((await state(page)).learnFeature === 'H3', 'model click on כיפה 3 → H3 (the map highlights the same id)');
     check((await page.locator('[data-highlight="H3"]').count()) === 1, 'map highlight follows the model');
@@ -190,7 +215,13 @@ try {
   check((await feedback(page)) === 'stale', 'a changed answer: "בדקו שוב"');
   await checkBtn(page).click();
   check((await feedback(page)) === 'partial', 'the right point alone: no full credit');
+  const falseId = leg0.evidence.find((e) => !leg0.correctEvidence.includes(e.id)).id;
+  await page.locator(`[data-evidence-id="${falseId}"]`).click();
+  await checkBtn(page).click();
+  check((await feedback(page)) === 'partial' && (await page.locator(`[data-evidence-id="${falseId}"][data-wrong]`).count()) === 1, 'a false statement is marked ✕ in the list; the feedback says why');
+  await alignCard(page);
   await shot(page, '05-partial.png');
+  await page.locator(`[data-evidence-id="${falseId}"]`).click();
   await page.locator('[data-strip="practice"] button', { hasText: 'רמז' }).first().click();
   check((await state(page)).hint === 1 && (await page.locator('[data-hint="1"]').count()) === 1, 'first hint: the kind of evidence');
   await page.locator('[data-strip="practice"] button', { hasText: 'רמז' }).first().click();
@@ -210,6 +241,9 @@ try {
   check(s2.leg === 1 && s2.outcomes[0] === 'verified', 'on to leg 2');
   check((await page.locator('[data-checkpoint="H1"]').count()) === 1, 'the verified point is now named on the map');
   await shot(page, '08-leg2.png');
+  check(await page.getByRole('button', { name: 'הצגת הסבר' }).isDisabled(), 'no explanation before a first check: moving on takes a decision');
+  await checkBtn(page).click();
+  check((await feedback(page)) === 'missing', 'an empty check asks for a point');
   await page.getByRole('button', { name: 'הצגת הסבר' }).click();
   check((await feedback(page)) === 'explained', 'הצגת הסבר shows the answer and says so');
   await shot(page, '09-explained.png');
@@ -252,7 +286,7 @@ try {
   check((await page.locator('[data-strip="summary"]').count()) === 1, 'summary after the four legs');
   await alignCard(page);
   await shot(page, '11-summary.png');
-  await page.getByRole('button', { name: 'התחלה מחדש' }).click();
+  await page.locator('#combatnav-handrail').getByRole('button', { name: 'התחלה מחדש' }).click();
   const s4 = await state(page);
   check(s4.leg === 0 && s4.outcomes.every((o) => o === null), 'restart: back to leg 1, progress cleared');
 
@@ -273,6 +307,7 @@ try {
       await c.page.waitForTimeout(k ? 2400 : 1500);
       await model.screenshot({ path: `public/assets/lessons/topic06/terrain-nav/leg-${k + 1}.jpg`, type: 'jpeg', quality: 82 });
       if (k < LEGS.length - 1) {
+        await checkBtn(c.page).click();
         await c.page.getByRole('button', { name: 'הצגת הסבר' }).click();
         await nextBtn(c.page).click();
       }
@@ -286,6 +321,7 @@ try {
     const r = await open(browser, { reduced: true });
     await modelReady(r.page);
     await mode(r.page, 'practice');
+    await checkBtn(r.page).click();
     await r.page.getByRole('button', { name: 'הצגת הסבר' }).click();
     await nextBtn(r.page).click();
     await r.page.waitForTimeout(150);

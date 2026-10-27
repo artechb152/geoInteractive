@@ -19,11 +19,14 @@ import { NavTipsMap, TipsLegendGlyph, TIP_LEGS, type MapFocus, type NavFocus, ty
 type Tip<F extends MapFocus> = {
   id: F;
   title: string;
-  /** מה עושים */
+  /** the action, one sentence */
   what: string;
-  /** למה זה מועיל */
+  /** why it helps, one sentence */
   why: string;
-  /** What the map shows in this state — the caption under it and the map's accessible name. */
+  /**
+   * What the map shows in this state — the caption under it and the map's
+   * accessible name. It describes the map; it does not repeat `what`.
+   */
   map: string;
 };
 
@@ -31,30 +34,30 @@ const PLAN_TIPS: Tip<PlanFocus>[] = [
   {
     id: 'ends',
     title: 'מכירים את המוצא ואת היעד',
-    what: 'מאתרים במפה את המוצא (נ.ה) ואת היעד (נ.ס). לכל אחד מהם בוחרים סימנים שבעזרתם מאמתים אותו בשטח.',
-    why: 'ניווט מתחיל מנקודה ידועה. סימנים שנבחרו מראש מאפשרים לוודא שיוצאים מהמקום הנכון, ובסוף הדרך לאשר שמגיעים ליעד עצמו, ולא רק לאזור קרוב אליו.',
-    map: 'במפה: נ.ה ליד מבנה בולט, ונ.ס בקבוצת אורנים על קרקע סלעית. אלה הסימנים שבעזרתם מאמתים כל נקודה בשטח.',
+    what: 'מאתרים במפה את המוצא (נ.ה) ואת היעד (נ.ס), ובוחרים לכל אחד סימנים לאימות בשטח.',
+    why: 'כך יוצאים מהמקום הנכון, ובסוף מאשרים שמגיעים ליעד עצמו ולא רק לאזור קרוב אליו.',
+    map: 'במפה: נ.ה ליד מבנה בולט, ונ.ס בקבוצת אורנים על קרקע סלעית.',
   },
   {
     id: 'route',
     title: 'בוחרים מסלול לפי תנאי השטח',
-    what: 'משווים בין מסלולים אפשריים. בכל אחד בוחנים את המרחק, את צורות הקרקע ואת הקשיים הצפויים.',
-    why: 'המסלול הקצר ביותר אינו בהכרח המתאים ביותר. תכנון מראש מסייע לצפות קשיים בשטח עוד לפני היציאה.',
-    map: 'במפה: הקו הישיר קצר יותר, אבל עובר מעל הפסגה. המסלול שנבחר עובר באוכף, הנקודה הנמוכה ברכס שבין שתי הפסגות, ונמנע מטיפוס על הפסגה.',
+    what: 'משווים בין מסלולים אפשריים לפי המרחק, צורות הקרקע והקשיים הצפויים.',
+    why: 'כך צופים קשיים בשטח עוד לפני היציאה.',
+    map: 'במפה: הקו הישיר קצר יותר, אבל עובר מעל הפסגה. המסלול שנבחר עובר באוכף, הנקודה הנמוכה ברכס שבין שתי הפסגות.',
   },
   {
     id: 'legs',
     title: 'מחלקים את הדרך לקטעים',
-    what: 'מחלקים את המסלול לקטעי דרך. לכל קטע דרך מגדירים כיוון, מרחק משוער וסימנים שצפויים להופיע לאורכו ובסופו.',
-    why: 'כך יודעים בכל שלב לאן הולכים, כמה הולכים ומה אמור להופיע. קל יותר לעקוב אחר ההתקדמות ולזהות סטייה מהמסלול.',
-    map: 'במפה: המסלול מחולק לארבעה קטעי דרך. בכל קטע דרך החץ מראה את הכיוון, והתווית מציינת את המרחק המשוער.',
+    what: 'מחלקים את המסלול לקטעי דרך מנקודה לנקודה, ולכל קטע מגדירים כיוון ומרחק משוער.',
+    why: 'כך יודעים בכל קטע לאן הולכים ולאיזה מרחק, וקל יותר לזהות סטייה.',
+    map: 'במפה: ארבעה קטעי דרך בין נ.ה לנ.ס. החץ מראה את הכיוון, והתווית מציינת את המרחק המשוער.',
   },
   {
     id: 'checkpoints',
     title: 'קובעים נקודות לבדיקת המיקום',
-    what: 'בוחרים לאורך המסלול סימנים שקל לזהות במפה ובשטח, כמו עיקול נחל, אוכף או חציית דרך. מתארים אותם לפי הסדר בסיפור הדרך.',
-    why: 'בדיקת המיקום בכל נקודה כזו מאפשרת לזהות סטייה מוקדם. שינון סיפור הדרך מראש מפחית את העומס המחשבתי בזמן התנועה.',
-    map: 'במפה: סיפור הדרך לפי הסדר: עיקול הנחל, האוכף שבין שתי הפסגות, חציית דרך העפר, ולבסוף קבוצת האורנים על הקרקע הסלעית בנ.ס.',
+    what: 'בוחרים לאורך המסלול סימנים שקל לזהות במפה ובשטח, ורושמים אותם בסיפור הדרך לפי סדר הופעתם.',
+    why: 'בכל סימן כזה בודקים את המיקום, וסיפור דרך שנלמד מראש מפחית עומס מחשבתי בזמן התנועה.',
+    map: 'במפה: עיקול הנחל, האוכף, חציית דרך העפר, ולבסוף האורנים על הקרקע הסלעית בנ.ס.',
   },
 ];
 
@@ -62,34 +65,34 @@ const NAV_TIPS: Tip<NavFocus>[] = [
   {
     id: 'verify',
     title: 'מאמתים מיקום וכיוון לפני ההתקדמות',
-    what: 'יוצאים לכל קטע דרך מנקודה מזוהה. לפני שממשיכים, בודקים במפה ובמצפן את הכיוון לקטע הדרך הבא.',
-    why: 'סטייה קטנה בכיוון מצטברת ככל שהמרחק גדל. בדיקה בתחילת קטע הדרך מצמצמת את הסיכון לצאת מנקודה שגויה או בכיוון שגוי.',
-    map: 'במפה: המיקום הנוכחי בעיקול הנחל (נקודה 1) מזוהה, והחץ מראה את הכיוון לקטע הדרך הבא, אל האוכף.',
+    what: 'יוצאים לכל קטע דרך מנקודה מזוהה, ובודקים במפה ובמצפן את הכיוון לקטע הבא.',
+    why: 'כך לא יוצאים מנקודה שגויה או בכיוון שגוי.',
+    map: 'במפה: אתם בעיקול הנחל (נקודה 1), והחץ מראה את הכיוון לקטע הבא, אל האוכף.',
   },
   {
     id: 'compare',
     title: 'משווים בין הצפוי לנראה בשטח',
-    what: 'בזמן התנועה משווים את הסימנים בשטח לסיפור הדרך: האם הם מופיעים בסדר הצפוי, והאם צורתם מתאימה למפה.',
-    why: 'בדיקות חוזרות לאורך הדרך מסייעות לזהות סטייה מוקדם, לפני שהיא גדלה.',
-    map: 'במפה: עיקול הנחל כבר מאחוריכם. הסימן הבא בסיפור הדרך הוא אוכף בין שתי פסגות, ולכן מחפשים בשטח את הצורה הזאת.',
+    what: 'בתנועה משווים את הסימנים בשטח לסיפור הדרך: האם הם מופיעים בסדר הצפוי ובצורה שבמפה.',
+    why: 'סימן שמופיע שלא בסדר הצפוי, או בצורה אחרת, מרמז על סטייה, ומגלים אותה כשהיא עוד קטנה.',
+    map: 'במפה: עיקול הנחל מאחוריכם. הסימן הבא הוא אוכף בין שתי פסגות, ואותו מחפשים בשטח.',
   },
   {
     id: 'combine',
     title: 'משלבים כיוון, מרחק וסימני שטח',
-    what: 'בודקים את המיקום בעזרת כמה נתונים יחד: הכיוון שבו הלכתם, המרחק שעברתם והסימנים שסביבכם.',
-    why: 'קל לבלבל בין מקומות דומים. כשכל הנתונים מתאימים לתכנון, הבדיקה אמינה יותר מהסתמכות על סימן דומה אחד.',
-    map: `במפה: הגעתם לאוכף. הכיוון מעיקול הנחל, המרחק (כ־${TIP_LEGS[1].m} מ׳) וצורת שתי הפסגות מתאימים יחד לתכנון.`,
+    what: 'בודקים את המיקום לפי כמה נתונים יחד: הכיוון שבו הלכתם, המרחק שעברתם והסימנים סביבכם.',
+    why: 'קל לבלבל בין מקומות דומים, והתאמה של כל הנתונים אמינה יותר מהסתמכות על סימן דומה אחד.',
+    map: `במפה: הגעתם לאוכף. הכיוון מעיקול הנחל, המרחק (כ־${TIP_LEGS[1].m} מ׳) וצורת שתי הפסגות מתאימים לתכנון.`,
   },
   {
     id: 'mismatch',
     title: 'בודקים אי־התאמה לפני שממשיכים',
-    what: 'כשסימן צפוי אינו מופיע, או שהשטח אינו תואם לתכנון, בודקים מחדש את המיקום ואת הכיוון לפני שממשיכים. בסוף הדרך מאמתים גם את ההגעה ליעד.',
-    why: 'בדיקה לפני שממשיכים מצמצמת את הסיכון להמשיך מנקודה שגויה. קרבה ליעד אינה מספיקה כדי לאשר הגעה, במיוחד בחושך או בראות מוגבלת.',
-    map: `במפה: אחרי כ־${TIP_LEGS[2].m} מ׳ הייתם אמורים לחצות דרך עפר, אבל היא אינה מופיעה, ולכן בודקים מחדש את המיקום ואת הכיוון לפני שממשיכים. בנ.ס מאמתים את ההגעה לפי האורנים והקרקע הסלעית.`,
+    what: 'כשסימן צפוי אינו מופיע או שהשטח אינו תואם לתכנון, לא ממשיכים מיד: משווים את הסביבה למפה ובודקים כיוון ומרחק מהנקודה המזוהה האחרונה.',
+    why: 'כך לא ממשיכים מנקודה שגויה, וחוזרים למסלול כל עוד זה קל.',
+    map: `במפה: כ־${TIP_LEGS[2].m} מ׳ אחרי האוכף הייתם אמורים לחצות דרך עפר, אבל היא לא הופיעה. הדרך שעברתם מראה שהכיוון סטה מהמסלול.`,
   },
 ];
 
-type LegendItem = { kind: 'route' | 'ahead' | 'walked' | 'checkpoint' | 'position'; label: string };
+type LegendItem = { kind: 'route' | 'ahead' | 'walked' | 'checkpoint' | 'verified' | 'position'; label: string };
 
 const PLAN_LEGEND: LegendItem[] = [
   { kind: 'route', label: 'המסלול המתוכנן' },
@@ -98,6 +101,7 @@ const PLAN_LEGEND: LegendItem[] = [
 const NAV_LEGEND: LegendItem[] = [
   { kind: 'position', label: 'מיקום נוכחי' },
   { kind: 'walked', label: 'הדרך שעברתם' },
+  { kind: 'verified', label: 'נקודה מזוהה' },
   { kind: 'ahead', label: 'המשך המסלול המתוכנן' },
 ];
 
@@ -107,19 +111,23 @@ const NAV_LEGEND: LegendItem[] = [
  * so the whole screen fits under the site header once it is scrolled to. The
  * 1920×1080 layout is the reference: scale 1 there and on any screen with
  * room for it.
- *   - Width: the section's content width at lg+ (max-w-6xl − lg:px-8).
+ *   - Width: the section's content width at the reference viewport
+ *     (max-w-lesson − lg:px-8), the same 1344px as every other screen of
+ *     lessons 2 and 6, so the tips show at the lesson's interface size.
  *   - Heights: the tallest state of each screen at the reference width
- *     (measured: plan 721px for every tip; nav 747px with tip 4 open; the
- *     question 690px with feedback and the retry button), so the scale stays
- *     steady while learners switch tips or answer.
+ *     (measured 2026-10-27, one card per screen: plan and nav for every tip;
+ *     the question with its longest feedback and its button), so the scale
+ *     stays steady while learners switch tips or answer. Inside the lesson
+ *     (LessonFitUniform) they are ignored; they apply where the scene is
+ *     rendered on its own (the archive).
  *   - Reserves are numeric because the screens sit deep in a scrolling page:
  *     the fixed 80px site header plus a 24px gap above, 24px of air below —
  *     the same reserves as the other topic-06 parts.
  *   - A screen shrunk by height is narrower than the column; it keeps to the
  *     inline start (right) so the three screens share one right edge.
  */
-const FIT_WIDTH = 1088;
-const FIT_HEIGHT = { plan: 721, nav: 747, question: 690 } as const;
+const FIT_WIDTH = 1344;
+const FIT_HEIGHT = { plan: 863, nav: 841, question: 532 } as const;
 const FIT_RESERVE_TOP = 104;
 const FIT_RESERVE_BOTTOM = 24;
 
@@ -143,18 +151,22 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 
 export function PlanningTipsScene() {
   return (
-    <section id="scene-tips" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        title="דגשים לתכנון ולניווט"
-        intro="מה מכינים לפני היציאה, ומה בודקים במהלך התנועה? נבחן את שניהם על אותה מפה לימודית, ונראה כיצד התכנון מסייע לזהות סטייה מהמסלול."
-      />
+    <section id="scene-tips" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
+      {/* The part header shrinks with the screens, as in the other sub-topics of the lesson. */}
+      <LessonViewportFit referenceWidth={FIT_WIDTH} reserveBottom={FIT_RESERVE_BOTTOM}>
+        <SceneHeader
+          title="דגשים לתכנון ולניווט"
+          intro="מה מכינים לפני היציאה, ומה בודקים במהלך התנועה?"
+        />
+      </LessonViewportFit>
 
       <ScreenFit height={FIT_HEIGHT.plan}>
         <TipsScreen
           screenId="plan"
           title="לפני שיוצאים: מה צריך לתכנן?"
-          intro="בחרו דגש כדי לראות במפה את הפרט המתאים ולקרוא מה עושים ולמה זה מועיל."
-          boardLabel="מפת התכנון · לפני היציאה"
+          intro="בחרו דגש וראו אותו במפה."
+          boardLabel="מפת התכנון"
+          boardNote="דוגמה לימודית, נפרדת מסיפור הדרך שבהמשך"
           tips={PLAN_TIPS}
           legend={PLAN_LEGEND}
         />
@@ -165,8 +177,8 @@ export function PlanningTipsScene() {
           <TipsScreen
             screenId="nav"
             title="במהלך הניווט: מה צריך לבדוק?"
-            intro="אותה מפה, עכשיו בזמן התנועה. בחרו דגש כדי לראות את המיקום הנוכחי ומה בודקים בו."
-            boardLabel="אותה מפה · במהלך הניווט"
+            intro="בחרו דגש וראו במפה מה בודקים במיקום הנוכחי."
+            boardLabel="אותה מפה, עם המיקום הנוכחי"
             tips={NAV_TIPS}
             legend={NAV_LEGEND}
           />
@@ -186,15 +198,17 @@ export function PlanningTipsScene() {
 }
 
 /**
- * One screen: the tips as an accordion (one open at a time, the first open on
- * entry) beside the shared map board. Choosing a tip updates the map and the
- * caption under it, so every map highlight also has a text description.
+ * One screen, one card: the title, the instruction, the tips as an accordion
+ * (one open at a time, the first open on entry) and the shared map board as an
+ * inset beside them. Choosing a tip updates the map and the caption under it,
+ * so every map highlight also has a text description.
  */
 function TipsScreen<F extends MapFocus>({
   screenId,
   title,
   intro,
   boardLabel,
+  boardNote,
   tips,
   legend,
 }: {
@@ -202,6 +216,7 @@ function TipsScreen<F extends MapFocus>({
   title: string;
   intro: string;
   boardLabel: string;
+  boardNote?: string;
   tips: Tip<F>[];
   legend: LegendItem[];
 }) {
@@ -222,7 +237,7 @@ function TipsScreen<F extends MapFocus>({
   };
 
   return (
-    <div role="group" aria-labelledby={`${uid}-title`} data-tips-screen={screenId}>
+    <div role="group" aria-labelledby={`${uid}-title`} data-tips-screen={screenId} className="surface-elevated p-6 lg:p-8">
       <h3 id={`${uid}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
         {title}
       </h3>
@@ -230,7 +245,7 @@ function TipsScreen<F extends MapFocus>({
 
       {/* Text column 1fr · board 1.35fr — the same split as the techniques screen. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
-        {/* Accordion — first child → RIGHT in RTL. */}
+        {/* Accordion — first child → RIGHT in RTL. Its headers match the four-stage accordion of the lesson's opening. */}
         <div className="space-y-3">
           {tips.map((t, i) => {
             const isActive = active === t.id;
@@ -240,7 +255,6 @@ function TipsScreen<F extends MapFocus>({
               <div
                 key={t.id}
                 className={cn(
-                  // Items sit on the textured page: the hover tint rides on the opaque white base via ::before.
                   'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
                   'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
                   isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
@@ -260,21 +274,21 @@ function TipsScreen<F extends MapFocus>({
                 >
                   <span
                     className={cn(
-                      'size-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
                       isActive ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border',
                     )}
                   >
-                    <span className="font-display font-bold text-sm">{i + 1}</span>
+                    <span className="font-display font-bold text-base">{i + 1}</span>
                   </span>
                   <div className="flex-1 min-w-0 text-start">
-                    <div className="font-display font-bold leading-snug text-black text-base md:text-lg">{t.title}</div>
+                    <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">{t.title}</div>
                   </div>
                   <motion.span
                     animate={{ rotate: isActive ? 180 : 0 }}
                     transition={{ duration: reduce ? 0 : 0.25 }}
                     className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <path d="m6 9 6 6 6-6" />
                     </svg>
                   </motion.span>
@@ -293,15 +307,9 @@ function TipsScreen<F extends MapFocus>({
                       transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-5 pt-1 space-y-4">
-                        <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5">מה עושים</div>
-                          <p className="text-base leading-relaxed text-black">{t.what}</p>
-                        </div>
-                        <div>
-                          <div className="text-base font-display font-bold text-black mb-1.5">למה זה מועיל</div>
-                          <p className="text-base leading-relaxed text-black">{t.why}</p>
-                        </div>
+                      <div className="px-4 pb-5 pt-1 space-y-2">
+                        <p className="text-base leading-relaxed text-black">{t.what}</p>
+                        <p className="text-base leading-relaxed text-black">{t.why}</p>
                       </div>
                     </motion.div>
                   )}
@@ -311,12 +319,12 @@ function TipsScreen<F extends MapFocus>({
           })}
         </div>
 
-        {/* Map board — second child → LEFT in RTL (the route-story board frame). */}
-        <div className="lg:sticky lg:top-24 self-start surface-elevated p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-3 mb-4">
+        {/* Map board — second child → LEFT in RTL; an inset in the screen's card. */}
+        <div className="lg:sticky lg:top-24 self-start rounded-xl bg-bg-accent/60 p-4 sm:p-5" data-tips-board>
+          <div className="flex items-start justify-between gap-3 mb-3">
             <div className="min-w-0">
               <div className="text-sm font-display font-semibold text-fg-muted">{boardLabel}</div>
-              <div className="mt-0.5 text-sm text-fg-muted">דוגמה לימודית נפרדת מסיפור הדרך שבהמשך השיעור</div>
+              {boardNote && <div className="mt-0.5 text-sm text-fg-muted">{boardNote}</div>}
             </div>
             <span dir="ltr" className="text-sm font-display font-bold tabular-nums text-fg-muted" aria-hidden>
               {activeIndex + 1}/{tips.length}
@@ -325,10 +333,11 @@ function TipsScreen<F extends MapFocus>({
           <div className="overflow-hidden rounded-xl border border-border/70">
             <NavTipsMap focus={activeTip.id} ariaLabel={activeTip.map} />
           </div>
-          <p className="mt-4 text-base leading-relaxed text-black" aria-live="polite">
+          {/* Two lines kept for every caption (2 × 26px), so the board keeps its height across tips. */}
+          <p className="mt-4 min-h-[3.25rem] text-base leading-relaxed text-black" aria-live="polite" data-tips-caption>
             {activeTip.map}
           </p>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2" data-tips-legend>
             {legend.map((it) => (
               <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
                 <TipsLegendGlyph kind={it.kind} />
@@ -352,24 +361,35 @@ type Option = { id: string; label: string; correct: boolean; feedback: string };
 const QUESTION_STEM =
   'הגעתם לצומת שנראה כמו הצומת המתוכנן, אבל המרחק וסדר הסימנים אינם תואמים. האם אפשר לאשר שזהו הצומת?';
 
+/**
+ * Two "yes" and two "no" answers, so the answer is not the odd one out. Each
+ * wrong answer targets one misconception (looks alone, direction alone, keep
+ * walking), and its feedback says why it fails without quoting the right one.
+ */
 const OPTIONS: Option[] = [
   {
     id: 'looks',
     label: 'כן. הצומת נראה כמו הצומת שבתכנון.',
     correct: false,
-    feedback: 'מראה דומה אינו מספיק כדי לאשר את המיקום. המרחק וסדר הסימנים אינם תואמים לתכנון, ולכן משווים גם אותם ואת הסביבה למפה לפני שמאשרים.',
+    feedback: 'מראה דומה אינו מספיק: קל לבלבל בין מקומות דומים. כאן המרחק וסדר הסימנים אינם תואמים לתכנון, ולכן ייתכן שזה צומת אחר.',
+  },
+  {
+    id: 'continue',
+    label: 'לא. ממשיכים בכיוון המתוכנן עד הסימן הבא.',
+    correct: false,
+    feedback: 'אם זה אינו הצומת, ממשיכים מנקודה שגויה, וכל צעד נוסף מגדיל את הסטייה. אי־התאמה לתכנון היא סיבה לבדוק לפני שממשיכים.',
+  },
+  {
+    id: 'recheck',
+    label: 'לא. קודם בודקים את המיקום מול המפה.',
+    correct: true,
+    feedback: 'הצומת אמנם נראה נכון, אבל המרחק וסדר הסימנים מרמזים שאולי זה צומת דומה אחר. משווים למפה את המרחק, את סדר הסימנים ואת הסביבה, ומאשרים רק כשכולם מתאימים.',
   },
   {
     id: 'direction',
     label: 'כן, אם הכיוון שבו הלכתם תואם לתכנון.',
     correct: false,
-    feedback: 'התאמה בכיוון בלבד אינה מספיקה כשהמרחק וסדר הסימנים אינם תואמים. משווים את כל הנתונים ואת הסביבה למפה לפני שמאשרים את המיקום.',
-  },
-  {
-    id: 'recheck',
-    label: 'לא בשלב זה. קודם בודקים את המיקום מול המפה.',
-    correct: true,
-    feedback: 'הדמיון החזותי לבדו אינו מספיק. משווים למפה גם את המרחק, את סדר הסימנים ואת הסביבה, ורק אז מחליטים אם זהו הצומת.',
+    feedback: 'כיוון נכון לבדו אינו מספיק: גם בכיוון הנכון אפשר להגיע לצומת דומה, לפני הצומת המתוכנן או אחריו. כאן המרחק וסדר הסימנים אינם תואמים לתכנון.',
   },
 ];
 
@@ -377,24 +397,37 @@ function ApplicationQuestion() {
   const [picked, setPicked] = useState<string | null>(null);
   const reduce = !!useReducedMotion();
   const uid = useId();
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const choice = OPTIONS.find((o) => o.id === picked) ?? null;
+
+  // Reset removes its own button, so focus goes back to the first answer.
+  const reset = () => {
+    setPicked(null);
+    optionRefs.current[0]?.focus();
+  };
 
   return (
     <div className="surface-elevated p-6 lg:p-8" data-activity="tips-question">
-      <div className="text-sm font-display font-semibold text-fg-muted">שאלת יישום</div>
-      <h3 id={`${uid}-stem`} className="mt-1.5 max-w-3xl font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance">
+      {/* The lesson's activity tiers: card title, then the question as its sub-heading. */}
+      <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">שאלת יישום</h3>
+      <h4 id={`${uid}-stem`} className="mt-2 font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance">
         {QUESTION_STEM}
-      </h3>
+      </h4>
 
-      <div role="group" aria-labelledby={`${uid}-stem`} className="mt-5 max-w-3xl space-y-2">
-        {OPTIONS.map((o) => {
+      {/* Two answers per row across the card's width (reading order: right, left, then the next row). */}
+      <div role="group" aria-labelledby={`${uid}-stem`} className="mt-5 grid gap-2 sm:grid-cols-2">
+        {OPTIONS.map((o, i) => {
           const isPicked = picked === o.id;
           return (
             <button
               key={o.id}
+              ref={(el) => {
+                optionRefs.current[i] = el;
+              }}
               type="button"
               onClick={() => setPicked(o.id)}
               aria-pressed={isPicked}
+              data-option={o.id}
               className={cn(
                 'w-full text-start px-4 py-3 rounded-xl border transition-all duration-300 ease-snap text-base leading-relaxed text-black flex items-center gap-3',
                 !isPicked && 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
@@ -419,21 +452,27 @@ function ApplicationQuestion() {
         })}
       </div>
 
-      {/* Feedback — announced once per choice; a wrong choice keeps the options open for another try. */}
-      <div role="status" aria-live="polite" aria-atomic="true" className="max-w-3xl">
-        <AnimatePresence mode="wait" initial={false}>
+      {/* Feedback — announced once per choice; a wrong choice keeps the options open for another try.
+          The block opens once; switching answers swaps its content in place, so nothing below jumps. */}
+      <div role="status" aria-live="polite" aria-atomic="true">
+        <AnimatePresence initial={false}>
           {choice && (
             <motion.div
-              key={choice.id}
-              initial={reduce ? false : { opacity: 0, height: 0, marginTop: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginTop: 16 }}
-              exit={reduce ? undefined : { opacity: 0, height: 0, marginTop: 0 }}
+              key="feedback"
+              initial={reduce ? false : { opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={reduce ? undefined : { opacity: 0, height: 0 }}
               transition={{ duration: 0.3, ease: EASE }}
               className="overflow-hidden"
+              data-tips-feedback={choice.correct ? 'correct' : 'wrong'}
             >
-              <div
+              <motion.div
+                key={choice.id}
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
                 className={cn(
-                  'p-4 rounded-xl text-base leading-relaxed border flex gap-2.5 items-start',
+                  'mt-4 p-4 rounded-xl text-base leading-relaxed border flex gap-2.5 items-start',
                   choice.correct ? 'border-status-ok/50 bg-status-ok/10' : 'border-status-danger/50 bg-status-danger/10',
                 )}
               >
@@ -453,19 +492,31 @@ function ApplicationQuestion() {
                   {choice.feedback}
                   {!choice.correct && <span className="block mt-1 text-sm text-fg-muted">בחרו תשובה אחרת ונסו שוב.</span>}
                 </span>
-              </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {choice && (
-        <div className="mt-4">
-          <button type="button" onClick={() => setPicked(null)} className="btn-secondary">
-            ניסיון נוסף
-          </button>
-        </div>
-      )}
+      {/* Reset — outside the live region, opening with the feedback (the same timing). */}
+      <AnimatePresence initial={false}>
+        {choice && (
+          <motion.div
+            key="reset"
+            initial={reduce ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={reduce ? undefined : { opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: EASE }}
+            className="overflow-hidden -m-1 p-1"
+          >
+            <div className="pt-4">
+              <button type="button" onClick={reset} className="btn-secondary" data-tips-reset>
+                {choice.correct ? 'התחלה מחדש' : 'ניסיון נוסף'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -473,10 +524,9 @@ function ApplicationQuestion() {
 function ConclusionCard() {
   return (
     <div className="mt-6 surface p-5 sm:p-6">
-      <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">מהתכנון לבדיקה בשטח</div>
       <p className="text-base text-fg leading-relaxed text-pretty">
-        התכנון קובע מה צפוי לאורך הדרך, ובמהלך הניווט משווים את השטח לתכנון. כך אפשר לזהות סטייה מוקדם.{' '}
-        <strong className="text-fg">כעת נכיר טכניקות ניווט ונבחן כיצד בוחרים ביניהן לפי הסימנים הזמינים ותנאי הראות.</strong>
+        התכנון קובע מה צפוי בדרך, ובתנועה משווים את השטח לתכנון.{' '}
+        <strong className="text-fg">בחלק הבא: טכניקות ניווט, ואיך בוחרים ביניהן לפי הסימנים הזמינים והראות.</strong>
       </p>
     </div>
   );

@@ -32,6 +32,10 @@ const SLAB_BOTTOM = PROF_BASE + 5;
 const TEX_Y = 124; // limestone texture spans the whole profile board (1152 × 384 → 200 × 66.67)
 const py = (h: number) => PROF_BASE - h * Z_SCALE;
 const f2 = (n: number) => n.toFixed(2);
+const VIEW_H = 190;
+
+/** Top edge of the profile (its 90 m level) as a fraction of the drawing height — the side text pins to it. */
+export const PROFILE_TOP_FRACTION = py(90) / VIEW_H;
 
 /**
  * "זיהוי תנאי שטח לפי צפיפות" — contour map + A–B cross-section, one live model.
@@ -173,7 +177,7 @@ export function ContoursShapeMap({
 
   return (
     <svg
-      viewBox="0 0 200 190"
+      viewBox={`0 0 200 ${VIEW_H}`}
       className="block w-full h-auto select-none"
       role="img"
       aria-label={label}
@@ -191,9 +195,6 @@ export function ContoursShapeMap({
           <path d={slab} />
         </clipPath>
       </defs>
-
-      <rect width="200" height="119" rx="4" fill="#F6EFE6" />
-      <rect y="123" width="200" height="67" rx="4" fill="#F6EFE6" />
 
       {/* ── MAP (top view) ─────────────────────────────────────────── */}
       <rect x="2" y="2" width="196" height="114" rx="3" fill="#F8F2E7" stroke="#DCCDB2" strokeWidth="0.35" />
@@ -330,6 +331,39 @@ export function ContourMapThumbnail({ kind }: { kind: DensityKind }) {
   return (
     <svg viewBox="0 0 200 120" aria-hidden="true" className="h-10 w-16 rounded-lg">
       <TopographicPlate kind={kind} />
+    </svg>
+  );
+}
+
+/** Line samples for the legend beside the drawing, in the drawing's own inks. */
+export function DensityLegendGlyph({
+  kind,
+  className,
+}: {
+  kind: 'contour' | 'index' | 'section' | 'interval';
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 28 12" aria-hidden="true" className={className}>
+      {kind === 'section' ? (
+        <g>
+          <path d="M1 6H27" stroke={INK} strokeWidth="1.3" strokeDasharray="3 2" />
+          <circle cx="14" cy="6" r="1.9" fill={INK} />
+        </g>
+      ) : kind === 'interval' ? (
+        <g stroke={LEVEL_INK} strokeWidth="1.4" strokeDasharray="2.6 2">
+          <path d="M1 2.5H27" />
+          <path d="M1 9.5H27" />
+        </g>
+      ) : (
+        <path
+          d="M1 10C7 2 21 2 27 10"
+          fill="none"
+          stroke={CONTOUR_INK}
+          strokeWidth={kind === 'index' ? 3 : 1.5}
+          strokeLinecap="round"
+        />
+      )}
     </svg>
   );
 }

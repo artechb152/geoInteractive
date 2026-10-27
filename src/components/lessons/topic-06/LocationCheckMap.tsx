@@ -58,6 +58,8 @@ export const MAP_ASPECT = MAP_VIEWBOX.w / MAP_VIEWBOX.h;
 const FS = { feature: 46, small: 41, grid: 38, area: 48, contour: 40 } as const;
 /** Selection halo around a hypothesis centre — a selection mark, not an accuracy radius. */
 export const HALO_R = 55;
+/** The point the 3D observation is rendered from, as the map names it after a successful check — never "the observer's position". */
+const SCENARIO_VIEWPOINT = 'נקודת התצפית בתרחיש';
 /** Minimum line weight: ≈ 1 px at the desktop width. */
 const HAIR = 2.4;
 const GROVE_DASH = '10 7';
@@ -175,7 +177,7 @@ export function LocationCheckMap({
       </defs>
       <g clipPath={`url(#lc-sheet-${uid})`}>
         {selectedCandidate && <AreaOverlay candidateId={selectedCandidate} checked={checked} />}
-        {solved && <ObserverReveal lookStore={lookStore} />}
+        {solved && <ScenarioViewpoint lookStore={lookStore} />}
       </g>
     </svg>
   );
@@ -439,7 +441,20 @@ export function MapLegend({ area, result, solved }: { area: boolean; result: boo
     items.push({ swatch: <path d={`M0 0h${SW}`} stroke={COLORS.hot} strokeWidth={5} strokeDasharray="12 7" />, text: 'כיוון שנמדד בשטח' });
     items.push({ swatch: <path d={`M0 0h${SW}`} stroke={MAP.ink} strokeOpacity={0.18} strokeWidth={22} />, text: 'טווח המרחק המשוער' });
   }
-  if (solved) items.push({ swatch: <path d={`M4 12L${SW - 4} -12V12Z`} fill={MAP.accent} fillOpacity={0.18} stroke={MAP.accent} strokeWidth={2.5} />, text: 'תחום המבט' });
+  if (solved) {
+    // The evidence supports the area; the point and its view are the scenario's, for illustration.
+    items.push({ swatch: <circle cx={SW / 2} cy={0} r={12} fill={MAP.accent} fillOpacity={0.14} stroke={MAP.accent} strokeWidth={3} />, text: 'אזור שמתאים לשתי המדידות' });
+    items.push({
+      swatch: (
+        <>
+          <circle cx={SW / 2} cy={0} r={9} fill={MAP.collar} stroke={MAP.ink} strokeWidth={3} />
+          <circle cx={SW / 2} cy={0} r={4} fill={MAP.ink} />
+        </>
+      ),
+      text: `${SCENARIO_VIEWPOINT} (להמחשה)`,
+    });
+    items.push({ swatch: <path d={`M4 12L${SW - 4} -12V12Z`} fill={MAP.accent} fillOpacity={0.18} stroke={MAP.accent} strokeWidth={2.5} />, text: 'תחום המבט' });
+  }
   return (
     <ul className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2" data-legend="map">
       {items.map((it) => (
@@ -635,8 +650,14 @@ function ValueLabel({ x, y, color, value, caption, rtlValue }: { x: number; y: n
   );
 }
 
-/** After a successful check only: where the observation was taken, and its live field of view. */
-function ObserverReveal({ lookStore }: { lookStore: LookStore }) {
+/**
+ * After a successful check only: the scenario's viewpoint — the point the 3D
+ * observation is rendered from (OBSERVER) — and its live field of view, so the
+ * view can be read on the map. It is an illustration, not a result: the two
+ * measurements support the chosen area (its halo), within their tolerances,
+ * and fix no point inside it. Hence the label names the scenario, not "you".
+ */
+function ScenarioViewpoint({ lookStore }: { lookStore: LookStore }) {
   const look = useSyncExternalStore(lookStore.subscribe, lookStore.getLive, lookStore.getLive);
   const o = toXY(OBSERVER);
   const R = 640;
@@ -650,9 +671,9 @@ function ObserverReveal({ lookStore }: { lookStore: LookStore }) {
       <path d={`M${r1(o.x)} ${r1(o.y)}L${r1(a.x)} ${r1(a.y)}A${R} ${R} 0 0 1 ${r1(b.x)} ${r1(b.y)}Z`} fill={MAP.accent} fillOpacity={0.1} stroke={MAP.accent} strokeWidth={2.5} />
       <circle cx={o.x} cy={o.y} r={13} fill={MAP.collar} stroke={MAP.ink} strokeWidth={4} />
       <circle cx={o.x} cy={o.y} r={6} fill={MAP.ink} />
-      {/* Below-left of the halo, inside the paced-distance ring, clear of the "אזור 1" label. */}
-      <PlateLabel x={o.x + 10} y={o.y + HALO_R + 30} size={FS.small} weight={700} anchor="start">
-        מיקום הצופה
+      {/* Below-left of the halo, clear of the "אזור 1" label and west of the arrow from the last known position. */}
+      <PlateLabel x={o.x - 22} y={o.y + HALO_R + 30} size={FS.small} weight={700} anchor="start">
+        {SCENARIO_VIEWPOINT}
       </PlateLabel>
     </g>
   );

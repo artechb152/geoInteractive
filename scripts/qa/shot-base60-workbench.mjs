@@ -17,6 +17,10 @@
 //   layout      track nodes never overlap; the equation's operation sits left of its field;
 //               readable text sizes; nothing clipped by the card
 //   keyboard    RTL arrows in the axis switch, LTR in the writings; focus moves with the step
+//   calculator  docked under the track's note, inside the card; open, it covers nothing (steps, track,
+//               note, feedback, band) and nothing above it moves; the whole card stays in the
+//               1440 × 1122 view; field ⇄ calculator is Tab / Shift+Tab away; Escape closes; its
+//               arithmetic is unchanged; it stays put through practice, the end, the axes and reset
 //   motion      reduced motion lands at once
 //   console     no page errors
 // Writes per-state screenshots of the screen and of the card.
@@ -293,6 +297,164 @@ async function layout(ui, state) {
   const ring = await ui.page.evaluate(() => getComputedStyle(document.activeElement).boxShadow);
   expect(ring && ring !== 'none', 'focus is visible');
   await shot(ui, '12-keyboard');
+  await ui.ctx.close();
+}
+
+// ──────────────────────────── calculator ────────────────────────────
+{
+  const ui = await open();
+  const { page, root } = ui;
+  const toggle = root.locator('[data-calc-toggle]');
+  const panel = root.locator('[data-calc]');
+  const line = root.locator('[data-calc-line]');
+  const result = root.locator('[data-calc-result]');
+  const key = (k) => root.locator(`[data-calc-key="${k}"]`);
+  const focus = () => page.evaluate(() => {
+    const a = document.activeElement;
+    return a?.dataset.focus ?? (a?.hasAttribute('data-calc-toggle') ? 'toggle' : a?.hasAttribute('data-calc-line') ? 'line' : a?.tagName);
+  });
+  const box = (loc) => loc.first().boundingBox();
+  const inside = (a, o) => a.x >= o.x - 1 && a.y >= o.y - 1 && a.x + a.width <= o.x + o.width + 1 && a.y + a.height <= o.y + o.height + 1;
+  const apart = (a, b) => a.x + a.width <= b.x + 1 || b.x + b.width <= a.x + 1 || a.y + a.height <= b.y + 1 || b.y + b.height <= a.y + 1;
+  const inView = (a) => a.y >= 80 - 1 && a.y + a.height <= H + 1;
+  // the work above the calculator: it must neither move nor be covered while the calculator is open
+  const WORK = { steps: root.locator('ol'), track: root.locator('[data-track]'), note: ui.note };
+  const work = async () => Object.fromEntries(await Promise.all(Object.entries(WORK).map(async ([k, l]) => [k, await box(l)])));
+  const same = (a, b) => Object.keys(a).every((k) => Math.abs(a[k].x - b[k].x) < 0.5 && Math.abs(a[k].y - b[k].y) < 0.5 && Math.abs(a[k].height - b[k].height) < 0.5);
+
+  /** Open: inside the card and in view, clear of the work, the feedback, the answer's field and the band. */
+  async function placed(state) {
+    const p = await box(panel);
+    const card = await box(ui.card);
+    expect(inside(p, card), `${state}: the calculator leaves the card`);
+    // the whole card fits under the 80px site header, and its foot is in this view
+    expect(card.height <= H - 80 + 1 && card.y + card.height <= H + 1, `${state}: the card is not whole in the 1440 × 1122 view (${Math.round(card.y)}–${Math.round(card.y + card.height)})`);
+    const others = { ...(await work()), band: await box(root.locator('[data-band]')) };
+    for (const sel of ['[data-feedback]', '[data-track] input', '[data-summary]'])
+      for (const b of await root.locator(sel).evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) others[sel] = b;
+    for (const [k, b] of Object.entries(others)) expect(apart(p, b), `${state}: the calculator covers ${k}`);
+    const clipped = await panel.evaluate((e) => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1);
+    expect(!clipped, `${state}: the calculator is clipped`);
+  }
+
+  // closed: the toggle has its row under the track's note
+  expect((await panel.count()) === 0 && (await toggle.getAttribute('aria-expanded')) === 'false', 'the calculator starts closed');
+  const [note, tg, card0] = await Promise.all([box(ui.note), box(toggle), box(ui.card)]);
+  expect(tg.y >= note.y + note.height && inside(tg, card0), 'the toggle sits under the track’s note, inside the card');
+  await shot(ui, '13-calc-closed');
+
+  // open: in place, nothing above moves, focus in its line
+  const w0 = await work();
+  const band0 = await box(root.locator('[data-band]'));
+  await toggle.click();
+  expect((await toggle.getAttribute('aria-expanded')) === 'true' && (await panel.count()) === 1, 'the toggle opens the calculator');
+  expect((await focus()) === 'line', `opening puts focus in the calculator’s line (${await focus()})`);
+  expect(same(w0, await work()), 'opening the calculator moves the steps, the track or the note');
+  const band1 = await box(root.locator('[data-band]'));
+  console.log(`  calculator open (guided opening): band moves ${Math.round(band1.y - band0.y)} px (screen)`);
+  await placed('guided-open');
+
+  // the arithmetic, unchanged
+  await page.keyboard.type('0.1234*60');
+  await page.keyboard.press('Enter');
+  expect((await text(result)) === '= 7.404', `0.1234 × 60 (${await text(result)})`);
+  expect((await line.inputValue()) === '0.1234×60', `typed * shows as × (${await line.inputValue()})`);
+  await key('+').click();
+  expect((await line.inputValue()) === '7.404 + ', 'an operator goes on from the result');
+  for (const k of ['C', '0', '.', '4', '0', '4', '×', '6', '0', '=']) await key(k).click();
+  expect((await text(result)) === '= 24.24', `keys: 0.404 × 60 (${await text(result)})`);
+  await key('C').click();
+  await line.fill('35×3600+7×60+24.24');
+  await line.press('Enter');
+  expect((await text(result)) === '= 126444.24', `the S conversion (${await text(result)})`);
+  await key('⌫').click();
+  expect((await line.inputValue()) === '35×3600+7×60+24.2' && (await text(result)) === '', '⌫ deletes the last character');
+  await line.fill('(2');
+  await line.press('Enter');
+  expect((await text(result)).startsWith('לא ניתן לחשב'), 'an unfinished expression is refused');
+  await shot(ui, '14-calc-open-guided');
+
+  // Escape closes, back on the toggle; nothing above moves
+  await line.press('Escape');
+  expect((await panel.count()) === 0 && (await focus()) === 'toggle', 'Escape closes, focus back on the toggle');
+  expect(same(w0, await work()), 'closing the calculator moves the steps, the track or the note');
+
+  // the guided example, open throughout
+  await toggle.click();
+  for (let i = 0; i < 3; i++) {
+    await ui.btn('הצעד הבא').click();
+    await settle(ui);
+    await placed(`guided-step${i + 1}`);
+  }
+  await shot(ui, '15-calc-guided-done');
+
+  // practice, by keyboard: field → toggle → line and back
+  await ui.btn('השלימו בעצמכם').click();
+  await settle(ui);
+  await placed('practice-1');
+  await ui.radio('35').click();
+  await ui.btn('בדיקת תשובה').click();
+  await settle(ui);
+  await ui.radio('× 60').click();
+  expect((await focus()) === 'answer-2', `the operation leads to the field (${await focus()})`);
+  await page.keyboard.press('Tab');
+  expect((await focus()) === 'toggle', `Tab from the field reaches the calculator (${await focus()})`);
+  await page.keyboard.press('Tab');
+  expect((await focus()) === 'line', `…and its line (${await focus()})`);
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('0.1234×60');
+  await page.keyboard.press('Enter');
+  expect((await text(result)) === '= 7.404', `practice: 0.1234 × 60 (${await text(result)})`);
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Shift+Tab');
+  expect((await focus()) === 'answer-2', `Shift+Tab twice from the line is the field (${await focus()})`);
+  await page.keyboard.type('7.4');
+  await page.keyboard.press('Enter');
+  expect((await text(ui.feedback)) === T.rounded, `a wrong answer with the calculator open (${await text(ui.feedback)})`);
+  for (const sel of ['[data-feedback]', '[data-focus="answer-2"]', 'li[data-step="2"]']) expect(inView(await box(root.locator(sel))), `practice-2: ${sel} out of view`);
+  await placed('practice-2-feedback');
+  await shot(ui, '16-calc-practice-step2-feedback');
+  await ui.answer(2).fill('7.404');
+  await ui.answer(2).press('Enter');
+  await settle(ui);
+  expect((await ui.stepCard(2).getAttribute('data-state')) === 'done', 'step 2 checks with the calculator open');
+
+  // step 3 with the mouse: line → field
+  await ui.radio('× 60').click();
+  await line.click();
+  await line.fill('0.404×60');
+  await key('=').click();
+  expect((await text(result)) === '= 24.24', `practice: 0.404 × 60 (${await text(result)})`);
+  await ui.answer(3).click();
+  await page.keyboard.type('24.24');
+  await placed('practice-3');
+  await shot(ui, '17-calc-practice-step3');
+  await page.keyboard.press('Enter');
+  await settle(ui);
+  expect((await text(root.locator('[data-summary="practice"]'))).includes(T.success), 'practice ends with the calculator open');
+  await placed('practice-done');
+  await shot(ui, '18-calc-practice-done');
+
+  // the other axis and reset keep it where it is
+  await ui.btn('משימה נוספת: קו רוחב').click();
+  await settle(ui);
+  await placed('lat-1');
+  await ui.radio('33').click();
+  await ui.btn('בדיקת תשובה').click();
+  await settle(ui);
+  await ui.btn('איפוס').click();
+  await settle(ui);
+  expect((await ui.card.getAttribute('data-done')) === '0' && (await panel.count()) === 1, 'reset (latitude) back to its first step; the calculator stays open');
+  await ui.radio('קו אורך').click();
+  await ui.btn('איפוס').click();
+  await settle(ui);
+  expect((await ui.card.getAttribute('data-mode')) === 'guided' && (await panel.count()) === 1, 'reset returns to the opening; the calculator stays open');
+  await placed('reset');
+  await shot(ui, '19-calc-reset');
+  await toggle.click();
+  expect((await panel.count()) === 0 && (await toggle.getAttribute('aria-expanded')) === 'false', 'the toggle closes it');
+
+  expect(ui.errors.length === 0, `calculator console: ${ui.errors.join(' | ')}`);
   await ui.ctx.close();
 }
 

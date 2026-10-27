@@ -12,7 +12,9 @@
      marks four lettered points; the learner picks one, on the globe or in the panel;
      "read" — a point is marked and the learner sets its coordinates. A miss is said
      beside the learner's point on the globe and in the panel; the target's lines are
-     never drawn before the task is over.
+     never drawn before the task is over, and a "read" miss never names its values.
+     "בדיקה" on an answer already checked is no new try: it stays inactive (focus kept) and
+     says to change the answer (design/docs/topic02-globe-feedback-handoff-2026-10-27.md).
    The model (state, check, copy) is geoCoords.ts; the 3-D view is Globe3D
    (loaded near the viewport, unmounted — and its GPU memory freed — away from
    it); without WebGL or the images, GlobeFlatMap shows the same grid flat. */
@@ -27,8 +29,8 @@ import { Icon } from '@/components/Icon';
 import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { cn } from '@/lib/utils';
 import {
-  CHOICE_NAMES, LAT_MAX, LEVELS, LON_MAX, MAX_TRIES, fmtLat, fmtLon, geoReducer, globeViewOf, initialGeoState, latCaption, lonCaption,
-  messageOf, normalizeLon, toSigned, type Coord, type GeoAction, type GlobeView, type Message, type Vec3,
+  CHOICE_NAMES, LAT_MAX, LEVELS, LON_MAX, MAX_TRIES, RECHECK_HINT, checkBlocked, fmtLat, fmtLon, geoReducer, globeDescription, globeViewOf, gridPlace,
+  initialGeoState, latCaption, lonCaption, messageOf, normalizeLon, toSigned, type Coord, type GeoAction, type GlobeView, type Message, type Vec3,
 } from './geoCoords';
 import { CoordinateControl } from './CoordinateControl';
 import { GlobeFlatMap } from './GlobeFlatMap';
@@ -214,11 +216,8 @@ export function GlobeExplorer() {
     e.preventDefault();
   };
 
-  const description = !task
-    ? `גלובוס תלת־ממדי עם רשת קווי רוחב ואורך כל 30 מעלות. מסומנים קו הרוחב ${fmtLat(explore.lat)} וקו האורך ${fmtLon(explore.lon)}, ונקודת המפגש שלהם.`
-    : task.kind === 'find'
-      ? `גלובוס תלת־ממדי עם רשת קווי רוחב ואורך כל 30 מעלות, ועליו ארבע נקודות מסומנות באותיות ${CHOICE_NAMES.join(', ')}. איזו מהן נמצאת ברוחב ${fmtLat(task.lat)} ובאורך ${fmtLon(task.lon)}? בחרו אות בפאנל.`
-      : 'גלובוס תלת־ממדי עם רשת קווי רוחב ואורך כל 30 מעלות. נקודה מסומנת בעיגול; קבעו את הרוחב והאורך שלה.';
+  // a "read" task's point in words for a screen reader: its place on the grid, never its values
+  const description = globeDescription(state);
 
   const controls = (c: Coord, compact = false) => {
     const { lat, lon } = toSigned(c);
@@ -463,6 +462,15 @@ function TaskPanel({
   const task = state.task!;
   const over = !!state.outcome;
   const level = LEVELS[state.level];
+  const blocked = checkBlocked(state);
+  // "בדיקה" turns into "נקודה הבאה" in place, focus on it: a double click or a held Enter must not
+  // also skip past the verdict (or check the next task's untouched answer), so a press right after
+  // the button changes role is let go
+  const turnedAt = useRef(0);
+  useEffect(() => {
+    turnedAt.current = performance.now();
+  }, [over, task]);
+  const settled = () => performance.now() - turnedAt.current > SETTLE_MS;
   return (
     <>
       <div className="flex h-10 items-center justify-between gap-2">
@@ -493,6 +501,8 @@ function TaskPanel({
                 <span className="absolute left-1/2 top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fg" />
               </span>
               מהן הקואורדינטות של הנקודה המסומנת?
+              {/* what the eye takes from the globe, for a screen reader: the grid lines around the point */}
+              {!over && <span className="sr-only"> {gridPlace(task)}</span>}
             </p>
           )}
         </div>
@@ -505,33 +515,68 @@ function TaskPanel({
         {said && <TaskMessage message={said.message} stale={said.stale} />}
 
         {!over && (
-          <p className="flex items-center gap-2 text-sm font-display font-semibold text-fg-muted" data-tries>
-            <span className="flex gap-1" aria-hidden>
-              {Array.from({ length: MAX_TRIES[task.kind] }, (_, i) => (
-                <span key={i} className={cn('size-2 rounded-full', i < state.misses ? 'bg-fg/60' : 'border border-fg/40')} />
-              ))}
-            </span>
-            ניסיון <L>{state.misses + 1}</L> מתוך <L>{MAX_TRIES[task.kind]}</L>
-          </p>
+          <div className="flex flex-col gap-0.5 text-sm font-display font-semibold text-fg-muted">
+            <p className="flex items-center gap-2" data-tries>
+              <span className="flex gap-1" aria-hidden>
+                {Array.from({ length: MAX_TRIES[task.kind] }, (_, i) => (
+                  <span key={i} className={cn('size-2 rounded-full', i < state.misses ? 'bg-fg/60' : 'border border-fg/40')} />
+                ))}
+              </span>
+              ניסיון <L>{state.misses + 1}</L> מתוך <L>{MAX_TRIES[task.kind]}</L>
+            </p>
+            {/* the same answer again is no new try: "בדיקה" waits for a change, and says so */}
+            {blocked === 'same' && (
+              <p id={HINT_ID} data-recheck-hint>
+                {RECHECK_HINT[task.kind]}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
       <div className="flex gap-3">
         {!over ? (
-          <Button size="md" className="flex-1" onClick={() => dispatch({ type: 'check' })} disabled={task.kind === 'find' && state.pick === null}>
+          <PrimaryAction inactive={!!blocked} describedBy={blocked === 'same' ? HINT_ID : undefined} onClick={() => settled() && dispatch({ type: 'check' })}>
             בדיקה
-          </Button>
+          </PrimaryAction>
         ) : (
-          <Button size="md" className="flex-1" onClick={() => dispatch({ type: 'next' })}>
+          // the same element as "בדיקה" (one component, one place): focus stays on it when the task ends
+          <PrimaryAction inactive={false} onClick={() => settled() && dispatch({ type: 'next' })}>
             נקודה הבאה
             <Icon name="arrow-left" size={16} />
-          </Button>
+          </PrimaryAction>
         )}
         <Button size="md" variant="secondary" className="px-5" onClick={() => dispatch({ type: 'explore' })} title="חזרה לבניית מיקום חופשית">
           לחקירה
         </Button>
       </div>
     </>
+  );
+}
+
+const HINT_ID = 'geo-globe-recheck-hint';
+/** How long the primary button lets presses go after it changes role (≥ a double click's gap). */
+const SETTLE_MS = 500;
+
+/** "בדיקה" / "נקודה הבאה": the lesson's primary button (Button primary · md, same classes, as in
+    datum-field/DatumFieldChallenge.tsx), with aria-disabled instead of disabled — after a miss it
+    keeps focus while the verdict is read out, and a second Enter does nothing. */
+function PrimaryAction({ children, onClick, inactive, describedBy }: { children: React.ReactNode; onClick: () => void; inactive: boolean; describedBy?: string }) {
+  return (
+    <button
+      type="button"
+      aria-disabled={inactive || undefined}
+      aria-describedby={describedBy}
+      onClick={inactive ? undefined : onClick}
+      className={cn(
+        'inline-flex flex-1 items-center justify-center select-none whitespace-nowrap font-display transition-all duration-200 ease-snap',
+        'h-12 px-6 text-[15px] gap-2 rounded-xl',
+        'bg-cta-ember font-bold text-white shadow-cta-ember hover:brightness-105 active:translate-y-px',
+        inactive && 'opacity-45 cursor-not-allowed hover:brightness-100 active:translate-y-0',
+      )}
+    >
+      {children}
+    </button>
   );
 }
 

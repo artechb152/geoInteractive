@@ -211,7 +211,10 @@ export function lonCaption(lon: number, lat: number): string {
    - read: a point is marked; the learner sets its latitude and longitude (checked
      within the level's tolerance).
    The level adapts: two first-try hits in a row → the next level; a task whose
-   answer had to be shown → one level back. */
+   answer had to be shown → one level back.
+   A try is a check of an answer not checked before on this task (checkBlocked); a "read"
+   task's miss says where the learner's point lies relative to the marked one, never the
+   marked one's values — those come only with the hit or the answer shown. */
 
 export type TaskKind = 'find' | 'read';
 export type Task = { kind: TaskKind; lat: number; lon: number; /** find: four points, the answer among them */ choices: Signed[] };
@@ -369,8 +372,11 @@ export function missNote(j: Judgement): string {
 const latLine = (t: number) => (t === 0 ? 'לקו המשווה' : `לקו הרוחב ${fmtLat(t)}`);
 const lonLine = (t: number) => (normalizeLon(t) === 0 ? 'לגריניץ׳' : `לקו האורך ${fmtLon(t)}`);
 
-/** The panel's sentence for a miss — distinct for a swap, a wrong side, and plain distance. */
-export function missMessage(j: Judgement, t: Signed): Message {
+/** The panel's sentence for a miss — distinct for a swap, a wrong side, and plain distance.
+    find: the coordinates are the question, so the target's own lines may be named.
+    read: the marked point IS the question — no value of it is ever said (not even "0°"); the
+    sentence says where the learner's point lies relative to it and what to count from. */
+export function missMessage(j: Judgement, t: Signed, kind: TaskKind): Message {
   if (j.hit) return hitMessage(t);
   if (j.swap)
     return {
@@ -378,17 +384,70 @@ export function missMessage(j: Judgement, t: Signed): Message {
       title: 'הרוחב והאורך התחלפו.',
       body: 'הרוחב נמדד מקו המשווה צפונה או דרומה, והאורך מגריניץ׳ מזרחה או מערבה.',
     };
+  const read = kind === 'read';
   const said: string[] = [];
-  if (j.flipLat) said.push(`${fmtLat(t.lat)} הוא רוחב ${latWord(t.lat).adj} – ${latWord(t.lat).to}.`);
-  if (j.flipLon) said.push(`${fmtLon(t.lon)} הוא אורך ${lonWord(t.lon).adj} – ${lonWord(t.lon).to}.`);
-  const where: string[] = [];
-  if (j.lat !== 'ok' && !j.flipLat) where.push(`${j.lat === 'north' ? 'מצפון' : 'מדרום'} ${latLine(t.lat)}`);
-  if (j.lon !== 'ok' && !j.flipLon) where.push(`${j.lon === 'east' ? 'ממזרח' : 'ממערב'} ${lonLine(t.lon)}`);
-  if (where.length) said.push(`הנקודה שלכם ${where.join(' ו')}.`);
+  if (j.flipLat)
+    said.push(read ? 'הנקודה המסומנת בצד השני של קו המשווה: בדקו את כיוון הרוחב, צפון או דרום.' : `${fmtLat(t.lat)} הוא רוחב ${latWord(t.lat).adj} – ${latWord(t.lat).to}.`);
+  if (j.flipLon)
+    said.push(read ? 'הנקודה המסומנת בצד השני של גריניץ׳: בדקו את כיוון האורך, מזרח או מערב.' : `${fmtLon(t.lon)} הוא אורך ${lonWord(t.lon).adj} – ${lonWord(t.lon).to}.`);
+  const offLat = j.lat !== 'ok' && !j.flipLat;
+  const offLon = j.lon !== 'ok' && !j.flipLon;
+  const latSide = j.lat === 'north' ? 'מצפון' : 'מדרום';
+  const lonSide = j.lon === 'east' ? 'ממזרח' : 'ממערב';
+  if (read && (offLat || offLon)) {
+    const where = [offLat && latSide, offLon && lonSide].filter(Boolean).join(' ו');
+    const count = [offLat && 'את קווי הרוחב מקו המשווה', offLon && 'את קווי האורך מגריניץ׳'].filter(Boolean).join(' ו');
+    said.push(`הנקודה שלכם ${where} לנקודה המסומנת. ספרו ${count}.`);
+  } else if (offLat || offLon) {
+    const where = [offLat && `${latSide} ${latLine(t.lat)}`, offLon && `${lonSide} ${lonLine(t.lon)}`].filter(Boolean).join(' ו');
+    said.push(`הנקודה שלכם ${where}.`);
+  }
   if (j.lat === 'ok') said.unshift('הרוחב מתאים.');
   else if (j.lon === 'ok') said.unshift('האורך מתאים.');
   return { tone: 'retry', title: `עוד לא: ${missNote(j)}.`, body: said.join(' ') };
 }
+
+/* ── a read task, in words: where the marked point lies on the grid, never its values ── */
+
+const GRID = 30;
+const ORD = ['', 'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
+/** The part of a 30° gap that a 5° step is, from the line nearer the equator / Greenwich. */
+const PART: Record<number, string> = { 5: 'שישית', 10: 'שליש', 15: 'חצי', 20: 'שני שלישים', 25: 'חמש שישיות' };
+
+/** One coordinate as a sighted learner reads it: on which grid line, or between which two and
+    how far along — counted from the equator (Greenwich), the 30° lines numbered outward. */
+function axisPlace(v: number, axis: 'lat' | 'lon'): string {
+  const lat = axis === 'lat';
+  const m = Math.abs(lat ? v : normalizeLon(v));
+  const n = Math.floor(m / GRID);
+  const r = Math.round(m - n * GRID);
+  const base = lat ? 'קו המשווה' : 'גריניץ׳';
+  const kind = lat ? 'קו הרוחב' : 'קו האורך';
+  const side = lat ? (v > 0 ? 'מצפון' : 'מדרום') : v > 0 ? 'ממזרח' : 'ממערב';
+  const sideTo = `${side} ל${base}`;
+  const last = lat ? `קוטב ה${v > 0 ? 'צפוני' : 'דרומי'}` : null;
+  // the outermost line: the pole, or the meridian facing Greenwich
+  const outer = (k: number) => k * GRID === (lat ? LAT_MAX : LON_MAX);
+  if (r === 0 || r === GRID) {
+    const k = r === GRID ? n + 1 : n;
+    if (k === 0) return `על ${base}`;
+    if (outer(k)) return lat ? `ב${last}` : 'על קו האורך שמול גריניץ׳';
+    return `על ${kind} ה${ORD[k]} ${sideTo}`;
+  }
+  const between =
+    n === 0
+      ? `בין ${base} ל${kind} ה${ORD[1]} ${side} לו`
+      : outer(n + 1)
+        ? `בין ${kind} ה${ORD[n]} ${sideTo} ל${lat ? last : 'קו האורך שמול גריניץ׳'}`
+        : `בין ${kind} ה${ORD[n]} ל${ORD[n + 1]} ${sideTo}`;
+  const step = Math.min(25, Math.max(5, Math.round(r / 5) * 5));
+  const along = step === 15 ? 'באמצע הדרך ביניהם' : `${PART[step]} מהדרך מ${n === 0 ? base : `הקו ה${ORD[n]}`}`;
+  return `${between}, ${along}`;
+}
+
+/** A read task's point for a screen reader: what the eye takes from the globe — the grid lines
+    around it — so it can be solved without sight, with the same counting and no value given. */
+export const gridPlace = (t: Signed): string => `ברוחב: ${axisPlace(t.lat, 'lat')}. באורך: ${axisPlace(t.lon, 'lon')}.`;
 
 export function hitMessage(t: Signed, levelUp?: string): Message {
   return {
@@ -426,6 +485,8 @@ export type GeoState = {
   /** misses on this task */
   misses: number;
   last: Check | null;
+  /** every attempt checked on this task — the same one again is no new try */
+  tried: Signed[];
   outcome: null | 'hit' | 'reveal';
   level: number;
   streak: number;
@@ -449,6 +510,7 @@ export const initialGeoState = (): GeoState => ({
   answer: { ...ANSWER_START },
   misses: 0,
   last: null,
+  tried: [],
   outcome: null,
   level: 0,
   streak: 0,
@@ -498,7 +560,7 @@ function edit(c: Coord, a: GeoAction): Coord {
 function withTask(s: GeoState, seed: number): GeoState {
   const { task, seed: next } = makeTask(s.level, seed, s.task, s.recent);
   const recent = [{ lat: task.lat, lon: task.lon }, ...s.recent].slice(0, RECENT);
-  return { ...s, stage: 'task', task, recent, pick: null, ruled: [], answer: { ...ANSWER_START }, misses: 0, last: null, outcome: null, leveled: false, seed: next };
+  return { ...s, stage: 'task', task, recent, pick: null, ruled: [], answer: { ...ANSWER_START }, misses: 0, last: null, tried: [], outcome: null, leveled: false, seed: next };
 }
 
 /** The attempt now: the chosen point (find) or the coordinates set (read). */
@@ -527,19 +589,20 @@ export function geoReducer(s: GeoState, a: GeoAction): GeoState {
     }
     case 'check': {
       const at = attemptOf(s);
-      if (s.stage !== 'task' || !s.task || s.outcome || !at) return s;
+      if (s.stage !== 'task' || !s.task || s.outcome || !at || checkBlocked(s)) return s;
       const find = s.task.kind === 'find';
       const j = judge(at, s.task, find ? CHOICE_TOL : LEVELS[s.level].tol);
       const last = { at, j };
+      const tried = [...s.tried, at];
       if (j.hit) {
         const streak = s.misses === 0 ? s.streak + 1 : 0;
         const up = streak >= 2 && s.level < LEVELS.length - 1;
-        return { ...s, last, outcome: 'hit', found: s.found + 1, streak: up ? 0 : streak, level: up ? s.level + 1 : s.level, leveled: up };
+        return { ...s, last, tried, outcome: 'hit', found: s.found + 1, streak: up ? 0 : streak, level: up ? s.level + 1 : s.level, leveled: up };
       }
       const misses = s.misses + 1;
       const ruled = find && s.pick !== null ? [...s.ruled, s.pick] : s.ruled;
-      if (misses >= MAX_TRIES[s.task.kind]) return { ...s, last, misses, ruled, outcome: 'reveal', streak: 0, level: Math.max(0, s.level - 1) };
-      return { ...s, last, misses, ruled };
+      if (misses >= MAX_TRIES[s.task.kind]) return { ...s, last, tried, misses, ruled, outcome: 'reveal', streak: 0, level: Math.max(0, s.level - 1) };
+      return { ...s, last, tried, misses, ruled };
     }
     default: {
       // a change to the coordinates: the explorer's, or the answer to a "read" task
@@ -557,13 +620,43 @@ export function geoReducer(s: GeoState, a: GeoAction): GeoState {
 /** The latest check no longer describes the attempt (another choice, a value changed). */
 export const isStale = (s: GeoState) => !!s.last && !s.outcome && !sameSigned(s.last.at, attemptOf(s));
 
+/** Why "בדיקה" cannot run now, in an open task: 'pick' — no letter chosen yet; 'same' — this
+    very answer was checked already on this task (the same values: a direction at 0°, or east /
+    west at 180°, is no change). null: it can. A blocked check is no try and changes nothing. */
+export function checkBlocked(s: GeoState): null | 'pick' | 'same' {
+  if (s.stage !== 'task' || !s.task || s.outcome) return null;
+  const at = attemptOf(s);
+  if (!at) return 'pick';
+  return s.tried.some((p) => sameSigned(p, at)) ? 'same' : null;
+}
+
+/** Said by "בדיקה" while the answer is one already checked. */
+export const RECHECK_HINT: Record<TaskKind, string> = {
+  find: 'כדי לבדוק שוב, בחרו אות אחרת.',
+  read: 'כדי לבדוק שוב, שנו את הרוחב או את האורך.',
+};
+
 /** What the panel says in a task (null in the explorer). */
 export function messageOf(s: GeoState): { message: Message; stale: boolean } | null {
   if (s.stage !== 'task' || !s.task) return null;
   if (s.outcome === 'hit') return { message: hitMessage(s.task, s.leveled ? LEVELS[s.level].name : undefined), stale: false };
   if (s.outcome === 'reveal') return { message: revealMessage(s.task), stale: false };
-  if (s.last) return { message: missMessage(s.last.j, s.task), stale: isStale(s) };
+  if (s.last) return { message: missMessage(s.last.j, s.task, s.task.kind), stale: isStale(s) };
   return { message: TASK_INTRO[s.task.kind], stale: false };
+}
+
+/** The globe's description for a screen reader. find: the coordinates asked are the question;
+    read: where the marked point lies on the grid (gridPlace), never its values. */
+export function globeDescription(s: GeoState): string {
+  const grid = 'גלובוס תלת־ממדי עם רשת קווי רוחב ואורך כל 30 מעלות.';
+  const task = s.stage === 'task' ? s.task : null;
+  if (!task) {
+    const e = toSigned(s.explore);
+    return `${grid} מסומנים קו הרוחב ${fmtLat(e.lat)} וקו האורך ${fmtLon(e.lon)}, ונקודת המפגש שלהם.`;
+  }
+  if (task.kind === 'find')
+    return `${grid.slice(0, -1)}, ועליו ארבע נקודות מסומנות באותיות ${CHOICE_NAMES.join(', ')}. איזו מהן נמצאת ברוחב ${fmtLat(task.lat)} ובאורך ${fmtLon(task.lon)}? בחרו אות בפאנל.`;
+  return `${grid} נקודה מסומנת בעיגול – ${gridPlace(task)} קבעו את הרוחב והאורך שלה.`;
 }
 
 /** What the globe draws. The target's lines are never drawn before the task is over.
@@ -663,8 +756,8 @@ export function pickLabel(
 
 /* ───────────────────────── camera ───────────────────────── */
 
-/** Opening view: the Indian Ocean, Africa's east and Greenwich on the left,
-    Australia on the right, the example point below centre — north up. */
+/** Opening view: centred on 0°, 0°, where the equator meets Greenwich (the explorer's
+    opening point, EXPLORE_START), north up. User request 2026-10-12. */
 export const VIEW_START = { lat: 0, lon: 0 } as const;
 /** Camera distance for the opening view (scene units from the centre): the globe
     ≈ 576 px across in the explorer's 660 px stage, as in the reference. */

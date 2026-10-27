@@ -74,19 +74,29 @@ const SUFFIX = ` · מוצג: ${SHOWN_AS.compare}`;
 
 /** Current view transform of the lab map (data-view = "k,x,y"). */
 const viewOf = async (page) => (await viewport(page).getAttribute('data-view')).split(',').map(Number);
+/**
+ * `data-view` (k, x, y) and the component's own constants are local px; boxes are screen px. The lesson fit
+ * scales the whole card uniformly (×0.7827 at 1440×1122), so `s` converts local → screen.
+ */
+async function frameOf(page) {
+  const r = await viewport(page).boundingBox();
+  const w = await viewport(page).evaluate((v) => v.offsetWidth);
+  return { r, w, s: r.width / w };
+}
 /** Screen px of a sheet point under the current view. */
 async function screenOfUnits(page, q) {
-  const r = await viewport(page).boundingBox();
+  const { r, s } = await frameOf(page);
   const [k, tx, ty] = await viewOf(page);
-  return { x: r.x + tx + (q.x / 1000) * r.width * k, y: r.y + ty + (q.y / 1000) * r.height * k };
+  return { x: r.x + s * tx + (q.x / 1000) * r.width * k, y: r.y + s * ty + (q.y / 1000) * r.height * k };
 }
 /**
- * Each curtain chip hangs 8 px off the line on its own side (the left one drops below the north arrow when
- * it would reach under it); a chip is hidden only when its half is narrower than the chip + 16 px.
- * Runs in the page; returns problem strings.
+ * Each curtain chip hangs 8 local px (CHIP_GAP) off the line on its own side (the left one drops below the
+ * north arrow when it would reach under it); a chip is hidden only when its half is narrower than the chip
+ * + 16 local px. Measured on screen, so both scale with the lesson fit. Runs in the page; returns problem strings.
  */
 const chipAnchorProblems = (vp) => {
   const box = vp.getBoundingClientRect();
+  const s = box.width / vp.offsetWidth;
   const lineEl = vp.querySelector(':scope > [data-qa="curtain-line"]');
   if (!lineEl) return ['no curtain line'];
   const lr = lineEl.getBoundingClientRect();
@@ -101,11 +111,11 @@ const chipAnchorProblems = (vp) => {
     const c = el.getBoundingClientRect();
     const half = side === 'left' ? x : box.width - x;
     const shown = el.dataset.shown === 'true' && getComputedStyle(el).visibility !== 'hidden';
-    const fitsIn = half >= c.width + 16;
+    const fitsIn = half >= c.width + 16 * s;
     if (shown !== fitsIn) problems.push(`${side} chip ${shown ? 'shown' : 'hidden'} with half ${half.toFixed(0)} px for a ${c.width.toFixed(0)} px chip`);
     if (!shown) continue;
     const gap = side === 'left' ? x - (c.right - box.left) : c.left - box.left - x;
-    if (Math.abs(gap - 8) > 1) problems.push(`${side} chip ${gap.toFixed(1)} px from the line (want 8)`);
+    if (Math.abs(gap - 8 * s) > 1) problems.push(`${side} chip ${gap.toFixed(1)} px from the line (want 8 × ${s.toFixed(4)} = ${(8 * s).toFixed(1)})`);
   }
   return problems;
 };
@@ -197,7 +207,7 @@ async function checkExplore() {
     await page.waitForTimeout(370);
   }
   const [hk, hx, hy] = await viewOf(page);
-  const hs = (await vp.boundingBox()).width;
+  const hs = (await frameOf(page)).w; // local, like hx / hy
   // The visible square's centre is still the sheet centre (Tavor).
   const hc = { x: ((hs / 2 - hx) / (hs * hk)) * 1000, y: ((hs / 2 - hy) / (hs * hk)) * 1000 };
   ok((await checkedSheet(page)) === '1:10,000' && (await page.locator('[data-qa="morph-ghost"]').count()) === 0, `hand-over: "+" ×${presses} on 1:50,000 opens 1:10,000 without a morph`);
@@ -590,8 +600,10 @@ async function checkCompare() {
   );
   ok((await panel.locator('p').count()) === 2, 'compare: one instruction line + the sentence');
   const [k, x, y] = await viewOf(page);
-  const size = (await vp.boundingBox()).width;
-  ok(k === 1.6 && Math.abs(x - (size / 2 - size * 0.8)) < 1 && Math.abs(y - (size / 2 - size * 0.8)) < 1, `compare: opens at ×1.6 on Tavor (${k}, ${x}, ${y})`);
+  const { r: vpBox, w: local } = await frameOf(page);
+  const size = vpBox.width; // screen, for the curtain checks below
+  // ×1.6 about the sheet centre (Tavor): the offset is local px, like data-view
+  ok(k === 1.6 && Math.abs(x - local * (0.5 - 0.8)) < 1 && Math.abs(y - local * (0.5 - 0.8)) < 1, `compare: opens at ×1.6 on Tavor (${k}, ${x}, ${y}; want ${local * (0.5 - 0.8)} of ${local} local px)`);
   const chips = [await vp.locator('[data-qa="curtain-chip-left"]').textContent(), await vp.locator('[data-qa="curtain-chip-right"]').textContent()];
   ok(chips[0] === 'מפת 1:250,000 מוגדלת פי 5' && chips[1] === 'מפת 1:50,000', `compare: chips ${chips.join(' | ')}`);
   const anchor = await vp.evaluate(chipAnchorProblems);

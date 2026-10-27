@@ -9,7 +9,7 @@ import { STATION_IDS, SURVEY_SPAN, displayed, geoidZ, groundZ, stationWorld, typ
 import { STATIONS } from './measurementMission.data';
 import type { StationId } from './measurementMission.data';
 import type { BodyTab } from './MeasurementSection';
-import { MODEL_URLS, heightGrid, hiddenBy, projectWith, type HeightGrid, type LandCamera, type LivePin, type ModelState } from './measurementView';
+import { MODEL_URLS, heightGrid, heightLens, hiddenBy, projectWith, type HeightGrid, type LandCamera, type LivePin, type ModelState } from './measurementView';
 import { arrowTurn, useDragTurn } from './viewControls';
 
 /**
@@ -233,6 +233,8 @@ export function MeasurementLandscape({
   const at = (p: Vec3) => projectWith(cam.matrix, p, size);
   const seen = (p: Vec3) => model.clear || !source.grid || !hiddenBy(source.grid, p, cam.eye);
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => arrowTurn(e, onTurn);
+  // H too short to read on the see-through model (A): its close-up, drawn by the model and framed here
+  const lens = live && model.plumb ? heightLens(cam, size, model.plumb, pins) : null;
 
   // the stills keep their own proportions, centred in the stage
   const rw = Math.min(width, Math.round((height * FB.frame.w) / FB.frame.h));
@@ -280,6 +282,7 @@ export function MeasurementLandscape({
             onReady={source.onReady}
             onFail={source.onFail}
             onLost={source.onLost}
+            lens={lens}
           />
         </div>
       )}
@@ -337,6 +340,8 @@ export function MeasurementLandscape({
             top={at(stationWorld(station))}
             shown={!!model.plumb}
             reduce={reduce}
+            station={station}
+            lens={lens}
           />
 
           {/* A/B/C — pickable where the view picks stations */}

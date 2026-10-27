@@ -5,20 +5,28 @@
    up, east right, dir="ltr", never mirrored; overlay labels use physical
    left/top on purpose. Text lives in HTML overlays (never stretched SVG text). */
 
-import { memo, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react';
+import { memo, useId, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { cn } from '@/lib/utils';
 import type { Basemap } from './useBasemap';
 import { fracX, fracY, latAt, lonAt, svgPoints, viewBottom, viewBox, viewTop, wrapCopies, type GridLine, type View } from './atlasGeometry';
-import { NORTH_LIMIT, SOUTH_LIMIT, zoneBoundarySegments, zoneOutline, type LatLon } from './utmAtlas';
+import { NORTH_LIMIT, SOUTH_LIMIT, cellOutline, zoneBoundarySegments, type Hemisphere, type LatLon } from './utmAtlas';
+
+/** A zone, or one side of the equator of it ("54N"). */
+export type Cell = { zone: number; hemisphere: Hemisphere | null };
 
 export type Marks = {
-  /** Tinted zone: the point's zone, a practice pick, or a revealed answer. */
+  /** Tinted zone: the point's zone, or a verified / shown practice answer. */
   focusZone?: number | null;
-  focusTone?: 'accent' | 'pick';
+  /** With focusZone: only its part on this side of the equator. */
+  focusHemisphere?: Hemisphere | null;
+  /** Practice: the learner's choice on the map (before a check: not a verdict). */
+  pick?: Cell | null;
+  /** Practice: the cell under the pointer, as a thin outline (where a click would choose). */
+  hover?: Cell | null;
   /** Neighbour zones drawn as outlines in the enlargement. */
   outlineZones?: number[];
-  /** A boundary to point at (crossed, or the one a practice answer turns on). */
-  boundary?: { lon: number; s: number; n: number } | null;
+  /** Boundaries to point at (the one crossed, or a practice hint's pair). */
+  boundaries?: { lon: number; s: number; n: number }[];
   equator?: 'plain' | 'highlight';
   greenwich?: boolean;
   /** World map only: the enlargement's window. */
@@ -28,8 +36,8 @@ export type Marks = {
   readingLines?: { up: [number, number][]; across: [number, number][] } | null;
 };
 
-export type Chip = { key: string; lat?: number; lon?: number; fx?: number; fy?: number; style?: CSSProperties; tone?: 'plain' | 'accent' | 'strong'; children: ReactNode };
-export type TopLabel = { key: string; fx: number; text: ReactNode; tone?: 'muted' | 'strong' | 'accent' };
+export type Chip = { key: string; lat?: number; lon?: number; fx?: number; fy?: number; style?: CSSProperties; tone?: 'plain' | 'accent' | 'strong' | 'pick'; children: ReactNode };
+export type TopLabel = { key: string; fx: number; text: ReactNode; tone?: 'muted' | 'strong' | 'accent' | 'pick' };
 
 type Phase = 'start' | 'move' | 'end';
 
@@ -45,10 +53,13 @@ export function AtlasMap({
   marks,
   topLabels,
   showTop = true,
+  linked = false,
   chips = [],
   children,
   frameRef,
   onPointer,
+  onHover,
+  keyboard,
   onPinKey,
   pinAria,
   pinDescribedBy,
@@ -63,16 +74,23 @@ export function AtlasMap({
   topLabels: TopLabel[];
   /** The row of labels above the frame (off for the small world locator of the metres view). */
   showTop?: boolean;
+  /** The enlargement of the world map's orange frame: its own frame is orange too. */
+  linked?: boolean;
   chips?: Chip[];
   children?: ReactNode;
   frameRef: RefObject<HTMLDivElement | null>;
   onPointer?: (p: LatLon, phase: Phase, onPin: boolean) => void;
+  /** Where the pointer is over the frame without a button pressed (null when it leaves). */
+  onHover?: (p: LatLon | null) => void;
+  /** Practice: the frame itself takes the keyboard (a choice made with the arrows). */
+  keyboard?: { label: string; describedBy: string; onKey: (e: KeyboardEvent<HTMLDivElement>) => void };
   onPinKey?: (e: KeyboardEvent<HTMLButtonElement>) => void;
   pinAria?: string;
   pinDescribedBy?: string;
   pinRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const drag = useRef<{ id: number; dx: number; dy: number; onPin: boolean } | null>(null);
+  const descId = useId();
 
   const at = (clientX: number, clientY: number): LatLon => {
     const r = frameRef.current!.getBoundingClientRect();
@@ -99,7 +117,10 @@ export function AtlasMap({
   };
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
-    if (!d || d.id !== e.pointerId || !onPointer) return;
+    if (!d || d.id !== e.pointerId || !onPointer) {
+      if (!d && e.pointerType === 'mouse') onHover?.(at(e.clientX, e.clientY));
+      return;
+    }
     onPointer(at(e.clientX - d.dx, e.clientY - d.dy), 'move', d.onPin);
   };
   const onUp = (e: PointerEvent<HTMLDivElement>) => {
@@ -124,8 +145,8 @@ export function AtlasMap({
     if (Math.max(y1, y2) < latS - 1 || Math.min(y1, y2) > latN + 1) return [];
     return [[a, -y1, b, -y2]];
   });
-  const outline = (z: number) => {
-    const o = zoneOutline(z);
+  const outline = (c: Cell) => {
+    const o = cellOutline(c.zone, c.hemisphere);
     const dx = shiftNear(view, (o[0][0] + o.at(-1)![0]) / 2);
     return o.map(([lon, lat]) => `${lon + dx},${-lat}`).join(' ');
   };
@@ -147,8 +168,14 @@ export function AtlasMap({
             data-top-label={t.key}
             className={cn(
               'absolute -translate-x-1/2 whitespace-nowrap tabular-nums',
-              // the chosen zone: black text (orange text is ≈ 3:1) over an orange bar
-              t.tone === 'accent' ? 'border-b-[3px] border-accent font-bold text-black' : t.tone === 'strong' ? 'font-bold text-black' : 'font-semibold text-fg-muted',
+              // the chosen zone: black text (orange text is ≈ 3:1) over an orange bar; a checked wrong pick over a dark one
+              t.tone === 'accent'
+                ? 'border-b-[3px] border-accent font-bold text-black'
+                : t.tone === 'pick'
+                  ? 'border-b-[3px] border-brand-dark font-bold text-black'
+                  : t.tone === 'strong'
+                    ? 'font-bold text-black'
+                    : 'font-semibold text-fg-muted',
             )}
             style={{ left: `${(Math.min(0.97, Math.max(0.03, t.fx)) * 100).toFixed(3)}%` }}
           >
@@ -160,20 +187,27 @@ export function AtlasMap({
       <div
         ref={frameRef}
         dir="ltr"
-        role="group"
-        aria-label={name}
+        // a keyboard surface (practice): the arrows choose on the map, so screen readers pass them through
+        role={keyboard ? 'application' : 'group'}
+        aria-label={keyboard ? keyboard.label : name}
+        aria-describedby={keyboard ? `${descId} ${keyboard.describedBy}` : undefined}
+        tabIndex={keyboard ? 0 : undefined}
+        onKeyDown={keyboard?.onKey}
         data-frame={kind}
         data-view={`${view.lon0},${view.lat0},${view.w},${view.h}`}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
+        onPointerLeave={onHover && (() => onHover(null))}
         className={cn(
-          'relative aspect-[3/2] select-none touch-none overflow-hidden rounded-xl border border-border/70 bg-paper-card [container-type:inline-size]',
-          onPointer && 'cursor-crosshair',
+          'relative aspect-[3/2] select-none touch-none overflow-hidden rounded-xl border bg-paper-card [container-type:inline-size]',
+          linked ? 'border-accent/70' : 'border-border/70',
+          onPointer && (onHover ? 'cursor-pointer' : 'cursor-crosshair'),
+          keyboard && 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated',
         )}
       >
-        <div role="img" aria-label={description} className="absolute inset-0">
+        <div id={descId} role="img" aria-label={description} className="absolute inset-0">
           <svg viewBox={viewBox(view)} preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden>
             {basemap && copies.map((dx) => <Land key={dx} basemap={basemap} dx={dx} kind={kind} />)}
 
@@ -194,13 +228,35 @@ export function AtlasMap({
 
             {marks.focusZone != null && (
               <polygon
-                points={outline(marks.focusZone)}
+                points={outline({ zone: marks.focusZone, hemisphere: marks.focusHemisphere ?? null })}
                 data-focus-zone={marks.focusZone}
-                className={cn(
-                  marks.focusTone === 'pick' ? 'fill-brand/20 stroke-brand-dark' : kind === 'world' ? 'fill-accent/30 stroke-accent' : 'fill-accent/15 stroke-accent',
-                )}
+                data-focus-hemisphere={marks.focusHemisphere ?? undefined}
+                className={kind === 'world' ? 'fill-accent/30 stroke-accent' : 'fill-accent/15 stroke-accent'}
                 strokeWidth={kind === 'world' ? 1.5 : 2}
                 strokeDasharray={kind === 'inset' ? '7 5' : undefined}
+                {...nonScaling}
+              />
+            )}
+            {/* the learner's choice: a dark tint and a SOLID dark edge (zone boundaries are dashed, a verified zone orange),
+                drawn over a verified zone so its side of the equator still shows */}
+            {marks.pick && (
+              <polygon
+                points={outline(marks.pick)}
+                data-pick-zone={marks.pick.zone}
+                data-pick-hemisphere={marks.pick.hemisphere ?? undefined}
+                className="fill-brand-dark/20 stroke-brand-dark"
+                strokeWidth={kind === 'world' ? 2 : 3}
+                strokeLinejoin="round"
+                {...nonScaling}
+              />
+            )}
+            {marks.hover && (
+              <polygon
+                points={outline(marks.hover)}
+                data-hover-zone={marks.hover.zone}
+                className="fill-brand-dark/[0.12] stroke-brand-dark/75"
+                strokeWidth={kind === 'world' ? 1.5 : 2}
+                strokeDasharray="4 3"
                 {...nonScaling}
               />
             )}
@@ -235,18 +291,19 @@ export function AtlasMap({
               )),
             )}
 
-            {marks.boundary && (
+            {marks.boundaries?.map((b) => (
               <line
-                x1={marks.boundary.lon + shiftNear(view, marks.boundary.lon)}
-                x2={marks.boundary.lon + shiftNear(view, marks.boundary.lon)}
-                y1={-marks.boundary.n}
-                y2={-marks.boundary.s}
-                data-boundary={marks.boundary.lon}
+                key={b.lon}
+                x1={b.lon + shiftNear(view, b.lon)}
+                x2={b.lon + shiftNear(view, b.lon)}
+                y1={-b.n}
+                y2={-b.s}
+                data-boundary={b.lon}
                 className="stroke-accent"
                 strokeWidth={kind === 'world' ? 2.5 : 3.5}
                 {...nonScaling}
               />
-            )}
+            ))}
 
             {marks.readingLines &&
               (['up', 'across'] as const).map((k) => (
@@ -287,7 +344,9 @@ export function AtlasMap({
                   'absolute whitespace-nowrap rounded-md px-1.5 py-0.5 font-display text-[13px] leading-tight tabular-nums shadow-[0_1px_4px_rgba(0,0,0,0.1)]',
                   c.tone === 'accent'
                     ? 'border border-accent bg-bg-elevated font-bold text-black'
-                    : c.tone === 'strong'
+                    : c.tone === 'pick'
+                      ? 'border border-brand-dark bg-bg-elevated font-bold text-black'
+                      : c.tone === 'strong'
                       ? 'bg-bg-elevated/90 font-bold text-black'
                       : 'bg-bg-elevated/85 font-semibold text-fg-muted',
                 )}
@@ -311,7 +370,7 @@ export function AtlasMap({
             onKeyDown={onPinKey}
             tabIndex={onPinKey ? 0 : -1}
             aria-hidden={onPinKey ? undefined : true}
-            className="group absolute z-[3] flex cursor-grab flex-col items-center rounded-full focus-visible:outline-none active:cursor-grabbing"
+            className={cn('group absolute z-[3] flex flex-col items-center rounded-full focus-visible:outline-none', onPinKey && 'cursor-grab active:cursor-grabbing')}
             style={{ ...pos(pin.lat, pin.lon), transform: 'translate(-50%, calc(-100% + 3px))' }}
           >
             <span

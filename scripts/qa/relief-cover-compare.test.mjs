@@ -299,7 +299,7 @@ test('COMPARE_ROWS is unchanged since the approved spec (1984b5f)', () => {
 
 test('the screen renders the component, and the reused orchard sentence is quoted verbatim', () => {
   const src = readFileSync(SCENE, 'utf8');
-  assert.ok(src.includes('<ReliefCoverCompare rows={COMPARE_ROWS}'), 'screen 3 renders ReliefCoverCompare from COMPARE_ROWS');
+  assert.ok(/<ReliefCoverCompare\s+rows=\{COMPARE_ROWS\}/.test(src), 'screen 3 renders ReliefCoverCompare from COMPARE_ROWS');
   assert.ok(src.includes('<h3 className={SECTION_TITLE}>השוואה בין תבליט לתכסית</h3>'), 'section heading kept');
   const sentence = 'מטע נחשב לתכסית מלאכותית משום שנוצר בידי אדם.';
   assert.equal(src.split(sentence).length - 1, 2, 'once in FEATURES.orchard.desc, once in the 2→3 feedback');

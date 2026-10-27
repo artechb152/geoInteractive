@@ -137,7 +137,8 @@ export function reducer(s: State, a: Action): State {
       if (!v.leg || v.closed) return s;
       return { ...s, hint: Math.min(2, s.hint + 1) as 0 | 1 | 2 };
     case 'reveal': {
-      if (!v.leg || v.closed) return s;
+      // The explanation follows a first try: moving on always takes a decision, never a bare click.
+      if (!v.leg || v.closed || s.attempts === 0) return s;
       const leg = v.leg;
       const sel: Selections = { candidate: leg.answer, evidence: [...leg.correctEvidence], comparison: 'match' };
       return {

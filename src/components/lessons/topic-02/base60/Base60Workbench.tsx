@@ -18,9 +18,10 @@ import {
 /* ─────────── חלוקה ב־60 — פירוק המספר, צעד אחר צעד ───────────
    Mockup: design/mockups/base60-concepts-2026-10-12/02-number-workbench.png (alternative 2);
    arithmetic, copy and states: claude-code-handoff.txt there, logic in ./base60.ts.
-   Steps at inline start (visual right), the number track at inline end, the coordinate and its
-   four writings in a band under both. The track is a diagram: left to right like the number
-   it decomposes (whole parts left, fractions right), so it is dir="ltr" and never mirrored. */
+   Steps at inline start (visual right), the number track at inline end with the calculator docked
+   under it, the coordinate and its four writings in a band under both. The track is a diagram: left
+   to right like the number it decomposes (whole parts left, fractions right), so it is dir="ltr" and
+   never mirrored. */
 
 // the activity's heading and lead, at the top of its own card (one envelope per activity)
 const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
@@ -74,16 +75,15 @@ export function Base60Workbench() {
           <Steps s={s} act={act} uid={uid} />
 
           <div className="min-w-0 lg:ps-6">
-            <div className="flex items-center justify-between gap-3">
-              <Calculator />
-              <AxisSwitch axis={s.axis} uid={uid} onSelect={(axis) => act({ type: 'axis', axis })} />
-            </div>
+            <AxisSwitch axis={s.axis} uid={uid} onSelect={(axis) => act({ type: 'axis', axis })} />
             <div className="mt-4 overflow-x-auto">
               <NumberTrack key={s.axis} s={s} act={act} uid={uid} />
             </div>
             <p data-track-note="" className="mt-3 rounded-xl bg-bg-accent/60 px-4 py-3 text-center text-base leading-relaxed text-black">
               <Rich c={activeStep(t) ? RULE : formatNote(s.axis, t.fmt)} />
             </p>
+            {/* the calculator's own row in the work area, under the track it works on */}
+            <Calculator />
           </div>
         </div>
 
@@ -720,7 +720,7 @@ function Band({ s, act, uid }: { s: State; act: Act; uid: string }) {
   const atStart = t.done === 0;
   const info = FORMAT_INFO[t.fmt];
   return (
-    <div className="mt-6 rounded-xl border border-border p-4">
+    <div className="mt-6 rounded-xl border border-border p-4" data-band="">
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex shrink-0 gap-2">
           <Button

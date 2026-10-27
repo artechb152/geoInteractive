@@ -125,10 +125,13 @@ export function sameSelections(a: Selections, b: Selections): boolean {
 
 /**
  * What the screen may show: a result only while the selections still equal the
- * checked snapshot; otherwise the old result is stale ("הבחירה השתנתה — בדקו שוב").
+ * checked snapshot. A verdict whose area was changed since is stale ("הבחירה
+ * השתנתה"); a check made with no area judged nothing, so choosing an area after
+ * it is a first choice, not a change.
  */
 export function view(state: State) {
-  const stale = !!state.attempt && !sameSelections(state.attempt.input, state.selections);
-  const result = state.attempt && !stale ? state.attempt.result : null;
+  const current = !!state.attempt && sameSelections(state.attempt.input, state.selections);
+  const stale = !!state.attempt && !current && state.attempt.result.kind !== 'missing';
+  const result = current ? state.attempt!.result : null;
   return { stale, result, solved: result?.kind === 'supported' };
 }

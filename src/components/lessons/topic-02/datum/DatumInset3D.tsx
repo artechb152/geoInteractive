@@ -11,14 +11,14 @@
 
    Everything comes from datumInset.ts — the same view the SVG arrow uses —
    so the arrow lands on the two band crests. Buffers are allocated once and
-   rewritten in place when the pose, the inspection point, the mode or the
+   rewritten in place when the pose, the inspection point, the region or the
    body in focus change; nothing is allocated per frame, everything is
    disposed when the view unmounts. */
 
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { DISPLAY_K, ELL, LOCAL_ARC, type DatumMode, type Pose } from './datumGeometry';
+import { DISPLAY_K, ELL, LOCAL_ARC, type Pose } from './datumGeometry';
 import type { Surface } from './datumDemo';
 import { STUDIO_GLSL } from './datumHolo';
 import {
@@ -270,7 +270,7 @@ function buildInset() {
   return {
     scene,
     camera,
-    update(pose: Pose, inspect: number, mode: DatumMode, emph: Surface | null) {
+    update(pose: Pose, inspect: number, region: boolean, emph: Surface | null) {
       const v = insetView(pose, inspect, INSET.size);
       place(v);
       const px = (p: number) => p / v.ppu; // screen pixels → plane units
@@ -292,8 +292,8 @@ function buildInset() {
       }
       for (const r of Object.values(shadows)) r.pos.needsUpdate = true;
 
-      meshes.arc.visible = mode === 'local';
-      if (mode === 'local') {
+      meshes.arc.visible = region;
+      if (region) {
         // the marked arc, as a translucent underlay along the geoid
         const f = (s: number) => geoidPlane(LOCAL_ARC.from + ((s + Math.PI) / (2 * Math.PI)) * (LOCAL_ARC.to - LOCAL_ARC.from));
         const run = arc.run;
@@ -340,14 +340,14 @@ function buildInset() {
 }
 
 /** Renders the globe, then the close-up into its circle. Takes over the frame (useFrame priority 1). */
-export function InsetPass({ pose, inspect, mode, emph, enabled }: { pose: Pose; inspect: number; mode: DatumMode; emph: Surface | null; enabled: boolean }) {
+export function InsetPass({ pose, inspect, region, emph, enabled }: { pose: Pose; inspect: number; region: boolean; emph: Surface | null; enabled: boolean }) {
   const invalidate = useThree((s) => s.invalidate);
   const inset = useMemo(() => buildInset(), []);
   useEffect(() => () => inset.dispose(), [inset]);
   useEffect(() => {
-    inset.update(pose, inspect, mode, emph);
+    inset.update(pose, inspect, region, emph);
     invalidate();
-  }, [inset, pose, inspect, mode, emph, invalidate]);
+  }, [inset, pose, inspect, region, emph, invalidate]);
 
   useFrame(({ gl, scene, camera, size }) => {
     gl.render(scene, camera);

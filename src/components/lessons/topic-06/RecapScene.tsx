@@ -4,7 +4,8 @@ import { SceneHeader } from './SceneHeader';
 
 const TERMS = [
   // Same order as the lesson: navigation techniques come before azimuth, the norths and route planning.
-  { term: 'ניווט לפי טופוגרפיה',        def: 'בדיקת המיקום באמצעות השוואת צורות קרקע ועצמים מזוהים למפה. תוואי רציף, כגון דרך או ערוץ, יכול לשמש כ״מעקה״ לניווט.' },
+  // The lesson calls it ניווט לפי השטח; the quiz says טופוגרפיה. A handrail is one case of it, not its name.
+  { term: 'ניווט לפי השטח (טופוגרפיה)', def: 'בדיקת המיקום באמצעות השוואת צורות קרקע ועצמים מזוהים למפה. תוואי רציף, כגון דרך או ערוץ, יכול לשמש כ״מעקה״ לניווט.' },
   { term: 'ניווט עיוור (Dead Reckoning)', def: 'הערכת המיקום מתוך נקודת מוצא ידועה, כיוון התנועה והמרחק שעברנו. משלבים בדיקת סימני שטח כשניתן לזהותם.' },
   { term: 'אזימוט',                    def: 'זווית אופקית הנמדדת מכיוון הצפון עם כיוון השעון. צפון הוא 0° או 360°, ומזרח הוא 90°.' },
   { term: 'אזימוט חוזר',               def: 'הכיוון ההפוך לאזימוט נתון, בהפרש של 180°. הוא מסייע בקביעת כיוון חזרה, אך אינו מספיק לבדו לאימות המיקום.' },
@@ -27,10 +28,8 @@ export function RecapScene() {
             מושגי היסוד בניווט
           </>
         }
-        intro="חזרה על המושגים המרכזיים בשיעור: קביעת כיוון, תכנון מסלול ובדיקת המיקום לאורך הדרך."
+        intro="השלמתם את החלק הלימודי. אלה המושגים לחזרה לפני התרגול ובדיקת הידע."
       />
-
-      <CompletionBanner />
 
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
@@ -52,18 +51,5 @@ export function RecapScene() {
         ))}
       </div>
     </section>
-  );
-}
-
-function CompletionBanner() {
-  return (
-    <div className="mb-12">
-      <div className="text-sm font-display font-semibold text-fg-muted">
-        השלמתם את החלק הלימודי
-      </div>
-      <h3 className="mt-1.5 font-display text-2xl font-bold leading-tight text-fg text-balance sm:text-3xl">
-        מכאן ממשיכים לתרגול ולבדיקת הידע
-      </h3>
-    </div>
   );
 }

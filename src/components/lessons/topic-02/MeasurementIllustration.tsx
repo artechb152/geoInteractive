@@ -93,6 +93,7 @@ export function MeasurementIllustration({
   phase,
   onZoom,
   height,
+  modelAction,
   modelControls,
   sectionControls,
   reduce,
@@ -118,6 +119,9 @@ export function MeasurementIllustration({
   /** Enlarge the marked area (a click on it on the body; the same as "הגדלת האזור"). */
   onZoom: () => void;
   height: number;
+  /** What to do now, with the control(s) that do it, at the start of the model caption (in place of its name). */
+  modelAction?: React.ReactNode;
+  /** The view's secondary controls, at the caption's end. */
   modelControls?: React.ReactNode;
   sectionControls?: React.ReactNode;
   reduce: boolean;
@@ -246,7 +250,7 @@ export function MeasurementIllustration({
       {/* ── the model ── */}
       <figure className={fig}>
         <figcaption className={caption}>
-          <span className="font-display text-sm font-bold text-fg">מודל תלת־ממדי</span>
+          {modelAction ?? <span className="font-display text-sm font-bold text-fg">מודל תלת־ממדי</span>}
           {(modelControls || canRetry) && (
             <div className="flex flex-wrap items-center gap-2">
               {modelControls}
@@ -343,6 +347,7 @@ export function MeasurementIllustration({
               geo={geo}
               tab={tab}
               station={picking ? station : null}
+              solved={mission && solved.has(station)}
               onSelect={picking ? onSelect : undefined}
               revealed={tab === 'geoid' && clear}
               linked={ellipsoid && bodyHot}

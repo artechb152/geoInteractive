@@ -15,13 +15,14 @@
    SectionSvg: the original 2-D DatumFit drawing, on a light card. It is the
    live section beside the static image when WebGL is not available, so it
    shows what the globe would: the Earth's surface in this section, the
-   geoid and the posed ellipse with the body in focus drawn stronger, the
-   marked region, station 2's temporary reference marks and station 3's two
-   check points. */
+   geoid and the posed ellipse, the reference marks (the Earth's centre and
+   rotation axis, the ellipsoid's own centre and axes, the dashed outline of
+   the pose it is compared with), and in station 2 the marked region and
+   the two check points. */
 
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
-import { DISPLAY_K, DV, ELL, GEOID, REGION, GC, geoidAt, surfaceEnvelopeW, svgDisplay, type DatumMode, type Pose } from './datumGeometry';
+import { DISPLAY_K, DV, ELL, GEOID, REGION, GC, geoidAt, surfaceEnvelopeW, svgDisplay, type Pose } from './datumGeometry';
 import type { Guide, Look, Surface } from './datumDemo';
 import {
   GAP_MIN, INSET_BAND, curveRun, ellipseCentrePlane, ellipsePhiAt, ellipsePlane, geoidPlane, insetPx, insetView, toPlane, type InsetView,
@@ -49,7 +50,7 @@ const RUN_N = 160;
 export function GapInset({
   pose,
   inspect,
-  mode,
+  region,
   emph,
   size,
   live,
@@ -58,7 +59,8 @@ export function GapInset({
 }: {
   pose: Pose;
   inspect: number;
-  mode: DatumMode;
+  /** the marked region: a translucent band along the geoid */
+  region: boolean;
   /** the body in focus: its band a little wider (none: both alike) */
   emph: Surface | null;
   size: number;
@@ -116,7 +118,7 @@ export function GapInset({
         </defs>
         <rect width={size} height={size} fill="#FAF6F0" />
         <path d={earth} fill="#F3E9DC" />
-        {mode === 'local' && (
+        {region && (
           <path d={poly(DISPLAY_LOCAL.map((p) => P(p)))} fill="none" stroke={C_H} strokeOpacity={0.32} strokeWidth={2 * INSET_BAND.arc - 6} strokeLinecap="round" />
         )}
         <g filter={`url(#gapSoft${uid})`} opacity={0.2}>
@@ -152,7 +154,7 @@ const DISPLAY_LOCAL = REGION.local.map(toPlane);
 /** The original exercise drawing (DatumFit), light card — the live view when there is no WebGL. */
 export function SectionSvg({
   pose,
-  mode,
+  region,
   look,
   guide,
   probes,
@@ -160,40 +162,31 @@ export function SectionSvg({
   className,
 }: {
   pose: Pose;
-  mode: DatumMode;
+  /** the marked region (station 2) */
+  region: boolean;
   look: Look;
   guide: Guide | null;
-  /** station 3: the chosen check point and the other one (section angles) */
+  /** station 2: the chosen check point and the other one (section angles) */
   probes: { on: number; off: number } | null;
   /** what the view shows, in words (the same text as the globe's description) */
   description: string;
   className?: string;
 }) {
-  const uid = useId().replace(/:/g, '');
   const emph: Surface | null = look === 'motion' ? 'ellipsoid' : look === 'compare' ? null : look;
   const strong = (id: Surface) => emph === id;
   const cx = GC.x + pose.dx;
   const cy = GC.y + pose.dy;
-  const rx = ELL.rx * pose.s;
-  const ry = ELL.ry * pose.s;
   const outline = (p: Pose, props: React.SVGProps<SVGEllipseElement>) => (
     <g transform={`translate(${GC.x + p.dx} ${GC.y + p.dy}) rotate(${p.rot}) scale(${p.s})`}>
       <ellipse rx={ELL.rx} ry={ELL.ry} fill="none" vectorEffect="non-scaling-stroke" {...props} />
     </g>
   );
   const ink = { stroke: C_INK, vectorEffect: 'non-scaling-stroke' as const };
-  const arrow = `url(#secArrow${uid})`;
-  const rotating = guide?.kind === 'rotate';
-  const axisK = rotating ? 1.32 : 1;
+  const axisK = 1.08;
   const point = (t: number) => svgDisplay(geoidAt(t));
   return (
     <div className={cn('relative overflow-hidden rounded-xl border border-border/70 bg-bg-elevated', className)}>
       <svg viewBox={`0 0 ${DV.w} ${DV.h}`} className="block h-full w-full" role="img" aria-label={description}>
-        <defs>
-          <marker id={`secArrow${uid}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill={C_INK} />
-          </marker>
-        </defs>
         {/* the view's display mapping (DISPLAY_K), as on the globe beside it */}
         <g transform={`translate(0 ${GC.y}) scale(1 ${DISPLAY_K}) translate(0 ${-GC.y})`}>
           {/* the Earth's surface in this section (its smooth form — the relief is the 3-D view's) */}
@@ -208,12 +201,12 @@ export function SectionSvg({
             d={GEOID_SVG}
             fill="none"
             stroke={C_H}
-            strokeWidth={strong('geoid') ? 4.5 : 3}
-            strokeOpacity={emph && !strong('geoid') ? 0.7 : 1}
+            strokeWidth={3}
+            strokeOpacity={emph ? 0.7 : 1}
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
-          {mode === 'local' && (
+          {region && (
             <>
               <path d={LOCAL_SVG} fill="none" stroke={C_H} strokeWidth="10" strokeLinecap="round" strokeOpacity="0.55" vectorEffect="non-scaling-stroke" />
               {/* the marked region's end caps: marked by shape, not by colour alone */}
@@ -223,36 +216,13 @@ export function SectionSvg({
             </>
           )}
 
-          {/* station 2's temporary reference marks */}
-          {guide && 'from' in guide && outline(guide.from, { ...ink, strokeOpacity: 0.6, strokeWidth: 1.6, strokeDasharray: '6 5' })}
-          {guide?.kind === 'shift' && (
-            <line
-              x1={GC.x + guide.from.dx}
-              y1={GC.y + guide.from.dy}
-              x2={GC.x + guide.to.dx}
-              y2={GC.y + guide.to.dy}
-              {...ink}
-              strokeOpacity={0.75}
-              strokeWidth={1.6}
-              strokeDasharray="6 5"
-              markerEnd={arrow}
-            />
-          )}
-          {guide?.kind === 'axis' && (
-            <line
-              x1={guide.axis === 'x' ? cx - 1.5 * rx : cx}
-              y1={guide.axis === 'x' ? cy : cy - 1.5 * ry}
-              x2={guide.axis === 'x' ? cx + 1.5 * rx : cx}
-              y2={guide.axis === 'x' ? cy : cy + 1.5 * ry}
-              {...ink}
-              strokeOpacity={0.72}
-              strokeWidth={1.6}
-              markerStart={arrow}
-              markerEnd={arrow}
-            />
-          )}
-          {rotating && (
-            <path d={`M${cx} ${cy - 1.5 * ry} V${cy + 1.5 * ry} M${cx - 1.5 * rx} ${cy} H${cx + 1.5 * rx}`} {...ink} strokeOpacity={0.6} strokeWidth={1.4} strokeDasharray="6 5" />
+          {/* reference marks: the pose it is compared with (dashed), the Earth's rotation axis and centre */}
+          {guide && (
+            <>
+              {outline(guide.other, { ...ink, strokeOpacity: 0.68, strokeWidth: 1.6, strokeDasharray: '6 5' })}
+              <path d={`M${GC.x} ${GC.y - 1.24 * ELL.ry} V${GC.y + 1.24 * ELL.ry}`} {...ink} strokeOpacity={0.7} strokeWidth={1.5} />
+              <path d={`M${GC.x - 8} ${GC.y} H${GC.x + 8} M${GC.x} ${GC.y - 8} V${GC.y + 8}`} {...ink} strokeOpacity={0.85} strokeWidth={2.2} />
+            </>
           )}
 
           <g transform={`translate(${cx} ${cy}) rotate(${pose.rot}) scale(${pose.s})`}>
@@ -265,31 +235,20 @@ export function SectionSvg({
               strokeOpacity={emph && !strong('ellipsoid') ? 0.7 : 1}
               vectorEffect="non-scaling-stroke"
             />
-            {/* its own axes: dashed; solid, and longer, while it turns */}
-            <line
-              x1={-ELL.rx * axisK}
-              y1="0"
-              x2={ELL.rx * axisK}
-              y2="0"
-              className={rotating ? 'stroke-accent' : 'stroke-accent/50'}
-              strokeWidth={rotating ? 2.4 : 1.5}
-              strokeDasharray={rotating ? undefined : '5 4'}
-              vectorEffect="non-scaling-stroke"
-            />
-            <line
-              x1="0"
-              y1={-ELL.ry * axisK}
-              x2="0"
-              y2={ELL.ry * axisK}
-              className={rotating ? 'stroke-accent' : 'stroke-accent/50'}
-              strokeWidth={rotating ? 2.4 : 1.5}
-              strokeDasharray={rotating ? undefined : '5 4'}
-              vectorEffect="non-scaling-stroke"
-            />
+            {/* its own axes: they shift and turn with it */}
+            {guide && (
+              <path
+                d={`M${-ELL.rx * axisK} 0 H${ELL.rx * axisK} M0 ${-ELL.ry * axisK} V${ELL.ry * axisK}`}
+                className="stroke-accent"
+                strokeWidth={2}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
           </g>
+          {guide && <ellipse cx={cx} cy={cy} rx={4} ry={4 / DISPLAY_K} className="fill-accent" />}
         </g>
 
-        {/* station 3: the two check points on the geoid (outside the display stretch: round marks) */}
+        {/* station 2: the two check points on the geoid (outside the display stretch: round marks) */}
         {probes && (
           <>
             <circle cx={point(probes.off).x} cy={point(probes.off).y} r={7} fill="#FFFFFF" fillOpacity={0.4} stroke={C_INK} strokeOpacity={0.6} strokeWidth={1.6} strokeDasharray="3 3" />

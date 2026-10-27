@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { SceneHeader } from './SceneHeader';
 import { ContoursDensitySection } from './ContoursDensitySection';
@@ -22,21 +22,25 @@ const ContourCake3D = dynamic(() => import('./ContourCake3D'), {
   ),
 });
 
-const VIEWS: { id: MountainView; label: string; caption: string }[] = [
+/** Per view: what it shows (caption) and what to do in it (hint). The map ↔ model hover link is LayerLink's. */
+const VIEWS: { id: MountainView; label: string; caption: string; hint: string }[] = [
   {
     id: 'whole',
     label: 'הר שלם',
-    caption: 'המודל מציג את צורת ההר. הקווים הכהים שנוספו למדרון מחברים נקודות הנמצאות באותו גובה.',
+    caption: 'על ההר מסומנים קווי גובה כל 10 מטרים. אלה אותם קווים שמופיעים במפה.',
+    hint: 'גררו לסיבוב · גלגלת לתקריב',
   },
   {
     id: 'sliced',
     label: 'פריסה לשכבות',
-    caption: 'המודל מחולק לשכבות בהפרשי גובה של 10 מטרים. גררו שכבה ובחנו כיצד גבול החיתוך מתאים לקו הגובה במפה.',
+    caption: 'ההר חתוך לשכבות אופקיות בגובה הקווים. גבול כל חיתוך הוא קו הגובה המתאים במפה.',
+    hint: 'גררו שכבה למעלה או למטה · גררו את הרקע לסיבוב',
   },
   {
     id: 'top',
     label: 'מבט מלמעלה',
-    caption: 'במבט מלמעלה אפשר לראות כיצד קווי הגובה מתארים את צורת ההר על גבי המפה.',
+    caption: 'מלמעלה, הקווים שעל ההר נראים כמו קווי הגובה במפה.',
+    hint: 'הצפון כלפי מעלה, כמו במפה · גלגלת לתקריב',
   },
 ];
 
@@ -58,13 +62,17 @@ const VIEWS: { id: MountainView; label: string; caption: string }[] = [
 const FIT_WIDTH = 1344;
 const FIT_TOP = 80 + 24;
 const FIT_BOTTOM = 24;
-/** Heights at FIT_WIDTH, px (measured 2026-10-19). The model screen (without the scene header) is the same
-    in all three views, and the density screen on all three tabs — the scale stays steady across tabs. */
-const FIT_HEIGHT_MODEL = 619;
+/** Heights at FIT_WIDTH, px (measured 2026-10-19; the model screen 2026-10-27, with the 460 px map). The model
+    screen (without the scene header) is the same in all three views, and the density screen on all three tabs —
+    the scale stays steady across tabs. */
+const FIT_HEIGHT_MODEL = 684;
 const FIT_HEIGHT_DENSITY = Math.min(890, LESSON_FIT_MAX_HEIGHT);
 
 export function ContoursScene() {
   const [activeRing, setActiveRing] = useState<number | null>(null);
+  // The map has keyboard focus: its ring and the key line under LayerLink show.
+  const [mapKeys, setMapKeys] = useState(false);
+  const keysId = useId();
   const [view, setView] = useState<MountainView>('whole');
   // Bumped on every view click, so re-clicking the active view re-frames the
   // camera after the learner has zoomed or panned away.
@@ -77,7 +85,7 @@ export function ContoursScene() {
       <SceneHeader
         step="02.4"
         title="קווי גובה: כיצד קוראים את צורת השטח במפה?"
-        intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה. בהדמיה ההר מחולק לשכבות אופקיות: גבול החיתוך של כל שכבה יוצר קו גובה. עברו בין התצוגות ובחנו את הקשר בין המודל למפה."
+        intro="קו גובה מחבר נקודות הנמצאות באותו גובה. כך אפשר לתאר הרים, עמקים ומדרונות במפה שטוחה."
       />
       <LessonViewportFit
         referenceWidth={FIT_WIDTH}
@@ -91,7 +99,7 @@ export function ContoursScene() {
           <div className="grid lg:grid-cols-2 gap-8 items-start">
             <div className="space-y-3">
               <div className="text-sm font-display font-semibold text-fg-muted">
-                מודל תלת־ממדי · חלוקה לשכבות גובה
+                מודל תלת־ממדי
               </div>
               <div className="p-4">
                 <ContourCake3D view={view} viewNonce={viewNonce} activeRing={activeRing} setActiveRing={setActiveRing} />
@@ -129,26 +137,25 @@ export function ContoursScene() {
               <p className="text-base text-fg leading-relaxed text-center min-h-[3.25rem]" aria-live="polite">
                 {viewInfo.caption}
               </p>
-              <div className="text-sm text-fg-muted leading-snug text-center">
-                {view === 'top'
-                  ? 'בתצוגה זו הצפון כלפי מעלה · השתמשו בגלגלת לשינוי התקריב'
-                  : view === 'sliced'
-                    ? 'גררו שכבה לשינוי גובהה · גלגלת לשינוי התקריב · גררו את הרקע לסיבוב'
-                    : 'גררו לסיבוב · גלגלת לשינוי התקריב · גררו בלחצן הימני להזזה'}
-              </div>
+              <div className="text-sm text-fg-muted leading-snug text-center">{viewInfo.hint}</div>
             </div>
 
             <div className="space-y-3">
               <div className="text-sm font-display font-semibold text-fg-muted">
-                מבט מלמעלה · קווי הגובה במפה
+                מפת קווי גובה
               </div>
               <div className="p-4">
-                <ContoursAsMap activeRing={activeRing} setActiveRing={setActiveRing} />
+                <ContoursAsMap
+                  activeRing={activeRing}
+                  setActiveRing={setActiveRing}
+                  keys={mapKeys}
+                  setKeys={setMapKeys}
+                  keysId={keysId}
+                />
               </div>
               <MapLegend />
-              <div className="text-sm text-fg-muted leading-snug text-center">
-                העבירו את הסמן על המפה כדי להדגיש את השכבה המתאימה במודל
-              </div>
+              <LayerLink activeRing={activeRing} />
+              <MapKeys id={keysId} shown={mapKeys} />
             </div>
           </div>
         </div>
@@ -179,6 +186,13 @@ export function ContoursScene() {
  * Layers, bottom → top: paper → 50 m grid → hovered band → contour lines →
  * steep/gentle rulers → contour labels → spot height → north arrow → scale
  * bar → hover targets.
+ *
+ * Keyboard: the map frame is one tab stop, a vertical slider over the layers
+ * (0 = none lit, 1–5 = the bands from 10 m up). Keyboard focus lights the
+ * lowest band; ↑/↓ step a band, Home/End jump to the bottom/top one, Esc
+ * clears. It drives the same activeRing as the pointer, so the model and
+ * LayerLink follow exactly as on hover; leaving (Tab) clears it like the
+ * pointer leaving. Tab is never trapped.
  */
 // One path per level; a level's rings (usually one) become subpaths.
 const RING_PATHS = MOUNTAIN.levels.map((lv) =>
@@ -269,12 +283,91 @@ function SlopeRuler({ side, label }: { side: 'steep' | 'gentle'; label: string }
   );
 }
 
-function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | null; setActiveRing: (n: number | null) => void; }) {
+/** A keyboard (not pointer) focus. Browsers without :focus-visible count every focus as keyboard. */
+const isKeyboardFocus = (el: Element) => {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return true;
+  }
+};
+
+function ContoursAsMap({
+  activeRing,
+  setActiveRing,
+  keys,
+  setKeys,
+  keysId,
+}: {
+  activeRing: number | null;
+  setActiveRing: (n: number | null) => void;
+  /** The map has keyboard focus (ring + key line shown). */
+  keys: boolean;
+  setKeys: (on: boolean) => void;
+  /** The key line under the map, read as the slider's description. */
+  keysId: string;
+}) {
   const clipId = useId();
+  const descId = useId();
   const s = MOUNTAIN.summit;
+  // The band the keys lit last: blur clears only that, never one the pointer
+  // has lit since (e.g. a click that starts a slice drag in the model).
+  const keyRing = useRef<number | null>(null);
+  const lightByKey = (n: number | null) => {
+    keyRing.current = n;
+    setActiveRing(n);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const at = activeRing ?? -1; // -1: nothing lit
+    const top = LEVEL_COUNT - 1;
+    const next =
+      e.key === 'ArrowUp' ? Math.min(at + 1, top)
+      : e.key === 'ArrowDown' ? Math.max(at - 1, -1)
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? top
+      : e.key === 'Escape' && at >= 0 ? -1 // nothing lit: let Esc through
+      : null;
+    if (next === null) return;
+    e.preventDefault();
+    setKeys(true);
+    lightByKey(next < 0 ? null : next);
+  };
+
   return (
-    <div className="aspect-video sm:aspect-square max-h-[340px] mx-auto">
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label="שכבת גובה מודגשת במפה ובמודל"
+      aria-orientation="vertical"
+      aria-valuemin={0}
+      aria-valuemax={LEVEL_COUNT}
+      aria-valuenow={activeRing === null ? 0 : activeRing + 1}
+      aria-valuetext={activeRing === null ? 'אין שכבה מודגשת' : layerText(activeRing)}
+      aria-describedby={`${descId} ${keysId}`}
+      data-qa="contour-map-keys"
+      onKeyDown={onKeyDown}
+      onFocus={(e) => {
+        // a click focuses too, but there the pointer drives the highlight
+        if (!isKeyboardFocus(e.currentTarget)) return;
+        setKeys(true);
+        if (activeRing === null) lightByKey(0);
+      }}
+      onBlur={() => {
+        if (!keys) return;
+        setKeys(false);
+        if (activeRing === keyRing.current) setActiveRing(null);
+      }}
+      // 460 px: a 3.4-unit number reads ≈ 12 px at the lesson's 1440 × 1122 scale (0.78); its labels keep their
+      // size relative to the contours. The map column then sets the card's height.
+      className={cn(
+        'aspect-video sm:aspect-square max-h-[460px] mx-auto rounded-md outline-none',
+        keys && 'ring-2 ring-accent ring-offset-2 ring-offset-bg',
+      )}
+    >
       <svg
+        id={descId}
         viewBox="0 0 100 100"
         className="w-full h-full select-none"
         role="img"
@@ -336,7 +429,7 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
           {/* north arrow — the map (and the 3D top view) are north-up */}
           <g aria-hidden className="pointer-events-none" transform="translate(93 10)">
             <path d="M0 -5 L2.2 1.2 L0 0 L-2.2 1.2 Z" fill={MAP.ink} />
-            <text x="0" y="4.4" textAnchor="middle" dominantBaseline="central" fontSize={3.2} className="font-display font-bold" fill={MAP.ink}>
+            <text x="0" y="4.6" textAnchor="middle" dominantBaseline="central" fontSize={3.4} className="font-display font-bold" fill={MAP.ink}>
               צ
             </text>
           </g>
@@ -363,26 +456,87 @@ function ContoursAsMap({ activeRing, setActiveRing }: { activeRing: number | nul
   );
 }
 
+/** Scale-bar numbers and unit, as the contour numbers (≈ 12 px on screen). */
+const SCALE_FONT = 3.4;
+
 /** 0–50 m bar along one grid square in the lower-left corner, 25 m segments alternating ink / paper. */
 function ScaleBar() {
   const x0 = GRID[0];
   const y = 92.5;
   const seg = 25 * MAP_PER_M;
+  const ty = y - 2.4;
   return (
     <g aria-hidden className="pointer-events-none">
       {[0, 1].map((k) => (
         <rect key={k} x={x0 + k * seg} y={y} width={seg} height={1.1} fill={k === 0 ? MAP.ink : MAP.paper} stroke={MAP.ink} strokeWidth={0.2} />
       ))}
       {[0, 25, 50].map((m, k) => (
-        <text key={m} x={x0 + k * seg} y={y - 2} textAnchor="middle" dominantBaseline="central" fontSize={2.8} className="font-display font-bold tabular-nums" fill={MAP.ink}>
+        <text key={m} x={x0 + k * seg} y={ty} textAnchor="middle" dominantBaseline="central" fontSize={SCALE_FONT} className="font-display font-bold tabular-nums" fill={MAP.ink}>
           {m}
         </text>
       ))}
-      {/* RTL: the text's end (its left edge) sits at x, so it reads to the right of the bar. */}
-      <text x={x0 + 2 * seg + 1.4} y={y + 0.55} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={2.8} className="font-display font-bold" fill={MAP.ink}>
+      {/* On the numbers' line, clear of "50" (two digits ≈ 1.2 em wide, centred on the tick).
+          RTL: the text's end (its left edge) sits at x, so it reads to the right of the "50". */}
+      <text x={x0 + 2 * seg + SCALE_FONT * 0.95} y={ty} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={SCALE_FONT} className="font-display font-bold" fill={MAP.ink}>
         מ׳
       </text>
     </g>
+  );
+}
+
+/** Layer i in words — the link line and the map slider's aria-valuetext. */
+function layerText(i: number) {
+  const lv = MOUNTAIN.levels[i];
+  const above = MOUNTAIN.levels[i + 1];
+  return (
+    (above ? `השכבה שבין ${lv.heightM} ל־${above.heightM} מ׳` : `השכבה שמעל ${lv.heightM} מ׳, עד הפסגה`) +
+    ` · הגבול התחתון שלה הוא קו הגובה ${lv.heightM}`
+  );
+}
+
+/**
+ * The map ↔ model link in words. Idle: how to light a layer. Lit: which layer,
+ * and that its lower boundary is the highlighted contour (map band i spans line
+ * i to line i+1; model slice i sits on line i).
+ */
+function LayerLink({ activeRing }: { activeRing: number | null }) {
+  const text = activeRing === null ? null : layerText(activeRing);
+  return (
+    <div
+      data-qa="contour-link"
+      className={cn(
+        'flex items-center justify-center gap-1.5 text-sm leading-snug text-center',
+        text ? 'text-fg' : 'text-fg-muted',
+      )}
+    >
+      {text ? (
+        <>
+          <svg width="18" height="8" viewBox="0 0 18 8" aria-hidden className="shrink-0">
+            <path d="M1 4H17" stroke={ACCENT} strokeWidth={3} strokeLinecap="round" />
+          </svg>
+          <span>{text}</span>
+        </>
+      ) : (
+        'העבירו את הסמן על שכבה במודל או על המפה, והיא תודגש בשניהם'
+      )}
+    </div>
+  );
+}
+
+/**
+ * The map's keys, shown under LayerLink only while the map has keyboard focus.
+ * Its line is kept while hidden (the map column sets the card's height), so
+ * showing it moves nothing. Always in the DOM: it is the slider's description
+ * for screen readers.
+ */
+function MapKeys({ id, shown }: { id: string; shown: boolean }) {
+  return (
+    <div className="text-sm leading-snug min-h-[1lh]">
+      <p id={id} data-qa="contour-map-keys-hint" className={cn('text-sm text-fg-muted leading-snug text-center', !shown && 'sr-only')}>
+        <kbd className="font-sans">↑</kbd> <kbd className="font-sans">↓</kbd> לשכבה גבוהה או נמוכה יותר ·{' '}
+        <kbd className="font-sans">Esc</kbd> לביטול ההדגשה
+      </p>
+    </div>
   );
 }
 

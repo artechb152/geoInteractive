@@ -9,11 +9,15 @@
  * comparison cells for that state. The full original table closes the activity.
  * One action panel right under the boards carries the whole loop in one place — the next change
  * and its question, then the feedback and "לשלב הבא" — so nothing has to be scrolled to act.
+ * The question opens only once the "בשטח" board shows the hill (the model's first frame, or its
+ * still without WebGL): nobody predicts a change on a model that is still loading.
+ * While the full table is open it takes the place of the state's cells (it holds them all, the
+ * state's own marked), so the card fits one screen in every state, the finished quarry included.
  * Lesson copy comes from the scene (single source; the table cells stay verbatim); the panel's
  * interface copy is TASK below.
  */
 
-import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -61,6 +65,8 @@ const TASK = {
     quarry: 'במדרון הגבעה נפתחת מחצבה, והיא מתרחבת אל שטח המטע.',
   } as Record<Target, string>,
   question: 'מה ישתנה בשטח בעקבות זה?',
+  /** beside the task's label while the model loads (its answers wait for it) */
+  waitModel: 'אפשר לענות כשהדגם יוצג',
   answerHint: { relief: 'צורת פני הקרקע', cover: 'מה שנמצא על פני הקרקע', both: 'גם הצורה וגם מה שעליה' } as Record<Answer, string>,
   watch: 'צפו בשינוי בדגם ובמפה…',
   chose: 'בחרתם',
@@ -92,10 +98,9 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
   const state = STATES[flow.view];
   const done = isComplete(flow);
   const [summaryOpen, setSummaryOpen] = useState(false);
-  // the full table opens on its own once the quarry is reached
-  useEffect(() => {
-    if (done) setSummaryOpen(true);
-  }, [done]);
+  // the question waits for the "בשטח" board to show the hill (once true, it stays)
+  const [modelShown, setModelShown] = useState(false);
+  const onModelShown = useCallback(() => setModelShown(true), []);
 
   const stepsRef = useRef<HTMLOListElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -105,6 +110,15 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
 
   // feedback waits for the boards' transition (cover objects ≈ 0.5 s, quarry morph 0.9 s)
   const settleFor = (s: StateId) => (reduce ? 0 : s === 'quarry' ? 0.95 : 0.6);
+
+  // the full table opens on its own once the quarry is reached — with its feedback, after the
+  // quarry has been cut, not while the boards still play it
+  const quarrySettle = settleFor('quarry');
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => setSummaryOpen(true), quarrySettle * 1000);
+    return () => clearTimeout(t);
+  }, [done, quarrySettle]);
 
   // Screen-reader announcement of the feedback. The live region is mounted from the first paint
   // (a region inserted together with its text is usually not announced) and is filled only when the
@@ -130,6 +144,7 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
     flowRef.current = flow;
   }, [flow]);
   const predict = (a: Answer) => {
+    if (!modelShown) return; // the answers are disabled until then; this also stops a stray click
     const cur = flowRef.current;
     const next = flowReducer(cur, { type: 'predict', answer: a });
     if (next === cur) return; // not asking any more — the reducer ignores it, so does the announcement
@@ -180,10 +195,26 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
     cancelPending();
     focusAfterSwap.current = 'panel';
   };
-  const toSummary = () => {
+  const revealSummary = () => {
     summaryRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     focusSoon(() => summaryRef.current);
   };
+  // The table opened itself at the quarry, but the learner may have closed it since: then it opens
+  // first, and the page scrolls once it has (a smooth scroll started while the state's cells close
+  // and the table grows is lost on the way).
+  const revealOnOpen = useRef(false);
+  const toSummary = () => {
+    if (summaryOpen) return revealSummary();
+    revealOnOpen.current = true;
+    setSummaryOpen(true);
+  };
+  useEffect(() => {
+    if (!summaryOpen || !revealOnOpen.current) return;
+    revealOnOpen.current = false;
+    const t = setTimeout(revealSummary, reduce ? 0 : 400); // the table opens in 0.35 s
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the table opens, not on every render
+  }, [summaryOpen]);
   const ctaClass = 'inline-flex shrink-0 cursor-pointer items-center gap-2 justify-self-start px-5 py-3 text-base';
   const cta = !frontier ? (
     <button type="button" onClick={goBack} className={cn('btn-secondary', ctaClass)}>
@@ -283,7 +314,12 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
         </div>
         <BoardView frameClassName="border border-border-subtle">
           <div data-qa="rc-block">
-            <ReliefCoverModel state={state} reduce={!!reduce} ariaLabel={`${copy.states[state]} — ${copy.boards.real}`} />
+            <ReliefCoverModel
+              state={state}
+              reduce={!!reduce}
+              ariaLabel={`${copy.states[state]} — ${copy.boards.real}`}
+              onShown={onModelShown}
+            />
           </div>
         </BoardView>
         {/* the contour chip, under the map (its row keeps its height in every state, so the card
@@ -354,6 +390,12 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
                       {flow.view + 2}
                     </span>
                     {TASK.nextLabel}: {copy.states[nextState!]}
+                    {/* same line, so the panel keeps its height when the model arrives */}
+                    {!modelShown && (
+                      <span id={`${uid}-wait`} data-qa="rc-wait" className="font-semibold">
+                        · {TASK.waitModel}
+                      </span>
+                    )}
                   </p>
                   <p id={`${uid}-scn`} className="mt-1.5 text-pretty text-base leading-relaxed text-fg">
                     {TASK.scenario[nextState!]}
@@ -366,7 +408,7 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
                   ref={answersRef}
                   role="group"
                   aria-labelledby={`${uid}-q`}
-                  aria-describedby={`${uid}-scn`}
+                  aria-describedby={modelShown ? `${uid}-scn` : `${uid}-scn ${uid}-wait`}
                   className="grid grid-cols-3 gap-2 lg:w-[38rem]"
                 >
                   {ANSWERS.map((a) => (
@@ -374,10 +416,12 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
                       key={a}
                       type="button"
                       data-answer={a}
+                      disabled={!modelShown}
                       onClick={() => predict(a)}
                       className={cn(
                         'flex min-h-[4.25rem] cursor-pointer flex-col items-start justify-center gap-0.5 rounded-xl border-2 border-border bg-bg-elevated px-3 py-2 text-start',
                         'transition-colors duration-200 ease-snap hover:border-accent/60 hover:bg-accent/[0.06] focus-visible:ring-offset-bg-elevated',
+                        'disabled:cursor-wait disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-bg-elevated',
                       )}
                     >
                       <span className="flex items-center gap-1.5 font-display text-base font-bold leading-tight text-fg">
@@ -426,31 +470,45 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
         )}
       </div>
 
-      {/* the state's cells — what the comparison table says about what is on show */}
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.dl
-          key={state}
-          data-qa="rc-cells"
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={reduce ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
-          className="mt-3 grid gap-x-6 gap-y-3 rounded-xl bg-bg-accent/60 p-4 sm:grid-cols-2 sm:px-5"
-        >
-          {STATE_CELLS[state].map((ref) => (
-            <div key={`${ref.row}-${ref.layer}-${ref.part ?? ''}`} data-qa="rc-cell">
-              <dt className="flex items-center gap-1.5 font-display text-sm font-semibold text-fg-muted">
-                <span aria-hidden className={cn('size-2 rounded-full', LAYER_DOT[ref.layer])} />
-                {ref.row} · {copy.layers[ref.layer]}
-              </dt>
-              <dd className="mt-1 text-pretty text-base leading-relaxed text-fg">{cellText(ref)}</dd>
-            </div>
-          ))}
-        </motion.dl>
+      {/* the state's cells — what the comparison table says about what is on show; while the full
+          table is open, it stands in for them (its cells for this state are marked) */}
+      <AnimatePresence initial={false}>
+        {!summaryOpen && (
+          <motion.div
+            key="cells"
+            initial={reduce ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, height: 0 }}
+            transition={{ duration: reduce ? 0 : 0.35, ease: EASE }}
+            className="overflow-hidden"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.dl
+                key={state}
+                data-qa="rc-cells"
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={reduce ? { opacity: 1 } : { opacity: 0 }}
+                transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
+                className="mt-3 grid gap-x-6 gap-y-3 rounded-xl bg-bg-accent/60 p-4 sm:grid-cols-2 sm:px-5"
+              >
+                {STATE_CELLS[state].map((ref) => (
+                  <div key={`${ref.row}-${ref.layer}-${ref.part ?? ''}`} data-qa="rc-cell">
+                    <dt className="flex items-center gap-1.5 font-display text-sm font-semibold text-fg-muted">
+                      <span aria-hidden className={cn('size-2 rounded-full', LAYER_DOT[ref.layer])} />
+                      {ref.row} · {copy.layers[ref.layer]}
+                    </dt>
+                    <dd className="mt-1 text-pretty text-base leading-relaxed text-fg">{cellText(ref)}</dd>
+                  </div>
+                ))}
+              </motion.dl>
+            </AnimatePresence>
+          </motion.div>
+        )}
       </AnimatePresence>
 
-      {/* summary: always here (a learner who skips can still open it); opens itself at the quarry.
-          It closes the comparison's own card, under a hairline. */}
+      {/* summary: always here (a learner who skips can still open it); opens itself at the quarry,
+          once its feedback is in. It closes the comparison's own card, under a hairline. */}
       <section data-qa="rc-summary" aria-labelledby={`${uid}-sum`} className="mt-6 border-t border-border-subtle pt-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h4 ref={summaryRef} tabIndex={-1} id={`${uid}-sum`} className="scroll-mt-28 font-display text-xl font-bold leading-tight text-fg focus-visible:outline-none">
@@ -479,7 +537,7 @@ export function ReliefCoverCompare({ rows, copy, header }: { rows: CompareRow[];
                 className="overflow-hidden"
               >
                 <div className="pt-4">
-                  <CompareTable rows={rows} layers={copy.layers} />
+                  <CompareTable rows={rows} layers={copy.layers} marked={STATE_CELLS[state]} />
                 </div>
               </motion.div>
             )}
@@ -579,8 +637,11 @@ function Feedback({ state, answer, copy }: { state: Target; answer: Answer; copy
   );
 }
 
-/** The original comparison table, unchanged (moved from ReliefCoverIntroScene screen 3). */
-function CompareTable({ rows, layers }: { rows: CompareRow[]; layers: Record<Layer, string> }) {
+/** The original comparison table, its text unchanged (moved from ReliefCoverIntroScene screen 3).
+ *  `marked` — the cells of the state on show (the ones its cells block would list), tinted in the
+ *  current-step orange, since the open table takes that block's place. */
+function CompareTable({ rows, layers, marked }: { rows: CompareRow[]; layers: Record<Layer, string>; marked: CellRef[] }) {
+  const isMarked = (row: string, layer: Layer) => marked.some((m) => m.row === row && m.layer === layer);
   return (
     <div className="overflow-hidden rounded-xl border border-border-subtle">
       <div className="grid grid-cols-[minmax(7rem,0.6fr)_1fr_1fr] text-sm">
@@ -590,8 +651,23 @@ function CompareTable({ rows, layers }: { rows: CompareRow[]; layers: Record<Lay
         {rows.map((row, i) => (
           <div key={row.label} className="contents">
             <div className={cn('px-4 py-3.5 font-display font-semibold text-fg', i > 0 && 'border-t border-border-subtle')}>{row.label}</div>
-            <div className={cn('px-4 py-3.5 text-fg-muted leading-relaxed', i > 0 && 'border-t border-border-subtle')}>{row.relief}</div>
-            <div className={cn('px-4 py-3.5 text-fg-muted leading-relaxed', i > 0 && 'border-t border-border-subtle')}>{row.cover}</div>
+            {(['relief', 'cover'] as Layer[]).map((l) => {
+              const on = isMarked(row.label, l);
+              return (
+                <div
+                  key={l}
+                  data-qa="rc-table-cell"
+                  data-marked={on || undefined}
+                  className={cn(
+                    'px-4 py-3.5 leading-relaxed transition-colors duration-300',
+                    on ? 'bg-accent/[0.08] text-fg' : 'text-fg-muted',
+                    i > 0 && 'border-t border-border-subtle',
+                  )}
+                >
+                  {row[l]}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>

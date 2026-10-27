@@ -42,7 +42,11 @@ type Props = {
   note?: ReactNode;
   /** Display the explanatory lines and credits below the map. */
   showFooter?: boolean;
-  /** A chip beside the zoom buttons that says the map zooms; it leaves after the first zoom. */
+  /**
+   * A chip beside the zoom buttons that says the map zooms. It leaves at the first action on the map (pointer
+   * down, or a key on it) and never shows while the map takes picks (`onPick`), where it would cover the points
+   * and the ruler. Until the first zoom, the + / − buttons keep its accent instead.
+   */
   zoomHint?: boolean;
   /**
    * Opening view of the sheet (centre defaults to the sheet centre), clamped: applied after the first
@@ -79,8 +83,16 @@ export function SheetViewport({
   const zoomHintId = useId();
   // Any zoom (wheel, +/− keys, buttons) shows the learner already found it.
   const [zoomTried, setZoomTried] = useState(false);
-  const showZoomHint = zoomHint && !zoomTried;
+  const zoomCue = zoomHint && !zoomTried;
+  // The chip gives way for good once the learner acts on the map or starts picking points.
+  const [hintGone, setHintGone] = useState(false);
+  const picking = !!onPick;
+  useEffect(() => {
+    if (picking) setHintGone(true);
+  }, [picking]);
+  const showZoomHint = zoomCue && !hintGone && !picking;
   const tried = () => setZoomTried(true);
+  const dismissHint = () => setHintGone(true);
   const reduce = !!useReducedMotion();
   const map = useMapView(ref, initialView, { maxK, onZoomOutPast, zoomInRect: zoomInto && { rect: zoomInto.rect, minK: zoomInto.minK } });
   const { view, size } = map;
@@ -175,7 +187,7 @@ export function SheetViewport({
         role="group"
         aria-roledescription="מפה"
         aria-label={label}
-        aria-describedby={showFooter ? hintId : showZoomHint ? zoomHintId : undefined}
+        aria-describedby={showFooter ? hintId : zoomCue ? zoomHintId : undefined}
         tabIndex={0}
         data-qa="sheet-viewport"
         data-view={`${view.k.toFixed(3)},${view.x.toFixed(1)},${view.y.toFixed(1)}`}
@@ -185,8 +197,16 @@ export function SheetViewport({
           view.k > MIN_K ? 'cursor-grab active:cursor-grabbing' : onPick ? 'cursor-crosshair' : 'cursor-default',
         )}
         {...map.handlers}
-        onWheelCapture={showZoomHint ? tried : undefined}
-        onKeyDownCapture={showZoomHint ? (e) => '+=-_'.includes(e.key) && tried() : undefined}
+        onWheelCapture={zoomCue ? tried : undefined}
+        onPointerDownCapture={showZoomHint ? dismissHint : undefined}
+        onKeyDownCapture={
+          zoomCue
+            ? (e) => {
+                if ('+=-_'.includes(e.key)) tried();
+                else if (!['Tab', 'Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) dismissHint();
+              }
+            : undefined
+        }
         // Focusing a handle outside the visible area would scroll this overflow-hidden box and shift the
         // map against its transform; the view only moves through zoom/pan.
         onScroll={(e) => {
@@ -248,6 +268,7 @@ export function SheetViewport({
           k={view.k}
           maxK={map.maxK}
           outPast={!!onZoomOutPast}
+          cue={zoomCue && !showZoomHint}
           onIn={() => {
             tried();
             map.zoomBy(1.5);
@@ -258,7 +279,12 @@ export function SheetViewport({
           }}
           onReset={map.reset}
         />
-        <AnimatePresence>{showZoomHint && <ZoomHint id={zoomHintId} reduce={reduce} />}</AnimatePresence>
+        <AnimatePresence>{showZoomHint && <ZoomHint reduce={reduce} />}</AnimatePresence>
+        {zoomCue && (
+          <span id={zoomHintId} className="sr-only">
+            {ZOOM_HINT_TEXT}
+          </span>
+        )}
       </div>
 
       {display === 'curtain' && curtain && <CurtainSlider {...curtain} />}
@@ -327,15 +353,18 @@ function NorthArrow() {
   );
 }
 
+/** The zoom hint for screen readers: the map's description until the first zoom (the chip is aria-hidden). */
+const ZOOM_HINT_TEXT = 'אפשר לעשות זום פנימה והחוצה, בגלגלת העכבר או בכפתורים + ו־−.';
+
 /**
  * Sits to the left of the + / − pair, centred on it (buttons: 12 px from the corner, 36 px each, 6 px apart, so the
  * pair spans 54–132 px from the bottom, centre 93) with a caret pointing at them; a few nudges toward them draw the eye. The box is LTR
  * so the caret stays on the buttons' side (map furniture is physical).
  */
-function ZoomHint({ id, reduce }: { id: string; reduce: boolean }) {
+function ZoomHint({ reduce }: { reduce: boolean }) {
   return (
     <motion.div
-      id={id}
+      aria-hidden
       dir="ltr"
       data-qa="zoom-hint"
       className="pointer-events-none absolute bottom-[93px] right-[56px] flex items-center"
@@ -365,25 +394,27 @@ function ZoomHint({ id, reduce }: { id: string; reduce: boolean }) {
 }
 
 function ZoomButtons({
-  k, maxK, outPast, onIn, onOut, onReset,
-}: { k: number; maxK: number; outPast: boolean; onIn: () => void; onOut: () => void; onReset: () => void }) {
+  k, maxK, outPast, cue, onIn, onOut, onReset,
+}: { k: number; maxK: number; outPast: boolean; /** The hint chip has gone but no zoom yet: + / − keep its accent. */ cue: boolean; onIn: () => void; onOut: () => void; onReset: () => void }) {
   // At a limit the button stays opaque (it sits on the map) and only its icon and cursor dim.
   const btn = cn(
     'flex size-9 items-center justify-center rounded-lg border border-border bg-bg-elevated text-fg shadow-sm transition-colors duration-200 ease-snap hover:border-brand/30',
     'aria-disabled:cursor-not-allowed aria-disabled:text-fg-dim aria-disabled:hover:border-border',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
   );
+  // The chip's accent outline, on the buttons' own footprint (it covers nothing on the map).
+  const cued = cn(btn, cue && 'border-accent ring-1 ring-accent aria-disabled:border-border aria-disabled:ring-0');
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
   const atMax = k >= maxK - 1e-3;
   const atMin = k <= MIN_K + 1e-3;
   // At k = 1 zoom-out can still open the wider sheet.
   const outOff = atMin && !outPast;
   return (
-    <div className="absolute bottom-3 right-3 flex flex-col gap-1.5" onPointerDown={stop} onClick={stop} onKeyDown={stop}>
-      <button type="button" className={btn} aria-label="התקרבות" aria-disabled={atMax} onClick={atMax ? undefined : onIn}>
+    <div className="absolute bottom-3 right-3 flex flex-col gap-1.5" data-qa="zoom-buttons" data-cue={cue || undefined} onPointerDown={stop} onClick={stop} onKeyDown={stop}>
+      <button type="button" className={cued} aria-label="התקרבות" aria-disabled={atMax} onClick={atMax ? undefined : onIn}>
         <Plus size={18} aria-hidden />
       </button>
-      <button type="button" className={btn} aria-label="התרחקות" aria-disabled={outOff} onClick={outOff ? undefined : onOut}>
+      <button type="button" className={cued} aria-label="התרחקות" aria-disabled={outOff} onClick={outOff ? undefined : onOut}>
         <Minus size={18} aria-hidden />
       </button>
       <button type="button" className={btn} aria-label="איפוס התצוגה" aria-disabled={atMin} onClick={atMin ? undefined : onReset}>

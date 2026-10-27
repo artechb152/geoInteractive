@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
 import { cn } from '@/lib/utils';
 
-type HistoricalCase = {
+export type HistoricalCase = {
   id: string;
   number: string;
   headline: string;
@@ -100,9 +100,14 @@ const CASES: HistoricalCase[] = [
   },
 ];
 
-export function HistoricalCasesPanel() {
-  const [activeId, setActiveId] = useState(CASES[0].id);
-  const active = CASES.find((c) => c.id === activeId) ?? CASES[0];
+export function HistoricalCasesPanel({
+  cases = CASES,
+  title = 'המשמעות המעשית של קריאת מפה',
+  intro = 'ארבע דוגמאות לחשיבותם של רשת קואורדינטות, קנה מידה, קווי גובה והיטל מפה.',
+  panelId = 'history-detail-panel',
+}: { cases?: HistoricalCase[]; title?: string; intro?: string; panelId?: string } = {}) {
+  const [activeId, setActiveId] = useState(cases[0].id);
+  const active = cases.find((c) => c.id === activeId) ?? cases[0];
 
   return (
     <div className="relative isolate overflow-hidden rounded-2xl bg-pine p-5 shadow-pine-card sm:p-7 md:p-8">
@@ -114,15 +119,15 @@ export function HistoricalCasesPanel() {
       <div className="relative z-10">
         <div className="mb-6 text-center md:mb-8">
           <h3 className="font-display text-2xl font-bold leading-tight text-paper-bright sm:text-3xl">
-            המשמעות המעשית של קריאת מפה
+            {title}
           </h3>
           <p className="mt-2 text-base leading-relaxed text-paper-bright/70">
-            ארבע דוגמאות לחשיבותם של רשת קואורדינטות, קנה מידה, קווי גובה והיטל מפה.
+            {intro}
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-3.5">
-          {CASES.map((c) => {
+          {cases.map((c) => {
             const isActive = c.id === activeId;
             return (
               <button
@@ -130,7 +135,7 @@ export function HistoricalCasesPanel() {
                 type="button"
                 onClick={() => setActiveId(c.id)}
                 aria-expanded={isActive}
-                aria-controls="history-detail-panel"
+                aria-controls={panelId}
                 className={cn(
                   'rounded-xl border p-4 text-start transition-colors duration-200 ease-snap',
                   isActive
@@ -171,7 +176,7 @@ export function HistoricalCasesPanel() {
           <AnimatePresence mode="wait">
             <motion.div
               key={active.id}
-              id="history-detail-panel"
+              id={panelId}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}

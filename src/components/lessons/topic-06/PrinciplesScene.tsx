@@ -62,40 +62,22 @@ function ScreenFit({ referenceHeight, children }: { referenceHeight?: number; ch
 export function PrinciplesScene() {
   return (
     <section id="scene-principles" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
-      <SceneHeader
-        step="03.1"
-        eyebrow="עקרונות הניווט"
-        title={
-          <>
-          קביעת כיוון: אזימוט וסוגי צפון
-          </>
-        }
-        intro="כדי לקבוע כיוון תנועה, צריך לדעת כיצד מודדים אזימוט ולאיזה צפון מתייחסים. בחלק זה נתרגל אזימוט ואזימוט חוזר, נכיר שלושה סוגי צפון ונבחן את מגבלות הניווט באמצעות GPS."
-      />
+      {/* The part header shrinks with the screens, as in the other sub-topics of the lesson. */}
+      <ScreenFit>
+        <SceneHeader
+          step="03.1"
+          eyebrow="עקרונות הניווט"
+          title={
+            <>
+            קביעת כיוון: אזימוט וסוגי צפון
+            </>
+          }
+          intro="כדי לקבוע כיוון תנועה, צריך לדעת איך מודדים אזימוט ומאיזה צפון."
+        />
+      </ScreenFit>
 
-      {/* Opening · two short term definitions as plain info text (no cards), so the
-          azimuth instrument below is the first strong surface on the screen. Each one
-          previews a block below it (azimuth → the compass board, GPS-Denied → the GPS
-          block). */}
-      <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-10">
-        <div>
-          <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
-          אזימוט <span className="text-fg-muted font-medium text-base sm:text-lg">(Azimuth)</span>
-          </h3>
-          <p className="text-base text-fg leading-relaxed text-pretty">
-          אזימוט הוא זווית אופקית הנמדדת <strong className="text-fg">מכיוון הצפון, עם כיוון השעון</strong>. צפון הוא 0° או 360°, ומזרח הוא 90°. אזימוט חוזר מציין את הכיוון ההפוך, בהפרש של 180°.
-          </p>
-        </div>
-
-        <div>
-          <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
-          ניווט ללא GPS זמין
-          </h3>
-          <p className="text-base text-fg leading-relaxed text-pretty">
-          כשקליטת אותות הלוויין חסומה או משובשת, אי אפשר להסתמך על GPS לקביעת המיקום. במצב זה נעזרים <strong className="text-fg">במפה, במצפן ובסימני השטח</strong> כדי לשמור על ההתמצאות.
-          </p>
-        </div>
-      </div>
+      {/* The azimuth definition sits under the compass it describes, and the GPS
+          context opens the location check (LocationCheckActivity). */}
 
       <ScreenFit referenceHeight={VIEW_REFERENCE_HEIGHT}>
         <AzimuthExplorer />
@@ -107,13 +89,13 @@ export function PrinciplesScene() {
         </ScreenFit>
       </div>
 
-      <div className="my-12">
+      {/* The location check and the closing line share one screen, as in the techniques sub-topic. */}
+      <div className="mt-12">
         <ScreenFit referenceHeight={VIEW_REFERENCE_HEIGHT}>
           <GpsDeniedCard />
+          <ConclusionCard />
         </ScreenFit>
       </div>
-
-      <ConclusionCard />
     </section>
   );
 }
@@ -179,6 +161,11 @@ function AzimuthExplorer() {
           </div>
           <AzimuthReadouts azimuth={azimuthLabel} back={backLabel} />
           <AzimuthSlider value={azimuth} onChange={setAzimuth} />
+          {/* The definition, beside the instrument; the back azimuth is the band below. */}
+          <p className="mt-5 text-base leading-relaxed text-black" data-azimuth-definition>
+            <strong className="font-bold">אזימוט (Azimuth)</strong> הוא זווית אופקית הנמדדת מכיוון הצפון, עם כיוון השעון: צפון{' '}
+            <span dir="ltr">0°</span> או <span dir="ltr">360°</span>, מזרח <span dir="ltr">90°</span>.
+          </p>
         </div>
 
         <div className="lg:col-start-2 lg:row-start-2">
@@ -331,15 +318,10 @@ function GpsDeniedCard() {
 function ConclusionCard() {
   // Closing takeaway — a flat info card: no stripe, no icon tile, no entrance motion.
   return (
-    <div className="surface p-5 sm:p-6">
-      <div>
-        <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
-        עקרונות מרכזיים
-        </div>
-        <p className="text-base text-fg leading-relaxed text-pretty">
-        קביעת כיוון נשענת על <strong className="text-fg">מדידת אזימוט ביחס לצפון המתאים</strong>. אזימוט חוזר מציין את הכיוון ההפוך, ובדיקת המיקום נעשית בעזרת מרחק וסימני שטח. שילוב הכלים האלה מאפשר לנווט גם כשאין אפשרות להסתמך על GPS.
-        </p>
-      </div>
+    <div className="mt-6 surface p-5 sm:p-6">
+      <p className="text-base text-fg leading-relaxed text-pretty">
+        מודדים <strong className="text-fg">אזימוט ביחס לצפון המתאים</strong>, ובודקים את המיקום לפי כיוון, מרחק וסימני שטח, גם כשאין GPS.
+      </p>
     </div>
   );
 }

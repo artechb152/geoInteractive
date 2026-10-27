@@ -24,13 +24,13 @@ import {
   DECLINATION_MAX,
   DECLINATION_MIN,
   DECLINATION_START,
-  GRID_NORTH_ANGLE,
   azimuthFrom,
   bearings,
   clampDeclination,
   declinationText,
   formatSigned,
   referenceAngle,
+  relationText,
 } from './northLabGeometry';
 import { NORTHS, NORTH_IDS, type NorthId } from './norths';
 import { NorthLabMap } from './NorthLabMap';
@@ -41,8 +41,12 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * "שלושה סוגי צפון" — a reference lab: the target B never moves; choosing a
  * north moves only the start of the measurement, and the declination slider
  * turns MN. One state (active north + declination) drives the map, the arc,
- * the large reading and the comparison table; the three original info fields
- * of the chosen north stay visible underneath.
+ * the large reading, its relation line and the comparison table.
+ *
+ * Each explanation sits next to what it explains: the chosen north's
+ * definition right under the tabs (the tab panel), why its value differs under
+ * the reading, what declination is under its slider. The card says once that
+ * the values are an example (slider label + the map's note).
  *
  * Every drawn angle and every number comes from the same smoothed values
  * (useSmoothed / useArcStart), so mid-animation they always agree; the slider
@@ -60,6 +64,7 @@ export function NorthLab() {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const tabId = (id: NorthId) => `${uid}-north-tab-${id}`;
   const panelId = `${uid}-north-panel`;
+  const tabsLabelId = `${uid}-north-tabs-label`;
 
   // Announce the reading once the learner pauses for a beat — never mid-drag,
   // and not on page load.
@@ -109,17 +114,19 @@ export function NorthLab() {
           שלושה סוגי צפון
         </h3>
         <p className="mt-2 max-w-3xl text-base leading-relaxed text-fg-muted">
-          אזימוט נמדד ביחס לסוג מסוים של צפון: מגנטי, רשת או אמיתי. בחרו בכל סוג כדי לראות את ההגדרה ואת השימוש בו.
+          הכיוון מ־A אל B לא משתנה. משתנה רק הצפון שממנו מודדים — ואיתו ערך האזימוט.
         </p>
       </div>
 
       {/* Desktop: the controls column at the inline start (right), the map at the
           end (left), as in the selected mockup; DOM order starts with the controls. */}
       <div className="grid gap-x-7 gap-y-4 lg:grid-cols-[304px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1" data-controls>
-          <p className="font-display text-base font-bold leading-tight text-black md:text-lg">שנו את נקודת הייחוס</p>
+        <div className="flex flex-col gap-2.5 lg:col-start-1 lg:row-start-1" data-controls>
+          <p id={tabsLabelId} className="font-display text-base font-bold leading-tight text-black md:text-lg">
+            מאיזה צפון מודדים?
+          </p>
 
-          <div role="tablist" aria-label="בחירת סוג צפון" className="grid grid-cols-3 gap-2">
+          <div role="tablist" aria-labelledby={tabsLabelId} className="grid grid-cols-3 gap-2">
             {NORTH_IDS.map((id, idx) => {
               const isActive = id === active;
               return (
@@ -138,10 +145,10 @@ export function NorthLab() {
                   onKeyDown={(e) => onTabKey(e, idx)}
                   data-north={id}
                   className={cn(
-                    'flex min-h-[52px] cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-center',
+                    'flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-center',
                     'font-display text-base font-semibold leading-tight text-fg text-balance transition-colors duration-200 ease-snap',
                     isActive
-                      ? 'border-accent bg-accent/10 ring-1 ring-inset ring-accent'
+                      ? 'border-accent bg-accent/10'
                       : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
                   )}
                 >
@@ -151,10 +158,15 @@ export function NorthLab() {
             })}
           </div>
 
+          <NorthInfoPanel active={active} panelId={panelId} labelledBy={tabId(active)} />
+
           <div className="rounded-2xl bg-bg-accent px-4 py-4 text-center" data-reading>
             <p className="font-display text-base font-bold leading-snug text-black">{readingLabel(active)}</p>
             <p dir="ltr" className="mt-2 font-display text-5xl font-bold leading-none tabular-nums text-fg" data-readout="reading">
               {formatDeg(azimuthFrom(arcStart))}
+            </p>
+            <p className="mt-2 text-balance text-base leading-snug text-black" data-relation>
+              {relationText(active, decl)}
             </p>
           </div>
 
@@ -168,10 +180,8 @@ export function NorthLab() {
         </div>
       </div>
 
-      <NorthInfoStrip active={active} panelId={panelId} labelledBy={tabId(active)} />
-
-      <p className="mt-4 text-base leading-relaxed text-black">
-        <strong className="font-bold">במעבר בין מפה למצפן:</strong> בודקים את ההפרש בין צפון הרשת לצפון המגנטי ומתקנים את האזימוט בהתאם לנתונים העדכניים לאזור. הזוויות בדוגמה הן להמחשה בלבד; בחלונית ההפרדה המוגדלת המרווחים בין החצים אינם בקנה מידה.
+      <p className="mt-4 text-base leading-relaxed text-black" data-note>
+        <strong className="font-bold">במעבר בין מפה למצפן:</strong> בודקים את ההפרש בין צפון הרשת לצפון המגנטי ומתקנים את האזימוט בהתאם לנתונים העדכניים לאזור.
       </p>
 
       <span className="sr-only" aria-live="polite" aria-atomic="true">
@@ -264,9 +274,8 @@ function ComparisonTable({ values, active }: { values: Record<NorthId, number>; 
               const isActive = id === active;
               return (
                 <tr key={id} data-row={id} aria-current={isActive ? 'true' : undefined} className={cn(isActive && 'bg-accent/10')}>
-                  <th scope="row" className="rounded-s-lg py-1.5 pe-2 ps-2 text-start align-middle">
+                  <th scope="row" className="rounded-s-lg py-1.5 pe-2 ps-3 text-start align-middle">
                     <span className="flex items-center gap-2">
-                      <span aria-hidden className={cn('h-5 w-1 shrink-0 rounded-full', isActive ? 'bg-accent' : 'bg-transparent')} />
                       <NorthSwatch id={id} />
                       <span className={cn('text-base leading-snug text-black', isActive ? 'font-bold' : 'font-normal')}>{NORTHS[id].label}</span>
                     </span>
@@ -327,7 +336,7 @@ function DeclinationControl({
         </p>
       </div>
       <p id={hintId} className="mt-1 text-base leading-snug text-black">
-        הזיזו את המחוון וצפו בשינוי המדידה.
+        הזווית בין הצפון האמיתי לצפון המגנטי. היא משתנה לפי המקום והזמן.
       </p>
 
       <div dir="ltr" className="relative mt-3 w-full" data-slider>
@@ -376,13 +385,7 @@ function DeclinationControl({
         </div>
       </div>
 
-      <div className="mt-1.5 flex items-center justify-between gap-3 border-t border-border-subtle pt-2.5">
-        <p className="text-base leading-snug text-black">
-          <span className="font-display font-bold">{NORTHS.grid.label}</span>{' '}
-          <span dir="ltr" className="font-display font-bold tabular-nums text-fg" data-readout="grid-angle">
-            {formatSigned(GRID_NORTH_ANGLE)}
-          </span>
-        </p>
+      <div className="mt-0.5 flex justify-end">
         <Button variant="secondary" size="sm" onClick={onReset}>
           <RotateCcw className="size-4" aria-hidden />
           איפוס
@@ -393,41 +396,34 @@ function DeclinationControl({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Info strip — the three original fields of the chosen north
+// Tab panel — what the chosen north is and where it is used
 // ─────────────────────────────────────────────────────────────────────────────
 
 function NorthInfoContent({ id }: { id: NorthId }) {
   const meta = NORTHS[id];
   return (
     <>
-      <h4 className="font-display text-lg font-bold leading-snug text-black md:text-xl">
-        {meta.label} <span className="text-base font-medium text-fg-muted sm:text-lg">({meta.english})</span>
+      <h4 className="font-display text-lg font-bold leading-snug text-black">
+        <span className="me-1.5 inline-block align-[-2px]">
+          <NorthSwatch id={id} />
+        </span>
+        {meta.label} <span className="text-base font-medium text-fg-muted">({meta.english})</span>
       </h4>
-      <dl className="mt-3 grid gap-x-8 gap-y-4 lg:grid-cols-3">
-        <div>
-          <dt className="mb-1 text-base font-display font-bold text-black">שימוש עיקרי</dt>
-          <dd className="text-base leading-relaxed text-black">{meta.who}</dd>
-        </div>
-        <div>
-          <dt className="mb-1 text-base font-display font-bold text-black">הגדרה</dt>
-          <dd className="text-base leading-relaxed text-black">{meta.what}</dd>
-        </div>
-        <div>
-          <dt className="mb-1 text-base font-display font-bold text-black">דגש לשימוש</dt>
-          <dd className="text-base leading-relaxed text-black">{meta.why}</dd>
-        </div>
-      </dl>
+      <p className="mt-1.5 text-pretty text-base leading-relaxed text-black">{meta.what}</p>
+      <p className="mt-2 text-pretty text-base leading-snug text-black">
+        <span className="font-display font-bold">דגש לשימוש:</span> {meta.note}
+      </p>
     </>
   );
 }
 
 /**
- * The tab panel. All three contents are stacked invisibly in the same grid
- * cell to reserve the tallest height, so switching never makes the card jump;
- * the visible one cross-fades on top. Neutral surface — the north colours stay
- * a legend for the map.
+ * The tab panel, directly under the tabs it belongs to. All three contents
+ * are stacked invisibly in the same grid cell to reserve the tallest height,
+ * so switching never moves the reading, table or slider below; the visible
+ * one cross-fades on top. Neutral surface — the swatch is the arrow's legend.
  */
-function NorthInfoStrip({ active, panelId, labelledBy }: { active: NorthId; panelId: string; labelledBy: string }) {
+function NorthInfoPanel({ active, panelId, labelledBy }: { active: NorthId; panelId: string; labelledBy: string }) {
   const reduce = !!useReducedMotion();
   return (
     <div
@@ -435,7 +431,7 @@ function NorthInfoStrip({ active, panelId, labelledBy }: { active: NorthId; pane
       id={panelId}
       aria-labelledby={labelledBy}
       tabIndex={0}
-      className="mt-6 grid rounded-2xl bg-bg-accent px-6 py-5"
+      className="grid rounded-2xl bg-bg-accent px-4 py-4"
       data-info={active}
     >
       {NORTH_IDS.map((id) => (

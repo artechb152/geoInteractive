@@ -2284,7 +2284,7 @@ Reference: `design/mockups/geographic-coordinates-2026-10-12/01-globe-explorer.p
 - **The Earth.** WGS84 at true flattening (≈ 1 px on the screen globe — not exaggerated), placed by geodetic latitude. NASA Blue Marble NG (July 2004, 21600 px master → 4096 px) for colour; GEBCO relief as light only (no displacement). The existing datum textures were not reused: their albedo is the lesson palette (ivory sea), not a natural Earth. Only the water is re-toned toward the mockup's restrained steel blue (manifest).
 - **One mapping.** Mesh uv = the plate carrée texture parameter; the 30° graticule, the equator / Greenwich and the selected parallel / meridian are drawn in the globe's shader from that same lat / lon (screen-pixel widths, hidden by the body on its far side). Marker and labels are HTML overlays projected per frame and hidden by the exact occlusion test (convex-surface normal test; ray–ellipsoid for the pole's "N").
 - **Value labels.** The mockup's single "30°S · 90°E" chip became two chips, latitude on the parallel and longitude on the meridian, beside the point (brief: separate, clear labels; never silently reorder the deck's longitude-first pair). The deck's own notation (`(90E,30S)`, `(75E,15N)`) is kept in `LATLON_ITEMS` and not displayed. At 0° a value chip is hidden: the equator / Greenwich chip already names that line.
-- **Opening view** `{lat −3°, lon 72°}`: the Indian Ocean centred (India top-centre, the example below centre, Australia right). The mockup's own geometry cannot hold Greenwich where it is drawn while 90°E is central, so Greenwich and its label sit nearer the left limb rather than being moved. Zoom is limited (distance 4.0–6.4, opening 5.25); no auto-rotation.
+- **Opening view** `{lat −3°, lon 72°}` *(superseded: the camera opens on 0°, 0° — see 2026-10-27, "globe and scale-lab tests")*: the Indian Ocean centred (India top-centre, the example below centre, Australia right). The mockup's own geometry cannot hold Greenwich where it is drawn while 90°E is central, so Greenwich and its label sit nearer the left limb rather than being moved. Zoom is limited (distance 4.0–6.4, opening 5.25); no auto-rotation.
 - **Practice start** 0°, 0° with the directions carried over from the example (S, E): reaching 15°N asks for a deliberate N. At 0° the direction choice shows outlined (the direction the number will grow toward), not filled — 0° claims no direction. 180° of longitude shows "180°" with no letter; ±180 normalise to one meridian; a pole matches any longitude.
 - **Layout.** Mockup proportions at the real 1052 px card: panel : globe column 1 : 2 (`gap-5`, panel `pe-5` + hairline), card `p-6`, stage 660 px, globe ≈ 576 px across. The mode switch is first in the DOM and set in the globe column's upper corner as in the mockup. The panel title follows lesson Table 2's heading row (`text-base md:text-lg`, black), smaller than the mockup's ≈ 24 px — per the brief ("לפי כישור העיצוב"). Card height is the same in both modes (826 px; asserted by the QA script). The 30° grid follows the brief (the mockup draws a denser one).
 - **Colours.** Tokens only: orange (`accent`) for the selected lines, the marker and the CTA; the equator / Greenwich in `brand` with a light core (the mockup's pale green); toggles / slider in `brand-dark`. The success strip takes a `brand` tint and green check; wrong answers use ink and an alert icon (no red); the explore strip is neutral, as in the mockup. The globe's limb rim and the sea's sheen are part of the natural rendering, not UI colours.
@@ -2360,7 +2360,7 @@ User request (same day): remove "הצגת הנקודה", "מבט התחלתי", 
 - New dead-reckoning images are conceptual compositions; their pixels do not certify exact map/model geometry or approved transcription. Runtime terrain, map, bearings and copy must come from the reviewed sources/data.
 - Dead-reckoning option 3 adds an explicitly separate bearing-deviation experiment; the approved original no-deviation demonstration is preserved. At equal 1200 m distances, a 62°/64° pair has 41.8858 m endpoint separation; the 64° endpoint is east and south of the 62° endpoint.
 - Detailed prompts and assets are in design/mockups/combatnav-concepts-2026-10-12/ and design/mockups/dead-reckoning-concepts-2026-10-12/. No application source was changed for this request.
-- **Update (same day):** "איפוס" now sets 0°, 0° (the equator meets Greenwich) instead of restoring the example; the direction toggles keep their last choice, shown outlined since 0° claims no direction. The page still opens on the deck's example (30°S 90°E). "לתרגול" has no arrow; its label is centred.
+- **Update (same day):** "איפוס" now sets 0°, 0° (the equator meets Greenwich) instead of restoring the example; the direction toggles keep their last choice, shown outlined since 0° claims no direction. The page still opens on the deck's example (30°S 90°E). *(Superseded the same day: it opens on 0°, 0° — see 2026-10-27, "globe and scale-lab tests".)* "לתרגול" has no arrow; its label is centred.
 
 ## 2026-10-12 — Coordinates 1 opening: two illustrated definition cards (option 1)
 
@@ -2770,3 +2770,662 @@ Every activity's title, lead/instructions, controls, visualisation and feedback 
 - **Assumption: left outside on purpose** — they are chapter-level theory, not part of one interaction: the definition cards that open relief-cover / land cover / coordinates 1; the two datum-parameter cards ("הזזה, סיבוב וקנה מידה", "ההבדל בין הדאטומים השונים"); "הגורמים המשפיעים על הצומח" beside the vegetation ladder (explains vegetation, not how to read the ladder); "כיצד מפרשים קואורדינטות?" (a static comparison + definitions screen, its heading covers both boxes); the opening term pairs of lesson 6 techniques / principles / planning (used by every activity of the chapter); summary/conclusion cards.
 - **Assumption: SceneHeader intros that also carry an instruction** (landforms, topography, contours, both onboarding screens) stay in the header — wording is frozen and the header is the screen title, so the sentence was not split.
 - Insets replace inner cards where a former card now sits inside a workspace (contours kind text, terrain-nav "מתי משתמשים"/walk-through, dead-reckoning board); the relief-cover summary table keeps a plain hairline frame.
+
+## 2026-10-26 — Datum mismatch activity ("הדמיה: מה קורה כשהדאטום לא תואם?"): clarity pass, task 16 (user request)
+
+Code: `datum-field/DatumFieldChallenge.tsx`, `datumField.ts`, `datumField.data.ts`. QA: `scripts/qa/datum-field-challenge.test.mjs` (21 unit tests), `scripts/qa/shot-datum-field-challenge.mjs` (18 states at 1440 × 1122). Screenshots: `design/screenshots/datum-field-challenge/`. Screen card: the 26.10 section of `datum-field-challenge-screen-card-2026-10-12.md`.
+
+- **The practice preview is gone.** This supersedes brief §7 ("בחירה מציגה תצוגה מקדימה אמיתית"). Choosing a pair moved the mark onto the place, which showed the answer before any decision. The user asked for a decision before the answer, so the map shows nothing of an answer until "בדיקת הנתונים".
+- **Assumption: three decision steps** (datums match? → action → pair). The feedback has to say whether the mistake was in identifying the datums, in choosing the action or in the calculation, and a single choice of pair can't tell these apart. The verdict names the first step that went wrong.
+- **Assumption: the calculation distractors.** "The two shifts swapped between E and N" and "only E converted" are invented slips. They are not from the brief.
+- **Assumption: "שינוי הכיתוב בלבד" is offered only in case 2.** In case 1 both labels already say A, so the action would mean nothing.
+- **Reset is back** ("התחלה מחדש": stage 2 to before the copy; practice: the case on screen). It was removed on 12.10 because the experiments are reversible. The current task asks to implement and verify a reset. The experiments stay reversible as before.
+- **Assumption: the ring appears in the legend again,** now as "המקום האמיתי" (on 13.10 "הגשר בשטח" was removed as a repeat). The task asks that the real place and the mark obtained be told apart at every moment. The ring's chip on the map gives only the place's name, so the term is not repeated.
+- **Assumption: the datum moved from the removed legend item "רשת דאטום A/B" into a map title** ("המפה · דאטום A", "מפת היעד · דאטום B"). One tag shape names every datum in the card.
+- **A short gap (17 m) has no line.** The two markers are too close for one: the number sits beside the diamond, on the side away from the target, and the legend leaves the line out.
+- **Height.** The 1344-px reference is now 1053 / 1077 (with the legend) / 1081 (case 2 after a check), up from 1033. `FitScreen name="datum-field"` in `CoordinatesScene.tsx` still says 1033, because another session is editing that file. Both values are clamped to 1000, so nothing changes.
+
+## 2026-10-26 — Topic-02 contours, screen 1 (3D mountain + linked map): copy cleanup (task 23)
+
+- **Scope:** only screen 1 of `#scene-contours` (`ContoursScene.tsx` above the density fit). `ContourCake3D.tsx`, the density section and its fit/wiring were not touched.
+- **One home per message:** the SceneHeader intro keeps only the definition (contour = equal height; describes relief on a flat map). The slicing idea lives in the "פריסה לשכבות" caption, and the 10 m interval in the "הר שלם" caption and the legend. Each view has one caption (what it shows) and one action line (what to do in that view), so the duplicated "גררו שכבה…" instruction is gone.
+- **Pan hint dropped:** "גררו בלחצן הימני להזזה" was removed from the action lines to keep them short. Panning still works, and re-clicking a view button re-frames.
+- **No "בדיוק" in the top-view caption:** the 3D top view is a perspective camera, so the higher rings look slightly larger than on the orthographic map. The caption says the lines "look like" the map's.
+- **Map column title** "מבט מלמעלה · קווי הגובה במפה" became "מפת קווי גובה", because it shared its name with view button 3. The model column title is now just "מודל תלת־ממדי".
+- **Live link line (`LayerLink`)** replaces the static "העבירו את הסמן על המפה…" line in the same slot. Idle, it says hovering either side lights the layer in both. Lit, it names the layer ("השכבה שבין 30 ל־40 מ׳") and states that its lower boundary is the orange contour ("הגבול התחתון שלה הוא קו הגובה 30"). This matches the existing highlight: map band i spans line i → i+1 with line i orange, and model slice i sits on line i. A short orange line glyph marks it. The text stays `text-fg`, not orange, for contrast. No `aria-live`: it changes on every hover.
+- QA: `scripts/qa/shot-contours-model.mjs` (all views, map→model and model→map, drag, link-line text) and `scripts/qa/shot-contours-model-loader.mjs` (GLB held via `page.route`). Shots are in `design/screenshots/contours-model-{before,after}/`.
+
+## 2026-10-26 — Topic 02 base-60 calculator docked in the work area
+
+- **Placement (completes the change deferred on 2026-10-13):** the floating calculator (fixed to the viewport's bottom-left, outside the card) is replaced by a docked one inside the activity's card, in its own row under the number track and its note. The toggle sits at the row's inline start (visual right, by the steps column). The calculator opens beside it as one low strip: display at inline start, keypad at inline end. The floating panel covered the track note and the D/DM/DMS/S writings at 1440 × 1122; the dock covers nothing.
+- **Why this spot:** the empty areas inside the track itself are too small for the calculator (top right ≈ 190 × 310 px), or the final writing row fills them at the end (bottom left). Under the track the calculator is next to the work it serves: the track's numbers and the answer's field are above it, the active step and its feedback to its right. In practice mode the steps column is already 100–220 px taller than the track column, so the dock mostly uses existing free space.
+- **No jump above it:** opening or closing never moves the steps, the track or its note (QA asserts this). Only the band below can move down. The open card is a constant 1286 reference px in every state, which is the existing tallest state (three hints shown). At 1440 × 1122 that is 1007 screen px, so the whole card fits under the site header with the calculator open. The band moves 133 screen px in the guided opening and ≈ 94 px in practice before feedback. It does not move when the step's feedback is already showing.
+- **Keypad 5 × 4 instead of 4 × 5**, so the strip stays low (184 px of keys). Same keys and same behaviour (`calc.ts` unchanged). The bottom row keeps the old order `0 . ⌫ … =`, with `+` inserted.
+- **Open, the toggle is the close button:** its icon becomes ✕, and it takes the pressed tone. The panel's separate ✕ was dropped, because the toggle sits at the strip's corner. Escape still closes and returns focus to the toggle. The panel is `role="group"` (labelled "מחשבון") rather than `dialog`, since it is in the page flow and not an overlay.
+- **Keyboard:** in DOM order the dock comes right after the track. From the answer's field, Tab reaches the toggle, then the calculator's line. From the line, Shift+Tab twice returns to the field. No result-to-field copy was added: the learner still types the answer.
+- **Kept as is:** the calculator keeps its open state and its expression through steps, axis switches, the end of the track and איפוס. That is the existing behaviour, and the calculator is the learner's own tool.
+- **Header row:** with the toggle moved, the row above the track holds only the axis switch at inline end, as in the mockup (`02-number-workbench.png`). The closed guided opening is 42 px taller than before (1116 vs 1074 reference px), because the toggle now has its own row.
+- **Shell:** `CoordinatesPart2Scene` fits the screen as `min(height, 704)`, so the larger card needs no fit change. To keep the `height` note accurate, the base60 screen's 1920 × 1080 opening height is now 1116 (was 1074).
+- QA: `scripts/qa/shot-base60-workbench.mjs`, calculator block, screenshots 13–19 in `design/screenshots/base60-workbench/`. Before/after pairs are in `design/screenshots/base60-calculator/`.
+
+## 2026-10-26 — Topic 02 datum: ellipsoid vs datum, and how datums differ (tasks 14–15)
+
+Brief: the user's message (tasks 14–15). Goal: a beginner can explain what the datum adds to the choice of an ellipsoid, and tell the reference body from how it is anchored to the Earth. Files: `topic-02/datum/` (`DatumGuided`, `datumDemo`, `DatumGlobe3D`, `DatumInset3D`, `DatumSection`, `datumOverlays`) and the block's QA scripts (`datum-guided.test.mjs`, `datum-copy-check.mjs`, `shot-datum.mjs`). `CoordinatesScene.tsx` and `datum-field/` (task 16, another session) were not touched. `datumGeometry` is unchanged; its tests still pin `fitError`, `bestFit`, `START`, `RANGE` and `DISPLAY_K`.
+
+**Screen card.** Lesson 2 ← קואורדינטות 1 ← the datum screen, after "אליפסואיד, גיאואיד וגליות" and before the datum-mismatch activity.
+- **Goal:** the learner can say what changed between two datums: the ellipsoid, the anchoring, or both.
+- **Message:** a datum = reference body (ellipsoid: size and shape) + anchoring (where its centre is, where its axes point).
+- **Action:** pick an anchoring, a datum and a check point, then answer three "what changed?" pairs.
+- **Boundary:** no coordinate-mismatch practice (task 16), and no geoid/undulation tabs (the previous screen).
+
+**Stations (the same accordion, globe and white card):**
+1. **"אותו אליפסואיד, עיגון אחר"** — `עיגון א׳` = geocentric (0, 0, 0°, ×1) / `עיגון ב׳` = (−18, 16, 10°, ×1), the same size.
+   - The globe marks the Earth's centre and rotation axis (ink, fixed), the ellipsoid's own centre and axes (orange, they move), and the other anchoring as a dashed outline. A legend sits upper left, under the surface label.
+   - Once B has been seen, the feedback adds the takeaway rows: "גוף הייחוס: אותו אליפסואיד" / "העיגון: שונה" / "אותו אליפסואיד בעיגון אחר הוא דאטום אחר."
+2. **"דאטום עולמי ומקומי"** — the global datum is geocentric (0, 0, 0°, ×1). The local datum keeps the same ellipsoid, so only the anchoring differs: (22, −4, −6°, ×1). It is the best shift over the marked arc with the turn held at −6°; left free, the fit turned the body by −36°, which read as a tilted Earth.
+   - The marked region shows in both datums, because the check points refer to it.
+   - Check points: inside t = −0.8, outside t = 0.6 (both on the open wall). Gaps in section units, inside / outside: global 22.9 / 5.0, local 2.4 / 14.4. The feedback words come from these numbers, as before ("יש פער…", not "נשאר", since the gap can grow).
+   - The close-up shows only here.
+3. **"בדיקה: מה השתנה?"** — datum A is always the global datum (dashed); datum B changes:
+   - the anchoring only: (20, −16, 12°, ×1);
+   - the ellipsoid only: (0, 0, 0°, ×1.08), larger;
+   - both: (−20, 12, −12°, ×0.88), smaller. One larger and one smaller, so that "another ellipsoid" never reads as "a smaller one".
+
+   Each pair opens on datum A and moves to B (1.1 s; instant under reduced motion). "הצגת המעבר שוב" replays it.
+   - A wrong answer says why and points at the mark to look at, without naming the answer, and can be changed.
+   - A right answer locks and opens "לזוג הבא".
+   - The end states the takeaway: "דאטומים יכולים להיבדל באליפסואיד, בעיגון או בשניהם." "מההתחלה" clears it. No score.
+
+**Shortened or moved:**
+- **Removed:** the shift → rotate → scale demo, its stepper, the four-slider experiment ("נסו בעצמכם", "איפוס", "הצגת התאמה") and the surface picker.
+  - A visual fit to the geoid is the reason an anchoring is chosen, not what defines a datum.
+  - The demo's scale phase resized the ellipsoid, which belongs to the ellipsoid, not to its anchoring.
+  - The surface picker repeated the previous screen.
+- **The two parameter cards → one closed card, "הרחבה: המרת קואורדינטות בין דאטומים"** (`FitScreen datum-conversion`, 244). It covers:
+  - conversion is a separate operation from the datum;
+  - the seven parameters, where scale "אינו משנה את האליפסואיד";
+  - a and f enter when the ellipsoids differ;
+  - the difference is not only a shift (local network distortions, correction grids);
+  - anchoring is realised by an origin point (old local datums) or a station network (modern datums).
+- **Title** "דאטום: התאמת האליפסואיד לכדור הארץ" → "דאטום: אליפסואיד ועיגון". The lead uses the course's definition (as in קואורדינטות 2 TERMS): "מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ".
+
+**Accuracy (fact-check and Hebrew review, both report-only):**
+- A local datum is described by its origin ("מעוגן לנקודת מוצא באזור אחד, כך שהאליפסואיד מתאים היטב לגיאואיד שם"), not by the fit alone.
+- The global datum is centred on the Earth's centre of mass.
+- Exaggeration is stated in stations 2 and 3. Real centre offsets: "לרוב עד כמה מאות מטרים, לעומת רדיוס של כ־6,400 ק״מ". The reviewer recalled about 180 m for ED50, 700 m for OSGB36 and 850 m for Tokyo, from memory; not re-fetched.
+- Dropped as overgeneral: "כך נבדלים לרוב דאטום מקומי ותיק ודאטום עולמי". Modern regional datums share GRS80 and differ mainly in anchoring.
+- **Open:** the 14-parameter (epoch-dependent) Helmert and the stated accuracy of a transformation are not mentioned. They are left out as advanced; add them to the הרחבה if the course wants them.
+
+**Layout:**
+- Each station's feedback slot holds its tallest state (station 1: 200 px with the takeaway; station 3: 176 px), so no answer resizes the card, the stage or the globe.
+- Card heights at 1344 px: station 1 778, station 2 886, station 3 927. `FitScreen datum` 818 → 927, and `fitTallerStates` was dropped (no taller optional state remains).
+- At 1440 × 1122 the scale stays 0.783. At 1366 × 768 the tallest station ends at y = 759; at 1920 × 1080, at y = 1011 (scale 1).
+- The legend appears with the first 3-D frame. Without WebGL it sits at the bottom, beside the close-up.
+- 3-D: `Guides` now draws the reference marks. `region` replaces `mode` in the globe and the close-up. The drag handle of the removed experiment is gone, and so are the unused "geoid" / "ellipsoid" looks; "surface" stays for the fallback capture.
+
+**Verification:**
+- The shared :3000/:3001 servers kept full-reloading while other sessions saved files. QA therefore ran on an isolated worktree (`.claude/worktrees/datum-tasks-14-15`: HEAD + the 9 files above, `node_modules` junction, `NEXT_DIST_DIR=.next-datum1415`, :3071).
+- `datum-guided.test.mjs` 21/21. `datum-copy-check.mjs` passes: every removed original sentence is listed with this reason.
+- `QA_BASE=http://localhost:3071 node scripts/qa/shot-datum.mjs` passes 94 checks. It covers every station, choice and feedback, keyboard, the card height per station, no GPU allocation while the ellipsoid moves, the loader (textures held with `page.route`), reduced motion and no WebGL.
+- `tsc --noEmit`: no errors in these files. `next build` (in the worktree) passes.
+- Screenshots: `design/screenshots/datum-guided/tasks-14-15/` (before: `before/`).
+
+## 2026-10-26 — Topic 02 "אטלס הפלחים", task 20: practice that asks before it tells (user request)
+
+Brief: the user's pasted message of 2026-10-26 (UTM atlas only; continue from the 2026-10-19 focus pass, no rebuild). Code: `utm-atlas/UtmZoneAtlas.tsx`, `AtlasMap.tsx`, `atlasControls.tsx`; `CoordinatesPart2Scene.tsx` and shared components untouched. QA: `scripts/qa/shot-utm-atlas.mjs` (150 checks; its stale lead selector fixed), `scripts/qa/utm-atlas.test.mjs` unchanged (14/14). Screenshots: `design/screenshots/utm-atlas-2026-10-26/` (`before-*` = the 2026-10-19 state).
+
+- **Kept as it was (already right):** the two views and their layout, one point across both maps and both views (switching keeps it), the zones card (zone + hemisphere only), the metres card (E, N, then zone / hemisphere / WGS84), coverage and exceptions in "מידע נוסף", the locator caption, the explainer.
+- **Exploration, added:** the leading world map names "צפוני N" / "דרומי S" beside the equator at its east edge, the point's side in the accent chip, so the hemisphere is read on the map, not only in the card; the enlargement names the equator when it is in view; the enlargement's frame takes the locator box's orange while the connectors are drawn, and the caption ends "המסגרת הכתומה מוגדלת בתקריב"; the crossed boundary is named once (its label above the frame, underlined) — the duplicate "גבול …" chip inside the map was removed. Instruction: "לחצו במפה או גררו את A. הפלח שלה מודגש, וחצי הכדור מסומן ליד קו המשווה."
+- **What gave answers away before (fixed):** Greenwich — the enlargement labelled 29 / 30 / 31 beside "גריניץ׳ 0°", and a choice tinted its zone and moved the enlargement to it before the check; transfer — the task gave "35.68°N" (the hemisphere letter), a map click picked the zone under the pointer and showed its number in the row (clicking B answered), and one wrong check stated the boundary ("מזרחית לגבול 138°E") and the hemisphere outright.
+- **Before a check now:** pin, boundary longitudes above the enlargement, the 1 / 15 / 30 / 45 / 60 anchors on the world map, the equator and which side is N / S, Greenwich in task 1 — no zone numbers in the enlargement, no tint for the current choice, no map picking (maps are information only in practice), the task data "נקודה B · טוקיו · קו אורך 139.69°E" beside the controls (assumption: the hemisphere is read from the pin against the equator; the latitude appears after the check; screen-reader descriptions carry the full coordinates, the equivalent of the pin). The row opens on 28–32 for Greenwich (the answer is not the middle button) and on 29–33 for the new points (their zones are paged to).
+- **Choice vs verified result:** the controls hold the choice; the maps and the feedback follow the LAST CHECK. ✓ / ✕ sit on the checked button / hemisphere only, and drop when the choice changes; a wrong zone is drawn in the pick tone (dark outline, its number above the world map and in the enlargement); the answer is drawn in the accent tone only once verified or shown. A part checked right locks (✓); "בדיקת הבחירה" is dimmed (`aria-disabled`, focus kept) until the choice differs from the one just checked.
+- **Hints, per wrong part:** 1 — what to check: the checked zone's own span ("פלח 53 משתרע מ־132°E עד 138°E, ו־B אינה בתחום הזה…"), for 30 "גריניץ׳ הוא גבולו המזרחי"; the hemisphere rule with the equator highlighted, without saying which side. 2 — where and how to count: B's two boundaries marked on both maps without the number + "מספרי הפלחים עולים ב־1 בכל 6° מזרחה, ופלח 31 מתחיל בגריניץ׳ (0°)" (task 1 becomes the anchor of tasks 2–4); for Greenwich 0°–6°E marked; for the hemisphere, the side. After two failed checks "הצגת התשובה" (secondary) is offered — assumption: on request rather than automatic, so a learner may keep trying. Right: why the zone and the hemisphere fit the point, then its E / N in that zone (WGS84). Shown: "התשובה: …" in the info tone, the learner's last choice stays theirs with ✕.
+- **End and reset:** the end card counts tasks solved without the answer; "תרגול מחדש" and re-entering practice start clean (no choice, verdict, hint or mark).
+- **Open:** in practice the feedback still pushes the small enlargement down (≈ 40–135 px at 1440, as in the 2026-10-19 version); the card stays inside 1440 × 1122 (tallest state 96–919 px). No shell change needed: `FitScreen name="utm-atlas"` is ignored inside `LessonFitUniform`.
+
+## 2026-10-26 — Topic 02 "אטלס הפלחים": the practice is done on the map (user request, second pass)
+
+Brief: the user's pasted message of 2026-10-26, later the same day. The learner should find and understand the zone and the hemisphere through the map. The morning's practice relied on a row of zone-number buttons and counting from the longitude, and the map was inactive. Scope: the utm-atlas activity and its tests only. The lesson shell and other activities are untouched.
+
+Code: `utm-atlas/UtmZoneAtlas.tsx`, `AtlasMap.tsx`, `atlasControls.tsx`, and `utmAtlas.ts` (new `cellAt`, `cellOutline`).
+
+QA:
+- `scripts/qa/shot-utm-atlas.mjs`: the practice section is rewritten. The label rows above the frames are now part of the overlap check, and the screen-reader verdict locator is scoped to the atlas, since another activity on the page now also uses `data-verdict`.
+- `scripts/qa/utm-atlas.test.mjs`: two new tests, 16/16 pass.
+- Screenshots: `design/screenshots/utm-atlas-map-practice-2026-10-26/`. The "before" images are `utm-atlas-2026-10-26/14–25`.
+
+**How the choice works**
+- **Choosing on the map.** A click or drag on either map chooses the zone under the pointer and the click's side of the equator. Together they form one cell, for example "54N".
+  - Assumption: one click sets both parts. The hemisphere letter is exactly the side of the equator, and the chosen half of the strip is drawn, so the hemisphere reads as a place on the map, not a toggle.
+  - A part already checked right stays as it is, and a click then changes only the other part.
+  - Greenwich has no hemisphere part.
+  - Clicking the pin chooses the point's own cell, read at the pin's tip (as in exploration).
+- **What it replaced.** The zone-number row with five-zone paging, and the N/S switch. `ZoneRow` and the `Segmented` verdict/locked props had no other users and were removed.
+- **The card.** It reads the choice back in the zones card's own cells: "הפלח שבחרתם" and "חצי הכדור שבחרתם", showing "—" until something is chosen. ✓ / ✕ appear on a cell only after a check.
+
+**What the map shows** (this reverses the morning pass)
+- Zone numbers stay in the enlargement before a check. The user asked: "אפשר לקרוא ולהבין את גבולות הפלחים ואת מספריהם במפה".
+- Boundary longitudes stay above the enlargement.
+- N / S labels sit beside the equator on the world map. They also appear in the enlargement when the equator is in view (Nairobi), and "קו המשווה" then moves to the enlargement's west edge.
+- In the Greenwich task, which asks for the western boundary, the enlargement's edges are labelled "מערב" / "מזרח".
+- The task line gives the place only ("נקודה B · טוקיו"). The coordinates appear in the right and shown feedback, and in the screen-reader descriptions.
+
+**Tones**
+- The learner's choice: a dark tint with a solid dark edge, on both maps. Zone boundaries are dashed and the answer is orange, so the three never look alike. The chosen zone's number chip and hemisphere chip get a dark border.
+- Hover: a light dashed outline shows what a click would choose.
+- Verified or shown: the accent tone. A verified cell is drawn as a half strip (54N).
+- Once the answer is shown, a different last choice stays drawn as the learner's own.
+- Above the world map, a choice within two zones of the shown answer keeps its number only in the enlargement and the card, so the two labels don't collide.
+
+**Keyboard**
+- In practice the world map frame takes focus (`role="application"`, with the same focus ring as DatumFieldChallenge's map).
+- ← / → move to the zone to the west / east, in map order and never mirrored. ↑ / ↓ choose the northern / southern hemisphere.
+- With nothing chosen yet, → starts at the zone on the enlargement's west edge and ← at its east edge, never at the point.
+- Each choice is announced with the zone's longitudes ("בחרתם: פלח 53, בין 132°E ל־138°E, חצי הכדור הצפוני."). A locked part says so.
+- Tab then reaches "בדיקת הבחירה".
+
+**Hints point at the map**
+- Zone, hint 1: the checked zone's boundaries, plus "בתקריב, בדקו בין אילו שני קווים מקווקווים נמצאת הסיכה B".
+- Zone, hint 2: the point's two boundaries marked in orange on both maps, plus "קראו בתקריב את המספר שבראש הרצועה שביניהם". The number itself is never given.
+- Hemisphere, hint 1: the equator highlighted, plus "בדקו במפה: B מעל הקו המודגש או מתחתיו?".
+- Hemisphere, hint 2: "במפה הסיכה … נמצאת מעל / מתחת לקו המשווה, כלומר מצפון / מדרום לו".
+- Greenwich: choosing 30 says Greenwich is its eastern edge, and that a western edge is the strip's left side on the map. Hint 2 points to the strip whose left line is Greenwich, with 0° marked.
+
+**Right feedback**
+It links the point, the zone's boundaries and the equator: "נכון: 54N. B ב־139.69°E, בין 138°E ל־144°E, שהם גבולות פלח 54, וב־35.68°N, מצפון לקו המשווה, ולכן בחצי הכדור הצפוני." The point's E / N in that zone (WGS84) follow.
+
+**Layout**
+The feedback moved from above the small enlargement to below it, in the same column. The maps, the choice and the buttons now never move during a task, which closes the morning pass's open point. The tallest state (Tokyo, two hints) spans 96 to ≈ 870 px at 1440 × 1122.
+
+**Kept from the morning pass**
+- Both exploration views.
+- The order choose → check → "הצגת התשובה" (after two failed checks) → next.
+- Locking a part checked right, and refusing to re-check the same choice.
+- The end count, "תרגול מחדש", and returning to exploration with the point kept.
+
+**Open**
+- The pin makes "click the point" a working strategy. What the learner gains then rests on reading the choice back (its number and side) and on the right feedback. A harder step, such as a point given only by its coordinates, would be a new task type.
+- At 1440 × 1122 the lesson's uniform fit scales everything by 0.78 (shell, `LessonFitUniform`). The 13 px map labels then render at ≈ 10 px and the 16 px body text at ≈ 12.5 px. This belongs to the shell, not this activity.
+- Three `next dev` servers (3000, 3001, 3091) run from the same `.next`. Pages reload on their own now and then, so a long QA run may need a retry.
+
+## 2026-10-26 — Topic 02 "כיצד מפרשים קואורדינטות?": a decomposed reading instead of the comparison table (task 22)
+
+New component `src/components/lessons/topic-02/reading-coordinates/` (`ReadingCoordinates.tsx`, copy and logic in `readingModel.ts`). **Not wired:** `CoordinatesPart2Scene.tsx` belongs to another run. The swap is described in `design/docs/reading-coordinates-wiring-2026-10-26.md`. Until then, the lesson still shows `ReadingCoordinatesBlock`.
+
+**Content:**
+- The example is point A (the bridge) of the reference-systems map. The screen uses `READINGS.A` from `reference-systems/`, so its numbers always match the map: `31° 48′ 27.98″ N, 35° 07′ 28.83″ E` and `36N E 701125 N 3521095`, WGS84. The terrain is illustrated, with a synthetic registration in zone 36N; it is not a real place (see `referenceSystems.data.ts`).
+- **Order.** Each example states its own order ("בדוגמה הזאת…") and tells the reader to identify values by their direction letter or label. No order is called a convention. The deck's own notation `(90E,30S)` (longitude first) is used in check question 1.
+- The UTM reading writes E and N as labels before the numbers. The hemisphere N after the zone number is explained as a different N from the northing axis; check question 2 tests exactly this.
+- **Units.** Metres are not written in a UTM reading. The key shows them as a dashed "מ׳" chip, meaning "implied by the system".
+- **E and N.** E is described against the zone's middle line (E = 500000), as the UTM atlas teaches. N is described as the distance from the equator in the northern hemisphere. The southern 10000000 m appears only in the check's explanations.
+- **Datum.** For a UTM message, the datum is counted as missing information, together with the zone and the hemisphere. This matches the atlas's closing line "הפלח, חצי הכדור והדאטום".
+- The datum and the reference system get one short note, plus a pointer to the datum activity in קואורדינטות 1. That activity is not repeated here.
+- **Left out on purpose:**
+  - The definition of "היטל". It stays in the projections screen and in `Part2Summary`.
+  - The table row "כיסוי ופלחים". UTM's 60 zones are in the zone row of the key, and the geographic system's global coverage is in GeoProsCons ("גלובלית").
+  - "רוחב ואורך אינם היטל למישור". **Open:** add it back if the course wants this point on this screen.
+
+**Interaction:**
+- Each key row opens with the exact glyphs it explains. Hover, focus or a press on a row marks those glyphs in the written reading: orange tint and underline, while the rest fades to 40 %. A press keeps the mark. The WGS84 chip in the note marks the datum in both captions. Orange ties a part to its explanation, as it ties the selected point to its readings on the map screen before.
+- **Check:** three questions, one at a time. A wrong answer gets an explanation first. Wrong picks get ✕, and the hints for options left out do not name them. "הצגת הפתרון" appears only after a check. Any new pick clears the verdict. After a right answer or a revealed solution, the options lock and "לשאלה הבאה" takes focus.
+- The feedback sits beside the options, in a slot that explains the flow before the first answer. The card's height therefore stays the same in every state.
+
+**Layout:**
+- One white card for the whole screen. Geographic is at inline start (right) and UTM at inline end, in the maps' order on the screen before.
+- Controls reuse `utm-atlas/atlasControls`: CHOICE, choiceTone, Feedback, HEADING, LABEL, BODY and VALUE. No new tokens, colours or fonts.
+- The card is 1294 px tall at the 1344 px reference. At 1440 × 1122 in the lesson (scale 0.7827), it runs from y = 96 to y = 1108.
+
+**Verification:**
+- Unit tests: `scripts/qa/reading-coordinates.test.mjs`, 9/9.
+- Browser QA: `scripts/qa/shot-reading-coordinates.mjs`, 13 shots. It covers layout and fit, RTL, the order of the LTR glyphs, every row's marks, press and release, the datum chip, keyboard (RTL arrows, focus ring, focus moved to the way forward), the full check flow, reduced motion, text of at least 16 px, and the console.
+- It ran on the standalone page `/lab/reading-coordinates/` ("isolated") and on the lesson route in a worktree wired as in the wiring doc ("sandbox-lesson"). Both passed.
+- Screenshots: `design/screenshots/reading-coordinates-2026-10-26/`.
+
+## 2026-10-26 — "אליפסואיד, גיאואיד וגליות" (task 13, lesson 2): one link, readable heights at A, the reveal, actions beside controls, task feedback
+
+Brief: the user's message of 2026-10-26, continuing the 2026-10-19 polish (its three open items are closed here). Files: `CoordinatesScene.tsx` (the `ReferenceBodies` block only), `MeasurementSection.tsx`, `MeasurementPanel.tsx`, `MeasurementIllustration.tsx`, `StageControls.tsx`, `measurementMission.ts`, `referenceBodiesStyle.ts`, one constant in `MeasurementLandscapeRenders.tsx`; QA `shot-measurement-mission.mjs`, `measurement-mission.test.mjs`, two label regexes in `measurement-round6.mjs` / `shot-measurement-heights.mjs`. Screenshots: `design/screenshots/geoid-undulation-2026-10-26/{before,after}/`.
+
+- **Same station, same numbers everywhere.** In the task each arrow in the section carries a chip with the station's value — `h = 148`, `N = +28`, `H = ?` (→ `H = 120` once solved) — the activity's existing `DiagramChip` (the ellipsoid's a/f labels). The readings are headed "נתוני תחנה B" with the pin's orange letter, and the question names the station ("מהו הגובה מעל פני הים בתחנה B?"). A pick updates buttons, model pin, receiver, section and readings in the same frame (QA: within 100 ms).
+- **Assumption: no units in the section's chips.** With "מ׳" the N chip at B covered station A's pin. The units stay in the readings, the answer field and the section's screen-reader description.
+- **Station A: a close-up, not a different scale.** When any height arrow at the picked station is shorter than 16 px, or the geoid and ellipsoid lines are closer than that (so it is unclear which one an arrow starts from), the section opens a close-up. It is the framed stretch of the same drawing, an exact whole number of times larger in both directions ("תחנה A · תקריב פי 3"), so H, h and N keep their proportions. It uses the ellipsoid view's enlargement style: an orange frame round the station, dashed corners up to the box. The box sits at the section's top end, clear of B's pin and the ground (QA). Lines keep the section's stroke widths. Only A triggers it, in the task and in the geoid view after the reveal (H alone, no numbers). The main section still draws A's small arrows inside the frame; their labels move into the close-up.
+- **The geoid view's reveal is one step that shows H in both figures.** Before the reveal the section draws the geoid and the quiet ellipsoid but no H, and the model none. After it, the model's H and the section's H (and A's close-up) fade in together after the geoid has swept in (`REVEAL_H_DELAY` 1 s, shared). "החזרת פני השטח" hides both at once. Reduced motion: at once.
+- **One instruction beside its control (`ActionLine`).** The model caption's name "מודל תלת־ממדי" is replaced by the view's current instruction, followed by an orange arrow and the control it names. Surface: "בחרו תחנה והשוו בין המודל לחתך" + A/B/C. Ellipsoid: "בחנו את הפחיסות בקטבים" + מהצד/מלמעלה. Geoid: "לחצו כדי לראות מאיזה משטח נמדד H" + the reveal; after it, "בחרו תחנה וראו את H" + A/B/C. Task: "בחרו תחנה" + A/B/C, and in the panel "הציבו את נתוני תחנה B בנוסחה, וכתבו את H במטרים." Secondary controls ("מבט התחלתי", "החזרת פני השטח") sit at the caption's end. The instruction sentences left the view paragraphs. The paragraphs are otherwise unchanged, including the agreed geoid definition that `measurement-round6.mjs` checks. The card lead now states the goal and order.
+- **Assumption: removed control.** In the geoid view before the reveal the station buttons are not shown, so the only control beside the instruction is the reveal. Pins on the model and the section still pick. After the reveal the toggle moves to the caption's end and keyboard focus follows it.
+- **Feedback explains and fixes; never gives H.** New verdicts in `measurementMission.ts`: `reversed` (N − h) and `gave-n` (±N), besides `gave-h` and `added-n`. Every wrong answer says what was done instead and gives the station's numbers put into H = h − N (`substitution()`: "H = 148 − 28", "H = 18 − (−12)"), left to work out. At A, h + N (= 18 − 12) is explained by the sign: N is negative, the geoid is below the ellipsoid, so H is greater than h. A right answer shows the worked sum and what the sign of N did ("N חיובי, ולכן H קטן מ־h"; N = 0 → H = h). The N reading states its meaning with the number ("שלילי: הגיאואיד 12 מ׳ מתחת לאליפסואיד"). The formula, data and checking are unchanged.
+- **Heights.** 1440 × 1122: card 513 / 538 / 559 / 705 px (surface / ellipsoid / geoid / task); the task is the same as before. 1920 × 1080: screen ≤ 868 px (`FitScreen` 917 unchanged).
+- **Verified:** `measurement-mission.test.mjs` 28/28 (new verdict and substitution cases); `shot-measurement-mission.mjs` PASS on an isolated worktree server and on the shared :3000; `shot-measurement-heights.mjs` fits at 1122 / 900 / 800 in every state; `tsc` clean for these files; `next build` (static export) passes in the worktree.
+- **Pre-existing, not changed:** `measurement-round6.mjs` fails only "surface: the model (197 px) and the section (156 px) differ in height", with identical numbers on plain HEAD. `shot-measurement-heights.mjs` reports the task card not fitting at 1920 × 855 (901 px), also identical on HEAD.
+
+## 2026-10-26 — Topic 02 "מערכות ייחוס", task 21: the method switch shows what stays and what changes; spacing (user request)
+
+Brief: the user's pasted message of 2026-10-26 (this activity only). Code: `ReferenceSystemsLinkedComparison.tsx`; `reference-systems/` data and geometry untouched (task 22 reads `READINGS` from it); `CoordinatesPart2Scene.tsx` (lead, `FitScreen`) untouched. QA: `scripts/qa/shot-reference-systems.mjs` (switch filmed frame by frame), screenshots `design/screenshots/reference-systems-2026-10-12/r5-*`.
+
+- **What stays is never animated:** terrain and crop, the pins, the chosen point's anchor ring and feature outline, north arrow, scale bar, and the panel's name "A · גשר". Measured in every painted frame of a switch: map box, pin tip and name do not move.
+- **What changes, one sequence:** the grid with its frame labels, the point's two lines, the frame values and the panel's reading fade out together (160 ms); the shown method swaps once, at 120 ms — before the fade ends, so framer's end-of-fade hand-off cannot flash the old layers; the new grid fades in, the point's two lines grow out of the unmoved point to the frame (clip reveal, 280 ms), and the frame values, the panel's numbers, the bar marks and the change sentence appear together from 160 ms after the swap. A pick replays the second half for the new point (the bar marks slide; that slide is the size of the change in seconds).
+- **No in-between numbers:** values are swapped whole, never counted or cross-faded; each reading enters as one unit (all four DMS groups and the bar's "31° 48′" together) — a part such as "31° 48′ N" alone would be another place. Quick switching: each new click restarts the out phase; the swap goes to the last choice only (QA: five clicks 40 ms apart → shown geo → utm, no mixed frame).
+- **Reduced motion:** the final state at once (no out phase, no reveal, no delay, bar marks jump). The still map and name, and the lead's "אותו מקום…", carry "the same point" without motion. A screen-reader line announces a switch: "שיטה UTM. נקודה B, רכס, נשארת במקומה."
+- **Panel = the same slots in both methods:** name → reading box (white, bordered: geo ϕ/λ with bars, UTM E/N + zone) → "השינוי … ביחס לגשר" box → general explanation. Geo's box title is new: "השינוי בקריאה ביחס לגשר" (parallel to UTM's "השינוי ברשת ביחס לגשר"). Its sentence keeps two lines so a pick never resizes the panel.
+- **Copy shortened:** A's geo sentence lost its instruction ("בחרו ברכס או ביישוב…", the lead already says it) and now parallels UTM: "הגשר הוא נקודת ההשוואה: אין שינוי ברוחב או באורך."; B/C lost "כאן השינוי מופיע ברכיב השניות." (the note under the readings says it once).
+- **Spacing (assumption: start-aligned rows):** both control rows are labelled ("שיטה:" / "נקודה:"), set to the map's start (right) edge, 16 px (reference) from the map on each side; method buttons now h-11 like the point buttons. The panel starts level with the method row; in geographic it runs to the point row's foot, in UTM it is as tall as its content (no half-empty box). Card, method row, map and point row are identical in all six states, so screen 2 no longer moves on a switch (round 4's open point). At 1440 × 1122, heading 16 px under the header, the card ends at ≈ 829 px.
+- **Open:** the lead (scene file, not this task) still says where the controls are ("בחרו שיטה מעל המפה, ובחרו נקודה במפה או בכפתורים שמתחתיה") although the rows are now labelled; a shorter lead is proposed in the task report.
+
+## 2026-10-26 — Topic 02 "היטלים: מכדור למפה" polish and the geographic system's pros / cons (tasks 17, 19)
+
+Brief: the user's pasted message of 2026-10-26 (tasks 17 and 19 only; tasks 13–16, the calculator and UTM run in parallel and were not touched). Code: `projections/` (`projectionsModel.ts`, `ProjectionsLab.tsx`, `ProjectionMap.tsx`, `ProjectionStage3D.tsx`, `ProjectionStageFlat.tsx`, `earthRaster.ts` cache key), new `GeoProsCons.tsx`, and in `CoordinatesPart2Scene.tsx` only the pros / cons block (moved out) and the two `FitScreen` heights. Tests: `scripts/qa/projections-lab.test.mjs` (22), `scripts/qa/shot-projections-lab.mjs` (WebGL, `QA_NOGL`, `QA_REDUCED`), new `scripts/qa/shot-geo-pros-cons.mjs`. Screenshots: `design/screenshots/projections-lab-2026-10-26/`, `design/screenshots/geo-pros-cons-2026-10-26/`.
+
+**Task 17 — the projections lab**
+- **Distortion made visible (was missing).** The sample parallel and point (31.8°N 35.2°E) are replaced by three equal circles (after Tissot), radius 8°, on 25°E at 20°, 45° and 70°N — the same three on the globe, on the sheet and on the map in every method, so a tab switch compares where each method keeps them true (20°N nearest the cylinder's equator, 45°N on the cone's contact, 70°N nearest the plane's pole). On the map each circle carries its size on the globe dashed (the UTM explainer's device) where the map stretches it ≥ 4 %. All three projections are equidistant along the meridians (scale 1), so every circle keeps its height and widens east–west by the parallel scale: cylinder ×1.06 / ×1.41 / ×2.92, cone ×1.08 / ×1.00 / ×1.17, plane ×1.30 / ×1.11 / ×1.02 (tested against the drawn circles to 3 %). Legend: "קו המגע / נקודת המגע", "עיגולים שווים על הכדור", "אותו עיגול בלי עיוות".
+- **Surface → unrolling → map.** The map comes in as the surface unrolls (opacity 0.28 → 1, smoothstep of the progress); the circles appear on the sheet and the map once it is well open (from 45 %, whole at 85 %) — wrapped, the sheet's own circles would sit beside the globe's. An arrow between the two views points from the illustration to the map. The 3-D view's heading says "המחשה: משטח ההטלה"; the lead says that the projection is a mathematical calculation and the surface an illustration of the grid it makes and of where it distorts (as the UTM explainer does).
+- **One idea and one action a phase** (`STEPS`): touching (start) → the cut-and-unroll, which does not stretch the surface — the distortion was made when the globe was carried onto it, so the step does not contradict content/topic-02.md's "אי אפשר לשטח… מבלי למתוח" (mid; the plane: nothing to unroll) → the distortion against the line / point of contact (end, "עברו לשיטה אחרת והשוו את העיגולים"). The cylinder's end gives the reason and the direction: on the cylinder every parallel is as long as the equator, so the circles stretch sideways (in Mercator, also cylindrical, they would grow both ways — the claim is about this example). Removed: the phase line under the slider (it repeated the slider's ends and the step; kept as the slider's `aria-valuetext`), `START_HINT` (merged into the action), the separate "רמז" button (its cue is now the first miss's feedback). "מבט התחלתי" left the controls row: it appears in the 3-D view's corner only after the view was turned (drag or arrow keys) and resets the turn only.
+- **Comparing methods.** A tab switch keeps the progress (was reset to 0), so the same moment is compared across methods; "הדגמה חוזרת" or Home replays a method from the wrap.
+- **Practice checks understanding before the answer.** Four tasks a round: all three methods and one again, never twice in a row, the repeat not always last — so the last task is never given by elimination (it was a permutation of three). One whole map a round; the rest are windows of the map (cylinder 20°W–70°E × 35°S–55°N, cone around 30°W–50°E × 30°–70°N, plane the pole ±50°) framed by a neat line, so the method is read from the grid — straight / arcs / closed circles — not recalled from the outline seen in the lab. Target maps draw the grid to be read (white under-stroke + ink). Feedback ladder: a first miss says what the chosen surface makes and where to look ("התבוננו בקווי הרוחב… ישרים, קשתות או מעגלים שלמים?") — never the target's grid or name (the old miss text described the target in the lab's own words for its surface); a second miss shows the answer, marks it, says why, and unrolls the answer's surface on the globe. The summary shows the three maps with their circles and contact, each with "עיוות קטן ליד …", and one line scoped to these examples ("בשלוש הדוגמאות כאן…"): a secant surface such as UTM's cylinder (k0 = 0.9996) is true on two lines, not at its centre. The maps' accessible names give each circle's stretch along its parallel against its meridian (on the cone and the plane the parallels are tilted at 25°E, so it is not "width / height" there).
+- **Heights.** 1440 × 1122: the card is 784 px in every state (was 797). 1920 × 1080: 1002 px (`FitScreen` 1036 → 1002; inside `LessonFitUniform` the per-screen height is not used, so this only keeps the documented value true).
+- **Fact-check** (read-only military-geo-editor pass, formulas recomputed): all numbers confirmed; six wording fixes taken — the summary line scoped, the accessible stretch wording, "זוג ערכים" without "אחד" (longitude is undefined at the poles), "לצדדים" on the cylinder, the mid step's "לא בפריסה", "רצועה מחצי הכדור הצפוני" for the cone map; "טריגונומטריה כדורית" (the standard term) instead of "גאומטריה כדורית". "שלוש שיטות ההטלה" stays: it is the deck's own term (slide 3).
+- **Not changed:** the projections, sheets, camera, loading, fallbacks, colours and the 3-D globe; the three method names and the slider's ends.
+
+**Task 19 — the geographic system's pros / cons**
+- **Place.** Same place in the sequence — after the base-60 workbench (the units) and before UTM (the answer in metres) — as one card with the activity cards' envelope; nothing about it elsewhere in the part.
+- **The deck's slogans said precisely** (deck ב׳ slide 12; content/topic-02.md "היטל קרטוגרפי"): "גלובלית" + "אינטואיטיבית" → one grid for the whole Earth, no zones (a pair of values — not "one pair": longitude is undefined at the poles and ±180° is one meridian), values read straight off the globe's lines (how far north / south of the equator, east / west of Greenwich); "יחידות זוויתיות ולא מטריות" → coordinates are angles, not metres; 1° of latitude ≈ 111 km everywhere, 1″ ≈ 31 m (ties to the base-60 screen); "פיזור לא אחיד" → a degree of longitude shrinks away from the equator because the meridians meet at the poles (the figure); "דורשת מתמטיקה גבוהה" → even the distance between two points needs spherical-trigonometry formulas ("טריגונומטריה כדורית"), not subtraction (on the ellipsoid those are themselves an approximation; not said, to keep the card focused). One bridging clause to UTM. The old green / red dots are gone (colour is not used for pro / con).
+- **Figure.** An orthographic globe like the explorer's (20° above the equator, 30° grid offset 15°), the band between two meridians from the equator to the pole, the parallels 0°, 30°, 60° highlighted inside it, HTML chips with the WGS84 ground length of 1° of longitude: 111, 96, 56 km and 0 at the pole ("כל קווי האורך נפגשים"). The band is 30° wide so it can be seen; a caption says so — the segments keep the true ratio (cos φ). WGS84 values: a = 6378.137 km, e² = 0.00669438 → 111.32, 96.49, 55.80 km. Labels inside the dir="ltr" figure use inline physical offsets (the RTL plugin's logical utilities apply to both sides there).
+- **Height.** 1920 × 1080: 636 px (`FitScreen` 216 → 636); 1440 × 1122: 498 px.
+
+**Open / outside these tasks:** `base60` measures 1116 px at 1920 × 1080 against its `FitScreen` 1090 (the calculator run's screen). `reading-coordinates/ReadingCoordinates.tsx` (task 22) is still unwired; the swap is in `design/docs/reading-coordinates-wiring-2026-10-26.md` and was left to its owner.
+
+## 2026-10-26 — Topic-02 contours, screen 1: keyboard access to the map ↔ model layers
+
+- **Scope:** only `ContoursScene.tsx`, screen 1 (`ContoursAsMap`, `LayerLink`, new `MapKeys`). `ContourCake3D.tsx`, the density screen and the shared shell were not touched.
+- **One tab stop, a slider.** The map frame is a single `role="slider"` (vertical, 0 = no layer lit, 1–5 = the bands from 10 m up). The 3D model gets no second stop: both views share `activeRing`, so one control lights the map band, its number, the model slice and its chip together. The card's tab order is now: full screen → three views → map (→ out to the density tabs).
+- **Keyboard focus lights the lowest layer (10 m).** Focus therefore shows at once what the control does. ↑/↓ move one layer, and ↓ from 10 m clears (as the pointer does below the 10 m line). Home/End go to the 10 m / 50 m layer. Esc clears and keeps focus. With nothing lit, Esc is passed on (not swallowed). Tab/Shift+Tab leave normally and clear the highlight, like the pointer leaving.
+- **Pointer focus is not keyboard focus.** A click on the map focuses it without the ring or the key line (`:focus-visible`), and the pointer keeps driving the highlight. A key press after a click switches to keyboard mode. Blur clears only the layer the keys lit, so a click that starts a slice drag in the model keeps its highlight.
+- **Key line (`MapKeys`)** "↑ ↓ לשכבה גבוהה או נמוכה יותר · Esc לביטול ההדגשה" shows under the link line only while the map has keyboard focus. It uses the action-line style of the model column (`text-sm text-fg-muted`). The map column is shorter than the model column, so nothing moves and the card height is unchanged. Otherwise it is `sr-only`, and stays in the DOM as the slider's description (with the map's own `aria-label`). The slider's `aria-valuetext` is the same `layerText()` sentence the link line shows.
+- **Ring:** the site's focus ring (`ring-2 ring-accent ring-offset-2 ring-offset-bg`). It is also applied from state, so it shows after a click-then-key, `rounded-md` to follow the map frame.
+- QA: `scripts/qa/contours-map-keys.test.mjs` covers tab stops, focus, every key, the exit both ways, keys in all three views, mouse regression (hover both ways, click, rotate, slice drag + reset) and the 1440×1122 fit. Shots are in `design/screenshots/contours-map-keys/`.
+
+## 2026-10-26 — Topic 02 task 22 wired: "כיצד מפרשים קואורדינטות?" in קואורדינטות 2 (and the task-21 lead)
+
+Follows `design/docs/reading-coordinates-wiring-2026-10-26.md`. Supersedes the "Not wired" notes of the 2026-10-26 entries above.
+
+- **Wired.** `CoordinatesPart2Scene.tsx`: `<FitScreen name="reading-coordinates" height={1294}><ReadingCoordinates /></FitScreen>`, right after the reference-systems map, before the summary. One heading (the card's `h3`). Removed: `ReadingCoordinatesBlock`, `SystemDifferences`, `TERMS`, `SYSTEM_DIFFERENCES`, `H3`, `LEAD`, the `cn` import and the old two-screen comment. Removed the unlinked review page `src/app/lab/reading-coordinates/` (it would ship in the static export).
+- **Task-21 lead** (same file): "אותו מקום יכול להיכתב בשיטות קואורדינטות שונות. החליפו שיטה ובחרו נקודה: המקום נשאר, והרשת, היחידות והמספרים משתנים." Checked against the map: the switch is labelled "שיטה:", A stays on the bridge, the grid (graticule ↔ UTM grid), the units (° ′ ″ ↔ metres) and the numbers change. The map itself (`ReferenceSystemsLinkedComparison.tsx`) was not touched.
+- **What the old screen held, and where it is now** (no duplicates):
+  - units, lat/lon vs E/N + zone + hemisphere, 60 zones of 6° → the two decomposed examples (key rows);
+  - "the whole Earth in one grid" → `GeoProsCons` (task 19);
+  - the conclusion "same point, different numbers; you must know the reference system" → the task-21 lead + the note's reference-system sentence + `DONE_TEXT`;
+  - datum (WGS84 in both, body + anchoring, see קואורדינטות 1) and reference system (datum, axes, units, in UTM also the projection) → the note "מה עוד צריך לדעת";
+  - **"latitude and longitude are geographic coordinates, not a projection"** — it was only in the old definitions, nowhere else in the lesson. Added to the note, after "וב־UTM גם ההיטל…": "רוחב ואורך אינם היטל: הם זוויות על גוף הייחוס." (pinned by the unit test).
+- **Copy for a learner on the site.** Q1 opened with "במצגת השיעור נכתבה נקודה כך" — the learner has no deck, and the globe shows lat / lon as separate values, never "(90E,30S)". Now: "במקור אחר נכתבה נקודה כך: (90E,30S)…", which also ties to the example's note ("יש מקורות ומכשירים שכותבים קודם את האורך").
+- **Fit at 1440 × 1122, every state.** The wiring doc's 1294 missed the tallest feedback: Q3 with both wrong options and none of the right ones gives five notes, and the card ended at 1164 px. The added projection sentence also put the note on a third line. Copy tightened, nothing dropped:
+  - note: the קואורדינטות 1 pointer folded into the datum sentence ("…מצביעים על מקום אחר, כמו בהדמיה שבקואורדינטות 1."), "את כל מה שצריך כדי לפרש את המספרים" → "את כל הדרוש לפירוש המספרים" — two lines;
+  - Q3 "סדר המספרים" why → "כל מספר בהודעה מסומן במילה, מזרח או צפון, ולכן הסדר לא משנה." (one line);
+  - Q3 hemisphere hint → "חסר פרט שקובע מאיפה נמדד ערך הצפון: בקו המשווה הוא 0 או 10000000 מ׳." (one line, still does not name the option).
+  - Measured (scale 0.7827, card top 95.5): opening / Q1 / Q2 1108, Q3 worst 1103, Q3 solution 1088, done 1011. Tallest = 1294 at reference, the `FitScreen` value.
+- **Assumption — number format.** The screen writes the reading as a written coordinate ("36N E 701125 N 3521095", no digit grouping, like the radio message in Q3); the map panel groups thousands for legibility ("701 125"). Same digits; the lesson QA compares them stripped of spaces.
+- **QA.** `reading-coordinates.test.mjs` 10/10 (new: no deck in the copy; the note keeps datum / reference system / not-a-projection). `shot-reading-coordinates.mjs` now runs on the lesson only: sequence (after the map, before the summary), one heading, readings = the map's bridge (A) in both methods, fit in every check state incl. the five-note one, restart; PASS — 15 shots (`design/screenshots/reading-coordinates-2026-10-26/lesson-*.png`, `task21-lead-*.png`). `shot-reference-systems.mjs`: the screen-2 check no longer demands a static screen ("screen 2: separate, after the card, still names the datum (WGS84)"), the lead constant follows the new lead, shot `r5-07-screen2-reading-coordinates.png`; all checks pass.
+- **Open.** `ReferenceSystemsLinkedComparison.tsx` header comment still says screen 2 holds "the table, conclusion and definitions — static" (not edited: the task-21 illustration is another run's).
+
+## 2026-10-26 — Topic 06 "באיזה אזור אתם נמצאים?" (task 30): the decision row and the result panel
+
+Only `LocationCheckActivity.tsx` changed. The model, the map, the geometry, the data and the check rules are unchanged. Logic findings: `design/docs/location-check-logic-findings-2026-10-26.md`.
+
+- **One sequence.** Under the observation, in reading order: "בחרו אזור" [אזור 1][אזור 2] → "בדקו את הבחירה" → "איפוס". The row sits level with the map tools under the map; the tools row was raised to the same 48 px (`h-12`, centred) so the two rows share a centre line. The result panel spans both views under that row (fixed 150 px). It can't push the controls or move the views.
+- **The result.**
+  - Title: the checked area with ✓/✗.
+  - Two aligned rows, direction and distance, each with "במפה X" | "נמדד בשטח Y" | "מתאים / אינו מתאים: reason" (35° gap with 5° allowed; within 260–340 מ׳). The captions are the map plates' own words ("במפה", "נמדד בשטח", "פער").
+  - One closing line.
+  - Removed as repeats: the reason sentence, the ✓/✗ chips and the "פירוט" popover.
+- **Wrong answer.** It says which measurement to match again ("בדקו במפה מאיזה אזור הכיוון להתפצלות הדרך קרוב ל־043°"), and that the distance fits both areas. It never names the other area.
+- **Success, worded to the evidence.** "אזור 1 מתאים לשתי המדידות", then "המרחק מתאים לשני האזורים, ולכן הכיוון הוא שמכריע. במצב אמיתי ממשיכים לבדוק את ההתאמה לאורך הדרך." The last sentence is the brief's own transfer line (§8).
+- **Not checked yet.** A chosen area that hasn't been checked is named as such: "אזור 2 נבחר — עדיין לא נבדק". After a change it reads "הבחירה השתנתה — אזור 1 עדיין לא נבדק" plus which area the previous result was for. No ✓/✗ rows show, and the map drops the result layers (as before). The chosen area's map values moved from a second sr-only live region into this panel, so a choice is announced once.
+- **Assumption — bearings' typeface.** In the result, bearings use the body face with tabular figures, not `font-mono`, to match the map's value plates and the "300 מ׳" beside them.
+- **Assumption — button labels at 15 px.** "בדקו את הבחירה" / "איפוס" stay `Button size="md"` (`text-[15px]`, Table 3). The ≥ 16 px check covers body text, not design-system button labels, as before.
+- **Measured at 1440 × 1122** (scale 0.7827): the card takes 150–802 px in every state (opening, no choice, each area chosen, wrong, change, success, change after success, reset, no WebGL). The card is 833 reference px tall, up from 818. Nothing moves between states, and the panel's content never overflows. Keyboard: radios (arrows) → Tab "בדקו את הבחירה" (Enter) → Tab "איפוס" (Space).
+
+### 2026-10-26 — Lesson 6 "לפני שמתחילים", screen 2: why navigation skills matter (task 26)
+
+- **Scope.** Only screen 2 of `topic-06/OnboardingScene.tsx`. The old `HISTORICAL` array, h3 and 2×2 card grid were replaced by `<NavigationExamplesPanel />` (new `topic-06/NavigationExamplesPanel.tsx` + figures in `topic-06/NavigationExampleVisuals.tsx`). Screen 1, the four navigation stages and the video work (task 25, user) are untouched. A screenshot of screen 1 at 1440 × 1122 is pixel-identical before/after. The figures import the `Pine`/`Bush`/`Rock` glyphs and palette from `PlanningRouteMap.tsx` (already exported for `NavTipsMap.tsx`); nothing shared was changed.
+- **Parallel screen.** Lesson 2's examples screen (`topic-02/HistoricalCasesPanel.tsx`, now in "משמעות מעשית" before the recap, not in lesson 2's opening any more). Kept from it: pine band, centred title + subtitle, four cards (number, headline, meta line, preview), one detail panel (text column right, figure column left with a badge). Dropped on purpose: the card teaser and the "עיקרון מרכזי"/"המשמעות לתכנון" pair, which restate each other. Each example now has three non-overlapping parts: **ההקשר**, **מה זה ממחיש**, **הלקח לניווט**, plus a source line.
+- **Assumption: drawn figures, not AI stills.** Lesson 2 uses generated photographs. Here each figure is a schematic map in lesson 6's own illustrated-map language (cream paper, tan contours, ember route), because a figure has to show the navigation point (a star's fixed rising point, a numbered marker at a firebreak crossing, the device's wrong position vs. the azimuth from the last verified point, two look-alike junctions plus distance, bridge and hill). Route semantics follow lesson 6: walked = solid orange, planned = dashed orange. Figures are never mirrored. Callouts are HTML pills in the figure's 4:3 frame.
+- **Interaction.** The cards are an ARIA tablist (click; ←/→ with the row read right-to-left, so ← = next; Home/End; Tab moves into the panel). All four panels share one grid cell, so the band keeps the tallest panel's height and nothing moves between examples (measured: band, detail grid and callout identical for all four).
+- **Facts and sources (checked 2026-10-26; full citations in the file's header comment):**
+  - *Stars.* The old source (Varisco 1995, terpconnect.umd.edu) covers star calendars and wind directions. It does not cover direction-finding on journeys, and no authoritative source was found for desert/Bedouin pole-star travel. The example is reframed to the documented Arab maritime practice: a 32-point horizon defined by star rising and setting points, with the earliest written sources (Ibn Mājid, Sulaymān al-Mahrī) from the late 15th and early 16th c. Source: J. L. Berggren's review of Constable & Facey (eds.), *The Principles of Arab Navigation* (2013), *Aestimatio* 2014.
+  - *Hürtgen.* MacDonald, *The Siegfried Line Campaign* (US Army CMH, 1963), ch. XIV, author's narration: with a map, position from numbered survey markers at firebreak intersections; without one, a compass. NPS: dense, rugged terrain, 19 Sep – 19 Dec 1944. army.mil: closely spaced 100-ft firs, dramatic elevation changes, only narrow unimproved roads and trails. No claim about the battle's outcome.
+  - *GNSS.* EASA SIB 2022-02, 17 Mar 2022, to aviation authorities and operators: "spoofing and/or jamming has intensified in geographical areas surrounding the conflict zone".
+  - *Junctions.* An invented example. It is flagged on the card, the panel meta, the figure badge and the note ("דוגמה מומצאת לצורכי הוראה…"), and the subtitle says "שלוש דוגמאות אמיתיות ודוגמה אחת להמחשה". Its distances (1.2 / 2.4 km) and the marker number 47 in the forest figure are schematic.
+- **Callout fix.** "בהמשך השיעור" pointed to "דגשים לתכנון ולניווט", a part no longer in the lesson. It now points to טכניקות ניווט, then אזימוט and תכנון ציר.
+- **Fit.** At 1440 × 1122 (scale 0.7827) the band runs from 166 to 867 and the callout ends at 988, so the whole screen fits with no inner scroll. At 1920 × 1080, 1536 × 864 and 1366 × 768 the band (the whole activity) fits, but the "בהמשך השיעור" callout below it needs a scroll. `FIT_HEIGHT_CASES` = 1050 (band + callout at 1920). QA: `scripts/qa/shot-topic06-examples.mjs`; shots in `design/screenshots/topic06-examples/`.
+
+### 2026-10-26 — "שלושה סוגי צפון": cleanup for beginners (lesson 6, task 29, `north-lab/`)
+
+- **Brief:** focus the existing lab without adding content. Map, compass, geometry, behaviour, palette and the `PrinciplesScene` wrapper are unchanged.
+- **One place per explanation:**
+  - The chosen north's definition, use and caveat now sit in a tab panel right under the tabs. Before, they were in a full-width strip below the map.
+  - The declination term ("ההפרש בין צפון מגנטי לצפון אמיתי נקרא נטייה מגנטית") and "משתנה לפי המקום והזמן" moved under the slider as its description.
+  - "במעבר בין מפה למצפן" is kept once, as the card's last line, without its second sentence.
+  - "להמחשה בלבד" is marked by the slider label ("לדוגמה"), the map's own note and "בדוגמה," in the relation line. The inset's title already says that its separation is enlarged.
+- **Removed as duplicates:** the intro's "בחרו בכל סוג כדי לראות את ההגדרה…", "שנו את נקודת הייחוס" (A does not move, so "נקודת ייחוס" also misled), "הזיזו את המחוון וצפו בשינוי המדידה", the "צפון רשת +2°" readout (the GN label shows it), the grid north's "במעבר בין המפה למצפן…" (the closing line says it), the inset's values (the main map shows them), and the extra selection cues (the ring on the selected tab, the side bar on the table row), per the lessons 2 & 6 cleanup spec.
+- **Assumption — relation line under the reading.** A short computed line, for example "בדוגמה, הצפון המגנטי נוטה 6° מערבה מהצפון האמיתי, ולכן האזימוט גדול ב־6°.", says why the value differs from the true azimuth. It names the side: west is larger and east is smaller, so it follows the slider and is never an "always add / subtract" rule. For true north it says the arrow angles are measured from it. It is the only new sentence type. It replaces the generic slider instruction and is unit-tested against the computed azimuths at every step.
+- **Assumption — Hebrew arrow labels.** TN / GN / MN became "אמיתי / רשת / מגנטי", the tab names' last word, so tab, arrow and table row share one name. The English names stay in the panel heading ("צפון מגנטי (Magnetic North)"). Label plate 44 → 48 units (measured text ≤ 40.1). Inset labels show the name only, at 13 units. The inset arrows went from 70 to 96 units long, to fill the space the values left. Gain, sides and order are unchanged.
+- **Caveats:**
+  - Each panel has one "דגש לשימוש", the original field minus what moved elsewhere. Magnetic: metals; true: "מצפן מגנטי אינו מורה בהכרח לכיוון זה."; grid: "עשוי להיות שונה מצפון אמיתי ומצפון מגנטי.".
+  - All three panels are 7 lines. The reserved height therefore leaves no blank, and the reading never moves when switching.
+- **Fit at 1440 × 1122 (scale 0.7827):** the card is 869 px (≈ 1,110 reference px; it was 1,034 px, foot at the screen edge). It runs 82–952 under the header in every state. The controls column ends with the map (893 = 893). No text was shrunk. The smallest HTML text is the slider's scale marks and the shared Button's sm label, both 14 px.
+- **Open:**
+  - The bezel print (90 / 180 / 270) is graduated from true north, as briefed. With grid or magnetic chosen, the reading is measured from that arrow, not from the printed 0.
+  - `PrinciplesScene.tsx`'s comment still cites the lab's old height (1321 px). It sits outside the NorthLab wrapper, so it was left alone.
+  - There is no conversion exercise, and none was added.
+- **Verification:** `north-lab.test.mjs` 15/15; `shot-north-lab.mjs` 108/108 (copy and removals, each explanation once, relation line per state, Hebrew labels on their plates, fit per state, Tab order, reset, reduced motion). Screenshots are in `design/screenshots/north-lab-task29/` (`before/`, `after/`, side by side in `compare/`).
+
+## 2026-10-26 — Topic 06 "דגשים לתכנון ולניווט": learner review, task 27
+
+Code: `topic-06/PlanningTipsScene.tsx`, `topic-06/NavTipsMap.tsx`. The part is archived (`/archive/topic-06/tips/`, behind the archive gate), not in the public lesson-6 sequence; it was reviewed and tested there. Tests: `scripts/qa/planning-tips.test.mjs` (12 behavioural tests, needs a dev server; `QA_BASE` picks it). Shots: `scripts/qa/shot-planning-tips.mjs` → `design/screenshots/planning-tips/` (`before-*` / `after-*`). `shot-topic06-tips-fit.mjs` now opens the archive route.
+
+- **Nav tip 4 ("בודקים אי־התאמה לפני שממשיכים") shows the mismatch only.** The destination halo, its "מאמתים את ההגעה ליעד" label and the sentences about confirming arrival were removed. They competed with the mismatch on one map, and arrival is already taught in plan tip 1 ("ובסוף הדרך לאשר שמגיעים ליעד עצמו") and in OnboardingScene ("קרבה ליעד אינה מספיקה…"). The tip now says what to check (the terrain against the map, direction and distance from the last identified point). The caption says what does not match (no road after ~600 m) and what the walked line shows (the direction drifted).
+- **Captions describe the map; they don't repeat the action text.** Plan tip 1 drops its repeated "אלה הסימנים…" sentence. Plan tip 4's action no longer lists the three landmarks, because the map labels and the caption already do. Plan tip 3's action now promises only direction and distance, which is what its map shows. The landmarks belong to tip 4. Every caption keeps two lines of room (`min-h-[3.25rem]`), so a screen's height does not change between tips.
+- **Colour = state, consistently.** In nav tip 3 the distance tag is sage, like "כיוון" and "סימן: אוכף", because all three are data that were checked and match. The navigation legend gains "נקודה מזוהה" (the ✓ marker), so the planned route (dashed), the walked way (solid sage), identified points (✓) and the current position (blue) each have a key.
+- **"אותה מפה" appears once in each place it is needed.** It stays in the part's intro and on the navigation board ("אותה מפה, עם המיקום הנוכחי"). It was removed from the navigation intro. The "דוגמה לימודית נפרדת…" note stays only on the planning board. The planning board label is now just "מפת התכנון", because "לפני היציאה" repeated the screen title.
+- **Application question: 4 answers, 2 "כן" + 2 "לא".** Before, the only "לא" answer was the right one, so the wording gave the answer away. **Assumption:** a new distractor, "לא. ממשיכים בכיוון המתוכנן עד הסימן הבא.", targets the "it will sort itself out further on" misconception. It breaks the principle in nav tip 4. The right answer lost its hedge "בשלב זה". Wrong-answer feedback explains why that choice fails and does not quote the right answer. The right-answer feedback says what the mismatch suggests (a similar junction) and what to compare before confirming. The stem, the tip titles and the closing card are the client's wording and were not changed.
+- **No jumps in the question.** Switching answers swaps the feedback in place instead of collapsing and reopening it. The reset button opens with the feedback, outside the live region. Its label is "ניסיון נוסף" after a wrong answer and "התחלה מחדש" after the right one. Reset returns keyboard focus to the first answer, because the button removes itself.
+- **One white card per activity** (the 2026-10-19 rule, skipped here then because the part was being archived). Each tips screen is one `.surface-elevated p-6 lg:p-8` card: the title, the instruction, the accordion, and the map board as a `bg-bg-accent/60` inset.
+- **Fit heights re-measured** at the 1088-px reference: plan 752 and nav 730 for every tip, and the question 750 (a wrong answer with its button). Scale: 1 at 1920 × 1080 and at 1440 × 1122. At 1366 × 768 it is 0.851 / 0.877 / 0.853.
+- Map furniture: the scale-bar figures and "צ" grew from 1.8–1.9 to 2.2 units (≈ 9.6 → 11.7 px on screen), and the group's opacity went from 0.75 to 0.85.
+
+## 2026-10-26 — "אליפסואיד, גיאואיד וגליות" (task 13, follow-up): A's H readable on the model; the relief check
+
+Brief: the user's message of 2026-10-26 (task 13's remaining readability item: A's H on the 3D model, and the reported model/section relief mismatch). Files: `measurementView.ts` (`heightLens`, `HEIGHT_LENS`), `MeasurementLandscape.tsx`, `MeasurementLandscapeRenders.tsx` (`GeoidHeight`, `HeightLensView`), `MeasurementLandscape3D.tsx` (`LensPass`). QA: `measurement-mission.test.mjs`, `shot-measurement-mission.mjs`, `measurement-round6.mjs`. Screenshots: `design/screenshots/geoid-model-closeup-2026-10-26/{before,after}/` and `compare-*.png`. The section, the panel, `CoordinatesScene.tsx` and the shared shell are unchanged.
+
+- **The problem, measured.** At 1440 × 1122 the geoid view's opening angle draws A's H 15.5 px long on the model (page px; ≈ 12 px on screen under the laptop fit). The ellipsoid lies between the geoid and the ground there (N = −12) and crosses H 6 px above its foot. The picked pin's foot covers its top. So it was unclear which surface H leaves from. B (66 px) and C (129 px) read as they are.
+- **A close-up on the model: the section's own.** Where H on the model is shorter than 16 px, or the ellipsoid crosses it closer than that to either end, the model gets the close-up the section already has (the section's `LENS_BELOW` threshold):
+  - an orange frame round the station, with dashed corners up to a box at the stage's top corner on the station's side;
+  - a title, "תחנה A · תקריב פי 3".
+  - **Inside it is the model itself, drawn again by its own renderer.** The same camera, cropped to the frame (`setViewOffset`), is drawn into the box's viewport after the main frame (`useFrame` priority 1, as `DatumInset3D`'s `InsetPass`). The result is an exact whole-number enlargement in both directions, so H, h and N keep their proportions. Fat lines keep their pixel width: their resolution is the box's for that pass.
+  - Over it, H is drawn again, k times longer (QA: exactly k × the model's line), with the station's orange ground dot and its letter, as in the section's close-up. The main model keeps its short H inside the frame; its letter moves into the box.
+  - Only A triggers it, only in the geoid view after the reveal. The task draws nothing on the model, as before.
+- **Assumption: the close-up names H's two ends.** "פני השטח" at the top and "גיאואיד" at the foot, in the section's words and colours. The model's sheets carry grid lines in the same colours as the two reference lines, so without names the line H leaves from still had to be inferred. The section's close-up is unchanged: its lines are named at the section's left end.
+- **Placement.** The box is 168 × 92 at the stage's top right, above A's pin and right of B's. k = 3 at 1440 (H 46 px in the box).
+  - It is drawn only where it covers neither its own frame nor any pin, with the frame inside the stage. Otherwise it tries the other top corner; failing that, there is none. From an angle the reader turned to, the box can sit in the other corner, with longer leaders.
+  - Zoomed in with the wheel until H reads on the model (≥ 16 px), there is none.
+- **H still never shows before the reveal.** The close-up is part of H's overlay (`GeoidHeight`):
+  - before the reveal there is neither;
+  - with the reveal it comes in with H, after the geoid's sweep (`REVEAL_H_DELAY`), its WebGL content eased in from under a paper veil on the same fade;
+  - a later pick of A shows it at once;
+  - "החזרת פני השטח" removes it at once;
+  - reduced motion: at once.
+- **Without WebGL** the see-through still itself is enlarged (×2; the stills are 2× images), in the same frame and box.
+- **The relief "mismatch" was the check's assumption, not the illustration.** `measurement-round6.mjs` compared the two figures' whole pixel heights (model 197 vs section 156 px), but they draw different things:
+  - **What the model's figure adds:** land off the survey line and outside the section's span (up to 278 m at the model's left edge, against 220 m at C), the top seen from 9° above (≈ 45 px of depth), and the base.
+  - **Along the survey line they agree.** The dashed line's WebGL pixels against the section's ground line give relief / length 0.416 vs 0.416 (surface view) and 0.413 vs 0.416 (task view). From the pins, C over A against C to A, the model is ×1.003 / ×1.005 of the section (the task's 17° tilt allowed).
+  - **Why the model draws smaller.** It is 86–92 % of the section's size overall. Its stage (651 × 264 page px) is too small to draw the line at the section's length. The 2026-10-12 rule applies: the line is never longer than in the section, and a box too small just fits the model.
+  - **The new check.** It judges the exaggeration along the line (± 6 %) and that the line is no longer than the section's; the whole-figure heights are reported, not judged. The unit test checks the same contract at the real layout (± 3 %, view tilt allowed). The old 2.5× / 6× mismatch would read ×0.42 and fail both.
+- **Verified** (1440 × 1122; on my own dev server :3063, because the shared :3000 timed out under the peers' load):
+  - `measurement-mission.test.mjs`: 29/29, including the new close-up test and the relief contract at the real layout.
+  - `shot-measurement-mission.mjs`: PASS, with the new model close-up checks (none before the reveal, A after it, none at B/C or in the task, reduced motion, the no-WebGL still). Its no-WebGL still check now counts the stills' own layer: the close-up shows the same still, enlarged.
+  - `measurement-round6.mjs`: PASS (along the line ×1.000 / ×0.991). One earlier run had a single dev-server reload error ("Unexpected end of JSON input", during peers' rebuilds) that did not recur.
+  - `shot-measurement-heights.mjs`: card heights unchanged (513 / 538 / 559 / 705), and every state fits at 1122, 900 and 800.
+  - `tsc` clean for these files. The project has no ESLint config, so lint was not run.
+  - In the browser: A/B/C before and after the reveal, and the task with wrong and right answers at A and B; before / after in the screenshots folder.
+- **Open:**
+  - The model draws the line ≈ 10 % shorter than the section at 1440 (the stage is too small). Drawing them the same size would mean a layout change.
+  - The model's close-up is smaller than the section's (168 × 92 against 184 × 126, the room above A's pin), so it enlarges ×3 (×2 on the stills).
+  - The section's close-up does not name the surfaces as the model's now does.
+  - Without WebGL, the geoid's label on the see-through still sits on the note line under it. That placement was there before and is unchanged.
+  - The task card still does not fit at 1920 × 855 (901 px), unchanged since HEAD.
+
+## 2026-10-26 — Topic 06 "טכניקות ניווט" (task 28): terrain association finished, dead reckoning made an activity
+
+Brief: the user's message of 2026-10-26 (task 28). Files: `CombatNavScene.tsx`, `terrain-nav/` (`TerrainAssociationActivity.tsx`, `terrainNavState.ts`, `TerrainNavMap.tsx` measure label, new `RadioRow.tsx`), new `dead-reckoning/` (`deadReckoningModel.ts`, `DeadReckoningActivity.tsx`, `DeadReckoningMap.tsx`, `DeadReckoningField.tsx`). `CombatNavVisuals.tsx` is unchanged (topic 10 imports it). Not touched: planning tips, the location-check activity, north types, route planning. QA: `scripts/qa/dead-reckoning.test.mjs` (11), `terrain-nav.test.mjs` (20), `shot-dead-reckoning.mjs` (115, includes the fit sweep of both cards), `shot-terrain-nav.mjs` (66). Screenshots: `design/screenshots/combatnav-task28/`.
+
+**Terrain association (kept: the domes-and-village scenario, the model, the map, learn / practice)**
+- **Fit.** Before the change the card overflowed 1440 × 1122 by 50 px (learn), 56 px (practice) and 233 px (partial feedback). Now the tallest state (any leg, wrong point or partial, plus hint 2) ends at 1114 px.
+  - How:
+    - the route legend moved into a 200 px column inside the map panel, at its outer (left) side, with the map key and the full-screen button; the caption stays under the views;
+    - views 55/45 → 52/48 (the sheet keeps its 488 px height);
+    - the check / next button moved to the strip's top row, over the feedback;
+    - the hint shows inside the feedback box;
+    - false statements are marked ✕ in the evidence list, so the feedback only says why;
+    - the summary is one row of four legs;
+    - spacing trimmed (header 24→20, views 20→16, strip 16→12, footer 24→20, footer insets p-5→p-4).
+  - **Assumption:** a legend column beside the map is the least visible change that buys the height. It also keeps the key next to the sheet it explains.
+- **A decision before moving on.** "הצגת הסבר" is disabled until the leg's first check (reducer: `reveal` needs `attempts > 0`). An empty check counts as a check.
+- **Order of the signs.**
+  - The practice instruction now says to compare direction and distance *from the previous sign*.
+  - A wrong point's feedback gives the route order: "לפי סדר הציר, הסימן הבא אחרי … נמצא ב־… ; אל נקודה …: …".
+  - The summary names the three things that told look-alike places apart: the order, direction and distance from the previous sign, and the signs beside each point.
+- **Reset in practice.** "התחלה מחדש" sits beside the learn/practice switch: back to leg 1, still practising. The summary keeps its own.
+- **Map measure label** (pre-existing clipping): the direction-and-distance plate prefers the side of the line that stays on the sheet, and is clamped inside the neatline. Open: on leg 1, point א׳, the plate lands west of the line and partly covers the 396 spot height near ג׳.
+- **QA script fixes in `shot-terrain-nav.mjs`** (stale since the laptop fit):
+  - the model-label registration multiplies the canvas probe by the fit scale (it compared unscaled px with scaled screen boxes);
+  - the map `svg` selector is now `svg[data-map-mode]`;
+  - the restart is scoped to the terrain card;
+  - the explanation is reached after a check.
+
+**Dead reckoning (the animated board became a three-step activity in one card)**
+- **Layout:** the same envelope as technique 1. Title + principle head the card, then the lab, then the "when to use" and example insets. The approved METHODS text is unchanged.
+- **Views:**
+  - "בשטח" (inline start): a north-up, top-down window around the navigator, 2.4 units/m. It is fully hazed beyond 30 m, using the old board's paper / storm language.
+  - Planning map (left): metres, north up, never mirrored, never hazed.
+  - Both draw one dataset: A at a road junction, B = A + 1200 m @ 62°, a dry wadi crossing the line at 450 m, and a hill with an antenna 160 m @ 315° from B.
+  - One animated distance drives the map estimate and the field view.
+- **Steps:**
+  1. **Pace pairs.** The options are 800 / 1,200 / 1,600 / 1,800. Each wrong one names its mistake: metres, single steps, multiplied. The right answer adds that a 1.6 m pace gives 750.
+  2. **Set the compass to 62°.** Use the dial (drag, click, arrows ±1, PageUp/Down ±10, Home) or the ±1/±10 buttons. The map arrow from A follows the setting.
+     - A wrong setting is refused with the turn needed and where that heading would end: 2·1200·sin(Δ/2).
+     - It also names three causes: counter-clockwise (298°), measured from east (28°), and back azimuth (242°).
+     - Then the learner counts in hundreds. At 300 pairs the wadi is a check on the distance.
+  3. **The count is complete: what does it prove?**
+     - "הגענו ל־B" and "keep walking until you see B" are wrong, each explained.
+     - "an estimate; verify" opens the 3° example drawn to scale (≈31 m apart at 600 m, ≈63 m at 1,200 m), the 1.4 m pace (80 m short), and the hill to verify against.
+     - The task ends at "נדרש אימות", never at an arrival.
+- **Assumptions:**
+  - The scenario's features (roads, wadi, hill) and the 30 m visibility are invented for the exercise.
+  - The 3° and 1.4 m errors are labelled examples, not error ranges.
+  - The walk itself has no deviation, as the approved example says.
+  - `SUPPORT.dead` changes, which the activity requires:
+    - the caption's last clause "ואינו מציג שגיאות כיוון או ספירה" became "ההליכה מוצגת ללא סטייה; בשלב האימות מוצגת השפעה של סטייה בכיוון";
+    - legend "מנווט — מצפן וספירת צעדים" → "מנווט; במפה — אומדן לפי הספירה";
+    - legend "סופת חול — ראות מוגבלת" → "סופת חול — ראות של כ־30 מ׳, בשטח בלבד".
+- **Copy review:** two read-only reviewers (domain, Hebrew) were applied. Changes:
+  - first person plural in the decision options;
+  - "הספירה מעריכה כמה הלכתם";
+  - the wadi confirms distance along the line, not drift to the side;
+  - the back azimuth is named;
+  - at the end of the count: stop at the estimate and verify against a landmark.
+- **Fit:** the card is 1188–1272 reference px in every step (ends at 1027–1092 px at 1440 × 1122).
+- **Open:**
+  - The map and field labels are 13–15 reference px, as in the terrain map, so about 11 px on screen at 1440.
+  - Without JavaScript the activity is not usable. It is SVG-only, so it needs no WebGL fallback.
+
+## 2026-10-26 — Lesson 2, tasks 13–24: combined fit-to-screen check at 1440 × 1122 (user request)
+
+**Rule (user, 2026-10-26):** every activity must fit whole on screen in its tallest state. Uniform width does not justify scrolling inside an activity or cutting off its foot, and an older check that tolerates scrolling does not override this. Target: desktop 1440 × 1122 only.
+
+**Method.** Integrated working tree after the other runs (tasks 13, 20, 22, the datum-field lead and the contours keyboard work) finished, on a private dev server. Each screen's fitted box is placed 16 px under the 80 px header (y = 96) and must end at ≤ 1122. The title, lead, illustration, main controls and feedback were measured in every state. 178 states were checked, including calculator open, הרחבה, hints, wrong and right answers, shown answers and summaries. The scale is 0.7827 on every screen (width-bound).
+
+**Result: every state fits, so no layout or shell change was made.** Tallest state per activity (screen px, bottom):
+
+| Activity | Tallest state | Height | Bottom |
+|---|---|---|---|
+| Ellipsoid, geoid and heights (13) | the task | 705 | 801 |
+| Datum (14–15) | station 3 | 726 | 822 |
+| Datum: הרחבה | open | 191 | 287 |
+| Datum mismatch (16) | case 2, right answer | 873 | 968 |
+| Projections (17) | all states | 784 | 880 |
+| Base 60 + calculator (18) | a hint or the calculator open | 1007 | 1102 |
+| Pros and cons (19) | static | 498 | 594 |
+| UTM explainer (20) | all steps | 499 | 595 |
+| UTM atlas (20) | Tokyo, wrong + hint | 775 | 871 |
+| Reference systems (21) | all six states | 759 | 856 |
+| Reading coordinates (22) | opening / Q1–Q2 | 1013 | 1108 |
+| Contours model (23) | all states | 485 | 581 |
+| Contour density (24) | all tabs | 720 | 940 |
+
+- **Base 60.** The calculator overlaps nothing in any of 8 calculator-open states. A hint, a wrong answer or opening the calculator pushes the band below the steps (coordinate, D/DM/DMS/S) down by 72–133 px. The band stays on screen.
+- **Reference systems.** Map, pins and both control rows stay to the pixel across all six states and through a filmed switch. The panel keeps its top and title, and only its foot moves (geographic 614 px, UTM 373 px). No text is clipped or overlapping.
+- **Datum mismatch.** Feedback grows the card by 18–28 px and moves the activity's bottom navigation down by 12–22 px. The main controls do not move.
+- **UTM practice** is answered on the maps: click the zone strip, and the side of the equator, on either map. By design (the owner, per the user's request), the close-up shows the zone numbers before a check. Correctness appears only after "בדיקת הבחירה".
+- **Not covered:** other viewports. On short laptop views the uniform fit still lets tall screens' feet scroll (`LESSON_FIT_MAX_HEIGHT`). For example, the heights task does not fit at 1920 × 855 (pre-existing). Screenshots: `design/screenshots/fit-pass-2026-10-26/`.
+
+## 2026-10-27 — User-directed restoration and shared navigation examples
+
+- The user clarified that task 27 was not meant to be archived. Restored tips after onboarding in Topic06Lesson and lessonScenes; removed its archive listing and updated the onboarding callout and QA routes.
+- The user requested lesson 6 historical cards identical to lesson 2, with only text and images differing. HistoricalCasesPanel now accepts data and copy with its original defaults; NavigationExamplesPanel uses that same component, with no independent layout.
+- Generated eight illustrative images with ChatGPT (four main images and four banners), integrated under topic06/navigation-examples. Images are labeled as reconstructions/illustrations, not historical photographs. Prompts and sources: topic06-navigation-images-2026-10-27.md.
+- Stars copy now qualifies rise/set directions by latitude; removed the universal claim that a star always rises/sets at the same points everywhere.
+- User explicitly approved showing the field distance before the location choice. Added a compact line with the observed bearing and distance, using READINGS, without changing the scenario or verdict rules.
+- Task 25 videos remain open and user-owned. Task 28 answer leakage, task 30 map precision and repeatable QA, and existing typecheck configuration failures remain open. See codex-review-2026-10-27.md and the follow-up prompts.
+
+## 2026-10-27 — Topic 06 "באיזה אזור אתם נמצאים?": task 30 follow-up (map precision, state, QA)
+
+Files: `LocationCheckMap.tsx`, `LocationCheckActivity.tsx`, `locationCheckState.ts`, `scripts/qa/location-check.test.mjs`, `scripts/qa/shot-location-check.mjs`. The scenario, the geometry, the 3D model, the field readings line (Codex, user-approved) and the verdict rules are unchanged. Details: `location-check-logic-findings-2026-10-26.md`, update of 2026-10-27.
+
+- **An area, not a point.** After success the map's mark is "נקודת התצפית בתרחיש", not "מיקום הצופה". It is literally the point the 3D view is rendered from (OBSERVER = area 1's centre). The map key separates it from the supported area: "אזור שמתאים לשתי המדידות" / "נקודת התצפית בתרחיש (להמחשה)". The success line adds "המדידות תומכות באזור, לא בנקודה מדויקת בתוכו." before "במצב אמיתי ממשיכים לבדוק…". It still fits on one line in the 150 px panel.
+- **Assumption — keep the mark and the wedge.** Dropping the mark would leave the field-of-view wedge without an apex. The wedge is what ties the 3D view to the map, so the mark stays, with the label and the key saying what it is.
+- **Stale after a check with no area** is now handled in `view()` instead of only in the activity's display.
+- **QA:** `shot-location-check.mjs` checks the opening with both field readings, a check with no area, area 2 wrong, the change to area 1, success, a change after success, reset, keyboard, loading, reduced motion and no WebGL. In every state it checks fit and stability at 1440 × 1122. Measured: the card spans 125.3–802 px in every state and every run, and the result never overflows. Screenshots: `design/screenshots/location-check-task30/followup/`.
+
+## 2026-10-27 — Topic 06 "תכנון ציר: בניית סיפור דרך" (task 31): points vs legs, write leg ד׳, pacing
+
+- **One source of data.** `route-story/routeStoryModel.ts` holds the five points, the four legs (azimuth, distance, what you pass, which sign ends them), the map geometry and the question. The map draws each leg from its azimuth and distance, and the list, panel, tag and live text print the same numbers. `scripts/qa/route-story.test.mjs` checks the drawing against the text: bearings and lengths, the stream crossed about 100 m from point 2, the road through point 4, the grove on the left in the middle of leg ד׳, and the pines and rocks at נ.ס.
+- **Points vs legs.** The old list had five checkpoint cards. Cards 1 and 2 both carried 035° / 500 מ׳, card 1 as the departure and card 2 as the arrival. The list now alternates נ.ה, leg א׳, point 2, … נ.ס: nine stops.
+  - A selected point shows the leg that LEAVES it. On the map it is dashed, and its tag names the leg's letter. The panel calls it „הקטע היוצא”, and at נ.ה it says the numbers belong to the leg that starts there.
+  - A selected leg is solid and rings what it passes and its end sign.
+  - Map marker 5 now reads 5, not B, as in the list.
+- **Application step (assumption: the simplest fit for this screen).** Leg ד׳ is the learner's to complete from the map: azimuth, distance and the sign at its end, three choices each.
+  - Each wrong option is a named mistake: the reverse bearing, the angle measured counter-clockwise, half or double the length, the sign at the start of the leg, and the sign on the way.
+  - Feedback explains each part under its own control and never names the value to pick. Changing an answer clears only its own feedback.
+  - Until the leg is done, its numbers show „?” in the list and the tag, its rings stay off, and נ.ס does not name its sign. The scale bar is outlined as the tool to use.
+  - Once done, the list, tag and rings fill in, and „איפוס” starts over.
+- **Panel height.** Another session changed the panel's min-height from 288 to 140 px (2026-10-27 10:23). Every point and leg view shares that height. Only the question view is taller, and it grows the card downward from the same top. Kept as found.
+- **Choice control.** The question and the pace lengths use lesson 6's shared `terrain-nav/RadioRow` (untracked, another session's file; imported, not changed). Its selected chip carries a ✓ badge even when the answer is wrong; the feedback box below says ✗. Left as the shared control behaves (same in ניווט עיוור).
+- **Map legibility (cartographic review).** Changes:
+  - Tags are offset from their box size, so they never cover their own leg; their text is a size larger.
+  - Arrows are 1.4× larger and sit 6.5 units before the leg end.
+  - The stream bend and crossing are pins with leaders; rings hid behind marker 2.
+  - The road is drawn cased, not dashed; dashes mean route state only.
+  - The saddle label has a leader to the col.
+  - Label pills were moved clear of markers and pines, and one grove pine was moved clear of the „צ” tick.
+  - The scale bar sits 2.5 units in from the edge, so its hint outline does not clip „500 מ׳”.
+  - The outgoing dashed leg no longer uses framer-motion's `pathLength`, which overwrote its dash array.
+- **Pacing demo.** It now shows the three quantities: distance (מ׳), steps (one foot to the other) and double steps (same foot to same foot — the counted one). A schematic shows both lengths, and „אורך הצעד הכפול שלכם” (1.4 / 1.5 / 1.6 מ׳) shows how the count depends on the personal measurement.
+  - A note says the count is not proof of arrival; the sign at the end of the leg is.
+  - It stays a demo with no question, so it does not repeat the ניווט עיוור activity (pace-count question, what a finished count proves).
+- **Fit.** At 1440 × 1122 (scale 0.7827) the builder spans y 104–832 in every point and leg view and 104–948 in the question's tallest state (feedback under all three answers, or done), inside 1122. The pacing card fits too.
+  - Open: at 1536 × 864 and 1366 × 768 the builder (795 / 677 px) is taller than the room under the header (736 / 640 px), so its foot scrolls there.
+- **Copy** went through a hebrew-copy-editor pass: one verb („משלימים”) for the question, „אורנים בקרקע סלעית” everywhere, 3-digit azimuths in feedback, and the formula line set `dir="ltr"`.
+- **QA:**
+  - `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/route-story.test.mjs` (model, 18 tests).
+  - `node --test scripts/qa/route-story.e2e.test.mjs` (browser, 11 tests, on the main lesson page; `SHOTS=<dir>` saves screenshots).
+  - `scripts/qa/probe-topic06-planning-fit.mjs` uses the new prev/next labels.
+  - Screenshots: `design/screenshots/route-story-builder/before/` and `…/after/`.
+
+
+## 2026-10-27 — Lesson 2 "הדמיה: מה קורה כשהדאטום לא תואם?": dead space in the card (layout only)
+
+Brief: `design/docs/claude-datum-layout-2026-10-27.md`. Changed only `datum-field/DatumFieldChallenge.tsx` and its browser QA (`scripts/qa/shot-datum-field-challenge.mjs`); model, data, geometry, map picture, lead text and the lesson's fit are untouched.
+
+- **Columns.** The 50/50 grid with both columns stretched (and the way on pushed to the map's foot with `lg:mt-auto`) is replaced by a fixed map column (`MAP_BOX_W` = 430 reference px + the 48 px N margin) and the panel taking the rest (768). The map keeps its whole extent and its 340 : 410 proportions; at 1440 × 1122 the box is 337 × 406 (was 450 × 543). Assumption: 430 balances the stages — the map stands between stage 1's panel (493) and practice's (691) — and every map label still passes the QA's inside / no-overlap / ≥ 13–14 px checks.
+- **Gap label at the smaller scale.** A 60 m or 48 m line is now ~60–76 px long, too short for its number beside its middle without touching the ring; below 120 px the number goes next to the diamond (the placement that already existed for markers too close for a line). Presentation only.
+- **Feedback room.** Each stage keeps room for its tallest feedback (compare 142, error 168, practice 108 reference px), stage 2's action row keeps the experiments' height, practice step 3 keeps the rule + pairs, the footer keeps a button's height (its rule hidden while empty), and stages 2–3 keep the legend's line. So within a stage the map, the controls and the way on never move and the card keeps one height (905 / 928 / 1017 / summary 928 reference px). Assumption: a blank of at most one feedback's height before it appears is the "reasonable room" the brief asks for — 136 px (stage 1 before the first switch), 164 px (stage 2 before the copy), 106 px (practice before the check) on screen.
+- **Practice at the wider panel.** The four actions sit in one row (each label on one line), the three pairs on one line each (`formatEN`, as every pair elsewhere in the activity), and the case's source and target rows side by side. Same choices, order and wording.
+- **Lead.** Its width is the panel's column (768, its former max-w-3xl), so it still breaks into the same 5 lines and ends where the panel ends.
+- **The summary (user's choice, 2026-10-27).** Its panel (heading, closing note, two buttons) was 201 reference px against the 603 px map column, ~314 px blank under it at 1440. Offered three options; the user chose a recap of both cases (`CaseRecap`): per case one inset with the place, the source's and the target map's datum tags, the right action (`rightAction`) and the numbers it sends (`convert`) — the two marks the summary map shows, which carry no labels. Only existing data and labels, no new prose; it exists only in the summary (QA checks it is absent before). Blank under the panel now ~180 px; the card's height is unchanged.
+- **QA.** `QA_BASE=http://localhost:3000 node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-datum-field-challenge.mjs` — new layout checks replace "both columns the same height / navigation level with the map". Before/after: `design/screenshots/datum-layout-2026-10-27/`.
+
+## 2026-10-27 — Lesson 6: copy cleanup (less repeated text, information beside its use)
+
+Brief: `design/docs/claude-topic06-copy-cleanup-2026-10-27.md`, which overrides "Wording is frozen" for shortening, merging and moving text. Map: `topic06-content-audit-2026-10-27.md`. Started after the task 28, 30 and 31 runs had finished (their notes above; no topic-06 file changed after 10:42). Text and local presentation only. Geometry, numbers, right answers, scoring, images, the shared shell, the lesson width, lesson 2 and other lessons are unchanged.
+
+- **Four stages** (`OnboardingScene`): the intro is one question and one instruction. Each stage keeps an action sentence and a reason sentence; the „הפעולה בשלב זה” / „חשיבות הפעולה” labels are gone. The exit stage no longer defines azimuth or gives the 5° / 1 km / 90 m example (azimuth is defined at the techniques and the compass; drift is shown in ניווט עיוור, step 3). „המסלול הקצר ביותר אינו בהכרח המתאים” stays here, the general rule; the tips keep only the map's own comparison. The transition to the tips is one line.
+- **Assumption — „8 ק״מ · לילה” removed** from the task line („משימה: מנקודה A לנקודה B” stays). Nothing in the illustration reads it, and there is no topic-06 video yet (task 25). If those videos use a night, 8 km scenario, the line can return with them.
+- **Examples** (`NavigationExamplesPanel` data only; `HistoricalCasesPanel` and lesson 2 untouched): a short context, one principle and an application that does not restate it. The sources (US Army history, EASA 2022, the navigation manuals), the stars' latitude qualifier and the 32 directions stay. The invented example is still marked on its card, in the detail line and on its image badge. The paragraph and the application no longer say it a third and fourth time.
+- **Tips** (`PlanningTipsScene`): all eight states keep an action and a reason (labels removed). Map captions say only what the map shows in that state; the saddle keeps a short definition where the route chooses it. The scene intro no longer says „אותה מפה לימודית”; the board note says it once. The closing card is one message sentence plus the transition, with no heading.
+- **Techniques** (`CombatNavScene`, `terrain-nav/TerrainAssociationActivity`, `dead-reckoning/DeadReckoningActivity`):
+  - Opening: no "each method is shown later" or "we'll practise later" sentences. Azimuth and road leg are one sentence each.
+  - Terrain association: a shorter principle ending with when the method fits (the three „מתי משתמשים” bullets as one sentence). The handrail is „תוואי רציף… יכול לשמש ״מעקה״”, one case of the method. The walk-through under the lab, which repeated the caption, is gone, and so are the „מסימן לסימן בשטח” tag and the caption's repeated principle. One instruction per mode; how to turn and zoom stays on the model. The waiting line in practice says only what is still missing („נשאר להשלים: …”), or that the check is ready.
+  - **Assumption — feature list**: the five route features (A, כיפה 1–3, the square) show first and the other ten sit behind „עוד 10 עצמים בשטח” (`aria-expanded`). A feature picked in the model or on the map opens the list, so its button is pressed and in view. Every feature stays a button in the tab order once the list is open.
+  - Dead reckoning: the principle is shorter and ends with when it fits. It no longer says „השלמת הספירה אינה כשלעצמה אישור”, which is step 3's answer; step 3's feedback and the done line carry it. The example under the activity, which repeated 62° and 1.2 km, is gone with its count-free twin, so no fixed text carries 800 now. The caption tells the field (about 30 m) from the planning map and keeps „ההליכה מוצגת ללא סטייה”; it no longer announces step 3. The legend names the symbols (the bearing's value is on the map). The plan step's waiting line no longer repeats the field note. The closing card is one sentence, with no heading.
+- **Principles** (`PrinciplesScene`, `LocationCheckActivity`, `north-lab/`): the two opening columns are gone. The azimuth definition sits under the compass's slider, in the column's free space, and the back azimuth stays in the band below. The GPS sentence opens the location check's instruction. „כאן תופיע תוצאת הבדיקה” is gone; the result panel keeps its fixed 150 px. North types: each „שימוש עיקרי” line is folded into its definition (the audit's gentle option). The table, the sign and difference explanation, declination and the caveats are unchanged. The closing card is one sentence.
+- **Route planning** (`PlanningScene`, `route-story/`): the intro and the two concept columns are one definition of סיפור דרך. The builder intro no longer repeats it, and the two reminders printed under every leg are gone. Task 31's activity is unchanged otherwise: five points, four legs, incoming and outgoing, the signs, leg ד׳. Pacing: one line on personal measurement and conditions, and the method („איך מודדים?”) in a native `<details>`. Step vs double step, the formula and „הספירה אינה הוכחת הגעה” stay in view. The part's closing card, which repeated the definition and that note, is gone.
+- **Recap**: the completion banner and its second big heading are merged into the intro. All ten terms stay. The first is „ניווט לפי השטח (טופוגרפיה)”, the lesson's name with the quiz's, and its definition keeps the handrail as one case.
+- **Not changed, open:**
+  - Quiz q4 (`src/lib/quizzes.ts`) still asks „מהו ניווט לפי טופוגרפיה ("לאורך מעקה")?”. Its stem and rationale frame the whole method as the handrail. The quiz is outside this cleanup, which may not touch answers or scoring.
+  - `content/topic-06.md` still has the longer wording.
+  - `FIT_HEIGHT_*` / `referenceHeight` constants were not retuned. Inside `LessonFitUniform` the lesson ignores them, and the width task re-measures.
+- **Copy** went through a hebrew-copy-editor pass, which fixed one agreement error and an ambiguous „שלא בסדר”, restored „מחשבתי” and „ברכס” where shortening had lost meaning, and lightened the punctuation. Not taken: a pointer back to „נתרגל בהמשך”, which the audit flagged; „תשלימו” for task 31's chosen „משלימים”; and „לפי הסדר” before the checkpoints caption, which would break the „במפה: ” caption rule that `planning-tips.test.mjs` checks.
+- **Found while checking, fixed (dead reckoning):** on arrival the first pace option, 800 (the right answer), had keyboard focus and a focus ring. The step-focus effect skipped its first run with a flag, but StrictMode re-runs the mount effect. It now compares with the last step key, so arrival moves no focus and step changes still do. Still open: 800 is the first of the four options, so a restart (or Tab into the group) lands on it.
+- **QA (1440 × 1122, shared :3000):**
+  - `tsc --noEmit`: 0 errors.
+  - Unit tests: terrain-nav 20/20, dead-reckoning 13/13, route-story 18/18, north-lab 15/15, location-check 31/31.
+  - `route-story.e2e` 11/11.
+  - `planning-tips.test` 11/12. Test 6 fails on the tips' scale, 0.9669 rather than 1, the 1088 px width the audit already measured. That belongs to the width task.
+  - `shot-terrain-nav` 69/69, `shot-dead-reckoning` 152/152, `shot-north-lab` 108/108, `shot-location-check` 67/67.
+  - New `scripts/qa/shot-topic06-copy-cleanup.mjs` 135/135. It covers every stage, example and tip state, the question (wrong, right, reset), terrain learn and practice with the waiting line, focus on arrival, compass, location check, route builder, pacing closed and open with the keyboard, recap, and reduced motion.
+  - The approved-copy lists in the activities' suites hold the new wording.
+  - Screenshots in `design/screenshots/topic06-copy-cleanup/`: `before/` and `after/` (each screen under the header), `compare/` (side by side), `states/` (the sweep).
+
+## 2026-10-27 — Lesson 6: one frame and one interface size for every activity (widths pass)
+
+Brief: `design/docs/claude-interaction-widths-2026-10-27.md`. Started after the lesson-6 copy cleanup reported done (11:38); layout only. No text, geometry, data, answers, images or colour meanings changed; lesson 2, `LessonViewportFit` and the shared shell are untouched.
+
+- **Measured, not assumed (1440 × 1122).** Every card already spanned x 64–1116. The deviations were inside: the tips sub-topic was laid out at 1088 px (`max-w-6xl`) and shrunk by 0.967, the rest of lessons 2 and 6 at 1344 px and 0.7827, so its body text and buttons showed at 15.5 px against 12.5 px and its titles at 29 px against 23.5 px. The tips and principles part headers and the principles closing line sat outside every fit (46 px / 16 px unscaled). The location check had 24 px padding and a `text-2xl` title, the route story a `text-xl` title and a `text-sm` lead, the four-stage card 24 px padding, and the step-counting card a scaled 38 px gap above it where every other gap is 48 px.
+- **One rule, not per-screen tuning:** every lesson-6 composition is laid out at the lesson's 1344 px reference and shrinks with the lesson's one scale (`LessonFitUniform`), as in lesson 2. Activity cards use lesson 2's tiers: 32 px padding (`p-6 lg:p-8`), title `font-display text-2xl font-bold leading-tight text-fg sm:text-3xl`, lead/body `text-base`.
+  - Tips: section `max-w-lesson`, `FIT_WIDTH` 1344; its header in its own fit. The board keeps the 1 : 1.35 split, so the map is the same size on screen as before (≈ 533 px wide); only the text got the lesson's size. Its accordion headers match the four-stage accordion of the opening (number tile `size-11`, `text-lg md:text-xl`, 20 px chevron), so the two accordions of the lesson look the same. `FIT_HEIGHT` (used only outside `LessonFitUniform`) re-measured at 1344: plan 863, nav 841, question 532.
+  - Tips question: „שאלת יישום” is the card title (it was a 14 px eyebrow); the question is its `h4` sub-heading and still labels the answer group. The four answers sit two per row across the card instead of a `max-w-3xl` column that left ~400 px empty beside them; order and wording are unchanged (reading order: right, left, next row). The feedback spans the card's width.
+  - Principles: the part header in its own fit; the closing line shares the location check's fit (`mt-6`), as the techniques sub-topic does.
+  - Location check: `p-6 lg:p-8`; the title takes the lesson's title tier and `text-fg` like every other card title (it was `text-black`).
+  - Route story: the title and lead move to the lesson's tiers; they stay in the list column beside the map (task 31's composition). The card height is unchanged (728 px on screen): the map column is the taller one.
+  - Four stages: `p-6 lg:p-8`, so its content edges line up with the cards that follow; `data-activity="nav-stages"` for QA.
+  - Step counting: the 48 px gap above it sits on the unscaled wrapper (`mt-12`), as everywhere else in the lesson.
+- **Result:** in all five sub-topics, header → intro 12 px, intro → first card 25 px, card → card 48 px, card → closing line 19 px, last block → page navigation 48 px.
+- **Justified exceptions (not changed):**
+  - Compass + map: the title above the map at the inline end and the 18 px instruction follow the selected mockup (`02-linked-map-selected.png`, entry above).
+  - Lesson 2 itself mixes part headers inside fits (36 px) and outside them (46 px), and its onboarding twin keeps 24 px padding. Lesson 2 was out of scope, so it was left as it is; lesson 6 now uses the inside-fit form throughout.
+  - The recap's term cards stay unwrapped, as in lesson 2. The hook is not wrapped. The examples panel is lesson 2's `HistoricalCasesPanel`, unchanged. The `ReadyCallout` keeps its shared 24 px padding.
+  - Accordion beside an aspect-locked map (tips): the accordion column ends ~180 px above the board, because the map keeps its size and isn't stretched to fill the column.
+  - Small labels (13 px tips legend and pacing ticks → 10.2 px; 12 px technique legends → 9.4 px) are unchanged reference sizes at the lesson scale.
+- **Not from this pass:** `/archive/topic-06/tips/` now answers 500 on the dev server, because `tips` left `archivedScenes` when the sub-topic returned to the lesson (task 27). The page map still imports `PlanningTipsScene`.
+- **QA (1440 × 1122, shared :3000):** new `scripts/qa/topic06-layout.mjs` 149/149 (lesson-2 reference measured in the same run; scale, 1344 reference, edges, padding, title and type sizes per card, no text outside a fit, no nested fit, tallest states under the header: every stage, example, tip, answer + reset, compass slider ends, every north, every route stop, every pace). `planning-tips.test` 12/12, after updating its stale "scale 1 at 1440" check to the lesson's scale. `route-story.e2e` 11/11, `shot-topic06-copy-cleanup` 135/135, `shot-location-check` 67/67, `shot-north-lab` 108/108, `shot-compass-map` 22/22, `shot-topic06-examples` PASS, `shot-dead-reckoning` 152/152 (includes the terrain tallest-state sweep and keyboard), `shot-terrain-nav` 69/69, `tsc --noEmit` 0 errors. Lesson 2: every fit and card of all ten scenes measured identical to the morning baseline. Screenshots: `design/screenshots/topic06-layout/` (`before/`, `after/`, `compare/`, `after/states/`, `lesson2-after/`).
+
+## 2026-10-27 — Lesson 6 › תרגול: the resection practice in the main lesson, and neutral selection
+
+Brief: `design/docs/claude-topic06-simulator-integration-2026-10-27.md`. Handoff: `design/docs/navigation-sim-integration-2026-10-27.md`.
+
+- **The practice card takes the lesson's fit.** The practice tab sits outside the learn tab's `LessonFitUniform`, so `NavigationSim` wraps its own card in `LessonFitUniform` + one `LessonViewportFit` (reference 1344). At 1440 × 1122 it shrinks by the lesson's 0.7827, like every other lesson-6 activity; one fit only, nothing hand-shrunk. Card tiers follow the widths pass: `p-6 lg:p-8`, title `text-2xl … sm:text-3xl text-fg`, body `text-base`. The map stays the same size on screen (≈ 618 × 464 px), so its labels are unchanged (≥ 14.4 px).
+- **The "תרגול" eyebrow above the title was dropped:** it repeated the tab's name, and no other lesson-6 activity card has one. The same-north note under the map went from `text-sm` to `text-base` (12.5 px on screen), since it states an assumption the whole exercise rests on.
+- **Selection is neutral.** `RadioRow`, the location check's area choice and the practice's object buttons drop the ✓ badge on the chosen option: a choice is shown by a thicker orange border, a tint and bold, and right/wrong only by the feedback after a check. Their focus ring now stands off the border (`ring-offset-2`), so a focused option (e.g. 800, the first and right pace option) never looks chosen. The terrain activity's evidence list is a checkbox list whose box keeps its tick (checkbox convention, outside this brief).
+- **Mark tolerance in the text.** A mark is accepted up to 60 m from the crossing (≈ 15 px). Within 10 m (the mark's centre dot) the feedback says it is in the crossing; farther it gives the distance, rounded to 5 m. The verification and the close say the third line passes through the crossing, never "through your mark".
+
+## 2026-10-27 — Lesson 2 „תבליט ותכסית”: classification feedback, comparison fit, axes marker, model gate (audit א2, ב2, ב3, ג9)
+
+- **Classification quiz.** `autoAdvance` is gone from the relief/cover quiz (it reverses the 2026-10-19 opt-in): an answer keeps the item on stage with „נכון.” or „לא בדיוק. הסיווג הנכון: …” and the existing explanation, and only „לפריט הבא” moves on — the same loop as „סיווג התכסית לפי מקור”. `SortQuiz` is unchanged; its `autoAdvance` option now has no caller.
+- **The open table replaces the state's cells.** While the summary table is open, the state's cells block closes and the table takes its place; the table's cells for the state on show are marked (`bg-accent/[0.08]`, text in `text-fg` instead of `text-fg-muted`). Assumption: the mark is the existing current-step orange at a lighter tint, so the table still says which cells belong to the state after the block that listed them has gone. Table text and order are unchanged.
+- **Auto-open kept, delayed.** The table still opens itself at the quarry, but once the quarry's feedback lands (0.95 s; at once under reduced motion), not while the model plays the cut. „לטבלת הסיכום” reopens it if the learner closed it, and scrolls to it once it has opened.
+- **No axes marker.** The X·Y·Z disc (`AxisGizmo.tsx`, deleted — this was its only use) no longer sits over the model. The existing „גררו לסיבוב” tag in the corner is the cue; it now shows once the model is drawn, not over the loader.
+- **The question waits for the model.** The three answers are `disabled` until the „בשטח” board shows the hill: the live model's first frame, or — without WebGL — the still once loaded or failed. Interface copy „אפשר לענות כשהדגם יוצג” sits on the task's label line while waiting (same line, so the panel keeps its height). Loader label „טוען שטח תלת־ממדי…” (the shared pattern).
+- Handoff: `design/docs/topic02-relief-feedback-layout-handoff-2026-10-27.md`.
+
+## 2026-10-27 — Lesson 2 › קווי גובה (map labels) and קנה מידה (zoom hint)
+
+Brief: `design/docs/claude-topic02-map-readability-2026-10-27.md`. Handoff: `design/docs/topic02-map-readability-handoff-2026-10-27.md`.
+
+- **The contour map grows instead of its labels.** The first contours card's map goes from 340 to 460 reference px (266 → 360 px at 1440 × 1122), so its 3.4-unit numbers read 12.24 px without changing their size relative to the contours; only the scale-bar text (2.8 → 3.4) and "צ" (3.2 → 3.4) grow in units. The map is now taller than the 3D model's frame (340), and its column sets the card's height (619 → 684 reference px, still under the 704 laptop cap). The hidden key line under the map keeps its slot, so keyboard focus still moves nothing.
+- **"מ׳" joins the scale bar's numbers** on their line, to the right of "50", rather than sitting at bar level after the bar's end (where it collided with "50").
+- **Zoom hint → accent on + / −.** In the scale lab the hint chip leaves at the first action on the map and never shows while the map takes picks (measure mode). Until the first zoom, the + / − buttons wear the chip's accent outline on their own footprint, the cue that is left without covering a point or the ruler. The sr-only hint text stays the map's description until then.
+- **Left as is:** the legend and the explanation lines under the map (HTML, 10.2–11 px on screen at the lesson's scale) are the lesson's standard small text, not data labels. The "מתון" plate covering a stretch of the 10 m contour predates this change.
+
+## 2026-10-27 — Lesson 2: globe and scale-lab tests brought in line with the current behaviour
+
+Brief: `design/docs/claude-followup-test-consistency-2026-10-27.md`. Handoff: `design/docs/topic02-test-consistency-handoff-2026-10-27.md`.
+
+- **The globe opens on 0°, 0°.** The explorer's point (`EXPLORE_START`) and the camera (`VIEW_START`) both open where the equator meets Greenwich, at the user's request of 2026-10-12 (the same request that added the shared 3D loader: "שנקודת ההתחלה תהיה 0,0"). This supersedes, in the 2026-10-12 globe entries above, "Opening view `{lat −3°, lon 72°}`" and "The page still opens on the deck's example (30°S 90°E)". The deck's points stay in `LATLON_ITEMS`; from the opening camera 30°S 90°E is past the limb, and a task on it turns the camera to it.
+- **Scale-lab QA measures in two units.** `data-view` (k, x, y) and the component's constants (`CHIP_GAP` = 8) are local px; boxes on screen are those × the lesson's uniform fit (0.7827 at 1440 × 1122). `scripts/qa/shot-scale.mjs` converts between them instead of comparing screen px against local constants. No component value changed.
+- **Two pre-existing touches on the contour map stay listed, capped,** in `scripts/qa/contours-legibility.mjs` (`KNOWN_LINE_HITS`): the "מתון" plate over the 10 m contour (39 samples ≈ 7.8 viewBox units) and the 59 plate touching the 50 m contour (1 sample). Any other touch, or either one growing, fails; `--strict` fails on them too.
+
+## 2026-10-27 — Lesson 2 › תרגול: „קוראים את המפה” (cartography-practice)
+
+Brief: `design/docs/claude-topic02-integrated-practice-2026-10-27.md`. Handoff: `design/docs/topic02-cartography-practice-handoff-2026-10-27.md`.
+
+- **A new fictional map, not an existing asset.** No lesson-2 map serves all four tasks from one data source, so the practice draws a schematic sheet in the lessons' map language (`MAP` of `topographyTerrainStyle.ts`, imported, not edited): one height model per scenario → contours, spot heights, slope segments, the ruler and the UTM grid. Marked once: „מפה בדיונית לתרגול”.
+- **Two scales.** Scenario A 1:10,000 (10 m interval, 500 m grid), B 1:20,000 (20 m, 1,000 m), so a wrong-scale answer is a real mistake in the second run. UTM numbers lie in a valid zone-36 range; the place is fictional.
+- **The ruler is laid by a button** from א towards ב and reads sheet cm (the SVG is drawn in sheet mm), like the scale lab's "ס״מ של דף מודפס". Tolerance = 2 mm on the ruler (±20 / ±40 m), said as „כ־”.
+- **Map marks are pointer-only;** the panel's buttons are the keyboard / screen-reader path, and a hidden per-step text gives the map's data (symbols, heights, segment lengths, grid values) without the answer words.
+- **One shared-component change:** `LessonShell` listens for `lesson:open-scene` ({ id }) and opens that sub-topic in the learn tab — the summary's review links. Nothing else in the shell changed.

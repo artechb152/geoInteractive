@@ -48,6 +48,9 @@ import { NORTHS, NORTH_IDS, type NorthId } from './norths';
  * Colour roles: accent = target line, B and the measurement arc; the three
  * north colours (NORTHS[id].color) are a legend for the arrows only. The sheet
  * uses the lesson-2 map symbology (MAP).
+ *
+ * Arrow labels carry the north's Hebrew name, as in the tabs, over its angle
+ * from TN; the inset repeats the names only, so each value is printed once.
  */
 
 const BODY_SRC = '/assets/lessons/topic06/compass/compass-body.webp';
@@ -194,8 +197,8 @@ function ArrowLabelMark({ label, selected }: { label: ArrowLabel; selected: bool
         <line x1={cx} y1={r1(box.y + box.h)} x2={r1(tip.x)} y2={r1(tip.y - 4)} stroke="currentColor" strokeWidth={1.1} strokeOpacity={0.8} />
       )}
       <rect x={r1(box.x)} y={r1(box.y)} width={box.w} height={box.h} rx={6} fill={MAP.paper} fillOpacity={0.88} />
-      <text x={cx} y={r1(box.y + 12)} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={15} fill="currentColor" className={selected ? 'font-display font-extrabold' : 'font-display font-bold'}>
-        {meta.abbr}
+      <text x={cx} y={r1(box.y + 12)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={15} fill="currentColor" className={selected ? 'font-display font-extrabold' : 'font-display font-bold'}>
+        {meta.short}
       </text>
       <text x={cx} y={r1(box.y + 27)} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={14} fill="currentColor" className="font-display font-bold tabular-nums">
         {formatSigned(label.value)}
@@ -227,20 +230,13 @@ function Inset({ declination, active }: { declination: number; active: NorthId }
       <circle cx={INSET_ORIGIN.x} cy={INSET_ORIGIN.y} r={3.5} fill={INK} />
       {labels.map((l) => {
         const cx = r1(l.box.x + l.box.w / 2);
-        const [first, second] = NORTHS[l.id].label.split(' ');
         return (
           <g key={l.id} className={NORTHS[l.id].color} data-inset-label={l.id}>
             {l.leader && (
               <line x1={cx} y1={r1(l.box.y + l.box.h)} x2={r1(l.tip.x)} y2={r1(l.tip.y - 3)} stroke="currentColor" strokeWidth={1} strokeOpacity={0.75} />
             )}
-            <text x={cx} y={r1(l.box.y + 7)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={12} fill="currentColor" className="font-display font-semibold">
-              {first}
-            </text>
-            <text x={cx} y={r1(l.box.y + 21)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={12} fill="currentColor" className="font-display font-semibold">
-              {second}
-            </text>
-            <text x={cx} y={r1(l.box.y + 35)} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={12} fill="currentColor" className="font-display font-bold tabular-nums">
-              ({formatSigned(l.value)})
+            <text x={cx} y={r1(l.box.y + l.box.h / 2)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={13} fill="currentColor" className="font-display font-bold">
+              {NORTHS[l.id].short}
             </text>
           </g>
         );

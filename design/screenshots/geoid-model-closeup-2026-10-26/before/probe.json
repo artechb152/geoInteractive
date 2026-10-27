@@ -1,0 +1,198 @@
+{
+  "notes": [],
+  "surface": {
+    "feet": {
+      "model": {
+        "C": {
+          "x": 745.6,
+          "y": 405.2
+        },
+        "B": {
+          "x": 898.5,
+          "y": 447.6
+        },
+        "A": {
+          "x": 979.4,
+          "y": 522
+        }
+      },
+      "section": {
+        "C": {
+          "x": 224.7,
+          "y": 407.2
+        },
+        "B": {
+          "x": 389.3,
+          "y": 448.5
+        },
+        "A": {
+          "x": 479.6,
+          "y": 534.1
+        }
+      }
+    },
+    "CoverA": {
+      "model": 116.8,
+      "section": 126.9
+    },
+    "BoverA": {
+      "model": 74.4,
+      "section": 85.6
+    },
+    "CtoA_x": {
+      "model": 233.8,
+      "section": 254.9
+    },
+    "spanPx": 475,
+    "card": {
+      "top": 92,
+      "bottom": 605,
+      "h": 513
+    }
+  },
+  "geoidBefore": {
+    "modelH": null,
+    "sectionH": {
+      "len": 96.7,
+      "opacity": 0
+    },
+    "card": {
+      "top": 92,
+      "bottom": 651,
+      "h": 559
+    }
+  },
+  "geoidBeforeA": {
+    "modelH": null,
+    "sectionH": {
+      "len": 23.4,
+      "opacity": 0
+    },
+    "lens": 0
+  },
+  "geoid": {
+    "A": {
+      "modelH": {
+        "x1": 479.7,
+        "y1": 168.1,
+        "x2": 480.9,
+        "y2": 152.6,
+        "len": 15.5,
+        "opacity": 1
+      },
+      "sectionH": {
+        "len": 23.4,
+        "opacity": 1
+      },
+      "lens": 0,
+      "card": {
+        "top": 92,
+        "bottom": 651,
+        "h": 559
+      }
+    },
+    "B": {
+      "modelH": {
+        "x1": 406.2,
+        "y1": 160.1,
+        "x2": 409,
+        "y2": 93.7,
+        "len": 66.5,
+        "opacity": 1
+      },
+      "sectionH": {
+        "len": 96.7,
+        "opacity": 1
+      },
+      "lens": 0,
+      "card": {
+        "top": 92,
+        "bottom": 651,
+        "h": 559
+      }
+    },
+    "C": {
+      "modelH": {
+        "x1": 257.7,
+        "y1": 200.8,
+        "x2": 253,
+        "y2": 71.8,
+        "len": 129.1,
+        "opacity": 1
+      },
+      "sectionH": {
+        "len": 178.1,
+        "opacity": 1
+      },
+      "lens": 0,
+      "card": {
+        "top": 92,
+        "bottom": 651,
+        "h": 559
+      }
+    }
+  },
+  "task": {
+    "B": {
+      "modelH": null,
+      "lens": 0,
+      "card": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      },
+      "wrong": "148 מ׳ הוא h, הגובה מעל האליפסואיד. הגובה מעל פני הים נמדד מהגיאואיד, ולכן חסרו ממנו את N: H = 148 − 28.",
+      "cardWrong": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      },
+      "right": "נכון. H = 120 מ׳\n\nלתחנה הבאה\n\n148 − 28 = 120. N חיובי, ולכן H קטן מ־h.",
+      "cardRight": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      }
+    },
+    "A": {
+      "modelH": null,
+      "lens": 0,
+      "card": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      },
+      "wrong": "התוצאה קטנה מ־h, אבל כאן N = −12: הגיאואיד מתחת לאליפסואיד, ולכן H גדול מ־h. שימו לב לסימן: H = 18 − (−12).",
+      "cardWrong": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      },
+      "right": "נכון. H = 30 מ׳\n\nלתחנה הבאה\n\n18 − (−12) = 30. N שלילי, ולכן H גדול מ־h.",
+      "cardRight": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      }
+    },
+    "C": {
+      "modelH": null,
+      "lens": 0,
+      "card": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      },
+      "right": "נכון. H = 220 מ׳\n\n3/3 – כל הגבהים חושבו.\n\n220 − 0 = 220. N = 0, ולכן H = h.",
+      "cardRight": {
+        "top": 92,
+        "bottom": 797,
+        "h": 705
+      }
+    }
+  },
+  "errors": [
+    "SyntaxError: Invalid or unexpected token",
+    "ChunkLoadError: Loading chunk app/lessons/[topicId]/page failed.\n(missing: http://localhost:3000/_next/static/chunks/app/lessons/%5BtopicId%5D/page.js)"
+  ]
+}

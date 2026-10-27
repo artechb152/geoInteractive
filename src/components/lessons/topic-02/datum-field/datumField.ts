@@ -12,7 +12,7 @@
  * written; the copy sent to the map, its label and the conversion result are
  * derived from the activity state.
  */
-import { CASES, MAP, GRID_STEP, PLACES, SHIFT, type Datum, type EN, type PlaceId, type PracticeCase } from './datumField.data';
+import { CASES, MAP, GRID_STEP, PLACES, SHIFT, type Action, type CalcKind, type Datum, type EN, type PlaceId, type PracticeCase } from './datumField.data';
 
 // ---------------------------------------------------------------- the model
 
@@ -115,31 +115,85 @@ export function errorResult(phase: ErrorPhase): EN | null {
 
 // ---------------------------------------------------------------- stage 3: practice
 
-export type OptionKind = 'kept' | 'plus' | 'minus' | 'other';
-
 export const caseTarget = (c: PracticeCase): EN => PLACES[c.place].ground;
 /** The numbers as delivered: the place in the source datum. */
 export const caseSource = (c: PracticeCase): EN => numbersOf(c.place, c.source);
 
-/** How an output pair relates to the source numbers. */
-export function optionKind(c: PracticeCase, p: EN): OptionKind {
+/** The learner's three decisions on a case: do the datums match, the action, and (for a conversion) the pair. */
+export type PracticeAnswer = { match: boolean | null; action: Action | null; calc: number | null };
+export const EMPTY_ANSWER: PracticeAnswer = { match: null, action: null, calc: null };
+
+export type Conversion = 'AtoB' | 'BtoA';
+export const isConversion = (a: Action | null): a is Conversion => a === 'AtoB' || a === 'BtoA';
+export const directionOf = (a: Conversion): { from: Datum; to: Datum } => (a === 'AtoB' ? { from: 'A', to: 'B' } : { from: 'B', to: 'A' });
+
+/** Step 1's truth: do the source and the target map use the same datum? */
+export const datumsMatch = (c: PracticeCase): boolean => c.source === c.target;
+
+/** Step 2's truth: nothing to convert when the datums match; otherwise from the source's datum to the map's. */
+export const rightAction = (c: PracticeCase): Action => (datumsMatch(c) ? 'keep' : c.source === 'A' ? 'AtoB' : 'BtoA');
+
+/**
+ * Step 3's pairs for a conversion: the conversion of the source numbers, the two shifts swapped between
+ * E and N, and only E converted — each built from SHIFT with its direction's sign, so 'right' is
+ * convert() itself (unit-tested).
+ */
+export function calcPair(c: PracticeCase, a: Conversion, kind: CalcKind): EN {
   const s = caseSource(c);
-  if (sameEN(p, s)) return 'kept';
-  if (sameEN(p, { e: s.e + SHIFT.e, n: s.n + SHIFT.n })) return 'plus';
-  if (sameEN(p, { e: s.e - SHIFT.e, n: s.n - SHIFT.n })) return 'minus';
-  return 'other';
+  const sign = directionOf(a).from === 'A' ? -1 : 1;
+  switch (kind) {
+    case 'right':
+      return { e: s.e + sign * SHIFT.e, n: s.n + sign * SHIFT.n };
+    case 'swapped':
+      return { e: s.e + sign * SHIFT.n, n: s.n + sign * SHIFT.e };
+    case 'partial':
+      return { e: s.e + sign * SHIFT.e, n: s.n };
+  }
 }
 
-/** The gap a pair makes in the target map (m). */
-export const optionGap = (c: PracticeCase, p: EN): number => gapOf(p, c.target, caseTarget(c));
+/** Step 3's pairs, in the case's order (none unless the action is a conversion). */
+export const calcOptions = (c: PracticeCase, a: Action | null): EN[] => (isConversion(a) ? c.calcOrder.map((k) => calcPair(c, a, k)) : []);
 
-/** Right means: the target map puts the pair on the place itself — read from the data, not from a slot. */
-export const isRight = (c: PracticeCase, p: EN): boolean => optionGap(c, p) < 1e-9;
+/** Complete enough to check: a conversion needs its pair; the other actions send the source numbers as they are. */
+export const answerComplete = (c: PracticeCase, x: PracticeAnswer): boolean =>
+  x.match !== null && x.action !== null && (!isConversion(x.action) || (x.calc !== null && x.calc >= 0 && x.calc < c.calcOrder.length));
 
-export function feedbackFor(c: PracticeCase, p: EN): string | undefined {
-  if (isRight(c, p)) return c.feedback.right;
-  const kind = optionKind(c, p);
-  return (kind === 'kept' || kind === 'plus' || kind === 'minus' ? c.feedback[kind] : undefined) ?? c.feedback.wrong;
+/** The copy an answer sends to the target map: its label and its numbers (null while incomplete). */
+export function sentOf(c: PracticeCase, x: PracticeAnswer): { label: Datum; numbers: EN } | null {
+  if (!answerComplete(c, x)) return null;
+  const a = x.action!;
+  if (a === 'keep') return { label: c.source, numbers: caseSource(c) };
+  // a new label only: the numbers stay the source's
+  if (a === 'relabel') return { label: c.target, numbers: caseSource(c) };
+  return { label: directionOf(a).to, numbers: calcOptions(c, a)[x.calc!] };
+}
+
+/** The first step that went wrong — identifying the datums, choosing the action, the calculation — or right. */
+export type Verdict = 'right' | 'identify' | 'action' | 'calc';
+
+export type Diagnosis = {
+  verdict: Verdict;
+  sent: { label: Datum; numbers: EN };
+  /** Where the target map puts the numbers sent (ground, datum-A metres). */
+  at: EN;
+  /** Metres from the place. */
+  gap: number;
+  /** The kind of pair chosen, for a conversion. */
+  calc: CalcKind | null;
+};
+
+/**
+ * Judge a complete answer: the verdict names the first step that went wrong. Every step right means —
+ * from the data, not from a slot — the target map puts the numbers on the place itself (unit-tested).
+ */
+export function diagnose(c: PracticeCase, x: PracticeAnswer): Diagnosis | null {
+  const sent = sentOf(c, x);
+  if (!sent) return null;
+  const at = interpret(sent.numbers, c.target);
+  const calc = isConversion(x.action) ? c.calcOrder[x.calc!] : null;
+  const verdict: Verdict =
+    x.match !== datumsMatch(c) ? 'identify' : x.action !== rightAction(c) ? 'action' : calc !== null && calc !== 'right' ? 'calc' : 'right';
+  return { verdict, sent, at, gap: distance(at, caseTarget(c)), calc };
 }
 
 // ---------------------------------------------------------------- the activity
@@ -150,10 +204,10 @@ export const MODES: readonly Mode[] = ['compare', 'error', 'practice'];
 export type PracticeState = {
   /** The case on screen. */
   index: number;
-  /** The option previewed on the map (not an answer yet). */
-  choice: number | null;
-  /** The option last checked with "בדיקת הנתונים" (null: nothing checked since the last choice). */
-  checked: number | null;
+  /** The learner's decisions on it. Nothing of them reaches the map before a check. */
+  answer: PracticeAnswer;
+  /** The answer on screen was checked with "בדיקה" (any change clears it). */
+  checked: boolean;
   /** Cases answered right at least once. */
   solved: readonly boolean[];
   /** The closing message after the last case. */
@@ -180,14 +234,17 @@ export type ActivityAction =
   | { type: 'convert' }
   | { type: 'arrive'; run: number }
   | { type: 'resetError' }
-  | { type: 'choose'; option: number }
+  | { type: 'setMatch'; match: boolean }
+  | { type: 'setAction'; action: Action }
+  | { type: 'setCalc'; option: number }
   | { type: 'check' }
+  | { type: 'resetCase' }
   | { type: 'goCase'; index: number }
   | { type: 'showSummary' }
   | { type: 'restartPractice' }
   | { type: 'backToDemo' };
 
-const initialPractice = (): PracticeState => ({ index: 0, choice: null, checked: null, solved: CASES.map(() => false), summary: false });
+const initialPractice = (): PracticeState => ({ index: 0, answer: EMPTY_ANSWER, checked: false, solved: CASES.map(() => false), summary: false });
 
 export const initialActivity = (): ActivityState => ({
   mode: 'compare',
@@ -199,6 +256,11 @@ export const initialActivity = (): ActivityState => ({
 
 /** A conversion caught mid-motion settles where it was going (the numbers were already converted). */
 const settle = (phase: ErrorPhase): ErrorPhase => (phase === 'converting' ? 'converted' : phase);
+
+/** Practice changes act only on a case on screen (not on the summary). */
+const answering = (s: ActivityState) => s.mode === 'practice' && !s.practice.summary;
+/** A new answer clears the last verdict: nothing is judged or drawn until the next check. */
+const withAnswer = (s: ActivityState, answer: PracticeAnswer): ActivityState => ({ ...s, practice: { ...s.practice, answer, checked: false } });
 
 export function activityReducer(s: ActivityState, a: ActivityAction): ActivityState {
   switch (a.type) {
@@ -233,31 +295,45 @@ export function activityReducer(s: ActivityState, a: ActivityAction): ActivitySt
       return { ...s, error: { ...s.error, phase: 'converted' } };
 
     case 'resetError':
+      // the stage from its start: nothing sent yet
       if (s.mode !== 'error') return s;
       return { ...s, error: { phase: 'ready', labelFrom: 'raw' }, run: s.run + 1 };
 
-    case 'choose': {
+    case 'setMatch':
+      if (!answering(s) || a.match === s.practice.answer.match) return s;
+      return withAnswer(s, { ...s.practice.answer, match: a.match });
+
+    case 'setAction': {
       const c = CASES[s.practice.index];
-      if (s.mode !== 'practice' || s.practice.summary || a.option < 0 || a.option >= c.options.length) return s;
-      if (a.option === s.practice.choice) return s;
-      return { ...s, practice: { ...s.practice, choice: a.option, checked: null } };
+      if (!answering(s) || !c.actions.includes(a.action) || a.action === s.practice.answer.action) return s;
+      // another action: the old pair belonged to the old one
+      return withAnswer(s, { ...s.practice.answer, action: a.action, calc: null });
+    }
+
+    case 'setCalc': {
+      const c = CASES[s.practice.index];
+      const x = s.practice.answer;
+      if (!answering(s) || !isConversion(x.action) || a.option < 0 || a.option >= c.calcOrder.length || a.option === x.calc) return s;
+      return withAnswer(s, { ...x, calc: a.option });
     }
 
     case 'check': {
       const p = s.practice;
-      if (s.mode !== 'practice' || p.summary || p.choice === null || p.checked === p.choice) return s;
       const c = CASES[p.index];
-      const right = isRight(c, c.options[p.choice]);
-      return {
-        ...s,
-        practice: { ...p, checked: p.choice, solved: right ? p.solved.map((v, i) => v || i === p.index) : p.solved },
-      };
+      if (!answering(s) || p.checked || !answerComplete(c, p.answer)) return s;
+      const right = diagnose(c, p.answer)!.verdict === 'right';
+      return { ...s, practice: { ...p, checked: true, solved: right ? p.solved.map((v, i) => v || i === p.index) : p.solved } };
     }
+
+    case 'resetCase':
+      // the case on screen from its start; a case solved once stays solved
+      if (!answering(s)) return s;
+      return withAnswer(s, EMPTY_ANSWER);
 
     case 'goCase':
       if (s.mode !== 'practice' || a.index < 0 || a.index >= CASES.length) return s;
       // every case starts clean
-      return { ...s, practice: { ...s.practice, index: a.index, choice: null, checked: null, summary: false } };
+      return { ...s, practice: { ...s.practice, index: a.index, answer: EMPTY_ANSWER, checked: false, summary: false } };
 
     case 'showSummary':
       if (s.mode !== 'practice' || !s.practice.solved.every(Boolean)) return s;
@@ -275,9 +351,7 @@ export function activityReducer(s: ActivityState, a: ActivityAction): ActivitySt
 
 // ---------------------------------------------------------------- readings
 
-/** The checked option of the case on screen, if any, and whether it was right. */
-export function checkedResult(p: PracticeState): { option: number; right: boolean } | null {
-  if (p.checked === null) return null;
-  const c = CASES[p.index];
-  return { option: p.checked, right: isRight(c, c.options[p.checked]) };
+/** The verdict on the case on screen, once checked. */
+export function checkedDiagnosis(p: PracticeState): Diagnosis | null {
+  return p.checked ? diagnose(CASES[p.index], p.answer) : null;
 }

@@ -61,6 +61,23 @@ export function declinationText(d: number) {
   return n === 1 ? `מעלה אחת ${side}` : `${n} מעלות ${side}`;
 }
 
+/**
+ * The line under the reading: where the chosen north lies relative to true
+ * north and what that does to the angle to B. It names the side (west →
+ * larger, east → smaller), never a blanket "add" / "subtract" rule, and it
+ * follows the slider. Unsigned degrees only, so the text needs no LTR island.
+ */
+export function relationText(id: NorthId, declination: number) {
+  if (id === 'true') return 'זה הבסיס להשוואה: הזוויות שעל החצים במפה נמדדות ממנו.';
+  const name = id === 'grid' ? 'צפון הרשת' : 'הצפון המגנטי';
+  const v = Math.round(referenceAngle(id, declination));
+  if (v === 0) return `בדוגמה, ${name} חופף לצפון האמיתי, ולכן האזימוט זהה.`;
+  const n = Math.abs(v);
+  return v < 0
+    ? `בדוגמה, ${name} נוטה ${n}° מערבה מהצפון האמיתי, ולכן האזימוט גדול ב־${n}°.`
+    : `בדוגמה, ${name} נוטה ${n}° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־${n}°.`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Measurement arc — from the chosen north, clockwise, to the target line
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +158,7 @@ export const INSET: Box = { x: 16, y: 16, w: 188, h: 190 };
 /** Angles in the inset only: the deviation from TN × INSET_GAIN (side and order kept). */
 export const INSET_GAIN = 4;
 export const INSET_ORIGIN: XY = { x: INSET.x + INSET.w / 2, y: INSET.y + INSET.h - 18 };
-export const INSET_ARROW_LEN = 70;
+export const INSET_ARROW_LEN = 96;
 
 /** "הנתונים להמחשה בלבד" — bottom-left corner of the sheet. */
 export const NOTE_POS: XY = { x: 16, y: LAB_H - 16 };
@@ -150,8 +167,9 @@ export const NOTE_POS: XY = { x: 16, y: LAB_H - 16 };
 // Labels — one row above the arrow tips, spread so they never overlap
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const ARROW_LABEL = { w: 44, h: 36, gap: 6, lift: 16 } as const;
-export const INSET_LABEL = { w: 46, h: 42, gap: 4, lift: 8 } as const;
+/** Main map: the north's Hebrew name over its angle from TN. Inset: the name only. */
+export const ARROW_LABEL = { w: 48, h: 36, gap: 6, lift: 16 } as const;
+export const INSET_LABEL = { w: 46, h: 20, gap: 4, lift: 8 } as const;
 
 /** Equal angles (MN = TN at 0°, MN = GN at 2°) keep this left-to-right order. */
 const TIE_ORDER: Record<NorthId, number> = { magnetic: 0, true: 1, grid: 2 };
@@ -220,7 +238,7 @@ function rowLabels(
   }));
 }
 
-/** TN / GN / MN labels on the main map: true angles, clear of the inset. */
+/** The three north labels on the main map: true angles, clear of the inset. */
 export function arrowLabels(declination: number): ArrowLabel[] {
   const n = northAngles(declination);
   return rowLabels(LAB_A, ARROW_LEN, n, n, ARROW_LABEL, INSET.x + INSET.w + 10, LAB_W - LAB_MARGIN);
@@ -232,7 +250,7 @@ export function insetAngles(declination: number): Record<NorthId, number> {
   return { true: n.true * INSET_GAIN, grid: n.grid * INSET_GAIN, magnetic: n.magnetic * INSET_GAIN };
 }
 
-/** Inset labels: drawn at the enlarged angles, printing the source values. */
+/** Inset labels: names only, placed at the enlarged angles (the values stay on the main map). */
 export function insetLabels(declination: number): ArrowLabel[] {
   return rowLabels(
     INSET_ORIGIN,

@@ -44,6 +44,7 @@
   "exclude": [
     "node_modules",
     "topics-1-2-review",
-    "prototypes"
+    "prototypes",
+    "qa-output"
   ]
 }

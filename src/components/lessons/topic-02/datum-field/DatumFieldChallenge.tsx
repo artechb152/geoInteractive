@@ -2,32 +2,38 @@
 
 /* ─────────── הדמיה: מה קורה כשהדאטום לא תואם? — אותו מקום, שתי דרכים לתאר אותו ───────────
    Brief: design/docs/datum-field-challenge-followup-claude-2026-10-12.txt (replaces the
-   find-and-fix task of 2026-10-11); screen card: design/docs/datum-field-challenge-screen-card-2026-10-12.md.
+   find-and-fix task of 2026-10-11); screen card: design/docs/datum-field-challenge-screen-card-2026-10-12.md
+   (clarity pass of 2026-10-26: datum tags, the real place vs the mark obtained, decisions before answers).
 
    One card, three stages in the same place: "משווים" (the same bridge in A and in B), "בודקים את
    הטעות" (A's numbers read as B, then a label change or a real conversion) and "מתרגלים" (two
-   cases). The panel — the question, the source and target in short rows, the action and its
-   feedback and the way on directly after it — sits at the inline start (visual right);
-   the map shares the width equally at the inline end. The map is one straight-down picture
-   (field-map.webp, scripts/maps/build-datum-field-map.mjs); the grid, its margin values, the
-   markers, the distance line and every number on it are live, placed through
-   datumFieldProjection.ts. The model and the stages are pure (datumField.ts) and unit-tested.
+   cases, each decided in three steps before the map shows anything). The panel — the question, the
+   data with their datum tags, the action and its feedback and the way on directly after it — sits at
+   the inline start (visual right) and takes the card's width beside a fixed map column (MAP_BOX_W) at
+   the inline end, titled with the datum it uses; the lead above ends where the panel does. Neither
+   column stretches to the other: each stage keeps room for its own feedback (ROOM), so the map and
+   the controls stay put within a stage (layout pass 2026-10-27,
+   design/docs/claude-datum-layout-2026-10-27.md). The map is one straight-down picture (field-map.webp,
+   scripts/maps/build-datum-field-map.mjs); the grid, its margin values, the markers, the distance
+   line and every number on it are live, placed through datumFieldProjection.ts. The model and the
+   stages are pure (datumField.ts) and unit-tested.
 
    Surfaces follow design/docs/lessons-02-06-ui-cleanup-spec.md (one workspace; borderless insets;
    options with border and hover); text tiers follow the scene's own neighbours (Table 2). */
 
-import { useCallback, useEffect, useId, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useReducer, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { animate, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import { L } from '../Ltr';
 import { useRovingKeys } from '../scale/controls';
-import { CASES, PLACES, SHIFT, type Datum, type EN, type PlaceId } from './datumField.data';
+import { CASES, PLACES, SHIFT, type Action, type Datum, type EN, type PlaceId, type PracticeCase } from './datumField.data';
 import {
-  activityReducer, caseSource, caseTarget, checkedResult, distance, ERROR_BEFORE, ERROR_MAP, ERROR_SOURCE, errorResult,
-  feedbackFor, formatEN, gridLines, initialActivity, interpret, isRight, lerpEN, MODES, numbersOf, optionGap, sentCopy,
-  type ActivityAction, type ActivityState, type ErrorPhase, type Mode,
+  activityReducer, calcOptions, caseSource, caseTarget, checkedDiagnosis, convert, datumsMatch, directionOf, distance,
+  ERROR_BEFORE, ERROR_MAP, ERROR_SOURCE, errorResult, formatEN, gridLines, initialActivity, interpret, isConversion,
+  lerpEN, MODES, numbersOf, rightAction, sentCopy, sentOf,
+  type ActivityAction, type ActivityState, type Diagnosis, type ErrorPhase, type Mode, type PracticeAnswer,
 } from './datumField';
 import { MAP_PX, toPicture, xOfE, yOfN } from './datumFieldProjection';
 
@@ -37,53 +43,97 @@ const MAP_ALT =
 
 // The activity's heading and lead, at the top of its own card (one envelope per activity), and the lesson-content tiers (Table 2).
 const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
-const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
+// the lead ends where the panel's column ends, so the text reads as one column above the work and the map stands beside it
+const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl lg:max-w-[calc(100%-var(--map-col)-2rem)]';
+/**
+ * The map's column at desktop (px of the 1344 reference layout): the picture box plus its 3rem N margin. Sized so the
+ * map stands between the panel's shortest stage (compare, 493) and its tallest (practice, 691), and the panel takes the
+ * rest of the card's width (768, the lead's measure).
+ */
+const MAP_BOX_W = 430;
+const MAP_COL = { '--map-col': `${MAP_BOX_W + 48}px` } as CSSProperties;
+/**
+ * Room kept for each stage's feedback: its tallest feedback at the reference layout (the card is always laid out at
+ * 1344px), so the way on stays put when feedback appears — compare: one line + the before/after cells; error: the
+ * conversion's two lines + cells; practice: a verdict with two lines. The summary keeps no room.
+ */
+const ROOM: Record<Mode, string> = { compare: 'min-h-[142px]', error: 'min-h-[168px]', practice: 'min-h-[108px]' };
+/** Stage 2's action row: the copy button holds the two experiments' height, so the feedback starts at one place. */
+const ACTION_ROW = 'min-h-[3.875rem]';
+/** Practice step 3 holds the conversion's rule and pairs, so the check does not move while the action is chosen. */
+const SEND_ROOM = 'min-h-[5.875rem]';
 const HEADING = 'font-display font-bold leading-tight text-black text-base md:text-lg';
 const LABEL = 'text-base font-display font-bold text-black';
 const BODY = 'text-base leading-relaxed text-black';
 const NUMBERS = 'font-display text-base font-bold tabular-nums text-black';
 /** An inset inside the workspace: no border, no shadow. */
 const INSET = 'rounded-xl bg-bg-accent/60';
+/** An option or experiment: bordered, tinted while on (lessons-02-06 spec). */
+const OPTION = 'rounded-xl border transition-colors duration-200 ease-snap motion-reduce:transition-none';
+const OPTION_ON = 'border-accent bg-accent/10';
+const OPTION_OFF = 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]';
 
 const STAGE: Record<Mode, string> = { compare: 'משווים', error: 'בודקים את הטעות', practice: 'מתרגלים' };
 
 // stage 1
 const C_HEADING = 'גשר אחד, קואורדינטות בשני דאטומים';
-const C_DO = 'A ו־B הם שני דאטומים: שתי מערכות ייחוס למדידת מיקום. כל אחת נותנת לאותו גשר מספרי קואורדינטות שונים.';
-const C_SWITCH = 'בחרו באיזה דאטום להציג את קואורדינטות הגשר';
-const C_INITIAL = 'שני צמדי המספרים מתארים את אותו גשר. עברו ל־B: הרשת והמספרים ישתנו, והעיגול שמסמן את הגשר יישאר במקומו.';
-const C_TO_B = 'הגשר נשאר באותו מקום. בהמרה לדאטום B המספרים שמייצגים אותו משתנים.';
-const C_TO_A = 'הגשר נשאר באותו מקום. בהמרה חזרה לדאטום A המספרים שמייצגים אותו חוזרים לערכים הקודמים.';
+const C_DO = 'עברו בין A ל־B ובדקו מה משתנה: המספרים או המקום בשטח?';
+const C_SWITCH = 'הדאטום שבו מתארים את הגשר';
+const C_CHANGED = 'המספרים השתנו, הגשר לא זז';
+const C_TO_B = 'המפה מציגה עכשיו את רשת B. הגשר נשאר במקומו, ולכן נקרא בה במספרים אחרים.';
+const C_TO_A = 'המפה מציגה שוב את רשת A, והגשר נקרא בה במספרים המקוריים. המקום עצמו לא השתנה.';
 const C_NEXT = 'מה קורה בלי המרה?';
 // stage 2
 const E_HEADING = 'אותם מספרים נקראים בדאטום אחר';
-const E_DO = 'העיגול מסמן את הגשר הקבוע. קיבלנו את המספרים בדאטום A, אבל המפה קוראת אותם כ־B. העתיקו ללא המרה: המעוין יראה לאן המפה מפנה אותנו.';
-const E_SENT = 'המספרים שנשלחו למפה';
-const E_MAP = 'המפה מפרשת את הנתונים בדאטום B';
+const E_DO = 'העתיקו את מספרי המקור למפת היעד בלי המרה ובדקו היכן יופיע הסימון.';
+const E_SENT = 'העותק שנשלח למפה';
+const E_READ = 'המפה קוראת כ־B';
 const E_COPY = 'העתקת המספרים ללא המרה';
 const E_RELABEL = 'שינוי הכיתוב בלבד';
-const E_RELABEL_HELP = 'מחליפים את האות בכותרת של עותק הנתונים; המספרים אינם משתנים.';
+const E_RELABEL_HELP = 'רק האות בכותרת העותק משתנה';
 const E_UNLABEL = 'ביטול שינוי הכיתוב';
-const E_CONVERT = 'המרת הנתונים מ־A ל־B';
-const E_RAW = 'המעוין נמצא 60 מטר מהגשר: מספרי A נקראו כ־B ללא המרה. הגשר לא זז — הסימון שגוי. השוו עכשיו בין שינוי הכיתוב להמרת המספרים.';
-const E_LABELLED = 'החלפנו את הכיתוב מ־A ל־B, אבל המספרים לא השתנו. לכן המעוין נשאר 60 מטר מהגשר. כדי לתקן צריך להמיר את המספרים.';
+const E_UNLABEL_HELP = 'חזרה לעותק שלפני הניסוי';
+const E_CONVERT = 'המרת המספרים מ־A ל־B';
+const E_CONVERT_HELP = 'E ו־N מחושבים מחדש לדאטום B';
+const E_STEP: Record<Exclude<ErrorPhase, 'ready'>, string> = {
+  raw: 'העתקה ללא המרה',
+  relabeled: 'שינוי הכיתוב בלבד',
+  converting: 'המרה A→B',
+  converted: 'המרה A→B',
+};
 const E_MOVING = 'המחשת המעבר';
-const E_FIXED = 'ההמרה שינתה את המספרים לייצוג בדאטום B, ולכן המעוין חזר לגשר. הגשר עצמו נשאר במקומו.';
 const E_MATCH = 'הסימון תואם למיקום הגשר';
+const E_FIXED = 'ההמרה חישבה את המספרים מחדש, כך שבדאטום B הם מתארים את אותו גשר. השתנו המספרים, לא המקום.';
+const E_LABELLED_LEAD = 'הכיתוב השתנה, הסימון לא זז';
+const E_LABELLED = 'המספרים עדיין של A, והמפה ממשיכה לקרוא אותם כ־B. שינוי הכיתוב אינו המרה.';
+const E_RESET = 'התחלה מחדש';
 const E_NEXT = 'נסו על נתונים נוספים';
 // stage 3
 const P_DO = 'איזה צמד מספרים צריך לשלוח למפת היעד כדי לשמור על אותו מקום?';
-const P_RULE = 'בהמחשה הזאת: A→B מחסיר (36,48); B→A מוסיף (36,48).';
-const P_PREVIEW = 'תצוגה מקדימה';
+const P_MATCH = 'האם הדאטומים תואמים?';
+const P_MATCH_YES = 'כן, אותו דאטום';
+const P_MATCH_NO = 'לא, דאטומים שונים';
+const P_ACTION = 'מה עושים עם המספרים?';
+const P_ACTIONS: Record<Action, string> = { keep: 'העתקה ללא המרה', relabel: 'שינוי הכיתוב בלבד', AtoB: 'המרה A→B', BtoA: 'המרה B→A' };
+const P_SEND = 'אילו מספרים נשלחים למפה?';
+const P_SEND_WAIT = 'יופיעו אחרי שתבחרו פעולה.';
+const P_RULE = 'כלל ההמחשה בלבד, לא שיטת המרה כללית:';
 const P_CHECK = 'בדיקת הנתונים';
+const P_VERDICT: Record<Diagnosis['verdict'], string> = {
+  right: 'נכון',
+  identify: 'הטעות בזיהוי הדאטומים',
+  action: 'הטעות בבחירת הפעולה',
+  calc: 'הטעות בחישוב',
+};
 const P_SUMMARY =
   'לפני שימוש בקואורדינטות בודקים באיזה דאטום נמסרו הנתונים ובאיזה דאטום משתמשת המפה. כשנדרשת המרה, משנים את המספרים באופן ששומר על אותו מקום בשטח.';
 // map
-const M_FOUND = 'המיקום לפי המספרים';
-const M_DISTANCE = 'הפער מהמקום בשטח';
+const M_REAL = 'המקום האמיתי';
+const M_FOUND = 'הסימון שהתקבל';
+const M_DISTANCE = 'הפער ביניהם';
 const ON_GROUND: Record<PlaceId, string> = { bridge: 'הגשר', junction: 'הצומת' };
-const sourceName = (d: Datum) => `נתוני המקור · דאטום ${d}`;
-const targetName = (d: Datum) => `מפת היעד · דאטום ${d}`;
+const SOURCE = 'נתוני המקור';
+const TARGET = 'מפת היעד';
 
 /** The grid's slide between A and B (stage 1) and the marker's way to the bridge after a conversion. */
 const GRID_S = 0.45;
@@ -141,11 +191,13 @@ export function DatumFieldChallenge() {
 
   return (
     <div ref={rootRef} className="my-10" data-datum-activity="">
-      <div className="surface-elevated p-6 lg:px-8 lg:pt-8">
+      <div className="surface-elevated p-6 lg:px-8 lg:pt-8" style={MAP_COL}>
         <h3 className={H3}>הדמיה: מה קורה כשהדאטום לא תואם?</h3>
         <p className={LEAD}>
-          <strong className="text-fg">לא ניתן לדבר על קואורדינטות של נקודה בלי שנדע מהו הדאטום ומהו ההיטל שלה</strong> (על ההיטל – בחלק הבא).{' '}
-          מפות ממקורות שונים עשויות להשתמש בדאטומים שונים. בהדגמה נראה איך מתארים את אותו גשר בשני דאטומים, ומדוע העתקת המספרים ביניהם ללא המרה עלולה להוביל למקום אחר.{' '}
+          <strong className="text-fg">כדי לפרש מספרי קואורדינטות, צריך לדעת באיזו מערכת ייחוס ובאיזה דאטום הם נכתבו.</strong>{' '}
+          במערכת מישורית, כמו מזרח וצפון במטרים, נדרשים גם ההיטל והפרמטרים שלו (על ההיטל – בחלק הבא).{' '}
+          מפות ממקורות שונים עשויות להשתמש בדאטומים שונים: החלפת שם הדאטום אינה ממירה את המספרים, והמרה מתאימה מחשבת אותם מחדש, כך שיתארו את אותו מקום.{' '}
+          בהדגמה נשווה שני ייצוגים של אותו גשר, נראה מה קורה כשמעבירים מספרים בלי המרה, ונתרגל בחירת נתונים למפת יעד.{' '}
           A ו־B הם דאטומים בדיוניים; ההבדל ביניהם מוצג כאן כהזזה קבועה לצורך ההמחשה בלבד.
         </p>
 
@@ -156,7 +208,7 @@ export function DatumFieldChallenge() {
           id={`${uid}-panel`}
           aria-labelledby={`${uid}-tab-${s.mode}`}
           data-stage={s.mode}
-          className="grid items-stretch gap-6 lg:grid-cols-2 lg:gap-8"
+          className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_var(--map-col)] lg:gap-8"
         >
           {/* the question, the data, the action and its feedback — inline start (visual right) */}
           <div className="flex min-w-0 flex-col" data-activity-panel="">
@@ -225,13 +277,13 @@ function useFlash(key: unknown, active: boolean, ms = 1400) {
 }
 
 function announcement(s: ActivityState): string {
-  if (s.mode === 'compare') return s.compare.switched ? (s.compare.datum === 'B' ? C_TO_B : C_TO_A) : '';
+  if (s.mode === 'compare') return s.compare.switched ? `${C_CHANGED}. ${s.compare.datum === 'B' ? C_TO_B : C_TO_A}` : '';
   if (s.mode === 'error') {
     switch (s.error.phase) {
       case 'raw':
-        return E_RAW;
+        return `${E_RAW_LEAD}. ${E_RAW}`;
       case 'relabeled':
-        return E_LABELLED;
+        return `${E_LABELLED_LEAD}. ${E_LABELLED}`;
       case 'converted':
         return `${E_MATCH}. ${E_FIXED}`;
       default:
@@ -240,11 +292,8 @@ function announcement(s: ActivityState): string {
   }
   const p = s.practice;
   if (p.summary) return P_SUMMARY;
-  const c = CASES[p.index];
-  const done = checkedResult(p);
-  if (done) return feedbackFor(c, c.options[done.option]) ?? '';
-  if (p.choice !== null) return previewLine(optionGap(c, c.options[p.choice]), PLACES[c.place].name);
-  return '';
+  const d = checkedDiagnosis(p);
+  return d ? `${P_VERDICT[d.verdict]}. ${explain(CASES[p.index], p.answer, d)}` : '';
 }
 
 /* ─────────────────── stages ─────────────────── */
@@ -273,19 +322,28 @@ function StageTabs({ mode, uid, onSelect }: { mode: Mode; uid: string; onSelect:
               on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
             )}
           >
-            <span
-              className={cn(
-                'grid size-8 shrink-0 place-items-center rounded-xl font-display text-sm font-bold transition-colors duration-200 motion-reduce:transition-none',
-                on ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
-              )}
-            >
-              <L>{i + 1}</L>
-            </span>
+            <StepNumber n={i + 1} on={on} />
             <span className="min-w-0 flex-1 font-display text-base font-bold leading-tight text-fg">{STAGE[m]}</span>
           </button>
         );
       })}
     </div>
+  );
+}
+
+/** The stages' and the practice steps' number: one badge, on (orange) or off (sand). */
+function StepNumber({ n, on, small }: { n: number; on?: boolean; small?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'grid shrink-0 place-items-center rounded-xl font-display text-sm font-bold transition-colors duration-200 motion-reduce:transition-none',
+        small ? 'size-7 rounded-lg' : 'size-8',
+        on ? 'bg-accent text-white' : 'bg-bg-accent text-fg-muted',
+      )}
+    >
+      <L>{n}</L>
+    </span>
   );
 }
 
@@ -302,7 +360,10 @@ function StageHeading({ children }: { children: ReactNode }) {
 
 function ComparePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: string }) {
   const datum = s.compare.datum;
+  const other: Datum = datum === 'A' ? 'B' : 'A';
   const switchId = `${uid}-switch`;
+  const was = numbersOf('bridge', other);
+  const now = numbersOf('bridge', datum);
   return (
     <>
       <StageHeading>{C_HEADING}</StageHeading>
@@ -323,14 +384,29 @@ function ComparePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: string
 
       <div className="mt-4 space-y-2">
         {(['A', 'B'] as const).map((d) => (
-          <Row key={d} on={d === datum} label={`מספרי הגשר בדאטום ${d}`} value={<L>{formatEN(numbersOf('bridge', d))}</L>} />
+          <Row key={d} on={d === datum} label="מספרי הגשר" tag={d} value={<L>{formatEN(numbersOf('bridge', d))}</L>} />
         ))}
       </div>
 
-      <FeedbackSlot className="mt-4">
-        <Feedback tone="info">
-          <p className={BODY}>{s.compare.switched ? (datum === 'B' ? C_TO_B : C_TO_A) : C_INITIAL}</p>
-        </Feedback>
+      {/* what the switch changed, and what it did not — only after a switch */}
+      <FeedbackSlot className="mt-4" room={ROOM.compare}>
+        {s.compare.switched && (
+          <Feedback
+            tone="info"
+            after={
+              <Compare
+                cells={[
+                  { name: 'E', value: <L>{`${was.e} → ${now.e}`}</L> },
+                  { name: 'N', value: <L>{`${was.n} → ${now.n}`}</L> },
+                  { name: 'הגשר', value: 'לא זז' },
+                ]}
+              />
+            }
+          >
+            <p className={LABEL}>{C_CHANGED}</p>
+            <p className={cn(BODY, 'mt-1')}>{datum === 'B' ? C_TO_B : C_TO_A}</p>
+          </Feedback>
+        )}
       </FeedbackSlot>
 
       <Footer>
@@ -346,6 +422,8 @@ function ComparePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: string
 const CONVERTED = sentCopy('converted')!.numbers;
 const gapOfPhase = (phase: ErrorPhase) => Math.round(distance(errorResult(phase)!, PLACES.bridge.ground));
 const GAP_BEFORE = Math.round(distance(ERROR_BEFORE, PLACES.bridge.ground));
+const E_RAW_LEAD = `הסימון שהתקבל רחוק ${GAP_BEFORE} מטר מהגשר`;
+const E_RAW = 'מספרי A נקראו כאילו נמדדו ב־B. הגשר לא זז; רק הסימון במפה. נסו לתקן בשתי הדרכים.';
 
 function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
   const phase = s.error.phase;
@@ -353,18 +431,17 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
   const sent = sentCopy(phase);
   const relabeled = phase === 'relabeled';
   const flashLabel = useFlash(s.run, relabeled);
-  const helpId = `${useId()}-help`;
-  const step = phase === 'ready' ? null : phase === 'raw' || phase === 'relabeled' ? 'מספרים ללא שינוי' : 'המרה A→B';
+  const flashNumbers = useFlash(s.run, phase === 'converted');
 
   return (
     <>
       <StageHeading>{E_HEADING}</StageHeading>
       <p className={cn(BODY, 'mt-1.5')}>{E_DO}</p>
 
-      {/* the data's way: the source (kept, in A) → the copy sent → the map that reads it as B */}
-      <div className="mt-4">
-        <Row label={sourceName(ERROR_SOURCE.datum)} value={<L>{formatEN(ERROR_SOURCE.numbers)}</L>} />
-        <Flow text={step} />
+      {/* the data's way: the source (kept, in A) → what was done → the copy sent → the map that reads it as B */}
+      <div className="mt-4" data-flow="">
+        <Row label={SOURCE} tag={ERROR_SOURCE.datum} value={<L>{formatEN(ERROR_SOURCE.numbers)}</L>} />
+        <Flow text={phase === 'ready' ? null : E_STEP[phase]} strong />
         <div
           data-sent=""
           className={cn(
@@ -372,24 +449,19 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
             sent ? 'border-transparent bg-bg-accent/60' : 'border-dashed border-border bg-bg-elevated',
           )}
         >
-          <span className="flex items-center gap-2">
+          <span className="flex min-h-6 items-center gap-2">
             <span className={LABEL}>{E_SENT}</span>
-            {sent && !moving && (
-              <span
-                data-copy-label={sent.label}
-                className={cn(
-                  'grid h-6 min-w-6 place-items-center rounded-md border px-1.5 font-display text-sm font-bold text-black transition-shadow duration-300 motion-reduce:transition-none',
-                  sent.label === 'B' ? 'border-accent' : 'border-border',
-                  flashLabel && 'ring-2 ring-accent ring-offset-1',
-                )}
-              >
-                <span className="sr-only">כיתוב: דאטום </span>
-                <L>{sent.label}</L>
-              </span>
-            )}
+            {sent && !moving && <DatumTag d={sent.label} flash={flashLabel} copy />}
           </span>
           {/* no output numbers while the marker is still on its way */}
-          <span className={cn(NUMBERS, 'rounded-md px-1 transition-shadow duration-300 motion-reduce:transition-none', flashLabel && 'ring-2 ring-border-strong')}>
+          <span
+            className={cn(
+              NUMBERS,
+              'rounded-md px-1 transition-shadow duration-300 motion-reduce:transition-none',
+              flashLabel && 'ring-2 ring-border-strong',
+              flashNumbers && 'ring-2 ring-accent',
+            )}
+          >
             {moving ? (
               <span className="font-sans font-normal text-fg-muted">{E_MOVING}</span>
             ) : sent ? (
@@ -399,39 +471,35 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
             )}
           </span>
         </div>
-        <Flow text={sent ? 'פירוש כ־B' : null} />
-        <Row label={E_MAP} />
+        <Flow text={sent ? E_READ : null} />
+        <Row label={TARGET} tag={ERROR_MAP} />
       </div>
 
       {/* the actions, then their feedback right under them */}
       {phase === 'ready' ? (
-        <div className="mt-4">
+        <div className={cn('mt-4', ACTION_ROW)}>
           <Button variant="primary" size="md" className="w-full px-4" data-focus="copy" onClick={() => act({ type: 'copyRaw' }, 'experiment')}>
             {E_COPY}
           </Button>
         </div>
       ) : (
-        <div className="mt-4">
-          <div className="grid grid-cols-2 gap-2">
-            <Experiment
-              label={relabeled ? E_UNLABEL : E_RELABEL}
-              focusKey="experiment"
-              describedBy={helpId}
-              on={relabeled}
-              onClick={() => act({ type: 'toggleLabel' })}
-            />
-            <Experiment label={E_CONVERT} on={moving || phase === 'converted'} inactive={moving} onClick={() => act({ type: 'convert' })} />
-          </div>
-          <p id={helpId} className="sr-only">
-            <span className="font-display font-bold">{E_RELABEL}:</span> {E_RELABEL_HELP}
-          </p>
+        <div className={cn('mt-4 grid grid-cols-2 gap-2', ACTION_ROW)}>
+          <Experiment
+            label={relabeled ? E_UNLABEL : E_RELABEL}
+            help={relabeled ? E_UNLABEL_HELP : E_RELABEL_HELP}
+            focusKey="experiment"
+            on={relabeled}
+            onClick={() => act({ type: 'toggleLabel' })}
+          />
+          <Experiment label={E_CONVERT} help={E_CONVERT_HELP} on={moving || phase === 'converted'} inactive={moving} onClick={() => act({ type: 'convert' })} />
         </div>
       )}
 
-      <FeedbackSlot className="mt-3">
+      <FeedbackSlot className="mt-3" room={ROOM.error}>
         {phase === 'raw' && (
           <Feedback tone="info">
-            <p className={BODY}>{E_RAW}</p>
+            <p className={LABEL}>{E_RAW_LEAD}</p>
+            <p className={cn(BODY, 'mt-1')}>{E_RAW}</p>
           </Feedback>
         )}
         {phase === 'relabeled' && (
@@ -447,7 +515,8 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
               />
             }
           >
-            <p className={BODY}>{E_LABELLED}</p>
+            <p className={LABEL}>{E_LABELLED_LEAD}</p>
+            <p className={cn(BODY, 'mt-1')}>{E_LABELLED}</p>
           </Feedback>
         )}
         {moving && (
@@ -478,6 +547,7 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
       </FeedbackSlot>
 
       <Footer>
+        {phase !== 'ready' && <ResetButton onClick={() => act({ type: 'resetError' }, 'copy')} />}
         <NextButton onClick={() => act({ type: 'setMode', mode: 'practice' }, 'heading')}>{E_NEXT}</NextButton>
       </Footer>
     </>
@@ -485,39 +555,46 @@ function ErrorPanel({ s, act }: { s: ActivityState; act: Act }) {
 }
 
 /**
- * An experiment: a direct action, marked while its result is on the map. While it cannot act (the
- * conversion's own motion) it says so with aria-disabled and keeps focus, instead of dropping it.
+ * An experiment: a direct action that says what it changes before it is used, marked while its
+ * result is on the map. While it cannot act (the conversion's own motion) it says so with
+ * aria-disabled and keeps focus, instead of dropping it.
  */
 function Experiment({
   label,
+  help,
   on,
   onClick,
   inactive,
-  describedBy,
   focusKey,
 }: {
   label: string;
+  help: string;
   on: boolean;
   onClick: () => void;
   inactive?: boolean;
-  describedBy?: string;
   focusKey?: FocusKey;
 }) {
+  const helpId = useId();
   return (
     <button
       type="button"
       onClick={inactive ? undefined : onClick}
+      aria-label={label}
+      aria-describedby={helpId}
       aria-disabled={inactive || undefined}
-      aria-describedby={describedBy}
       data-focus={focusKey}
       className={cn(
-        'min-h-12 rounded-xl border px-2.5 py-2 font-display text-[15px] font-bold leading-tight text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none',
+        OPTION,
+        'min-h-12 px-2.5 py-2 cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
         'aria-disabled:cursor-default aria-disabled:opacity-60',
-        on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+        on ? OPTION_ON : OPTION_OFF,
       )}
     >
-      {isolateArrow(label)}
+      <span className="block font-display text-[15px] font-bold leading-tight text-fg">{isolateArrow(label)}</span>
+      <span id={helpId} className="mt-1 block text-[15px] leading-snug text-fg-muted">
+        {isolateArrow(help)}
+      </span>
     </button>
   );
 }
@@ -536,10 +613,33 @@ function Compare({ cells }: { cells: { name: ReactNode; value: ReactNode }[] }) 
   );
 }
 
-/* stage 3 — two cases */
+/* stage 3 — two cases, each decided in three steps before the map shows the result */
 
-function previewLine(gap: number, place: string) {
-  return gap < 0.5 ? `${P_PREVIEW}: הסימון מופיע על ${place}.` : `${P_PREVIEW}: הסימון מופיע ${Math.round(gap)} מטר מ${place}.`;
+/** The explanation of a verdict: which step went wrong, what it did to the numbers, and the gap it made. */
+function explain(c: PracticeCase, x: PracticeAnswer, d: Diagnosis): string {
+  const place = PLACES[c.place].name;
+  const gap = Math.round(d.gap);
+  const away = gap > 0 ? ` הסימון נפל ${gap} מטר מ${place}.` : '';
+  switch (d.verdict) {
+    case 'right':
+      return c.right;
+    case 'identify':
+      return datumsMatch(c)
+        ? `גם נתוני המקור וגם מפת היעד בדאטום ${c.source}: הדאטומים תואמים, ואין מה להמיר.${away}`
+        : `נתוני המקור בדאטום ${c.source} ומפת היעד בדאטום ${c.target}: הדאטומים שונים, ולכן צריך להמיר.${away}`;
+    case 'action': {
+      const a = x.action!;
+      if (datumsMatch(c)) return `הדאטומים תואמים, ולכן אין מה להמיר. ההמרה הזיזה את הסימון ${gap} מטר מ${place}.`;
+      if (a === 'keep') return `המספרים נשלחו בלי המרה, ומפת היעד קראה את מספרי ${c.source} כאילו הם ב־${c.target}.${away}`;
+      if (a === 'relabel') return `שינוי הכיתוב ל־${c.target} לא שינה את המספרים, ולכן המפה עדיין קוראת אותם במקום אחר.${away}`;
+      const dir = directionOf(a);
+      return `הכיוון הפוך: הנתונים ב־${c.source} ומפת היעד ב־${c.target}, ולכן ממירים ${c.source}→${c.target}. המרה ${dir.from}→${dir.to} הרחיקה את הסימון ל־${gap} מטר מ${place}.`;
+    }
+    case 'calc':
+      return d.calc === 'swapped'
+        ? `הכיוון נכון, אבל ההזזות התחלפו: בהמחשה E משתנה ב־${SHIFT.e} ו־N ב־${SHIFT.n}.${away}`
+        : `הכיוון נכון, אבל רק E הומר. בהמחשה גם N משתנה, ב־${SHIFT.n}.${away}`;
+  }
 }
 
 function PracticePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: string }) {
@@ -553,6 +653,7 @@ function PracticePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: strin
             <p className={BODY}>{P_SUMMARY}</p>
           </Feedback>
         </FeedbackSlot>
+        <CaseRecap />
         <Footer>
           <Button variant="secondary" size="md" className="px-4" onClick={() => act({ type: 'restartPractice' }, 'heading')}>
             <Icon name="refresh" size={16} strokeWidth={2} />
@@ -566,9 +667,14 @@ function PracticePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: strin
 
   const c = CASES[p.index];
   const place = PLACES[c.place];
-  const done = checkedResult(p);
+  const x = p.answer;
+  const d = checkedDiagnosis(p);
   const last = p.index === CASES.length - 1;
-  const canCheck = p.choice !== null && p.checked !== p.choice;
+  const sent = sentOf(c, x);
+  const canCheck = !p.checked && sent !== null;
+  const started = x.match !== null || x.action !== null;
+  const pairs = calcOptions(c, x.action);
+  const name = (step: string) => `${uid}-${c.id}-${step}`;
   return (
     <>
       {/* the case and its question: one block, where focus lands on a new case */}
@@ -579,60 +685,72 @@ function PracticePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: strin
         <h4 className={HEADING}>{P_DO}</h4>
       </div>
 
-      <div className="mt-3 space-y-2">
-        <Row label={sourceName(c.source)} value={<L>{formatEN(caseSource(c))}</L>} />
-        <Row label={targetName(c.target)} />
+      {/* the case's data on one line: the source at the start (right), the target map after it */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Row label={SOURCE} tag={c.source} value={<L>{formatEN(caseSource(c))}</L>} />
+        <Row label={TARGET} tag={c.target} />
       </div>
-      <Rule />
 
-      <fieldset className="mt-3 min-w-0">
-        <legend className="sr-only">בחרו צמד מספרים</legend>
-        <div className="grid grid-cols-3 gap-2">
-          {c.options.map((o, i) => {
-            const on = p.choice === i;
-            return (
-              <label
-                key={`${c.id}-${i}`}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-2 transition-colors duration-200 ease-snap motion-reduce:transition-none',
-                  'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2',
-                  on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                )}
-              >
-                <input
-                  type="radio"
-                  name={`${uid}-option-${c.id}`}
-                  value={i}
-                  checked={on}
-                  onChange={() => act({ type: 'choose', option: i })}
-                  className="sr-only"
-                />
-                <RadioDot on={on} />
-                <span dir="ltr" className={cn(NUMBERS, 'flex flex-col leading-snug')}>
-                  <span>E {o.e}</span>
-                  <span>N {o.n}</span>
-                </span>
-              </label>
-            );
-          })}
+      {/* step 1: identify */}
+      <Step n={1} label={P_MATCH} data="match">
+        <div className="grid grid-cols-2 gap-2">
+          {[true, false].map((v) => (
+            <Choice key={String(v)} name={name('match')} value={v ? 'same' : 'different'} on={x.match === v} onChange={() => act({ type: 'setMatch', match: v })}>
+              <span className="font-display text-[15px] font-bold leading-tight text-fg">{v ? P_MATCH_YES : P_MATCH_NO}</span>
+            </Choice>
+          ))}
         </div>
-      </fieldset>
+      </Step>
+
+      {/* step 2: the action */}
+      <Step n={2} label={P_ACTION} data="action">
+        {/* one row, one line per label */}
+        <div className={cn('grid gap-2', c.actions.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
+          {c.actions.map((a) => (
+            <Choice key={a} name={name('action')} value={a} on={x.action === a} onChange={() => act({ type: 'setAction', action: a })}>
+              <span className="font-display text-[15px] font-bold leading-tight text-fg">{isolateArrow(P_ACTIONS[a])}</span>
+            </Choice>
+          ))}
+        </div>
+      </Step>
+
+      {/* step 3: the numbers the action sends — chosen only for a conversion */}
+      <Step n={3} label={P_SEND} data="send">
+        <div className={SEND_ROOM}>
+          {x.action === null ? (
+            <p className={cn(BODY, 'text-fg-muted')}>{P_SEND_WAIT}</p>
+          ) : !isConversion(x.action) ? (
+            <Row label="העותק שנשלח" tag={x.action === 'relabel' ? c.target : c.source} value={<><L>{formatEN(caseSource(c))}</L> <span className="font-sans font-normal text-fg-muted">(ללא שינוי)</span></>} />
+          ) : (
+            <>
+              <Rule action={x.action} />
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {pairs.map((o, i) => (
+                  <Choice key={`${x.action}-${i}`} name={name('calc')} value={String(i)} on={x.calc === i} onChange={() => act({ type: 'setCalc', option: i })}>
+                    {/* one line, as every pair in the activity */}
+                    <span dir="ltr" className={cn(NUMBERS, 'whitespace-nowrap')}>
+                      {formatEN(o)}
+                    </span>
+                  </Choice>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </Step>
 
       <PrimaryAction className="mt-3 w-full" inactive={!canCheck} onClick={() => act({ type: 'check' })}>
         {P_CHECK}
       </PrimaryAction>
 
-      <FeedbackSlot className="mt-3">
-        {done ? (
-          <Feedback tone={done.right ? 'right' : 'wrong'}>
-            <p className={BODY}>{feedbackFor(c, c.options[done.option])}</p>
+      <FeedbackSlot className="mt-3" room={ROOM.practice}>
+        {d && (
+          <Feedback tone={d.verdict === 'right' ? 'right' : 'wrong'}>
+            <p className={LABEL} data-verdict={d.verdict}>
+              {P_VERDICT[d.verdict]}
+            </p>
+            <p className={cn(BODY, 'mt-1')}>{isolateArrow(explain(c, x, d))}</p>
           </Feedback>
-        ) : (
-          p.choice !== null && (
-            <Feedback tone="info">
-              <p className={BODY}>{previewLine(optionGap(c, c.options[p.choice]), place.name)}</p>
-            </Feedback>
-          )
         )}
       </FeedbackSlot>
 
@@ -643,6 +761,7 @@ function PracticePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: strin
             למקרה הקודם
           </Button>
         ) : null}
+        {started && <ResetButton onClick={() => act({ type: 'resetCase' }, 'heading')} />}
         {p.solved[p.index] &&
           (last ? (
             p.solved.every(Boolean) && <NextButton onClick={() => act({ type: 'showSummary' }, 'heading')}>לסיכום התרגול</NextButton>
@@ -651,6 +770,75 @@ function PracticePanel({ s, act, uid }: { s: ActivityState; act: Act; uid: strin
           ))}
       </Footer>
     </>
+  );
+}
+
+/**
+ * The summary's recap: per case, the place, the source's and the target map's datums, the right action and the
+ * numbers it sends — the marks the summary map shows on both places. Only after both cases are solved.
+ */
+function CaseRecap() {
+  return (
+    <ul className="mt-3 space-y-2" data-recap="">
+      {CASES.map((c, i) => (
+        <li key={c.id} className={cn(INSET, 'px-3 py-2.5')}>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <span className={LABEL}>
+              מקרה <L>{i + 1}</L> · {PLACES[c.place].name}
+            </span>
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="flex items-center gap-2">
+                <span className={BODY}>{SOURCE}</span>
+                <DatumTag d={c.source} />
+              </span>
+              <span className="flex items-center gap-2">
+                <span className={BODY}>{TARGET}</span>
+                <DatumTag d={c.target} />
+              </span>
+            </span>
+          </div>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3">
+            <span className={BODY}>{isolateArrow(P_ACTIONS[rightAction(c)])}</span>
+            <span className={NUMBERS}>
+              <L>{formatEN(convert(caseSource(c), c.source, c.target))}</L>
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** A practice step: its number, its question, and its choices (a radio group). */
+function Step({ n, label, data, children }: { n: number; label: string; data: string; children: ReactNode }) {
+  return (
+    <fieldset className="mt-3 min-w-0" data-step={data}>
+      <legend className="mb-2 p-0">
+        <span className="flex items-center gap-2">
+          <StepNumber n={n} small />
+          <span className={LABEL}>{label}</span>
+        </span>
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
+/** One choice of a practice step: a native radio (arrows, Space) inside a bordered option. */
+function Choice({ name, value, on, onChange, children }: { name: string; value: string; on: boolean; onChange: () => void; children: ReactNode }) {
+  return (
+    <label
+      className={cn(
+        OPTION,
+        'flex min-h-11 cursor-pointer items-center gap-2 px-2.5 py-2',
+        'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2',
+        on ? OPTION_ON : OPTION_OFF,
+      )}
+    >
+      <input type="radio" name={name} value={value} checked={on} onChange={onChange} className="sr-only" />
+      <RadioDot on={on} />
+      {children}
+    </label>
   );
 }
 
@@ -677,45 +865,47 @@ function PrimaryAction({ children, onClick, inactive, className }: { children: R
   );
 }
 
-/** The schematic rule, as task data: the sentence, and the formula left to right with its axes named. */
-function Rule() {
+/**
+ * The schematic rule of the chosen conversion, as task data: scoped to this illustration, the formula
+ * left to right with its axes named. Never shown as a general way to convert between datums.
+ */
+function Rule({ action }: { action: 'AtoB' | 'BtoA' }) {
+  const { from, to } = directionOf(action);
+  const sign = from === 'A' ? '−' : '+';
   return (
-    <div className={cn(INSET, 'mt-3 px-3 py-2.5')}>
-      <p className={BODY}>{clauses(P_RULE)}</p>
-      {/* in the sentence's order (A→B first, at the start), each formula left to right */}
-      <div className={cn(NUMBERS, 'mt-1 flex flex-wrap gap-x-5 gap-y-0.5')}>
-        <span dir="ltr">{`A→B: E − ${SHIFT.e}, N − ${SHIFT.n}`}</span>
-        <span dir="ltr">{`B→A: E + ${SHIFT.e}, N + ${SHIFT.n}`}</span>
-      </div>
+    <div className={cn(INSET, 'flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-3 py-2')} data-rule="">
+      <span className="text-base leading-relaxed text-fg-muted">{P_RULE}</span>
+      <span dir="ltr" className={NUMBERS}>{`${from}→${to}: E ${sign} ${SHIFT.e}, N ${sign} ${SHIFT.n}`}</span>
     </div>
   );
 }
 
-/** The rule's clauses kept whole (a line breaks only between them), their Latin and number runs isolated. */
-function clauses(text: string): ReactNode[] {
-  const [lead, ...rest] = text.split(': ');
-  const parts = rest.join(': ').split('; ');
-  return [
-    `${lead}: `,
-    ...parts.flatMap((p, i) => [
-      <span key={i} className="whitespace-nowrap">
-        {isolate(p)}
-        {i < parts.length - 1 ? ';' : ''}
-      </span>,
-      i < parts.length - 1 ? ' ' : '',
-    ]),
-  ];
-}
-
-/** Latin and number runs of a Hebrew sentence, each in its own LTR isolate. */
-function isolate(text: string): ReactNode[] {
-  return text.split(/([A-Z]→[A-Z]|\(\d+,\d+\))/).map((part, i) => (i % 2 ? <L key={i}>{part}</L> : part));
-}
-
 /* ─────────────────── shared panel parts ─────────────────── */
 
-/** A data row: a borderless inset; the active datum's row is tinted. */
-function Row({ label, value, on }: { label: string; value?: ReactNode; on?: boolean }) {
+/**
+ * The name of a datum wherever one is given — the source, a copy's label, the target map, the map's
+ * own title — in one shape. `copy` marks the label of the copy sent (the label experiment changes it).
+ */
+function DatumTag({ d, flash, copy }: { d: Datum; flash?: boolean; copy?: boolean }) {
+  return (
+    <span
+      data-datum-tag={d}
+      data-copy-label={copy ? d : undefined}
+      className={cn(
+        'inline-grid h-6 shrink-0 place-items-center whitespace-nowrap rounded-md border border-border-strong bg-bg-elevated px-1.5 font-display text-sm font-bold text-black',
+        'transition-shadow duration-300 motion-reduce:transition-none',
+        flash && 'ring-2 ring-accent ring-offset-1',
+      )}
+    >
+      <span>
+        דאטום <L>{d}</L>
+      </span>
+    </span>
+  );
+}
+
+/** A data row: a borderless inset with its datum tag; the active datum's row is tinted. */
+function Row({ label, tag, value, on }: { label: string; tag?: Datum; value?: ReactNode; on?: boolean }) {
   return (
     <div
       className={cn(
@@ -723,21 +913,24 @@ function Row({ label, value, on }: { label: string; value?: ReactNode; on?: bool
         on ? 'bg-accent/15' : 'bg-bg-accent/60',
       )}
     >
-      <span className={LABEL}>{label}</span>
+      <span className="flex min-h-6 items-center gap-2">
+        <span className={LABEL}>{label}</span>
+        {tag && <DatumTag d={tag} />}
+      </span>
       {value !== undefined && <span className={NUMBERS}>{value}</span>}
     </div>
   );
 }
 
-/** A short link between two rows of the data's way: a line down and what happened on it. */
-function Flow({ text }: { text: string | null }) {
+/** A short link between two rows of the data's way: a line down and what happened on it (`strong`: the learner's action). */
+function Flow({ text, strong }: { text: string | null; strong?: boolean }) {
   return (
-    <div className="flex h-6 items-center gap-2 ps-5" aria-hidden={!text}>
+    <div className="flex h-6 items-center gap-2 ps-5" aria-hidden={!text} data-flow-step={text ?? ''}>
       <svg width="12" height="22" viewBox="0 0 12 26" aria-hidden className={cn('shrink-0', text ? 'text-fg-muted' : 'text-border')}>
         <path d="M6 1v20" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
         <path d="M2 17l4 5 4-5" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      {text && <span className={BODY}>{isolateArrow(text)}</span>}
+      {text && <span className={strong ? LABEL : BODY}>{isolateArrow(text)}</span>}
     </div>
   );
 }
@@ -801,9 +994,12 @@ function RadioDot({ on }: { on: boolean }) {
   );
 }
 
-/** Feedback takes only the room it needs; empty states do not reserve a blank block. */
-function FeedbackSlot({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('empty:hidden', className)}>{children}</div>;
+/**
+ * Where a stage's feedback appears. With `room`, it keeps that stage's tallest feedback's height (ROOM), so showing,
+ * changing or clearing feedback never moves the way on; without it, it takes only what it holds.
+ */
+function FeedbackSlot({ children, className, room }: { children: ReactNode; className?: string; room?: string }) {
+  return <div className={cn(room ?? 'empty:hidden', className)}>{children}</div>;
 }
 
 /** Feedback next to the action: an inset tinted by its meaning; one glyph (✓ / ✕) when it is a verdict. */
@@ -832,9 +1028,19 @@ function Feedback({ tone, children, after }: { tone: 'info' | 'wrong' | 'right';
   );
 }
 
-/** At desktop, the action ends level with the illustration in every state. */
+/**
+ * The way on, right after the stage's feedback room: never pushed down to line up with the map. It holds a md
+ * button's height (pt-4 + 48 + the rule) while empty, without its rule, so the card keeps its height when a button appears.
+ */
 function Footer({ children }: { children: ReactNode }) {
-  return <div data-activity-navigation="" className="mt-4 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-4 lg:mt-auto">{children}</div>;
+  return (
+    <div
+      data-activity-navigation=""
+      className="mt-4 flex min-h-[4.0625rem] flex-wrap items-center gap-3 border-t border-border-subtle pt-4 empty:border-transparent"
+    >
+      {children}
+    </div>
+  );
 }
 
 function NextButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
@@ -846,10 +1052,22 @@ function NextButton({ children, onClick }: { children: ReactNode; onClick: () =>
   );
 }
 
+/** Starts the stage (or the case on screen) again; quieter than the way on. */
+function ResetButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button variant="ghost" size="sm" onClick={onClick}>
+      <Icon name="refresh" size={16} strokeWidth={2} />
+      {E_RESET}
+    </Button>
+  );
+}
+
 /* ─────────────────── the map ─────────────────── */
 
-type MapLabel = { text: string; numbers?: EN };
+type MapLabel = { text?: string; numbers?: EN };
 type MapScene = {
+  /** The map's title and the datum it uses. */
+  title: string;
   datum: Datum;
   /** 0 = A's grid lines, 1 = B's (fractions while sliding). */
   gridT: number;
@@ -857,19 +1075,23 @@ type MapScene = {
   results: { at: EN; label: MapLabel; moving?: boolean }[];
   /** The gap in metres, or null while the marker is still on its way. */
   measure: { from: EN; to: EN; gap: number | null } | null;
-  legend: ('result' | 'measure')[];
+  legend: ('target' | 'result' | 'measure')[];
+  /** The legend's line is kept while it is empty (stages 2–3), so the map's column does not grow when it appears. */
+  legendRoom: boolean;
 };
 
 function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: number): MapScene {
   const bridge = PLACES.bridge.ground;
   if (s.mode === 'compare') {
     return {
+      title: 'המפה',
       datum: gridDatum,
       gridT,
-      targets: [{ at: bridge, label: { text: 'הגשר', numbers: numbersOf('bridge', s.compare.datum) } }],
+      targets: [{ at: bridge, label: { text: ON_GROUND.bridge, numbers: numbersOf('bridge', s.compare.datum) } }],
       results: [],
       measure: null,
       legend: [],
+      legendRoom: false,
     };
   }
   if (s.mode === 'error') {
@@ -877,45 +1099,47 @@ function sceneOf(s: ActivityState, gridDatum: Datum, gridT: number, travelP: num
     const sent = sentCopy(phase);
     const moving = phase === 'converting';
     const at = moving ? lerpEN(ERROR_BEFORE, bridge, travelP) : errorResult(phase);
-    const results = at && sent ? [{ at, moving, label: moving ? { text: E_MOVING } : { text: M_FOUND, numbers: sent.numbers } }] : [];
+    const results = at && sent ? [{ at, moving, label: moving ? { text: E_MOVING } : { numbers: sent.numbers } }] : [];
     const gap = at ? distance(at, bridge) : 0;
     return {
+      title: TARGET,
       datum: gridDatum,
       gridT,
-      targets: [{ at: bridge, label: { text: '' } }],
+      targets: [{ at: bridge, label: { text: ON_GROUND.bridge } }],
       results,
       // the gap is read only at rest: no number for a marker still on its way
       measure: at && gap >= 1 ? { from: bridge, to: at, gap: moving ? null : gap } : null,
-      legend: results.length ? ['result', 'measure'] : [],
+      legend: results.length ? ['target', 'result', ...(at && gap >= 1 ? (['measure'] as const) : [])] : [],
+      legendRoom: true,
     };
   }
   const p = s.practice;
   if (p.summary) {
     return {
+      title: TARGET,
       datum: gridDatum,
       gridT,
       targets: CASES.map((c) => ({ at: caseTarget(c), label: { text: ON_GROUND[c.place] } })),
-      results: CASES.map((c) => {
-        const right = c.options.find((o) => isRight(c, o))!;
-        return { at: interpret(right, c.target), label: { text: '' } };
-      }),
+      // each case's right numbers, read by its target map
+      results: CASES.map((c) => ({ at: interpret(convert(caseSource(c), c.source, c.target), c.target), label: {} })),
       measure: null,
-      legend: ['result'],
+      legend: ['target', 'result'],
+      legendRoom: true,
     };
   }
   const c = CASES[p.index];
   const target = caseTarget(c);
-  const name = ON_GROUND[c.place];
-  const option = p.choice === null ? null : c.options[p.choice];
-  const at = option && interpret(option, c.target);
-  const gap = at ? distance(at, target) : 0;
+  // the decisions reach the map only once checked
+  const d = checkedDiagnosis(p);
   return {
+    title: TARGET,
     datum: gridDatum,
     gridT,
-    targets: [{ at: target, label: { text: name } }],
-    results: at && option ? [{ at, label: { text: p.checked === p.choice ? M_FOUND : P_PREVIEW, numbers: option } }] : [],
-    measure: at && gap >= 1 ? { from: target, to: at, gap } : null,
-    legend: at ? ['result', 'measure'] : [],
+    targets: [{ at: target, label: { text: ON_GROUND[c.place] } }],
+    results: d ? [{ at: d.at, label: { numbers: d.sent.numbers } }] : [],
+    measure: d && d.gap >= 1 ? { from: target, to: d.at, gap: d.gap } : null,
+    legend: d ? ['target', 'result', ...(d.gap >= 1 ? (['measure'] as const) : [])] : [],
+    legendRoom: true,
   };
 }
 
@@ -928,7 +1152,7 @@ function FieldMap({ scene }: { scene: MapScene }) {
   const [load, setLoad] = useState<LoadState>('pending');
   const boxRef = useRef<HTMLDivElement>(null);
   // picture pixels per screen pixel (the markers and the line's ends are sized on screen)
-  const [k, setK] = useState(MAP_PX.w / 524);
+  const [k, setK] = useState(MAP_PX.w / MAP_BOX_W);
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
@@ -949,92 +1173,107 @@ function FieldMap({ scene }: { scene: MapScene }) {
   const grid = gridLines(scene.gridT);
   const eLines = grid.e.map((l) => ({ v: l.value, x: xOfE(l.ground) }));
   const nLines = grid.n.map((l) => ({ v: l.value, y: yOfN(l.ground) }));
+  // the dimension line, sized on screen; too close for one, the legend leaves it out too
+  const line = scene.measure ? measurePath(scene.measure.from, scene.measure.to, k) : null;
+  // a line too short to carry its number clear of the ring and the diamond: the number goes next to the diamond instead
+  const besideMark = !line || (!!scene.measure && screenLength(scene.measure.from, scene.measure.to, k) < LABEL_ON_LINE);
 
   return (
-    <figure className="m-0 flex min-w-0 flex-col justify-between" data-map={load}>
-      {/* the map keeps its own orientation: west on the left, whatever the reading direction */}
-      <div dir="ltr" className="grid grid-cols-[3rem_minmax(0,1fr)]">
-        {/* N values, on the west margin */}
-        <div aria-hidden className="relative">
-          {nLines.map((l) => (
-            <span key={`n${l.v}`} data-grid-n={l.v} className={cn(MARGIN, 'end-1')} style={{ top: pct(l.y), transform: 'translateY(-50%)' }}>
-              N {l.v}
-            </span>
-          ))}
+    // the map at the top of its column, its legend right under it; neither column is stretched to the other
+    <figure className="m-0 min-w-0" data-map={load}>
+      <div>
+        {/* the map's own title: which datum it reads every pair in — above its start (right) edge */}
+        <div className="me-12 mb-2 flex min-h-7 items-center gap-2" data-map-title={scene.datum}>
+          <span className={LABEL}>{scene.title}</span>
+          <DatumTag d={scene.datum} />
         </div>
 
-        <div
-          ref={boxRef}
-          data-map-box=""
-          className="relative overflow-hidden rounded-lg border border-border bg-bg-accent"
-          style={{ aspectRatio: `${MAP_PX.w} / ${MAP_PX.h}` }}
-          aria-busy={load === 'pending' || undefined}
-        >
-          {load === 'pending' && (
-            // the site's asset loading surface (IsometricAsset): tan wash + soft sheen, only after a short delay
-            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-              <div className="absolute inset-0 animate-asset-surface-in bg-tanline/35 motion-reduce:[animation-duration:0s]">
-                <div className="absolute inset-0 hidden bg-gradient-to-l from-transparent via-paper-bright/70 to-transparent motion-safe:block motion-safe:animate-asset-sheen" />
+        {/* the map keeps its own orientation: west on the left, whatever the reading direction */}
+        <div dir="ltr" className="grid grid-cols-[3rem_minmax(0,1fr)]">
+          {/* N values, on the west margin */}
+          <div aria-hidden className="relative">
+            {nLines.map((l) => (
+              <span key={`n${l.v}`} data-grid-n={l.v} className={cn(MARGIN, 'end-1')} style={{ top: pct(l.y), transform: 'translateY(-50%)' }}>
+                N {l.v}
+              </span>
+            ))}
+          </div>
+
+          <div
+            ref={boxRef}
+            data-map-box=""
+            className="relative overflow-hidden rounded-lg border border-border bg-bg-accent"
+            style={{ aspectRatio: `${MAP_PX.w} / ${MAP_PX.h}` }}
+            aria-busy={load === 'pending' || undefined}
+          >
+            {load === 'pending' && (
+              // the site's asset loading surface (IsometricAsset): tan wash + soft sheen, only after a short delay
+              <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute inset-0 animate-asset-surface-in bg-tanline/35 motion-reduce:[animation-duration:0s]">
+                  <div className="absolute inset-0 hidden bg-gradient-to-l from-transparent via-paper-bright/70 to-transparent motion-safe:block motion-safe:animate-asset-sheen" />
+                </div>
               </div>
-            </div>
-          )}
-          {load !== 'failed' && (
-            // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
-            <img
-              key={attempt}
-              ref={imgRef}
-              src={src}
-              alt={MAP_ALT}
-              width={MAP_PX.w}
-              height={MAP_PX.h}
-              decoding="async"
-              draggable={false}
-              data-asset-img=""
-              suppressHydrationWarning
-              onLoad={() => setLoad('ready')}
-              onError={() => setLoad('failed')}
-              className={cn(
-                'absolute inset-0 size-full select-none transition-opacity duration-300 ease-out motion-reduce:transition-none',
-                load === 'ready' ? 'opacity-100' : 'opacity-0',
-              )}
-            />
-          )}
+            )}
+            {load !== 'failed' && (
+              // eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized
+              <img
+                key={attempt}
+                ref={imgRef}
+                src={src}
+                alt={MAP_ALT}
+                width={MAP_PX.w}
+                height={MAP_PX.h}
+                decoding="async"
+                draggable={false}
+                data-asset-img=""
+                suppressHydrationWarning
+                onLoad={() => setLoad('ready')}
+                onError={() => setLoad('failed')}
+                className={cn(
+                  'absolute inset-0 size-full select-none transition-opacity duration-300 ease-out motion-reduce:transition-none',
+                  load === 'ready' ? 'opacity-100' : 'opacity-0',
+                )}
+              />
+            )}
 
-          <MapLayers scene={scene} eLines={eLines} nLines={nLines} k={k} />
+            <MapLayers scene={scene} eLines={eLines} nLines={nLines} line={line} besideMark={besideMark} />
 
-          {load === 'failed' && (
-            <div dir="rtl" role="alert" className="absolute inset-x-3 top-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-bg-elevated/95 px-3 py-2">
-              <p className={BODY}>לא ניתן לטעון את מפת השטח.</p>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setLoad('pending');
-                  setAttempt((n) => n + 1);
-                }}
-              >
-                נסו שוב
-              </Button>
-            </div>
-          )}
-        </div>
+            {load === 'failed' && (
+              <div dir="rtl" role="alert" className="absolute inset-x-3 top-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-bg-elevated/95 px-3 py-2">
+                <p className={BODY}>לא ניתן לטעון את מפת השטח.</p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setLoad('pending');
+                    setAttempt((n) => n + 1);
+                  }}
+                >
+                  נסו שוב
+                </Button>
+              </div>
+            )}
+          </div>
 
-        <span />
-        {/* E values, on the south margin */}
-        <div aria-hidden className="relative h-6">
-          {eLines.map((l) => (
-            <span key={`e${l.v}`} data-grid-e={l.v} className={cn(MARGIN, 'top-1')} style={{ left: pct(l.x), transform: 'translateX(-50%)' }}>
-              E {l.v}
-            </span>
-          ))}
+          <span />
+          {/* E values, on the south margin */}
+          <div aria-hidden className="relative h-6">
+            {eLines.map((l) => (
+              <span key={`e${l.v}`} data-grid-e={l.v} className={cn(MARGIN, 'top-1')} style={{ left: pct(l.x), transform: 'translateX(-50%)' }}>
+                E {l.v}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* under the map itself: its start (right) edge, clear of the N margin on the left */}
-      {scene.legend.length > 0 && (
-        <figcaption className="me-12 mt-1">
-          <Legend scene={scene} />
+      {scene.legend.length > 0 ? (
+        <figcaption className="me-12 mt-1 min-h-5">
+          <Legend scene={scene} line={line !== null} />
         </figcaption>
+      ) : (
+        scene.legendRoom && <div aria-hidden className="mt-1 h-5" />
       )}
     </figure>
   );
@@ -1043,7 +1282,21 @@ function FieldMap({ scene }: { scene: MapScene }) {
 const CHIP = 'inline-flex flex-col items-center rounded-lg border border-border bg-bg-elevated/95 px-2 py-0.5';
 
 /** The live layers, in picture fractions from the one transform. Never mirrored. */
-function MapLayers({ scene, eLines, nLines, k }: { scene: MapScene; eLines: { v: number; x: number }[]; nLines: { v: number; y: number }[]; k: number }) {
+function MapLayers({
+  scene,
+  eLines,
+  nLines,
+  line,
+  besideMark,
+}: {
+  scene: MapScene;
+  eLines: { v: number; x: number }[];
+  nLines: { v: number; y: number }[];
+  /** The dimension line's path, or null when the two markers are too close for one. */
+  line: string | null;
+  /** The gap's number next to the diamond rather than beside the line (no line, or one too short for it). */
+  besideMark: boolean;
+}) {
   const W = MAP_PX.w;
   const H = MAP_PX.h;
   const target = scene.targets[0];
@@ -1060,10 +1313,12 @@ function MapLayers({ scene, eLines, nLines, k }: { scene: MapScene; eLines: { v:
             <line key={`n${l.v}`} x1={0} x2={W} y1={l.y * H} y2={l.y * H} vectorEffect="non-scaling-stroke" />
           ))}
         </g>
-        {scene.measure && <Measure from={scene.measure.from} to={scene.measure.to} k={k} />}
+        {line && <Measure d={line} />}
       </svg>
 
-      {scene.measure && scene.measure.gap !== null && <MeasureLabel from={scene.measure.from} to={scene.measure.to} gap={scene.measure.gap} />}
+      {scene.measure && scene.measure.gap !== null && (
+        <MeasureLabel from={scene.measure.from} to={scene.measure.to} gap={scene.measure.gap} beside={besideMark} />
+      )}
 
       {scene.targets.map((t, i) => (
         <Marker key={`t${i}`} kind="target" at={t.at} />
@@ -1079,7 +1334,7 @@ function MapLayers({ scene, eLines, nLines, k }: { scene: MapScene; eLines: { v:
         const below = !r || distance(r.at, t.at) < 1 || r.at.n >= t.at.n;
         return <Chip key={`tl${i}`} at={t.at} side={below ? 'below' : 'above'} label={t.label} kind="target" />;
       })}
-      {result && result.label.text && target && (
+      {result && (result.label.text || result.label.numbers) && target && (
         <Chip at={result.at} side={distance(result.at, target.at) < 1 || result.at.n >= target.at.n ? 'above' : 'below'} label={result.label} kind="result" />
       )}
     </div>
@@ -1116,29 +1371,44 @@ function ResultGlyph({ size }: { size: number }) {
   return <span aria-hidden className="block rotate-45 rounded-[3px] border-2 border-bg-elevated bg-accent" style={{ width: size, height: size }} />;
 }
 
-/** A dimension line between the two markers: square ends, no arrowhead (a distance, not a route). */
-function Measure({ from, to, k }: { from: EN; to: EN; k: number }) {
-  const W = MAP_PX.w;
-  const H = MAP_PX.h;
+/**
+ * The dimension line's path between the two markers (picture px), from clear of the target's ring to
+ * clear of the diamond — or null when they are too close on screen for a line (k: picture px per
+ * screen px).
+ */
+function measurePath(from: EN, to: EN, k: number): string | null {
   const a = toPicture(from);
   const b = toPicture(to);
-  const ax = a.x * W;
-  const ay = a.y * H;
-  const bx = b.x * W;
-  const by = b.y * H;
+  const ax = a.x * MAP_PX.w;
+  const ay = a.y * MAP_PX.h;
+  const bx = b.x * MAP_PX.w;
+  const by = b.y * MAP_PX.h;
   const len = Math.hypot(bx - ax, by - ay) || 1;
   const ux = (bx - ax) / len;
   const uy = (by - ay) / len;
-  // start clear of the target's ring and stop clear of the diamond (k: picture px per screen px)
   const s0 = 23 * k;
   const s1 = Math.max(s0, len - 14 * k);
+  if (s1 - s0 < 4 * k) return null;
   const p0 = { x: ax + ux * s0, y: ay + uy * s0 };
   const p1 = { x: ax + ux * s1, y: ay + uy * s1 };
   const cap = 7 * k;
   const nx = -uy * cap;
   const ny = ux * cap;
-  const d = `M${p0.x} ${p0.y}L${p1.x} ${p1.y}M${p0.x + nx} ${p0.y + ny}L${p0.x - nx} ${p0.y - ny}M${p1.x + nx} ${p1.y + ny}L${p1.x - nx} ${p1.y - ny}`;
-  if (s1 - s0 < 4 * k) return null;
+  return `M${p0.x} ${p0.y}L${p1.x} ${p1.y}M${p0.x + nx} ${p0.y + ny}L${p0.x - nx} ${p0.y - ny}M${p1.x + nx} ${p1.y + ny}L${p1.x - nx} ${p1.y - ny}`;
+}
+
+/** Shortest line, in screen px, whose number sits beside its middle clear of the target's ring and the diamond. */
+const LABEL_ON_LINE = 120;
+
+/** The distance between two ground positions on screen (k: picture px per screen px). */
+function screenLength(from: EN, to: EN, k: number): number {
+  const a = toPicture(from);
+  const b = toPicture(to);
+  return Math.hypot((b.x - a.x) * MAP_PX.w, (b.y - a.y) * MAP_PX.h) / k;
+}
+
+/** A dimension line between the two markers: square ends, no arrowhead (a distance, not a route). */
+function Measure({ d }: { d: string }) {
   return (
     <g data-measure="" fill="none" strokeLinecap="round">
       <path d={d} className="stroke-bg-elevated" strokeWidth={4.5} vectorEffect="non-scaling-stroke" opacity={0.95} />
@@ -1147,27 +1417,36 @@ function Measure({ from, to, k }: { from: EN; to: EN; k: number }) {
   );
 }
 
-function MeasureLabel({ from, to, gap }: { from: EN; to: EN; gap: number }) {
+/**
+ * The gap in metres: beside the line, on its eastern side, clear of the labels above and below the
+ * markers — or, when the markers are too close for a line or the line too short for its number
+ * (`beside`), next to the diamond, on the side away from the target, clear of its ring.
+ */
+function MeasureLabel({ from, to, gap, beside }: { from: EN; to: EN; gap: number; beside: boolean }) {
   const a = toPicture(from);
   const b = toPicture(to);
-  const mx = (a.x + b.x) / 2;
-  const my = (a.y + b.y) / 2;
-  // the side of the line toward the east, clear of the labels above and below the markers
-  const dx = (b.x - a.x) * MAP_PX.w;
-  const dy = (b.y - a.y) * MAP_PX.h;
-  const len = Math.hypot(dx, dy) || 1;
-  let nx = -dy / len;
-  let ny = dx / len;
-  if (nx < 0) {
-    nx = -nx;
-    ny = -ny;
+  let style: CSSProperties;
+  if (beside) {
+    const east = b.x >= a.x;
+    style = { left: pct(b.x), top: pct(b.y), transform: east ? 'translate(18px, -50%)' : 'translate(calc(-100% - 18px), -50%)' };
+  } else {
+    const dx = (b.x - a.x) * MAP_PX.w;
+    const dy = (b.y - a.y) * MAP_PX.h;
+    const len = Math.hypot(dx, dy) || 1;
+    let nx = -dy / len;
+    let ny = dx / len;
+    if (nx < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    style = {
+      left: pct((a.x + b.x) / 2),
+      top: pct((a.y + b.y) / 2),
+      transform: `translate(calc(-50% + ${(nx * 30).toFixed(1)}px), calc(-50% + ${(ny * 30).toFixed(1)}px))`,
+    };
   }
   return (
-    <span
-      data-measure-label=""
-      className="absolute"
-      style={{ left: pct(mx), top: pct(my), transform: `translate(calc(-50% + ${(nx * 30).toFixed(1)}px), calc(-50% + ${(ny * 30).toFixed(1)}px))` }}
-    >
+    <span data-measure-label="" className="absolute" style={style}>
       <span dir="rtl" className={cn(CHIP, 'whitespace-nowrap font-display text-sm font-bold tabular-nums text-black')}>
         <span>
           <L>{Math.round(gap)}</L> מ׳
@@ -1186,9 +1465,9 @@ function Chip({ at, side, label, kind }: { at: EN; side: 'above' | 'below'; labe
   return (
     <span data-chip={kind} className="absolute" style={{ left: pct(p.x), top: pct(p.y), transform: `translate(${ax}, ${ty})` }}>
       <span dir="rtl" className={CHIP}>
-        <span className="font-display text-sm font-bold leading-snug text-black whitespace-nowrap">{label.text}</span>
+        {label.text && <span className="font-display text-sm font-bold leading-snug text-black whitespace-nowrap">{label.text}</span>}
         {label.numbers && (
-          <span className="font-display text-sm font-bold leading-snug tabular-nums text-fg-muted">
+          <span className={cn('font-display text-sm font-bold leading-snug tabular-nums whitespace-nowrap', label.text ? 'text-fg-muted' : 'text-black')}>
             <L>{formatEN(label.numbers)}</L>
           </span>
         )}
@@ -1198,11 +1477,21 @@ function Chip({ at, side, label, kind }: { at: EN; side: 'above' | 'below'; labe
 }
 
 /** The map's legend: T6 (lessons-02-06 spec), each item with the symbol drawn on the map. */
-function Legend({ scene }: { scene: MapScene }) {
+function Legend({ scene, line }: { scene: MapScene; line: boolean }) {
   const item = 'flex items-center gap-1.5';
   const text = 'text-sm leading-snug text-fg-muted';
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1" data-legend="">
+      {scene.legend.includes('target') && (
+        <li className={item}>
+          {/* the map's ring and ticks, redrawn at legend size (a scaled-down ring would lose its stroke) */}
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden className="stroke-fg" fill="none" strokeWidth={1.5} strokeLinecap="round">
+            <circle cx="9" cy="9" r="5.5" />
+            <path d="M9 1v2.5M9 14.5V17M1 9h2.5M14.5 9H17" />
+          </svg>
+          <span className={text}>{M_REAL}</span>
+        </li>
+      )}
       {scene.legend.includes('result') && (
         <li className={item}>
           <span className="grid size-[18px] place-items-center">
@@ -1211,7 +1500,7 @@ function Legend({ scene }: { scene: MapScene }) {
           <span className={text}>{M_FOUND}</span>
         </li>
       )}
-      {scene.legend.includes('measure') && (
+      {scene.legend.includes('measure') && line && (
         <li className={item}>
           <svg width="22" height="12" viewBox="0 0 22 12" aria-hidden className="stroke-fg" fill="none" strokeWidth={1.75} strokeLinecap="round">
             <path d="M2 6h18M2 2v8M20 2v8" />

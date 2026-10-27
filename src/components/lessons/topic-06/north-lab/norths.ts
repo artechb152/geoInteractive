@@ -5,42 +5,46 @@ export type { NorthId };
 export interface NorthMeta {
   label: string;
   english: string;
-  /** arrow label on the map */
-  abbr: 'TN' | 'GN' | 'MN';
+  /** arrow label on the map (main map and inset) — the label's last word, as in the tabs */
+  short: string;
   /** text-* token — the arrow / legend colour, read in SVG via currentColor */
   color: string;
-  who: string;
+  /** the definition, ending with what the north is used for */
   what: string;
-  why: string;
+  /** the practical caveat ("דגש לשימוש"), shown with the definition */
+  note: string;
 }
 
+/*
+ * Each fact is shown once, next to what it explains: the definition (with its
+ * use) and the caveat here (the tab panel); "משתנה לפי המקום והזמן" and the term "נטייה מגנטית"
+ * under the declination slider; the map-to-compass correction in the card's
+ * closing line.
+ */
 export const NORTHS: Record<NorthId, NorthMeta> = {
   magnetic: {
     label: 'צפון מגנטי',
     english: 'Magnetic North',
-    abbr: 'MN',
+    short: 'מגנטי',
     color: 'text-accent-hot',
-    who: 'מדידת כיוון במצפן מגנטי',
-    what: 'הכיוון שמורה הקצה הצפוני של מחט המצפן, בהתאם לשדה המגנטי המקומי של כדור הארץ.',
-    why: 'ההפרש בינו לצפון אמיתי משתנה לפי המקום והזמן. מתכות ושדות מגנטיים סמוכים עלולים לשבש את הקריאה.',
+    what: 'הכיוון שמורה הקצה הצפוני של מחט המצפן, בהתאם לשדה המגנטי המקומי של כדור הארץ. ממנו מודדים כיוון במצפן.',
+    note: 'מתכות ושדות מגנטיים סמוכים עלולים לשבש את הקריאה.',
   },
   grid: {
     label: 'צפון רשת',
     english: 'Grid North',
-    abbr: 'GN',
+    short: 'רשת',
     color: 'text-terrain-olive',
-    who: 'תכנון ומדידת כיוון במפת רשת',
-    what: 'כיוון הצפון לאורך הקווים האנכיים של רשת הקואורדינטות במפה.',
-    why: 'עשוי להיות שונה מצפון אמיתי ומצפון מגנטי. במעבר בין המפה למצפן מתחשבים בהפרש המתאים.',
+    what: 'כיוון הצפון לאורך הקווים האנכיים של רשת הקואורדינטות במפה. לפיו מודדים כיוונים במפה.',
+    note: 'עשוי להיות שונה מצפון אמיתי ומצפון מגנטי.',
   },
   true: {
     label: 'צפון אמיתי',
     english: 'True North',
-    abbr: 'TN',
+    short: 'אמיתי',
     color: 'text-brand-dark',
-    who: 'ייחוס גאוגרפי למדידת כיוונים',
-    what: 'הכיוון אל הקוטב הצפוני הגאוגרפי לאורך קו האורך המקומי.',
-    why: 'מצפן מגנטי אינו מורה בהכרח לכיוון זה. ההפרש הזוויתי בין צפון מגנטי לצפון אמיתי נקרא נטייה מגנטית.',
+    what: 'הכיוון אל הקוטב הצפוני הגאוגרפי לאורך קו האורך המקומי. משמש כייחוס גאוגרפי למדידת כיוונים.',
+    note: 'מצפן מגנטי אינו מורה בהכרח לכיוון זה.',
   },
 };
 

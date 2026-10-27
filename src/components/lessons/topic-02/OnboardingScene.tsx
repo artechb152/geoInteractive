@@ -241,7 +241,7 @@ export function OnboardingScene() {
         contentClassName="[&>section]:mt-0"
       >
         <ReadyCallout title="בהמשך השיעור" signature={false}>
-          <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר תבליט ותכסית, תבניות נוף וסוגי סלעים, ובהמשך נתרגל
+          <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר את התבליט, את התכסית ואת תבניות הנוף, ובהמשך נתרגל
               <strong className="text-fg"> שימוש בקנה מידה, קריאת נקודות ציון ופענוח קווי גובה</strong>.</p>
         </ReadyCallout>
       </LessonViewportFit>

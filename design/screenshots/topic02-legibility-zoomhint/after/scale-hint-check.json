@@ -1,0 +1,78 @@
+{
+ "exploreLoad": {
+  "hint": true,
+  "cue": false,
+  "plusBorder": "rgb(220, 205, 178)",
+  "k": 1,
+  "view": "1.000,0.0,0.0",
+  "described": "אפשר לעשות זום פנימה והחוצה, בגלגלת העכבר או בכפתורים + ו־−."
+ },
+ "explorePress": {
+  "hint": false,
+  "cue": true,
+  "plusBorder": "rgb(217, 126, 43)",
+  "k": 1,
+  "view": "1.000,0.0,0.0",
+  "described": "אפשר לעשות זום פנימה והחוצה, בגלגלת העכבר או בכפתורים + ו־−."
+ },
+ "measureTab": {
+  "hint": false,
+  "cue": true,
+  "plusBorder": "rgb(217, 126, 43)",
+  "k": 1,
+  "view": "1.000,0.0,0.0",
+  "described": "אפשר לעשות זום פנימה והחוצה, בגלגלת העכבר או בכפתורים + ו־−."
+ },
+ "measureTwo": {
+  "dots": 2,
+  "result": "7 ק״מ בשטח",
+  "buttonsCover": false,
+  "hint": false
+ },
+ "measureScaleSwitch": {
+  "hint": false,
+  "cue": true,
+  "plusBorder": "rgb(217, 126, 43)",
+  "k": 1,
+  "view": "1.000,0.0,0.0",
+  "described": "אפשר לעשות זום פנימה והחוצה, בגלגלת העכבר או בכפתורים + ו־−.",
+  "result": "7 ק״מ בשטח"
+ },
+ "measureZoom": {
+  "hint": false,
+  "cue": false,
+  "plusBorder": "rgb(220, 205, 178)",
+  "k": 1.616,
+  "view": "1.616,-184.5,-184.4",
+  "described": null
+ },
+ "measureDrag": {
+  "before": "1.616,-184.5,-184.4",
+  "after": "1.616,-124.5,-154.4"
+ },
+ "keyArrow": {
+  "hint": false,
+  "cue": true,
+  "plusBorder": "rgb(217, 126, 43)",
+  "k": 1,
+  "view": "1.000,0.0,0.0",
+  "described": "אפשר לעשות זום פנימה והחוצה, בגלגלת העכבר או בכפתורים + ו־−."
+ },
+ "keyPlus": {
+  "hint": false,
+  "cue": false,
+  "plusBorder": "rgb(220, 205, 178)",
+  "k": 1.5,
+  "view": "1.500,-150.0,-150.0",
+  "described": null
+ },
+ "plusButton": {
+  "hint": false,
+  "cue": false,
+  "plusBorder": "rgba(116, 156, 117, 0.3)",
+  "k": 1.5,
+  "view": "1.500,-150.0,-150.0",
+  "described": null
+ },
+ "failures": []
+}

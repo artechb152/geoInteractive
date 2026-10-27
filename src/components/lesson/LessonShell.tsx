@@ -162,6 +162,19 @@ export function LessonShell({
     };
   }, [sceneList, activeId, gotoScene]);
 
+  // `lesson:open-scene` ({ id }) opens a sub-topic in the learn tab from any
+  // tab — used by a practice summary's "back to the sub-topic" links.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+      if (!id || !sceneList.some((s) => s.id === id)) return;
+      setTab('learn');
+      gotoScene(id);
+    };
+    window.addEventListener('lesson:open-scene', onOpen);
+    return () => window.removeEventListener('lesson:open-scene', onOpen);
+  }, [sceneList, gotoScene]);
+
   // On `learn` the recap sub-topic renders its own "next lesson" link via
   // PagedLearn, so this footer would duplicate it. It only earns its place
   // on practice / check (which aren't paged).

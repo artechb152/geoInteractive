@@ -12,7 +12,7 @@ import { CASES, GRID_STEP, MAP, PLACES, SHIFT, TERRAIN } from '../../src/compone
 import {
   convert, interpret, distance, formatEN, numbersOf, gapOf, gridOf, gridLines,
   ERROR_SOURCE, ERROR_MAP, ERROR_BEFORE, sentCopy, errorResult,
-  caseSource, caseTarget, optionKind, optionGap, isRight, feedbackFor, checkedResult,
+  caseSource, caseTarget, calcPair, calcOptions, datumsMatch, rightAction, answerComplete, sentOf, diagnose, checkedDiagnosis, EMPTY_ANSWER,
   initialActivity, activityReducer,
 } from '../../src/components/lessons/topic-02/datum-field/datumField.ts';
 import { MAP_ASPECT, MAP_PX, toPicture, insideMap } from '../../src/components/lessons/topic-02/datum-field/datumFieldProjection.ts';
@@ -186,99 +186,142 @@ test('leaving a stage mid-motion cancels it; the late end cannot overwrite the n
   assert.equal(run(t, { type: 'arrive', run: m2 }).error.phase, 'relabeled');
 });
 
-// ---------------------------------------------------------------- stage 3: practice
+// ---------------------------------------------------------------- stage 3: practice (three decisions, then a check)
 
-test('5) when the datums already match, the original numbers are right and any change makes a gap', () => {
+/** An answer: do the datums match, the action, and the kind of pair chosen (its slot in the case's order). */
+const ans = (c, match, action, kind = null) => ({ match, action, calc: kind ? c.calcOrder.indexOf(kind) : null });
+const isConv = (a) => a === 'AtoB' || a === 'BtoA';
+
+test('5) the datums already match: sending the numbers as they are is right; a conversion is an action error with a gap', () => {
   const c = CASES.find((x) => x.id === 'same');
   assert.equal(c.place, 'bridge');
   assert.equal(c.source, 'A');
   assert.equal(c.target, 'A');
   assert.deepEqual(caseSource(c), EN(1200, 800));
-  assert.deepEqual(c.options, [EN(1164, 752), EN(1200, 800), EN(1236, 848)]);
-  assert.deepEqual(c.options.map((p) => optionGap(c, p)), [60, 0, 60]);
-  assert.deepEqual(c.options.map((p) => isRight(c, p)), [false, true, false]);
-  assert.deepEqual(c.options.map((p) => optionKind(c, p)), ['minus', 'kept', 'plus']);
-  assert.equal(feedbackFor(c, c.options[1]), c.feedback.right);
-  assert.equal(feedbackFor(c, c.options[0]), c.feedback.wrong);
-  assert.equal(feedbackFor(c, c.options[2]), c.feedback.wrong);
-  assert.match(c.feedback.wrong, /60 מטר/);
+  assert.ok(datumsMatch(c));
+  assert.equal(rightAction(c), 'keep');
+  assert.ok(!c.actions.includes('relabel'), 'no label to change when both already say A');
+  const right = diagnose(c, ans(c, true, 'keep'));
+  assert.deepEqual(right, { verdict: 'right', sent: { label: 'A', numbers: EN(1200, 800) }, at: EN(1200, 800), gap: 0, calc: null });
+  // converting when nothing needs converting: the action is wrong, whatever the arithmetic
+  for (const a of ['AtoB', 'BtoA']) {
+    for (const k of c.calcOrder) {
+      const d = diagnose(c, ans(c, true, a, k));
+      assert.equal(d.verdict, 'action', `${a} ${k}`);
+      assert.ok(d.gap > 30, `${a} ${k} moves the mark (${d.gap})`);
+    }
+  }
+  assert.equal(diagnose(c, ans(c, true, 'AtoB', 'right')).gap, 60);
+  // calling the datums different is an identification error — named even when the numbers land right
+  assert.deepEqual(['verdict', 'gap'].map((k) => diagnose(c, ans(c, false, 'keep'))[k]), ['identify', 0]);
+  assert.deepEqual(['verdict', 'gap'].map((k) => diagnose(c, ans(c, false, 'BtoA', 'right'))[k]), ['identify', 60]);
 });
 
-test('6) the junction, B → A: gaps 0 / 60 / 120 m, and each mistake gets its own explanation', () => {
+test('6) the junction, B → A: each step’s mistake is named, with the gap it makes', () => {
   const c = CASES.find((x) => x.id === 'reverse');
   assert.equal(c.place, 'junction');
   assert.equal(c.source, 'B');
   assert.equal(c.target, 'A');
   assert.deepEqual(caseSource(c), EN(1054, 712));
   assert.deepEqual(caseTarget(c), EN(1090, 760));
-  assert.deepEqual(c.options, [EN(1090, 760), EN(1054, 712), EN(1018, 664)]);
-  assert.deepEqual(c.options.map((p) => optionGap(c, p)), [0, 60, 120]);
-  assert.deepEqual(c.options.map((p) => optionKind(c, p)), ['plus', 'kept', 'minus']);
-  assert.deepEqual(c.options[0], convert(caseSource(c), 'B', 'A'), 'the right pair is the B→A conversion');
-  const texts = c.options.map((p) => feedbackFor(c, p));
-  assert.equal(texts[0], c.feedback.right);
-  assert.equal(texts[1], c.feedback.kept);
-  assert.equal(texts[2], c.feedback.minus);
-  assert.notEqual(texts[1], texts[2]);
-  assert.match(texts[1], /60 מטר/);
-  assert.match(texts[2], /120 מטר/);
+  assert.ok(!datumsMatch(c));
+  assert.equal(rightAction(c), 'BtoA');
+  const v = (...a) => diagnose(c, ans(c, ...a));
+  const vg = (...a) => [v(...a).verdict, Math.round(v(...a).gap)];
+  // right: B→A, the conversion's own pair
+  assert.deepEqual(v(false, 'BtoA', 'right'), { verdict: 'right', sent: { label: 'A', numbers: EN(1090, 760) }, at: EN(1090, 760), gap: 0, calc: 'right' });
+  assert.deepEqual(calcPair(c, 'BtoA', 'right'), convert(caseSource(c), 'B', 'A'));
+  // identification: "the same datum" → sent as is, 60 m
+  assert.deepEqual(vg(true, 'keep'), ['identify', 60]);
+  // the action: unchanged 60, the label only 60 (label A, numbers B's), the reverse direction 120
+  assert.deepEqual(vg(false, 'keep'), ['action', 60]);
+  const relabel = v(false, 'relabel');
+  assert.deepEqual([relabel.verdict, relabel.gap, relabel.sent.label], ['action', 60, 'A']);
+  assert.deepEqual(relabel.sent.numbers, caseSource(c), 'a new label, the same numbers');
+  assert.deepEqual(vg(false, 'AtoB', 'right'), ['action', 120]);
+  // the calculation: the right direction, the shifts swapped (17 m) or only E converted (48 m)
+  assert.deepEqual(calcPair(c, 'BtoA', 'swapped'), EN(1102, 748));
+  assert.deepEqual(calcPair(c, 'BtoA', 'partial'), EN(1090, 712));
+  assert.deepEqual(vg(false, 'BtoA', 'swapped'), ['calc', 17]);
+  assert.deepEqual(vg(false, 'BtoA', 'partial'), ['calc', 48]);
 });
 
-test('right comes from the data, not from a slot; every option has an explanation and stays on the map', () => {
-  const slots = CASES.map((c) => c.options.findIndex((p) => isRight(c, p)));
-  assert.equal(new Set(slots).size, CASES.length, `the right pair moves between cases: ${slots}`);
+test('right comes from the data, not from a slot; every answer lands inside the map', () => {
   for (const c of CASES) {
-    assert.equal(c.options.filter((p) => isRight(c, p)).length, 1, c.id);
-    for (const p of c.options) {
-      assert.ok(typeof feedbackFor(c, p) === 'string' && feedbackFor(c, p).length > 10, `${c.id} ${formatEN(p)}`);
-      assert.ok(insideMap(interpret(p, c.target), 25), `${c.id} ${formatEN(p)} lands inside the map`);
+    const all = [];
+    for (const match of [true, false]) {
+      for (const a of c.actions) {
+        for (const k of isConv(a) ? c.calcOrder : [null]) all.push(diagnose(c, ans(c, match, a, k)));
+      }
     }
+    // one way to be right: every step right — and only it puts the mark on the place itself
+    const rights = all.filter((d) => d.verdict === 'right');
+    assert.equal(rights.length, 1, c.id);
+    assert.ok(rights[0].gap < 1e-9, c.id);
+    for (const d of all) assert.ok(insideMap(d.at, 25), `${c.id} ${formatEN(d.sent.numbers)} lands inside the map`);
+    // every pair of a conversion is different
+    for (const a of ['AtoB', 'BtoA']) assert.equal(new Set(calcOptions(c, a).map(formatEN)).size, 3, `${c.id} ${a}`);
   }
+  assert.equal(new Set(CASES.map((c) => c.calcOrder.indexOf('right'))).size, CASES.length, 'the right pair changes slot between cases');
   assert.ok(insideMap(ERROR_BEFORE, 25));
   for (const id of Object.keys(PLACES)) assert.ok(insideMap(PLACES[id].ground, 60), id);
 });
 
-test('choosing previews, checking judges; a wrong answer stays open to correction', () => {
-  let s = at('practice');
-  const c = CASES[0];
-  const wrong = c.options.findIndex((p) => !isRight(c, p));
-  const right = c.options.findIndex((p) => isRight(c, p));
+test('practice: nothing is judged or drawn before a check; any change clears the verdict; a reset starts the case again', () => {
+  const c = CASES[1];
+  let s = run(at('practice'), { type: 'goCase', index: 1 });
   s = run(s, { type: 'check' });
-  assert.equal(s.practice.checked, null, 'nothing to check before a choice');
-  s = run(s, { type: 'choose', option: wrong });
-  assert.equal(s.practice.choice, wrong);
-  assert.equal(s.practice.checked, null, 'a choice is only a preview');
-  assert.ok(!s.practice.solved[0]);
+  assert.equal(s.practice.checked, false, 'nothing to check before the answers');
+  s = run(s, { type: 'setMatch', match: false }, { type: 'setAction', action: 'BtoA' });
+  assert.ok(!answerComplete(c, s.practice.answer), 'a conversion needs its pair');
+  assert.equal(sentOf(c, s.practice.answer), null);
+  assert.equal(run(s, { type: 'check' }).practice.checked, false);
+  s = run(s, { type: 'setCalc', option: c.calcOrder.indexOf('swapped') });
+  assert.equal(checkedDiagnosis(s.practice), null, 'a choice is not a verdict');
   s = run(s, { type: 'check' });
-  assert.deepEqual(checkedResult(s.practice), { option: wrong, right: false });
-  assert.ok(!s.practice.solved[0]);
-  s = run(s, { type: 'choose', option: right });
-  assert.equal(s.practice.checked, null, 'a new choice clears the old verdict');
+  assert.equal(checkedDiagnosis(s.practice).verdict, 'calc');
+  assert.ok(!s.practice.solved[1]);
+  assert.deepEqual(run(s, { type: 'check' }), s, 'checked once until something changes');
+  // correcting the pair clears the verdict; the next check judges again
+  s = run(s, { type: 'setCalc', option: c.calcOrder.indexOf('right') });
+  assert.equal(s.practice.checked, false);
   s = run(s, { type: 'check' });
-  assert.deepEqual(checkedResult(s.practice), { option: right, right: true });
-  assert.ok(s.practice.solved[0]);
-  // after success: compare another option, and come back
-  s = run(s, { type: 'choose', option: wrong }, { type: 'check' });
-  assert.equal(checkedResult(s.practice).right, false);
-  assert.ok(s.practice.solved[0], 'solving once is kept');
+  assert.equal(checkedDiagnosis(s.practice).verdict, 'right');
+  assert.ok(s.practice.solved[1]);
+  // another action drops the old pair
+  s = run(s, { type: 'setAction', action: 'AtoB' });
+  assert.equal(s.practice.answer.calc, null);
+  assert.equal(s.practice.checked, false);
+  // what the case does not offer is ignored
+  assert.equal(run(at('practice'), { type: 'setAction', action: 'relabel' }).practice.answer.action, null);
+  assert.equal(run(at('practice'), { type: 'setCalc', option: 0 }).practice.answer.calc, null, 'no pair without a conversion');
+  assert.equal(run(at('practice'), { type: 'setAction', action: 'keep' }, { type: 'setCalc', option: 0 }).practice.answer.calc, null);
+  // reset: the case from its start; solved once stays solved
+  s = run(s, { type: 'resetCase' });
+  assert.deepEqual(s.practice.answer, EMPTY_ANSWER);
+  assert.equal(s.practice.checked, false);
+  assert.ok(s.practice.solved[1]);
 });
 
 test('7) cases start clean; summary only after both; practise again and back to the demonstration', () => {
-  let s = run(at('practice'), { type: 'choose', option: 2 });
-  s = run(s, { type: 'goCase', index: 1 });
-  assert.equal(s.practice.index, 1);
-  assert.equal(s.practice.choice, null);
-  assert.equal(s.practice.checked, null);
-  assert.deepEqual(run(s, { type: 'showSummary' }).practice.summary, false, 'no summary before both are right');
   const solve = (st) => {
     const c = CASES[st.practice.index];
-    return run(st, { type: 'choose', option: c.options.findIndex((p) => isRight(c, p)) }, { type: 'check' });
+    const a = rightAction(c);
+    let t = run(st, { type: 'setMatch', match: datumsMatch(c) }, { type: 'setAction', action: a });
+    if (isConv(a)) t = run(t, { type: 'setCalc', option: c.calcOrder.indexOf('right') });
+    return run(t, { type: 'check' });
   };
+  let s = run(at('practice'), { type: 'setMatch', match: false });
+  s = run(s, { type: 'goCase', index: 1 });
+  assert.equal(s.practice.index, 1);
+  assert.deepEqual(s.practice.answer, EMPTY_ANSWER);
+  assert.equal(s.practice.checked, false);
+  assert.deepEqual(run(s, { type: 'showSummary' }).practice.summary, false, 'no summary before both are right');
   s = solve(s);
   s = solve(run(s, { type: 'goCase', index: 0 }));
   s = run(s, { type: 'showSummary' });
   assert.ok(s.practice.summary);
-  assert.equal(run(s, { type: 'choose', option: 0 }).practice.choice, s.practice.choice, 'the summary takes no answers');
+  assert.deepEqual(run(s, { type: 'setMatch', match: true }), s, 'the summary takes no answers');
   const again = run(s, { type: 'restartPractice' });
   assert.deepEqual(again.practice, initialActivity().practice);
   const demo = run(s, { type: 'setDatum', datum: 'B' }, { type: 'backToDemo' });
@@ -296,7 +339,8 @@ test('every stage keeps its own state when the learner moves between stages', ()
   assert.equal(s.error.phase, 'raw');
   // actions of another stage do nothing
   assert.deepEqual(run(s, { type: 'setDatum', datum: 'A' }), s);
-  assert.deepEqual(run(s, { type: 'choose', option: 1 }), s);
+  assert.deepEqual(run(s, { type: 'setMatch', match: true }), s);
+  assert.deepEqual(run(s, { type: 'resetCase' }), s);
 });
 
 // ---------------------------------------------------------------- the world → picture transform
@@ -346,77 +390,75 @@ test('the base map: one picture at the extent’s size; the diorama and its thum
   }
 });
 
-// ---------------------------------------------------------------- the copy (§5–§7, §10)
+// ---------------------------------------------------------------- the copy (§5–§7, §10; clarity pass 2026-10-26)
 
-test('the activity’s copy: source wording kept, datums and physical locations distinguished', () => {
+test('the activity’s copy: source wording kept, datums and the real place vs the mark obtained distinguished', () => {
   const src = readFileSync('src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx', 'utf8');
   const required = [
     // kept
     'הדמיה: מה קורה כשהדאטום לא תואם?',
-    'לא ניתן לדבר על קואורדינטות של נקודה בלי שנדע מהו הדאטום ומהו ההיטל שלה',
-    '(על ההיטל – בחלק הבא).',
-    // §10 and §4
-    'מפות ממקורות שונים עשויות להשתמש בדאטומים שונים.',
+    // the lead (2026-10-26): the datum always, the projection only for a planar system — as קואורדינטות 2 defines מערכת ייחוס
+    'כדי לפרש מספרי קואורדינטות, צריך לדעת באיזו מערכת ייחוס ובאיזה דאטום הם נכתבו.',
+    'במערכת מישורית, כמו מזרח וצפון במטרים, נדרשים גם ההיטל והפרמטרים שלו (על ההיטל – בחלק הבא).',
+    'מפות ממקורות שונים עשויות להשתמש בדאטומים שונים: החלפת שם הדאטום אינה ממירה את המספרים, והמרה מתאימה מחשבת אותם מחדש, כך שיתארו את אותו מקום.',
+    // §4: the schematic model, said once
     'A ו־B הם דאטומים בדיוניים; ההבדל ביניהם מוצג כאן כהזזה קבועה לצורך ההמחשה בלבד.',
     // stages
     'משווים', 'בודקים את הטעות', 'מתרגלים',
-    // §5
+    // stage 1
     'גשר אחד, קואורדינטות בשני דאטומים',
-    'שתי מערכות ייחוס למדידת מיקום. כל אחת נותנת לאותו גשר מספרי קואורדינטות שונים.',
-    'דאטום A', 'דאטום B', 'בחרו באיזה דאטום להציג את קואורדינטות הגשר',
-    'הגשר נשאר באותו מקום. בהמרה לדאטום B המספרים שמייצגים אותו משתנים.',
+    'עברו בין A ל־B ובדקו מה משתנה: המספרים או המקום בשטח?',
+    'הדאטום שבו מתארים את הגשר', 'דאטום A', 'דאטום B',
+    'המספרים השתנו, הגשר לא זז',
+    'המפה מציגה עכשיו את רשת B. הגשר נשאר במקומו, ולכן נקרא בה במספרים אחרים.',
     'מה קורה בלי המרה?',
-    // §6
+    // stage 2
     'אותם מספרים נקראים בדאטום אחר',
-    'נתוני המקור · דאטום',
-    'המפה מפרשת את הנתונים בדאטום B',
-    'קיבלנו את המספרים בדאטום A, אבל המפה קוראת אותם כ־B.',
+    'נתוני המקור', 'מפת היעד', 'העותק שנשלח למפה',
+    'העתיקו את מספרי המקור למפת היעד בלי המרה ובדקו היכן יופיע הסימון.',
+    'המפה קוראת כ־B',
     'העתקת המספרים ללא המרה',
-    'המספרים שנשלחו למפה',
-    'המיקום לפי המספרים',
-    'העיגול מסמן את הגשר הקבוע.',
-    'העתיקו ללא המרה: המעוין יראה לאן המפה מפנה אותנו.',
-    'המעוין נמצא 60 מטר מהגשר: מספרי A נקראו כ־B ללא המרה. הגשר לא זז — הסימון שגוי.',
-    'שינוי הכיתוב בלבד',
-    'מחליפים את האות בכותרת של עותק הנתונים; המספרים אינם משתנים.',
-    'החלפנו את הכיתוב מ־A ל־B, אבל המספרים לא השתנו. לכן המעוין נשאר 60 מטר מהגשר. כדי לתקן צריך להמיר את המספרים.',
-    'המרת הנתונים מ־A ל־B',
-    'ההמרה שינתה את המספרים לייצוג בדאטום B, ולכן המעוין חזר לגשר. הגשר עצמו נשאר במקומו.',
+    'שינוי הכיתוב בלבד', 'רק האות בכותרת העותק משתנה',
+    'המרת המספרים מ־A ל־B', 'E ו־N מחושבים מחדש לדאטום B',
+    'מספרי A נקראו כאילו נמדדו ב־B. הגשר לא זז; רק הסימון במפה.',
+    'הכיתוב השתנה, הסימון לא זז',
+    'המספרים עדיין של A, והמפה ממשיכה לקרוא אותם כ־B. שינוי הכיתוב אינו המרה.',
     'הסימון תואם למיקום הגשר',
-    'המחשת המעבר',
-    'נסו על נתונים נוספים',
-    // §7
+    'ההמרה חישבה את המספרים מחדש, כך שבדאטום B הם מתארים את אותו גשר. השתנו המספרים, לא המקום.',
+    'המחשת המעבר', 'התחלה מחדש', 'נסו על נתונים נוספים',
+    // the map
+    'המקום האמיתי', 'הסימון שהתקבל',
+    // stage 3: three decisions, a check, the step that went wrong
     'איזה צמד מספרים צריך לשלוח למפת היעד כדי לשמור על אותו מקום?',
-    'תצוגה מקדימה',
+    'האם הדאטומים תואמים?', 'מה עושים עם המספרים?', 'אילו מספרים נשלחים למפה?',
+    'כלל ההמחשה בלבד, לא שיטת המרה כללית:',
     'בדיקת הנתונים',
-    'בהמחשה הזאת: A→B מחסיר (36,48); B→A מוסיף (36,48).',
+    'הטעות בזיהוי הדאטומים', 'הטעות בבחירת הפעולה', 'הטעות בחישוב',
     'לפני שימוש בקואורדינטות בודקים באיזה דאטום נמסרו הנתונים ובאיזה דאטום משתמשת המפה. כשנדרשת המרה, משנים את המספרים באופן ששומר על אותו מקום בשטח.',
     'תרגול חוזר', 'חזרה להדגמה',
   ];
   for (const s of required) assert.ok(src.includes(s), `missing: ${s}`);
-  // §1, §9: gone — the north glyph, the hint, the picker and its thumbnails, the old diorama and wording
-  for (const s of ['רמז', 'בחירת נקודה', 'thumb-', 'terrain-base', 'פסגה', 'מיקום מבוקש', 'זוהי המחשה סכמטית', 'ההדמיה ממחישה זאת', 'הגשר בשטח', 'רשת דאטום']) {
+  // §1, §9: gone — the north glyph, the hint, the picker and its thumbnails, the old diorama and wording;
+  // 2026-10-26: the general datum explanation (the previous activity's) and the preview that gave the answer away
+  for (const s of [
+    'רמז', 'בחירת נקודה', 'thumb-', 'terrain-base', 'פסגה', 'מיקום מבוקש', 'זוהי המחשה סכמטית', 'ההדמיה ממחישה זאת', 'הגשר בשטח', 'רשת דאטום',
+    'שתי מערכות ייחוס למדידת מיקום', 'תצוגה מקדימה', 'המעוין',
+  ]) {
     assert.ok(!src.includes(s), `still there: ${s}`);
   }
   assert.ok(!/>\s*N\s*</.test(src), 'no N glyph');
-  // §4, §10: phrasing to avoid
-  for (const s of ['הנקודה זזה בשטח', 'תמיד גורם לסטייה', 'בטוח', 'מסוכן']) assert.ok(!src.includes(s), `avoid: ${s}`);
-  // the cases’ texts are the brief’s
-  const all = CASES.flatMap((c) => Object.values(c.feedback));
-  for (const s of [
-    'המקור והמפה משתמשים כאן באותו דאטום. אין צורך בהמרה; המספרים המקוריים כבר מצביעים על הגשר.',
-    'שיניתם מספרים אף שהדאטום כבר תואם. בהדגמה הזאת השינוי מזיז את הסימון 60 מטר מהגשר.',
-    'כאן המקור הוא B והיעד הוא A, ולכן כיוון ההמרה הפוך מהדוגמה הקודמת. המספרים השתנו והסימון נשאר בצומת.',
-    'הועתקו מספרי B למפה שקוראת אותם כ־A. הפער נשאר 60 מטר.',
-    'הופעלה המרה בכיוון A→B אף שהנתונים כבר ב־B. בהמחשה הזאת הפער גדל ל־120 מטר.',
-  ]) assert.ok(all.includes(s), `case feedback: ${s}`);
+  // §4, §10: phrasing to avoid; the old lead tied every coordinate to a projection (latitude/longitude have none)
+  for (const s of ['הנקודה זזה בשטח', 'תמיד גורם לסטייה', 'בטוח', 'מסוכן', 'מהו הדאטום ומהו ההיטל שלה']) assert.ok(!src.includes(s), `avoid: ${s}`);
+  // the cases' right answers say why that action, for that pair of datums
+  assert.match(CASES.find((c) => c.id === 'same').right, /באותו דאטום/);
+  assert.match(CASES.find((c) => c.id === 'reverse').right, /ממירים B→A/);
 });
 
-test('the rule shown to the learner is the model’s shift, and the map draws the tested grid', () => {
+test('the rule shown to the learner is the model’s shift, scoped to the illustration; the map draws the tested grid', () => {
   const src = readFileSync('src/components/lessons/topic-02/datum-field/DatumFieldChallenge.tsx', 'utf8');
-  const rule = src.match(/A→B מחסיר \((\d+),(\d+)\); B→A מוסיף \((\d+),(\d+)\)/);
-  assert.ok(rule, 'the rule sentence is there');
-  assert.deepEqual(rule.slice(1).map(Number), [SHIFT.e, SHIFT.n, SHIFT.e, SHIFT.n]);
+  // the formula is written from SHIFT and the chosen direction, never typed in
+  assert.ok(src.includes('`${from}→${to}: E ${sign} ${SHIFT.e}, N ${sign} ${SHIFT.n}`'), 'the rule comes from SHIFT');
+  assert.ok(/P_RULE = 'כלל ההמחשה בלבד, לא שיטת המרה כללית:'/.test(src), 'the rule is scoped');
   assert.ok(/gridLines\(/.test(src), 'the map draws gridLines(), the function tested above');
   // the slide in stage 1 moves every line by the same fraction of the shift
   const half = gridLines(0.5);
@@ -426,5 +468,9 @@ test('the rule shown to the learner is the model’s shift, and the map draws th
 
 test('the lesson around it is untouched: same place in the scene, before the part summary', () => {
   const scene = readFileSync('src/components/lessons/topic-02/CoordinatesScene.tsx', 'utf8');
-  assert.ok(/<DatumGuided \/>\s*<DatumFieldChallenge \/>\s*<Part1Summary \/>/.test(scene), 'DatumGuided → the activity → the part summary');
+  // each in its own laptop-fit screen (FitScreen), in this order
+  assert.ok(
+    /<DatumGuided \/>\s*<FitScreen name="datum-field"[^>]*>\s*<DatumFieldChallenge \/>\s*<\/FitScreen>\s*<FitScreen name="summary"[^>]*>\s*<Part1Summary \/>/.test(scene),
+    'DatumGuided → the activity → the part summary',
+  );
 });

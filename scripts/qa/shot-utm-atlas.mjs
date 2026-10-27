@@ -11,18 +11,26 @@
 // the hemisphere and the datum. States: opening (36N), a pick in the same zone, a drag across a
 // zone boundary, a click across the equator, every preset (with the Norway exception), a click
 // outside coverage, the metric grid with keyboard moves in metres, crossing the equator and a
-// neighbour zone in metres, switching views keeps the point, Greenwich practice (30 wrong,
-// another wrong, 31 right), the transfer practice (wrong zone + hemisphere, then right) to the
-// end, back to exploration with the state kept, "מידע נוסף על UTM" closed then opened, leaving
-// the sub-topic and coming back, reduced motion, fit at 1440 × 1122, 16 px black body text,
-// label overlap.
+// neighbour zone in metres, switching views keeps the point, "מידע נוסף על UTM" closed then
+// opened, leaving the sub-topic and coming back, reduced motion, fit at 1440 × 1122, 16 px black
+// body text, label overlap.
+//
+// Practice (map pass 2026-10-26): the map is the tool. A click on either map chooses the zone there
+// and its side of the equator (a cell, "54N"); the arrows on the world map do the same by keyboard.
+// The choice is drawn in the pick tone and read back in the card — never judged before a check; zone
+// numbers and boundaries stay readable on the map; a check marks only the checked choice (✓ / ✕);
+// hints grow per wrong part and point at the map; "הצגת התשובה" after two failed checks; a part
+// right is locked; the feedback sits under the enlargement, so the maps never move. Greenwich (30
+// by click → hint 1, 32 by keyboard → hint 2, 31 right), Tokyo (53S, 53N, then 54N), Buenos Aires
+// (21N: zone right + hemisphere wrong, then S by keyboard), Nairobi (the equator in the enlargement;
+// two misses, the answer on request), the end count, the reset, back to exploration.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 import {
   readUtm, OPENING, PRESETS, TRANSFER, normLon, HEMI_NAME,
 } from '../../src/components/lessons/topic-02/utm-atlas/utmAtlas.ts';
 
-const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'design/screenshots/utm-atlas-2026-10-19';
+const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'design/screenshots/utm-atlas-map-practice-2026-10-26';
 const BASE = process.env.QA_BASE || 'http://localhost:3001';
 const URL = `${BASE}/lessons/topic-02/#scene-coordinates-2`;
 await mkdir(outDir, { recursive: true });
@@ -80,7 +88,17 @@ const state = (page) =>
       }
       const chips = [...f.querySelectorAll('[data-chip]')].map((c) => {
         const b = c.getBoundingClientRect();
-        return { key: c.dataset.chip, text: c.textContent.trim(), left: b.left, right: b.right, top: b.top, bottom: b.bottom, fontSize: getComputedStyle(c).fontSize };
+        return {
+          key: c.dataset.chip,
+          text: c.textContent.trim(),
+          accent: c.classList.contains('border-accent'),
+          pick: c.classList.contains('border-brand-dark'),
+          left: b.left,
+          right: b.right,
+          top: b.top,
+          bottom: b.bottom,
+          fontSize: getComputedStyle(c).fontSize,
+        };
       });
       // map furniture the labels must also clear
       for (const o of f.querySelectorAll('[data-scale-bar], [data-axes]')) {
@@ -93,15 +111,36 @@ const state = (page) =>
         view: { lon0, lat0, w, h },
         tip,
         focus: f.querySelector('[data-focus-zone]')?.dataset.focusZone ?? null,
+        focusHemi: f.querySelector('[data-focus-zone]')?.dataset.focusHemisphere ?? null,
+        pick: f.querySelector('[data-pick-zone]')?.dataset.pickZone ?? null,
+        pickHemi: f.querySelector('[data-pick-zone]')?.dataset.pickHemisphere ?? null,
+        hover: f.querySelector('[data-hover-zone]')?.dataset.hoverZone ?? null,
+        role: f.getAttribute('role'),
+        tabIndex: f.tabIndex,
         boundary: f.querySelector('[data-boundary]')?.dataset.boundary ?? null,
+        boundaries: [...f.querySelectorAll('[data-boundary]')].map((b) => b.dataset.boundary).sort((a, b) => a - b),
+        linked: f.classList.contains('border-accent/70'),
         equator: f.querySelector('[data-equator]')?.dataset.equator ?? null,
         greenwich: Boolean(f.querySelector('[data-greenwich]')),
         gridLines: f.querySelectorAll('[data-grid-line]').length,
         zoneNumbers: [...f.querySelectorAll('[data-zone-number]')].map((z) => z.dataset.zoneNumber),
         chips,
         top: topRow && topRow.offsetParent ? [...topRow.querySelectorAll('[data-top-label]')].map((t) => t.textContent.trim()) : [],
+        topRects: topRow && topRow.offsetParent
+          ? [...topRow.querySelectorAll('[data-top-label]')].map((t) => {
+              const b = t.getBoundingClientRect();
+              return { key: t.dataset.topLabel, left: b.left, right: b.right };
+            })
+          : [],
+        // underlined labels above the frame: orange = verified / crossed, dark = a checked wrong pick
+        topMarked: topRow && topRow.offsetParent
+          ? [...topRow.querySelectorAll('[data-top-label]')]
+              .filter((t) => t.classList.contains('border-accent') || t.classList.contains('border-brand-dark'))
+              .map((t) => `${t.classList.contains('border-accent') ? 'accent' : 'pick'}:${t.textContent.trim()}`)
+          : [],
       };
     };
+    const verdicts = [...root.querySelectorAll('[data-verdict-mark]')].map((m) => `${m.closest('[data-choice]')?.dataset.choice}:${m.dataset.verdictMark}`);
     return {
       mode: root.dataset.mode,
       lead: root.dataset.lead,
@@ -122,9 +161,16 @@ const state = (page) =>
         range: txt('[data-value="range"]'),
         latlon: txt('[data-value="latlon"]'),
       },
-      rowPressed: root.querySelector('[data-zone-row] [aria-pressed="true"]')?.textContent.trim() ?? null,
+      choice: { zone: txt('[data-choice="zone"]'), hemi: txt('[data-choice="hemisphere"]') },
+      announce: txt('[data-announce]'),
+      verdicts,
+      taskState: root.dataset.taskState ?? null,
+      taskData: txt('[data-task-data]'),
+      hints: Object.fromEntries([...root.querySelectorAll('[data-hint]')].map((h) => [h.dataset.hint, Number(h.dataset.level)])),
+      checkEnabled: (() => { const b = [...root.querySelectorAll('button')].find((x) => x.textContent.trim() === 'בדיקת הבחירה'); return Boolean(b && !b.disabled && b.getAttribute('aria-disabled') !== 'true'); })(),
+      showAnswer: Boolean(root.querySelector('[data-show-answer]')),
       explain: txt('[data-explain]'),
-      feedback: txt('[data-feedback]:not([data-feedback="info"])'),
+      feedback: txt('[data-practice-feedback] [data-feedback]') ?? txt('[data-practice="done"] [data-feedback]'),
       prompt: txt('[data-prompt]'),
       world: frame('world'),
       inset: frame('inset'),
@@ -160,6 +206,12 @@ function consistent(s, label, { grid = false } = {}) {
   }
   if (s.world.focus !== String(r.zone)) bad.push(`world highlight ${s.world.focus}`);
   if (!grid && s.inset.focus !== String(r.zone)) bad.push(`inset highlight ${s.inset.focus}`);
+  if (!grid) {
+    // the leading world map names the point's hemisphere beside the equator
+    const named = s.world.chips.filter((c) => c.key.startsWith('hemi-') && c.accent).map((c) => c.key);
+    if (named.join() !== `hemi-${r.hemisphere}`) bad.push(`hemisphere chip ${named}`);
+    if (!s.inset.linked) bad.push('enlargement frame not linked (orange) to the locator box');
+  }
   for (const k of ['world', 'inset']) {
     const fr = s[k];
     const want = px(fr, s.lat, s.lon);
@@ -189,6 +241,11 @@ function labelsClear(s, label) {
         const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
         if (ox > 2 && oy > 2 && !(a.furniture && b.furniture)) bad.push(`${k}:${a.key}×${b.key}`);
       }
+    // the label row above the frame (zone numbers / boundary longitudes)
+    const ts = fr.topRects;
+    for (let i = 0; i < ts.length; i++)
+      for (let j = i + 1; j < ts.length; j++)
+        if (Math.min(ts[i].right, ts[j].right) - Math.max(ts[i].left, ts[j].left) > 1) bad.push(`${k} top:${ts[i].key}×${ts[j].key}`);
   }
   if (bad.length) fail(`${label} labels: ${bad.join(', ')}`);
   else ok(`${label}: no label overlaps, all inside their frames`);
@@ -259,7 +316,7 @@ const { ctx, page, errors } = await open();
 // the block: heading, lead, explainer
 await align(page, '[data-block="utm"] h3');
 await shot(page, '00-block-top');
-const lead = await page.locator('[data-block="utm"] > p').first().textContent();
+const lead = await page.locator('[data-block="utm"] h3 + p').first().textContent();
 check(lead.includes('מרקטור רוחבי') && lead.includes('60 פלחים') && lead.includes('במטרים'), 'lead: transverse Mercator, 60 zones, metres');
 check(!lead.includes('גלילי הפוך'), 'lead: no unexplained "גלילי הפוך"');
 
@@ -298,13 +355,22 @@ let s = await state(page);
 check(s.lat === OPENING.lat && s.lon === OPENING.lon, 'opening point 32°N 33°E');
 let r = consistent(s, 'opening');
 check(r.zone === 36 && r.hemisphere === 'N' && s.insetKind === 'zones', 'opening: zone 36, N, the zones view');
-check(s.title === 'באיזה פלח ובאיזה חצי כדור נמצאת הנקודה?' && s.instruction === 'בחרו נקודה במפה ובדקו באיזה פלח היא נמצאת.', `opening: one question title and one instruction (${s.title} / ${s.instruction})`);
+check(
+  s.title === 'באיזה פלח ובאיזה חצי כדור נמצאת הנקודה?' && s.instruction === 'לחצו במפה או גררו את A. הפלח שלה מודגש, וחצי הכדור מסומן ליד קו המשווה.',
+  `opening: one question title and one instruction that says where the answer shows on the map (${s.title} / ${s.instruction})`,
+);
+check(
+  s.world.chips.some((c) => c.key === 'hemi-N' && c.accent) && s.world.chips.some((c) => c.key === 'hemi-S' && !c.accent),
+  'opening: the world map marks N (the point\'s side) and S beside the equator',
+);
 check(s.world.rect.width > s.inset.rect.width * 1.6, `zones view: the world map leads (${Math.round(s.world.rect.width)} vs ${Math.round(s.inset.rect.width)} px)`);
 check(s.inset.zoneNumbers.join() === '35,36,37', `opening enlargement shows zones 35, 36, 37 (${s.inset.zoneNumbers})`);
 check(['24°E', '30°E', '36°E', '42°E'].every((t) => s.inset.top.includes(t)), `the zone's boundaries are on the enlargement, not in a table (${s.inset.top})`);
 check(s.explain.includes('30°E') && s.explain.includes('36°E') && s.explain.includes('פלח 36') && s.explain.includes('מצפון לקו המשווה'), `opening explanation: why zone 36 and N (${s.explain})`);
 check(!s.world.chips.some((c) => /84°N|80°S/.test(c.text)) && s.world.chips.some((c) => c.text === 'קו המשווה'), 'world map: the equator named; the coverage numbers moved to "מידע נוסף"');
-check((await page.locator(`${ROOT} [data-locator-note]`).textContent()).includes('מפת איתור'), 'the world map is captioned as a locator map');
+const note = await page.locator(`${ROOT} [data-locator-note]`).textContent();
+check(note.includes('מפת איתור') && note.includes('לא מפת') && note.includes('מוגדלת בתקריב'), `the world map is captioned as a locator map, and its orange frame as the enlargement (${note})`);
+check(s.inset.linked && !s.world.linked, 'the enlargement wears the locator box\'s orange on its frame');
 const more = page.locator(`${ROOT} [data-more]`);
 check((await more.getAttribute('data-state')) === 'closed' && !(await page.locator(`${ROOT} [data-more] li`).count()), '"מידע נוסף על UTM" is closed');
 check((await page.locator(`${ROOT} [data-secondary] button`).count()) === 2 && (await page.locator(`${ROOT} .bg-cta-ember`).count()) === 0, 'zones view: two secondary actions, no competing primary button');
@@ -326,6 +392,7 @@ s = await state(page);
 r = consistent(s, 'after crossing 36°E');
 check(s.inset.boundary === '36' && s.world.boundary === '36', 'crossed boundary stays marked in both maps');
 check(s.explain.includes('36°E') && s.explain.includes('לפלח 37'), `crossing explanation: 36°E, into zone 37 (${s.explain})`);
+check(s.inset.topMarked.includes('accent:36°E') && !s.inset.chips.some((c) => c.text.includes('גבול')), `crossed boundary named once, above the frame (${s.inset.topMarked})`);
 check(s.inset.top.includes('42°E') && s.inset.zoneNumbers.includes('38'), 'enlargement recentred on zone 37 after release');
 labelsClear(s, 'crossing');
 await shot(page, '05-crossing');
@@ -336,6 +403,7 @@ await clickAt(page, 'world', -20, beforeEq.lon);
 s = await state(page);
 r = consistent(s, 'click south of the equator');
 check(r.hemisphere === 'S' && s.world.equator === 'highlight' && s.explain.includes('קו המשווה'), `equator crossed: S, the equator highlighted (${s.explain})`);
+check(s.world.chips.some((c) => c.key === 'hemi-S' && c.accent) && !s.world.chips.some((c) => c.key === 'hemi-N' && c.accent), 'equator crossed: the world map now marks S');
 await shot(page, '06-south');
 
 // presets
@@ -435,75 +503,278 @@ await page.locator(`${ROOT} [data-more] button`).click();
 await settle(page, 400);
 await align(page, ROOT);
 
-// Greenwich practice
+// ── Practice (map pass 2026-10-26): the map is the tool; a choice before anything is judged ──
+/** Nothing in the maps marks an answer: no verified zone, no accent zone number or hemisphere. */
+const nothingAnswered = (s) =>
+  s.world.focus === null &&
+  s.inset.focus === null &&
+  !s.world.chips.some((c) => c.key.startsWith('hemi-') && c.accent) &&
+  !s.inset.chips.some((c) => (c.key.startsWith('zone') || c.key.startsWith('hemi-')) && c.accent);
+const focusWorld = () => page.locator(`${ROOT} [data-frame="world"]`).focus();
+
+// Greenwich
+const explorePoint = await state(page);
 await clickText(page, 'מצאו את גריניץ׳');
 s = await state(page);
-check(s.mode === 'greenwich' && s.prompt.includes('גבולו המערבי הוא קו גריניץ׳'), 'Greenwich practice opens with the unambiguous prompt');
+check(s.mode === 'greenwich' && s.prompt.includes('הגבול המערבי') && s.prompt.includes('לחצו במפה') && s.taskState === 'open', 'Greenwich practice opens: the question, and that the choice is made on the map');
 check(s.world.greenwich && s.inset.greenwich, 'Greenwich meridian marked on both maps');
-await page.locator(`${ROOT} [data-zone-button="30"]`).click();
+check(s.inset.zoneNumbers.join() === '29,30,31,32', `zone numbers are read on the map: 29–32 in the enlargement (${s.inset.zoneNumbers})`);
+check(['6°W', '0°', '6°E'].every((t) => s.inset.top.includes(t)), `boundary longitudes above the enlargement (${s.inset.top})`);
+check(s.inset.chips.some((c) => c.key === 'west') && s.inset.chips.some((c) => c.key === 'east'), 'the enlargement names west and east, which "the western boundary" needs');
+check(nothingAnswered(s) && s.world.pick === null && s.choice.zone === '—' && !s.checkEnabled, 'nothing chosen: no choice drawn, nothing answered, "בדיקת הבחירה" disabled');
+check(s.world.role === 'application' && s.world.tabIndex === 0, 'the world map takes the keyboard in practice');
+labelsClear(s, 'Greenwich open');
+await fits(page, 'fit 1440 × 1122, Greenwich open');
+await shot(page, '14-greenwich-open');
+
+// hover: where a click would choose — not a choice
+const hp = px(s.inset, 52, 3);
+await page.mouse.move(hp.x, hp.y);
+await settle(page, 300);
+s = await state(page);
+check(s.inset.hover === '31' && s.world.hover === '31' && s.choice.zone === '—', 'hovering a strip outlines it on both maps; nothing is chosen');
+await shot(page, '14b-greenwich-hover');
+
+await clickAt(page, 'inset', 50, -3);
+s = await state(page);
+check(s.choice.zone === '30' && s.inset.pick === '30' && s.world.pick === '30' && s.inset.pickHemi === null, 'a click in the enlargement chooses zone 30: drawn on both maps, read back in the card');
+check(s.inset.chips.some((c) => c.key === 'zone30' && c.pick) && s.world.topMarked.includes('pick:30'), "the chosen zone's number is marked on the map (pick tone)");
+check(nothingAnswered(s) && !s.verdicts.length && s.feedback === null && s.checkEnabled, 'the choice is not judged before the check: no ✓ / ✕, no feedback, the answer not drawn');
+check(s.lat === explorePoint.lat && s.lon === explorePoint.lon, 'a practice click does not move the exploration point');
+const insetBefore = s.inset.rect;
+await shot(page, '15-greenwich-choice');
 await clickText(page, 'בדיקת הבחירה');
 s = await state(page);
-check(s.feedback?.includes('מסתיים') && s.inset.boundary === '0', 'zone 30: it ends at 0°, the boundary marked');
+check(s.taskState === 'tried' && s.verdicts.join() === 'zone:wrong' && s.hints.zone === 1, `zone 30 checked: ✕ on the choice, hint 1 (${s.verdicts})`);
+check(
+  s.feedback?.includes('ממערב לקו גריניץ׳') && s.feedback.includes('המזרחי') && s.feedback.includes('השמאלי'),
+  `hint 1 for 30: Greenwich is its EASTERN edge; a western edge is the strip's left side on the map (${s.feedback})`,
+);
+check(s.inset.boundaries.includes('0') && s.inset.focus === null && s.inset.pick === '30', 'hint 1: the Greenwich line pointed at; the answer still not drawn');
+check(Math.abs(s.inset.rect.top - insetBefore.top) < 0.5 && Math.abs(s.inset.rect.left - insetBefore.left) < 0.5, 'the feedback appears under the enlargement: the maps do not move');
+check(!s.checkEnabled && !s.showAnswer, 'the same choice cannot be checked again; no answer offered after one try');
+check((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'בדיקת הבחירה', 'after a wrong check the keyboard focus stays on the check button');
 await page.waitForTimeout(600);
-check((await page.locator('[data-verdict]').textContent()).includes('לא נכון'), 'zone 30: a short verdict for screen readers');
+check((await page.locator(`${ROOT} [data-verdict]`).textContent()).includes('לא נכון'), 'zone 30: a short verdict for screen readers');
 labelsClear(s, 'Greenwich 30');
-await shot(page, '14-greenwich-30');
-await page.locator(`${ROOT} [data-zone-button="33"]`).click();
+await fits(page, 'fit 1440 × 1122, Greenwich hint 1');
+await shot(page, '16-greenwich-30-hint1');
+
+// keyboard: → → on the world map, from 30 to 32
+await focusWorld();
+await page.keyboard.press('ArrowRight');
+await page.keyboard.press('ArrowRight');
+await settle(page, 700);
+s = await state(page);
+check(s.choice.zone === '32' && s.world.pick === '32' && !s.verdicts.length, `keyboard: → → on the world map chooses 32; the ✕ drops until the next check (${s.choice.zone})`);
+check(s.announce?.includes('בחרתם: פלח 32') && s.announce.includes('6°E') && s.announce.includes('12°E'), `the keyboard choice is announced with the zone's longitudes (${s.announce})`);
+const ring = await page.locator(`${ROOT} [data-frame="world"]`).evaluate((e) => getComputedStyle(e).boxShadow);
+check(ring !== 'none', 'the keyboard focus on the map is visible (focus ring)');
+await shot(page, '16b-greenwich-keyboard');
 await clickText(page, 'בדיקת הבחירה');
 s = await state(page);
-check(s.feedback?.includes('12°E') && s.feedback.includes('18°E') && s.inset.focus === '33', 'zone 33: its range shown, another try');
-await page.locator(`${ROOT} [data-zone-button="31"]`).click();
+check(
+  s.hints.zone === 2 && s.feedback.includes('רמז') && s.feedback.includes('הקו השמאלי שלה') && !/פלח 31/.test(s.feedback),
+  `zone 32: hint 2 points at the map — the strip whose left line is Greenwich — without naming 31 (${s.feedback})`,
+);
+check(s.inset.topMarked.includes('accent:0°') && s.showAnswer, 'hint 2: 0° underlined above the enlargement; "הצגת התשובה" offered after two failed checks');
+labelsClear(s, 'Greenwich hint 2');
+await shot(page, '17-greenwich-32-hint2');
+await focusWorld();
+await page.keyboard.press('ArrowLeft');
+await settle(page, 300);
 await clickText(page, 'בדיקת הבחירה');
 s = await state(page);
-check(s.feedback?.includes('נכון') && s.feedback.includes('6°E') && s.inset.focus === '31', 'zone 31: right, 0°–6°E explained');
+check(
+  s.taskState === 'solved' && s.feedback?.includes('נכון') && s.feedback.includes('6°E') && s.feedback.includes('המערבי') && s.inset.focus === '31',
+  'zone 31: right — Greenwich is its western (left) edge, it runs to 6°E; drawn as verified',
+);
+check(s.verdicts.join() === 'zone:right' && s.inset.pick === null, 'zone 31: ✓ on the choice; the verified zone replaces the pick tone');
 await page.waitForTimeout(300);
 const focused = await page.evaluate(() => document.activeElement?.textContent?.trim());
 check(focused === 'לנקודות חדשות', `after a right answer focus moves to the next action (${focused})`);
-check((await page.locator('[data-verdict]').textContent()).startsWith('נכון'), 'zone 31: verdict announced');
-await shot(page, '15-greenwich-right');
+check((await page.locator(`${ROOT} [data-verdict]`).textContent()).startsWith('נכון'), 'zone 31: verdict announced');
+await clickAt(page, 'inset', 50, -3);
+s = await state(page);
+check(s.choice.zone === '31', 'a verified task takes no new choice from the map');
+await shot(page, '18-greenwich-right');
 
-// transfer practice
+// transfer 1 — Tokyo: 53S (both parts wrong), 53N (zone again, hemisphere right), then 54N
 await clickText(page, 'לנקודות חדשות');
-s = await state(page);
-check(s.mode === 'transfer' && s.inset.zoneNumbers.length === 0 && s.world.focus === null, 'transfer: no zone numbers or highlight before the answer');
-check(s.world.tip?.label === 'B', 'transfer: the new point is B');
 const tokyo = readUtm(TRANSFER[0]);
-await clickAt(page, 'world', 20, 135); // zone 53
-await page.locator(`${ROOT} [data-practice] [role="radio"]`, { hasText: 'דרומי' }).click();
+s = await state(page);
+check(s.mode === 'transfer' && s.world.tip?.label === 'B' && s.inset.tip?.label === 'B' && s.taskState === 'open', 'transfer: the new point is B, pinned on both maps');
+check(s.taskData === 'נקודה B · טוקיו', `the task names the place; where it is is read on the map (${s.taskData})`);
+check(
+  s.inset.zoneNumbers.join() === '53,54,55' && ['132°E', '138°E', '144°E'].every((t) => s.inset.top.includes(t)),
+  `zone numbers and boundaries readable in the enlargement (${s.inset.zoneNumbers} / ${s.inset.top})`,
+);
+check(nothingAnswered(s) && s.choice.zone === '—' && s.choice.hemi === '—', 'before a choice: nothing answered, the card shows no choice');
+check(
+  s.world.chips.some((c) => c.key === 'hemi-N' && !c.accent && !c.pick) && s.world.chips.some((c) => c.key === 'hemi-S' && !c.accent && !c.pick),
+  'which side of the equator is N / S stays on the map, unmarked',
+);
+labelsClear(s, 'transfer open');
+await fits(page, 'fit 1440 × 1122, transfer open');
+await shot(page, '19-transfer-open');
+await clickAt(page, 'world', 20, 135);
+s = await state(page);
+check(
+  s.choice.zone === '53' && s.choice.hemi?.includes('צפוני') && s.world.pick === '53' && s.world.pickHemi === 'N' && s.inset.pick === '53',
+  'a click on the world map chooses a cell: zone 53 north of the equator (53N), drawn on both maps',
+);
+check(s.world.chips.some((c) => c.key === 'hemi-N' && c.pick) && nothingAnswered(s) && !s.verdicts.length, 'the chosen side is marked beside the equator in the pick tone; nothing is judged');
+await shot(page, '20-transfer-choice');
+await clickAt(page, 'world', -20, 135);
+s = await state(page);
+check(s.world.pickHemi === 'S' && s.inset.pickHemi === 'S' && s.choice.hemi?.includes('דרומי'), 'clicking south of the equator chooses 53S: the south half, outside the enlargement window, drawn on the world map');
 await clickText(page, 'בדיקת הבחירה');
 s = await state(page);
-check(s.feedback?.includes('53') && s.feedback.includes('138°E') && s.feedback.includes('מצפון לקו המשווה'), 'transfer wrong: the boundary and the equator explained');
-check(s.world.boundary === '138' && s.world.equator === 'highlight', 'transfer wrong: boundary 138°E and the equator marked');
-labelsClear(s, 'transfer wrong');
-await shot(page, '16-transfer-wrong');
-await page.locator(`${ROOT} [data-zone-button="54"]`).click();
-await page.locator(`${ROOT} [data-practice] [role="radio"]`, { hasText: 'צפוני' }).click();
+check(s.hints.zone === 1 && s.hints.hemi === 1 && s.verdicts.sort().join() === 'hemisphere:wrong,zone:wrong', `53S checked: ✕ on both parts, hint 1 for each (${s.verdicts})`);
+check(
+  s.feedback.includes('132°E') && s.feedback.includes('138°E') && !s.feedback.includes('144°E') && s.feedback.includes('קווים מקווקווים'),
+  `hint 1, zone: the chosen zone's own boundaries, and where to look in the enlargement (${s.feedback})`,
+);
+check(
+  s.feedback.includes('מעל הקו המודגש או מתחתיו') && !s.feedback.includes('מצפון לקו המשווה') && s.world.equator === 'highlight' && s.inset.equator === 'highlight',
+  'hint 1, hemisphere: look at B against the highlighted equator — not which side',
+);
+check(s.world.boundaries.length === 0 && s.world.focus === null, 'hint 1: no boundary of B and no answer drawn');
+labelsClear(s, 'transfer hint 1');
+await fits(page, 'fit 1440 × 1122, transfer hint 1 (two hints)');
+await shot(page, '21-transfer-hint1');
+await clickAt(page, 'inset', 38, 133);
 await clickText(page, 'בדיקת הבחירה');
 s = await state(page);
-check(s.feedback?.includes('נכון') && s.feedback.includes(tokyo.eText) && s.feedback.includes(tokyo.nText), 'transfer right: E/N revealed');
-check(s.world.focus === '54' && s.inset.zoneNumbers.includes('54'), 'transfer right: the zone revealed on both maps');
-await shot(page, '17-transfer-right');
-for (const [i, place] of TRANSFER.entries()) {
-  if (i === 0) continue;
-  await clickText(page, 'לנקודה הבאה');
-  const rr = readUtm(place);
-  if (!(await page.locator(`${ROOT} [data-zone-button="${rr.zone}"]`).count())) await clickAt(page, 'world', place.lat, place.lon);
-  if (await page.locator(`${ROOT} [data-zone-button="${rr.zone}"]`).count()) await page.locator(`${ROOT} [data-zone-button="${rr.zone}"]`).click();
-  await page.locator(`${ROOT} [data-practice] [role="radio"]`, { hasText: rr.hemisphere === 'N' ? 'צפוני' : 'דרומי' }).click();
-  await clickText(page, 'בדיקת הבחירה');
-  s = await state(page);
-  check(s.feedback?.includes('נכון') && s.world.tip?.label === ['B', 'C', 'D'][i], `transfer ${place.id}: zone ${rr.zone}${rr.hemisphere} accepted`);
-}
+check(
+  s.hints.zone === 2 && s.feedback.includes('רמז') && s.feedback.includes('138°E') && s.feedback.includes('144°E') && !s.feedback.includes(String(tokyo.zone)),
+  `hint 2, zone: B between the marked 138°E and 144°E; the number is read on the map, not given (${s.feedback})`,
+);
+check(
+  s.world.boundaries.join() === '138,144' && s.inset.boundaries.join() === '138,144' && s.inset.topMarked.includes('accent:138°E') && s.inset.topMarked.includes('accent:144°E'),
+  'hint 2: 138°E and 144°E marked on both maps',
+);
+check(
+  s.hints.hemi === 0 && s.feedback.includes('חצי הכדור נכון') && s.verdicts.includes('hemisphere:right') && s.world.chips.some((c) => c.key === 'hemi-N' && c.accent),
+  'the hemisphere checked right: ✓, locked, named on the map',
+);
+check(s.showAnswer, 'two failed checks: "הצגת התשובה" offered');
+labelsClear(s, 'transfer hint 2');
+await fits(page, 'fit 1440 × 1122, transfer hint 2');
+await shot(page, '22-transfer-hint2');
+await clickAt(page, 'world', -30, 141); // south of the equator: the locked hemisphere stays N
+s = await state(page);
+check(s.choice.zone === '54' && s.choice.hemi?.includes('צפוני'), 'with the hemisphere locked, a click changes only the zone (54, still N)');
+await clickText(page, 'בדיקת הבחירה');
+s = await state(page);
+check(
+  s.taskState === 'solved' && s.feedback?.includes('נכון') && s.feedback.includes('54N') && s.feedback.includes('139.69°E') && s.feedback.includes('138°E') && s.feedback.includes('144°E') && s.feedback.includes('35.68°N') && s.feedback.includes('מצפון לקו המשווה'),
+  `right: the point, the zone's boundaries and the equator explain 54N (${s.feedback})`,
+);
+check(s.feedback.includes(tokyo.eText) && s.feedback.includes(tokyo.nText), 'right: then its E / N in that zone');
+check(
+  s.world.focus === '54' && s.world.focusHemi === 'N' && s.inset.focus === '54' && s.verdicts.sort().join() === 'hemisphere:right,zone:right',
+  'right: the cell 54N drawn as verified; ✓ on both parts',
+);
+await shot(page, '23-transfer-right');
+
+// transfer 2 — Buenos Aires: 21N → the zone locks, the hemisphere is hinted; ↓ by keyboard
+await clickText(page, 'לנקודה הבאה');
+const ba = readUtm(TRANSFER[1]);
+s = await state(page);
+check(
+  s.world.tip?.label === 'C' && s.taskState === 'open' && !s.verdicts.length && s.choice.zone === '—' && s.feedback === null && s.world.boundaries.length === 0,
+  'next point C: a fresh task (no choice, verdict, hint or feedback)',
+);
+await clickAt(page, 'world', 20, TRANSFER[1].lon);
+await clickText(page, 'בדיקת הבחירה');
+s = await state(page);
+check(
+  s.feedback?.includes(`הפלח נכון: ${ba.zone}`) && s.hints.hemi === 1 && s.world.focus === String(ba.zone) && s.world.focusHemi === null && s.world.pickHemi === 'N',
+  `${ba.zone}N: the zone verified (its whole strip), the chosen north half still the learner's (${s.feedback})`,
+);
+check(!s.world.chips.some((c) => c.key.startsWith('hemi-') && c.accent), 'the hemisphere stays unnamed until it is verified');
+labelsClear(s, 'zone right, hemisphere wrong');
+await shot(page, '24-transfer-zone-right-hemi-wrong');
+await focusWorld();
+await page.keyboard.press('ArrowLeft');
+await settle(page, 700);
+s = await state(page);
+check(s.choice.zone === String(ba.zone) && s.announce?.includes('הפלח כבר נכון'), `keyboard: the verified zone does not move, and says so (${s.announce})`);
+await page.keyboard.press('ArrowDown');
+await settle(page, 300);
+await clickText(page, 'בדיקת הבחירה');
+s = await state(page);
+check(s.taskState === 'solved' && s.world.chips.some((c) => c.key === 'hemi-S' && c.accent) && s.world.focusHemi === 'S', `↓ chooses the south: ${ba.zone}${ba.hemisphere} accepted`);
+
+// transfer 3 — Nairobi, near the equator: the enlargement names it and its sides; two misses, the answer on request
+await clickText(page, 'לנקודה הבאה');
+const nb = readUtm(TRANSFER[2]);
+s = await state(page);
+check(
+  s.inset.chips.some((c) => c.key === 'eq' && c.text === 'קו המשווה') && s.inset.chips.some((c) => c.key === 'hemi-N') && s.inset.chips.some((c) => c.key === 'hemi-S'),
+  'D is near the equator: the enlargement names it and its N / S sides',
+);
+check(s.inset.zoneNumbers.includes('36') && s.inset.zoneNumbers.includes('37'), `D's neighbourhood: 36 and 37 readable (${s.inset.zoneNumbers})`);
+labelsClear(s, 'transfer near the equator');
+await shot(page, '25-transfer-equator');
+await clickAt(page, 'inset', 1.5, 35);
+s = await state(page);
+check(s.inset.pick === '36' && s.inset.pickHemi === 'N' && s.inset.chips.some((c) => c.key === 'hemi-N' && c.pick), 'in the enlargement a click north of the equator chooses 36N; the enlargement marks the chosen side');
+await clickText(page, 'בדיקת הבחירה');
+await clickAt(page, 'inset', 2, 44);
+await clickText(page, 'בדיקת הבחירה');
+s = await state(page);
+check(s.showAnswer && s.hints.zone === 2 && s.inset.boundaries.join() === '36,42', 'two misses on D (36N, 38N): zone hint 2 (36°E and 42°E marked) and the answer on request');
+check(
+  s.hints.hemi === 2 && s.feedback.includes('מתחת לקו המשווה') && s.feedback.includes('מדרום לו') && s.inset.chips.some((c) => c.key === 'eq' && c.accent),
+  `hemisphere hint 2: on the map D is below the equator, i.e. south of it (${s.feedback})`,
+);
+labelsClear(s, 'D hint 2');
+await fits(page, 'fit 1440 × 1122, D with both hints at level 2');
+await page.locator(`${ROOT} [data-show-answer]`).click();
+await settle(page);
+s = await state(page);
+check(
+  s.taskState === 'shown' && s.feedback?.includes(`התשובה: ${nb.zone}${nb.hemisphere}`) && s.world.focus === String(nb.zone) && s.world.focusHemi === nb.hemisphere,
+  `shown: the answer (${nb.zone}${nb.hemisphere}) in the feedback and on the maps`,
+);
+check(s.inset.pick === '38' && s.inset.pickHemi === 'N' && s.verdicts.sort().join() === 'hemisphere:wrong,zone:wrong', "shown: the learner's own last choice (38N) stays drawn as theirs (✕), apart from the answer");
+await page.waitForTimeout(300);
+check((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'לסיום התרגול', 'shown: focus moves to the way forward');
+labelsClear(s, 'shown');
+await shot(page, '26-transfer-shown');
 await clickText(page, 'לסיום התרגול');
 s = await state(page);
-check(s.mode === 'done' && s.title === 'סיימתם את התרגול', 'practice ends');
-await shot(page, '18-done');
+check(s.mode === 'done' && s.title === 'סיימתם את התרגול' && s.feedback?.includes('3 מתוך 4'), `practice ends with an honest count (${s.feedback})`);
+await shot(page, '27-done');
 
-// back to exploration
+// reset: practice again starts clean
+await clickText(page, 'תרגול מחדש');
+s = await state(page);
+check(
+  s.mode === 'greenwich' && s.taskState === 'open' && s.choice.zone === '—' && !s.verdicts.length && s.feedback === null && s.inset.pick === null && s.world.boundaries.length === 0,
+  'reset ("תרגול מחדש"): task 1 again, no choice, verdict, hint or mark left',
+);
+await focusWorld();
+await page.keyboard.press('ArrowRight');
+await settle(page, 300);
+s = await state(page);
+check(s.choice.zone === '29', `keyboard from nothing: → starts at the enlargement's west edge (29), not at the answer (${s.choice.zone})`);
+await clickText(page, 'בדיקת הבחירה');
+s = await state(page);
+check(s.hints.zone === 1 && !s.showAnswer, 'after the reset the hints start again from 1');
+
+// back to exploration, from the practice header
 await clickText(page, 'חזרה לחקירה');
 s = await state(page);
 check(s.mode === 'explore' && s.lat === exploreKept.lat && s.lon === exploreKept.lon && s.insetKind === 'zones', 'back to exploration: point and view kept');
 consistent(s, 'exploration after practice');
+check(s.world.pick === null && s.world.hover === null && s.world.role === 'group', "exploration: no practice marks; clicks place the point again");
+await clickText(page, 'מצאו את גריניץ׳');
+s = await state(page);
+check(s.taskState === 'open' && s.feedback === null && s.choice.zone === '—', 'entering practice again starts it clean');
+await clickText(page, 'חזרה לחקירה');
 
 // text: 16 px black body copy
 const body = await page.$$eval(`[data-block="utm"] p, [data-block="utm"] li`, (ps) =>

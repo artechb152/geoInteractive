@@ -94,24 +94,32 @@ export const TERRAIN = {
   ],
 } as const;
 
-/** The practice cases: a place, the datum its numbers were delivered in, and the target map's datum. */
+/** What the learner does with the source numbers before sending them to the target map (practice, step 2). */
+export type Action = 'keep' | 'relabel' | 'AtoB' | 'BtoA';
+
+/**
+ * Practice step 3, the calculation: the pair the chosen conversion gives, or one of two slips in
+ * applying it — the two shifts swapped between E and N, or only E converted.
+ */
+export type CalcKind = 'right' | 'swapped' | 'partial';
+
+/**
+ * A practice case: a place, the datum its numbers were delivered in and the target map's datum. The
+ * learner decides in three steps before anything is shown on the map — do the datums match, what to
+ * do with the numbers, and (for a conversion) which pair it gives — and the feedback names the step
+ * that went wrong (datumField.ts, diagnose).
+ */
 export type PracticeCase = {
   readonly id: 'same' | 'reverse';
   readonly place: PlaceId;
   readonly source: Datum;
   readonly target: Datum;
-  /** Three output pairs, in a set order (the right one is not always in the same slot). */
-  readonly options: readonly EN[];
-  readonly feedback: {
-    readonly right: string;
-    /** For a pair that copies the source numbers unchanged. */
-    readonly kept?: string;
-    /** For a pair with SHIFT added (B→A applied) or subtracted (A→B applied). */
-    readonly plus?: string;
-    readonly minus?: string;
-    /** For any other wrong pair. */
-    readonly wrong?: string;
-  };
+  /** The actions offered, in a set order ("שינוי הכיתוב בלבד" only where the two labels differ). */
+  readonly actions: readonly Action[];
+  /** The order of the calculation pairs (the right one is not always in the same slot). */
+  readonly calcOrder: readonly CalcKind[];
+  /** The explanation of the right answer: why this action, for this pair of datums. */
+  readonly right: string;
 };
 
 export const CASES: readonly PracticeCase[] = [
@@ -120,30 +128,17 @@ export const CASES: readonly PracticeCase[] = [
     place: 'bridge',
     source: 'A',
     target: 'A',
-    options: [
-      { e: 1164, n: 752 },
-      { e: 1200, n: 800 },
-      { e: 1236, n: 848 },
-    ],
-    feedback: {
-      right: 'המקור והמפה משתמשים כאן באותו דאטום. אין צורך בהמרה; המספרים המקוריים כבר מצביעים על הגשר.',
-      wrong: 'שיניתם מספרים אף שהדאטום כבר תואם. בהדגמה הזאת השינוי מזיז את הסימון 60 מטר מהגשר.',
-    },
+    actions: ['keep', 'AtoB', 'BtoA'],
+    calcOrder: ['swapped', 'right', 'partial'],
+    right: 'המקור ומפת היעד באותו דאטום, ולכן אין מה להמיר: המספרים המקוריים כבר מצביעים על הגשר.',
   },
   {
     id: 'reverse',
     place: 'junction',
     source: 'B',
     target: 'A',
-    options: [
-      { e: 1090, n: 760 },
-      { e: 1054, n: 712 },
-      { e: 1018, n: 664 },
-    ],
-    feedback: {
-      right: 'כאן המקור הוא B והיעד הוא A, ולכן כיוון ההמרה הפוך מהדוגמה הקודמת. המספרים השתנו והסימון נשאר בצומת.',
-      kept: 'הועתקו מספרי B למפה שקוראת אותם כ־A. הפער נשאר 60 מטר.',
-      minus: 'הופעלה המרה בכיוון A→B אף שהנתונים כבר ב־B. בהמחשה הזאת הפער גדל ל־120 מטר.',
-    },
+    actions: ['keep', 'relabel', 'AtoB', 'BtoA'],
+    calcOrder: ['partial', 'swapped', 'right'],
+    right: 'המקור ב־B ומפת היעד ב־A, ולכן ממירים B→A — בכיוון ההפוך מההדגמה. המספרים השתנו, והסימון נשאר בצומת.',
   },
 ];

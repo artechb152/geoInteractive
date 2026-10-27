@@ -62,6 +62,13 @@ async function shot(name) {
   console.log(id, name, JSON.stringify(await readout()));
 }
 const btn = (name) => card.getByRole('button', { name, exact: true });
+// a click that turns the primary button ("בדיקה" ↔ "נקודה הבאה") or opens a task; the panel lets presses go for
+// 500 ms after it changes (GlobeExplorer SETTLE_MS — no double click past a verdict), so wait around it
+const turn = async (name) => {
+  await page.waitForTimeout(600);
+  await btn(name).click();
+  await page.waitForTimeout(600);
+};
 const task = async () => card.evaluate((el) => ({ kind: el.dataset.taskKind, lat: +el.dataset.taskLat, lon: +el.dataset.taskLon }));
 const choice = (i) => card.locator(`[data-choice-option="${i}"]`);
 // which choice is right / wrong: read from the page's own model through the dev hook
@@ -70,13 +77,21 @@ const answerIndex = () => page.evaluate(() => window.__geoGlobeAnswer?.());
 await shot('explore');
 
 // into practice: draw tasks until one of each kind has been seen
-await btn('לתרגול').click();
+await turn('לתרגול');
 let t = await task();
 await shot(`task-${t.kind}`);
 for (let guard = 0; guard < 12 && t.kind !== 'find'; guard++) {
-  // answer the read task wrong three times to move on
-  for (let i = 0; i < 3; i++) await btn('בדיקה').click();
-  await btn('נקודה הבאה').click();
+  // answer the read task wrong three times to move on — three different answers (the same one
+  // checked again is no new try)
+  const lat = card.getByRole('spinbutton', { name: /רוחב/ });
+  for (let i = 0; i < 3 && !(await btn('נקודה הבאה').isVisible()); i++) {
+    await btn('בדיקה').click();
+    if (await lat.isVisible()) {
+      await lat.focus();
+      await page.keyboard.press('ArrowUp');
+    }
+  }
+  await turn('נקודה הבאה');
   t = await task();
 }
 await shot('find-open');
@@ -92,12 +107,12 @@ await btn('בדיקה').click();
 await shot('find-hit');
 
 // a read task
-await btn('נקודה הבאה').click();
+await turn('נקודה הבאה');
 t = await task();
 for (let guard = 0; guard < 12 && t.kind !== 'read'; guard++) {
   await choice(await answerIndex()).click();
   await btn('בדיקה').click();
-  await btn('נקודה הבאה').click();
+  await turn('נקודה הבאה');
   t = await task();
 }
 await shot('read-open');
@@ -120,7 +135,7 @@ if (await btn('בדיקה').isVisible()) {
 await shot('read-hit');
 
 // picking by keyboard: Tab into the letters, arrows move the choice (and turn the globe)
-await btn('נקודה הבאה').click();
+await turn('נקודה הבאה');
 t = await task();
 if (t.kind === 'find') {
   await choice(0).focus();

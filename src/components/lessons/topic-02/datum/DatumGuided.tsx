@@ -1,43 +1,46 @@
 'use client';
 
-/* ─────────────── דאטום: התאמת האליפסואיד לכדור הארץ — guided 3-D ───────────────
-   Replaces the 2-D DatumFit block of CoordinatesScene (deck "מבוא לגיאודזיה
-   חלק א׳", slides 15–20 — no other source). Reference:
-   design/mockups/datum-concepts/01-guided-3d-site-palette.png; briefs:
-   claude-guided-3d-prompt.md, and for what each action means
-   claude-interaction-and-learning-refinement-prompt.md.
+/* ─────────────── דאטום: אליפסואיד ועיגון — guided 3-D ───────────────
+   Lesson 2, tasks 14–15 (2026-10-26): what the datum adds to the choice of an
+   ellipsoid, and how datums differ. Built on the guided 3-D globe (deck
+   "מבוא לגיאודזיה חלק א׳", slides 15–20; reference
+   design/mockups/datum-concepts/01-guided-3d-site-palette.png).
 
    Layout: the lesson's guided-demo pattern (OnboardingScene, 32 : 68) — three
    compact stations on the right, followed by the active station's controls
-   and feedback; on the left the live globe and linked close-up. During the
-   taller manual experiment, controls and feedback sit below the globe.
-   One action per station:
-   1. "גוף הייחוס" — choose a surface to tell the three bodies apart;
-   2. "מיקום וכיוון" — one demo button (shift → rotate → scale, each phase
-      changing only its own parameter) and an optional four-parameter
-      experiment behind "נסו בעצמכם";
-   3. "עולמי ומקומי" — global or local, applied at once, read at two fixed
-      check points.
-   The accordion panels keep their natural content height.
-   No score is shown: the original 0–100 measure is a schematic distance to
-   the computed fit, not a geodetic accuracy or a measure of learning
-   (datumGeometry keeps it for the tests). The deck's sentences are kept
-   except where the brief approved a focused rewording (listed in
-   design/docs/assumptions.md, 2026-10-12). */
+   and feedback; on the left the live globe, its reference marks (the Earth's
+   centre and rotation axis, the ellipsoid's own centre and axes, the dashed
+   outline of the pose it is compared with) and their legend.
+   1. "אותו אליפסואיד, עיגון אחר" — two anchorings of one ellipsoid: the size
+      and the shape stay, the centre and the axes move. The reference body
+      versus its anchoring;
+   2. "דאטום עולמי ומקומי" — the geocentric global datum against a local one
+      with the same ellipsoid, read at two fixed check points with the
+      close-up;
+   3. "בדיקה: מה השתנה?" — three pairs (the anchoring, the ellipsoid, both),
+      with feedback that explains what to look at.
+   Removed on 2026-10-26: the shift → rotate → scale demo and its four-slider
+   experiment (a visual fit to the geoid is not what defines a datum, and the
+   scale phase changed the ellipsoid, not its anchoring), and the surface
+   picker (the screen before this one teaches the bodies). The seven
+   parameters moved to the "הרחבה" card below: they convert coordinates
+   between datums; they do not define one. No score is shown. Copy changes
+   are listed in design/docs/assumptions.md (2026-10-26). */
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/Icon';
 import { ModelLoading } from '@/components/lesson/ModelLoading';
-import { RANGE, computeBest, gapAt, type BestFits, type DatumMode, type Pose } from './datumGeometry';
+import { gapAt, type DatumMode } from './datumGeometry';
 import {
-  PHASES, PROBES, datumReducer, demoPose, initialDatumState, inspectOf, isAnimating, lookOf, phaseAt, phaseStart, viewPose,
-  type DatumAction, type DatumState, type Guide, type Phase, type Probe, type Step, type Surface,
+  CHECK, DATUM_POSE, PROBES, checkComplete, datumReducer, initialDatumState, inspectOf, isAnimating, lookOf, otherPose, solved, viewPose,
+  type Anchor, type Change, type Guide, type Look, type Probe, type Step, type Surface,
 } from './datumDemo';
 import { GapInset, SectionSvg } from './DatumSection';
-import { GlobeOverlays, INSET, MARKER_R, makeOverlayRefs } from './datumOverlays';
+import { GlobeOverlays, GuideLegend, INSET, MARKER_R, makeOverlayRefs } from './datumOverlays';
 import { FitScreen } from '../coordinates1Fit';
 
 const DatumGlobe3D = dynamic(() => import('./DatumGlobe3D'), { ssr: false, loading: () => null });
@@ -60,87 +63,94 @@ function L({ children }: { children: React.ReactNode }) {
 const H3 = 'font-display text-2xl font-bold leading-tight text-fg sm:text-3xl mb-2 text-balance';
 const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 const BODY = 'text-base leading-relaxed text-black';
+const NOTE = 'text-sm leading-snug text-fg-muted';
+/** Each station's feedback slot holds its tallest state (station 1 with the comparison, station 3's last
+    answer), so an answer or a choice never resizes the card, the stage or the globe. */
+const FEEDBACK_MIN_H: Record<Step, string> = { 0: 'min-h-[200px]', 1: '', 2: 'min-h-[176px]' };
 
-const DATUM_MODES: { id: DatumMode; label: string; body: string }[] = [
-  { id: 'global', label: 'דאטום עולמי', body: 'בדאטום עולמי מתאימים את האליפסואיד לצורת כדור הארץ כולו.' },
-  { id: 'local', label: 'דאטום מקומי', body: 'בדאטום מקומי מתאימים את האליפסואיד לאזור מסוים, המסומן כאן בקו עבה.' },
+const STEPS: { title: string }[] = [{ title: 'אותו אליפסואיד, עיגון אחר' }, { title: 'דאטום עולמי ומקומי' }, { title: 'בדיקה: מה השתנה?' }];
+
+const SURFACE_LABEL: Record<Surface, string> = { surface: 'פני השטח', geoid: 'גיאואיד', ellipsoid: 'אליפסואיד' };
+/** The marks' legend: upper left of the stage, under the surface label (illustration side, not mirrored). */
+const LEGEND_POS: React.CSSProperties = { left: 0, top: 60 };
+
+/* ── station 1 ── */
+const ANCHORS: { id: Anchor; label: string }[] = [
+  { id: 'a', label: 'עיגון א׳' },
+  { id: 'b', label: 'עיגון ב׳' },
+];
+const ANCHOR_LABEL = Object.fromEntries(ANCHORS.map((a) => [a.id, a.label])) as Record<Anchor, string>;
+/** What each anchoring is — read on the globe's marks. */
+const ANCHOR_NOTE: Record<Anchor, { title: string; body: string }> = {
+  a: { title: 'עיגון א׳: במרכז כדור הארץ', body: 'מרכז האליפסואיד במרכז כדור הארץ, והציר הקצר שלו חופף לציר הסיבוב.' },
+  b: { title: 'עיגון ב׳: מוזז ומסובב', body: 'המרכז זז ממרכז כדור הארץ, והצירים הסתובבו. הגודל והצורה לא השתנו.' },
+};
+
+/* ── station 2 ── */
+const DATUM_MODES: { id: DatumMode; label: string }[] = [
+  { id: 'global', label: 'עולמי' },
+  { id: 'local', label: 'מקומי' },
 ];
 const MODE_NAME: Record<DatumMode, string> = { global: 'העולמי', local: 'המקומי' };
-const SCOPE: Record<DatumMode, string> = { global: 'תחום ההתאמה: כלל כדור הארץ.', local: 'תחום ההתאמה: האזור המסומן.' };
-
-const SURFACES: { id: Surface; label: string }[] = [
-  { id: 'surface', label: 'פני השטח' },
-  { id: 'geoid', label: 'גיאואיד' },
-  { id: 'ellipsoid', label: 'אליפסואיד' },
-];
-const SURFACE_LABEL = Object.fromEntries(SURFACES.map((s) => [s.id, s.label])) as Record<Surface, string>;
-/** What the body in focus is, and what the view does to show it. */
-const SURFACE_NOTE: Record<Surface, string> = {
-  surface: 'המעטפת של כדור הארץ, עם התבליט של היבשות. הגיאואיד והאליפסואיד נראים בחתך.',
-  geoid: 'משטח גלי, המתאר בקירוב את פני הים הממוצעים. המעטפת שקופה כדי לחשוף אותו.',
-  ellipsoid: 'גוף גאומטרי חלק, המתאר בקירוב את צורת כדור הארץ. הגיאואיד נשאר ברקע כייחוס.',
-};
-
-const PHASE_LIST: { id: Phase; label: string; note: string }[] = [
-  { id: 'shift', label: 'הזזה', note: 'רק המיקום של האליפסואיד משתנה; הכיוון והגודל נשמרים.' },
-  { id: 'rotate', label: 'סיבוב', note: 'רק הכיוון של האליפסואיד משתנה; המיקום והגודל נשמרים.' },
-  { id: 'scale', label: 'קנה מידה', note: 'הגודל משתנה באופן אחיד; המיקום, הכיוון והצורה נשמרים.' },
-];
-
-/** The experiment's four parameters: label, and what changing it changes. */
-const PARAMS: Record<keyof Pose, { label: string; note: string }> = {
-  dx: { label: 'הזזה אופקית (X)', note: 'משנה רק את מיקום האליפסואיד, לאורך הציר האופקי.' },
-  dy: { label: 'הזזה אנכית (Y)', note: 'משנה רק את מיקום האליפסואיד, לאורך הציר האנכי.' },
-  rot: { label: 'סיבוב', note: 'משנה רק את הכיוון של האליפסואיד.' },
-  s: { label: 'קנה מידה', note: 'משנה את הגודל באופן אחיד, בלי לשנות את הצורה.' },
-};
-
 const PROBE_LIST: { id: Probe; label: string; where: string }[] = [
-  { id: 'inside', label: 'באזור המסומן', where: 'בנקודה שבאזור המסומן' },
-  { id: 'outside', label: 'מחוץ לאזור', where: 'בנקודה שמחוץ לאזור' },
+  { id: 'inside', label: 'באזור המסומן', where: 'באזור המסומן' },
+  { id: 'outside', label: 'מחוץ לאזור', where: 'מחוץ לאזור' },
 ];
 
-const STEPS: { title: string }[] = [{ title: 'גוף הייחוס' }, { title: 'מיקום וכיוון' }, { title: 'עולמי ומקומי' }];
-
-let BEST: BestFits | null = null;
-const getBest = () => (BEST ??= computeBest());
-const reducer = (s: DatumState, a: DatumAction) => datumReducer(s, a, getBest());
-
-const samePose = (a: Pose, b: Pose) => a.dx === b.dx && a.dy === b.dy && a.rot === b.rot && a.s === b.s;
-
-/** The gap at a check point, in words — from the computed gap of this fit and of the other one
-    at the same point (section units; the close-up's arrow is the same distance). */
-function probeNote(mode: DatumMode, probe: Probe, best: BestFits) {
+/** The gap at a check point, in words — from the computed gap of this datum and of the other one at the
+    same point (section units; the close-up's arrow is the same distance). */
+function probeNote(mode: DatumMode, probe: Probe) {
   const other: DatumMode = mode === 'global' ? 'local' : 'global';
-  const gap = gapAt(best[mode].pose, PROBES[probe]);
-  const otherGap = gapAt(best[other].pose, PROBES[probe]);
+  const gap = gapAt(DATUM_POSE[mode], PROBES[probe]);
+  const otherGap = gapAt(DATUM_POSE[other], PROBES[probe]);
   const level =
     gap < 3
       ? 'הגיאואיד והאליפסואיד כמעט חופפים'
       : gap < 8
-        ? 'נשאר פער קטן בין הגיאואיד לאליפסואיד'
+        ? 'יש פער קטן בין הגיאואיד לאליפסואיד'
         : gap < 20
-          ? 'נשאר פער בין הגיאואיד לאליפסואיד'
-          : 'נשאר פער גדול בין הגיאואיד לאליפסואיד';
+          ? 'יש פער בין הגיאואיד לאליפסואיד'
+          : 'יש פער גדול בין הגיאואיד לאליפסואיד';
   const cmp =
     Math.abs(gap - otherGap) < 2
-      ? `בדאטום ${MODE_NAME[other]} הפער כאן דומה.`
-      : `בדאטום ${MODE_NAME[other]} הפער כאן ${gap < otherGap ? 'גדול' : 'קטן'} יותר.`;
-  return `${PROBE_LIST.find((p) => p.id === probe)!.where} ${level}. ${cmp}`;
+      ? `בדאטום ${MODE_NAME[other]} הפער בנקודה הזאת דומה.`
+      : `בדאטום ${MODE_NAME[other]} הפער בנקודה הזאת ${gap < otherGap ? 'גדול' : 'קטן'} יותר.`;
+  return `${PROBE_LIST.find((p) => p.id === probe)!.where}, ${level}. ${cmp}`;
 }
 
-type ParamFocus = { key: keyof Pose; from: Pose } | null;
+/* ── station 3 ── */
+const CHANGES: { id: Change; label: string; hint: string; right: string }[] = [
+  { id: 'anchor', label: 'העיגון בלבד', hint: 'מרכז וכיוון', right: 'נכון: העיגון בלבד' },
+  { id: 'ellipsoid', label: 'האליפסואיד בלבד', hint: 'גודל וצורה', right: 'נכון: האליפסואיד בלבד' },
+  { id: 'both', label: 'גם וגם', hint: 'האליפסואיד והעיגון', right: 'נכון: גם וגם' },
+];
+/** Per pair (CHECK order), what each answer means: the right one explains what changed; a wrong one says
+    why, and points at the mark to look at again. */
+const CHECK_FEEDBACK: Record<Change, string>[] = [
+  {
+    anchor: 'הגודל והצורה זהים, אבל מרכז האליפסואיד זז וציריו הסתובבו. אותו אליפסואיד בעיגון אחר הוא דאטום אחר.',
+    ellipsoid: 'האליפסואיד הכתום והקו המקווקו זהים בגודל ובצורה, ולכן האליפסואיד לא השתנה. מה כן זז?',
+    both: 'השוו את האליפסואיד הכתום לקו המקווקו: הגודל והצורה לא השתנו. מה כן השתנה?',
+  },
+  {
+    ellipsoid: 'המרכז והצירים נשארו על מרכז כדור הארץ ועל ציר הסיבוב, אבל האליפסואיד גדול יותר. זה אליפסואיד אחר באותו עיגון.',
+    anchor: 'המרכז והצירים הכתומים לא זזו: הם עדיין על מרכז כדור הארץ ועל ציר הסיבוב. מה כן השתנה?',
+    both: 'המרכז והצירים לא זזו, ולכן העיגון לא השתנה. מה כן השתנה?',
+  },
+  {
+    both: 'האליפסואיד קטן יותר, וגם מרכזו וציריו זזו: השתנו גם גוף הייחוס וגם העיגון.',
+    anchor: 'המרכז והצירים אכן זזו, אבל זה לא הכול. השוו גם את הגודל: האליפסואיד הכתום מול הקו המקווקו.',
+    ellipsoid: 'הגודל אכן השתנה, אבל זה לא הכול. בדקו גם את המרכז והצירים הכתומים: האם הם זזו ממרכז כדור הארץ ומציר הסיבוב?',
+  },
+];
 
 export function DatumGuided() {
-  const [state, dispatch] = useReducer(reducer, undefined, initialDatumState);
+  const [state, dispatch] = useReducer(datumReducer, undefined, initialDatumState);
   const reduce = !!useReducedMotion();
-  const best = getBest();
-  const fit = best.global.pose;
-  const pose = viewPose(state, best);
+  const pose = viewPose(state);
   const inspect = inspectOf(state);
-  const look = lookOf(state);
   const animating = isAnimating(state);
-  const { lab, step } = state;
+  const { step } = state;
   const [expanded, setExpanded] = useState<Step | null>(0);
 
   // ── stage visibility: load near the viewport, pause off-screen / hidden tab ──
@@ -160,16 +170,8 @@ export function DatumGuided() {
     io.observe(el);
     return () => io.disconnect();
   }, []);
-  useEffect(() => {
-    if (!inView) dispatch({ type: 'pause' });
-  }, [inView]);
-  useEffect(() => {
-    const onVis = () => document.hidden && dispatch({ type: 'pause' });
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
 
-  // ── animation frames only while something moves ──
+  // ── animation frames only while something moves (an off-screen ease simply resumes) ──
   useEffect(() => {
     if (!animating || !inView) return;
     let raf = 0;
@@ -213,38 +215,18 @@ export function DatumGuided() {
 
   const refs = useMemo(() => makeOverlayRefs(stageRef), []);
 
-  // ── station 2: the parameter being adjusted (focus / drag) — its marks and its note ──
-  const [param, setParam] = useState<ParamFocus>(null);
-  const onParam = useCallback((key: keyof Pose | null) => setParam(key ? { key, from: lab.pose } : null), [lab.pose]);
-  const manual = lab.interaction === 'manual';
-  const phase = step === 1 && !manual && lab.playback !== 'idle' ? phaseAt(lab.progress) : null;
-  const guide = useMemo<Guide | null>(() => {
-    if (step !== 1) return null;
-    if (manual) {
-      if (!param) return null;
-      if (param.key === 'rot') return { kind: 'rotate' };
-      if (param.key === 's') return { kind: 'scale', from: param.from };
-      return { kind: 'axis', axis: param.key === 'dx' ? 'x' : 'y', from: param.from };
-    }
-    if (phase === 'shift') return { kind: 'shift', from: phaseStart('shift', fit), to: demoPose(PHASES.shift, fit) };
-    if (phase === 'rotate') return { kind: 'rotate' };
-    if (phase === 'scale') return { kind: 'scale', from: phaseStart('scale', fit) };
-    return null;
-  }, [step, manual, param, phase, fit]);
+  // ── what the globe draws ──
+  const look: Look = capture ? 'surface' : lookOf(state);
+  const other = otherPose(state);
+  const guide = useMemo<Guide | null>(() => (capture ? null : { other }), [capture, other]);
+  const region = step === 1;
+  const otherProbe: Probe = state.probe === 'inside' ? 'outside' : 'inside';
 
-  // ── focus stays somewhere sensible when the experiment opens / closes ──
-  const tryRef = useRef<HTMLDivElement>(null);
-  const labRef = useRef<HTMLDivElement>(null);
-  const focusNext = useRef<'lab' | 'try' | null>(null);
-  useEffect(() => {
-    const f = focusNext.current;
-    focusNext.current = null;
-    if (f === 'lab') labRef.current?.querySelector<HTMLInputElement>('input[type=range]')?.focus();
-    if (f === 'try') tryRef.current?.querySelector('button')?.focus();
-  }, [manual]);
+  // ── station 3: focus the first answer of a new pair ──
+  const answersRef = useRef<HTMLDivElement>(null);
+  const focusAnswers = () => requestAnimationFrame(() => answersRef.current?.querySelector('button')?.focus());
 
   // ── actions ──
-  const onDemo = () => dispatch(reduce ? { type: 'demoStep' } : { type: 'demo' });
   const clickStep = (i: Step) => {
     if (expanded === i) {
       // closing the text keeps the station (and its view) as it is
@@ -252,154 +234,153 @@ export function DatumGuided() {
       return;
     }
     setExpanded(i);
-    setParam(null);
     dispatch({ type: 'openStep', step: i, instant: reduce });
   };
-  const onMovePose = useCallback((p: Pose) => dispatch({ type: 'movePose', pose: p }), []);
-  const onInspect = useCallback((t: number) => dispatch({ type: 'setInspect', t }), []);
 
-  const demoLabel =
-    manual || lab.playback === 'idle'
-      ? 'הפעלת ההדגמה'
-      : lab.playback === 'ended'
-        ? 'הדגמה חוזרת'
-        : reduce
-          ? 'לשלב הבא'
-          : lab.playback === 'playing'
-            ? 'עצירת ההדגמה'
-            : 'המשך ההדגמה';
+  const pairDone = solved(state, state.pair);
+  const complete = checkComplete(state);
+  const pick = state.picks[state.pair];
 
   // ── feedback: short, about the active station ──
   const feedback = useMemo(() => {
-    if (step === 0) return { title: `במיקוד: ${SURFACE_LABEL[state.surface]}`, body: SURFACE_NOTE[state.surface] };
-    if (step === 1) {
-      if (manual) {
-        if (param) return { title: PARAMS[param.key].label, body: PARAMS[param.key].note };
-        return {
-          title: 'ניסוי',
-          body: samePose(lab.pose, fit) ? 'זו ההתאמה המחושבת בהמחשה.' : 'שנו פרמטר אחד בכל פעם, ובחנו מה משתנה במודל.',
-        };
-      }
-      if (lab.playback === 'ended') return { title: 'סוף ההדגמה', body: 'האליפסואיד הוזז, סובב והוגדל עד שהוא קרוב לגיאואיד.' };
-      const ph = PHASE_LIST.find((p) => p.id === phase);
-      if (ph) return { title: ph.label, body: ph.note };
-      return { title: 'לפני ההדגמה', body: 'האליפסואיד (בכתום) מוזז ומסובב ביחס לגיאואיד, וקטן ממנו.' };
+    if (step === 0) {
+      const n = ANCHOR_NOTE[state.anchor];
+      return { title: n.title, body: state.anchor === 'a' && !state.seenB ? `${n.body} עברו לעיגון ב׳ והשוו.` : n.body };
     }
-    return { title: SCOPE[state.mode], body: probeNote(state.mode, state.probe, best) };
-  }, [step, state.surface, state.mode, state.probe, manual, param, lab.pose, lab.playback, phase, fit, best]);
+    if (step === 1) return { title: `דאטום ${MODE_NAME[state.mode]} · ${PROBE_LIST.find((p) => p.id === state.probe)!.label}`, body: probeNote(state.mode, state.probe) };
+    const right = CHANGES.find((c) => c.id === CHECK[state.pair].answer)!.right;
+    if (!pick) return { title: 'לפני שבוחרים', body: 'צפו במעבר מדאטום א׳ לדאטום ב׳: מה זז, מה הסתובב ומה השתנה בגודל?' };
+    return { title: pairDone ? right : 'עדיין לא', body: CHECK_FEEDBACK[state.pair][pick] };
+  }, [step, state.anchor, state.seenB, state.mode, state.probe, state.pair, pick, pairDone]);
 
-  // announced once things settle — not every frame, not every slider step
+  // announced once things settle — not every frame
   const [announce, setAnnounce] = useState('');
   useEffect(() => {
     if (animating) return;
-    const id = window.setTimeout(() => setAnnounce(`${feedback.title} ${feedback.body}`), 700);
+    const id = window.setTimeout(() => setAnnounce(`${feedback.title}. ${feedback.body}`), 700);
     return () => window.clearTimeout(id);
   }, [animating, feedback]);
 
-  const mode: DatumMode = step === 2 ? state.mode : 'global';
   const description = [
-    step === 0 ? `המשטח במיקוד: ${SURFACE_LABEL[state.surface]}.` : step === 1 ? 'האליפסואיד בהמחשת הזזה, סיבוב וקנה מידה.' : SCOPE[state.mode],
-    'גיאואיד גלי בכחול ואליפסואיד בכתום.',
-    mode === 'local' ? 'אזור ההתאמה מסומן בקו עבה בצד הימני העליון.' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+    step === 0
+      ? `אותו אליפסואיד בשני עיגונים. מוצג ${ANCHOR_LABEL[state.anchor]}; הקו המקווקו הוא העיגון האחר.`
+      : step === 1
+        ? `דאטום ${MODE_NAME[state.mode]}; הקו המקווקו הוא הדאטום האחר. האזור המסומן בקו עבה בצד הימני העליון; התקריב מראה את הפער בנקודת הבדיקה.`
+        : `זוג ${state.pair + 1} מתוך ${CHECK.length}: הקו המקווקו הוא דאטום א׳ (העולמי), והאליפסואיד הכתום הוא דאטום ב׳.`,
+    'גיאואיד גלי בכחול ואליפסואיד בכתום. מסומנים ציר הסיבוב ומרכז כדור הארץ, ומרכז האליפסואיד וציריו.',
+  ].join(' ');
 
   const show3d = webgl === 'yes';
-  const otherProbe: Probe = state.probe === 'inside' ? 'outside' : 'inside';
-  // the stepper: the demo's active phase (the ones before it done); in the experiment, the kind
-  // of change the parameter being adjusted makes
-  const activePhase: Phase | null = manual
-    ? param && (param.key === 'rot' ? 'rotate' : param.key === 's' ? 'scale' : 'shift')
-    : lab.playback === 'ended'
-      ? null
-      : phase;
-  const phaseIndex = manual ? -1 : lab.playback === 'ended' ? PHASE_LIST.length : PHASE_LIST.findIndex((p) => p.id === activePhase);
+  const legend =
+    step === 0
+      ? { current: ANCHOR_LABEL[state.anchor], other: ANCHOR_LABEL[state.anchor === 'a' ? 'b' : 'a'] }
+      : step === 1
+        ? { current: `דאטום ${MODE_NAME[state.mode]}`, other: `דאטום ${MODE_NAME[state.mode === 'global' ? 'local' : 'global']}` }
+        : { current: 'דאטום ב׳', other: 'דאטום א׳ (העולמי)' };
 
-  const showExperiment = step === 1 && manual;
   const stationPanel = (
     <>
-            {/* the active station controls, below the compact accordion */}
-            <div className="mt-3 min-h-12">
-              {step === 0 && (
-                <Segmented
-                  label="המשטח במיקוד"
-                  items={SURFACES}
-                  value={state.surface}
-                  onChange={(s) => dispatch({ type: 'selectSurface', surface: s })}
-                  attr="data-surface"
-                />
-              )}
-              {step === 1 && (
-                <div className={cn('flex gap-3', showExperiment ? 'items-center' : 'flex-col items-stretch')}>
-                  <Button size="md" className={cn('shrink-0 px-5', showExperiment ? 'min-w-[184px]' : 'w-full')} onClick={onDemo}>
-                    {demoLabel}
-                  </Button>
-                  <ol aria-label="שלבי ההדגמה" className="flex flex-1 items-center justify-center gap-1.5">
-                    {PHASE_LIST.map((p, k) => {
-                      const on = p.id === activePhase;
-                      const done = k < phaseIndex;
-                      return (
-                        <li key={p.id} aria-current={on ? 'step' : undefined} className="flex items-center gap-1.5">
-                          {k > 0 && (
-                            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-fg-dim" aria-hidden>
-                              <path d="m10 3.5-4.5 4.5 4.5 4.5" />
-                            </svg>
-                          )}
-                          <span
-                            className={cn(
-                              'inline-flex h-9 items-center gap-1 rounded-full px-2 font-display text-base font-bold transition-colors duration-200 ease-snap motion-reduce:transition-none',
-                              on ? 'bg-brand-dark text-bg-elevated' : done ? 'text-fg' : 'text-fg-muted',
-                            )}
-                          >
-                            {done && (
-                              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-dark" aria-hidden>
-                                <path d="m3.5 8.5 3 3 6-7" />
-                              </svg>
-                            )}
-                            {p.label}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </div>
-              )}
-              {step === 2 && (
-                <div className="mx-auto flex w-full max-w-[560px] flex-col items-stretch gap-2">
-                  <span className="shrink-0 text-sm font-display font-semibold text-fg-muted">נקודת הבדיקה</span>
-                  <Segmented
-                    label="נקודת הבדיקה"
-                    items={PROBE_LIST}
-                    value={state.probe}
-                    onChange={(p) => dispatch({ type: 'setProbe', probe: p })}
-                    attr="data-probe"
-                    className="flex-1"
-                  />
-                </div>
-              )}
+      {/* the active station controls, below the compact accordion */}
+      <div className="mt-3">
+        {step === 0 && (
+          <Segmented label="העיגון המוצג" items={ANCHORS} value={state.anchor} onChange={(a) => dispatch({ type: 'setAnchor', anchor: a, instant: reduce })} attr="data-anchor" />
+        )}
+        {step === 1 && (
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
+            <span className="text-sm font-display font-semibold text-fg-muted">דאטום</span>
+            <Segmented label="סוג הדאטום" items={DATUM_MODES} value={state.mode} onChange={(m) => dispatch({ type: 'setMode', mode: m, instant: reduce })} attr="data-mode" />
+            <span className="text-sm font-display font-semibold text-fg-muted">נקודת בדיקה</span>
+            <Segmented label="נקודת הבדיקה" items={PROBE_LIST} value={state.probe} onChange={(p) => dispatch({ type: 'setProbe', probe: p })} attr="data-probe" />
+          </div>
+        )}
+        {step === 2 && (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-display font-semibold text-fg-muted">
+                זוג <L>{state.pair + 1}</L> מתוך <L>{CHECK.length}</L>
+              </span>
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => dispatch({ type: 'replay', instant: reduce })}>
+                <Icon name="refresh" size={16} />
+                הצגת המעבר שוב
+              </Button>
             </div>
+            <div ref={answersRef} role="group" aria-label="מה השתנה בין דאטום א׳ לדאטום ב׳?" className="mt-2 flex flex-col gap-1.5">
+              {CHANGES.map((c) => {
+                const on = pick === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    aria-pressed={on}
+                    aria-disabled={pairDone && !on}
+                    data-change={c.id}
+                    onClick={() => dispatch({ type: 'pick', change: c.id })}
+                    className={cn(
+                      'flex h-11 items-center gap-2 rounded-xl border px-4 text-start transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                      on ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated',
+                      pairDone ? 'cursor-default' : 'cursor-pointer',
+                      !on && !pairDone && 'hover:border-brand/30 hover:bg-brand/[0.03]',
+                    )}
+                  >
+                    <span className="font-display text-base font-bold text-fg">{c.label}</span>
+                    <span className="text-sm text-fg-muted">({c.hint})</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
-            {/* feedback: below the station controls, in the information column */}
-            <div data-datum-feedback className="mt-3 min-h-[92px] rounded-xl bg-bg-accent/60 p-4">
-              <p className="font-display text-base font-bold leading-snug text-fg">{feedback.title}</p>
-              <p className="mt-1 text-base leading-relaxed text-fg">{feedback.body}</p>
-            </div>
-            <div aria-live="polite" className="sr-only">
-              {announce}
-            </div>
+      {/* feedback: below the station controls, in the information column */}
+      <div className={cn('mt-3', FEEDBACK_MIN_H[step])} data-datum-feedback={step === 2 ? (pick ? (pairDone ? 'right' : 'wrong') : 'idle') : 'note'}>
+        {step === 2 && pick ? (
+          <CheckFeedback
+            right={pairDone}
+            title={feedback.title}
+            body={feedback.body}
+            onNext={
+              pairDone && state.pair < CHECK.length - 1
+                ? () => {
+                    dispatch({ type: 'nextPair', instant: reduce });
+                    focusAnswers();
+                  }
+                : null
+            }
+            onRestart={
+              complete
+                ? () => {
+                    dispatch({ type: 'restartCheck', instant: reduce });
+                    focusAnswers();
+                  }
+                : null
+            }
+          />
+        ) : (
+          <div className="rounded-xl bg-bg-accent/60 p-4">
+            <p className="font-display text-base font-bold leading-snug text-fg">{feedback.title}</p>
+            <p className="mt-1 text-base leading-relaxed text-fg">{feedback.body}</p>
+            {step === 0 && state.seenB && <AnchorSummary />}
+          </div>
+        )}
+      </div>
+      <div aria-live="polite" className="sr-only">
+        {announce}
+      </div>
     </>
   );
 
   return (
     <div className="my-10">
-      {/* laptop fit: the guided stage and the parameter cards are two screens, each shrunk on its own */}
-      <FitScreen name="datum" height={818} fitTallerStates className="">
+      {/* laptop fit: the guided stage and the conversion note are two screens, each shrunk on its own; heights are
+          the tallest state at 1920 × 1080 (station 3: 927; the note open: 244) */}
+      <FitScreen name="datum" height={927} className="">
         <div>
           <div className="surface-elevated p-6 lg:p-8">
-            <h3 className={H3}>דאטום: התאמת האליפסואיד לכדור הארץ</h3>
+            <h3 className={H3}>דאטום: אליפסואיד ועיגון</h3>
             <p className={LEAD}>
-              <strong className="text-fg">דאטום</strong> מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ. כך אפשר לחשב מיקומים ביחס לאותו בסיס.
+              <strong className="text-fg">דאטום</strong> מגדיר את גוף הייחוס ואת עיגונו ביחס לכדור הארץ. האליפסואיד קובע את הצורה והגודל; העיגון קובע היכן
+              מרכז האליפסואיד ולאן מכוונים ציריו.
             </p>
 
             <div className="grid md:grid-cols-[32fr_68fr] gap-6 items-stretch">
@@ -460,66 +441,20 @@ export function DatumGuided() {
                             className="overflow-hidden"
                           >
                             <div className="px-4 pb-4 pt-1">
-                              {i === 0 && (
-                                <>
-                                  <p className={BODY}>האליפסואיד הוא מודל מתמטי של צורת כדור הארץ. הדאטום מגדיר כיצד הוא מעוגן לכדור הארץ — מה מיקומו ומה כיוונו.</p>
-                                  <p className={cn(BODY, 'mt-3')}>בחרו משטח והשוו במודל בין פני השטח, הגיאואיד והאליפסואיד.</p>
-                                </>
-                              )}
+                              {i === 0 && <p className={BODY}>האליפסואיד הכתום הוא גוף הייחוס. עברו בין שני העיגונים שלו ובדקו: מה משתנה ומה נשאר?</p>}
                               {i === 1 && (
                                 <>
-                                  <p className={BODY}>הפעילו את ההדגמה כדי לראות כיצד הזזה, סיבוב ושינוי קנה מידה משפיעים על האליפסואיד. בכל שלב משתנה רק אחד מהם.</p>
-                                  {manual ? (
-                                    <Experiment
-                                      ref={labRef}
-                                      pose={lab.pose}
-                                      dispatch={dispatch}
-                                      reduce={reduce}
-                                      onParam={onParam}
-                                      onBack={() => {
-                                        focusNext.current = 'try';
-                                        setParam(null);
-                                        dispatch({ type: 'backToDemo', instant: reduce });
-                                      }}
-                                    />
-                                  ) : (
-                                    <div ref={tryRef} className="mt-4">
-                                      <Button
-                                        variant="secondary"
-                                        size="md"
-                                        className="w-full px-4"
-                                        onClick={() => {
-                                          focusNext.current = 'lab';
-                                          dispatch({ type: 'tryYourself' });
-                                        }}
-                                      >
-                                        נסו בעצמכם
-                                      </Button>
-                                    </div>
-                                  )}
+                                  <p className={BODY}>
+                                    דאטום עולמי מעוגן במרכז המסה של כדור הארץ ומתאים לכולו בקירוב. דאטום מקומי מעוגן לנקודת מוצא באזור אחד, כך שהאליפסואיד
+                                    מתאים היטב לגיאואיד שם (הקו העבה). כאן יש לשניהם אותו אליפסואיד, ורק העיגון שונה.
+                                  </p>
+                                  <p className={cn(NOTE, 'mt-2')}>ההבדלים מוגדלים מאוד להמחשה: בפועל מרכזי דאטומים רחוקים זה מזה לרוב עד כמה מאות מטרים, לעומת רדיוס של כ־6,400 ק״מ.</p>
                                 </>
                               )}
                               {i === 2 && (
                                 <>
-                                  <div role="radiogroup" aria-label="סוג הדאטום" className="grid grid-cols-2 gap-2 mb-3">
-                                    {DATUM_MODES.map((m) => (
-                                      <button
-                                        key={m.id}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={state.mode === m.id}
-                                        onClick={() => dispatch({ type: 'setMode', mode: m.id, instant: reduce })}
-                                        className={cn(
-                                          'rounded-xl border px-3 py-2 font-display text-base font-bold text-fg cursor-pointer transition-colors duration-200 ease-snap motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                                          state.mode === m.id ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                                        )}
-                                      >
-                                        {m.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  <p className={BODY}>{DATUM_MODES.find((m) => m.id === state.mode)!.body}</p>
-                                  <p className={cn(BODY, 'mt-3')}>השוו את הפער בתקריב בתוך האזור המסומן ומחוצה לו.</p>
+                                  <p className={BODY}>הקו המקווקו הוא דאטום א׳ (העולמי), והאליפסואיד הכתום הוא דאטום ב׳. מה השתנה בין שני הדאטומים?</p>
+                                  <p className={cn(NOTE, 'mt-2')}>גם כאן השינויים מוגדלים להמחשה.</p>
                                 </>
                               )}
                             </div>
@@ -529,25 +464,27 @@ export function DatumGuided() {
                     </div>
                   );
                 })}
-                {!showExperiment && stationPanel}
+                {stationPanel}
               </div>
 
-              {/* ── the visualisation (left): the globe and linked close-up ── */}
+              {/* ── the visualisation (left): the globe, its marks and (station 2) the linked close-up ── */}
               <div className="min-w-0 flex flex-col">
                 <div
                   ref={stageRef}
                   role="group"
-                  aria-label="דאטום: התאמת האליפסואיד לכדור הארץ"
+                  aria-label="דאטום: אליפסואיד ועיגון"
                   aria-describedby="datum-stage-desc"
                   onPointerDown={() => setZoomOn(true)}
                   onFocus={() => setZoomOn(true)}
                   data-station={step}
                   data-look={look}
-                  data-playback={step === 1 ? (manual ? 'manual' : lab.playback) : ''}
-                  data-phase={activePhase ?? ''}
-                  data-guide={guide?.kind ?? ''}
+                  data-anchor={state.anchor}
+                  data-mode={state.mode}
+                  data-pair={step === 2 ? state.pair : ''}
+                  data-moving={animating ? 'true' : 'false'}
                   data-pose={`${pose.dx.toFixed(2)},${pose.dy.toFixed(2)},${pose.rot.toFixed(2)},${pose.s.toFixed(3)}`}
-                  data-inspect={inspect.toFixed(3)}
+                  data-other={`${other.dx},${other.dy},${other.rot},${other.s}`}
+                  data-inspect={step === 1 ? inspect.toFixed(3) : ''}
                   className="relative h-[440px] w-full overflow-hidden rounded-xl bg-bg-elevated md:flex-1 md:min-h-[440px]"
                 >
                   <p id="datum-stage-desc" className="sr-only">
@@ -562,37 +499,26 @@ export function DatumGuided() {
                         <div className="absolute inset-0">
                           <DatumGlobe3D
                             pose={pose}
-                            mode={mode}
+                            region={region}
                             look={look}
-                            draggable={step === 1 && manual}
                             guide={guide}
                             inspect={inspect}
-                            altInspect={step === 2 ? PROBES[otherProbe] : null}
-                            markerDraggable={step !== 2}
+                            altInspect={step === 1 ? PROBES[otherProbe] : null}
                             active={inView}
                             reduce={reduce}
                             zoomEnabled={zoomOn}
                             capture={capture}
-                            showMarker
+                            showMarker={step === 1}
                             refs={refs}
-                            onMovePose={onMovePose}
-                            onInspect={onInspect}
                             onReady={onReady}
                             onFail={onFail}
                           />
                         </div>
                       )}
-                      {!capture && <GlobeOverlays refs={refs} emph={step === 0 ? state.surface : null} labels={SURFACE_LABEL} />}
+                      {!capture && <GlobeOverlays refs={refs} emph={null} labels={SURFACE_LABEL} />}
+                      {!capture && <InspectMarker markerRef={refs.marker} />}
                       {!capture && (
-                        <InspectMarker
-                          markerRef={refs.marker}
-                          t={inspect}
-                          interactive={step !== 2}
-                          onKey={(dt) => dispatch({ type: 'setInspect', t: state.inspect + dt })}
-                        />
-                      )}
-                      {!capture && (
-                        <ProbeMarker markerRef={refs.markerAlt} shown={step === 2} onPick={() => dispatch({ type: 'setProbe', probe: otherProbe })} />
+                        <ProbeMarker markerRef={refs.markerAlt} shown={step === 1} onPick={() => dispatch({ type: 'setProbe', probe: otherProbe })} />
                       )}
                     </>
                   )}
@@ -605,10 +531,10 @@ export function DatumGuided() {
                     <div className="absolute inset-x-0 top-0 grid grid-cols-2 items-start gap-3 pt-2">
                       <SectionSvg
                         pose={pose}
-                        mode={mode}
+                        region={region}
                         look={look}
                         guide={guide}
-                        probes={step === 2 ? { on: PROBES[state.probe], off: PROBES[otherProbe] } : null}
+                        probes={step === 1 ? { on: PROBES[state.probe], off: PROBES[otherProbe] } : null}
                         description={description}
                         className="aspect-[3/2] w-full"
                       />
@@ -616,66 +542,167 @@ export function DatumGuided() {
                     </div>
                   )}
 
-                  {/* the linked close-up: lower left, beside the globe (illustration side, not mirrored) */}
-                  {!capture && (
+                  {/* lower left, beside the globe (illustration side, not mirrored): the close-up in station 2 */}
+                  {!capture && step === 1 && (
                     <GapInset
                       pose={pose}
                       inspect={inspect}
-                      mode={mode}
-                      emph={step === 0 && state.surface !== 'surface' ? state.surface : step === 1 ? 'ellipsoid' : null}
+                      region={region}
+                      emph={null}
                       size={INSET.size}
                       live={show3d && ready}
                       className="absolute"
                       style={{ left: INSET.left, bottom: INSET.bottom }}
                     />
                   )}
+                  {/* what the marks are (every station), once they are drawn: upper left, under the surface label;
+                      without WebGL the section takes the top, so it sits at the bottom, beside the close-up */}
+                  {!capture && (webgl === 'no' || ready) && (
+                    <GuideLegend
+                      current={legend.current}
+                      other={legend.other}
+                      style={show3d ? LEGEND_POS : { left: step === 1 ? INSET.left + INSET.size + 12 : INSET.left, bottom: INSET.bottom }}
+                    />
+                  )}
                 </div>
-                {showExperiment && stationPanel}
               </div>
             </div>
           </div>
         </div>
       </FitScreen>
 
-      <FitScreen name="datum-parameters" height={207} className="mt-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="surface p-5 sm:p-6">
-            <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">הזזה, סיבוב וקנה מידה</h4>
-            <p className="text-base leading-relaxed text-fg mb-2">אחת השיטות להמרת קואורדינטות בין דאטומים משתמשת בשבעה פרמטרים:</p>
-            <ul className="space-y-1.5 text-base leading-relaxed text-fg">
-              <li>
-                <strong>שלושה פרמטרי הזזה</strong> – לאורך הצירים (<L>X, Y, Z</L>).
-              </li>
-              <li>
-                <strong>שלושה פרמטרי סיבוב</strong> – סביב הצירים (<L>X, Y, Z</L>).
-              </li>
-              <li>
-                <strong>פרמטר קנה מידה</strong> – שינוי אחיד בקנה המידה של הקואורדינטות.
-              </li>
-            </ul>
-          </div>
-          <div className="surface p-5 sm:p-6">
-            <h4 className="font-display text-lg font-bold leading-snug text-fg mb-2">ההבדל בין הדאטומים השונים</h4>
-            <p className="text-base leading-relaxed text-fg mb-2">דאטומים עשויים להשתמש באליפסואידים שונים ובעיגון שונה לכדור הארץ. בין ההבדלים:</p>
-            <ul className="space-y-1.5 text-base leading-relaxed text-fg">
-              <li>
-                גודל האליפסואיד (<L>a</L>)
-              </li>
-              <li>
-                פחיסות האליפסואיד (<L>f</L>)
-              </li>
-              <li>
-                מיקום האליפסואיד במרחב (<L>∆x, ∆y, ∆z</L>)
-              </li>
-            </ul>
-          </div>
-        </div>
+      <FitScreen name="datum-conversion" height={244} className="mt-6">
+        <ConversionNote reduce={reduce} />
       </FitScreen>
     </div>
   );
 }
 
-/* ─────────────── a segmented radio group (the surfaces, the check points) ─────────────── */
+/* ─────────────── station 1: what changed, once both anchorings are seen ─────────────── */
+
+function AnchorSummary() {
+  return (
+    <dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-base leading-snug">
+      <dt className="font-display font-bold text-fg">גוף הייחוס</dt>
+      <dd className="text-fg">אותו אליפסואיד: אותו גודל ואותה צורה</dd>
+      <dt className="font-display font-bold text-fg">העיגון</dt>
+      <dd className="text-fg">שונה: מרכז אחר וכיוון אחר</dd>
+      <dd className="col-span-2 mt-1 font-display font-bold text-fg">אותו אליפסואיד בעיגון אחר הוא דאטום אחר.</dd>
+    </dl>
+  );
+}
+
+/* ─────────────── station 3: the answer's feedback ─────────────── */
+
+function CheckFeedback({
+  right,
+  title,
+  body,
+  onNext,
+  onRestart,
+}: {
+  right: boolean;
+  title: string;
+  body: string;
+  onNext: (() => void) | null;
+  onRestart: (() => void) | null;
+}) {
+  if (!right) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-accent/60 bg-bg-elevated p-3">
+        <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full border-2 border-accent text-accent">
+          <Icon name="x" size={16} strokeWidth={2.5} />
+        </span>
+        <p className="min-w-0 text-base leading-relaxed text-black">{body}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-brand/30 bg-brand/[0.08] p-3">
+      <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-dark text-white">
+        <Icon name="check" size={18} strokeWidth={2.5} />
+      </span>
+      <div className="min-w-0 flex-1 space-y-0.5">
+        {/* the way on stands beside the verdict, so the answer is no taller than a wrong one needs */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="font-display text-lg font-bold leading-snug text-black">{title}</p>
+          {(onNext || onRestart) && (
+            <Button variant="secondary" size="sm" className="shrink-0" onClick={(onNext ?? onRestart)!}>
+              {onNext ? 'לזוג הבא' : 'מההתחלה'}
+            </Button>
+          )}
+        </div>
+        <p className="text-base leading-relaxed text-black">{body}</p>
+        {onRestart && <p className="text-base leading-relaxed text-black">דאטומים יכולים להיבדל באליפסואיד, בעיגון או בשניהם.</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── הרחבה: converting coordinates between datums (advanced, closed by default) ─────────────── */
+
+function ConversionNote({ reduce }: { reduce: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={cn('rounded-2xl border bg-bg-card transition-colors duration-200 ease-snap', open ? 'border-brand/45' : 'border-border/60')}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="datum-conversion-body"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full cursor-pointer items-center gap-3 rounded-2xl p-5 text-start transition-colors duration-200 ease-snap hover:bg-brand/[0.03] sm:px-6 focus-visible:ring-inset focus-visible:ring-offset-0"
+      >
+        <span className="flex-1 font-display text-lg font-bold leading-snug text-fg md:text-xl">הרחבה: המרת קואורדינטות בין דאטומים</span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: reduce ? 0 : 0.25 }} className={cn('inline-flex shrink-0', open ? 'text-brand-dark' : 'text-fg-dim')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id="datum-conversion-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="grid gap-6 px-5 pb-5 sm:px-6 sm:pb-6 md:grid-cols-2">
+              <div>
+                <p className="text-base leading-relaxed text-fg">
+                  הדאטום מגדיר את גוף הייחוס ואת עיגונו. המרת קואורדינטות היא פעולה אחרת: חישוב הקואורדינטות של אותה נקודה בדאטום אחר. שיטה נפוצה משתמשת
+                  בשבעה פרמטרים:
+                </p>
+                <ul className="mt-2 space-y-1.5 text-base leading-relaxed text-fg">
+                  <li>
+                    <strong>שלוש הזזות</strong> – לאורך הצירים (<L>X, Y, Z</L>).
+                  </li>
+                  <li>
+                    <strong>שלושה סיבובים</strong> – סביב אותם צירים.
+                  </li>
+                  <li>
+                    <strong>קנה מידה</strong> – תיקון קטן מאוד של המרחקים. הוא אינו משנה את האליפסואיד.
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-2 text-base leading-relaxed text-fg">
+                <p>שבעת הפרמטרים מראים שההבדל בין דאטומים אינו רק הזזה. לעתים יש גם עיוותים מקומיים ברשת המדידה, ואז משתמשים גם בטבלאות תיקון.</p>
+                <p>
+                  אם האליפסואידים שונים, ההמרה מביאה בחשבון גם את הגודל (<L>a</L>) והפחיסות (<L>f</L>) של כל אחד מהם.
+                </p>
+                <p>בפועל העיגון נקבע במדידות: בדאטומים מקומיים ישנים לפי נקודת מוצא בשטח, ובדאטומים מודרניים לפי רשת תחנות קבועות.</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─────────────── a segmented radio group (anchorings, datums, check points) ─────────────── */
 
 function Segmented<T extends string>({
   label,
@@ -734,165 +761,22 @@ function Segmented<T extends string>({
   );
 }
 
-/* ─────────────── station 2: the optional experiment (inside the open station) ─────────────── */
+/* ─────────────── check-point markers + static render ─────────────── */
 
-function Experiment({
-  ref,
-  pose,
-  dispatch,
-  reduce,
-  onParam,
-  onBack,
-}: {
-  ref: React.Ref<HTMLDivElement>;
-  pose: Pose;
-  dispatch: React.Dispatch<DatumAction>;
-  reduce: boolean;
-  onParam: (key: keyof Pose | null) => void;
-  onBack: () => void;
-}) {
-  const set = (key: keyof Pose) => (value: number) => dispatch({ type: 'setPose', key, value });
-  const focus = (key: keyof Pose) => ({ onFocus: () => onParam(key), onBlur: () => onParam(null) });
-  return (
-    <div ref={ref}>
-      <p className={cn(BODY, 'mt-3')}>שנו מחוון אחד בכל פעם ובחנו את הפער בין האליפסואיד לגיאואיד. זהו ניסוי בחתך דו־ממדי; השינויים מוגדלים להמחשה.</p>
-      <div className="mt-4 flex flex-col gap-3">
-        <RangeRow label={PARAMS.dx.label} min={RANGE.dx[0]} max={RANGE.dx[1]} step={2} value={pose.dx} onChange={set('dx')} display={`${pose.dx}`} {...focus('dx')} />
-        {/* SVG y grows downward; the slider and its readout count upward. */}
-        <RangeRow
-          label={PARAMS.dy.label}
-          min={-RANGE.dy[1]}
-          max={-RANGE.dy[0]}
-          step={2}
-          value={-pose.dy}
-          onChange={(v) => set('dy')(-v)}
-          display={`${-pose.dy}`}
-          {...focus('dy')}
-        />
-        <RangeRow label={PARAMS.rot.label} min={RANGE.rot[0]} max={RANGE.rot[1]} step={1} value={pose.rot} onChange={set('rot')} display={`${pose.rot}°`} {...focus('rot')} />
-        <RangeRow label={PARAMS.s.label} min={RANGE.s[0]} max={RANGE.s[1]} step={0.01} value={pose.s} onChange={set('s')} display={`×${pose.s.toFixed(2)}`} {...focus('s')} />
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'reset', instant: reduce })}>
-          איפוס
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'showFit', instant: reduce })}>
-          הצגת התאמה
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          חזרה להדגמה
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* Range input — same recipe as CoordinatesScene's RangeRow (native thumb,
-   ember focus ring). The pose is snapped to these steps in the experiment. */
-function RangeRow({
-  label,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-  display,
-  onFocus,
-  onBlur,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (v: number) => void;
-  display: string;
-  onFocus: () => void;
-  onBlur: () => void;
-}) {
-  return (
-    <label className="block">
-      <span className="flex items-baseline justify-between gap-2 text-sm font-display font-semibold text-fg-muted">
-        <span>{label}</span>
-        <L>{display}</L>
-      </span>
-      {/* dir="ltr": the thumb travels the same way as the body it moves. */}
-      <span dir="ltr" className="relative mt-1 block h-7">
-        <span aria-hidden className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-bg-accent ring-1 ring-inset ring-border" />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          onPointerDown={onFocus}
-          aria-valuetext={`${label}: ${display}`}
-          className={cn(
-            'absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent rounded-full focus-visible:ring-0 focus-visible:ring-offset-0',
-            '[&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent',
-            '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:box-border [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:mt-0.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bg-elevated [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:shadow-cta-ember',
-            '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:box-border [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-bg-elevated [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-accent',
-            '[&:focus-visible::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
-            '[&:focus-visible::-moz-range-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
-          )}
-        />
-      </span>
-    </label>
-  );
-}
-
-/* ─────────────── inspection markers + static render ─────────────── */
-
-/** The close-up's inspection point on the exercise wall. Stations 1–2: drag it
-    along the section (DatumGlobe3D handles the pointer) or use the arrow keys.
-    Station 3: it marks the chosen check point (the radio group under the
-    globe is its accessible control). */
-function InspectMarker({
-  markerRef,
-  t,
-  interactive,
-  onKey,
-}: {
-  markerRef: React.RefObject<HTMLDivElement | null>;
-  t: number;
-  interactive: boolean;
-  onKey: (dt: number) => void;
-}) {
-  const deg = Math.round((-t * 180) / Math.PI);
-  const slider = interactive
-    ? {
-        role: 'slider',
-        tabIndex: 0,
-        'aria-label': 'נקודת הבדיקה',
-        'aria-valuemin': -83,
-        'aria-valuemax': 83,
-        'aria-valuenow': deg,
-        'aria-valuetext': `${deg}°`,
-        onKeyDown: (e: React.KeyboardEvent) => {
-          const d = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? -0.05 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? 0.05 : 0;
-          if (!d) return;
-          e.preventDefault();
-          onKey(d);
-        },
-      }
-    : { 'aria-hidden': true };
+/** Station 2: the chosen check point on the exercise wall (the radio group under the stations is its
+    accessible control). DatumGlobe3D places it every frame. */
+function InspectMarker({ markerRef }: { markerRef: React.RefObject<HTMLDivElement | null> }) {
   return (
     <div
       ref={markerRef}
-      {...slider}
-      className={cn(
-        'absolute left-0 top-0 rounded-full border-2 border-dashed border-fg bg-bg-elevated/25 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
-        interactive ? 'cursor-grab touch-none active:cursor-grabbing' : 'border-solid',
-      )}
+      aria-hidden
+      className="pointer-events-none absolute left-0 top-0 rounded-full border-2 border-solid border-fg bg-bg-elevated/25"
       style={{ width: MARKER_R * 2, height: MARKER_R * 2, opacity: 0 }}
     />
   );
 }
 
-/** Station 3: the other check point — a quieter ring; clicking it chooses it. */
+/** Station 2: the other check point — a quieter ring; clicking it chooses it. */
 function ProbeMarker({ markerRef, shown, onPick }: { markerRef: React.RefObject<HTMLDivElement | null>; shown: boolean; onPick: () => void }) {
   return (
     <div

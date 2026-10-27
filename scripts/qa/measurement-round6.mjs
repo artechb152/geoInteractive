@@ -6,8 +6,11 @@
 //             sentence and "ניסיון נוסף", which brings the model back); a lost WebGL context (the stills,
 //             then the model again once the context is back); a model remounted by the dev server
 //             (Fast Refresh) stays live; no WebGL (the stills and their sentence, no retry, nothing to turn)
-//   heights   in the three landscape views' opening angles the model's drawn height and the section's
-//             agree (pixel extent of each figure), and the survey line is as long in both
+//   heights   in the surface and task views' opening angles the relief along the survey line is drawn at
+//             the same exaggeration in the model as in the section (the model's dashed line, its WebGL
+//             pixels, against the section's ground line over the same span), and the line is no longer in
+//             the model. Each figure's whole pixel height is reported, not judged: the model's also holds
+//             the land off the line and outside the span, the top seen from above and the base
 //   ellipsoid drag, arrows and the side / top buttons move one view state; the pressed button shows a
 //             check; a drag after "מהצד" goes on from there (no jump back); a click on the marked area
 //             enlarges it like "הגדלת האזור"; "חזרה למבט הכללי" keeps the reader's angle
@@ -223,6 +226,34 @@ async function extent(buf, b) {
   }
   return bottom - top + 1;
 }
+/** The model's dashed survey line as drawn (C_ACCENT pixels of the WebGL frame, the HTML layer over it hidden): its extent. */
+async function surveyLineDrawn(buf, b) {
+  const { data, info } = await sharp(buf).extract({ left: Math.round(b.x), top: Math.round(b.y), width: Math.round(b.width), height: Math.round(b.height) }).raw().toBuffer({ resolveWithObject: true });
+  let x0 = Infinity, x1 = -1, y0 = Infinity, y1 = -1;
+  for (let y = 0; y < info.height; y++)
+    for (let x = 0; x < info.width; x++) {
+      const i = (y * info.width + x) * info.channels;
+      const [r, g, bl] = [data[i], data[i + 1], data[i + 2]];
+      if (r > 175 && r - g > 55 && g - bl > 35 && g > 85 && g < 165) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+    }
+  return { length: x1 - x0 + 1, relief: y1 - y0 + 1 };
+}
+/** The section's ground line over the same span (screen px): from its top to the span's sea end, and the span's length. */
+const sectionLine = (page) =>
+  page.evaluate((ill) => {
+    const svg = document.querySelector(`${ill} figure:nth-of-type(2) [role="img"][dir="ltr"] svg`);
+    const ground = [...svg.querySelectorAll(':scope > path')].filter((p) => p.getAttribute('fill') === 'none').at(-1).getBoundingClientRect();
+    const ends = [...svg.querySelectorAll(':scope > circle')].map((c) => {
+      const r = c.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    });
+    return { length: ends[1].x - ends[0].x, relief: Math.max(ends[1].y, ground.bottom) - ground.top };
+  }, ILL);
 for (const [name, label] of [['surface', 'פני השטח'], ['geoid', 'גיאואיד'], ['undulation', 'גליות וגובה']]) {
   await tab(page, label, 1600);
   const stage = await page.locator(STAGE).boundingBox();
@@ -230,11 +261,20 @@ for (const [name, label] of [['surface', 'פני השטח'], ['geoid', 'גיאו
   const buf = await page.screenshot();
   const m = await extent(buf, stage);
   const s = await extent(buf, section);
-  notes.push(`${name}: model ${m} px, section ${s} px`);
-  // the opening (profile) view and the task's comparison view must agree; the geoid view looks in obliquely on purpose
-  // (the sheets inside read as surfaces), so its top's depth adds height — reported, not judged
-  if (name !== 'geoid') expect(Math.abs(m / s - 1) < 0.25, `${name}: the model (${m} px) and the section (${s} px) differ in height`);
+  notes.push(`${name}: whole figure — model ${m} px, section ${s} px (reported, not judged)`);
   await shot(page, `view-${name}`);
+  // the geoid view looks in obliquely on purpose (the sheets inside read as surfaces): not registered with the section
+  if (name === 'geoid') continue;
+  // the relief along the line: one exaggeration in both, the model's line no longer than the section's
+  const hide = await page.addStyleTag({ content: `${STAGE} button, ${STAGE} span { visibility: hidden !important; }` });
+  await page.waitForTimeout(150);
+  const ml = await surveyLineDrawn(await page.screenshot(), stage);
+  await hide.evaluate((el) => el.remove());
+  const sl = await sectionLine(page);
+  const ve = ml.relief / ml.length / (sl.relief / sl.length);
+  notes.push(`${name}: along the line — model ${ml.relief} / ${ml.length} px, section ${sl.relief.toFixed(0)} / ${sl.length.toFixed(0)} px: exaggeration ×${ve.toFixed(3)}, length ×${(ml.length / sl.length).toFixed(3)}`);
+  expect(Math.abs(ve - 1) < 0.06, `${name}: the relief along the line is drawn ×${ve.toFixed(3)} the section's exaggeration`);
+  expect(ml.length <= sl.length * 1.02, `${name}: the line is longer in the model (${ml.length} px) than in the section (${sl.length.toFixed(0)} px)`);
 }
 
 // the ellipsoid
@@ -336,7 +376,7 @@ const layout = await page.evaluate(() => {
 expect(layout.sameGrid, 'task: the readings and the question are not two cells of one grid');
 expect(layout.answer.right <= layout.readings.left + 1, 'task: the question is not left of the readings');
 expect(Math.abs(layout.answer.top - layout.readings.top) < 4, 'task: the two columns do not start on one row');
-expect(layout.question.some((q) => q.includes('מהו הגובה מעל פני הים?')), 'task: the question is not in the left column');
+expect(layout.question.some((q) => q.includes('מהו הגובה מעל פני הים בתחנה')), 'task: the question is not in the left column');
 const h0 = await cardH();
 const fieldTop0 = (await input.boundingBox()).y;
 await shot(page, 'task-empty');

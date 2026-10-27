@@ -1,0 +1,99 @@
+{
+ "geometry": {
+  "unitPx": 3.6,
+  "shapes": [
+   "chip 10",
+   "chip 20",
+   "chip 30",
+   "chip 40",
+   "chip 50",
+   "chip 59",
+   "slope תלול",
+   "slope מתון",
+   "text צ",
+   "text 0",
+   "text 25",
+   "text 50",
+   "text מ׳",
+   "summit triangle",
+   "north arrow",
+   "scale bar 0",
+   "scale bar 1"
+  ],
+  "overlaps": [],
+  "closest": [
+   {
+    "a": "text 50",
+    "b": "text מ׳",
+    "gapPx": 3.52
+   },
+   {
+    "a": "text 0",
+    "b": "scale bar 0",
+    "gapPx": 4.23
+   },
+   {
+    "a": "text 25",
+    "b": "scale bar 0",
+    "gapPx": 4.23
+   },
+   {
+    "a": "text 25",
+    "b": "scale bar 1",
+    "gapPx": 4.23
+   },
+   {
+    "a": "text 50",
+    "b": "scale bar 1",
+    "gapPx": 4.23
+   },
+   {
+    "a": "chip 50",
+    "b": "chip 59",
+    "gapPx": 4.36
+   },
+   {
+    "a": "chip 59",
+    "b": "summit triangle",
+    "gapPx": 4.68
+   },
+   {
+    "a": "text צ",
+    "b": "north arrow",
+    "gapPx": 7.83
+   }
+  ],
+  "lineHits": [
+   {
+    "label": "slope מתון",
+    "line": "contour 10",
+    "samples": 39
+   },
+   {
+    "label": "chip 59",
+    "line": "contour 50",
+    "samples": 1
+   }
+  ],
+  "outOfFrame": []
+ },
+ "hover": "השכבה שבין 30 ל־40 מ׳ · הגבול התחתון שלה הוא קו הגובה 30",
+ "keys": {
+  "focused": true,
+  "valuetext": "השכבה שבין 30 ל־40 מ׳ · הגבול התחתון שלה הוא קו הגובה 30",
+  "hintShown": true
+ },
+ "heights": {
+  "idle": 535.4,
+  "hover map": 535.4,
+  "keyboard focus": 535.4,
+  "keyboard left": 535.4,
+  "view הר שלם": 535.4,
+  "view פריסה לשכבות": 535.4,
+  "view מבט מלמעלה": 535.4,
+  "model zoomed": 535.4
+ },
+ "failures": [
+  "labels over other lines: [{\"label\":\"slope מתון\",\"line\":\"contour 10\",\"samples\":39},{\"label\":\"chip 59\",\"line\":\"contour 50\",\"samples\":1}]"
+ ]
+}

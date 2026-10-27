@@ -1,4 +1,6 @@
 // QA probe for the topic-06 „דגשים לתכנון ולניווט” laptop fit.
+// The part is archived (/archive/topic-06/tips/, behind the archive gate); behaviour
+// is tested in planning-tips.test.mjs and every state is shot by shot-planning-tips.mjs.
 // Usage: node scripts/qa/shot-topic06-tips-fit.mjs <outDir> <tag> [base] [--states]
 //   Screenshots each screen of the sub-topic scrolled into view, a full-page
 //   shot, and (with --states) every tip / answer state of every screen.
@@ -54,7 +56,7 @@ const scrollToScreen = (page, id) =>
     const fit = el?.closest('[data-lesson-viewport-fit]') ?? el;
     const headerH = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
     const top = fit.getBoundingClientRect().top + scrollY - headerH - 24;
-    scrollTo(0, Math.max(0, top));
+    scrollTo({ top: Math.max(0, top), behavior: 'instant' });
   }, id);
 
 const report = {};
@@ -66,10 +68,11 @@ async function runViewport(w, h) {
   page.on('pageerror', (e) => errors.push(`${w}x${h} ${e}`));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(`${w}x${h} ${m.text()}`); });
   page.setDefaultTimeout(60000);
-  await page.goto(`${BASE}/lessons/topic-06/#scene-tips`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.addInitScript(() => localStorage.setItem('archive:auth', JSON.stringify({ at: Date.now() })));
+  await page.goto(`${BASE}/archive/topic-06/tips/`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('[data-tips-screen="question"]', { timeout: 120000 });
   await page.waitForTimeout(2500);
-  await page.evaluate(() => scrollTo(0, 0));
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await page.waitForTimeout(300);
   const key = `${w}x${h}`;
   report[key] = { initial: await probe(page) };

@@ -7,7 +7,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-import { L } from '../Ltr';
 import { useRovingKeys } from '../scale/controls';
 import { wrapZone } from './utmAtlas';
 
@@ -42,63 +41,19 @@ export function ZoneStepper({ zone, onStep, reduce }: { zone: number; onStep: (d
   );
 }
 
-/** Five zone buttons in map order (west → east, never mirrored) and two arrows that page the row. */
-export function ZoneRow({
-  center,
-  selected,
-  onSelect,
-  onPage,
-  label,
-  verdict,
-}: {
-  center: number;
-  selected: number | null;
-  onSelect: (z: number) => void;
-  onPage: (dz: number) => void;
-  label: string;
-  /** After a check: marks the chosen button with ✓ / ✕ as well as colour. */
-  verdict?: 'right' | 'wrong' | null;
-}) {
-  const zones = [-2, -1, 0, 1, 2].map((d) => wrapZone(center + d));
-  const arrow = ARROW;
+/** ✓ / ✕ on a checked choice: the verdict of the last check, never a preview. Its parent is `relative`. */
+export function VerdictMark({ verdict }: { verdict: 'right' | 'wrong' }) {
   return (
-    <div role="group" aria-label={label} dir="ltr" className="flex items-center gap-1.5" data-zone-row>
-      <button type="button" className={arrow} onClick={() => onPage(-5)} aria-label="חמישה פלחים מערבה">
-        <Icon name="arrow-left" size={16} />
-      </button>
-      {zones.map((z) => {
-        const on = selected === z;
-        return (
-          <button
-            key={z}
-            type="button"
-            aria-pressed={on}
-            aria-label={`פלח ${z}`}
-            data-zone-button={z}
-            onClick={() => onSelect(z)}
-            className={cn(CHOICE, choiceTone(on), 'relative h-11 w-12 font-display text-base font-bold tabular-nums text-black')}
-          >
-            {z}
-            {/* the chosen zone also carries a shape, not only a colour */}
-            {on && <span aria-hidden className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-fg" data-selected-mark />}
-            {on && verdict && (
-              <span
-                aria-hidden
-                className={cn(
-                  'absolute -top-2 -end-2 grid size-5 place-items-center rounded-full',
-                  verdict === 'right' ? 'bg-brand-dark text-white' : 'border-2 border-border-strong bg-bg-elevated text-fg',
-                )}
-              >
-                <Icon name={verdict === 'right' ? 'check' : 'x'} size={11} strokeWidth={3} />
-              </span>
-            )}
-          </button>
-        );
-      })}
-      <button type="button" className={arrow} onClick={() => onPage(5)} aria-label="חמישה פלחים מזרחה">
-        <Icon name="arrow-right" size={16} />
-      </button>
-    </div>
+    <span
+      aria-hidden
+      data-verdict-mark={verdict}
+      className={cn(
+        'absolute -top-2 -end-2 grid size-5 place-items-center rounded-full',
+        verdict === 'right' ? 'bg-brand-dark text-white' : 'border-2 border-border-strong bg-bg-elevated text-fg',
+      )}
+    >
+      <Icon name={verdict === 'right' ? 'check' : 'x'} size={11} strokeWidth={3} />
+    </span>
   );
 }
 
@@ -153,27 +108,6 @@ export function Segmented<T extends string>({
     </div>
   );
 }
-
-export const HEMI_ITEMS = [
-  {
-    id: 'N' as const,
-    label: (
-      <>
-        צפוני <L>N</L>
-      </>
-    ),
-    aria: 'חצי כדור צפוני, N',
-  },
-  {
-    id: 'S' as const,
-    label: (
-      <>
-        דרומי <L>S</L>
-      </>
-    ),
-    aria: 'חצי כדור דרומי, S',
-  },
-];
 
 /** One labelled reading in the data rows. */
 export function Cell({ label, children, className, id }: { label: ReactNode; children: ReactNode; className?: string; id?: string }) {

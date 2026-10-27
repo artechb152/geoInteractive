@@ -41,9 +41,16 @@ export const CONE_LAT_MAX = 80;
 export const AZ_LAT_MIN = 10;
 /** One graticule for the globe, every surface and every map. */
 export const GRID_STEP = 15;
-/** The demonstration point, in the Middle East — inside all three maps. Its parallel is the
-    highlighted line; it is NOT a line of contact of any surface. */
-export const DEMO = { lat: 31.8, lon: 35.2 } as const;
+/** Equal circles on the globe (after Tissot's indicatrix): one radius, one meridian, three
+    latitudes — 20°N near the cylinder's line of contact, 45°N on the cone's, 70°N near the
+    plane's point. Every surface and map draws the same three, so switching methods compares
+    where each keeps them true. Inside every map's coverage, radius included. */
+export const CIRCLE_R = 8;
+export const CIRCLES: readonly { lat: number; lon: number }[] = [
+  { lat: 20, lon: 25 },
+  { lat: 45, lon: 25 },
+  { lat: 70, lon: 25 },
+];
 
 const PHI0 = CONE_PHI0 * D2R;
 /** Cone constant n = sin φ0: the developed cone is a sector of 2π·n. */
@@ -116,7 +123,48 @@ export function unproject(m: Method, x: number, y: number): { lat: number; lon: 
   return { lat, lon: r < 1e-12 ? 0 : Math.atan2(x, -y) * R2D };
 }
 
+/** Points of the circle of angular radius `r` (degrees) about (lat, lon) on the sphere. */
+export function smallCircle(lat: number, lon: number, r: number, n = 72): { lat: number; lon: number }[] {
+  const p1 = lat * D2R;
+  const d = r * D2R;
+  const out: { lat: number; lon: number }[] = [];
+  for (let k = 0; k <= n; k++) {
+    const b = (2 * Math.PI * k) / n;
+    const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
+    const l2 = lon * D2R + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+    out.push({ lat: p2 * R2D, lon: l2 * R2D });
+  }
+  return out;
+}
+
+/** An equal circle as drawn on a method's map (flat coordinates). */
+export const circleOnMap = (m: Method, c: { lat: number; lon: number }, r = CIRCLE_R): XY[] => smallCircle(c.lat, c.lon, r).map((q) => project(m, q.lat, q.lon));
+
+/** The map's scale along a parallel at `lat` (east–west stretch). Along the meridians all three
+    maps are true (scale 1), so a circle's width on the map is this many times its height. */
+export function parallelScale(m: Method, lat: number): number {
+  const phi = lat * D2R;
+  if (m === 'cyl') return 1 / Math.cos(phi);
+  if (m === 'cone') return (CONE_N * coneRho(lat)) / Math.cos(phi);
+  const c = (90 - lat) * D2R;
+  return c < 1e-9 ? 1 : c / Math.sin(c);
+}
+
 export type Box = { x0: number; x1: number; y0: number; y1: number };
+
+/** The flat box around a lat / lon region of a method's map. */
+export function regionBox(m: Method, latMin: number, latMax: number, lonMin: number, lonMax: number): Box {
+  const b = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+  for (let i = 0; i <= 24; i++)
+    for (let j = 0; j <= 24; j++) {
+      const [x, y] = project(m, latMin + ((latMax - latMin) * i) / 24, lonMin + ((lonMax - lonMin) * j) / 24);
+      b.x0 = Math.min(b.x0, x);
+      b.x1 = Math.max(b.x1, x);
+      b.y0 = Math.min(b.y0, y);
+      b.y1 = Math.max(b.y1, y);
+    }
+  return b;
+}
 
 /** The flat extent of each map (and of the cone's paper up to its apex). */
 export const MAP_BOX: Record<Method, Box> = {
@@ -460,7 +508,6 @@ export const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) 
 
 export const TAB_NAME: Record<Method, string> = { cyl: 'גלילי', cone: 'חרוטי', az: 'אזימוטלי' };
 export const SURFACE_NAME: Record<Method, string> = { cyl: 'גליל', cone: 'חרוט', az: 'מישור' };
-export const SHAPE_NAME: Record<Method, string> = { cyl: 'מלבן', cone: 'מניפה', az: 'מפה עגולה בדוגמה הקוטבית' };
 
 /** The slider's two ends: [at 0 (right), at 1 (left)]. */
 export const ENDS: Record<Method, [string, string]> = {
@@ -469,112 +516,159 @@ export const ENDS: Record<Method, [string, string]> = {
   az: ['מישור משיק', 'מבט על'],
 };
 
+/** The slider's state in words — its accessible value only; on screen the ends and the step say it. */
 export const PHASE_LABEL: Record<Method, Record<Phase, string>> = {
   cyl: { start: 'משטח סביב הכדור', mid: 'פתיחת המשטח', end: 'מפה שטוחה' },
   cone: { start: 'משטח סביב הכדור', mid: 'פתיחת המשטח', end: 'מפה שטוחה' },
   az: { start: 'מישור משיק', mid: 'מעבר למבט על', end: 'מבט על' },
 };
 
-export const START_HINT: Record<Method, string> = {
-  cyl: 'הזיזו את המחוון או הפעילו את ההדגמה כדי לפתוח את המשטח.',
-  cone: 'הזיזו את המחוון או הפעילו את ההדגמה כדי לפתוח את המשטח.',
-  az: 'הזיזו את המחוון או הפעילו את ההדגמה כדי לעבור למבט על.',
-};
+/** One step of the process on screen: one idea and one short action. */
+export type Step = { idea: string; act: string };
+const UNROLL_ACT = 'גררו את המחוון כדי לפרוס אותו.';
+const ON_ACT = 'המשיכו עד למפה השטוחה.';
+const COMPARE_ACT = 'עברו לשיטה אחרת והשוו את העיגולים.';
 
-/** The explanation line, by method and phase (the instruction joins the opening one). */
-export const EXPLAIN: Record<Method, Record<Phase, string>> = {
+/** By method and phase. The process: the surface touches the globe → it unrolls without
+    stretching — the distortion was made when the globe was carried onto it (the plane needs no
+    unrolling) → the map, where equal circles show the distortion. */
+export const STEPS: Record<Method, Record<Phase, Step>> = {
   cyl: {
-    start: 'גליל עוטף את הכדור ונוגע בו לאורך קו המשווה.',
-    mid: 'הגליל נחתך לאורך קו אחד ונפרש. קווי הרשת שעליו נשארים ישרים.',
-    end: 'גליל נפתח למלבן. בדוגמה הזו מתקבלת רשת של קווים ישרים.',
+    start: { idea: 'הגליל עוטף את הכדור ונוגע בו לאורך קו המשווה.', act: UNROLL_ACT },
+    mid: { idea: 'הגליל נחתך ונפרש למישור בלי להימתח. העיוות נוצר כשמעבירים אליו את הכדור, לא בפריסה.', act: ON_ACT },
+    end: { idea: 'על הגליל כל קו רוחב ארוך כמו קו המשווה, ולכן במפה העיגולים נמתחים לצדדים ככל שמתרחקים ממנו.', act: COMPARE_ACT },
   },
   cone: {
-    start: 'חרוט מונח על הכדור ונוגע בו לאורך קו הרוחב 45° צפון. הקודקוד שלו מעל הקוטב.',
-    mid: 'החרוט נחתך לאורך קו אחד ונפרש. קווי האורך יוצאים מהקודקוד.',
-    end: 'חרוט נפתח למניפה. קווי הרוחב מקושתים וקווי האורך מתכנסים.',
+    start: { idea: 'החרוט נוגע בכדור לאורך קו הרוחב 45° צפון, וקודקודו מעל הקוטב.', act: UNROLL_ACT },
+    mid: { idea: 'החרוט נחתך ונפרש למניפה בלי להימתח. העיוות נוצר כשמעבירים אליו את הכדור, לא בפריסה.', act: ON_ACT },
+    end: { idea: 'ליד קו הרוחב 45° העיגול כמעט אינו משתנה. ככל שמתרחקים מקו המגע, העיגולים נמתחים.', act: COMPARE_ACT },
   },
   az: {
-    start: 'מישור נוגע בכדור בנקודה אחת: הקוטב הצפוני.',
-    mid: 'המישור כבר שטוח, ולכן אין מה לפרוס. המבט עולה אל מעל הקוטב.',
-    end: 'המישור כבר שטוח. במבט על מתקבלת רשת מעגלית סביב מרכז ההיטל.',
+    start: { idea: 'המישור נוגע בכדור בנקודה אחת: הקוטב הצפוני.', act: 'גררו את המחוון כדי להביט עליו מלמעלה.' },
+    mid: { idea: 'המישור כבר שטוח, ולכן אין מה לפרוס. רק המבט עולה מעל הקוטב.', act: 'המשיכו עד למבט מלמעלה.' },
+    end: { idea: 'ליד הקוטב העיגול כמעט אינו משתנה. ככל שמתרחקים מנקודת המגע, העיגולים נמתחים.', act: COMPARE_ACT },
   },
 };
 
 export const CONTACT_LEGEND: Record<Method, string> = { cyl: 'קו המגע', cone: 'קו המגע', az: 'נקודת המגע' };
+export const CIRCLE_LEGEND = 'עיגולים שווים על הכדור';
+export const TRUE_LEGEND = 'אותו עיגול בלי עיוות';
+
+/** How many times longer along its parallel than along its meridian an equal circle is on a
+    method's map ("1.41") — its width only where the parallels run straight across (cylinder). */
+export const stretchText = (m: Method, lat: number) => parallelScale(m, lat).toFixed(2);
+
+/* ── the map's sheet in learning: it comes in as the surface unrolls ── */
+
+/** The map's opacity at progress p: a faint preview of what the surface will give, whole when flat. */
+export const mapOpacity = (p: number) => 0.28 + 0.72 * smooth01(p);
+/** The equal circles on the unrolling sheet and on the map: once the sheet is well open. */
+export const circlesOn = (p: number) => smooth01((p - 0.45) / 0.4);
 
 /** What the 3-D view shows, for its accessible description. */
 export function stageDescription(m: Method | null, p: number): string {
   if (!m) return 'כדור הארץ התלת־ממדי עם רשת קווי אורך ורוחב כל 15 מעלות. עדיין לא נבחר משטח הטלה.';
   const pct = Math.round(p * 100);
-  const point = 'קו רוחב לדוגמה ונקודה לדוגמה במזרח התיכון מסומנים בכתום, על הכדור ועל המשטח.';
-  if (m === 'cyl') return `כדור הארץ התלת־ממדי וגליל שקוף למחצה שנוגע בו לאורך קו המשווה. הגליל פתוח ב־${pct}%: ${phaseOf(p) === 'end' ? 'הוא נפרש למלבן שטוח.' : phaseOf(p) === 'start' ? 'הוא עוטף את הכדור.' : 'התפר שלו נפתח והוא נפרש.'} ${point}`;
-  if (m === 'cone') return `כדור הארץ התלת־ממדי וחרוט שקוף למחצה שנוגע בו לאורך קו הרוחב 45° צפון, וקודקודו מעל הקוטב. החרוט פתוח ב־${pct}%: ${phaseOf(p) === 'end' ? 'הוא נפרש למניפה שטוחה.' : phaseOf(p) === 'start' ? 'הוא מונח על הכדור.' : 'התפר שלו נפתח והוא נפרש.'} ${point}`;
-  return `כדור הארץ התלת־ממדי ומישור שקוף למחצה שנוגע בו בקוטב הצפוני. ${phaseOf(p) === 'end' ? 'מבט מלמעלה על המישור.' : phaseOf(p) === 'start' ? 'מבט מהצד.' : `המבט עולה מעל הקוטב (${pct}%).`} ${point}`;
+  const circles = `על הכדור שלושה עיגולים שווים בכתום, ב־20°, ב־45° וב־70° צפון${circlesOn(p) > 0.5 ? '; על המשטח הם נמתחים ככל שמתרחקים מ' + (m === 'az' ? 'נקודת המגע.' : 'קו המגע.') : '.'}`;
+  if (m === 'cyl') return `כדור הארץ התלת־ממדי וגליל שקוף למחצה שנוגע בו לאורך קו המשווה. הגליל פתוח ב־${pct}%: ${phaseOf(p) === 'end' ? 'הוא נפרש למלבן שטוח.' : phaseOf(p) === 'start' ? 'הוא עוטף את הכדור.' : 'התפר שלו נפתח והוא נפרש.'} ${circles}`;
+  if (m === 'cone') return `כדור הארץ התלת־ממדי וחרוט שקוף למחצה שנוגע בו לאורך קו הרוחב 45° צפון, וקודקודו מעל הקוטב. החרוט פתוח ב־${pct}%: ${phaseOf(p) === 'end' ? 'הוא נפרש למניפה שטוחה.' : phaseOf(p) === 'start' ? 'הוא מונח על הכדור.' : 'התפר שלו נפתח והוא נפרש.'} ${circles}`;
+  return `כדור הארץ התלת־ממדי ומישור שקוף למחצה שנוגע בו בקוטב הצפוני. ${phaseOf(p) === 'end' ? 'מבט מלמעלה על המישור.' : phaseOf(p) === 'start' ? 'מבט מהצד.' : `המבט עולה מעל הקוטב (${pct}%).`} ${circles}`;
 }
 
 /** The map, for its accessible name. */
 export const MAP_DESCRIPTION: Record<Method, string> = {
   cyl: 'מפת עולם מלבנית, מקו רוחב 80° דרום עד 80° צפון. קווי האורך והרוחב ישרים ונחתכים בניצב, כל 15 מעלות.',
-  cone: 'מפה בצורת מניפה של חצי הכדור הצפוני, מקו רוחב 10° עד 80° צפון. קווי הרוחב הם קשתות, וקווי האורך מתכנסים לעבר הקודקוד.',
+  cone: 'מפה בצורת מניפה של רצועה מחצי הכדור הצפוני, מקו רוחב 10° עד 80° צפון. קווי הרוחב הם קשתות, וקווי האורך מתכנסים לעבר הקודקוד.',
   az: 'מפה עגולה סביב הקוטב הצפוני, עד קו רוחב 10° צפון. קווי הרוחב הם מעגלים, וקווי האורך יוצאים מהמרכז כמו קרניים.',
 };
 
+/** The map's name with the equal circles' stretch on it (along the parallel, against the meridian). */
+const stretchSaid = (m: Method, lat: number) => (stretchText(m, lat) === '1.00' ? `ב־${lat}° ללא שינוי` : `ב־${lat}° פי ${stretchText(m, lat)}`);
+export const mapLabelWithCircles = (m: Method) =>
+  `${MAP_DESCRIPTION[m]} שלושת העיגולים השווים נמתחים במפה לאורך קו הרוחב, ביחס לאורכם לאורך קו האורך: ${[20, 45, 70].map((lat) => stretchSaid(m, lat)).join(', ')}.`;
+
 /* ───────────────────────── practice ───────────────────────── */
 
-/** First round: not the tabs' order. Later rounds: other orders, none of them the tabs'. */
-export const FIRST_ORDER: Method[] = ['cone', 'az', 'cyl'];
-export const REPEAT_ORDERS: Method[][] = [
-  ['az', 'cyl', 'cone'],
-  ['cyl', 'az', 'cone'],
-  ['az', 'cone', 'cyl'],
-  ['cone', 'cyl', 'az'],
-];
+/** A practice task: a method's map, whole — or a window of it (`part`), so the method is read
+    from the grid itself and not recalled from the outline seen in the lab. */
+export type Target = { m: Method; part: boolean };
 
+/** The windows, in flat coordinates, clear of every outline: cylinder 20°W–70°E × 35°S–55°N;
+    cone around 30°W–50°E × 30°–70°N; plane the pole ±50° (the parallels 45°–75°N whole). */
+export const WINDOW: Record<Method, Box> = {
+  cyl: { x0: -20 * D2R, x1: 70 * D2R, y0: -35 * D2R, y1: 55 * D2R },
+  cone: regionBox('cone', 30, 70, -30, 50),
+  az: { x0: -50 * D2R, x1: 50 * D2R, y0: -50 * D2R, y1: 50 * D2R },
+};
+
+const T = (m: Method, part: boolean): Target => ({ m, part });
+/** Four tasks a round: all three methods and one of them again, never twice in a row, so no task
+    can be answered by elimination. Each round has one whole map; the rest are windows. */
+export const ROUNDS: Target[][] = [
+  [T('cone', false), T('az', true), T('cyl', true), T('cone', true)],
+  [T('az', false), T('cyl', true), T('az', true), T('cone', true)],
+  [T('cyl', true), T('cone', false), T('az', true), T('cyl', true)],
+  [T('az', true), T('cone', true), T('cyl', false), T('cone', true)],
+];
+/** A second wrong check shows the answer. */
+export const MAX_MISSES = 2;
+
+export type Outcome = 'right' | 'shown';
 export type PracticeState = {
-  order: Method[];
+  order: Target[];
   index: number;
   /** the surface chosen now (not yet checked, or checked) */
   pick: Method | null;
   /** the surface the last check was about; cleared when the pick changes */
   checked: Method | null;
-  /** per task: answered right (after any number of tries) */
-  solved: boolean[];
-  /** checks made on this task */
-  tries: number;
-  hint: boolean;
+  /** wrong checks on this task */
+  misses: number;
+  /** per task: answered right (after any tries) or shown after the second miss; null while open */
+  outcome: (Outcome | null)[];
   /** the summary has been reached */
   done: boolean;
   round: number;
 };
 
-export const initialPractice = (): PracticeState => ({ order: [...FIRST_ORDER], index: 0, pick: null, checked: null, solved: [false, false, false], tries: 0, hint: false, done: false, round: 0 });
+export const initialPractice = (): PracticeState => ({
+  order: ROUNDS[0].map((t) => ({ ...t })),
+  index: 0,
+  pick: null,
+  checked: null,
+  misses: 0,
+  outcome: ROUNDS[0].map(() => null),
+  done: false,
+  round: 0,
+});
 
-export type PracticeAction = { type: 'pick'; m: Method } | { type: 'check' } | { type: 'hint' } | { type: 'next' } | { type: 'finish' } | { type: 'restart' };
+export type PracticeAction = { type: 'pick'; m: Method } | { type: 'check' } | { type: 'next' } | { type: 'finish' } | { type: 'restart' };
 
-export const targetOf = (s: PracticeState): Method => s.order[s.index];
-export const isSolved = (s: PracticeState) => s.solved[s.index];
+export const targetOf = (s: PracticeState): Method => s.order[s.index].m;
+export const isPart = (s: PracticeState): boolean => s.order[s.index].part;
+/** The task is over: answered right, or its answer shown. */
+export const isOver = (s: PracticeState) => s.outcome[s.index] !== null;
 
 export function practiceReducer(s: PracticeState, a: PracticeAction): PracticeState {
   switch (a.type) {
     case 'pick':
-      if (s.done || isSolved(s) || s.pick === a.m) return s;
+      if (s.done || isOver(s) || s.pick === a.m) return s;
       return { ...s, pick: a.m, checked: s.checked === a.m ? s.checked : null };
     case 'check': {
-      if (s.done || isSolved(s) || !s.pick || s.checked === s.pick) return s;
+      if (s.done || isOver(s) || !s.pick || s.checked === s.pick) return s;
       const right = s.pick === targetOf(s);
-      const solved = right ? s.solved.map((v, i) => (i === s.index ? true : v)) : s.solved;
-      return { ...s, checked: s.pick, tries: s.tries + 1, solved };
+      const misses = right ? s.misses : s.misses + 1;
+      const o: Outcome | null = right ? 'right' : misses >= MAX_MISSES ? 'shown' : null;
+      return { ...s, checked: s.pick, misses, outcome: o ? s.outcome.map((v, i) => (i === s.index ? o : v)) : s.outcome };
     }
-    case 'hint':
-      return s.done || isSolved(s) || s.hint ? s : { ...s, hint: true };
     case 'next':
-      if (!isSolved(s) || s.index >= s.order.length - 1) return s;
-      return { ...s, index: s.index + 1, pick: null, checked: null, tries: 0, hint: false };
+      if (!isOver(s) || s.index >= s.order.length - 1) return s;
+      return { ...s, index: s.index + 1, pick: null, checked: null, misses: 0 };
     case 'finish':
-      return s.solved.every(Boolean) ? { ...s, done: true } : s;
+      return s.outcome.every((o) => o !== null) ? { ...s, done: true } : s;
     case 'restart': {
-      const order = REPEAT_ORDERS[s.round % REPEAT_ORDERS.length];
-      return { ...initialPractice(), order: [...order], round: s.round + 1 };
+      const round = s.round + 1;
+      const order = ROUNDS[round % ROUNDS.length];
+      return { ...initialPractice(), order: order.map((t) => ({ ...t })), outcome: order.map(() => null), round };
     }
     default:
       return s;
@@ -582,48 +676,49 @@ export function practiceReducer(s: PracticeState, a: PracticeAction): PracticeSt
 }
 
 export const QUESTION = 'איזה משטח יוצר את הרשת הזו?';
-export const HINT = 'התבוננו בצורה של קווי הרוחב ובכיוון של קווי האורך: האם הם ישרים, מקושתים או סוגרים מעגל?';
 export const PICK_PROMPT = 'בחרו משטח ולחצו על ״בדיקת תשובה״.';
+/** After a miss: where to look — the grid's parallels — never what the target shows. */
+export const LOOK = 'התבוננו בקווי הרוחב במפת היעד: האם הם ישרים, קשתות או מעגלים שלמים?';
+
+/** What the chosen surface makes — said first in a miss (it is about the choice, not the target). */
+export const MADE: Record<Method, string> = {
+  cyl: 'גליל נפרש למלבן, וקווי הרוחב בו ישרים.',
+  cone: 'חרוט נפרש למניפה, וקווי הרוחב בו קשתות.',
+  az: 'מישור שנוגע בקוטב יוצר קווי רוחב שהם מעגלים שלמים.',
+};
 
 export const RIGHT: Record<Method, string> = {
-  cone: 'נכון. החרוט נפתח למניפה: קווי הרוחב מקושתים וקווי האורך מתכנסים.',
-  az: 'נכון. בדוגמה הזו המישור יוצר מפה עגולה סביב מרכז ההיטל, עם קווים רדיאליים ומעגליים.',
-  cyl: 'נכון. הגליל נפתח למלבן, וברשת הזו קווי האורך והרוחב ישרים.',
+  cone: 'נכון. החרוט נפרש למניפה: קווי הרוחב הם קשתות, וקווי האורך מתכנסים לקודקוד.',
+  az: 'נכון. במישור קווי הרוחב הם מעגלים שלמים סביב נקודת המגע, וקווי האורך יוצאים ממנה.',
+  cyl: 'נכון. בגליל שנפרש קווי הרוחב והאורך ישרים ונחתכים בניצב.',
 };
 
-/** What the chosen surface makes — said first in a miss. */
-const MADE: Record<Method, Record<Method, string>> = {
-  // [chosen][target]
-  cyl: { cyl: '', cone: 'הגליל נפתח למלבן.', az: 'הגליל נפתח למלבן, עם קווים ישרים.' },
-  cone: { cyl: 'החרוט נפתח למניפה, עם קווי רוחב מקושתים.', cone: '', az: 'החרוט נפתח למניפה: קווי הרוחב שלה אינם נסגרים למעגל.' },
-  az: { cyl: 'המישור יוצר כאן מפה עגולה, עם קווי רוחב מעגליים.', cone: 'המישור יוצר כאן מפה עגולה: קווי הרוחב שלה הם מעגלים שלמים סביב מרכז ההיטל.', az: '' },
-};
-/** What the target map shows — the gap to look at, never the surface's name. */
-const TARGET_GRID: Record<Method, Record<Method, string>> = {
-  // [target][chosen]
-  cyl: { cyl: '', cone: 'במפת היעד קווי האורך והרוחב ישרים ונחתכים בניצב', az: 'במפת היעד קווי האורך והרוחב ישרים ונחתכים בניצב' },
-  cone: { cyl: 'במפת היעד קווי הרוחב מקושתים וקווי האורך מתכנסים', cone: '', az: 'במפת היעד קווי הרוחב הם קשתות בלבד, וקווי האורך מתכנסים לנקודה מחוץ למפה' },
-  az: { cyl: 'במפת היעד קווי הרוחב הם מעגלים שלמים סביב נקודת מרכז, וקווי האורך יוצאים ממנה', cone: 'במפת היעד קווי הרוחב הם מעגלים שלמים סביב נקודת מרכז, וקווי האורך יוצאים ממנה', az: '' },
+/** The answer, after the second miss: the surface and the grid that gives it away. */
+export const SHOWN: Record<Method, string> = {
+  cyl: 'התשובה: גליל. במפה קווי הרוחב והאורך ישרים ונחתכים בניצב, כמו בגליל שנפרש למלבן.',
+  cone: 'התשובה: חרוט. במפה קווי הרוחב הם קשתות, וקווי האורך מתכנסים לנקודה שמחוץ למפה: קודקוד החרוט.',
+  az: 'התשובה: מישור. במפה קווי הרוחב הם מעגלים שלמים סביב הקוטב, וקווי האורך יוצאים ממנו.',
 };
 
-export function wrongMessage(chosen: Method, target: Method): string {
-  return `${MADE[chosen][target]} ${TARGET_GRID[target][chosen]} — בדקו איזה משטח יכול ליצור את הרשת הזו.`;
-}
-
-export type Feedback = { tone: 'info' | 'right' | 'wrong'; text: string; hint: string | null };
+export type Feedback = { tone: 'info' | 'right' | 'wrong' | 'shown'; text: string };
 
 /** The practice's feedback line now (null: the summary). */
 export function feedbackOf(s: PracticeState): Feedback | null {
   if (s.done) return null;
   const target = targetOf(s);
-  const hint = s.hint && !isSolved(s) ? HINT : null;
-  if (s.checked) return s.checked === target ? { tone: 'right', text: RIGHT[target], hint: null } : { tone: 'wrong', text: wrongMessage(s.checked, target), hint };
-  return { tone: 'info', text: PICK_PROMPT, hint };
+  const o = s.outcome[s.index];
+  if (o === 'right') return { tone: 'right', text: RIGHT[target] };
+  if (o === 'shown') return { tone: 'shown', text: SHOWN[target] };
+  if (s.checked) return { tone: 'wrong', text: `${MADE[s.checked]} ${LOOK}` };
+  return { tone: 'info', text: s.misses ? LOOK : PICK_PROMPT };
 }
 
-export const SUMMARY_TITLE = 'זיהיתם את שלוש שיטות ההטלה';
-export const SUMMARY: { m: Method; surface: string; shape: string }[] = [
-  { m: 'cyl', surface: 'גליל', shape: 'מלבן' },
-  { m: 'cone', surface: 'חרוט', shape: 'מניפה' },
-  { m: 'az', surface: 'מישור', shape: 'מפה עגולה בדוגמה הקוטבית' },
+export const SUMMARY_TITLE = 'סיכום: שלוש שיטות ההטלה';
+/** The summary: each surface, the shape it unrolls into, and where its map is least distorted. */
+export const SUMMARY: { m: Method; surface: string; shape: string; near: string }[] = [
+  { m: 'cyl', surface: 'גליל', shape: 'מלבן', near: 'עיוות קטן ליד קו המשווה' },
+  { m: 'cone', surface: 'חרוט', shape: 'מניפה', near: 'עיוות קטן ליד קו הרוחב 45°' },
+  { m: 'az', surface: 'מישור', shape: 'מפה עגולה בדוגמה הקוטבית', near: 'עיוות קטן ליד הקוטב' },
 ];
+/** Said of these three examples only: a secant surface (UTM's cylinder) is true on two lines, not one. */
+export const SUMMARY_LINE = 'בשלוש הדוגמאות כאן העיוות קטן ליד המקום שבו המשטח נוגע בכדור, וגדל ככל שמתרחקים ממנו.';

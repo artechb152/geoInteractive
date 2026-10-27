@@ -1,44 +1,58 @@
-// QA for the lesson-6 location-check activity ("באיזה אזור אתם נמצאים?").
+// Browser QA for the lesson-6 location-check activity ("באיזה אזור אתם נמצאים?"),
+// as implemented after task 30 and its follow-up (2026-10-27): field readings above
+// the views; the decision row (area → check → reset) under the observation; one
+// fixed-height result panel under both views; no road-split button, no GPS help
+// dialog, no measurement boxes, no "פירוט" popover.
 //
 // Usage (dev server running; default http://localhost:3000):
 //   node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-location-check.mjs [outDir] [--base=http://localhost:3000] [--capture-fallback]
 //
 // Checks (exit code 1 on any failure):
-//   entry         the scene is reached through the side-nav button "עקרונות הניווט"
-//   one screen    with the card aligned under the site header at 1440 × 1122, the task, the two
-//                 measurements, both views, the map tools, the area choice, the check button and
-//                 the feedback are all inside the viewport, none overlapping; body text ≥ 16 px;
-//                 the card does not grow when feedback appears (checked in every captured state)
-//   4:3           the observation frame is 4:3; the map frame has the same height
-//   registration  the canvas' own projection (dev probe) vs the pure projectToView() for F,
-//                 a G1 crown and a G2 crown, at the frame's real size — ≤ 1.5 px
-//   opening view  G1 left of G2, both inside the frame; F off-frame to the right
-//   one choice    a click in the observation selects nothing; the area is chosen on the map
-//                 (halo or name plate) or with the buttons, and both stay in sync
-//   map values    a chosen area shows its bearing to the road split and its distance from the
-//                 last known position, in plain ink, before any check (no verdict colour, no result)
-//   mouse flow    area 2 (direction contradiction) then area 1 (success)
-//   stale         changing the area after a check: "הבחירה השתנתה — בדקו שוב", no old result
-//                 layers, the new area's neutral values shown
-//   wording       no "מזלג" anywhere in the activity (text, labels, aria)
-//   keyboard flow the same answer through the radio group only — same state, same verdict
-//   road split    "הראו את התפצלות הדרך" frames the split (043°, 30°); in the rendered frame at the
-//                 normal panel size both arms are clearly brighter than the ground beside them
-//   measurement   "הראו את התפצלות הדרך" turns the view to 043° without changing the choice;
-//                 turning the view never changes the measured bearing shown
-//   help          the GPS help dialog opens, and closes with Escape
-//   reset         returns to the opening state (and the camera to the opening view)
-//   nav           another sub-topic and back: one canvas, no duplicated document listeners
-//   loading       placeholder while the ground textures load; the choice usable; nothing revealed
-//   no WebGL      static 4:3 picture of the same world and camera, choice + check still work
-//   console       no page errors
+//   entry          the scene is reached through the side-nav button "עקרונות הניווט"
+//   fit            at 1440 × 1122, card under the site header: title, instruction, field readings,
+//                  both views, decision row, map tools and result panel inside the viewport and not
+//                  overlapping; body text ≥ 16 px; one live region; the result never overflows its
+//                  panel; nothing moves or resizes between states; the same card height in every run
+//   field readings 043° to the road split and about 300 m from the last known position (READINGS),
+//                  above the views from the opening on, unchanged in every state
+//   frames         observation 4:3, the map the same height
+//   registration   the canvas' own projection (dev probe) vs projectToView() for F and a crown of
+//                  each grove, at the frame's real size — ≤ 1.5 px
+//   opening view   G1 left of G2, both inside the frame; F off-frame to the right
+//   one choice     a click in the observation selects nothing; map clicks (halo, name plate) and the
+//                  radio buttons choose the same area and stay in sync
+//   map values     a chosen area shows its bearing and distance in plain ink before any check:
+//                  300 מ׳ for both areas (the distance cannot decide), 043° vs 008°
+//   no area        a check with no area: "עדיין לא נבחר אזור", no verdict; the area chosen next is a
+//                  first choice, not a change (feedback "pending", view().stale false)
+//   wrong          area 2: ✗ direction 008° vs 043° (35°, 5° allowed), ✓ distance; says what to
+//                  match again; never names area 1; no scenario viewpoint on the map
+//   change         after a check: "הבחירה השתנתה — … עדיין לא נבדק", old result layers gone
+//   success        area 1: both rows ✓, worded to the evidence (an area, not a point; keep checking
+//                  along the route); the map marks "נקודת התצפית בתרחיש" inside area 1 with the field
+//                  of view, never "מיקום הצופה", its label clear of every other map label; the map key
+//                  separates the supported area from the scenario viewpoint, only after success
+//   after success  a change voids it; re-choosing the checked area shows its verdict; reset returns
+//                  to the opening state and view
+//   road split     at the road-split look both arms are brighter than the ground beside them
+//   nav            another sub-topic and back: one canvas, no duplicated document/window listeners
+//   keyboard       radios (arrows, RTL) → Tab "בדקו את הבחירה" (Enter) → Shift+Tab, correct → Tab
+//                  "איפוס" (Space); arrow keys on the observation turn the view
+//   loading        ground textures held: the shared loader "טוען תצפית תלת־ממדית…" over the frame,
+//                  the readings and the choice usable, nothing revealed; released: the loader is gone
+//                  once the canvas is drawn
+//   reduced motion a new look is applied at once, no easing
+//   no WebGL       static 4:3 picture, no loader; same layout; wrong → change → success, same feedback
+//                  and the same scenario-viewpoint mark
+//   console        no page errors
 // --capture-fallback renders public/assets/lessons/topic06/location-check/observation-north.jpg
 // from the live canvas at the opening look (overlays hidden), 4:3 at 2×.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
-import { CANDIDATES, FORK, ROAD_WIDTH_M } from '../../src/components/lessons/topic-06/locationCheckScenario.ts';
-import { projectToView } from '../../src/components/lessons/topic-06/locationCheckGeometry.ts';
+import { CANDIDATES, FORK, OBSERVER, READINGS, ROAD_WIDTH_M } from '../../src/components/lessons/topic-06/locationCheckScenario.ts';
+import { distance, formatBearing, projectToView, worldToMap } from '../../src/components/lessons/topic-06/locationCheckGeometry.ts';
 import { ROAD_VERGE_M, crownShape, groveTrees, heightAt, observerEye, roads, terrainClear } from '../../src/components/lessons/topic-06/locationCheckTerrain.ts';
+import { view } from '../../src/components/lessons/topic-06/locationCheckState.ts';
 import { INITIAL_LOOK, LOOK_LIMITS } from '../../src/components/lessons/topic-06/locationCheckViewStore.ts';
 
 const args = process.argv.slice(2);
@@ -54,6 +68,12 @@ const fail = (m) => {
   console.log('FAIL', m);
 };
 const ok = (m) => console.log('ok  ', m);
+
+const ACT = '[data-activity="location-check"]';
+const VIEWPOINT = 'נקודת התצפית בתרחיש';
+const LOADER = 'טוען תצפית תלת־ממדית';
+/** Text as read: bidi isolates dropped, spaces collapsed. */
+const norm = (s) => s.replace(/[⁦-⁩]/g, '').replace(/\s+/g, ' ').trim();
 
 // Count document/window listeners (adds − removes) to catch duplicates after remounts.
 const LISTENER_SPY = () => {
@@ -73,9 +93,10 @@ const LISTENER_SPY = () => {
   }
 };
 
-async function openActivity(browser, opts = {}) {
+async function openActivity(browser, opts = {}, { route } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1122 }, ...opts });
   await ctx.addInitScript(LISTENER_SPY);
+  if (route) await ctx.route(route.pattern, route.handler);
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -83,54 +104,64 @@ async function openActivity(browser, opts = {}) {
   await page.goto(URL, { waitUntil: 'networkidle', timeout: 240000 });
   // Entry through the side-nav button, not the hash alone.
   await page.getByRole('button', { name: /עקרונות הניווט/ }).first().click();
-  await page.waitForSelector('#scene-principles [data-activity="location-check"]', { timeout: 60000 });
-  for (let y = 0; y < 7000; y += 700) {
-    await page.evaluate((v) => window.scrollTo(0, v), y);
-    await page.waitForTimeout(80);
-  }
+  await page.waitForSelector(`#scene-principles ${ACT}`, { state: 'attached', timeout: 60000 });
+  await scrollThrough(page);
   await alignActivity(page);
   return { ctx, page, errors };
 }
 
-/** Card top just under the site header — "aligned to the start of the content area". */
+/** Scroll down the lesson once so lazy content above the card has its real height. */
+async function scrollThrough(page) {
+  for (let y = 0; y < 7000; y += 700) {
+    await page.evaluate((v) => window.scrollTo({ top: v, behavior: 'instant' }), y);
+    await page.waitForTimeout(60);
+  }
+}
+
+/** Card top just under the site header. */
 async function alignActivity(page) {
-  await page.evaluate(() => {
+  await page.evaluate((sel) => {
     const header = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
-    const el = document.querySelector('[data-activity="location-check"]');
-    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - header - 4);
-  });
+    const el = document.querySelector(sel);
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - header - 16, behavior: 'instant' });
+  }, ACT);
   await page.waitForTimeout(400);
 }
 
-async function waitFor3D(page) {
-  await page.waitForFunction(() => document.querySelector('[data-activity="location-check"] canvas') && !document.body.innerText.includes('טוען תצפית תלת־ממדית'), null, {
-    timeout: 240000,
-  });
-  await page.waitForTimeout(800);
-}
+const waitFor3D = (page) =>
+  page
+    .waitForFunction(([sel, loader]) => document.querySelector(`${sel} canvas`) && !document.querySelector(sel).innerText.includes(loader), [ACT, LOADER], { timeout: 240000 })
+    .then(() => page.waitForTimeout(800));
 
+const act = (page) => page.locator(ACT);
 const state = (page) => page.evaluate(() => window.__lc.state);
+const viewOf = async (page) => view(await state(page));
 const frameBox = (page) => page.locator('[data-obs-frame]').boundingBox();
-const areaGroup = (page) => page.getByRole('radiogroup', { name: 'בחרו אזור' });
-const checkButton = (page) => page.getByRole('button', { name: 'בדקו את הבחירה' });
-const feedbackKind = (page) => page.locator('[data-feedback]').getAttribute('data-feedback');
+const areaGroup = (page) => act(page).getByRole('radiogroup', { name: 'בחרו אזור' });
+const radio = (page, name) => areaGroup(page).getByRole('radio', { name });
+const checkButton = (page) => act(page).getByRole('button', { name: 'בדקו את הבחירה' });
+const resetButton = (page) => act(page).getByRole('button', { name: 'איפוס' });
+const feedbackKind = (page) => act(page).locator('[data-feedback]').getAttribute('data-feedback');
+const feedbackText = async (page) => norm(await act(page).locator('[data-feedback]').innerText());
 const count = (page, sel) => page.locator(sel).count();
+const resultLayers = (page) => count(page, '[data-panel="map"] [data-overlay="result"], [data-panel="map"] [data-overlay="observer"]');
 
 /** Client px of a map point (E, N) through the SVG's own screen CTM. */
 async function mapPoint(page, E, N) {
+  const m = worldToMap({ E, N });
   return page.evaluate(
-    ([e, n]) => {
+    ([x, y]) => {
       const svg = document.querySelector('[data-panel="map"] svg');
-      const p = new DOMPoint(e, 1050 - n).matrixTransform(svg.getScreenCTM());
+      const p = new DOMPoint(x, y).matrixTransform(svg.getScreenCTM());
       return { x: p.x, y: p.y };
     },
-    [E, N],
+    [m.x, m.y],
   );
 }
 async function clickMap(page, E, N) {
   const pt = await mapPoint(page, E, N);
   await page.mouse.click(pt.x, pt.y);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(350);
 }
 
 /** A visible crown of a grove, as an eye-space point for projection. */
@@ -149,6 +180,20 @@ async function clickInView(page, p) {
   const look = await page.evaluate(() => window.__lc.look.getLive());
   const v = projectToView(look, box.width / box.height, observerEye(), p);
   await page.mouse.click(box.x + v.x * box.width, box.y + v.y * box.height);
+}
+
+/** Every value the activity shows from READINGS, as displayed. */
+const FIELD = { bearing: formatBearing(READINGS.forkBearingDeg), distance: `כ־${READINGS.distanceM} מ׳` };
+
+/** The field readings line: both values, from the opening on. */
+async function checkReadings(page, label) {
+  const el = act(page).locator('[data-field-readings]');
+  if (!(await el.count())) return fail(`${label}: no field readings line`);
+  const t = norm(await el.innerText());
+  if (!t.includes(FIELD.bearing) || !t.includes(FIELD.distance) || !/נמדד בשטח/.test(t) || !/התפצלות הדרך/.test(t) || !/המיקום האחרון/.test(t))
+    fail(`${label}: field readings "${t}"`);
+  else ok(`${label}: field readings "${t}"`);
+  return t;
 }
 
 /**
@@ -170,6 +215,73 @@ async function checkAreaValues(page, id, { dir, dist }, label) {
   if (v.results) problems.push('result layers drawn before the check');
   if (problems.length) fail(`${label}: ${problems.join('; ')}`);
   else ok(`${label}: map shows ${dir} to the road split and ${dist} from the last known position, neutral, no result`);
+}
+
+/**
+ * The scenario viewpoint on the map: absent unless the check succeeded; when
+ * shown, named as the scenario's, inside area 1's halo, its label clear of
+ * every other label on the sheet.
+ */
+async function checkViewpoint(page, expected, label) {
+  const v = await page.evaluate(() => {
+    const svg = document.querySelector('[data-panel="map"] svg');
+    const g = svg.querySelector('[data-overlay="observer"]');
+    if (!g) return null;
+    const box = (el) => {
+      const b = el.getBoundingClientRect();
+      return { x: b.x, y: b.y, r: b.right, b: b.bottom };
+    };
+    const own = [...g.querySelectorAll('text')];
+    const ownBoxes = own.map(box);
+    const clashes = [...svg.querySelectorAll('text')]
+      .filter((t) => !g.contains(t) && t.textContent.trim())
+      .filter((t) => {
+        const b = box(t);
+        return ownBoxes.some((o) => Math.min(o.r, b.r) - Math.max(o.x, b.x) > 1 && Math.min(o.b, b.b) - Math.max(o.y, b.y) > 1);
+      })
+      .map((t) => t.textContent.trim());
+    const dot = [...g.querySelectorAll('circle')].at(-1);
+    const halo = svg.querySelector('[data-candidate="area-1"] circle');
+    return {
+      label: own.map((t) => t.textContent.trim()).join(' '),
+      clashes,
+      dot: { x: +dot.getAttribute('cx'), y: +dot.getAttribute('cy') },
+      halo: { x: +halo.getAttribute('cx'), y: +halo.getAttribute('cy'), r: +halo.getAttribute('r'), fill: halo.getAttribute('fill') },
+    };
+  });
+  if (!expected) {
+    if (v) fail(`${label}: the scenario viewpoint is on the map before a successful check`);
+    return;
+  }
+  if (!v) return fail(`${label}: no scenario viewpoint after success`);
+  const problems = [];
+  if (v.label !== VIEWPOINT) problems.push(`label "${v.label}"`);
+  const o = worldToMap(OBSERVER);
+  if (Math.hypot(v.dot.x - o.x, v.dot.y - o.y) > 0.5) problems.push(`mark at ${v.dot.x},${v.dot.y}, not OBSERVER`);
+  if (Math.hypot(v.dot.x - v.halo.x, v.dot.y - v.halo.y) > v.halo.r) problems.push('mark outside the area 1 halo');
+  if (v.halo.fill === 'none') problems.push('area 1 not drawn as the chosen area');
+  if (v.clashes.length) problems.push(`label overlaps ${v.clashes.map((c) => `"${c}"`).join(', ')}`);
+  if (problems.length) fail(`${label}: scenario viewpoint — ${problems.join('; ')}`);
+  else ok(`${label}: map marks "${VIEWPOINT}" at the scenario's observer, inside the chosen area 1, label clear of the other labels`);
+}
+
+/** The map key's entries (opened through its own button, closed with Escape). */
+async function legendText(page) {
+  await act(page).getByRole('button', { name: 'מקרא המפה' }).click();
+  await page.waitForTimeout(250);
+  const t = norm(await act(page).locator('[data-legend="map"]').innerText());
+  return t;
+}
+const closeLegend = async (page) => {
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+};
+
+/** The look at which the road split is framed (yaw = the measured bearing, the narrowest field of view). */
+function roadSplitLook() {
+  const eye = observerEye();
+  const elev = (Math.atan2(heightAt(FORK.E, FORK.N) - eye.heightM, distance(OBSERVER, FORK)) * 180) / Math.PI;
+  return { yawDeg: READINGS.forkBearingDeg, pitchDeg: elev - 3, hfovDeg: LOOK_LIMITS.hfovMin };
 }
 
 /**
@@ -249,63 +361,107 @@ async function checkRoadContrast(page, label) {
 }
 
 /**
- * One-screen check: every part of the task inside the viewport, no two parts
- * overlapping, body text at least 16 px, card height unchanged.
+ * One screen, and nothing moves: every part inside the viewport under the
+ * header, no two parts overlapping, body text ≥ 16 px, one live region, the
+ * result inside its panel, the field readings unchanged; each part's top and
+ * height equal to the run's first state, the card's height equal in every run.
  */
-let cardHeight = null;
-async function checkFit(page, label) {
-  const m = await page.evaluate(() => {
-    const act = document.querySelector('[data-activity="location-check"]');
-    const box = (el) => {
+let firstCardHeight = null;
+let readingsText = null;
+let reference = null;
+async function layout(page, label) {
+  const m = await page.evaluate((sel) => {
+    const a = document.querySelector(sel);
+    const r = (el) => {
       if (!el) return null;
       const b = el.getBoundingClientRect();
-      return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right, b: b.bottom };
+      return { x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10, w: Math.round(b.width * 10) / 10, h: Math.round(b.height * 10) / 10 };
     };
-    const parts = {
-      title: box(act.querySelector('h3')),
-      instruction: box(act.querySelector('h3')?.parentElement?.nextElementSibling),
-      measurements: box(act.querySelector('[data-measurements]')),
-      observation: box(act.querySelector('[data-panel="observation"]')),
-      map: box(act.querySelector('[data-panel="map"]')),
-      mapTools: box(act.querySelector('[data-map-tools]')),
-      areaChoice: box(act.querySelector('[data-choice="area"]')),
-      check: box([...act.querySelectorAll('button')].find((b) => b.textContent.includes('בדקו את הבחירה'))),
-      feedback: box(act.querySelector('[data-feedback]')),
-    };
-    // Body text: the instruction, the measurements, the choice, the feedback. (Tags and in-view labels use the design system's chip sizes.)
-    const fonts = [...act.querySelectorAll('[data-feedback] p, [data-feedback] li, [data-choice] button, [data-choice] > span, [data-measurements] > div, h3 ~ p, p')]
-      .filter((el) => el.offsetParent && !el.closest('.sr-only'))
+    const fb = a.querySelector('[data-feedback]');
+    const fonts = [...a.querySelectorAll('[data-feedback] *, [data-decision] *, h3 ~ p, h3 ~ p *')]
+      .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && !el.closest('.sr-only') && !el.closest('button:not([role="radio"])'))
       .map((el) => parseFloat(getComputedStyle(el).fontSize));
-    const header = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
-    return { parts, card: box(act), vh: innerHeight, header, minFont: Math.min(...fonts), overflowY: getComputedStyle(act).overflowY };
-  });
-  const problems = [];
-  for (const [k, b] of Object.entries(m.parts)) {
-    if (!b) problems.push(`${k} missing`);
-    else if (b.y < m.header - 1 || b.b > m.vh + 0.5) problems.push(`${k} outside the viewport (${Math.round(b.y)}–${Math.round(b.b)})`);
+    const buttons = [...a.querySelectorAll('button')];
+    return {
+      header: document.querySelector('header')?.getBoundingClientRect().bottom ?? 0,
+      vh: innerHeight,
+      card: r(a),
+      // Side-by-side parts that must not overlap.
+      parts: {
+        title: r(a.querySelector('h3')),
+        instruction: r(a.querySelector('h3 + p')),
+        readings: r(a.querySelector('[data-field-readings]')),
+        observation: r(a.querySelector('[data-panel="observation"]')),
+        map: r(a.querySelector('[data-panel="map"]')),
+        decision: r(a.querySelector('[data-decision]')),
+        mapTools: r(a.querySelector('[data-map-tools]')),
+        feedback: r(fb),
+      },
+      // Controls inside the decision row: only "inside the viewport".
+      controls: {
+        areaChoice: r(a.querySelector('[data-choice="area"]')),
+        check: r(buttons.find((b) => b.textContent.trim() === 'בדקו את הבחירה')),
+        reset: r(buttons.find((b) => b.textContent.trim() === 'איפוס')),
+      },
+      overflow: fb.scrollHeight - fb.clientHeight,
+      contentBottom: fb.firstElementChild.getBoundingClientRect().bottom,
+      fbInnerBottom: fb.getBoundingClientRect().bottom - parseFloat(getComputedStyle(fb).paddingBottom) * (fb.getBoundingClientRect().height / fb.offsetHeight) + 0.5,
+      minFont: Math.min(...fonts),
+      scale: a.getBoundingClientRect().width / a.offsetWidth,
+      liveRegions: a.querySelectorAll('[aria-live]').length,
+      overflowY: getComputedStyle(a).overflowY,
+      readings: (a.querySelector('[data-field-readings]')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      html: a.outerHTML,
+    };
+  }, ACT);
+  const p = [];
+  for (const [k, b] of Object.entries({ card: m.card, ...m.parts, ...m.controls })) {
+    if (!b) p.push(`${k} missing`);
+    else if (b.y < m.header - 1 || b.y + b.h > m.vh + 0.5) p.push(`${k} outside the viewport (${b.y}–${Math.round(b.y + b.h)})`);
   }
   const entries = Object.entries(m.parts).filter(([, b]) => b);
   for (let i = 0; i < entries.length; i++) {
     for (let j = i + 1; j < entries.length; j++) {
       const [ka, a] = entries[i];
       const [kb, b] = entries[j];
-      if ((ka === 'title' && kb === 'instruction') || (ka === 'instruction' && kb === 'title')) continue;
-      const ix = Math.min(a.r, b.r) - Math.max(a.x, b.x);
-      const iy = Math.min(a.b, b.b) - Math.max(a.y, b.y);
-      if (ix > 1 && iy > 1) problems.push(`${ka} overlaps ${kb}`);
+      const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (ix > 1 && iy > 1) p.push(`${ka} overlaps ${kb}`);
     }
   }
-  if (m.minFont < 16) problems.push(`text below 16 px (${m.minFont})`);
-  if (m.overflowY === 'auto' || m.overflowY === 'scroll') problems.push('the card scrolls');
-  if (m.card.b > m.vh + 0.5) problems.push(`card bottom ${Math.round(m.card.b)} > ${m.vh}`);
-  if (cardHeight === null) cardHeight = m.card.h;
-  else if (Math.abs(m.card.h - cardHeight) > 0.5) problems.push(`card height changed ${cardHeight} → ${m.card.h}`);
-  if (problems.length) fail(`fit [${label}]: ${problems.join('; ')}`);
-  else ok(`fit [${label}]: card ${Math.round(m.card.y)}–${Math.round(m.card.b)} of ${m.vh}, all parts visible, no overlaps, min text ${m.minFont}px`);
+  const { observation, decision, mapTools, feedback, readings } = m.parts;
+  if (readings && observation && readings.y + readings.h > observation.y) p.push('field readings not above the views');
+  if (decision && observation && decision.y < observation.y + observation.h) p.push('decision row not under the observation');
+  if (decision && mapTools && Math.abs(decision.y + decision.h / 2 - (mapTools.y + mapTools.h / 2)) > 3) p.push('decision row not level with the map tools');
+  if (feedback && decision && feedback.y < decision.y + decision.h) p.push('result panel not under the decision row');
+  if (m.overflow > 0) p.push(`result overflows by ${m.overflow}px`);
+  if (m.contentBottom > m.fbInnerBottom) p.push(`result content ends ${Math.round(m.contentBottom - m.fbInnerBottom)}px into the panel's padding`);
+  if (m.minFont < 16) p.push(`text below 16px (${m.minFont})`);
+  if (m.liveRegions !== 1) p.push(`${m.liveRegions} live regions in the activity (expected 1)`);
+  if (m.overflowY === 'auto' || m.overflowY === 'scroll') p.push('the card scrolls');
+  if (m.html.includes('מיקום הצופה')) p.push('"מיקום הצופה" in the activity');
+  if (m.html.includes('מזלג')) p.push('"מזלג" in the activity');
+  if (readingsText === null) readingsText = m.readings;
+  else if (m.readings !== readingsText) p.push(`field readings changed: "${m.readings}"`);
+  if (firstCardHeight === null) firstCardHeight = m.card.h;
+  else if (Math.abs(m.card.h - firstCardHeight) > 0.5) p.push(`card height ${firstCardHeight} → ${m.card.h}`);
+  const now = { card: m.card, ...m.parts, ...m.controls };
+  if (!reference) reference = now;
+  else
+    for (const k of Object.keys(reference)) {
+      const a = reference[k];
+      const b = now[k];
+      if (a && b && (Math.abs(a.y - b.y) > 0.5 || Math.abs(a.h - b.h) > 0.5)) p.push(`${k} moved/resized ${a.y}/${a.h} → ${b.y}/${b.h}`);
+    }
+  if (p.length) fail(`layout [${label}]: ${p.join('; ')}`);
+  else ok(`layout [${label}]: card ${m.card.y}–${Math.round(m.card.y + m.card.h)} of ${m.vh}, all parts visible, no overlaps, nothing moved, result fits, min text ${m.minFont}px (×${m.scale.toFixed(4)} on screen)`);
 }
 
-const shot = (page, name) => page.screenshot({ path: `${outDir}/${name}.png` });
-const crop = async (page, sel, name) => page.locator(sel).first().screenshot({ path: `${outDir}/${name}.png` });
+const shot = async (page, name) => {
+  await page.screenshot({ path: `${outDir}/${name}.png` });
+  await act(page).screenshot({ path: `${outDir}/${name}-card.png` });
+};
+const crop = (page, sel, name) => page.locator(sel).first().screenshot({ path: `${outDir}/${name}.png` });
 
 const browser = await chromium.launch({ channel: 'chrome' });
 
@@ -317,19 +473,40 @@ if (CAPTURE) {
   await page.waitForTimeout(500);
   const box = await frameBox(page);
   if (Math.abs(box.width / box.height - 4 / 3) > 0.01) throw new Error(`frame is not 4:3 (${box.width}×${box.height})`);
-  await page.locator('[data-activity="location-check"] canvas').screenshot({ path: 'public/assets/lessons/topic06/location-check/observation-north.jpg', type: 'jpeg', quality: 86 });
+  await page.locator(`${ACT} canvas`).screenshot({ path: 'public/assets/lessons/topic06/location-check/observation-north.jpg', type: 'jpeg', quality: 86 });
   console.log(`fallback picture written (${Math.round(box.width * 2)}×${Math.round(box.height * 2)})`);
   await ctx.close();
   await browser.close();
   process.exit(0);
 }
 
-// The area plates' centres in map coordinates (the halo is at the area centre; "אזור 1" sits west of it).
 const AREA1 = CANDIDATES.find((c) => c.id === 'area-1').center;
 const AREA2 = CANDIDATES.find((c) => c.id === 'area-2').center;
+// The "אזור 1" name plate sits west of its halo.
 const AREA1_PLATE = { E: 500, N: AREA1.N };
 
-// ---------------------------------------------------------------- mouse flow + screenshots
+const WRONG_ROWS = (t) =>
+  [
+    [/^אזור 2 אינו מתאים למדידות/, 'title names area 2'],
+    [/כיוון להתפצלות הדרך במפה 008° נמדד בשטח 043° אינו מתאים: פער 35°, מותר עד 5°/, 'direction row'],
+    [/מרחק מהמיקום האחרון במפה 300 מ׳ נמדד בשטח כ־300 מ׳ מתאים: בטווח 260–340 מ׳/, 'distance row'],
+    [/המרחק מתאים לשני האזורים ואינו מכריע ביניהם/, 'distance cannot decide'],
+    [/בדקו במפה מאיזה אזור הכיוון להתפצלות הדרך קרוב ל־043°/, 'what to match again'],
+  ].filter(([re]) => !re.test(t)).map(([, what]) => what);
+
+const SUCCESS_ROWS = (t) =>
+  [
+    [/^אזור 1 מתאים לשתי המדידות/, 'title'],
+    [/כיוון להתפצלות הדרך במפה 043° נמדד בשטח 043° מתאים: פער 0°, מותר עד 5°/, 'direction row'],
+    [/מרחק מהמיקום האחרון במפה 300 מ׳ נמדד בשטח כ־300 מ׳ מתאים: בטווח 260–340 מ׳/, 'distance row'],
+    [/המרחק מתאים לשני האזורים, ולכן הכיוון הוא שמכריע/, 'the direction decides'],
+    [/המדידות תומכות באזור, לא בנקודה מדויקת בתוכו/, 'an area, not a point'],
+    [/במצב אמיתי ממשיכים לבדוק את ההתאמה לאורך הדרך/, 'keep checking along the route'],
+  ].filter(([re]) => !re.test(t)).map(([, what]) => what);
+
+const CERTAINTY = /בוודאות|מיקום מדויק|מצאתם את המיקום|אתם נמצאים ב|מיקום הצופה|נכון!/;
+
+// ---------------------------------------------------------------- mouse: every state
 let mouseFinal;
 {
   const { ctx, page, errors } = await openActivity(browser);
@@ -344,31 +521,38 @@ let mouseFinal;
   if (Math.abs(mb.height - (fb.height + 2)) > 3) fail(`map height ${mb.height.toFixed(0)} ≠ observation ${fb.height.toFixed(0)}`);
   else ok(`map ${mb.width.toFixed(0)}×${mb.height.toFixed(0)} — same height as the observation`);
 
+  // Opening: the task, both field readings, an empty result, a clean map.
+  const instruction = norm(await act(page).locator('h3 + p').innerText());
+  if (instruction !== 'כשקליטת אותות הלוויין חסומה או משובשת, אי אפשר להסתמך על GPS, וקובעים את המיקום לפי המפה, המצפן וסימני השטח. בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח.') fail(`instruction text: ${instruction}`);
+  else ok(`instruction: "${instruction}"`);
+  await checkReadings(page, 'opening');
+  let s = await state(page);
+  if (JSON.stringify(Object.keys(s.selections)) !== '["candidateId"]') fail(`selections hold more than the area: ${JSON.stringify(s.selections)}`);
+  if (s.selections.candidateId || s.attempt) fail('opening state is not empty');
+  if (await count(page, '[data-panel="map"] [data-overlay]')) fail('map layers visible before an area is chosen');
+  let t = await feedbackText(page);
+  // 2026-10-27 copy cleanup: the empty panel keeps its height and says nothing.
+  if ((await feedbackKind(page)) !== 'empty' || t.trim() !== '') fail(`opening result panel: ${t}`);
+  else ok('opening: no choice, an empty result panel, clean map');
+  const order = await page.evaluate((sel) => {
+    const d = document.querySelector(`${sel} [data-decision]`);
+    return [...d.querySelectorAll('[data-choice] > span, [role="radio"], button:not([role])')].map((e) => e.textContent.trim());
+  }, ACT);
+  if (order.join('|') !== 'בחרו אזור|אזור 1|אזור 2|בדקו את הבחירה|איפוס') fail(`decision order: ${order.join(' → ')}`);
+  else ok(`decision row in reading order: ${order.join(' → ')}`);
+  if ((await count(page, `${ACT} [role="radiogroup"]`)) !== 1) fail('expected exactly one radio group (the area)');
+  await layout(page, 'opening');
   await shot(page, '01-opening');
-  await crop(page, '[data-panel="observation"]', '01-opening-observation');
   await crop(page, '[data-panel="map"]', '01-opening-map');
-  await checkFit(page, 'opening');
 
-  const s0 = await state(page);
-  if (JSON.stringify(Object.keys(s0.selections)) !== '["candidateId"]') fail(`selections hold more than the area: ${JSON.stringify(s0.selections)}`);
-  else ok('the only choice is the area');
-  if (s0.selections.candidateId || s0.attempt) fail('opening state is not empty');
-  if (await count(page, '[data-overlay]')) fail('map layers visible before an area is chosen');
-  if ((await feedbackKind(page)) !== 'empty') fail('feedback is not empty at the opening');
-  // One radio group in the task (the GPS help dialog has its own, outside the task).
-  const groups = await page.evaluate(() => [...document.querySelectorAll('[data-activity="location-check"] [role="radiogroup"]')].filter((g) => !g.closest('dialog')).length);
-  if (groups !== 1) fail(`expected exactly one radio group in the task (the area), found ${groups}`);
-
-  const html = await page.locator('[data-activity="location-check"]').evaluate((el) => el.outerHTML);
-  if (html.includes('מזלג')) fail('the activity still says "מזלג"');
-  else ok('no "מזלג" in the activity (text, labels, aria)');
-  const instruction = await page.evaluate(() => document.querySelector('[data-activity="location-check"] h3').parentElement.nextElementSibling.textContent);
-  if (instruction.trim() !== 'בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח.') fail(`instruction text: ${instruction}`);
-  else ok('instruction: "בחרו אזור והשוו את הכיוון והמרחק במפה למדידות מהשטח."');
-
-  // Registration at the real frame size: the canvas' own projection vs the pure one.
+  // Registration at the real frame size: the canvas' own projection vs the pure one. The canvas
+  // measures its untransformed (layout) size under the laptop fit, so the probe's px are layout px.
   const eye = observerEye();
   const look = await page.evaluate(() => window.__lc.look.getLive());
+  const layoutFrame = await page.evaluate(() => {
+    const f = document.querySelector('[data-obs-frame]');
+    return { width: f.offsetWidth, height: f.offsetHeight };
+  });
   if (Math.abs(look.yawDeg - INITIAL_LOOK.yawDeg) > 0.01 || Math.abs(look.hfovDeg - INITIAL_LOOK.hfovDeg) > 0.01) fail(`opening look ${JSON.stringify(look)}`);
   const probes = [
     { name: 'F', p: { E: FORK.E, N: FORK.N, heightM: heightAt(FORK.E, FORK.N) } },
@@ -377,10 +561,10 @@ let mouseFinal;
   ];
   for (const { name, p } of probes) {
     const gl = await page.evaluate(([E, N, h]) => window.__lcProbe(E, N, h), [p.E, p.N, p.heightM]);
-    const v = projectToView(look, fb.width / fb.height, eye, p);
-    const err = Math.hypot(gl[0] - v.x * fb.width, gl[1] - v.y * fb.height);
-    if (err > 1.5) fail(`registration ${name}: ${err.toFixed(2)} px`);
-    else ok(`registration ${name}: ${err.toFixed(2)} px`);
+    const v = projectToView(look, layoutFrame.width / layoutFrame.height, eye, p);
+    const err = Math.hypot(gl[0] - v.x * layoutFrame.width, gl[1] - v.y * layoutFrame.height);
+    if (err > 1.5) fail(`registration ${name}: ${err.toFixed(2)} px (frame ${layoutFrame.width}×${layoutFrame.height} layout px)`);
+    else ok(`registration ${name}: ${err.toFixed(2)} px (frame ${layoutFrame.width}×${layoutFrame.height} layout px)`);
   }
   const g1x = projectToView(look, fb.width / fb.height, eye, visibleCrown('G1')).x;
   const g2x = projectToView(look, fb.width / fb.height, eye, visibleCrown('G2')).x;
@@ -391,124 +575,146 @@ let mouseFinal;
   // A click on a grove in the view is not a choice.
   await clickInView(page, visibleCrown('G1'));
   await page.waitForTimeout(300);
-  let s = await state(page);
-  if (s.selections.candidateId || s.attempt || (await count(page, '[data-overlay]'))) fail('a click in the observation changed the task');
+  s = await state(page);
+  if (s.selections.candidateId || s.attempt || (await count(page, '[data-panel="map"] [data-overlay]'))) fail('a click in the observation changed the task');
   else ok('a click on a grove in the observation selects nothing');
 
-  // Area 2 on the map (its halo): the radio follows; the map shows its values, neutral.
+  // Check with no area.
+  await checkButton(page).click();
+  await page.waitForTimeout(400);
+  t = await feedbackText(page);
+  s = await state(page);
+  if ((await feedbackKind(page)) !== 'missing' || !/^עדיין לא נבחר אזור/.test(t) || /מתאים/.test(t)) fail(`check without a choice: ${t}`);
+  else ok(`check without a choice: "${t}" — names what is missing, no verdict`);
+  if (s.selections.candidateId || s.attempt?.result.kind !== 'missing') fail(`check without a choice left ${JSON.stringify(s)}`);
+  if (await resultLayers(page)) fail('result layers after a check with no area');
+  await layout(page, 'check without a choice');
+  await shot(page, '02-check-without-choice');
+
+  // Area 2 on the map (its halo): a first choice, not a change; the radio follows; neutral values.
   await clickMap(page, AREA2.E, AREA2.N);
   s = await state(page);
+  t = await feedbackText(page);
   if (s.selections.candidateId !== 'area-2') fail(`map click → ${s.selections.candidateId}`);
-  else if ((await areaGroup(page).getByRole('radio', { checked: true }).innerText()).trim() !== 'אזור 2') fail('area radio not in sync with the map click');
+  else if (norm(await areaGroup(page).getByRole('radio', { checked: true }).innerText()) !== 'אזור 2') fail('area radio not in sync with the map click');
   else ok('map click on the area 2 halo → אזור 2 (radio in sync)');
+  if ((await feedbackKind(page)) !== 'pending' || !/^אזור 2 נבחר — עדיין לא נבדק/.test(t) || /השתנתה/.test(t)) fail(`area 2 chosen after a check with no area: ${t}`);
+  else ok(`area 2 after a check with no area: "${t.split('.')[0]}" — a first choice, not a change`);
+  if ((await viewOf(page)).stale) fail('view().stale is true after a check with no area');
+  else ok('view(): not stale after a check with no area');
   await checkAreaValues(page, 'area-2', { dir: '008°', dist: '300 מ׳' }, 'area 2 chosen');
-  if ((await feedbackKind(page)) !== 'empty') fail('choosing an area produced feedback before the check');
-  await shot(page, '02-area2-chosen');
-  await crop(page, '[data-panel="map"]', '02-area2-chosen-map');
-  await checkFit(page, 'area 2 chosen');
+  await layout(page, 'area 2 chosen');
+  await shot(page, '03-area2-chosen');
 
-  // Area 2 checked: direction contradiction.
+  // Wrong: area 2.
   await checkButton(page).click();
   await page.waitForTimeout(700);
   s = await state(page);
   const r2 = s.attempt?.result;
   if (r2?.kind !== 'contradicted' || r2.direction.consistent || !r2.distance.consistent) fail('area 2 should fail on direction only');
-  else ok(`area 2: contradicted on direction (predicted ${r2.direction.predictedDeg.toFixed(2)}°), distance fits`);
-  const wrongText = await page.locator('[data-feedback]').innerText();
-  if (!/אזור 2 אינו מתאים למדידות/.test(wrongText) || !/008°/.test(wrongText) || !/043°/.test(wrongText) || !/התפצלות הדרך/.test(wrongText)) fail(`area 2 feedback: ${wrongText}`);
-  else ok('area 2 feedback explains: distance fits both, direction 008° not 043°');
-  if (/חורש/.test(wrongText)) fail('feedback still mentions a grove');
-  if (!(await count(page, '[data-overlay="result"]'))) fail('no result layers after the check');
-  await shot(page, '03-area2-contradiction');
-  await crop(page, '[data-panel="map"]', '03-area2-contradiction-map');
-  await checkFit(page, 'area 2 contradiction');
-  // The full reasoning on demand.
-  await page.getByRole('button', { name: 'פירוט הבדיקה' }).click();
-  await page.waitForTimeout(250);
-  await shot(page, '03b-area2-details');
-  await page.keyboard.press('Escape');
+  else ok(`area 2: contradicted on direction (map ${r2.direction.predictedDeg.toFixed(2)}°), distance fits`);
+  t = await feedbackText(page);
+  const rows2 = await act(page).locator('[data-feedback] li').evaluateAll((els) => els.map((e) => e.dataset.row));
+  const wrongMissing = WRONG_ROWS(t);
+  if ((await feedbackKind(page)) !== 'contradicted' || rows2.join() !== 'mismatch,match' || wrongMissing.length) fail(`wrong (area 2): ${wrongMissing.join(', ') || rows2.join()} — "${t}"`);
+  else ok('wrong (area 2): ✗ direction 008° vs 043° (35°, 5° allowed), ✓ distance 300 מ׳ (260–340); says what to match again');
+  if (/אזור 1/.test(t)) fail('wrong feedback names area 1 (gives the answer away)');
+  if (/חורש/.test(t)) fail('feedback mentions a grove');
+  if (!(await count(page, '[data-panel="map"] [data-overlay="result"]'))) fail('no result layers after the check');
+  await checkViewpoint(page, false, 'wrong (area 2)');
+  let legend = await legendText(page);
+  if (/אזור שמתאים|נקודת התצפית/.test(legend)) fail(`map key before success: ${legend}`);
+  else ok('map key after a wrong check: no supported area, no scenario viewpoint');
+  await closeLegend(page);
+  await layout(page, 'wrong — area 2');
+  await shot(page, '04-area2-wrong');
+  await crop(page, '[data-panel="map"]', '04-area2-wrong-map');
 
   // Area 1 by its name plate on the map: the old result is void, area 1's values shown.
   await clickMap(page, AREA1_PLATE.E, AREA1_PLATE.N);
   s = await state(page);
+  t = await feedbackText(page);
   if (s.selections.candidateId !== 'area-1') fail(`click on the "אזור 1" plate → ${s.selections.candidateId}`);
   else ok('map click on the "אזור 1" name plate → אזור 1');
-  if ((await feedbackKind(page)) !== 'stale') fail('changed area should show the stale notice');
+  if ((await feedbackKind(page)) !== 'stale' || !/^הבחירה השתנתה — אזור 1 עדיין לא נבדק/.test(t) || !/הקודמת הייתה של אזור 2/.test(t) || /מתאים/.test(t)) fail(`change after a check: ${t}`);
+  else ok(`change after a check: "${t.split('.')[0]}." — no verdict on the new choice`);
+  if (!(await viewOf(page)).stale) fail('view().stale is false after changing a checked area');
+  if (await act(page).locator('[data-feedback] li').count()) fail('comparison rows still shown after a change');
   await checkAreaValues(page, 'area-1', { dir: '043°', dist: '300 מ׳' }, 'area 1 chosen after a check');
+  await layout(page, 'changed to area 1');
+  await shot(page, '05-changed-to-area1');
 
-  // Area 1 checked: success.
+  // Success: area 1.
   await checkButton(page).click();
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(1000);
   s = await state(page);
   if (s.attempt?.result.kind !== 'supported') fail(`area 1 should succeed, got ${s.attempt?.result.kind}`);
   else ok('area 1: supported');
-  const okText = await page.locator('[data-feedback]').innerText();
-  if (!/אזור 1 מתאים למדידות/.test(okText) || !/043°/.test(okText)) fail(`success feedback: ${okText}`);
-  else ok('area 1 feedback explains: direction 043° as measured, distance fits both');
-  if (!(await count(page, '[data-overlay="observer"]'))) fail('observation point missing after success');
-  await shot(page, '04-success');
-  await crop(page, '[data-panel="map"]', '04-success-map');
-  await checkFit(page, 'success');
+  t = await feedbackText(page);
+  const rows1 = await act(page).locator('[data-feedback] li').evaluateAll((els) => els.map((e) => e.dataset.row));
+  const okMissing = SUCCESS_ROWS(t);
+  if ((await feedbackKind(page)) !== 'supported' || rows1.join() !== 'match,match' || okMissing.length) fail(`success (area 1): ${okMissing.join(', ') || rows1.join()} — "${t}"`);
+  else ok('success (area 1): both rows ✓ with values; "the direction decides", "an area, not a point", "keep checking along the route"');
+  if (CERTAINTY.test(t)) fail(`success claims more certainty than the evidence: "${t}"`);
+  await checkViewpoint(page, true, 'success');
+  legend = await legendText(page);
+  if (!legend.includes('אזור שמתאים לשתי המדידות') || !legend.includes(`${VIEWPOINT} (להמחשה)`) || !legend.includes('תחום המבט')) fail(`map key after success: ${legend}`);
+  else ok(`map key after success separates "אזור שמתאים לשתי המדידות" from "${VIEWPOINT} (להמחשה)"`);
+  await shot(page, '06b-area1-success-legend');
+  await closeLegend(page);
+  await layout(page, 'success — area 1');
+  await shot(page, '06-area1-success');
+  await crop(page, '[data-panel="map"]', '06-area1-success-map');
   mouseFinal = JSON.stringify(s.selections);
 
-  // Change after success (buttons): stale, old result layers gone, the new area's neutral values.
-  await areaGroup(page).getByRole('radio', { name: 'אזור 2' }).click();
+  // Change after success (buttons): the verdict and its map layers go.
+  await radio(page, 'אזור 2').click();
   await page.waitForTimeout(400);
-  const fbText = await page.locator('[data-feedback]').innerText();
-  if ((await feedbackKind(page)) !== 'stale' || !/הבחירה השתנתה — בדקו שוב/.test(fbText)) fail('change after success did not void the result');
-  else ok('change after success → "הבחירה השתנתה — בדקו שוב"');
-  if (await count(page, '[data-overlay="observer"], [data-overlay="result"]')) fail('old result layers still shown after a change');
-  else ok('old result layers removed after a change');
+  t = await feedbackText(page);
+  if ((await feedbackKind(page)) !== 'stale' || !/^הבחירה השתנתה — אזור 2 עדיין לא נבדק/.test(t) || /מתאים לשתי/.test(t)) fail(`change after success: ${t}`);
+  else ok(`change after success: "${t.split('.')[0]}." — the verdict is gone`);
+  if (await resultLayers(page)) fail('success layers still on the map after a change');
+  else ok('result layers and the scenario viewpoint removed after a change');
   await checkAreaValues(page, 'area-2', { dir: '008°', dist: '300 מ׳' }, 'area 2 after a change');
-  await shot(page, '05-changed-after-success');
-  await crop(page, '[data-panel="map"]', '05-changed-after-success-map');
-  await checkFit(page, 'changed after success');
+  await layout(page, 'changed after success');
+  await shot(page, '07-changed-after-success');
 
-  // The measurement stays fixed; "הראו את התפצלות הדרך" only turns the view.
-  const before = JSON.stringify((await state(page)).selections);
-  await page.getByRole('button', { name: 'הראו את התפצלות הדרך' }).click();
-  await page.waitForTimeout(1200);
-  const t = await page.evaluate(() => window.__lc.look.getTarget());
-  if (Math.abs(t.yawDeg - 43) > 0.01 || t.hfovDeg !== LOOK_LIMITS.hfovMin) fail(`"הראו את התפצלות הדרך" set ${JSON.stringify(t)}`);
-  else ok(`"הראו את התפצלות הדרך" turns the view to 043° and frames the split at ${t.hfovDeg}°`);
-  if (JSON.stringify((await state(page)).selections) !== before) fail('"הראו את התפצלות הדרך" changed the choice');
-  const measured = await page.locator('[data-measurements]').innerText();
-  if (!/043°/.test(measured)) fail('measured bearing changed after turning the view');
-  else ok('measured bearing still 043° while the view looks elsewhere');
-  await crop(page, '[data-panel="observation"]', '06-road-split-view');
-  await shot(page, '06-road-split');
-  await checkRoadContrast(page, 'road split (normal size)');
+  // Back to the checked area: the snapshot is current again, its verdict returns.
+  await radio(page, 'אזור 1').click();
+  await page.waitForTimeout(400);
+  if ((await feedbackKind(page)) !== 'supported' || !(await count(page, '[data-panel="map"] [data-overlay="observer"]'))) fail('re-choosing the checked area did not restore its verdict');
+  else ok('re-choosing the checked area shows its verdict again');
 
-  // Help dialog.
-  await page.getByRole('button', { name: /למה אין GPS/ }).click();
-  await page.waitForTimeout(300);
-  if (!(await count(page, 'dialog[data-dialog="gps-help"][open]'))) fail('help dialog did not open');
-  await shot(page, '06b-gps-help');
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
-  if (await count(page, 'dialog[data-dialog="gps-help"][open]')) fail('help dialog did not close with Escape');
-  else ok('help dialog opens and closes with Escape');
-
-  // Reset.
-  await page.getByRole('button', { name: /איפוס/ }).click();
+  // Reset: opening state and view.
+  await page.evaluate(() => window.__lc.look.setTarget({ yawDeg: 20 }));
+  await resetButton(page).click();
   await page.waitForTimeout(1200);
   s = await state(page);
   const lookAfter = await page.evaluate(() => window.__lc.look.getTarget());
-  if (s.selections.candidateId || s.attempt || (await count(page, '[data-overlay]'))) fail('reset left a choice, a result or map layers');
+  if (s.selections.candidateId || s.attempt || (await feedbackKind(page)) !== 'empty' || (await count(page, '[data-panel="map"] [data-overlay]'))) fail('reset left a choice, a result or map layers');
   else if (lookAfter.yawDeg !== INITIAL_LOOK.yawDeg || lookAfter.hfovDeg !== INITIAL_LOOK.hfovDeg) fail('reset did not return to the opening view');
-  else ok('reset → opening state and opening view');
+  else ok('reset → opening state (no choice, no result, clean map) and opening view');
+  await checkReadings(page, 'after reset');
+  await layout(page, 'after reset');
+  await shot(page, '08-reset');
 
-  // Navigate to another sub-topic and back.
+  // The road split reads in 3D at its own look.
+  const split = roadSplitLook();
+  await page.evaluate((l) => window.__lc.look.setTarget(l), split);
+  await page.waitForFunction((y) => Math.abs(window.__lc.look.getLive().yawDeg - y) < 0.05, split.yawDeg, { timeout: 10000 });
+  await page.waitForTimeout(300);
+  await crop(page, '[data-panel="observation"]', '09-road-split-view');
+  await checkRoadContrast(page, 'road split (normal size)');
+  await page.evaluate(() => window.__lc.look.reset());
+
+  // Another sub-topic and back.
   const listenersBefore = await page.evaluate(() => ({ ...window.__lcListeners }));
   await page.getByRole('button', { name: /תכנון ציר/ }).first().click();
   await page.waitForTimeout(1500);
-  if (await count(page, '[data-activity="location-check"] canvas')) fail('canvas left behind after leaving the sub-topic');
+  if (await count(page, `${ACT} canvas`)) fail('canvas left behind after leaving the sub-topic');
   await page.getByRole('button', { name: /עקרונות הניווט/ }).first().click();
-  await page.waitForSelector('[data-activity="location-check"]');
-  for (let y = 0; y < 7000; y += 700) {
-    await page.evaluate((v) => window.scrollTo(0, v), y);
-    await page.waitForTimeout(60);
-  }
+  await page.waitForSelector(ACT, { state: 'attached' });
+  await scrollThrough(page);
   await alignActivity(page);
   await waitFor3D(page);
   const canvases = await count(page, 'canvas');
@@ -520,65 +726,99 @@ let mouseFinal;
   else ok('no duplicated document/window listeners after returning');
 
   if (errors.length) fail(`console errors (mouse run): ${errors.slice(0, 3).join(' | ')}`);
+  else ok('no console errors (mouse run)');
   await ctx.close();
 }
 
-// ---------------------------------------------------------------- keyboard-only flow
+// ---------------------------------------------------------------- keyboard only
 {
   const { ctx, page, errors } = await openActivity(browser);
   await waitFor3D(page);
-  await areaGroup(page).getByRole('radio').first().focus();
+  reference = null;
+  await layout(page, 'keyboard — opening');
+  await radio(page, 'אזור 1').focus();
   await page.keyboard.press('Space'); // אזור 1
-  await page.keyboard.press('ArrowLeft'); // RTL: next option = אזור 2
+  await page.keyboard.press('ArrowLeft'); // RTL: the next option, אזור 2
   let s = await state(page);
   if (s.selections.candidateId !== 'area-2') fail(`ArrowLeft chose ${s.selections.candidateId}`);
+  await page.keyboard.press('Tab');
+  const onCheck = await page.evaluate(() => document.activeElement?.textContent.trim());
+  if (onCheck !== 'בדקו את הבחירה') fail(`Tab from the area group lands on "${onCheck}"`);
+  else ok('Space / ArrowLeft choose; Tab from the area group → "בדקו את הבחירה"');
+  const ring = await page.evaluate(() => getComputedStyle(document.activeElement).boxShadow !== 'none' || getComputedStyle(document.activeElement).outlineStyle !== 'none');
+  if (!ring) fail('no visible focus on the check button');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(700);
+  if ((await feedbackKind(page)) !== 'contradicted') fail('Enter on check (area 2) did not give the wrong verdict');
+  else ok('Enter → area 2 wrong verdict');
+  await layout(page, 'keyboard — wrong');
+  await shot(page, '10-keyboard-wrong');
+  await page.keyboard.press('Shift+Tab');
+  const back = await page.evaluate(() => document.activeElement?.getAttribute('aria-checked') === 'true' && document.activeElement?.textContent.trim());
+  if (back !== 'אזור 2') fail(`Shift+Tab returns to "${back}", expected the checked radio`);
   await page.keyboard.press('ArrowRight'); // back to אזור 1
-  await checkButton(page).focus();
+  if ((await feedbackKind(page)) !== 'stale') fail('keyboard change did not void the result');
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(900);
   s = await state(page);
-  if (s.attempt?.result.kind !== 'supported') fail(`keyboard flow verdict ${s.attempt?.result.kind}`);
+  if ((await feedbackKind(page)) !== 'supported') fail('keyboard correction did not succeed');
   else if (JSON.stringify(s.selections) !== mouseFinal) fail(`keyboard selections ${JSON.stringify(s.selections)} ≠ mouse ${mouseFinal}`);
-  else ok('keyboard flow = mouse flow (supported)');
+  else ok('keyboard correction: Shift+Tab → ArrowRight (אזור 1) → Tab → Enter → supported, same state as the mouse run');
+  await checkViewpoint(page, true, 'keyboard — success');
+  await layout(page, 'keyboard — success');
+  await shot(page, '11-keyboard-success');
+  await page.keyboard.press('Tab');
+  const onReset = await page.evaluate(() => document.activeElement?.textContent.trim());
+  if (onReset !== 'איפוס') fail(`Tab after check lands on "${onReset}"`);
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(700);
+  if ((await feedbackKind(page)) !== 'empty') fail('Space on reset did not reset');
+  else ok('Tab → "איפוס", Space resets');
   await page.locator('[data-obs-frame]').focus();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(600);
   const look = await page.evaluate(() => window.__lc.look.getTarget());
   if (Math.abs(look.yawDeg - (INITIAL_LOOK.yawDeg + 10)) > 0.01) fail(`arrow keys turned the view to ${look.yawDeg}`);
-  else ok('arrow keys turn the view');
+  else ok('arrow keys on the observation turn the view');
   if (errors.length) fail(`console errors (keyboard run): ${errors.slice(0, 3).join(' | ')}`);
   await ctx.close();
 }
 
 // ---------------------------------------------------------------- loading
 {
-  // Hold the ground textures back: the panel shows its loading state, the task
+  // Hold the ground textures back: the shared loader covers the frame, the task
   // stays usable through the area buttons, and nothing reveals the answer.
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1122 } });
   let release;
   const gate = new Promise((r) => (release = r));
-  await ctx.route('**/location-check/textures/**', async (route) => {
-    await gate;
-    await route.continue();
+  const { ctx, page, errors } = await openActivity(browser, {}, {
+    route: {
+      pattern: '**/location-check/textures/**',
+      handler: async (route) => {
+        await gate;
+        await route.continue();
+      },
+    },
   });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(URL, { waitUntil: 'networkidle', timeout: 240000 });
-  await page.getByRole('button', { name: /עקרונות הניווט/ }).first().click();
-  await page.waitForSelector('[data-activity="location-check"]');
-  await alignActivity(page);
-  await page.waitForFunction(() => document.body.innerText.includes('טוען תצפית תלת־ממדית'), null, { timeout: 120000 });
+  await page.waitForFunction(([sel, loader]) => document.querySelector(sel)?.innerText.includes(loader), [ACT, LOADER], { timeout: 120000 });
   await crop(page, '[data-panel="observation"]', '00-loading-observation');
+  const loaderInFrame = await page.evaluate(([sel, loader]) => {
+    const frame = document.querySelector(`${sel} [data-obs-frame]`);
+    return frame.innerText.includes(loader);
+  }, [ACT, LOADER]);
+  if (!loaderInFrame) fail('loading: the loader is not over the observation frame');
+  await checkReadings(page, 'loading');
   const overlayWhileLoading = await count(page, '[data-obs-overlay]');
-  await areaGroup(page).getByRole('radio').first().click();
+  await radio(page, 'אזור 1').click();
   const s = await state(page);
   if (overlayWhileLoading) fail('loading: labels drawn over an unloaded view');
-  else if (s.selections.candidateId !== 'area-1' || s.attempt || (await count(page, '[data-overlay="result"], [data-overlay="observer"]'))) fail('loading: area choice not usable, or a result appeared');
-  else ok('loading: placeholder shown, area choice usable, nothing revealed');
+  else if (s.selections.candidateId !== 'area-1' || s.attempt || (await resultLayers(page))) fail('loading: area choice not usable, or a result appeared');
+  else ok(`loading: "${LOADER}…" over the frame, readings shown, area choice usable, nothing revealed`);
   release();
   await waitFor3D(page);
+  if (await page.evaluate(([sel, loader]) => document.querySelector(sel).innerText.includes(loader), [ACT, LOADER])) fail('loading: the loader stayed after the canvas was drawn');
+  else ok('loading: released — the canvas is drawn and the loader is gone');
   if (errors.length) fail(`console errors (loading): ${errors.slice(0, 3).join(' | ')}`);
   await ctx.close();
 }
@@ -587,11 +827,11 @@ let mouseFinal;
 {
   const { ctx, page, errors } = await openActivity(browser, { reducedMotion: 'reduce' });
   await waitFor3D(page);
-  await page.getByRole('button', { name: 'הראו את התפצלות הדרך' }).click();
+  await page.evaluate(() => window.__lc.look.setTarget({ yawDeg: 43 }));
   await page.waitForTimeout(250);
   const live = await page.evaluate(() => window.__lc.look.getLive());
   if (Math.abs(live.yawDeg - 43) > 0.01) fail(`reduced motion: camera eased (${live.yawDeg})`);
-  else ok('reduced motion: camera jumps, no easing');
+  else ok('reduced motion: the camera jumps to a new look, no easing');
   if (errors.length) fail(`console errors (reduced motion): ${errors.slice(0, 3).join(' | ')}`);
   await ctx.close();
 }
@@ -602,23 +842,36 @@ await browser.close();
   const noGl = await chromium.launch({ channel: 'chrome', args: ['--disable-webgl', '--disable-webgl2', '--disable-3d-apis'] });
   const { ctx, page, errors } = await openActivity(noGl);
   await page.waitForTimeout(1500);
+  reference = null;
   const img = page.locator('[data-obs-frame] img');
-  if ((await count(page, '[data-activity="location-check"] canvas')) || !(await img.count())) fail('no-WebGL: expected the static picture, not a canvas');
+  if ((await count(page, `${ACT} canvas`)) || !(await img.count())) fail('no WebGL: expected the static picture, not a canvas');
   else {
     const { w, h } = await img.evaluate((el) => ({ w: el.naturalWidth, h: el.naturalHeight }));
-    if (!w) fail('no-WebGL: static picture failed to load');
-    else if (Math.abs(w / h - 4 / 3) > 0.01) fail(`no-WebGL: picture is ${w}×${h}, not 4:3`);
-    else ok(`no-WebGL: static 4:3 picture (${w}×${h})`);
+    if (!w) fail('no WebGL: static picture failed to load');
+    else if (Math.abs(w / h - 4 / 3) > 0.01) fail(`no WebGL: picture is ${w}×${h}, not 4:3`);
+    else ok(`no WebGL: static 4:3 picture (${w}×${h})`);
   }
-  await areaGroup(page).getByRole('radio').first().click();
+  if (await page.evaluate(([sel, loader]) => document.querySelector(sel).innerText.includes(loader), [ACT, LOADER])) fail('no WebGL: a loader over the static picture');
+  else ok('no WebGL: no loader over the static picture');
+  await checkReadings(page, 'no WebGL');
+  await layout(page, 'no WebGL — opening');
+  await radio(page, 'אזור 2').click();
   await checkButton(page).click();
-  await page.waitForTimeout(700);
-  const s = await state(page);
-  if (s.attempt?.result.kind !== 'supported') fail('no-WebGL: check did not work');
-  else ok('no-WebGL: area choice + check work');
-  if (!(await page.getByRole('button', { name: 'הראו את התפצלות הדרך' }).isDisabled())) fail('no-WebGL: "הראו את התפצלות הדרך" should be disabled');
-  await shot(page, '07-no-webgl');
-  await checkFit(page, 'no WebGL');
+  await page.waitForTimeout(600);
+  const wrongMissing = WRONG_ROWS(await feedbackText(page));
+  if ((await feedbackKind(page)) !== 'contradicted' || wrongMissing.length) fail(`no WebGL: wrong check — ${wrongMissing.join(', ')}`);
+  else ok('no WebGL: area 2 → the same wrong feedback');
+  await layout(page, 'no WebGL — wrong');
+  await radio(page, 'אזור 1').click();
+  if ((await feedbackKind(page)) !== 'stale') fail('no WebGL: change did not void the result');
+  await checkButton(page).click();
+  await page.waitForTimeout(800);
+  const okMissing = SUCCESS_ROWS(await feedbackText(page));
+  if ((await feedbackKind(page)) !== 'supported' || okMissing.length) fail(`no WebGL: success — ${okMissing.join(', ')}`);
+  else ok('no WebGL: change to area 1 → the same success feedback');
+  await checkViewpoint(page, true, 'no WebGL — success');
+  await layout(page, 'no WebGL — success');
+  await shot(page, '12-no-webgl-success');
   if (errors.filter((e) => !/WebGL|webgl/.test(e)).length) fail(`console errors (no WebGL): ${errors.slice(0, 3).join(' | ')}`);
   await ctx.close();
   await noGl.close();

@@ -466,6 +466,21 @@ test('changing the area after a check voids the old result', () => {
   assert.equal(view(s).result, null);
 });
 
+test('a check with no area makes the next choice a first choice, not a change', () => {
+  let s = reducer(INITIAL_STATE, { type: 'check' });
+  assert.equal(view(s).stale, false);
+  s = reducer(s, { type: 'selectCandidate', id: 'area-2' });
+  assert.equal(view(s).stale, false);
+  assert.equal(view(s).result, null);
+  assert.equal(view(s).solved, false);
+  // The area's own check then behaves as usual, and changing it after that is stale.
+  s = reducer(s, { type: 'check' });
+  assert.equal(view(s).result.kind, 'contradicted');
+  s = reducer(s, { type: 'selectCandidate', id: 'area-1' });
+  assert.equal(view(s).stale, true);
+  assert.equal(view(s).result, null);
+});
+
 test('reset returns the whole activity to its opening state', () => {
   let s = reducer(INITIAL_STATE, { type: 'selectCandidate', id: 'area-2' });
   s = reducer(s, { type: 'setGpsReason', id: 'battery' });

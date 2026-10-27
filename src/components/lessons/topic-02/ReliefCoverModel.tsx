@@ -2,16 +2,18 @@
 
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ModelLoading } from '@/components/lesson/ModelLoading';
-import { AxisGizmo } from './AxisGizmo';
 import type { StateId } from './reliefCoverCompare.data';
 
 /**
  * The "בשטח" board of „אותה גבעה, שלושה נופים”: the live model (ReliefCover3D, loaded only near the
- * viewport; drag turns it — an X·Y·Z axes marker in its middle says so until the first drag), or — without WebGL — a still of the same model in the same state
+ * viewport; drag turns it — the "גררו לסיבוב" tag in its corner says so, nothing sits on the
+ * ground itself), or — without WebGL — a still of the same model in the same state
  * (captured from it by scripts/qa/capture-relief-cover-fallback.mjs).
+ * `onShown` (pass a stable callback) fires once the board really shows the hill: the live model's
+ * first frame, or the still once it has loaded (or failed to, so a missing file never locks the
+ * activity) — the comparison opens its question only then.
  */
 
 const ReliefCover3D = dynamic(() => import('./ReliefCover3D'), { ssr: false, loading: () => null });
@@ -43,16 +45,31 @@ class CanvasErrorBoundary extends Component<{ onError: () => void; children: Rea
   }
 }
 
-export function ReliefCoverModel({ state, reduce, ariaLabel }: { state: StateId; reduce: boolean; ariaLabel: string }) {
+export function ReliefCoverModel({
+  state,
+  reduce,
+  ariaLabel,
+  onShown,
+}: {
+  state: StateId;
+  reduce: boolean;
+  ariaLabel: string;
+  onShown?: () => void;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [renderer, setRenderer] = useState<'pending' | 'live' | 'static'>('pending');
   const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
-  const [turned, setTurned] = useState(false);
+  const [stillSettled, setStillSettled] = useState(false);
 
   useEffect(() => setRenderer(hasWebGL() ? 'live' : 'static'), []);
   const fallBack = useCallback(() => setRenderer('static'), []);
   const onReady = useCallback(() => setReady(true), []);
+  const settleStill = useCallback(() => setStillSettled(true), []);
+  // a still already in the cache can finish before React sees its load event
+  const stillRef = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete) setStillSettled(true);
+  }, []);
 
   // Start the 3D only near the viewport; once started it stays (frames render on demand only).
   useEffect(() => {
@@ -64,14 +81,17 @@ export function ReliefCoverModel({ state, reduce, ariaLabel }: { state: StateId;
   }, []);
 
   const live = renderer === 'live';
+  const shown = live ? ready : renderer === 'static' && stillSettled;
+  useEffect(() => {
+    if (shown) onShown?.();
+  }, [shown, onShown]);
 
   return (
     <div
       ref={rootRef}
       className={cn('relative aspect-[518/352] w-full overflow-hidden', HAZE)}
       data-renderer={renderer}
-      data-ready={ready || undefined}
-      onPointerDownCapture={() => setTurned(true)}
+      data-ready={shown || undefined}
     >
       {live && activated && (
         <CanvasErrorBoundary onError={fallBack}>
@@ -80,32 +100,24 @@ export function ReliefCoverModel({ state, reduce, ariaLabel }: { state: StateId;
       )}
       {renderer === 'static' && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={FALLBACK(state)} alt="" className="absolute inset-0 size-full object-cover" data-fallback />
+        <img
+          ref={stillRef}
+          src={FALLBACK(state)}
+          alt=""
+          onLoad={settleStill}
+          onError={settleStill}
+          className="absolute inset-0 size-full object-cover"
+          data-fallback
+        />
       )}
 
       {/* the figure's name for assistive tech; the canvas itself is aria-hidden */}
       <div role="img" aria-label={ariaLabel} className="pointer-events-none absolute inset-0" />
 
-      {live && !ready && <ModelLoading label="טוען את מודל השטח…" className={HAZE} />}
+      {/* from the first paint (before WebGL is even checked) until the model's first frame */}
+      {renderer !== 'static' && !ready && <ModelLoading label="טוען שטח תלת־ממדי…" className={HAZE} />}
 
-      {/* "this turns": the axes marker in the middle, until the learner first drags the model */}
-      <AnimatePresence>
-        {live && ready && !turned && (
-          <motion.div
-            key="gizmo"
-            data-qa="rc-gizmo"
-            data-overlay
-            className="pointer-events-none absolute inset-0 flex items-center justify-center"
-            initial={reduce ? false : { opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1, transition: { duration: reduce ? 0 : 0.35, delay: reduce ? 0 : 0.2 } }}
-            exit={{ opacity: 0, scale: 0.9, transition: { duration: reduce ? 0 : 0.25 } }}
-          >
-            <AxisGizmo reduce={reduce} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {live && (
+      {live && ready && (
         <div className="pointer-events-none absolute end-2.5 top-2.5" data-overlay>
           <span className="rounded-lg bg-pine/80 px-2 py-0.5 font-display text-sm font-semibold text-paper-bright">גררו לסיבוב</span>
         </div>

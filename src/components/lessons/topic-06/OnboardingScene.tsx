@@ -7,6 +7,7 @@ import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
+import { NavigationExamplesPanel } from './NavigationExamplesPanel';
 
 type Phase = 'plan' | 'start' | 'travel' | 'arrive';
 
@@ -23,64 +24,29 @@ const STEPS: Step[] = [
     id: 'plan',
     label: 'תכנון: בחירת המסלול',
     icon: 'flag',
-    caption: 'מסמנים במפה את נקודת המוצא (A) ואת היעד (B), ומשווים בין מסלולים אפשריים. בוחנים את המרחק, את תנאי השטח ואת מידת החשיפה לאורך כל מסלול.',
-    insight: 'תכנון מראש מסייע לצפות קשיים ולבחור נקודות שבהן נבדוק את המיקום. המסלול הקצר ביותר אינו בהכרח המתאים ביותר למשימה.',
+    caption: 'מסמנים במפה מוצא (A) ויעד (B) ומשווים בין מסלולים לפי מרחק, תנאי שטח וחשיפה.',
+    insight: 'המסלול הקצר ביותר אינו בהכרח המתאים. בתכנון גם בוחרים מראש היכן בודקים את המיקום.',
   },
   {
     id: 'start',
     label: 'יציאה: קביעת כיוון',
     icon: 'compass',
-    caption: 'לפני היציאה מוודאים את המיקום ואת כיוון התנועה בעזרת המפה והמצפן. הכיוון מתואר באמצעות אזימוט: זווית הנמדדת במעלות מכיוון הצפון, עם כיוון השעון.',
-    insight: 'סטייה קטנה בכיוון מצטברת ככל שהמרחק גדל. לדוגמה, סטייה קבועה של 5 מעלות לאורך קילומטר תרחיק אותנו בכ־90 מטר מהקו המתוכנן.',
+    caption: 'לפני היציאה מוודאים את המיקום ומכוונים את המצפן לפי האזימוט המתוכנן.',
+    insight: 'סטייה קטנה בכיוון מצטברת ככל שהמרחק גדל.',
   },
   {
     id: 'travel',
     label: 'בתנועה: בדיקת המיקום',
     icon: 'eye',
-    caption: 'במהלך התנועה משווים בין סימנים בולטים בשטח לבין מיקומם במפה. בהמחשה, הגבעה והדקלים משמשים נקודות ייחוס לבדיקת המיקום ביחס למסלול.',
-    insight: 'בדיקות חוזרות לאורך הדרך מסייעות לזהות סטייה מוקדם. אם השטח אינו תואם את הצפוי, בודקים מחדש את המיקום ואת הכיוון לפני שממשיכים.',
+    caption: 'בתנועה משווים סימנים בולטים בשטח, כמו הגבעה והדקלים, למיקומם במפה.',
+    insight: 'כך מזהים סטייה מוקדם. אם השטח אינו תואם את המפה, בודקים שוב את המיקום והכיוון לפני שממשיכים.',
   },
   {
     id: 'arrive',
     label: 'הגעה: אימות היעד',
     icon: 'target',
-    caption: 'בהגעה לאזור היעד מזהים את הנקודה המתוכננת באמצעות סימנים שנבחרו מראש, כגון צומת דרכים או מבנה בולט. בודקים גם את התאמת הסביבה למפה.',
-    insight: 'קרבה ליעד אינה מספיקה כדי לאשר הגעה. אימות הנקודה חשוב במיוחד בחושך או בראות מוגבלת, כשקל לבלבל בין מקומות דומים.',
-  },
-];
-
-// Background sources for the historical examples; the final card is illustrative:
-// https://terpconnect.umd.edu/~tlaloc/archastro/ae16.html
-// https://www.nps.gov/places/hurtgen-forest.htm
-// https://www.easa.europa.eu/en/newsroom-and-events/news/easa-publishes-sib-warn-intermittent-gnss-outages-near-ukraine-conflict
-const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconName; accent: string }[] = [
-  {
-    headline: 'ניווט לפי כוכבים',
-    place: 'חצי האי ערב · מסורות ניווט',
-    lesson: 'במסורות הניווט בחצי האי ערב שימש הידע על הכוכבים להתמצאות ולקביעת כיוון. הדוגמה ממחישה כיצד היכרות עם סימנים טבעיים יכולה לתמוך בניווט גם ללא אמצעים דיגיטליים.',
-    icon: 'star',
-    accent: 'text-accent-cool',
-  },
-  {
-    headline: 'השפעת השטח: יער הירטגן',
-    place: 'גרמניה · 1944',
-    lesson: 'בקרבות ביער הירטגן ב־1944 פעלו הכוחות בשטח מיוער וצפוף בעל תבליט קשה לתנועה. בהקשר של ניווט, זו דוגמה לחשיבות של לימוד השטח מראש והתאמת המסלול לתנאיו.',
-    icon: 'compass',
-    accent: 'text-accent-hot',
-  },
-  {
-    headline: 'ניווט בתנאי שיבוש',
-    place: 'סביבת המלחמה באוקראינה · 2022',
-    lesson: 'בעקבות הפלישה לאוקראינה ב־2022 התריעה הסוכנות האירופית לבטיחות תעופה על התגברות שיבושי ניווט לווייני באזורים הסמוכים למלחמה. עבור ניווט בשטח, הלקח הוא לשמור גם על מיומנות בשימוש במפה ובמצפן.',
-    icon: 'satellite',
-    accent: 'text-accent-intel',
-  },
-  {
-    headline: 'הבחנה בין נקודות דומות',
-    place: 'דוגמה להמחשה · ניווט בלילה',
-    lesson: 'במסלול יש שני צמתים דומים, והיעד נמצא ליד השני. זיהוי לפי מראה הצומת בלבד עלול להוביל לעצירה במקום שגוי. שילוב של המרחק שעברנו, סדר סימני הדרך והסביבה מסייע לאמת את היעד.',
-    icon: 'crosshair',
-    accent: 'text-status-danger',
+    caption: 'באזור היעד מזהים את הנקודה לפי סימנים שנבחרו מראש, כמו צומת או מבנה בולט.',
+    insight: 'קרבה ליעד אינה אישור הגעה. בחושך או בראות מוגבלת קל לבלבל בין מקומות דומים.',
   },
 ];
 
@@ -90,12 +56,13 @@ const HISTORICAL: { headline: string; place: string; lesson: string; icon: IconN
 // content box there (1408 − 2·32). Heights are the screens measured at that
 // width (2026-10-19): screen 1 = header + mb-8 + accordion/stage row (the row
 // height is the same with every step open; all-closed is shorter), screen 2
-// = h3 + 2×2 info cards + ReadyCallout. Any column narrower than 1344px
+// = examples band + ReadyCallout (2026-10-26; the band is the same height for
+// every example, see NavigationExamplesPanel). Any column narrower than 1344px
 // (1440 with the side nav: 1052px) shrinks the screens too, so they keep the
 // 1920 line breaks instead of reflowing.
 const FIT_WIDTH = 1344;
 const FIT_HEIGHT_STEPS = 777;
-const FIT_HEIGHT_CASES = 632;
+const FIT_HEIGHT_CASES = 1050;
 // Viewport px above a screen when it is read in place: the site header
 // (--header-h, 5rem from lg) plus the shell's 24px top gap that sits above
 // the section at scroll 0. Mirrored below screen 1, whose bottom would
@@ -125,11 +92,12 @@ export function OnboardingScene() {
       >
         <SceneHeader
           title="ניווט בשטח: מתכנון ועד הגעה"
-          intro="כיצד מגיעים מנקודת המוצא ליעד בשטח לא מוכר? נבחן ארבעה שלבים: תכנון המסלול, קביעת כיוון, בדיקת המיקום בתנועה ואימות ההגעה. בחרו בכל שלב כדי לעקוב אחר ההסבר וההמחשה."
+          intro="איך מגיעים ליעד בשטח לא מוכר? בחרו שלב וראו מה עושים בו."
         />
 
-        {/* One card holds the four stages and the illustration they drive (one envelope per activity). */}
-        <div className="surface-elevated p-5 sm:p-6 grid md:grid-cols-[2fr_3fr] gap-6">
+        {/* One card holds the four stages and the illustration they drive (one envelope per activity);
+            the lesson's activity padding, so its content edges line up with the cards that follow. */}
+        <div data-activity="nav-stages" className="surface-elevated p-6 lg:p-8 grid md:grid-cols-[2fr_3fr] gap-6">
           <div className="space-y-3">
             {STEPS.map((s, i) => {
               const active = phase === s.id;
@@ -202,19 +170,9 @@ export function OnboardingScene() {
                         transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="px-4 pb-5 pt-1 space-y-4">
-                          <div>
-                            <div className="text-base font-display font-bold text-black mb-1.5">
-                              הפעולה בשלב זה
-                            </div>
-                            <p className="text-base leading-relaxed text-black">{s.caption}</p>
-                          </div>
-                          <div>
-                            <div className="text-base font-display font-bold text-black mb-1.5">
-                              חשיבות הפעולה
-                            </div>
-                            <p className="text-base leading-relaxed text-black">{s.insight}</p>
-                          </div>
+                        <div className="px-4 pb-5 pt-1 space-y-2">
+                          <p className="text-base leading-relaxed text-black">{s.caption}</p>
+                          <p className="text-base leading-relaxed text-black">{s.insight}</p>
                         </div>
                       </motion.div>
                     )}
@@ -238,31 +196,11 @@ export function OnboardingScene() {
         reserveTop={FIT_TOP}
         className="mt-12"
       >
-        <h3 className="mb-6 font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-          חשיבות הניווט בתנאים שונים
-        </h3>
-
-        <div className="grid sm:grid-cols-2 gap-4">
-          {/* Local info cards (spec §1 "Info card") instead of the shared IntelCard,
-              whose rounded-md surface and tracked attribution line are kept for
-              the other lessons that use it. Same content and order as before. */}
-          {HISTORICAL.map((h) => (
-            <article key={h.headline} className="surface flex h-full flex-col p-5 sm:p-6">
-              <h3 className="font-display text-lg font-bold leading-snug text-fg text-balance md:text-xl">
-                {h.headline}
-              </h3>
-              <p className="mt-2 text-base leading-relaxed text-fg text-pretty">{h.lesson}</p>
-              <div className="mt-auto pt-4 text-sm font-display font-semibold text-fg-muted">
-                <span aria-hidden className="me-1.5">—</span>
-                <span>{h.place}</span>
-              </div>
-            </article>
-          ))}
-        </div>
+        {/* Same structure as lesson 2's practical-examples panel; its own file. */}
+        <NavigationExamplesPanel />
 
         <ReadyCallout title="בהמשך השיעור" signature={false}>
-          <p>ארבעת השלבים משלבים תכנון ובדיקת מיקום לאורך הדרך. בחלק הבא נכיר
-              <strong className="text-fg"> דגשים לתכנון ולניווט</strong>, ובהמשך נלמד לבחור שיטת ניווט המתאימה לתנאי השטח, לקבוע אזימוט ולתכנן מסלול.</p>
+          <p>בחלק הבא, <strong className="text-fg">דגשים לתכנון ולניווט</strong>: מה מכינים לפני היציאה ומה בודקים בדרך.</p>
         </ReadyCallout>
       </LessonViewportFit>
     </section>
@@ -421,7 +359,7 @@ function MissionStage({ phase }: { phase: Phase }) {
       </svg>
 
       <div className="absolute top-4 start-4 text-sm font-display font-semibold text-fg-muted">
-        משימה: מנקודה A לנקודה B · 8 ק״מ · לילה
+        משימה: מנקודה A לנקודה B
       </div>
     </div>
   );

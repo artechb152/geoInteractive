@@ -7,8 +7,8 @@ import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
 import { MEASUREMENT_MODEL as M } from './measurementModel.data';
 import { N_Z_PER_M, Z_PER_M, geoidZ, undulationAt, type Vec3 } from './measurementLayout';
 import type { StationId } from './measurementMission.data';
-import { MODEL_URLS, surveyLine3D, surveyPlaneLines, topZ, type HeightGrid, type LandCamera, type ModelState } from './measurementView';
-import { C_ACCENT, C_ELL, C_GEO, C_INK, C_SEA } from './referenceBodiesStyle';
+import { MODEL_URLS, surveyLine3D, surveyPlaneLines, topZ, type HeightGrid, type HeightLens, type LandCamera, type ModelState } from './measurementView';
+import { C_ACCENT, C_ELL, C_GEO, C_INK, C_SEA, REVEAL_H_DELAY, REVEAL_H_FADE } from './referenceBodiesStyle';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 
 /**
@@ -37,6 +37,9 @@ import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit'
  *            the two reference lines in the survey line's plane — the section's
  *            own lines, in the model.
  *   tripod   the GNSS receiver beside the picked station (the only lit object).
+ *   lens     while clear, the close-up of H at a station where it is too short to
+ *            read (A): the same scene drawn again into the close-up's box, from
+ *            the same camera cropped to the frame round the station (LensPass).
  *
  * The camera is given (landCamera(): the same numbers the HTML overlay projects
  * with), so nothing here decides where anything lands on screen. Frames render
@@ -687,6 +690,73 @@ function Tripod({ id, grid }: { id: StationId; grid: HeightGrid }) {
   );
 }
 
+/** The paper the close-up is drawn on: paper.card, as the section's close-up. */
+const LENS_PAPER = '#F8F2E7';
+
+/**
+ * Draws the frame, then H's close-up into its box (measurementView.heightLens): the same scene from
+ * the same camera, cropped to the frame round the station (setViewOffset) and drawn into the box's
+ * own viewport — an exact enlargement, k times in both directions, every line at its own width (the
+ * fat lines take the box's resolution for that pass). It comes in with H — after the geoid's sweep,
+ * at once for a station picked later — from under a sheet of the box's paper. Takes over the frame
+ * (useFrame priority 1), as the datum close-up does (DatumInset3D's InsetPass).
+ */
+function LensPass({ lens, shown, reduce }: { lens: HeightLens | null; shown: boolean; reduce: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
+  const a = useEased(shown ? 1 : 0, REVEAL_H_FADE * 1000, reduce, shown ? REVEAL_H_DELAY * 1000 : 0);
+  const parts = useMemo(() => {
+    const veil = new THREE.MeshBasicMaterial({ color: LENS_PAPER, transparent: true, depthTest: false, depthWrite: false, toneMapped: false });
+    const veilScene = new THREE.Scene();
+    veilScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), veil));
+    return { cam: new THREE.PerspectiveCamera(), veil, veilScene, veilCam: new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1), paper: new THREE.Color(LENS_PAPER), clear: new THREE.Color() };
+  }, []);
+  useEffect(
+    () => () => {
+      parts.veil.dispose();
+      parts.veilScene.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+    },
+    [parts],
+  );
+  const key = lens ? [lens.k, lens.frame.x, lens.frame.y, lens.view.x, lens.view.y].map((v) => v.toFixed(2)).join() : '';
+  useEffect(() => invalidate(), [key, invalidate]);
+
+  useFrame(({ gl, scene, camera, size }) => {
+    gl.render(scene, camera);
+    if (!lens || a.current < 0.003) return;
+    const { frame: f, view: v } = lens;
+    const { cam, paper, clear } = parts;
+    cam.copy(camera as THREE.PerspectiveCamera);
+    cam.setViewOffset(size.width, size.height, f.x, f.y, f.w, f.h);
+    const lines: { resolution: THREE.Vector2 }[] = [];
+    scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as { isLineMaterial?: boolean; resolution?: THREE.Vector2 } | undefined;
+      if (m?.isLineMaterial && m.resolution) lines.push(m as { resolution: THREE.Vector2 });
+    });
+    lines.forEach((m) => m.resolution.set(v.w, v.h));
+    gl.getClearColor(clear);
+    const alpha = gl.getClearAlpha();
+    const auto = gl.autoClear;
+    const y = size.height - v.y - v.h;
+    gl.setScissorTest(true);
+    gl.setScissor(v.x, y, v.w, v.h);
+    gl.setViewport(v.x, y, v.w, v.h);
+    gl.setClearColor(paper, 1);
+    gl.autoClear = true;
+    gl.render(scene, cam);
+    if (a.current < 0.997) {
+      parts.veil.opacity = 1 - a.current;
+      gl.autoClear = false;
+      gl.render(parts.veilScene, parts.veilCam);
+    }
+    gl.autoClear = auto;
+    gl.setClearColor(clear, alpha);
+    gl.setScissorTest(false);
+    gl.setViewport(0, 0, size.width, size.height);
+    lines.forEach((m) => m.resolution.set(size.width, size.height));
+  }, 1);
+  return null;
+}
+
 /**
  * The model's WebGL context, while the model is on the page. The browser may take a context away
  * (a GPU reset, too many contexts) and give it back: the page shows the stills meanwhile and
@@ -746,6 +816,7 @@ export default function MeasurementLandscape3D({
   onReady,
   onFail,
   onLost,
+  lens = null,
 }: {
   grid: HeightGrid;
   cam: LandCamera;
@@ -757,6 +828,8 @@ export default function MeasurementLandscape3D({
   onReady: () => void;
   onFail: (why: 'image' | 'webgl') => void;
   onLost: () => void;
+  /** H's close-up at the picked station, while clear (the page frames it; the model draws what is in it). */
+  lens?: HeightLens | null;
 }) {
   return (
     <GLBoundary onFail={onFail}>
@@ -775,6 +848,7 @@ export default function MeasurementLandscape3D({
         <ContextWatch onLost={onLost} onReady={onReady} />
         <CameraRig cam={cam} />
         <Model grid={grid} state={state} cam={cam} reduce={reduce} active={active} onReady={onReady} onFail={onFail} />
+        <LensPass lens={lens} shown={!!state.plumb} reduce={reduce} />
       </Canvas>
     </GLBoundary>
   );

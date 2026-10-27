@@ -8,12 +8,12 @@ import { ELL_SIDE, ELL_START, ELL_TOP, clampElev, sameEll, wrap, type EllView } 
 import { MeasurementIllustration, type IllustrationLabels, type ZoomPhase } from './MeasurementIllustration';
 import { useLandscapeSource } from './MeasurementLandscape';
 import { LAND_STARTS, MODEL_ZOOM, clampLand, nearView, sameView, type LandTab, type LandView } from './measurementView';
-import { ResetViewButton, ViewButton } from './StageControls';
+import { ActionLine, ResetViewButton, ViewButton } from './StageControls';
 import { useTween } from './viewControls';
 import { MeasurementPanel, StationRow } from './MeasurementPanel';
 import type { BodyTab } from './MeasurementSection';
-import { FIRST_STATION, type StationId } from './measurementMission.data';
-import { initialMission, missionReducer, solvedSet } from './measurementMission';
+import { FIRST_STATION, STATIONS, type StationId } from './measurementMission.data';
+import { initialMission, missionReducer, orthometric, signed, solvedSet } from './measurementMission';
 import { C_ELL, C_GEO, C_H } from './referenceBodiesStyle';
 import { DatumGuided } from './datum/DatumGuided';
 import { DatumFieldChallenge } from './datum-field/DatumFieldChallenge';
@@ -63,18 +63,19 @@ const LEAD = 'text-fg leading-relaxed text-pretty mb-6 max-w-3xl';
 
 /* ─────────────────── אליפסואיד · גיאואיד · גליות (deck slides 6–14) ─────────────────── */
 
+// Each view's text says what the view is about; what to do now is said beside its control (ActionLine).
 const BODY_TABS: { id: BodyTab; label: string; title: string; body: React.ReactNode; extra?: React.ReactNode }[] = [
   {
     id: 'surface',
     label: 'פני השטח',
     title: 'פני השטח: צורה מורכבת',
-    body: 'פני כדור הארץ כוללים הרים וגאיות, יבשות ואוקיינוסים. זהו משטח לא אחיד, ולכן לצורך קביעת מיקום וחישובים משתמשים בגופי ייחוס המתארים את צורתו בקירוב. בחרו תחנת מדידה והשוו בין מיקומה בשטח לבין מיקומה בחתך.',
+    body: 'פני כדור הארץ כוללים הרים וגאיות, יבשות ואוקיינוסים. זהו משטח לא אחיד, ולכן לצורך קביעת מיקום וחישובים משתמשים בגופי ייחוס המתארים את צורתו בקירוב.',
   },
   {
     id: 'ellipsoid',
     label: 'אליפסואיד',
     title: 'אליפסואיד: גוף ייחוס מתמטי',
-    body: 'אליפסואיד הוא גוף ייחוס מתמטי המתאר בקירוב את צורת כדור הארץ. את צורתו אפשר להבין באמצעות סיבוב אליפסה סביב צירה. סובבו את המודל והשוו בין מבט מהצד למבט מלמעלה כדי לבחון את הפחיסות בקטבים.',
+    body: 'אליפסואיד הוא גוף ייחוס מתמטי המתאר בקירוב את צורת כדור הארץ. את צורתו אפשר להבין באמצעות סיבוב אליפסה סביב צירה.',
     extra: (
       <>
         צורת האליפסואיד נקבעת באמצעות שני פרמטרים: <strong className="text-fg">רדיוס קו המשווה</strong> (<L>a</L>) ו<strong className="text-fg">פחיסות</strong> (<L>f</L>).
@@ -87,23 +88,39 @@ const BODY_TABS: { id: BodyTab; label: string; title: string; body: React.ReactN
     label: 'גיאואיד',
     title: 'גיאואיד: משטח הייחוס לגובה',
     body: 'הגיאואיד הוא משטח ייחוס לגובה, הקרוב לפני הים הממוצעים וממשיך מתחת ליבשות. הוא נקבע לפי שדה הכבידה.',
-    extra: 'בניסוח מדויק יותר, הגיאואיד הוא משטח שווה־פוטנציאל של שדה הכבידה. בשונה מהאליפסואיד, צורתו אינה צורה גאומטרית פשוטה: האליפסואיד משמש לחישובי מיקום, מרחק וזווית, והגיאואיד – ייחוס לגובה מעל פני הים. חשפו את משטחי הייחוס ובחרו תחנה כדי לראות מאיזה משטח נמדד הגובה H.',
+    extra:
+      'בניסוח מדויק יותר, הגיאואיד הוא משטח שווה־פוטנציאל של שדה הכבידה. בשונה מהאליפסואיד, צורתו אינה צורה גאומטרית פשוטה: האליפסואיד משמש לחישובי מיקום, מרחק וזווית, והגיאואיד – ייחוס לגובה מעל פני הים.',
   },
   {
     id: 'undulation',
     label: 'גליות וגובה',
     title: 'גליות וגובה: מאיזה משטח מודדים?',
-    body: 'גליות (N) היא הפרש הגובה בין הגיאואיד לאליפסואיד. בחרו תחנה וחשבו את הגובה מעל פני הים (H) לפי נתוני הגובה האליפסואידלי (h) והגליות (N).',
+    body: (
+      <>
+        גליות (<L>N</L>) היא הפרש הגובה בין הגיאואיד לאליפסואיד. בעזרתה עוברים מהגובה מעל האליפסואיד (<L>h</L>) לגובה מעל פני הים (<L>H</L>).
+      </>
+    ),
   },
 ];
 
-// The section's description per view (read instead of the drawing).
-const SECTION_LABELS: Record<BodyTab, string> = {
-  surface: 'חתך: יבשה עם הרים ואוקיינוס. פני השטח אינם חלקים.',
-  ellipsoid: 'חתך: האליפסואיד מסומן כקשת חלקה ירוקה מתחת לפני השטח.',
-  geoid: 'חתך: הגיאואיד מסומן כקו גלי חום, החופף לפני הים באוקיינוס וממשיך מתחת ליבשה. בתחנה הנבחרת חץ כחול – הגובה H, הנמדד מהגיאואיד.',
-  undulation: 'חתך: נקודה על פני השטח. חץ כחול – גובה אורתומטרי H מעל הגיאואיד; חץ ירוק – גובה אליפסואידלי h מעל האליפסואיד; חץ חום – גליות N בין הגיאואיד לאליפסואיד.',
-};
+// The section's description per view and step (read instead of the drawing): the same station and numbers as the figures.
+function sectionLabel(tab: BodyTab, id: StationId, clear: boolean, solved: boolean): string {
+  const { h, N } = STATIONS[id];
+  switch (tab) {
+    case 'surface':
+      return `חתך: יבשה עם הרים ואוקיינוס. פני השטח אינם חלקים. מסומנת תחנה ${id}.`;
+    case 'ellipsoid':
+      return 'חתך: האליפסואיד מסומן כקשת חלקה ירוקה מתחת לפני השטח.';
+    case 'geoid':
+      return `חתך: הגיאואיד מסומן כקו גלי חום, החופף לפני הים באוקיינוס וממשיך מתחת ליבשה.${
+        clear ? ` בתחנה ${id} חץ כחול – הגובה H, הנמדד מהגיאואיד עד פני השטח.` : ''
+      }`;
+    case 'undulation':
+      return `חתך בתחנה ${id}: חץ כחול – גובה אורתומטרי H מעל הגיאואיד${solved ? `, ${orthometric(id)} מ׳` : ', לא ידוע'}; חץ ירוק – גובה אליפסואידלי h מעל האליפסואיד, ${h} מ׳; ${
+        N === 0 ? 'הגיאואיד והאליפסואיד נפגשים, N = 0.' : `חץ חום – גליות N בין הגיאואיד לאליפסואיד, ${signed(N)} מ׳.`
+      }`;
+  }
+}
 const LABELS: IllustrationLabels = {
   terrain:
     'דגם נוף: רכס מיוער עם שלוחות וגאיות, מדרגה תלולה, מישור חוף עם שדות, חוף וים. על קו המדידה שלוש תחנות – C על שלוחה של הרכס, B על שלוחה נמוכה מעל המדרגה ו־A במישור החוף.',
@@ -111,7 +128,7 @@ const LABELS: IllustrationLabels = {
   ellipsoid: 'אליפסואיד: גוף חלק ופחוס מעט בקטבים, עם קווי אורך ורוחב, הרדיוס a והפחיסות f. גררו או השתמשו בחצים כדי לסובב.',
   turn: 'גררו או השתמשו בחצים כדי לסובב.',
   ellipsoidNote: 'הפחיסות הוגדלה לצורך ההמחשה',
-  clearNote: 'הקרקע שקופה כדי להציג את משטחי הייחוס שמתחתיה.',
+  clearNote: 'הקרקע שקופה: מתחתיה הגיאואיד והאליפסואיד. החץ הכחול H נמדד מהגיאואיד עד פני השטח.',
   geoidName: 'גיאואיד — משטח הייחוס לגובה',
   modelLoading: 'המודל התלת־ממדי נטען. בינתיים מוצגת תמונה של הדגם.',
   modelLost: 'התצוגה התלת־ממדית נקטעה. מוצגת תמונה קבועה של הדגם.',
@@ -263,16 +280,23 @@ function ReferenceBodies() {
       }}
     />
   );
-  // Each view's controls, beside the figure they work on.
-  const modelControls: Record<BodyTab, React.ReactNode> = {
+  // The reveal's button moves when it flips (the action, then a secondary control): focus follows it.
+  const revealRef = useRef<HTMLButtonElement>(null);
+  const toggleClear = () => {
+    const hadFocus = document.activeElement === revealRef.current;
+    setClear((c) => !c);
+    if (hadFocus) requestAnimationFrame(() => revealRef.current?.focus());
+  };
+
+  // Each view's one instruction, beside the control(s) that carry it out, at the start of the model's caption …
+  const modelAction: Record<BodyTab, React.ReactNode> = {
     surface: (
-      <>
+      <ActionLine text="בחרו תחנה והשוו בין המודל לחתך">
         <StationRow id={mission.station} solved={NONE_SOLVED} onSelect={select} />
-        {resetLand}
-      </>
+      </ActionLine>
     ),
     ellipsoid: (
-      <>
+      <ActionLine text="בחנו את הפחיסות בקטבים">
         <div role="group" aria-label="מבט על האליפסואיד" className="flex gap-2">
           {(
             [
@@ -285,28 +309,49 @@ function ReferenceBodies() {
             </ViewButton>
           ))}
         </div>
-        <ResetViewButton
-          atStart={sameEll(ell, ELL_START) && zoom.ell === 1}
-          onReset={() => {
-            unzoom('ell');
-            ellTween.to({ elev: ELL_START.elev, az: ell.az + wrap(ELL_START.az - ell.az) });
-          }}
-        />
-      </>
+      </ActionLine>
+    ),
+    // first the reveal, then the stations: H is drawn (in the model and the section alike) only once revealed
+    geoid: clear ? (
+      <ActionLine text={<>בחרו תחנה וראו את <L>H</L></>}>
+        <StationRow id={mission.station} solved={NONE_SOLVED} onSelect={select} />
+      </ActionLine>
+    ) : (
+      <ActionLine text={<>לחצו כדי לראות מאיזה משטח נמדד <L>H</L></>}>
+        <ViewButton buttonRef={revealRef} onClick={toggleClear}>
+          חשיפת משטחי הייחוס
+        </ViewButton>
+      </ActionLine>
+    ),
+    undulation: (
+      <ActionLine text="בחרו תחנה">
+        <StationRow id={mission.station} solved={solvedSet(mission)} onSelect={select} />
+      </ActionLine>
+    ),
+  };
+  // … and its secondary controls at the caption's end.
+  const modelControls: Record<BodyTab, React.ReactNode> = {
+    surface: resetLand,
+    ellipsoid: (
+      <ResetViewButton
+        atStart={sameEll(ell, ELL_START) && zoom.ell === 1}
+        onReset={() => {
+          unzoom('ell');
+          ellTween.to({ elev: ELL_START.elev, az: ell.az + wrap(ELL_START.az - ell.az) });
+        }}
+      />
     ),
     geoid: (
       <>
-        <ViewButton onClick={() => setClear((c) => !c)}>{clear ? 'החזרת פני השטח' : 'חשיפת משטחי הייחוס'}</ViewButton>
-        <StationRow id={mission.station} solved={NONE_SOLVED} onSelect={select} compact />
+        {clear && (
+          <ViewButton buttonRef={revealRef} onClick={toggleClear}>
+            החזרת פני השטח
+          </ViewButton>
+        )}
         {resetLand}
       </>
     ),
-    undulation: (
-      <>
-        <StationRow id={mission.station} solved={solvedSet(mission)} onSelect={select} />
-        {resetLand}
-      </>
-    ),
+    undulation: resetLand,
   };
   const sectionControls =
     tab === 'ellipsoid' ? (
@@ -322,9 +367,8 @@ function ReferenceBodies() {
       <div className="surface-elevated p-6 lg:p-8">
         <h3 className={H3}>אליפסואיד, גיאואיד וגליות</h3>
         <p className={LEAD}>
-          כדי לקבוע מיקום וגובה משתמשים בשני גופי ייחוס: <strong className="text-fg">אליפסואיד</strong>, המתאר בקירוב את צורת כדור הארץ, ו
-          <strong className="text-fg">גיאואיד</strong>, המשמש ייחוס לגובה מעל פני הים. עברו בין התצוגות והשוו בין פני השטח, גופי הייחוס והגבהים
-          הנמדדים ביחס אליהם.
+          כדי לקבוע מיקום וגובה משתמשים בשני גופי ייחוס: <strong className="text-fg">אליפסואיד</strong> ו<strong className="text-fg">גיאואיד</strong>.
+          עברו בין התצוגות לפי הסדר, ובתצוגה האחרונה חשבו את הגובה מעל פני הים בשלוש תחנות מדידה.
         </p>
 
         <div role="tablist" aria-label="שכבות החתך" onKeyDown={onTabKey} className="mb-4 flex gap-2">
@@ -382,10 +426,11 @@ function ReferenceBodies() {
             phase={phase}
             onZoom={zoomIn}
             height={VIEWS_H}
+            modelAction={modelAction[tab]}
             modelControls={modelControls[tab]}
             sectionControls={sectionControls}
             reduce={reduce}
-            labels={{ ...LABELS, section: SECTION_LABELS[tab] }}
+            labels={{ ...LABELS, section: sectionLabel(tab, mission.station, clear, mission.byStation[mission.station].solved) }}
           />
 
           {isMission && (

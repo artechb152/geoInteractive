@@ -158,6 +158,8 @@ npx tsc --noEmit   # typecheck מהיר
 npm run build      # חייב לעבור לפני סיום
 ```
 
+בעבודה מקבילה ה־build רץ ב־worktree, לא בתיקייה הראשית שבה רץ השרת המשותף. ראו [`docs/dev-environment.md`](docs/dev-environment.md).
+
 קישורי בדיקה:
 - בית: http://localhost:3000/
 - סילבוס: http://localhost:3000/#syllabus

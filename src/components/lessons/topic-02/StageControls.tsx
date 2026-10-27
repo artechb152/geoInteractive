@@ -11,9 +11,21 @@ import { cn } from '@/lib/utils';
  * plain action. "מבט התחלתי" goes back to the view's opening angle — the view
  * only, never the task — and rests quieter once the view is there.
  */
-export function ViewButton({ pressed, onClick, children }: { pressed?: boolean; onClick: () => void; children: React.ReactNode }) {
+export function ViewButton({
+  pressed,
+  onClick,
+  buttonRef,
+  children,
+}: {
+  pressed?: boolean;
+  onClick: () => void;
+  /** For a button that moves within its caption when its state flips (focus follows it there). */
+  buttonRef?: React.Ref<HTMLButtonElement>;
+  children: React.ReactNode;
+}) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
@@ -40,5 +52,22 @@ export function ResetViewButton({ atStart, onReset }: { atStart: boolean; onRese
     >
       מבט התחלתי
     </button>
+  );
+}
+
+/**
+ * What to do now, said right beside the control that does it: one short line at the caption's start, an
+ * orange arrow pointing on to the control(s) that follow it (RTL: to their left). Each view has one, and it
+ * changes with the step (the geoid view: reveal first, then pick a station).
+ */
+export function ActionLine({ text, children }: { text: React.ReactNode; children?: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2" data-action-line>
+      <p className="flex items-center gap-1.5 whitespace-nowrap text-base font-display font-bold text-black" aria-live="polite">
+        {text}
+        <Icon name="arrow-left" size={16} strokeWidth={2.5} className="text-accent" />
+      </p>
+      {children}
+    </div>
   );
 }

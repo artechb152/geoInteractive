@@ -1,49 +1,41 @@
-// QA for the guided 3-D datum block (topic-02 #scene-coordinates,
-// design/mockups/datum-concepts/claude-guided-3d-prompt.md §11, with the
-// stations as claude-interaction-and-learning-refinement-prompt.md redefines them).
+// QA for the guided 3-D datum block (topic-02 #scene-coordinates), as lesson 2
+// tasks 14–15 rebuilt it (2026-10-26): "אותו אליפסואיד, עיגון אחר", "דאטום עולמי
+// ומקומי", the "מה השתנה?" check, and the closed "הרחבה" card.
 //
 // Usage (dev server on :3000):
-//   node scripts/qa/shot-datum.mjs [outDir]          (QA_BASE=http://localhost:3041 for another server)
+//   node scripts/qa/shot-datum.mjs [outDir]          (QA_BASE=http://localhost:3001 for another server)
 //
-// Drives every station and control at 1440 × 1122 and fails (exit 1) on:
-//   - console / page errors (three's own "THREE.Clock" deprecation warning is
-//     reported, not failed — it comes from @react-three/fiber, every 3-D scene);
-//   - a removed control or a score coming back (round play button, scrubber,
-//     percentages, fullscreen, "החזרת המבט", demo copies inside the stations);
-//   - a surface choice that moves anything, or that does not visibly change the view;
-//   - a demo that autoplays, loops, auto-advances, or whose phase changes more
-//     than its own parameter; a single button that does not play / stop /
-//     resume / replay;
-//   - station 3 not applying the chosen fit at once, check points that do not
-//     follow the choice, or stations overwriting each other's state;
-//   - the feedback leaving the globe's column (or drifting below it);
-//   - missing fallback (no WebGL) or reduced-motion behaviour;
-//   - a close-up that does not follow the pose, has no bands, or puts the
-//     measured points outside its circle;
-//   - textures or GPU buffers created while the demo plays (per-frame allocation).
-// The stage exposes its state as data-* attributes (station, look, playback,
-// phase, guide, pose, inspect) — read here instead of any on-screen number.
+// Drives every station, choice and feedback at 1440 × 1122 and fails (exit 1) on:
+//   - console / page errors, or a failed request;
+//   - a removed control coming back (the demo button, "נסו בעצמכם", sliders, a score);
+//   - station 1: switching the anchoring that changes the size, or a comparison that
+//     does not appear once both anchorings are seen;
+//   - station 2: a datum choice that does not apply, check points that do not follow
+//     the choice, a close-up that is missing;
+//   - station 3: a wrong answer that is not explained or cannot be changed, a right one
+//     that does not open the next pair, the next pair not starting at datum A, no
+//     completion, a restart that keeps old answers;
+//   - an answer or a choice that resizes the card inside a station;
+//   - textures or GPU buffers created while the ellipsoid moves (per-frame allocation);
+//   - the "הרחבה" card open by default, or not opening;
+//   - the 3-D loader not covering the wait (textures held), or staying after the first frame;
+//   - missing reduced-motion (instant) or no-WebGL (live section + legend, no loader) behaviour.
+// The stage exposes its state as data-* attributes (station, anchor, mode, pair,
+// moving, pose, other, inspect) — read here instead of any on-screen number.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { dirname } from 'node:path';
 
-const require = createRequire(import.meta.url);
-const sharp = require(require.resolve('sharp', { paths: [dirname(require.resolve('next/package.json'))] }));
-
-const outDir = process.argv[2] || 'design/screenshots/datum-guided/interaction-refinement/qa';
+const outDir = process.argv[2] || 'design/screenshots/datum-guided/tasks-14-15';
 const BASE = process.env.QA_BASE || 'http://localhost:3000';
-/** QA_SKIP_LEAVE=1: skip leaving the lesson and coming back — only for a shared dev
-    server whose OTHER routes are broken (reported as skipped, never as passed). */
-const SKIP_LEAVE = process.env.QA_SKIP_LEAVE === '1';
 const URL = `${BASE}/lessons/topic-02/#scene-coordinates`;
 await mkdir(outDir, { recursive: true });
 
-/* The exercise's poses (datumDemo.ts / datumGeometry.ts — the unit tests pin them). */
-const OVERVIEW = [0, 0, 0, 1];
-const DEMO_START = [72, -52, 26, 0.8];
-const FIT = { global: [4, -4, -9, 1.01], local: [38, -28, -36, 0.75] };
-const PROBES = { inside: -1, outside: 1 };
+/* The block's poses (datumDemo.ts — the unit tests pin them). */
+const GLOBAL = '0,0,0,1';
+const ANCHOR_B = '-18,16,10,1';
+const LOCAL = '22,-4,-6,1';
+const CHECK = ['20,-16,12,1', '0,0,0,1.08', '-20,12,-12,0.88'];
+const ANSWERS = ['anchor', 'ellipsoid', 'both'];
 
 const failures = [];
 const notes = [];
@@ -51,539 +43,268 @@ const fail = (m) => failures.push(m);
 const check = (cond, m) => (cond ? notes.push(`ok  ${m}`) : fail(m));
 
 const browser = await chromium.launch({ channel: 'chrome' });
+const TITLE = 'דאטום: אליפסואיד ועיגון';
+const stageSel = `[role=group][aria-label="${TITLE}"]`;
 
-async function open({ reducedMotion = 'no-preference', webgl = true } = {}) {
+async function open({ reducedMotion = 'no-preference', webgl = true, hold = null } = {}) {
   const b = webgl ? browser : await chromium.launch({ channel: 'chrome', args: ['--disable-webgl', '--disable-webgl2', '--disable-3d-apis'] });
   const ctx = await b.newContext({ viewport: { width: 1440, height: 1122 }, reducedMotion });
   const page = await ctx.newPage();
   // count WebGL textures / buffers created by the datum stage's canvas (not the lesson's other scenes)
-  await page.addInitScript(() => {
-    window.__datumGL = { createTexture: 0, createBuffer: 0, deleteTexture: 0, deleteBuffer: 0, lost: 0 };
+  await page.addInitScript((title) => {
+    window.__datumGL = { createTexture: 0, createBuffer: 0 };
     for (const C of [window.WebGLRenderingContext, window.WebGL2RenderingContext].filter(Boolean)) {
-      const getExt = C.prototype.getExtension;
-      C.prototype.getExtension = function (name) {
-        const ext = getExt.call(this, name);
-        if (ext && name === 'WEBGL_lose_context' && !ext.__counted) {
-          const ctx = this;
-          const lose = ext.loseContext.bind(ext);
-          ext.loseContext = () => {
-            if (ctx.__datum) window.__datumGL.lost++;
-            return lose();
-          };
-          ext.__counted = true;
-        }
-        return ext;
-      };
-      for (const m of ['createTexture', 'createBuffer', 'deleteTexture', 'deleteBuffer']) {
+      for (const m of ['createTexture', 'createBuffer']) {
         const orig = C.prototype[m];
         C.prototype[m] = function (...a) {
-          // a context is the stage's once it creates something there (the canvas is detached by the time it is torn down)
-          if (m.startsWith('create') && this.canvas?.closest?.('[aria-label="דאטום: התאמת האליפסואיד לכדור הארץ"]')) this.__datum = true;
-          if (this.__datum) window.__datumGL[m]++;
+          if (this.canvas?.closest?.(`[aria-label="${title}"]`)) window.__datumGL[m]++;
           return orig.apply(this, a);
         };
       }
     }
-  });
+  }, TITLE);
   const errors = [];
-  const warnings = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  page.on('console', (m) => {
-    const t = m.text();
-    if (m.type() === 'error' && !/datum-fallback\.webp/.test(t)) errors.push(t);
-    if (m.type() === 'warning') warnings.push(t);
-  });
-  page.on('response', (r) => {
-    if (r.status() >= 400 && !r.url().includes('_next/webpack-hmr')) errors.push(`${r.status()} ${r.url()}`);
-  });
-  await page.goto(URL, { waitUntil: 'networkidle', timeout: 180000 });
-  await reach(page);
-  if (webgl) {
+  page.on('console', (m) => m.type() === 'error' && !/datum-fallback\.webp/.test(m.text()) && errors.push(m.text()));
+  page.on('response', (r) => r.status() >= 400 && !r.url().includes('_next/webpack-hmr') && errors.push(`${r.status()} ${r.url()}`));
+  let release = null;
+  if (hold) {
+    // hold the globe's surface textures: the 3-D view cannot draw its first frame until they arrive
+    const held = [];
+    release = () => held.splice(0).forEach((r) => r.continue());
+    await page.route(hold, (route) => held.push(route));
+  }
+  await page.goto(URL, { waitUntil: 'load', timeout: 180000 });
+  await page.waitForSelector(stageSel, { state: 'attached', timeout: 120000 });
+  await align(page);
+  if (webgl && !hold) {
     await page.waitForSelector(`${stageSel} canvas`, { timeout: 60000 });
-    await page.waitForTimeout(3500);
+    await page.waitForFunction((sel) => !document.querySelector(`${sel} [data-loading]`), stageSel, { timeout: 60000 });
+    await page.waitForTimeout(1500);
   } else await page.waitForTimeout(1500);
   await align(page);
-  return { b, ctx, page, errors, warnings };
+  return { b, ctx, page, errors, release };
 }
 
-/** The lesson's sections mount as they come into view: bring the stage in, then align. */
-async function reach(page) {
-  await page.waitForSelector(stageSel, { state: 'attached', timeout: 120000 });
-  await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center' }), stageSel);
-  await page.waitForSelector('[aria-controls="datum-step-0"]', { timeout: 60000 });
-  await align(page);
-}
-
-/** Scroll so the first station row sits at y = 386 — where the reference puts it. */
+/** Scroll so the card's top sits just under the site header — repeated until the lesson above stops moving. */
 async function align(page) {
-  await page.evaluate(() => {
-    const row = document.querySelector('[aria-controls="datum-step-0"]').closest('div.rounded-xl');
-    window.scrollTo(0, row.getBoundingClientRect().top + window.scrollY - 386);
-  });
-  await page.waitForTimeout(300);
+  for (let i = 0; i < 6; i++) {
+    const moved = await page.evaluate((title) => {
+      const card = [...document.querySelectorAll('h3')].find((h) => h.textContent === title).closest('.surface-elevated');
+      const d = card.getBoundingClientRect().top - 96;
+      window.scrollBy(0, d);
+      return Math.abs(d);
+    }, TITLE);
+    await page.waitForTimeout(moved > 2 ? 500 : 150);
+    if (moved <= 2) return;
+  }
 }
 
-/** The datum block only — the section also holds other scenes' controls and canvases. */
-const blk = (page) => page.locator('h3', { hasText: 'דאטום: התאמת האליפסואיד לכדור הארץ' }).locator('xpath=..');
-const stageSel = '[role=group][aria-label="דאטום: התאמת האליפסואיד לכדור הארץ"]';
-const shot = (page, name) => page.screenshot({ path: `${outDir}/${name}.png` });
-const station = (page, i) => page.locator(`[aria-controls="datum-step-${i}"]`);
-const panel = (page, i) => page.locator(`#datum-step-${i}`);
-const radio = (page, name) => blk(page).getByRole('radio', { name, exact: true });
-const demoBtn = (page) => blk(page).getByRole('button', { name: /^(הפעלת ההדגמה|עצירת ההדגמה|המשך ההדגמה|הדגמה חוזרת|לשלב הבא)$/ });
+const stage = (page) => page.locator(stageSel);
+const attr = (page, a) => stage(page).getAttribute(`data-${a}`);
+const poseOf = async (page) => (await attr(page, 'pose')).split(',').map(Number).map((x) => +x.toFixed(3)).join(',');
+const settle = async (page) => {
+  await page.waitForFunction((sel) => document.querySelector(sel)?.dataset.moving === 'false', stageSel, { timeout: 10000 });
+  await page.waitForTimeout(250);
+};
+const cardH = (page) => page.evaluate((title) => [...document.querySelectorAll('h3')].find((h) => h.textContent === title).closest('.surface-elevated').offsetHeight, TITLE);
 const feedback = (page) => page.locator('[data-datum-feedback]');
+const shot = async (page, name) => {
+  await align(page);
+  await page.screenshot({ path: `${outDir}/${name}.png` });
+};
 
-/** The stage's state readout. */
-async function st(page) {
-  const d = await page.locator(stageSel).evaluate((el) => ({ ...el.dataset }));
-  return { ...d, pose: d.pose.split(',').map(Number), inspect: Number(d.inspect) };
-}
-const near = (a, b, eps = 0.02) => a.every((x, i) => Math.abs(x - b[i]) <= eps);
-const fmt = (p) => `(${p.join(', ')})`;
-
-/** The close-up: its circle (stage px), the arrow's ends, and band pixels in a screenshot of it. */
-const insetSel = `${stageSel} div.rounded-full:has(> svg)`;
-async function inset(page) {
-  const el = page.locator(insetSel);
-  const box = await el.boundingBox();
-  const line = await el.locator('svg line').first().evaluate((l) => ['x1', 'y1', 'x2', 'y2'].map((k) => Number(l.getAttribute(k)))).catch(() => null);
-  const png = await page.screenshot({ clip: box });
-  const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
-  let blue = 0;
-  let orange = 0;
-  for (let i = 0; i < data.length; i += info.channels) {
-    const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-    if (b > r + 40 && b > 150) blue++;
-    if (r > b + 70 && r > 170 && g < r - 25) orange++;
-  }
-  return { box, line, png, blue, orange, paths: await el.locator('svg path').count() };
-}
-const inCircle = (box, x, y, pad) => Math.hypot(x - box.width / 2, y - box.height / 2) <= box.width / 2 - pad;
-
-/** Mean per-channel difference (0–255) between two screenshots of the same box. */
-async function diff(a, b) {
-  const [x, y] = await Promise.all([a, b].map((p) => sharp(p).raw().toBuffer()));
-  let s = 0;
-  for (let i = 0; i < x.length; i++) s += Math.abs(x[i] - y[i]);
-  return s / x.length;
-}
-
-/** The feedback sits in the globe's column, right under its control — not after the cards' grid. */
-async function feedbackNearGlobe(page, label) {
-  const stage = await page.locator(stageSel).boundingBox();
-  const fb = await feedback(page).boundingBox();
-  const gap = fb.y - (stage.y + stage.height);
-  const sameColumn = fb.x >= stage.x - 1 && fb.x + fb.width <= stage.x + stage.width + 1;
-  check(sameColumn && gap > 0 && gap < 110, `feedback right under the globe, in its column — ${label} (${Math.round(gap)} px below it)`);
-}
-
-async function noScore(page, label) {
-  const txt = await blk(page).innerText();
-  const desc = await page.locator('#datum-stage-desc').textContent();
-  const live = await blk(page).locator('[aria-live]').textContent();
-  check(!/\d\s*%|אחוז/.test(txt + desc + live), `no score or percentage in the block, its description or its announcement — ${label}`);
-}
-
-/* ───────── main run ───────── */
+/* ───────────── the main run ───────────── */
 {
-  const { b, ctx, page, errors, warnings } = await open();
+  const { ctx, page, errors } = await open();
+  const block = page.locator('.surface-elevated', { has: page.locator('h3', { hasText: TITLE }) });
 
-  // the removed controls stay removed
-  for (const name of ['השהיה', 'המשך', 'מסך מלא', 'יציאה ממסך מלא', 'החזרת המבט']) {
-    check((await blk(page).getByRole('button', { name, exact: true }).count()) === 0, `no "${name}" button`);
-  }
-  check((await blk(page).getByRole('slider', { name: 'התקדמות ההדגמה' }).count()) === 0, 'no demo scrubber');
-  await noScore(page, 'opening');
+  // removed controls stay out
+  for (const name of ['הפעלת ההדגמה', 'נסו בעצמכם', 'הצגת התאמה', 'איפוס']) check((await block.getByRole('button', { name }).count()) === 0, `no "${name}" button`);
+  check((await block.locator('input[type=range]').count()) === 0, 'no sliders in the block');
+  check(!/%|אחוז/.test(await block.innerText()), 'no score or percentage');
 
-  // ── station 1: three surfaces, nothing moves ──
-  check((await station(page, 0).getAttribute('aria-expanded')) === 'true', 'station 1 open at start');
-  let s = await st(page);
-  check(s.station === '0' && s.look === 'surface' && near(s.pose, OVERVIEW), `station 1 opens on the nested overview ${fmt(s.pose)}`);
-  check((await radio(page, 'פני השטח').getAttribute('aria-checked')) === 'true', 'surface selected at start');
-  check((await demoBtn(page).count()) === 0 && (await blk(page).locator('input[type=range]').count()) === 0, 'no demo and no fit controls in station 1');
-  await page.waitForTimeout(1500);
-  check(near((await st(page)).pose, OVERVIEW), 'no autoplay');
-  await feedbackNearGlobe(page, 'station 1');
-  const canvas = page.locator(`${stageSel} canvas`);
-  let prev = await canvas.screenshot();
-  await shot(page, '01-station1-surface');
-  for (const [name, look, file] of [['גיאואיד', 'geoid', '02-station1-geoid'], ['אליפסואיד', 'ellipsoid', '03-station1-ellipsoid'], ['פני השטח', 'surface', null]]) {
-    await radio(page, name).click();
-    await page.waitForTimeout(500);
-    s = await st(page);
-    const now = await canvas.screenshot();
-    const d = await diff(prev, now);
-    check(s.look === look && near(s.pose, OVERVIEW) && s.playback === '', `"${name}" changes the look only — pose ${fmt(s.pose)}, no fit, no playback`);
-    check(d > 6, `"${name}" visibly changes the view (mean difference ${d.toFixed(1)} / 255)`);
-    check((await feedback(page).innerText()).includes(`במיקוד: ${name}`), `the feedback names the surface in focus (${name})`);
-    if (file) await shot(page, file);
-    prev = now;
-  }
-  // choosing the active surface again does not reset the camera
-  {
-    const bb = await canvas.boundingBox();
-    await page.mouse.move(bb.x + 120, bb.y + 60);
-    await page.mouse.down();
-    await page.mouse.move(bb.x + 240, bb.y + 80, { steps: 8 });
-    await page.mouse.up();
-    await page.waitForTimeout(900);
-    const turned = await canvas.screenshot();
-    await radio(page, 'פני השטח').click();
-    await page.waitForTimeout(900);
-    check((await diff(turned, await canvas.screenshot())) < 1, 'choosing the active surface again keeps the camera where it is');
-  }
+  /* station 1 */
+  check((await attr(page, 'station')) === '0', 'opens on station 1');
+  check((await poseOf(page)) === GLOBAL, `anchoring A is the geocentric pose (${await poseOf(page)})`);
+  check((await attr(page, 'other')) === ANCHOR_B, 'the dashed outline is anchoring B');
+  check((await feedback(page).innerText()).includes('עברו לעיגון ב׳'), 'before B: the feedback asks to compare');
+  const h1a = await cardH(page);
+  await shot(page, '01-station1-anchor-a');
+  await page.locator('button[data-anchor="b"]').click();
+  check((await attr(page, 'moving')) === 'true', 'switching the anchoring eases');
+  await settle(page);
+  check((await poseOf(page)) === ANCHOR_B, `anchoring B on screen (${await poseOf(page)})`);
+  const fb1 = await feedback(page).innerText();
+  check(fb1.includes('אותו אליפסואיד בעיגון אחר הוא דאטום אחר') && fb1.includes('גוף הייחוס'), 'after B: the comparison (reference body vs anchoring) is shown');
+  check((await cardH(page)) === h1a, `station 1 card height stable (${h1a} → ${await cardH(page)})`);
+  await shot(page, '02-station1-anchor-b');
+  // keyboard: the radio group (RTL: ArrowRight goes back to A)
+  await page.locator('button[data-anchor="b"]').focus();
+  await page.keyboard.press('ArrowRight');
+  await settle(page);
+  check((await attr(page, 'anchor')) === 'a', 'arrow keys move between the anchorings');
+  check((await feedback(page).innerText()).includes('אותו אליפסואיד בעיגון אחר'), 'back on A: the comparison stays');
+  await shot(page, '03-station1-anchor-a-after-b');
 
-  // ── station 2: one demo button under the globe ──
-  await station(page, 1).click();
-  await page.waitForTimeout(1000);
-  await align(page);
-  check((await station(page, 0).getAttribute('aria-expanded')) === 'false', 'only one station open');
-  s = await st(page);
-  check(s.station === '1' && s.look === 'motion' && near(s.pose, DEMO_START) && s.playback === 'idle', `station 2 opens on the demo's opening pose, not playing ${fmt(s.pose)}`);
-  check((await blk(page).getByRole('radiogroup', { name: 'המשטח במיקוד' }).count()) === 0, 'the surface choice is only in station 1');
-  check((await demoBtn(page).count()) === 1 && (await panel(page, 1).getByRole('button', { name: /ההדגמה/ }).count()) === 0, 'one demo button, none inside the station');
-  {
-    const btn = await demoBtn(page).boundingBox();
-    const stage = await page.locator(stageSel).boundingBox();
-    check(btn.y > stage.y + stage.height && btn.x >= stage.x && btn.x + btn.width <= stage.x + stage.width, 'the demo button sits under the globe');
-  }
-  check((await demoBtn(page).innerText()).trim() === 'הפעלת ההדגמה', 'label before playing: "הפעלת ההדגמה"');
-  await feedbackNearGlobe(page, 'station 2');
-  await shot(page, '04-station2-open');
-
-  const gl0 = await page.evaluate(() => ({ ...window.__datumGL }));
-  await demoBtn(page).click();
-  check((await demoBtn(page).innerText()).trim() === 'עצירת ההדגמה', 'label while playing: "עצירת ההדגמה"');
-  await page.waitForTimeout(1900);
-  s = await st(page);
-  check(s.phase === 'shift' && s.guide === 'shift', `phase "הזזה" with its reference marks (${s.phase}/${s.guide})`);
-  check(s.pose[2] === DEMO_START[2] && s.pose[3] === DEMO_START[3] && !near(s.pose.slice(0, 2), DEMO_START.slice(0, 2), 1), `the shift moves only the position ${fmt(s.pose)}`);
-  check((await blk(page).locator('ol[aria-label="שלבי ההדגמה"] [aria-current="step"]').innerText()).includes('הזזה'), 'the stepper shows the active phase: הזזה');
-  await demoBtn(page).click();
-  check((await demoBtn(page).innerText()).trim() === 'המשך ההדגמה', 'label when stopped: "המשך ההדגמה"');
-  const held = (await st(page)).pose;
-  await page.waitForTimeout(1200);
-  check(near((await st(page)).pose, held, 1e-9), 'stopped holds in place');
-  await shot(page, '05-station2-demo-shift');
-  {
-    const a = await inset(page);
-    check(a.blue > 300 && a.orange > 300, `close-up draws both bands (blue ${a.blue}px, orange ${a.orange}px)`);
-    check(!!a.line && inCircle(a.box, a.line[0], a.line[1], 6) && inCircle(a.box, a.line[2], a.line[3], 6), 'the gap arrow and both measured points are inside the close-up');
-    check(a.paths <= 2, `with WebGL the close-up's SVG holds only the arrow and points (${a.paths} paths)`);
-  }
-  await demoBtn(page).click();
-  await page.waitForTimeout(1650);
-  s = await st(page);
-  check(s.phase === 'rotate' && s.guide === 'rotate', `phase "סיבוב" with the body's axes (${s.phase}/${s.guide})`);
-  check(near(s.pose.slice(0, 2), FIT.global.slice(0, 2)) && s.pose[3] === DEMO_START[3], `the rotation keeps position and size ${fmt(s.pose)}`);
-  await demoBtn(page).click();
-  await shot(page, '06-station2-demo-rotate');
-  await demoBtn(page).click();
-  await page.waitForTimeout(1700);
-  s = await st(page);
-  check(s.phase === 'scale' && s.guide === 'scale', `phase "קנה מידה" with the outline it started from (${s.phase}/${s.guide})`);
-  check(near(s.pose.slice(0, 3), FIT.global.slice(0, 3)), `the scale keeps position and orientation ${fmt(s.pose)}`);
-  const gl1 = await page.evaluate(() => ({ ...window.__datumGL }));
-  check(gl0.createTexture > 0 && gl1.createTexture === gl0.createTexture && gl1.createBuffer === gl0.createBuffer,
-    `no textures / buffers created while the demo plays through its phases (textures ${gl0.createTexture}→${gl1.createTexture}, buffers ${gl0.createBuffer}→${gl1.createBuffer})`);
-  await demoBtn(page).click();
-  await shot(page, '07-station2-demo-scale');
-  await demoBtn(page).click();
-  await page.waitForTimeout(3000);
-  s = await st(page);
-  check(s.playback === 'ended' && near(s.pose, FIT.global), `the demo ends on the computed fit ${fmt(s.pose)}`);
-  check((await demoBtn(page).innerText()).trim() === 'הדגמה חוזרת', 'label at the end: "הדגמה חוזרת"');
-  await page.waitForTimeout(1500);
-  check(near((await st(page)).pose, FIT.global) && (await st(page)).playback === 'ended', 'the end stays — no loop');
-  check((await station(page, 1).getAttribute('aria-expanded')) === 'true' && (await station(page, 2).getAttribute('aria-expanded')) === 'false', 'no auto-advance to station 3');
-  await noScore(page, 'demo end');
-  await shot(page, '08-station2-demo-end');
-  await demoBtn(page).click();
-  await page.waitForTimeout(300);
-  s = await st(page);
-  check(s.playback === 'playing' && Number(s.pose[3]) < 0.95, 'replay starts again from the opening');
-
-  // ── the experiment (closed by default, behind "נסו בעצמכם") ──
-  check((await panel(page, 1).locator('input[type=range]').count()) === 0, 'the four parameters are closed by default');
-  await panel(page, 1).getByRole('button', { name: 'נסו בעצמכם' }).click();
-  await page.waitForTimeout(400);
-  s = await st(page);
-  check(s.playback === 'manual', 'the experiment stops the demo');
-  const sliders = panel(page, 1).locator('input[type=range]');
-  check((await sliders.count()) === 4, 'four parameters in the experiment');
-  for (const name of ['הזזה אופקית (X)', 'הזזה אנכית (Y)', 'סיבוב', 'קנה מידה']) {
-    check((await panel(page, 1).getByText(name, { exact: true }).count()) === 1, `parameter "${name}"`);
-  }
-  check((await panel(page, 1).getByText('זהו ניסוי סכמטי בחתך דו־ממדי', { exact: false }).count()) === 1, 'the schematic-experiment note is shown');
-  check(await page.evaluate(() => document.activeElement?.type === 'range'), 'focus moves to the first parameter');
-  check((await panel(page, 1).getByRole('button', { name: /ההדגמה$/ }).count()) === 0, 'no second play button under the parameters');
-  const rot = panel(page, 1).getByRole('slider', { name: /^סיבוב/ });
-  await rot.focus();
-  await page.waitForTimeout(200);
-  const before3 = await inset(page);
-  const r0 = (await st(page)).pose;
-  for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowLeft');
-  await page.waitForTimeout(400);
-  s = await st(page);
-  check(s.guide === 'rotate' && s.phase === 'rotate', `adjusting the rotation shows the axes and names the change (${s.guide})`);
-  check(s.pose[2] !== r0[2] && near(s.pose.slice(0, 2), r0.slice(0, 2)) && s.pose[3] === r0[3], `the keyboard turns only the orientation ${fmt(r0)} → ${fmt(s.pose)}`);
-  check(!before3.png.equals((await inset(page)).png), 'the close-up follows the pose (live, not a picture)');
-  check((await feedback(page).innerText()).includes('סיבוב'), 'the feedback names the parameter being changed');
-  await align(page);
-  await shot(page, '09-station2-experiment');
-  await panel(page, 1).getByRole('button', { name: 'איפוס' }).click();
-  await page.waitForTimeout(900);
-  check(near((await st(page)).pose, DEMO_START), 'reset returns the experiment to its opening');
-  await panel(page, 1).getByRole('button', { name: 'הצגת התאמה' }).click();
-  await page.waitForTimeout(1400);
-  check(near((await st(page)).pose, FIT.global), 'show fit moves to the computed fit');
-  await noScore(page, 'show fit');
-  // leave a saved experiment for the station round trip
-  const sx = panel(page, 1).getByRole('slider', { name: /^קנה מידה/ });
-  await sx.focus();
-  for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(300);
-  const saved = (await st(page)).pose;
-  await feedbackNearGlobe(page, 'experiment open (the longest station)');
-
-  // ── station 3: global / local, two check points ──
-  await station(page, 2).click();
-  await page.waitForTimeout(1000);
-  await align(page);
-  s = await st(page);
-  check(s.station === '2' && s.look === 'compare' && near(s.pose, FIT.global), `station 3 shows the global fit ${fmt(s.pose)}`);
-  check((await demoBtn(page).count()) === 0 && (await blk(page).locator('input[type=range]').count()) === 0 && (await blk(page).getByRole('button', { name: 'נסו בעצמכם' }).count()) === 0,
-    'no demo, no experiment in station 3');
-  check((await feedback(page).innerText()).includes('תחום ההתאמה: כלל כדור הארץ.'), 'global: "תחום ההתאמה: כלל כדור הארץ."');
-  check(Math.abs(s.inspect - PROBES.inside) < 1e-3, 'the close-up reads the check point in the marked region');
-  await feedbackNearGlobe(page, 'station 3');
-  await shot(page, '10-station3-global-inside');
-  await radio(page, 'דאטום מקומי').click();
-  await page.waitForTimeout(80);
-  s = await st(page);
-  check(!near(s.pose, FIT.global, 0.5) || near(s.pose, FIT.local), 'local applies at once (the view is already on its way)');
-  await page.waitForTimeout(1000);
-  s = await st(page);
-  check(near(s.pose, FIT.local), `local: the computed local fit ${fmt(s.pose)}`);
-  check((await feedback(page).innerText()).includes('תחום ההתאמה: האזור המסומן.'), 'local: "תחום ההתאמה: האזור המסומן."');
-  const insideLocal = await inset(page);
-  await shot(page, '11-station3-local-inside');
-  await radio(page, 'מחוץ לאזור').click();
+  /* station 2 */
+  await page.getByRole('button', { name: 'דאטום עולמי ומקומי' }).click();
+  await settle(page);
+  check((await attr(page, 'station')) === '1', 'station 2 opens');
+  check((await poseOf(page)) === GLOBAL && (await attr(page, 'other')) === LOCAL, 'global datum shown, local dashed');
+  check((await page.locator('[data-coordinates1-screen="datum"] svg circle').count()) > 0, 'the close-up is drawn');
+  const fbG = await feedback(page).innerText();
+  check(/באזור המסומן/.test(fbG) && /פער גדול/.test(fbG), `global · inside: a large gap ("${fbG.replace(/\s+/g, ' ')}")`);
+  const h2 = await cardH(page);
+  await shot(page, '04-station2-global-inside');
+  await page.locator('[data-probe="outside"]').click();
   await page.waitForTimeout(500);
-  s = await st(page);
-  check(Math.abs(s.inspect - PROBES.outside) < 1e-3 && near(s.pose, FIT.local), 'the outside check point, same fit');
-  const outsideLocal = await inset(page);
-  const len = (a) => Math.hypot(a.line[2] - a.line[0], a.line[3] - a.line[1]);
-  check(!!outsideLocal.line && (!insideLocal.line || len(outsideLocal) > len(insideLocal)), `local: the gap outside the region is larger than inside it (arrow ${insideLocal.line ? len(insideLocal).toFixed(0) : 'none'} → ${outsideLocal.line ? len(outsideLocal).toFixed(0) : 'none'} px)`);
-  check(/מחוץ לאזור/.test(await feedback(page).innerText()), 'the feedback reports the check point');
-  await shot(page, '12-station3-local-outside');
-  await radio(page, 'דאטום עולמי').click();
-  await page.waitForTimeout(1000);
-  s = await st(page);
-  check(near(s.pose, FIT.global) && Math.abs(s.inspect - PROBES.outside) < 1e-3, 'the same check point serves both fits');
-  await shot(page, '13-station3-global-outside');
-  // the other check point on the globe is a pointer alternative to the radio group
-  {
-    const alt = page.locator(`${stageSel} > div[aria-hidden].cursor-pointer`);
-    if ((await alt.count()) === 1 && (await alt.evaluate((el) => el.style.opacity)) === '1') {
-      await alt.click();
-      await page.waitForTimeout(400);
-      check(Math.abs((await st(page)).inspect - PROBES.inside) < 1e-3, 'clicking the other check point on the globe chooses it');
-    } else notes.push('--  the other check point is out of view at this camera — not clicked');
-  }
-
-  // ── 2 → 3 → 2: the experiment is where it was left, nothing plays ──
-  await station(page, 1).click();
-  await page.waitForTimeout(1000);
-  s = await st(page);
-  check(s.playback === 'manual' && near(s.pose, saved, 1e-9), `station 2 keeps its experiment ${fmt(saved)}`);
-  check((await panel(page, 1).locator('input[type=range]').count()) === 4, 'the experiment is still open');
-  await page.waitForTimeout(800);
-  check(near((await st(page)).pose, saved, 1e-9), 'coming back plays nothing');
-  // "חזרה להדגמה" closes the parameters; focus lands on "נסו בעצמכם"
-  await panel(page, 1).getByRole('button', { name: 'חזרה להדגמה' }).click();
-  await page.waitForTimeout(900);
-  check((await panel(page, 1).locator('input[type=range]').count()) === 0 && (await demoBtn(page).innerText()).trim() === 'הפעלת ההדגמה', '"חזרה להדגמה" closes the experiment; the demo is ready again');
-  check(await page.evaluate(() => document.activeElement?.textContent?.trim() === 'נסו בעצמכם'), 'focus returns to "נסו בעצמכם"');
-
-  // ── camera: background drag rotates (inside its limits); wheel only once engaged ──
-  const bb = await canvas.boundingBox();
-  const before = await canvas.screenshot();
-  await page.mouse.move(bb.x + 120, bb.y + 60);
-  await page.mouse.down();
-  await page.mouse.move(bb.x + 260, bb.y + 90, { steps: 8 });
-  await page.mouse.up();
-  await page.waitForTimeout(800);
-  await shot(page, '14-camera-rotated');
-  check(!before.equals(await canvas.screenshot()), 'background drag rotates the camera');
-  // a long drag stops at the azimuth limit: the open quarter stays toward the viewer
-  for (let k = 0; k < 2; k++) {
-    await page.mouse.move(bb.x + 40, bb.y + 200);
-    await page.mouse.down();
-    await page.mouse.move(bb.x + bb.width - 20, bb.y + 200, { steps: 20 });
-    await page.mouse.up();
-    await page.waitForTimeout(1200);
-  }
-  const limit1 = await canvas.screenshot();
-  await page.mouse.move(bb.x + 40, bb.y + 200);
-  await page.mouse.down();
-  await page.mouse.move(bb.x + bb.width - 20, bb.y + 200, { steps: 20 });
-  await page.mouse.up();
-  await page.waitForTimeout(1200);
-  check((await diff(limit1, await canvas.screenshot())) < 1.5, 'turning stops at its limit (the model stays in view)');
-  await page.mouse.click(10, 600); // outside
-  const y0 = await page.evaluate(() => window.scrollY);
-  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
-  await page.mouse.wheel(0, 300);
-  await page.waitForTimeout(600);
-  const y1 = await page.evaluate(() => window.scrollY);
-  check(y1 > y0, `wheel scrolls the lesson while the stage is not engaged (${y0} → ${y1})`);
-  await align(page);
-
-  // ── keyboard ──
-  await station(page, 0).focus();
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(600);
-  check((await station(page, 0).getAttribute('aria-expanded')) === 'true' && (await st(page)).station === '0', 'Enter opens a station');
-  await radio(page, 'פני השטח').click();
-  await page.keyboard.press('ArrowLeft');
-  check((await radio(page, 'גיאואיד').getAttribute('aria-checked')) === 'true', '← moves the surface choice (RTL)');
-  const marker = blk(page).getByRole('slider', { name: 'נקודת הבדיקה' });
-  const v0 = await marker.getAttribute('aria-valuenow');
-  await marker.focus();
-  await page.keyboard.press('ArrowUp');
-  await page.keyboard.press('ArrowUp');
-  check(v0 !== (await marker.getAttribute('aria-valuenow')), 'the inspection point moves with the keyboard (stations 1–2)');
-  await station(page, 2).focus();
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(600);
-  await radio(page, 'באזור המסומן').click();
-  await page.keyboard.press('ArrowLeft');
-  check((await radio(page, 'מחוץ לאזור').getAttribute('aria-checked')) === 'true', '← moves the check point choice');
-  check((await blk(page).getByRole('slider', { name: 'נקודת הבדיקה' }).count()) === 0, 'station 3: the marker is not a free slider (two fixed check points)');
-  // closing the open station's text keeps the station and its view
-  await station(page, 2).click();
+  check((await attr(page, 'inspect')) === '0.600', 'the outside check point');
+  check(/פער קטן/.test(await feedback(page).innerText()), 'global · outside: a small gap');
+  await shot(page, '05-station2-global-outside');
+  await page.locator('button[data-mode="local"]').click();
+  await settle(page);
+  check((await poseOf(page)) === LOCAL && (await attr(page, 'other')) === GLOBAL, 'local datum shown, global dashed');
+  check((await attr(page, 'inspect')) === '0.600', 'the check point does not move with the datum');
+  const fbLo = await feedback(page).innerText();
+  check(/מחוץ לאזור/.test(fbLo) && /יש פער/.test(fbLo) && /קטן יותר/.test(fbLo), 'local · outside: a gap, smaller in the global datum');
+  await shot(page, '06-station2-local-outside');
+  await page.locator('[data-probe="inside"]').click();
   await page.waitForTimeout(500);
-  check((await station(page, 2).getAttribute('aria-expanded')) === 'false' && (await st(page)).station === '2', 'closing the text keeps the station');
+  check(/כמעט חופפים/.test(await feedback(page).innerText()), 'local · inside: almost coincide');
+  check((await cardH(page)) === h2, `station 2 card height stable (${h2} → ${await cardH(page)})`);
+  await shot(page, '07-station2-local-inside');
 
-  // ── scroll through the block ──
-  await page.evaluate(() => {
-    const h = [...document.querySelectorAll('h3')].find((e) => e.textContent.includes('דאטום: התאמת'));
-    window.scrollTo(0, h.getBoundingClientRect().top + window.scrollY - 96);
-  });
+  /* station 3 */
+  await page.getByRole('button', { name: 'בדיקה: מה השתנה?' }).click();
+  check((await poseOf(page)) === GLOBAL, 'the check opens on datum A');
+  await settle(page);
+  check((await poseOf(page)) === CHECK[0] && (await attr(page, 'other')) === GLOBAL, 'pair 1: datum B on screen, datum A dashed');
+  const h3idle = await cardH(page);
+  check((await feedback(page).getAttribute('data-datum-feedback')) === 'idle', 'pair 1: no verdict before an answer');
+  await shot(page, '08-check-pair1');
+  for (let i = 0; i < 3; i++) {
+    const wrong = ['anchor', 'ellipsoid', 'both'].filter((c) => c !== ANSWERS[i]);
+    const gl0 = await page.evaluate(() => ({ ...window.__datumGL }));
+    for (const w of wrong) {
+      await page.locator(`[data-change="${w}"]`).click();
+      await page.waitForTimeout(250);
+      check((await feedback(page).getAttribute('data-datum-feedback')) === 'wrong', `pair ${i + 1}: "${w}" is marked wrong`);
+      check((await page.getByRole('button', { name: 'לזוג הבא' }).count()) === 0, `pair ${i + 1}: no next pair after a wrong answer`);
+      check((await cardH(page)) === h3idle, `pair ${i + 1}: card height stable after "${w}"`);
+      await shot(page, `09-check-pair${i + 1}-wrong-${w}`);
+    }
+    await page.locator(`[data-change="${ANSWERS[i]}"]`).click();
+    await page.waitForTimeout(250);
+    check((await feedback(page).getAttribute('data-datum-feedback')) === 'right', `pair ${i + 1}: "${ANSWERS[i]}" is right`);
+    check((await feedback(page).innerText()).startsWith('נכון'), `pair ${i + 1}: the explanation starts with the verdict`);
+    await page.locator(`[data-change="${wrong[0]}"]`).click({ force: true }); // aria-disabled once the pair is done
+    check((await page.locator(`[data-change="${ANSWERS[i]}"]`).getAttribute('aria-pressed')) === 'true', `pair ${i + 1}: a right answer stays`);
+    check((await cardH(page)) === h3idle, `pair ${i + 1}: card height stable after the right answer`);
+    await shot(page, `10-check-pair${i + 1}-right`);
+    if (i < 2) {
+      await page.getByRole('button', { name: 'לזוג הבא' }).click();
+      check((await poseOf(page)) === GLOBAL, `pair ${i + 2} starts at datum A`);
+      await settle(page);
+      check((await poseOf(page)) === CHECK[i + 1], `pair ${i + 2}: datum B on screen (${await poseOf(page)})`);
+      const focused = await page.evaluate(() => document.activeElement?.dataset?.change ?? null);
+      check(focused === 'anchor', 'focus moves to the first answer of the new pair');
+      const gl1 = await page.evaluate(() => ({ ...window.__datumGL }));
+      check(gl1.createTexture === gl0.createTexture && gl1.createBuffer === gl0.createBuffer,
+        `no textures / buffers created while the ellipsoid moves (textures ${gl0.createTexture}→${gl1.createTexture}, buffers ${gl0.createBuffer}→${gl1.createBuffer})`);
+    }
+  }
+  const done = await feedback(page).innerText();
+  check(/באליפסואיד, בעיגון או בשניהם/.test(done), 'completion: the takeaway is stated');
+  await page.getByRole('button', { name: 'הצגת המעבר שוב' }).click();
+  check((await poseOf(page)) === GLOBAL, 'replay: back to datum A');
+  await settle(page);
+  check((await poseOf(page)) === CHECK[2], 'replay: and to datum B again');
+  await shot(page, '11-check-complete');
+  await page.getByRole('button', { name: 'מההתחלה' }).click();
+  await settle(page);
+  check((await attr(page, 'pair')) === '0' && (await feedback(page).getAttribute('data-datum-feedback')) === 'idle', 'restart: pair 1, no answers');
+
+  /* stations keep their state */
+  await page.getByRole('button', { name: 'אותו אליפסואיד, עיגון אחר' }).click();
+  await settle(page);
+  check((await attr(page, 'anchor')) === 'a' && (await poseOf(page)) === GLOBAL, 'station 1 as it was left');
+  await page.getByRole('button', { name: 'דאטום עולמי ומקומי' }).click();
+  await settle(page);
+  check((await attr(page, 'mode')) === 'local' && (await attr(page, 'inspect')) === '-0.800', 'station 2 as it was left');
+
+  /* the "הרחבה" card */
+  const conv = page.getByRole('button', { name: 'הרחבה: המרת קואורדינטות בין דאטומים' });
+  check((await conv.getAttribute('aria-expanded')) === 'false', 'הרחבה: closed by default');
+  check((await page.locator('#datum-conversion-body').count()) === 0, 'הרחבה: its text is not on the page until opened');
+  await conv.click();
   await page.waitForTimeout(600);
-  await shot(page, '15-scroll-top');
-  await page.mouse.wheel(0, 700);
-  await page.waitForTimeout(800);
-  await shot(page, '16-scroll-cards');
+  check((await conv.getAttribute('aria-expanded')) === 'true', 'הרחבה: opens');
+  const convText = await page.locator('#datum-conversion-body').innerText();
+  check(/המרת קואורדינטות היא פעולה אחרת/.test(convText) && /אינו משנה את האליפסואיד/.test(convText), 'הרחבה: conversion is set apart from the datum; scale is not the ellipsoid');
+  await conv.evaluate((e) => e.scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${outDir}/12-conversion-open.png` });
+  await conv.click();
 
-  // leave the lesson (client-side, as a learner would) — the stage's GPU resources are released — and come back
-  if (SKIP_LEAVE) console.log('--  SKIPPED: leaving the lesson and re-entering it (QA_SKIP_LEAVE=1)');
-  else {
-    const glIn = await page.evaluate(() => ({ ...window.__datumGL }));
-    await page.getByRole('link', { name: 'בית', exact: true }).first().click();
-    await page.waitForURL((u) => !u.pathname.includes('topic-02'), { timeout: 60000 });
-    await page.waitForTimeout(1500);
-    const glOut = await page.evaluate(() => ({ ...window.__datumGL }));
-    // three keeps 4 placeholder textures of its own per renderer; they go with the context
-    const liveTex = glIn.createTexture - glIn.deleteTexture;
-    const liveBuf = glIn.createBuffer - glIn.deleteBuffer;
-    check(glOut.lost > glIn.lost && glOut.deleteTexture - glIn.deleteTexture >= liveTex - 4 && glOut.deleteBuffer - glIn.deleteBuffer >= 0.8 * liveBuf,
-      `leaving the lesson releases the stage (context released; textures ${glOut.deleteTexture - glIn.deleteTexture} of ${liveTex} deleted explicitly, buffers ${glOut.deleteBuffer - glIn.deleteBuffer} of ${liveBuf})`);
-    await page.goBack({ waitUntil: 'networkidle' });
-    await reach(page);
-    await page.waitForSelector(`${stageSel} canvas`, { timeout: 60000 });
-    await page.waitForTimeout(2500);
-    s = await st(page);
-    check(s.station === '0' && near(s.pose, OVERVIEW), 're-entering the lesson starts at station 1');
-  }
-
-  report('main', errors, warnings);
-  await ctx.close();
-  void b;
-}
-
-/* ───────── reduced motion ───────── */
-{
-  const { ctx, page, errors, warnings } = await open({ reducedMotion: 'reduce' });
-  await station(page, 1).click();
-  await page.waitForTimeout(150);
-  check(near((await st(page)).pose, DEMO_START), 'reduced motion: opening a station switches the view at once');
-  const labels = [];
-  for (const phase of ['shift', 'rotate', 'scale']) {
-    await demoBtn(page).click();
-    const a = await st(page);
-    await page.waitForTimeout(900);
-    const c = await st(page);
-    labels.push((await demoBtn(page).innerText()).trim());
-    check(near(a.pose, c.pose, 1e-9), `reduced motion: one click per phase, nothing animates (${phase} ${fmt(c.pose)})`);
-    if (phase !== 'scale') check(c.phase === phase, `reduced motion: the click shows "${phase}"`);
-  }
-  check(labels[0] === 'לשלב הבא' && labels[1] === 'לשלב הבא' && labels[2] === 'הדגמה חוזרת', `reduced motion: the same button reads "לשלב הבא", then "הדגמה חוזרת" (${labels.join(' / ')})`);
-  check(near((await st(page)).pose, FIT.global), 'reduced motion: the clicks reach the computed fit');
-  await align(page);
-  await shot(page, '17-reduced-motion');
-  await station(page, 2).click();
-  await page.waitForTimeout(150);
-  await radio(page, 'דאטום מקומי').click();
-  await page.waitForTimeout(100);
-  check(near((await st(page)).pose, FIT.local), 'reduced motion: global ↔ local is instant');
-  report('reduced', errors, warnings);
+  check(errors.length === 0, `no console / page errors (${errors.slice(0, 3).join(' | ')})`);
   await ctx.close();
 }
 
-/* ───────── no WebGL ───────── */
+/* ───────────── the 3-D loader covers the wait, then goes ───────────── */
 {
-  const { b, ctx, page, errors, warnings } = await open({ webgl: false });
+  const { ctx, page, errors, release } = await open({ hold: '**/datum-guided/textures/**' });
+  await page.waitForTimeout(2500);
+  const loader = page.locator(`${stageSel} [data-loading]`);
+  check((await loader.count()) === 1 && /טוען גלובוס תלת־ממדי/.test(await loader.innerText()), 'loader shown while the textures are held');
+  check((await page.locator(`${stageSel} ul`).count()) === 0, 'no legend before its marks are drawn');
+  await shot(page, '13-loader');
+  release();
+  await page.waitForFunction((sel) => !document.querySelector(`${sel} [data-loading]`), stageSel, { timeout: 60000 }).catch(() => {});
+  check((await loader.count()) === 0, 'loader gone once the globe is drawn');
+  check((await page.locator(`${stageSel} canvas`).count()) === 1, 'the canvas is up');
+  check((await page.locator(`${stageSel} ul`).count()) === 1, 'the legend comes with the first frame');
+  check(errors.length === 0, `loader run: no errors (${errors.slice(0, 3).join(' | ')})`);
+  await ctx.close();
+}
+
+/* ───────────── reduced motion: every change is instant ───────────── */
+{
+  const { ctx, page, errors } = await open({ reducedMotion: 'reduce' });
+  await page.locator('button[data-anchor="b"]').click();
+  check((await attr(page, 'moving')) === 'false' && (await poseOf(page)) === ANCHOR_B, 'reduced motion: the anchoring switches at once');
+  await page.getByRole('button', { name: 'בדיקה: מה השתנה?' }).click();
+  check((await attr(page, 'moving')) === 'false' && (await poseOf(page)) === CHECK[0], 'reduced motion: the pair shows datum B at once');
+  await page.locator('[data-change="anchor"]').click();
+  await page.getByRole('button', { name: 'לזוג הבא' }).click();
+  check((await attr(page, 'moving')) === 'false' && (await poseOf(page)) === CHECK[1], 'reduced motion: the next pair at once');
+  check(errors.length === 0, 'reduced motion: no errors');
+  await ctx.close();
+}
+
+/* ───────────── no WebGL: the live section beside the static picture ───────────── */
+{
+  const { b, ctx, page, errors } = await open({ webgl: false });
   check((await page.locator(`${stageSel} canvas`).count()) === 0, 'no WebGL: no canvas');
-  const svg = page.locator(`${stageSel} svg[role=img]`);
-  check((await svg.count()) === 1, 'no WebGL: the live SVG section is shown');
-  check(!/%|אחוז/.test(await svg.getAttribute('aria-label')), 'no WebGL: the section’s description has no score');
-  {
-    const a = await inset(page);
-    check(a.paths >= 8 && a.blue > 300 && a.orange > 300, `no WebGL: the close-up draws its bands in SVG (${a.paths} paths)`);
-  }
-  const svg0 = await svg.innerHTML();
-  await radio(page, 'גיאואיד').click();
-  await page.waitForTimeout(300);
-  const svg1 = await svg.innerHTML();
-  check(svg0 !== svg1 && (await svg.getAttribute('aria-label')).includes('גיאואיד'), 'no WebGL: choosing a surface changes the live section and its description');
-  await station(page, 1).click();
-  await page.waitForTimeout(800);
-  await demoBtn(page).click();
-  await page.waitForTimeout(2000);
-  check(!near((await st(page)).pose, DEMO_START, 1), 'no WebGL: the demo button drives the section');
-  await demoBtn(page).click();
-  await panel(page, 1).getByRole('button', { name: 'נסו בעצמכם' }).click();
-  await panel(page, 1).getByRole('button', { name: 'הצגת התאמה' }).click();
-  await page.waitForTimeout(1500);
-  check(near((await st(page)).pose, FIT.global), 'no WebGL: the experiment still drives the section');
-  await align(page);
-  await shot(page, '18-no-webgl-experiment');
-  await station(page, 2).click();
-  await page.waitForTimeout(1000);
-  await radio(page, 'דאטום מקומי').click();
-  await page.waitForTimeout(1000);
-  check(near((await st(page)).pose, FIT.local) && (await svg.locator(':scope > circle').count()) === 2, 'no WebGL: local and both check points on the section');
-  await shot(page, '19-no-webgl-local');
-  report('no-webgl', errors, warnings);
+  check((await page.locator(`${stageSel} [data-loading]`).count()) === 0, 'no WebGL: no loader');
+  check((await page.locator(`${stageSel} svg[role=img]`).count()) === 1, 'no WebGL: the live section');
+  check((await page.locator(`${stageSel} ul`).innerText()).includes('מרכז כדור הארץ וציר הסיבוב'), 'no WebGL: the legend');
+  await shot(page, '14-no-webgl-station1');
+  await page.locator('button[data-anchor="b"]').click();
+  await page.waitForTimeout(1200);
+  await shot(page, '15-no-webgl-station1-b');
+  await page.getByRole('button', { name: 'דאטום עולמי ומקומי' }).click();
+  await page.waitForTimeout(1200);
+  await shot(page, '16-no-webgl-station2');
+  check(errors.length === 0, 'no WebGL: no errors');
   await ctx.close();
   await b.close();
-}
-
-function report(label, errors, warnings) {
-  const three = warnings.filter((w) => /THREE\.Clock/.test(w)).length;
-  const other = warnings.filter((w) => !/THREE\.Clock/.test(w));
-  if (errors.length) fail(`${label}: console/page errors:\n  ${errors.slice(0, 10).join('\n  ')}`);
-  else notes.push(`ok  ${label}: no console or page errors`);
-  if (three) notes.push(`--  ${label}: ${three}× THREE.Clock deprecation warning (from @react-three/fiber)`);
-  if (other.length) notes.push(`--  ${label}: warnings:\n  ${other.slice(0, 6).join('\n  ')}`);
 }
 
 await browser.close();
 console.log(notes.join('\n'));
 if (failures.length) {
-  console.log(`\nFAIL (${failures.length}):\n- ${failures.join('\n- ')}`);
+  console.log(`\nFAIL (${failures.length}):\n  ${failures.join('\n  ')}`);
   process.exit(1);
 }
-console.log('\nPASS');
+console.log(`\nPASS — ${notes.length} checks; screenshots in ${outDir}`);

@@ -18,14 +18,24 @@
 //               links the section (one click, a steady end); "חזרה למבט הכללי" back; a click
 //               during the growth cancels it for good; turning and the side / top views go on;
 //               no long callout lines between the figures
-//   geoid       opens solid; "חשיפת משטחי הייחוס" → see-through + its sentence, the label turns to
-//               "החזרת פני השטח" → solid; turning while see-through; leaving and coming back: solid
+//   geoid       opens solid with no H anywhere and only the reveal beside its instruction; "חשיפת משטחי
+//               הייחוס" → see-through + its sentence, H in the model and the section together, the station
+//               buttons beside "בחרו תחנה", "החזרת פני השטח" at the end (focus follows it) → solid, H gone
+//               from both; turning while see-through; leaving and coming back: solid
+//   actions     one instruction per view (data-action-line) at the model caption's start, its control in it
+//   close-up    at A only (task, and the geoid view once revealed), a whole factor, clear of the B pin;
+//               the chips beside the arrows give the readings' numbers (H "?" until solved). On the model
+//               (the geoid view, see-through, A only — none before the reveal, at B/C or in the task): a
+//               whole factor, H k times the model's, A's ground point in its frame, no pin under its box,
+//               the model drawn into it — with H, not before; at once with reduced motion; the still without WebGL
+//   sync        a station picked: buttons, model pins, receiver, section and readings within 100 ms
 //   stations    A/B/C picked on the model, on the section or with the buttons: the same station
 //               everywhere (buttons, pins, section, receiver, data)
 //   mission     no arrows over the model, H/h/N once in the section; B opens empty, no H value
-//               before checking; 148 → h hint; 119.9 wrong; drafts kept; 120.0 correct; turning,
-//               the reveal, the enlargement and switching views keep the task; A: 6 → sign hint,
-//               30; C 220 → 3/3 — on screen throughout; "מבט התחלתי" keeps 3/3, "איפוס המשימה" clears
+//               before checking; 148 → h hint; 176 → "add" hint; −120 → order hint; 28 → N hint; 119.9
+//               wrong (each with the substitution, never the answer); drafts kept; 120.0 correct; turning,
+//               the reveal, the enlargement and switching views keep the task; A: 6 → sign hint, 30;
+//               C 220 → 3/3 — on screen throughout; "מבט התחלתי" keeps 3/3, "איפוס המשימה" clears
 //   keyboard    the tabs (←/→/Home/End), the model (arrows), Enter checks
 //   motion      reduced motion: the enlargement and the reveal switch at once, no flying frame
 //   no WebGL    the profile stills, no turning offered, the reveal and the receiver as stills,
@@ -34,6 +44,9 @@
 // Writes a screenshot per state into outDir.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+
+const sharp = createRequire(import.meta.url)('../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp');
 
 const outDir = process.argv[2] || 'design/screenshots/measurement-mission-clarity-2026-10-12/qa';
 const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02/#scene-coordinates`;
@@ -118,7 +131,95 @@ const tab = (page, name) => page.getByRole('tab', { name, exact: true });
 const shot = (page, name) => page.screenshot({ path: `${outDir}/${name}.png` });
 const button = (page, name) => page.getByRole('button', { name, exact: true }).first();
 const stationButton = (page, id) => page.getByRole('group', { name: 'בחירת תחנה' }).getByRole('button', { name: new RegExp(`^תחנה ${id}`) });
-const input = (page) => page.getByLabel('מהו הגובה מעל פני הים?');
+const input = (page) => page.getByLabel(/^מהו הגובה מעל פני הים בתחנה [ABC]\?$/);
+/** The model caption's instruction(s): text, and the controls inside the same line. */
+const actions = (page) =>
+  page.evaluate(
+    (ill) =>
+      [...document.querySelectorAll(`${ill} figure:first-of-type figcaption [data-action-line]`)].map((a) => ({
+        text: a.querySelector('p').textContent.trim(),
+        controls: [...a.querySelectorAll('button')].map((b) => b.textContent.trim()),
+      })),
+    ILL,
+  );
+/** What the section shows of the picked station: its id, the close-up, the geoid view's H, and the labels' text. */
+const sectionState = (page) =>
+  page.evaluate((sel) => {
+    const sec = document.querySelector(sel);
+    const lens = sec.querySelector('[data-section-lens]');
+    const gh = sec.querySelector('[data-geoid-h]');
+    return {
+      station: sec.getAttribute('data-section-station'),
+      lens: lens ? Number(lens.getAttribute('data-section-lens')) : 0,
+      lensOpacity: lens ? Number(getComputedStyle(lens.parentElement).opacity) : 0,
+      geoidH: gh ? Number(getComputedStyle(gh).opacity) : -1,
+      labels: [...sec.querySelectorAll('[data-section-labels] > span, [data-section-lens] span.absolute')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()),
+    };
+  }, SECTION);
+const modelH = (page) => page.locator(`${STAGE} [data-geoid-height]`).count();
+/**
+ * The model's close-up of H (the geoid view, see-through): its factor, fade, title and names; H's length on
+ * the model and in the box; whether its frame holds the picked station's ground point and its box covers no
+ * pin; and how much the model drew into the box (the spread of its pixels, from a screenshot).
+ */
+async function modelLens(page) {
+  const l = await page.evaluate((stage) => {
+    const s = document.querySelector(stage);
+    const lens = s.querySelector('[data-model-lens]');
+    if (!lens) return null;
+    const rect = (e) => {
+      const b = e.getBoundingClientRect();
+      return { l: b.left, t: b.top, r: b.right, b: b.bottom };
+    };
+    const hLine = (root) => [...root.querySelectorAll('line')].find((x) => x.getAttribute('stroke') === '#5b9dd9');
+    const len = (x) => Math.hypot(+x.getAttribute('x2') - +x.getAttribute('x1'), +x.getAttribute('y2') - +x.getAttribute('y1'));
+    const g = lens.closest('[data-geoid-height]');
+    const pins = [...s.querySelectorAll('button[aria-label^="תחנה"]')];
+    const picked = pins.find((b) => b.getAttribute('aria-pressed') === 'true');
+    const fp = picked && rect(picked);
+    // the pin stands 3 px (the page's own px, under the laptop fit's scale) below its ground point
+    const sc = picked ? (fp.b - fp.t) / picked.offsetHeight : 1;
+    return {
+      k: Number(lens.getAttribute('data-model-lens')),
+      opacity: Number(getComputedStyle(g).opacity),
+      title: lens.querySelector('[data-lens-box] p').textContent.trim(),
+      names: [...lens.querySelectorAll('[data-lens-view] span')].map((x) => x.textContent.trim()),
+      hModel: len(hLine(g.querySelector(':scope > svg'))),
+      hLens: len(hLine(lens.querySelector('[data-lens-view]'))),
+      box: rect(lens.querySelector('[data-lens-box]')),
+      view: rect(lens.querySelector('[data-lens-view]')),
+      frame: rect(lens.querySelector('[data-lens-frame] rect')),
+      foot: fp && { x: (fp.l + fp.r) / 2, y: fp.b - 3 * sc },
+      heads: pins.map((b) => rect(b.firstElementChild)),
+      still: !!lens.querySelector('img'),
+    };
+  }, STAGE);
+  if (!l) return null;
+  const v = l.view;
+  const { data, info } = await sharp(await page.screenshot())
+    .extract({ left: Math.round(v.l + 3), top: Math.round(v.t + 3), width: Math.round(v.r - v.l - 6), height: Math.round(v.b - v.t - 6) })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const n = info.width * info.height;
+  const mean = [0, 1, 2].map((c) => Array.from({ length: n }, (_, i) => data[i * info.channels + c]).reduce((a, b) => a + b, 0) / n);
+  let sq = 0;
+  for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) sq += (data[i * info.channels + c] - mean[c]) ** 2;
+  return { ...l, spread: Math.sqrt(sq / n / 3) };
+}
+const overlapsRect = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+/** The close-up as it should stand once shown: a whole factor, H k times longer, the station framed, no pin covered. */
+function expectLens(l, id, where) {
+  expect(!!l, `${where}: no close-up of H in the model`);
+  if (!l) return;
+  expect(Number.isInteger(l.k) && l.k >= 2, `${where}: the close-up is not a whole factor (${l.k})`);
+  expect(l.title === `תחנה ${id} · תקריב פי ${l.k}`, `${where}: the close-up's title: ${l.title}`);
+  expect(JSON.stringify(l.names) === JSON.stringify(['H', 'פני השטח', 'גיאואיד']), `${where}: the close-up's names: ${JSON.stringify(l.names)}`);
+  expect(Math.abs(l.hLens - l.k * l.hModel) < 0.75, `${where}: H in the close-up is not ${l.k}× the model's (${l.hLens.toFixed(1)} vs ${l.hModel.toFixed(1)})`);
+  expect(l.foot && l.foot.x > l.frame.l && l.foot.x < l.frame.r && l.foot.y > l.frame.t && l.foot.y < l.frame.b, `${where}: the frame does not hold the station's ground point`);
+  expect(!l.heads.some((h) => overlapsRect(h, l.box)) && !overlapsRect(l.frame, l.box), `${where}: the close-up's box covers a pin or its own frame`);
+  expect(l.opacity > 0.95 && l.spread > 8, `${where}: the close-up is not drawn (opacity ${l.opacity}, spread ${l.spread.toFixed(1)})`);
+}
+const readingsTitle = async (page) => (await page.locator('[data-task="readings"] > p').first().innerText()).trim();
 const feedback = async (page) => (await page.locator('#scene-coordinates [id$="-feedback"][aria-live="polite"]').innerText()).trim();
 const check = (page) => page.getByRole('button', { name: 'בדיקת תשובה' }).click();
 /** The pins over the model: centre-bottom, opacity, pressed. */
@@ -180,6 +281,8 @@ for (const [name, file] of VIEWS) {
   await scrollCard(page);
   await page.waitForTimeout(400);
   layouts[file] = await layoutOf(page);
+  const a = await actions(page);
+  expect(a.length === 1 && a[0].text.length > 0 && a[0].controls.length > 0, `${file}: not one instruction with its control beside it: ${JSON.stringify(a)}`);
   await shot(page, `view-${file}`);
 }
 for (const [v, l] of Object.entries(layouts)) {
@@ -328,21 +431,77 @@ await page.waitForTimeout(900);
 await tab(page, 'גיאואיד').click();
 await page.waitForTimeout(1200);
 expect((await attr(page, STAGE, 'data-clear')) === 'false', 'the geoid view does not open on solid ground');
+{
+  const a = await actions(page);
+  expect(
+    a.length === 1 && a[0].text.startsWith('לחצו כדי לראות מאיזה משטח נמדד') && JSON.stringify(a[0].controls) === JSON.stringify(['חשיפת משטחי הייחוס']),
+    `geoid, solid: the instruction is not beside the reveal: ${JSON.stringify(a)}`,
+  );
+  const g = await sectionState(page);
+  expect(g.geoidH === 0 && (await modelH(page)) === 0, `geoid, solid: H is shown before the reveal (section ${g.geoidH})`);
+  expect((await page.getByRole('group', { name: 'בחירת תחנה' }).count()) === 0, 'geoid, solid: the station buttons compete with the reveal');
+}
 await shot(page, 'geoid-solid');
+// A picked on the model before the reveal: still no H, and no close-up of it
+await page.locator(`${STAGE} button[aria-label^="תחנה A"]`).click();
+await page.waitForTimeout(400);
+expect((await modelH(page)) === 0 && (await modelLens(page)) === null && (await sectionState(page)).geoidH === 0, 'geoid, solid, A: H or its close-up shows before the reveal');
+await shot(page, 'geoid-solid-A');
 await button(page, 'חשיפת משטחי הייחוס').click();
-await page.waitForTimeout(1300);
+await page.waitForTimeout(450);
+{
+  // H comes in once the geoid has swept under the land — in both figures together, not before; and A's close-up with it
+  const g = await sectionState(page);
+  expect(g.geoidH < 0.05, `geoid: H shows in the section before the model's (${g.geoidH})`);
+  const l = await modelLens(page);
+  expect(!l || (l.opacity < 0.05 && l.spread < 2), `geoid: the model's close-up shows before H (${l && `opacity ${l.opacity}, spread ${l.spread.toFixed(1)}`})`);
+}
+await page.waitForTimeout(1100);
+expectLens(await modelLens(page), 'A', 'geoid, revealed, A');
 expect((await attr(page, STAGE, 'data-clear')) === 'true', 'the reveal did not make the ground see-through');
+{
+  const g = await sectionState(page);
+  const mo = await page.locator(`${STAGE} [data-geoid-height]`).evaluate((e) => Number(getComputedStyle(e).opacity));
+  expect(g.geoidH > 0.95 && mo > 0.95, `geoid, revealed: H not shown in both figures (section ${g.geoidH}, model ${mo})`);
+  const a = await actions(page);
+  expect(a.length === 1 && a[0].text.startsWith('בחרו תחנה') && a[0].controls.join('') === 'ABC', `geoid, revealed: the instruction is not beside the stations: ${JSON.stringify(a)}`);
+}
 expect((await page.getByRole('button', { name: 'החזרת פני השטח', exact: true }).count()) === 1, 'the reveal button does not offer the next action');
-expect((await cardText(page)).includes('הקרקע שקופה כדי להציג את משטחי הייחוס שמתחתיה.'), 'the see-through sentence is missing');
+expect((await cardText(page)).includes('הקרקע שקופה: מתחתיה הגיאואיד והאליפסואיד.'), 'the see-through sentence is missing');
 await shot(page, 'geoid-clear');
+// the close-up at A comes with the reveal; B has none
+await stationButton(page, 'A').click();
+await page.waitForTimeout(400);
+{
+  const g = await sectionState(page);
+  expect(g.station === 'A' && g.lens === 3 && g.lensOpacity > 0.95 && JSON.stringify(g.labels) === '["H"]', `geoid, revealed, A: no close-up (H alone, no numbers): ${JSON.stringify(g)}`);
+}
+await shot(page, 'geoid-clear-A');
+// B and C read on the model as they are: no close-up there
+for (const id of ['B', 'C']) {
+  await stationButton(page, id).click();
+  await page.waitForTimeout(300);
+  expect((await modelH(page)) === 1 && (await modelLens(page)) === null, `geoid, revealed, ${id}: the model shows a close-up (or no H)`);
+}
+// picked again after the reveal: A's close-up at once
+await stationButton(page, 'A').click();
+await page.waitForTimeout(250);
+expectLens(await modelLens(page), 'A', 'geoid, revealed, A picked again');
+await stationButton(page, 'B').click();
+await page.waitForTimeout(300);
+expect((await sectionState(page)).lens === 0, 'geoid, revealed, B: a close-up opened');
 await stageFocus(page);
 await keys(page, 'ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'ArrowUp', 'ArrowUp');
 await page.waitForTimeout(500);
 await shot(page, 'geoid-clear-turned');
 expect(Object.values(await pins(page)).every((p) => p.o > 0.9), 'see-through: a station is still drawn as hidden');
-await button(page, 'החזרת פני השטח').click();
+// by keyboard: focus follows the toggle to its new place
+await button(page, 'החזרת פני השטח').focus();
+await page.keyboard.press('Enter');
 await page.waitForTimeout(900);
 expect((await attr(page, STAGE, 'data-clear')) === 'false', '"החזרת פני השטח" did not bring the ground back');
+expect((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'חשיפת משטחי הייחוס', 'focus did not follow the reveal toggle');
+expect((await sectionState(page)).geoidH === 0 && (await modelH(page)) === 0, '"החזרת פני השטח" left H drawn');
 expect(!(await cardText(page)).includes('הקרקע שקופה'), 'the see-through sentence stays on solid ground');
 await button(page, 'חשיפת משטחי הייחוס').click();
 await page.waitForTimeout(300);
@@ -368,6 +527,12 @@ const letters = await page.evaluate(
 );
 expect(letters.model === 0, 'height letters are drawn over the model');
 expect(JSON.stringify(letters.section.sort()) === JSON.stringify(['H', 'N', 'h']), `the section's height letters: ${letters.section}`);
+{
+  // the chips give the readings' numbers; H stays unknown
+  const g = await sectionState(page);
+  expect(JSON.stringify(g.labels) === JSON.stringify(['H = ?', 'h = 148', 'N = +28']) && g.lens === 0, `B: the section's labels: ${JSON.stringify(g)}`);
+  expect((await readingsTitle(page)).startsWith('נתוני תחנה B'), 'B: the readings do not name the station');
+}
 await shot(page, 'mission-B-open');
 
 await check(page);
@@ -378,11 +543,38 @@ expect((await feedback(page)).includes('מעל האליפסואיד'), 'h-instea
 await scrollCard(page);
 expect((await layoutOf(page)).bottom <= H, 'the hint pushed the card off screen');
 await shot(page, 'mission-B-gave-h');
+for (const [v, says] of [
+  ['176', 'חיברתם את'],
+  ['-120', 'בסדר הפוך'],
+  ['28', 'ערך הגליות'],
+]) {
+  await input(page).fill(v);
+  await check(page);
+  const fb = await feedback(page);
+  expect(fb.includes(says) && fb.includes('H = 148 − 28') && !fb.includes('120'), `B ${v}: the hint does not explain and fix: ${fb}`);
+}
 await input(page).fill('119.9');
 await check(page);
-expect((await feedback(page)).startsWith('עדיין לא'), '119.9 accepted');
+expect((await feedback(page)).startsWith('עדיין לא') && (await feedback(page)).includes('H = 148 − 28'), '119.9 accepted, or no substitution');
+// a pick reaches every figure and the readings at once
+await stationButton(page, 'C').click();
+await page.waitForTimeout(100);
+{
+  const g = await sectionState(page);
+  const p = await pins(page);
+  const ok =
+    g.station === 'C' &&
+    p.C.pressed === 'true' &&
+    (await attr(page, STAGE, 'data-tripod')) === 'C' &&
+    (await readingsTitle(page)).startsWith('נתוני תחנה C') &&
+    g.labels.includes('h = 220') &&
+    g.labels.includes('N = 0');
+  expect(ok, `a pick did not reach every figure within 100 ms: ${JSON.stringify(g)}`);
+}
+await stationButton(page, 'B').click();
 await stationButton(page, 'C').click();
 expect((await input(page).inputValue()) === '', 'C does not start empty');
+expect((await sectionState(page)).lens === 0, 'C: a close-up opened');
 expect((await attr(page, STAGE, 'data-tripod')) === 'C', 'the receiver did not follow the pick');
 await stationButton(page, 'B').click();
 expect((await input(page).inputValue()) === '119.9', 'B draft lost after switching stations');
@@ -408,7 +600,8 @@ expect((await input(page).inputValue()) === '119.9', '"מבט התחלתי" touc
 await input(page).fill('120.0');
 await input(page).press('Enter');
 const fbB = await feedback(page);
-expect(fbB.includes('נכון') && fbB.includes('148 − 28 = 120'), `B correct feedback wrong: ${fbB}`);
+expect(fbB.includes('נכון') && fbB.includes('148 − 28 = 120') && fbB.includes('חיובי'), `B correct feedback wrong: ${fbB}`);
+expect((await sectionState(page)).labels[0] === 'H = 120', 'solved B: the section does not give H');
 await scrollCard(page);
 await shot(page, 'mission-B-correct');
 await button(page, 'לתחנה הבאה').click();
@@ -416,13 +609,27 @@ await page.waitForTimeout(700);
 expect((await stationButton(page, 'A').getAttribute('aria-pressed')) === 'true', 'next after B is not A');
 await input(page).fill('6');
 await check(page);
-expect((await feedback(page)).includes('סימן הפעולה'), 'h+N hint missing at A');
+{
+  const fb = await feedback(page);
+  expect(fb.includes('שימו לב לסימן') && fb.includes('הגיאואיד מתחת לאליפסואיד') && fb.includes('18 − (−12)'), `A 6: the sign hint: ${fb}`);
+  // A's heights are read in the close-up, a whole factor larger, clear of B's pin
+  const g = await sectionState(page);
+  expect(g.lens === 3 && JSON.stringify(g.labels) === JSON.stringify(['H = ?', 'h = 18', 'N = −12']), `A: the close-up: ${JSON.stringify(g)}`);
+  const clear = await page.evaluate((sel) => {
+    const lens = document.querySelector(`${sel} [data-section-lens]`).getBoundingClientRect();
+    const b = [...document.querySelectorAll(`${sel} button`)].find((x) => x.textContent.trim() === 'B').getBoundingClientRect();
+    return lens.left > b.right;
+  }, SECTION);
+  expect(clear, 'A: the close-up covers the B pin');
+  // the task draws the heights in the section only: no H, and no close-up of it, on the model
+  expect((await modelH(page)) === 0 && (await modelLens(page)) === null, 'A, task: H or its close-up is drawn on the model');
+}
 await scrollCard(page);
 expect((await layoutOf(page)).bottom <= H, 'the A hint pushed the card off screen');
 await shot(page, 'mission-A-wrong');
 await input(page).fill('30');
 await check(page);
-expect((await feedback(page)).includes('18 − (−12) = 30'), 'A worked sum missing');
+expect((await feedback(page)).includes('18 − (−12) = 30') && (await feedback(page)).includes('שלילי'), 'A worked sum missing');
 await button(page, 'לתחנה הבאה').click();
 await page.waitForTimeout(700);
 await input(page).fill('220');
@@ -467,8 +674,13 @@ await ctx.close();
   await r.page.waitForTimeout(60);
   const g = await land(r.page);
   expect(sameAz(g[0], -20) && near(g[1], 25), `reduced motion: the view does not switch at once (${g})`);
+  await r.page.locator(`${STAGE} button[aria-label^="תחנה A"]`).click();
   await button(r.page, 'חשיפת משטחי הייחוס').click();
   expect((await attr(r.page, STAGE, 'data-clear')) === 'true', 'reduced motion: the reveal does not switch');
+  await r.page.waitForTimeout(60);
+  expect((await sectionState(r.page)).geoidH > 0.95, "reduced motion: the section's H does not come at once");
+  await r.page.waitForTimeout(140);
+  expectLens(await modelLens(r.page), 'A', 'reduced motion: A');
   await r.page.waitForTimeout(400);
   await shot(r.page, 'reduced-motion-clear');
   expect(r.errors.length === 0, `reduced motion: errors: ${r.errors.slice(0, 3).join(' | ')}`);
@@ -484,12 +696,18 @@ await ctx.close();
   await shot(r.page, 'no-webgl-surface');
   await r.page.locator(`${STAGE} button[aria-label^="תחנה A"]`).click();
   expect((await stationButton(r.page, 'A').getAttribute('aria-pressed')) === 'true', 'no WebGL: a pin does not pick');
-  const shownIn = (p) => p.evaluate((sel) => [...document.querySelectorAll(`${sel} img`)].filter((i) => getComputedStyle(i).opacity === '1').map((i) => i.getAttribute('src').split('/').pop()), STAGE);
+  // the stills' own layer (A's close-up shows the see-through still too, enlarged — checked on its own below)
+  const shownIn = (p) => p.evaluate((sel) => [...document.querySelectorAll(`${sel} [role="img"] > img`)].filter((i) => getComputedStyle(i).opacity === '1').map((i) => i.getAttribute('src').split('/').pop()), STAGE);
   await tab(r.page, 'גיאואיד').click();
   await button(r.page, 'חשיפת משטחי הייחוס').click();
   await r.page.waitForTimeout(700);
   const shown = await shownIn(r.page);
   expect(JSON.stringify(shown) === JSON.stringify(['fallback-clear.webp']), `no WebGL: the reveal shows ${shown}`);
+  // A's close-up on the still: the still itself, enlarged
+  await r.page.waitForTimeout(800);
+  const nl = await modelLens(r.page);
+  expectLens(nl, 'A', 'no WebGL: A');
+  expect(nl?.still, 'no WebGL: the close-up does not enlarge the still');
   await shot(r.page, 'no-webgl-clear');
   await tab(r.page, 'גליות וגובה').click();
   await r.page.waitForTimeout(700);

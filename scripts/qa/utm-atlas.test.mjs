@@ -6,6 +6,7 @@ import {
   OPENING, PRESETS, TRANSFER, GREENWICH_ZONE, SOUTH_LIMIT, NORTH_LIMIT,
   normLon, wrapZone, zoneWest, zoneEast, regularZone, utmZoneOf, exceptionAt, zoneBands, zoneRangeAt, zoneOutline,
   zoneBoundarySegments, readUtm, moveToZone, moveToHemisphere, fmtLon, fmtLat, fmtRange, zoneStep, hemisphereOf, inCoverage,
+  cellAt, cellOutline,
 } from '../../src/components/lessons/topic-02/utm-atlas/utmAtlas.ts';
 
 const close = (a, b, eps, msg = '') => assert.ok(Math.abs(a - b) <= eps, `${msg} ${a} ≉ ${b} (±${eps})`);
@@ -142,6 +143,34 @@ test('zone boundary lines agree with the lookup, exceptions included', () => {
   assert.ok(horiz(56, 3, 6) && horiz(64, 3, 6), '32V steps');
   assert.ok(horiz(72, 6, 12) && horiz(72, 18, 24) && horiz(72, 30, 36), 'Svalbard steps');
   assert.ok(!horiz(72, 12.5, 17.5), 'zone 33 is continuous at 72°N');
+});
+
+test('practice: a map click chooses the cell at that place — its zone and its side of the equator', () => {
+  // every practice point: clicking on it chooses its own zone and hemisphere
+  for (const p of TRANSFER) {
+    const r = readUtm(p);
+    assert.deepEqual(cellAt(p), { zone: r.zone, hemisphere: r.hemisphere }, p.id);
+  }
+  assert.deepEqual(cellAt({ lat: 51.48, lon: -0.01 }), { zone: 30, hemisphere: 'N' }, 'just west of Greenwich: 30');
+  assert.deepEqual(cellAt({ lat: 51.48, lon: 0 }), { zone: GREENWICH_ZONE, hemisphere: 'N' }, 'on Greenwich: 31 (a boundary belongs to the zone east of it)');
+  assert.deepEqual(cellAt({ lat: 0, lon: 36.82 }), { zone: 37, hemisphere: 'N' }, 'on the equator: N');
+  assert.deepEqual(cellAt({ lat: -0.01, lon: 36.82 }), { zone: 37, hemisphere: 'S' });
+  assert.deepEqual(cellAt({ lat: 20, lon: 181 }), { zone: 1, hemisphere: 'N' }, 'longitude wraps');
+  assert.equal(cellAt({ lat: 60, lon: 4 }).zone, 32, 'exceptions apply (south-west Norway)');
+});
+
+test('practice: a cell is the zone on one side of the equator; without a hemisphere, the whole zone', () => {
+  assert.deepEqual(cellOutline(54, null), zoneOutline(54));
+  const lats = (o) => o.map(([, lat]) => lat);
+  const n = cellOutline(54, 'N');
+  const s = cellOutline(54, 'S');
+  assert.ok(lats(n).every((l) => l >= 0 && l <= NORTH_LIMIT) && Math.min(...lats(n)) === 0 && Math.max(...lats(n)) === NORTH_LIMIT, '54N: equator to 84°N');
+  assert.ok(lats(s).every((l) => l <= 0 && l >= SOUTH_LIMIT) && Math.max(...lats(s)) === 0 && Math.min(...lats(s)) === SOUTH_LIMIT, '54S: 80°S to the equator');
+  for (const o of [n, s]) assert.ok(o.every(([lon]) => lon === 138 || lon === 144), 'both halves keep the zone boundaries 138°E / 144°E');
+  // an exception zone keeps its steps in the northern half only
+  const n32 = cellOutline(32, 'N');
+  assert.ok(n32.some(([lon, lat]) => lon === 3 && lat === 64) && !n32.some(([, lat]) => lat > 72), '32N steps west to 3°E and stops at 72°N');
+  assert.ok(cellOutline(32, 'S').every(([lon]) => lon === 6 || lon === 12), '32S is a plain 6°–12°E strip');
 });
 
 test('neighbour buttons carry the point: same latitude, same offset ⇒ same E/N, different place', () => {

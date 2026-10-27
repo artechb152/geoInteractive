@@ -27,25 +27,25 @@
      leave the stage, and eases back as it comes in;
    - the linked close-up is drawn by the same renderer into its circle
      (DatumInset3D);
-   - what each state shows is one explicit table (LOOKS,
-     claude-interaction-and-learning-refinement-prompt.md): the surface in
-     focus solid with its relief raised; the geoid or the ellipsoid in focus
-     with the shell turned to a veil so the body itself can be read; the
-     stations that move the ellipsoid keep a veil, so the moving body stays
-     in sight. Temporary reference marks (Guides) show what a phase or a
-     parameter changes: the outline it started from, its track, its axes.
+   - what each state shows is one explicit table (LOOKS): the surface solid
+     with its relief raised (the fallback picture); the stations keep the
+     shell a veil, so the ellipsoid stays in sight against the geoid.
+     Reference marks (Guides) separate the reference body from its
+     anchoring: the Earth's centre and rotation axis (fixed), the
+     ellipsoid's own centre and axes, and the dashed outline of the pose it
+     is compared with (tasks 14–15, 2026-10-26).
    All learning state comes in as props; this file only owns the camera.
    Labels and the inspection marker are HTML/SVG overlays projected from 3-D
    anchors every rendered frame, hidden when their anchor is hidden. Frames
    render on demand only. */
 
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import {
-  CUT, DISPLAY_K, ELL, GC, GEOID, LOCAL_ARC, REGION, angleOf, bodyPoint, ellipsoidSectionX0, geoidAt, geoidW3, inCutaway, planeToWorld,
-  posedEllipse, poseToWorld, surfaceEnvelopeW, svgToPlane, type DatumMode, type Pose, type Vec3,
+  CUT, DISPLAY_K, ELL, GEOID, LOCAL_ARC, REGION, bodyPoint, ellipsoidSectionX0, geoidAt, geoidW3, inCutaway, planeToWorld,
+  posedEllipse, poseToWorld, surfaceEnvelopeW, svgToPlane, type Pose, type Vec3,
 } from './datumGeometry';
 import { earthTextures, heightAt, loadEarth, LON_AT_WALL, type EarthImages } from './datumEarth';
 import { bodyMaterial, clearDepthBefore, depthMaterial, earthMaterial, setUniforms, wallMaterial } from './datumHolo';
@@ -270,7 +270,7 @@ const exerciseToWall = (pts: { x: number; y: number }[]) =>
     the opening), with the Earth's material above the geoid as a sand band —
     a lit lip at the surface, a shaded inner edge at the geoid — and the
     crisp section lines: the exact 2-D exercise on the back wall. */
-function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose, mode: DatumMode, look: Look, showEllipsoid: boolean) {
+function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose, region: boolean, look: Look, showEllipsoid: boolean) {
   const emph = LOOKS[look].emph;
   const ctx = wall.canvas.getContext('2d')!;
   const { k, h1, y1 } = WALL;
@@ -348,7 +348,7 @@ function drawWall(wall: ReturnType<typeof makeWall>, kind: WallKind, pose: Pose,
   path(wall.prof);
   ctx.stroke();
 
-  if (kind === 'exercise' && mode === 'local') {
+  if (kind === 'exercise' && region) {
     // the marked region: a thick band along the geoid, closed by two end caps across it —
     // marked by shape, not by colour alone
     const arc = exerciseToWall(REGION.local);
@@ -413,35 +413,19 @@ type StateLook = { shell: ShellLook; geoid: GeoidLook; ell: EllLook; emph: Surfa
 
 const GEOID_QUIET: GeoidLook = { opacity: 0.8, rimStrength: 0.16, rimAlpha: 0.05, back: 0.42, lines: 0.06, width: 1, wave: 0.2 };
 const ELL_QUIET: EllLook = { opacity: 0.02, rimStrength: 0.32, rimAlpha: 0.18, back: 0.02, lines: 0.5, behind: 0.36, hidden: 0.04, width: 0.9 };
-/** the ellipsoid while the geoid is in focus: its cage barely there, so the blue body reads */
-const ELL_FAINT: EllLook = { opacity: 0.015, rimStrength: 0.22, rimAlpha: 0.12, back: 0.015, lines: 0.26, behind: 0.16, hidden: 0.03, width: 0.8 };
 const ELL_ON: EllLook = { opacity: 0.12, rimStrength: 0.85, rimAlpha: 0.5, back: 0.06, lines: 1, behind: 0.9, hidden: 0.14, width: 1.5 };
 
 const LOOKS: Record<Look, StateLook> = {
-  // the surface: the shell solid, its relief raised, its cut outlined; the bodies inside quiet
+  // the surface: the shell solid, its relief raised, its cut outlined; the bodies inside quiet (the fallback picture)
   surface: { shell: { land: 1, sea: 0.99, bump: 1.4, rim: 0.18 }, geoid: GEOID_QUIET, ell: ELL_QUIET, emph: 'surface' },
-  // the geoid: the shell a veil, the blue body whole, its waves and contour lines stronger
-  geoid: {
-    shell: { land: 0.48, sea: 0.26, bump: 0.8, rim: 0.12 },
-    geoid: { opacity: 0.95, rimStrength: 0.3, rimAlpha: 0.08, back: 0.62, lines: 0.34, width: 1.3, wave: 0.32 },
-    ell: ELL_FAINT,
-    emph: 'geoid',
-  },
-  // the ellipsoid: the smooth body and its cage in front, the geoid opened to a quiet reference
-  ellipsoid: {
-    shell: { land: 0.4, sea: 0.2, bump: 0.8, rim: 0.12 },
-    geoid: { opacity: 0.58, rimStrength: 0.14, rimAlpha: 0.04, back: 0.3, lines: 0.05, width: 1, wave: 0.16 },
-    ell: ELL_ON,
-    emph: 'ellipsoid',
-  },
-  // station 2: the ellipsoid moves — kept in sight against the geoid and the Earth throughout
+  // stations 1 and 3: the ellipsoid's anchoring changes — kept in sight against the geoid and the Earth throughout
   motion: {
     shell: { land: 0.56, sea: 0.32, bump: 1, rim: 0.12 },
     geoid: { opacity: 0.7, rimStrength: 0.16, rimAlpha: 0.05, back: 0.36, lines: 0.06, width: 1, wave: 0.18 },
     ell: ELL_ON,
     emph: 'ellipsoid',
   },
-  // station 3: the fit against the geoid — both bodies readable, the marked region on the wall
+  // station 2: the fit against the geoid — both bodies readable, the marked region on the wall
   compare: {
     shell: { land: 0.56, sea: 0.32, bump: 1, rim: 0.12 },
     geoid: { opacity: 0.8, rimStrength: 0.2, rimAlpha: 0.06, back: 0.45, lines: 0.1, width: 1, wave: 0.22 },
@@ -471,7 +455,7 @@ const through = (g: GeoidLook) => Math.min(0.6, (1 - g.opacity) * 2.5);
           surface and cage in front of the geoid again (crisp). So the cage
           is crisp in front, subdued behind the geoid, faint on its own far
           side, and hidden inside the globe — never pasted over the scene.
-   37     the shell as a veil (geoid / ellipsoid in focus, stations 2–3): drawn
+   37     the shell as a veil (every station): drawn
           after the bodies, tested against their depth — it lies over what is
           inside it and under what pokes out of it; its lip at 37.5
    40     glass over the open quarter — almost clear, only a rim: the globe
@@ -480,24 +464,17 @@ const ORDER = { earthBack: 1, walls: 2, geoidBack: 10, ellHidden: 12, geoid: 16,
 
 /* ───────────────────────── scene ───────────────────────── */
 
-type OrbitControlsLike = { enabled: boolean; update: () => void; target: THREE.Vector3 };
-
 type SceneProps = {
   images: EarthImages;
   pose: Pose;
-  mode: DatumMode;
+  /** the marked region (station 2), on the wall and on the geoid */
+  region: boolean;
   look: Look;
-  /** the ellipsoid is a handle (station 2's experiment) */
-  draggable: boolean;
   guide: Guide | null;
   capture: boolean;
-  onMovePose: (p: Pose) => void;
-  onDragging: (d: boolean) => void;
-  controlsRef: React.MutableRefObject<OrbitControlsLike | null>;
-  isVisible: (p: Vec3) => boolean;
 };
 
-function Globe({ images, pose, mode, look, draggable, guide, capture, onMovePose, onDragging, controlsRef, isVisible }: SceneProps) {
+function Globe({ images, pose, region, look, guide, capture }: SceneProps) {
   const invalidate = useThree((s) => s.invalidate);
   const gl = useThree((s) => s.gl);
 
@@ -582,10 +559,10 @@ function Globe({ images, pose, mode, look, draggable, guide, capture, onMovePose
   );
 
   useEffect(() => {
-    drawWall(walls.exercise, 'exercise', pose, mode, look, !capture);
-    drawWall(walls.side, 'side', pose, mode, look, !capture);
+    drawWall(walls.exercise, 'exercise', pose, region, look, !capture);
+    drawWall(walls.side, 'side', pose, region, look, !capture);
     invalidate();
-  }, [walls, pose, mode, look, capture, invalidate]);
+  }, [walls, pose, region, look, capture, invalidate]);
 
   const L = LOOKS[look];
   const g = L.geoid;
@@ -649,18 +626,7 @@ function Globe({ images, pose, mode, look, draggable, guide, capture, onMovePose
         {!capture && (
           <>
             {wallsIntoDepth(ORDER.ellHidden)}
-            <Ellipsoid
-              stage="hidden"
-              sphere={sphere}
-              pose={pose}
-              look={L.ell}
-              through={through(g)}
-              draggable={draggable}
-              onMovePose={onMovePose}
-              onDragging={onDragging}
-              controlsRef={controlsRef}
-              isVisible={isVisible}
-            />
+            <Ellipsoid stage="hidden" sphere={sphere} pose={pose} look={L.ell} through={through(g)} />
           </>
         )}
 
@@ -680,25 +646,14 @@ function Globe({ images, pose, mode, look, draggable, guide, capture, onMovePose
 
         {!capture && (
           <>
-            <Ellipsoid
-              stage="seen"
-              sphere={sphere}
-              pose={pose}
-              look={L.ell}
-              through={through(g)}
-              draggable={draggable}
-              onMovePose={onMovePose}
-              onDragging={onDragging}
-              controlsRef={controlsRef}
-              isVisible={isVisible}
-            />
+            <Ellipsoid stage="seen" sphere={sphere} pose={pose} look={L.ell} through={through(g)} />
             <mesh geometry={geoid.geom} material={geoid.depthBehind} renderOrder={ORDER.ellSeen + 3} />
           </>
         )}
 
         <mesh geometry={glass.geom} material={glass.mat} renderOrder={ORDER.glass} />
 
-        {!capture && <LocalRegion shown={mode === 'local'} />}
+        {!capture && <LocalRegion shown={region} />}
         {!capture && <Guides guide={guide} pose={pose} />}
       </group>
 
@@ -711,22 +666,15 @@ function Globe({ images, pose, mode, look, draggable, guide, capture, onMovePose
   );
 }
 
-const planeZ0 = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-
 /** The posed ellipsoid, in two stages of the draw order (see ORDER): its own
-    far side ("hidden"), and the side the camera sees ("seen" — the handle). */
+    far side ("hidden"), and the side the camera sees ("seen"). */
 function Ellipsoid({
   stage,
   sphere,
   pose,
   look,
   through: t,
-  draggable,
-  onMovePose,
-  onDragging,
-  controlsRef,
-  isVisible,
-}: Pick<SceneProps, 'pose' | 'draggable' | 'onMovePose' | 'onDragging' | 'controlsRef' | 'isVisible'> & {
+}: Pick<SceneProps, 'pose'> & {
   stage: 'hidden' | 'seen';
   sphere: THREE.SphereGeometry;
   look: EllLook;
@@ -734,9 +682,6 @@ function Ellipsoid({
   through: number;
 }) {
   const { center, rotZ, radii } = poseToWorld(pose);
-  const drag = useRef<{ start: THREE.Vector3; pose: Pose; id: number } | null>(null);
-  const [hover, setHover] = useState(false);
-  const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
 
   const mats = useMemo(
@@ -765,46 +710,6 @@ function Ellipsoid({
     invalidate();
   }, [look, mats, t, surfaceThrough, surfaceAgain, invalidate]);
 
-  useEffect(() => {
-    if (stage === 'seen') gl.domElement.style.cursor = drag.current ? 'grabbing' : hover && draggable ? 'grab' : '';
-  }, [hover, draggable, gl, stage]);
-
-  /** World hit → section units (undo the scene scale and the display mapping). */
-  const hit = (e: ThreeEvent<PointerEvent>) => isVisible([e.point.x / S, e.point.y / (S * DISPLAY_K), e.point.z / S]);
-
-  const onDown = (e: ThreeEvent<PointerEvent>) => {
-    // Only a visible part of the body, and only in the experiment, is a handle;
-    // everything else falls through to the camera (background drag rotates).
-    if (!draggable || e.button !== 0 || !hit(e)) return;
-    const p = e.ray.intersectPlane(planeZ0, new THREE.Vector3());
-    if (!p) return;
-    e.stopPropagation();
-    (e.target as Element).setPointerCapture(e.pointerId);
-    drag.current = { start: p, pose, id: e.pointerId };
-    if (controlsRef.current) controlsRef.current.enabled = false;
-    onDragging(true);
-    gl.domElement.style.cursor = 'grabbing';
-  };
-  const onMove = (e: ThreeEvent<PointerEvent>) => {
-    const d = drag.current;
-    if (!d) {
-      if (draggable) setHover(hit(e));
-      return;
-    }
-    const p = e.ray.intersectPlane(planeZ0, new THREE.Vector3());
-    if (!p) return;
-    // world → section: x / S, y / (S·K); dx = u, dy = −v
-    onMovePose({ ...d.pose, dx: d.pose.dx + (p.x - d.start.x) / S, dy: d.pose.dy - (p.y - d.start.y) / (S * DISPLAY_K) });
-  };
-  const end = (e: ThreeEvent<PointerEvent>) => {
-    if (!drag.current) return;
-    (e.target as Element).releasePointerCapture?.(drag.current.id);
-    drag.current = null;
-    if (controlsRef.current) controlsRef.current.enabled = true;
-    onDragging(false);
-    gl.domElement.style.cursor = '';
-  };
-
   if (stage === 'hidden') {
     const o = ORDER.ellHidden;
     return (
@@ -818,16 +723,7 @@ function Ellipsoid({
   const o = ORDER.ellSeen;
   return (
     <group position={center} rotation={[0, 0, rotZ]} scale={radii}>
-      <mesh
-        geometry={sphere}
-        material={mats.depth}
-        renderOrder={o}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={end}
-        onPointerCancel={end}
-        onPointerOut={() => setHover(false)}
-      />
+      <mesh geometry={sphere} material={mats.depth} renderOrder={o} />
       <Line points={CAGE} segments color={C.ellipsoid} lineWidth={look.width * 0.75} transparent opacity={look.behind} depthWrite={false} renderOrder={o + 1} />
       <mesh geometry={sphere} material={mats.through} renderOrder={o + 2} />
       {/* o + 3: the geoid's front into depth (Globe) */}
@@ -837,29 +733,26 @@ function Ellipsoid({
   );
 }
 
-/* ───────────────────────── temporary reference marks ───────────────────────── */
+/* ───────────────────────── reference marks ───────────────────────── */
 
-/* Quiet marks that show what one phase or one parameter changes (Guide in
-   datumDemo): the outline the body left (dashed ink), its track to where the
-   phase ends, the one axis an X / Y parameter slides along, the body's own
-   axes against a fixed vertical while it turns, its outline while it scales.
-   In the section plane z = 0, over everything (no depth test), thin. Every
-   line is built once from fixed points and placed by its group, and a hidden
-   one is still drawn, at zero opacity — so its buffers exist from the first
-   frame and a moving body or a new phase never creates one. */
+/* What the datum adds, drawn on the globe (Guide in datumDemo): the Earth's
+   centre and rotation axis — fixed, ink; the ellipsoid's own centre and axes
+   — orange, they shift and turn with it; and the dashed outline of the pose
+   it is compared with (the other anchoring, the other datum, datum A). In the
+   section plane z = 0, over everything (no depth test), thin. Every line is
+   built once from fixed points and placed by its group, and a hidden one is
+   still drawn, at zero opacity — so its buffers exist from the first frame
+   and a moving body never creates one. */
 const GUIDE_ORDER = 45;
 const UNIT_RING: Vec3[] = Array.from({ length: 97 }, (_, i) => [Math.cos((i / 96) * 2 * Math.PI), Math.sin((i / 96) * 2 * Math.PI), 0]);
-const UNIT_SEG: Vec3[] = [[0, 0, 0], [1, 0, 0]];
-/** An arrowhead pointing along +x, section units. */
-const ARROW: Vec3[] = [[0, 0, 0], [-11, 6, 0], [0, 0, 0], [-11, -6, 0]];
-const doubleArrow = (axis: 0 | 1): Vec3[] => {
-  const p = (a: number, b: number): Vec3 => (axis === 0 ? [a, b, 0] : [b, a, 0]);
-  return [p(-1.5, 0), p(1.5, 0), p(1.5, 0), p(1.38, 0.07), p(1.5, 0), p(1.38, -0.07), p(-1.5, 0), p(-1.38, 0.07), p(-1.5, 0), p(-1.38, -0.07)];
-};
-const ARROW_X = doubleArrow(0);
-const ARROW_Y = doubleArrow(1);
-const REFERENCE: Vec3[] = [[0, -1.5, 0], [0, 1.5, 0], [-1.5, 0, 0], [1.5, 0, 0]];
-const BODY_AXES: Vec3[] = [[0, -1.32, 0], [0, 1.32, 0], [-1.32, 0, 0], [1.32, 0, 0]];
+/** The Earth's rotation axis through its centre, a little past both poles (section units). */
+const EARTH_AXIS: Vec3[] = [[0, -ELL.ry * 1.24, 0], [0, ELL.ry * 1.24, 0]];
+/** The Earth's centre: a small cross (section units). */
+const EARTH_CENTRE: Vec3[] = [[-8, 0, 0], [8, 0, 0], [0, -8, 0], [0, 8, 0]];
+/** The ellipsoid's own axes, in its radii; they reach a little past its surface. */
+const BODY_AXES: Vec3[] = [[0, -1.08, 0], [0, 1.08, 0], [-1.08, 0, 0], [1.08, 0, 0]];
+/** The ellipsoid's centre: a small ring, drawn thick (section units). */
+const BODY_CENTRE_R = 4;
 
 /** The marked local region on the geoid itself (the λ = 0 meridian, where the exercise wall cuts
     it), just outside the body: a thick band with a dark edge, closed by two end caps across it —
@@ -892,43 +785,24 @@ function Guides({ guide, pose }: { guide: Guide | null; pose: Pose }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => invalidate(), [guide, invalidate]);
   const cur = poseToWorld(pose);
-  const from = guide && 'from' in guide ? poseToWorld(guide.from) : cur;
-  const end = guide?.kind === 'shift' ? poseToWorld(guide.to).center : cur.center;
-  const track = Math.hypot(end[0] - from.center[0], end[1] - from.center[1]);
-  const heading = Math.atan2(end[1] - from.center[1], end[0] - from.center[0]);
-  const k = guide?.kind ?? null;
-  const on = {
-    from: k === 'shift' || k === 'axis' || k === 'scale',
-    track: k === 'shift' && track > 1,
-    x: guide?.kind === 'axis' && guide.axis === 'x',
-    y: guide?.kind === 'axis' && guide.axis === 'y',
-    rotate: k === 'rotate',
-    outline: k === 'scale',
-  };
+  const other = poseToWorld(guide?.other ?? pose);
+  const on = guide !== null;
   const line = { transparent: true, depthTest: false, depthWrite: false, renderOrder: GUIDE_ORDER } as const;
   return (
     <>
-      {/* where the body was */}
-      <group position={from.center} rotation={[0, 0, from.rotZ]} scale={[from.radii[0], from.radii[1], 1]}>
-        <Line points={UNIT_RING} color={C.ink} lineWidth={1.4} dashed dashSize={0.07} gapSize={0.05} opacity={on.from ? 0.62 : 0} {...line} />
+      {/* the pose it is compared with: a dashed outline */}
+      <group position={other.center} rotation={[0, 0, other.rotZ]} scale={[other.radii[0], other.radii[1], 1]}>
+        <Line points={UNIT_RING} color={C.ink} lineWidth={1.6} dashed dashSize={0.07} gapSize={0.05} opacity={on ? 0.68 : 0} {...line} />
       </group>
-      {/* its track to where the phase ends */}
-      <group position={from.center} rotation={[0, 0, heading]} scale={[Math.max(track, 1e-3), 1, 1]}>
-        <Line points={UNIT_SEG} color={C.ink} lineWidth={1.4} dashed dashSize={0.07} gapSize={0.05} opacity={on.track ? 0.7 : 0} {...line} />
-      </group>
-      <group position={end} rotation={[0, 0, heading]}>
-        <Line points={ARROW} segments color={C.ink} lineWidth={1.6} opacity={on.track ? 0.75 : 0} {...line} />
-      </group>
-      {/* the axis an X / Y parameter slides along; the fixed reference a turn is read against */}
-      <group position={cur.center} scale={[cur.radii[0], cur.radii[1], 1]}>
-        <Line points={ARROW_X} segments color={C.ink} lineWidth={1.5} opacity={on.x ? 0.72 : 0} {...line} />
-        <Line points={ARROW_Y} segments color={C.ink} lineWidth={1.5} opacity={on.y ? 0.72 : 0} {...line} />
-        <Line points={REFERENCE} segments color={C.ink} lineWidth={1.3} dashed dashSize={0.06} gapSize={0.05} opacity={on.rotate ? 0.6 : 0} {...line} />
-      </group>
-      {/* the body's own axes (they turn with it) and, while it scales, its outline */}
+      {/* the Earth: its centre and rotation axis — they never move */}
+      <Line points={EARTH_AXIS} color={C.ink} lineWidth={1.5} opacity={on ? 0.7 : 0} {...line} />
+      <Line points={EARTH_CENTRE} segments color={C.ink} lineWidth={2.2} opacity={on ? 0.85 : 0} {...line} />
+      {/* the ellipsoid's own axes and centre: they shift and turn with it */}
       <group position={cur.center} rotation={[0, 0, cur.rotZ]} scale={[cur.radii[0], cur.radii[1], 1]}>
-        <Line points={BODY_AXES} segments color={C.ellipsoid} lineWidth={2.2} opacity={on.rotate ? 0.95 : 0} {...line} />
-        <Line points={UNIT_RING} color={C.ellipsoid} lineWidth={2} opacity={on.outline ? 0.9 : 0} {...line} />
+        <Line points={BODY_AXES} segments color={C.ellipsoid} lineWidth={2} opacity={on ? 0.95 : 0} {...line} />
+      </group>
+      <group position={cur.center} scale={[BODY_CENTRE_R, BODY_CENTRE_R, 1]}>
+        <Line points={UNIT_RING} color={C.ellipsoid} lineWidth={3.2} opacity={on ? 1 : 0} {...line} />
       </group>
     </>
   );
@@ -1050,7 +924,7 @@ function OverlaySync({
   refs: OverlayRefs;
   pose: Pose;
   inspect: number;
-  /** the other check point (station 3), or none */
+  /** the other check point (station 2), or none */
   altInspect: number | null;
   capture: boolean;
   isVisible: (p: Vec3) => boolean;
@@ -1163,7 +1037,7 @@ function OverlaySync({
       l2.style.opacity = ok ? '1' : '0';
     }
 
-    // station 3: the other check point, a quieter marker on the wall
+    // station 2: the other check point, a quieter marker on the wall
     const alt = refs.markerAlt.current;
     if (alt) {
       let shown = false;
@@ -1186,25 +1060,20 @@ function OverlaySync({
 
 export type DatumGlobeProps = {
   pose: Pose;
-  /** global / local — the marked region is drawn on the wall for local */
-  mode: DatumMode;
+  /** the marked region (station 2): on the wall, on the geoid and in the close-up */
+  region: boolean;
   look: Look;
-  /** the ellipsoid is a handle (station 2's experiment) */
-  draggable: boolean;
   guide: Guide | null;
   inspect: number;
-  /** the other check point (station 3), or none */
+  /** the other check point (station 2), or none */
   altInspect: number | null;
-  /** the inspection marker can be dragged along the wall (stations 1–2) */
-  markerDraggable: boolean;
   active: boolean;
   reduce: boolean;
   zoomEnabled: boolean;
   capture: boolean;
+  /** the check point and the close-up (station 2) */
   showMarker: boolean;
   refs: OverlayRefs;
-  onMovePose: (p: Pose) => void;
-  onInspect: (t: number) => void;
   onReady: () => void;
   onFail: () => void;
 };
@@ -1223,14 +1092,10 @@ class GlobeBoundary extends Component<{ onFail: () => void; children: ReactNode 
 }
 
 export default function DatumGlobe3D(props: DatumGlobeProps) {
-  const { pose, mode, look, draggable, guide, inspect, altInspect, markerDraggable, active, reduce, zoomEnabled, capture, showMarker, refs, onMovePose, onInspect, onReady, onFail } = props;
-  const controlsRef = useRef<OrbitControlsLike | null>(null);
+  const { pose, region, look, guide, inspect, altInspect, active, reduce, zoomEnabled, capture, showMarker, refs, onReady, onFail } = props;
   // under the laptop fit a drag covers fewer screen px: the turn speed is divided by the scale
   const fitScale = useLessonViewportScale();
-  const markerDrag = useRef(markerDraggable);
-  markerDrag.current = markerDraggable;
   const cameraRef = useRef<THREE.Camera | null>(null);
-  const [dragging, setDragging] = useState(false);
   const readyRef = useRef(false);
 
   // the surface textures (cached for the page); the canvas mounts once they are in
@@ -1269,52 +1134,6 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
     return true;
   }, []);
 
-  // marker drag + keyboard live in the DOM overlay; the 3-D ray comes from the camera
-  useEffect(() => {
-    const marker = refs.marker.current;
-    const stage = refs.stage.current;
-    if (!marker || !stage) return;
-    let dragId: number | null = null;
-    const ray = new THREE.Raycaster();
-    const tFromEvent = (ev: PointerEvent) => {
-      const cam = cameraRef.current;
-      if (!cam) return null;
-      const r = stage.getBoundingClientRect();
-      const ndc = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -(((ev.clientY - r.top) / r.height) * 2 - 1));
-      ray.setFromCamera(ndc, cam);
-      const hit = ray.ray.intersectPlane(planeZ0, new THREE.Vector3());
-      if (!hit) return null;
-      return angleOf(GC.x + hit.x / S, GC.y - hit.y / (S * DISPLAY_K));
-    };
-    const down = (ev: PointerEvent) => {
-      if (ev.button !== 0 || !markerDrag.current) return;
-      ev.preventDefault();
-      dragId = ev.pointerId;
-      marker.setPointerCapture(ev.pointerId);
-      marker.focus();
-    };
-    const move = (ev: PointerEvent) => {
-      if (dragId !== ev.pointerId) return;
-      const t = tFromEvent(ev);
-      if (t !== null) onInspect(t);
-    };
-    const up = (ev: PointerEvent) => {
-      if (dragId !== ev.pointerId) return;
-      dragId = null;
-      marker.releasePointerCapture?.(ev.pointerId);
-    };
-    marker.addEventListener('pointerdown', down);
-    marker.addEventListener('pointermove', move);
-    marker.addEventListener('pointerup', up);
-    marker.addEventListener('pointercancel', up);
-    return () => {
-      marker.removeEventListener('pointerdown', down);
-      marker.removeEventListener('pointermove', move);
-      marker.removeEventListener('pointerup', up);
-      marker.removeEventListener('pointercancel', up);
-    };
-  }, [refs, onInspect]);
-
   if (!images) return null;
   return (
     <GlobeBoundary onFail={onFail}>
@@ -1325,7 +1144,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
         camera={{ position: camPosition(CAM.az, CAM.el, CAM.dist), fov: FOV, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: capture }}
         frameloop={active ? 'demand' : 'never'}
-        style={{ cursor: dragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+        style={{ cursor: 'grab', touchAction: 'none' }}
         onCreated={({ gl }) => {
           gl.domElement.addEventListener('webglcontextlost', (e) => {
             e.preventDefault();
@@ -1333,22 +1152,9 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
           });
         }}
       >
-        <Globe
-          images={images}
-          pose={pose}
-          mode={mode}
-          look={look}
-          draggable={draggable}
-          guide={guide}
-          capture={capture}
-          onMovePose={onMovePose}
-          onDragging={setDragging}
-          controlsRef={controlsRef}
-          isVisible={isVisible}
-        />
+        <Globe images={images} pose={pose} region={region} look={look} guide={guide} capture={capture} />
 
         <OrbitControls
-          ref={controlsRef as never}
           target={[0, 0, 0]}
           enablePan={false}
           enableZoom={zoomEnabled}
@@ -1365,7 +1171,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
           dampingFactor={0.1}
         />
         <CameraRig reduce={reduce} pose={pose} />
-        <InsetPass pose={pose} inspect={inspect} mode={mode} emph={LOOKS[look].emph} enabled={!capture} />
+        <InsetPass pose={pose} inspect={inspect} region={region} emph={LOOKS[look].emph} enabled={!capture && showMarker} />
         <OverlaySync
           emph={LOOKS[look].emph}
           refs={refs}

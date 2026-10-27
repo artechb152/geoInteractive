@@ -5,12 +5,14 @@
    claude-implementation-option-1.txt there. Replaces ProjectionsBlock / ProjectionArt of
    CoordinatesPart2Scene (deck ב׳, slides 3–5).
    One card: three method tabs; the stage — the projection surface on the 3-D globe (inline
-   start, right) and the map it makes (inline end, left); a slider that opens the surface
-   (0 % at the right, "עטיפה" → 100 % at the left, "מפה שטוחה"), the demonstration and the
-   initial view, a line that explains the method and the phase. "נסו לזהות את המשטח" turns
-   the same card into practice: three target maps (conic, azimuthal, cylindrical), a surface
-   to choose and check; the check shows the chosen surface and unrolls it with the same
-   mechanism. The model (projections, sheets, camera, practice, copy) is projectionsModel.ts. */
+   start, right: the illustration) → the map it makes (inline end, left), which comes in as the
+   surface unrolls; three equal circles on the globe show, on the sheet and the map, where the
+   method distorts. A slider opens the surface (0 % at the right, "עטיפה" → 100 % at the left,
+   "מפה שטוחה"); switching methods keeps the progress, so the same moment is compared. One line
+   says the phase's one idea and one action. "נסו לזהות את המשטח" turns the same card into
+   practice: four target maps (whole or a window), a surface to choose and check; a check shows
+   the chosen surface unrolling with the same mechanism; a first miss says where to look, a second
+   shows the answer. The model (projections, sheets, camera, practice, copy) is projectionsModel.ts. */
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState } from 'react';
@@ -31,8 +33,9 @@ import { ProjectionStageFlat } from './ProjectionStageFlat';
 import { SurfaceIcon } from './SurfaceIcon';
 import type { StageApi, StageImages, StageView } from './ProjectionStage3D';
 import {
-  CONTACT_LEGEND, ENDS, EXPLAIN, MAP_DESCRIPTION, METHODS, PHASE_LABEL, QUESTION, START_HINT, SUMMARY, SUMMARY_TITLE, SURFACE_NAME, TAB_NAME,
-  demoDuration, easeInOut, feedbackOf, initialPractice, isSolved, phaseOf, practiceReducer, sliderKey, stageDescription, targetOf, type Feedback, type Method,
+  CIRCLE_LEGEND, CONTACT_LEGEND, ENDS, MAP_DESCRIPTION, METHODS, PHASE_LABEL, QUESTION, STEPS, SUMMARY, SUMMARY_LINE, SUMMARY_TITLE, SURFACE_NAME, TAB_NAME, TRUE_LEGEND, WINDOW,
+  circlesOn, demoDuration, easeInOut, feedbackOf, initialPractice, isOver, isPart, mapLabelWithCircles, mapOpacity, phaseOf, practiceReducer, sliderKey, stageDescription,
+  targetOf, type Feedback, type Method,
 } from './projectionsModel';
 
 const Stage3D = dynamic(() => import('./ProjectionStage3D'), { ssr: false, loading: () => null });
@@ -48,7 +51,7 @@ const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:rin
 /** The two views' height: the stage keeps it in every method, phase and state. */
 const STAGE_H = 436;
 /** The controls' band under the stage: the same in learning and in practice. */
-const CONTROLS_H = 212;
+const CONTROLS_H = 168;
 /** The practice: how long the checked surface takes to unroll. */
 const REVEAL_SECONDS = 3.4;
 
@@ -63,6 +66,8 @@ export function ProjectionsLab() {
   const [playing, setPlaying] = useState(false);
   const [practice, dispatch] = useReducer(practiceReducer, undefined, initialPractice);
   const [reveal, setReveal] = useState(0);
+  /** the learner turned the view: the way back to the initial view is offered */
+  const [turned, setTurned] = useState(false);
   const api = useRef<StageApi | null>(null);
 
   /* ── the Earth: near the viewport, load the images (the page's one cache) → the maps' pixels ── */
@@ -132,6 +137,7 @@ export function ProjectionsLab() {
       setCanvasKey((k) => k + 1);
     }
   }, []);
+  const onEngage = useCallback(() => setTurned(true), []);
   const flat = webgl === 'no' || failed3d;
   const show3d = webgl === 'yes' && !failed3d && near && !!stageImages;
 
@@ -186,18 +192,27 @@ export function ProjectionsLab() {
     if (playing) stopDemo();
     setP(v);
   };
+  const resetView = () => {
+    api.current?.resetView();
+    setTurned(false);
+  };
+  // another method at the same progress: the same moment of the process, compared
   const chooseMethod = (m: Method) => {
     if (m === method) return;
     stopDemo();
     setMethod(m);
-    setP(0);
-    api.current?.resetView();
+    resetView();
   };
   const tabKeys = useRovingKeys(METHODS, method, chooseMethod);
 
   /* ── practice ── */
   const target = targetOf(practice);
-  const started = practice.tries > 0 || practice.index > 0 || practice.pick !== null || practice.done;
+  const part = isPart(practice);
+  const over = isOver(practice);
+  const shown = practice.outcome[practice.index] === 'shown';
+  const started = practice.misses > 0 || practice.index > 0 || practice.pick !== null || practice.done;
+  // the surface on the globe: the one checked, or — once shown — the answer's
+  const stageSurface = practice.done ? null : shown ? target : practice.checked;
   const enterPractice = () => {
     stopDemo();
     setMode('practice');
@@ -206,45 +221,51 @@ export function ProjectionsLab() {
     stopAnim();
     setMode('learn');
   };
-  // a check shows the chosen surface and unrolls it with the learning's own mechanism
+  // a check shows its surface and unrolls it with the learning's own mechanism
   useEffect(() => {
     if (mode !== 'practice') return;
-    if (!practice.checked) {
+    if (!stageSurface) {
       stopAnim();
       setReveal(0);
       return;
     }
     runTo(0, setReveal, REVEAL_SECONDS, () => undefined);
-    // a new check (tries) restarts it; changing the pick clears it
-  }, [mode, practice.checked, practice.tries, practice.index, runTo, stopAnim]);
+    // a new check (misses) or the answer restarts it; changing the pick clears it
+  }, [mode, stageSurface, practice.misses, practice.index, runTo, stopAnim]);
   const feedback = feedbackOf(practice);
 
   /* ── what the stage shows ── */
   const learning = mode === 'learn';
   const view: StageView = useMemo(
-    () => (learning ? { m: method, p, demo: true } : { m: practice.done ? null : practice.checked, p: reveal, demo: false }),
-    [learning, method, p, practice.done, practice.checked, reveal],
+    () => (learning ? { m: method, p, demo: true } : { m: stageSurface, p: reveal, demo: false }),
+    [learning, method, p, stageSurface, reveal],
   );
   const phase = phaseOf(p);
+  const step = STEPS[method][phase];
 
   const onStageKey = (e: React.KeyboardEvent) => {
     const a = api.current;
     if (!a) return;
     const k = e.key;
+    if (k === 'Home') {
+      resetView();
+      e.preventDefault();
+      return;
+    }
     // the same sense as dragging: → turns the globe's face to the right
     if (k === 'ArrowRight') a.turn(-10, 0);
     else if (k === 'ArrowLeft') a.turn(10, 0);
     else if (k === 'ArrowUp') a.turn(0, 8);
     else if (k === 'ArrowDown') a.turn(0, -8);
-    else if (k === 'Home') a.resetView();
     else return;
+    setTurned(true);
     e.preventDefault();
   };
 
   const panelId = `${uid}-panel`;
   const descId = `${uid}-desc`;
-  const stageTitle = learning ? 'משטח ההטלה' : practice.checked ? `המשטח שבחרתם: ${SURFACE_NAME[practice.checked]}` : 'כדור הארץ';
-  const mapTitle = learning ? 'המפה המתקבלת' : 'מפת היעד';
+  const stageTitle = learning ? 'המחשה: משטח ההטלה' : shown ? `התשובה: ${SURFACE_NAME[target]}` : practice.checked ? `המשטח שבחרתם: ${SURFACE_NAME[practice.checked]}` : 'כדור הארץ';
+  const mapTitle = learning ? 'המפה המתקבלת' : part ? 'מפת היעד (קטע)' : 'מפת היעד';
 
   return (
     <div className="my-10" data-screen="projections">
@@ -257,10 +278,12 @@ export function ProjectionsLab() {
         data-progress={p.toFixed(3)}
         data-playing={playing ? 'true' : 'false'}
         data-target={learning ? '' : target}
+        data-part={learning ? '' : part ? 'true' : 'false'}
         data-pick={practice.pick ?? ''}
         data-checked={practice.checked ?? ''}
         data-task={practice.index}
-        data-solved={practice.solved.map(Number).join('')}
+        data-misses={practice.misses}
+        data-outcome={practice.outcome.map((o) => (o === 'right' ? 'r' : o === 'shown' ? 's' : '-')).join('')}
         data-done={practice.done ? 'true' : 'false'}
         data-ready={ready ? 'true' : 'false'}
         data-flat={flat ? 'true' : 'false'}
@@ -268,7 +291,8 @@ export function ProjectionsLab() {
       >
         <h3 className={H3}>היטלים: מכדור למפה</h3>
         <p className={LEAD}>
-          <strong className="text-fg">היטל</strong> הוא מעבר ממשטח מעוקל לייצוג שטוח. בחרו משטח ופתחו אותו כדי לראות איזו מפה מתקבלת.
+          <strong className="text-fg">היטל</strong> הוא חישוב מתמטי שמעביר כל נקודה מכדור הארץ אל מפה שטוחה. המשטח שנפרש כאן הוא המחשה: הוא מראה איזו רשת כל שיטה
+          יוצרת, והיכן המפה מעוותת.
         </p>
 
         {/* ── row 1: the methods, or the practice's heading (one height) ── */}
@@ -316,7 +340,7 @@ export function ProjectionsLab() {
             <SummaryStage pixels={pixels} />
           ) : (
             <>
-              <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] gap-6">
+              <div className="grid grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1fr)] gap-3">
                 {/* the surface on the globe (inline start = right) */}
                 <section className="min-w-0" aria-label={stageTitle}>
                   <h4 className={cn(HEADING, 'text-center')} data-stage-title>
@@ -348,10 +372,17 @@ export function ProjectionsLab() {
                     )}
                     {show3d && (
                       <div className={cn('absolute inset-0 transition-opacity duration-300 motion-reduce:transition-none', ready ? 'opacity-100' : 'opacity-0')}>
-                        <Stage3D key={canvasKey} images={stageImages!} view={view} reduce={reduce} active={near} api={api} onReady={onReady} onFail={onFail} onLost={onLost} onEngage={noop} />
+                        <Stage3D key={canvasKey} images={stageImages!} view={view} reduce={reduce} active={near} api={api} onReady={onReady} onFail={onFail} onLost={onLost} onEngage={onEngage} />
                       </div>
                     )}
                     {flat && <ProjectionStageFlat view={view} pixels={pixels} />}
+                    {/* the way back, only once the view was turned */}
+                    {!flat && ready && turned && (
+                      <Button size="sm" variant="secondary" className="absolute start-2 top-2 z-10 px-3" onClick={resetView} title="מחזיר את זווית המבט בלבד, בלי לשנות את פתיחת המשטח" data-reset-view>
+                        <RefreshCcw size={16} aria-hidden />
+                        מבט התחלתי
+                      </Button>
+                    )}
                     {/* always present, so a change of its text is announced */}
                     <p role="status" className={cn(T6, 'pointer-events-none absolute inset-x-0 bottom-2 text-center text-balance')} data-stage-status>
                       {flat
@@ -363,18 +394,25 @@ export function ProjectionsLab() {
                   </div>
                 </section>
 
+                {/* surface → map: what the unrolling gives (learning); nothing to point at before a check */}
+                <div aria-hidden className={cn('flex items-center pt-10', !learning && !stageSurface && 'invisible')} data-stage-arrow>
+                  <ArrowLeft size={22} strokeWidth={1.8} className="text-fg-muted" />
+                </div>
+
                 {/* the map (inline end = left) */}
                 <section className="min-w-0" aria-label={mapTitle}>
                   <h4 className={cn(HEADING, 'text-center')} data-map-title>
                     {mapTitle}
                   </h4>
-                  <div className="mt-3" style={{ height: STAGE_H }}>
+                  <div className="mt-3" style={{ height: STAGE_H, opacity: learning ? mapOpacity(p) : 1 }} data-map-box>
                     <ProjectionMap
                       method={learning ? method : target}
                       pixels={pixels}
-                      demo={learning}
+                      circles={learning ? circlesOn(p) : 0}
                       contact={learning}
-                      label={learning ? MAP_DESCRIPTION[method] : `מפת היעד. ${MAP_DESCRIPTION[target]}`}
+                      frame={!learning && part ? WINDOW[target] : undefined}
+                      strongGrid={!learning}
+                      label={learning ? mapLabelWithCircles(method) : `${part ? 'קטע ממפת היעד' : 'מפת היעד'}. ${MAP_DESCRIPTION[target]}`}
                     />
                   </div>
                 </section>
@@ -389,35 +427,26 @@ export function ProjectionsLab() {
           {learning ? (
             <div className="flex h-full flex-col gap-4">
               <ProgressSlider method={method} value={p} onChange={setProgress} />
-              <div className="flex flex-1 items-start gap-6">
-                <div className="flex shrink-0 gap-3">
-                  <Button size="md" className="w-[188px]" onClick={onPlay} data-play={playing ? 'stop' : p >= 0.995 ? 'replay' : 'play'}>
-                    {playing ? <Pause size={18} aria-hidden fill="currentColor" /> : <Play size={18} aria-hidden fill="currentColor" />}
-                    {playing ? 'עצירת ההדגמה' : p >= 0.995 ? 'הדגמה חוזרת' : 'הפעלת ההדגמה'}
-                  </Button>
-                  <Button size="md" variant="secondary" onClick={() => api.current?.resetView()} title="מחזיר את זווית המבט בלבד, בלי לשנות את פתיחת המשטח">
-                    <RefreshCcw size={18} aria-hidden />
-                    מבט התחלתי
-                  </Button>
+              <div className="flex items-start gap-4">
+                <Button size="md" className="w-[188px] shrink-0" onClick={onPlay} data-play={playing ? 'stop' : p >= 0.995 ? 'replay' : 'play'}>
+                  {playing ? <Pause size={18} aria-hidden fill="currentColor" /> : <Play size={18} aria-hidden fill="currentColor" />}
+                  {playing ? 'עצירת ההדגמה' : p >= 0.995 ? 'הדגמה חוזרת' : 'הפעלת ההדגמה'}
+                </Button>
+                <div className="flex min-h-[76px] min-w-0 flex-1 items-start gap-3 rounded-xl bg-bg-accent px-4 py-3" data-explain={`${method}-${phase}`}>
+                  <BookOpen size={22} strokeWidth={1.8} aria-hidden className="mt-0.5 shrink-0 text-fg-muted" />
+                  <p className={BODY} aria-live="polite">
+                    {step.idea} <strong className="font-bold" data-act>{step.act}</strong>
+                  </p>
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col items-end gap-3">
-                  <div className="flex w-full items-start gap-3 rounded-xl bg-bg-accent px-4 py-3" data-explain={`${method}-${phase}`}>
-                    <BookOpen size={22} strokeWidth={1.8} aria-hidden className="mt-0.5 shrink-0 text-fg-muted" />
-                    <p className={BODY} aria-live="polite">
-                      {EXPLAIN[method][phase]}
-                      {phase === 'start' && ` ${START_HINT[method]}`}
-                    </p>
-                  </div>
-                  <Button size="md" variant="secondary" onClick={enterPractice} data-enter-practice>
-                    <Lightbulb size={18} aria-hidden />
-                    {practice.done ? 'סיכום התרגול' : started ? 'חזרה לתרגול' : 'נסו לזהות את המשטח'}
-                  </Button>
-                </div>
+                <Button size="md" variant="secondary" className="shrink-0" onClick={enterPractice} data-enter-practice>
+                  <Lightbulb size={18} aria-hidden />
+                  {practice.done ? 'סיכום התרגול' : started ? 'חזרה לתרגול' : 'נסו לזהות את המשטח'}
+                </Button>
               </div>
             </div>
           ) : practice.done ? (
             <div className="flex h-full flex-col justify-center gap-4" data-summary-actions>
-              <p className={BODY}>שלוש ההתאמות נכונות. אפשר לתרגל שוב בסדר אחר, או לחזור למעבדה ולפתוח את המשטחים.</p>
+              <p className={BODY}>{SUMMARY_LINE}</p>
               <div className="flex gap-3">
                 <Button size="md" onClick={() => dispatch({ type: 'restart' })}>
                   תרגול חוזר
@@ -428,7 +457,7 @@ export function ProjectionsLab() {
               </div>
             </div>
           ) : (
-            <PracticePanel state={practice} dispatch={dispatch} feedback={feedback} onBack={backToLearn} />
+            <PracticePanel state={practice} dispatch={dispatch} feedback={feedback} over={over} onBack={backToLearn} />
           )}
         </div>
       </div>
@@ -436,72 +465,64 @@ export function ProjectionsLab() {
   );
 }
 
-const noop = () => undefined;
-
 /* ───────────────────────── the slider ───────────────────────── */
 
 /** The process 0–1: 0 at the right ("עטיפה"), 1 at the left ("מפה שטוחה") — the reading
     direction. A native range in an RTL box (its minimum is at the right); the keys are this
-    lab's own (projectionsModel.sliderKey): ← / ↑ advance, → / ↓ go back, Home / End. */
+    lab's own (projectionsModel.sliderKey): ← / ↑ advance, → / ↓ go back, Home / End. The phase
+    in words is its accessible value; on screen the ends and the step line say it. */
 function ProgressSlider({ method, value, onChange }: { method: Method; value: number; onChange: (v: number) => void }) {
-  const id = useId();
   const [a, b] = ENDS[method];
   const phase = PHASE_LABEL[method][phaseOf(value)];
   const pct = Math.round(value * 100);
   return (
-    <div data-slider>
-      <div className="flex items-center gap-4">
-        <span className={cn(LABEL, 'w-24 shrink-0 text-start')} data-end="start">
-          {a}
-        </span>
-        <span dir="rtl" className="relative block h-9 flex-1">
-          <span aria-hidden className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-border" />
-          {/* the part done: from the start (right) to the thumb */}
-          <span aria-hidden className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-brand-dark" style={{ insetInlineStart: 0, width: `calc(11px + ${value} * (100% - 22px))` }} />
-          <input
-            type="range"
-            dir="rtl"
-            min={0}
-            max={1000}
-            step={1}
-            value={Math.round(value * 1000)}
-            onChange={(e) => onChange(Number(e.target.value) / 1000)}
-            onKeyDown={(e) => {
-              if (e.altKey || e.ctrlKey || e.metaKey) return;
-              const v = sliderKey(e.key, value);
-              if (v === null) return;
-              e.preventDefault();
-              onChange(v);
-            }}
-            aria-label={method === 'az' ? 'מעבר למבט על' : 'פתיחת המשטח'}
-            aria-valuetext={`${pct}% – ${phase}`}
-            aria-describedby={`${id}-phase`}
-            data-progress-input
-            className={cn(
-              'absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full bg-transparent focus-visible:outline-none',
-              '[&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent',
-              '[&::-webkit-slider-thumb]:mt-[7px] [&::-webkit-slider-thumb]:box-border [&::-webkit-slider-thumb]:size-[22px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(40,50,35,0.4)]',
-              '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:box-border [&::-moz-range-thumb]:size-[22px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-accent',
-              '[&:focus-visible::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)] [&:focus-visible::-moz-range-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
-            )}
-          />
-        </span>
-        <span className={cn(LABEL, 'w-24 shrink-0 text-end')} data-end="end">
-          {b}
-        </span>
-      </div>
-      <p id={`${id}-phase`} className={cn(LABEL, 'text-center')} data-phase={phaseOf(value)}>
-        {phase}
-      </p>
+    <div className="flex items-center gap-4" data-slider data-phase={phaseOf(value)}>
+      <span className={cn(LABEL, 'w-24 shrink-0 text-start')} data-end="start">
+        {a}
+      </span>
+      <span dir="rtl" className="relative block h-9 flex-1">
+        <span aria-hidden className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-border" />
+        {/* the part done: from the start (right) to the thumb */}
+        <span aria-hidden className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-brand-dark" style={{ insetInlineStart: 0, width: `calc(11px + ${value} * (100% - 22px))` }} />
+        <input
+          type="range"
+          dir="rtl"
+          min={0}
+          max={1000}
+          step={1}
+          value={Math.round(value * 1000)}
+          onChange={(e) => onChange(Number(e.target.value) / 1000)}
+          onKeyDown={(e) => {
+            if (e.altKey || e.ctrlKey || e.metaKey) return;
+            const v = sliderKey(e.key, value);
+            if (v === null) return;
+            e.preventDefault();
+            onChange(v);
+          }}
+          aria-label={method === 'az' ? 'מעבר למבט על' : 'פתיחת המשטח'}
+          aria-valuetext={`${pct}% – ${phase}`}
+          data-progress-input
+          className={cn(
+            'absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full bg-transparent focus-visible:outline-none',
+            '[&::-webkit-slider-runnable-track]:h-full [&::-webkit-slider-runnable-track]:bg-transparent',
+            '[&::-webkit-slider-thumb]:mt-[7px] [&::-webkit-slider-thumb]:box-border [&::-webkit-slider-thumb]:size-[22px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(40,50,35,0.4)]',
+            '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:box-border [&::-moz-range-thumb]:size-[22px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-accent',
+            '[&:focus-visible::-webkit-slider-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)] [&:focus-visible::-moz-range-thumb]:shadow-[0_0_0_4px_rgba(217,126,43,0.45)]',
+          )}
+        />
+      </span>
+      <span className={cn(LABEL, 'w-24 shrink-0 text-end')} data-end="end">
+        {b}
+      </span>
     </div>
   );
 }
 
 /* ───────────────────────── the legend ───────────────────────── */
 
-/** What the lines mean, drawn as on the map and the globe (DatumFieldChallenge's legend
-    recipe). The line of contact is never the sample parallel. Kept (empty) in practice so the
-    stage keeps its height. */
+/** What the marks mean, drawn as on the map and the globe (DatumFieldChallenge's legend
+    recipe): the line / point of contact, the equal circles and their size on the globe. Kept
+    (empty) in practice so the stage keeps its height. */
 function Legend({ method }: { method: Method | null }) {
   const item = 'flex items-center gap-1.5';
   return (
@@ -519,16 +540,16 @@ function Legend({ method }: { method: Method | null }) {
         <span className={T6}>{method ? CONTACT_LEGEND[method] : ''}</span>
       </li>
       <li className={item}>
-        <svg width="26" height="8" viewBox="0 0 26 8" aria-hidden>
-          <path d="M1 4h24" className="stroke-accent" strokeWidth={2.5} strokeLinecap="round" />
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
+          <circle cx="9" cy="9" r="7" className="fill-white stroke-accent" strokeWidth={2.25} />
         </svg>
-        <span className={T6}>קו רוחב לדוגמה</span>
+        <span className={T6}>{CIRCLE_LEGEND}</span>
       </li>
       <li className={item}>
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
-          <circle cx="8" cy="8" r="5" className="fill-accent stroke-white" strokeWidth={2} />
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
+          <circle cx="9" cy="9" r="7" fill="none" className="stroke-fg" strokeWidth={1.5} strokeDasharray="4 3" />
         </svg>
-        <span className={T6}>נקודה לדוגמה</span>
+        <span className={T6}>{TRUE_LEGEND}</span>
       </li>
     </ul>
   );
@@ -540,18 +561,20 @@ function PracticePanel({
   state,
   dispatch,
   feedback,
+  over,
   onBack,
 }: {
   state: ReturnType<typeof initialPractice>;
   dispatch: React.Dispatch<Parameters<typeof practiceReducer>[1]>;
   feedback: Feedback | null;
+  over: boolean;
   onBack: () => void;
 }) {
-  const solved = isSolved(state);
+  const target = targetOf(state);
   const last = state.index >= state.order.length - 1;
   const value = state.pick ?? METHODS[0];
   const keys = useRovingKeys(METHODS, value, (m) => dispatch({ type: 'pick', m }));
-  const action = !solved ? (
+  const action = !over ? (
     <Button size="lg" className="w-[184px] rounded-xl" onClick={() => dispatch({ type: 'check' })} disabled={!state.pick || state.checked === state.pick} data-check>
       בדיקת תשובה
     </Button>
@@ -575,7 +598,8 @@ function PracticePanel({
         <div role="radiogroup" aria-labelledby="projections-question" className="grid h-14 min-w-0 flex-1 grid-cols-3 gap-2" onKeyDown={keys.onKeyDown}>
           {METHODS.map((m) => {
             const on = state.pick === m;
-            const verdict = state.checked === m ? (m === targetOf(state) ? 'right' : 'wrong') : null;
+            // ✓ on the answer once the task is over (answered or shown), ✕ on a checked miss
+            const verdict = over && m === target ? 'right' : state.checked === m && m !== target ? 'wrong' : null;
             return (
               <button
                 key={m}
@@ -583,8 +607,9 @@ function PracticePanel({
                 type="button"
                 role="radio"
                 aria-checked={on}
+                aria-label={`${SURFACE_NAME[m]}${verdict === 'right' ? ' – התשובה' : verdict === 'wrong' ? ' – לא נכון' : ''}`}
                 tabIndex={(state.pick ?? METHODS[0]) === m ? 0 : -1}
-                disabled={solved && !on}
+                disabled={over && m !== target}
                 data-option={m}
                 onClick={() => dispatch({ type: 'pick', m })}
                 className={cn(CHOICE, choiceTone(on), FOCUS, 'relative flex items-center justify-center gap-3 px-4 disabled:cursor-default disabled:opacity-55')}
@@ -609,22 +634,16 @@ function PracticePanel({
       </div>
       <div className="flex min-h-0 flex-1 items-start gap-3">
         <FeedbackLine feedback={feedback} />
-        <div className="flex shrink-0 gap-2">
-          <Button size="md" variant="secondary" onClick={() => dispatch({ type: 'hint' })} disabled={solved || state.hint} data-hint>
-            <Lightbulb size={18} aria-hidden />
-            רמז
-          </Button>
-          <Button size="md" variant="ghost" onClick={onBack} data-back>
-            חזרה להדגמה
-          </Button>
-        </div>
+        <Button size="md" variant="ghost" className="shrink-0" onClick={onBack} data-back>
+          חזרה להדגמה
+        </Button>
       </div>
     </div>
   );
 }
 
 /** One feedback line (aria-live): the verdict told by words and a glyph — success in the
-    lesson's green, the rest in ink; never red. The hint follows on its own line. */
+    lesson's green, the rest in ink; never red. A shown answer carries the hint glyph. */
 function FeedbackLine({ feedback }: { feedback: Feedback | null }) {
   const tone = feedback?.tone ?? 'info';
   return (
@@ -632,27 +651,21 @@ function FeedbackLine({ feedback }: { feedback: Feedback | null }) {
       aria-live="polite"
       aria-atomic="true"
       data-feedback={tone}
-      className={cn('flex min-w-0 flex-1 gap-3 rounded-xl px-3.5 py-2.5', tone === 'right' ? 'bg-brand/[0.08]' : tone === 'wrong' ? 'bg-bg-accent' : 'bg-bg-accent/60')}
+      className={cn('flex min-w-0 flex-1 gap-3 rounded-xl px-3.5 py-2.5', tone === 'right' ? 'bg-brand/[0.08]' : tone === 'info' ? 'bg-bg-accent/60' : 'bg-bg-accent')}
     >
-      {tone !== 'info' && (
+      {(tone === 'right' || tone === 'wrong') && (
         <span aria-hidden className={cn('mt-0.5 grid size-6 shrink-0 place-items-center rounded-full', tone === 'right' ? 'bg-brand-dark text-white' : 'border-2 border-border-strong text-fg')}>
           <Icon name={tone === 'right' ? 'check' : 'x'} size={12} strokeWidth={3} />
         </span>
       )}
-      <div className="min-w-0">
-        <p className={BODY}>{feedback?.text}</p>
-        {feedback?.hint && (
-          <p className={cn(BODY, 'mt-1 flex items-start gap-1.5')} data-hint-text>
-            <Lightbulb size={18} aria-hidden className="mt-1 shrink-0 text-fg-muted" />
-            {feedback.hint}
-          </p>
-        )}
-      </div>
+      {tone === 'shown' && <Lightbulb size={20} aria-hidden className="mt-0.5 shrink-0 text-fg-muted" />}
+      <p className={cn(BODY, 'min-w-0')}>{feedback?.text}</p>
     </div>
   );
 }
 
-/** The summary in the stage's place: each surface, the shape it makes, and its map. */
+/** The summary in the stage's place: each surface, the shape it makes, its map with the equal
+    circles and its line of contact, and where it is least distorted. */
 function SummaryStage({ pixels }: { pixels: EarthPixels | null }) {
   return (
     <ul className="grid grid-cols-3 gap-6" style={{ height: STAGE_H + 28 + 12 + 32 }} data-summary>
@@ -668,9 +681,12 @@ function SummaryStage({ pixels }: { pixels: EarthPixels | null }) {
               {s.shape}
             </p>
           </div>
-          <div className="w-full flex-1">
-            <ProjectionMap method={s.m} pixels={pixels} demo={false} contact={false} label={`${s.surface}: ${MAP_DESCRIPTION[s.m]}`} pad={4} />
+          <div className="min-h-0 w-full flex-1">
+            <ProjectionMap method={s.m} pixels={pixels} circles={1} contact label={`${s.surface}: ${mapLabelWithCircles(s.m)}`} pad={4} />
           </div>
+          <p className={cn(T6, 'text-center')} data-summary-near>
+            {s.near}
+          </p>
         </li>
       ))}
     </ul>

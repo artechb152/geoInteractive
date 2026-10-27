@@ -2,35 +2,56 @@
 /**
  * PlanningRouteMap — the illustrated route-story map for PlanningScene (topic-06).
  *
- * The map is drawn to scale from the checkpoint data: every leg is a straight
- * azimuth line whose bearing and length come from the numbers in the
- * checkpoint text (legs[i].az / legs[i].m). North is always up — the SVG is
- * never mirrored for RTL.
+ * Every number and place comes from route-story/routeStoryModel: each leg is
+ * a straight azimuth line whose bearing and length are the leg's data, the
+ * stream, road, saddle and pines are the signs the story names, at the places
+ * it names them. North is always up — the SVG is never mirrored for RTL.
  *
- * Step semantics (activeStep = index of the active checkpoint card):
- *   - step 0  → standing at נ.ה; the departure bearing of card 1 is shown.
- *   - step k  → the leg (k-1 → k) is the current leg: drawn solid orange with
- *               its azimuth arc at the leg start and an "az° / m מ׳" tag.
- *   - legs before the current one are muted-solid (done), later ones dashed.
+ * What is drawn for the selected stop (a point or a leg):
+ *   - a selected leg   → solid orange with its azimuth arc at the leg start,
+ *                        an arrow and a tag „letter · az° · m מ׳”; its end
+ *                        point gets an orange ring, the signs it passes and
+ *                        the sign at its end get dashed / solid rings.
+ *   - a selected point → its marker in orange and its own sign ringed; the
+ *                        leg LEAVING it is drawn dashed orange with the same
+ *                        tag, so the numbers read as the outgoing leg's.
+ *   - legs before the selection are muted solid (walked), later ones dashed.
+ *   - leg ד׳ is the learner's to write: until it is done its tag shows „?”,
+ *     its rings stay off and the scale bar is outlined as the tool to use.
  */
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import {
+  FEATURES,
+  GROVE_PINES,
+  LEGS,
+  M_PER_UNIT,
+  POINTS,
+  POINT_XY,
+  ROAD,
+  STOPS,
+  STREAM,
+  SADDLE_ROTATE,
+  SUMMIT_OFFSET,
+  TARGET_PINES,
+  TARGET_ROCKS,
+  VIEW_H,
+  VIEW_W,
+  deg,
+  halos as halosOf,
+  isHidden,
+  legStates,
+  lerp,
+  pathD,
+  pointStates,
+  polar,
+  shownLeg,
+  stopIndex,
+  type Deco,
+  type Pt,
+  type Stop,
+} from './route-story/routeStoryModel';
 
-export type RouteLeg = { az: number; m: number };
-type Pt = { x: number; y: number };
-export type Deco = { x: number; y: number; s?: number };
-type Side = 'nw' | 'se';
-
-// ——— Geometry ———
-const VB_W = 100;
-const VB_H = 92;
-/** map scale — metres per SVG unit (the 500 מ׳ scale bar is drawn from it) */
-const M_PER_UNIT = 23.5;
-const START: Pt = { x: 14, y: 80 };
-/** per step: which side of the leg its tag sits on, how far out, and how far
- *  along the leg it slides (chosen to keep clear of terrain, markers and labels) */
-const TAG_SIDE: Side[] = ['se', 'se', 'nw', 'se', 'se'];
-const TAG_OFFSET = [7, 6.6, 6.6, 6.6, 6.6];
-const TAG_SHIFT = [2, 0, 0, 0, 0];
+export type { Deco };
 
 // ——— Palette (design tokens mirrored as hex for SVG paint) ———
 export const ORANGE = '#D97E2B'; // accent
@@ -44,20 +65,6 @@ export const FONT = { fontFamily: 'var(--font-rubik), system-ui, sans-serif' };
 export const EASE = [0.22, 1, 0.36, 1] as const;
 
 const fx = (n: number) => Math.round(n * 100) / 100;
-function polar(p: Pt, az: number, dist: number): Pt {
-  const r = (az * Math.PI) / 180;
-  return { x: fx(p.x + dist * Math.sin(r)), y: fx(p.y - dist * Math.cos(r)) };
-}
-function lerp(a: Pt, b: Pt, t: number): Pt {
-  return { x: fx(a.x + (b.x - a.x) * t), y: fx(a.y + (b.y - a.y) * t) };
-}
-/** unit normal pointing to the given side of a leg with bearing `az` */
-function sideNormal(az: number, side: Side): Pt {
-  const r = (az * Math.PI) / 180;
-  const k = side === 'se' ? 1 : -1;
-  return { x: k * Math.cos(r), y: k * Math.sin(r) };
-}
-const pad3 = (n: number) => String(n).padStart(3, '0');
 
 // ——— Terrain objects ———
 export function Pine({ x, y, s = 1 }: Deco) {
@@ -109,19 +116,13 @@ export function Cairn({ x, y, s = 1 }: Deco) {
 
 // Positions are placed clear of every leg, marker, label and leg tag.
 const PINES: Deco[] = [
-  // on the two summits flanking the saddle (checkpoint 3)
+  // on the two summits flanking the saddle (point 3)
   { x: 46.6, y: 43.2, s: 0.85 },
   { x: 50.1, y: 41.6, s: 0.95 },
   { x: 60.2, y: 58.4, s: 0.85 },
-  // the grove the last leg walks through (checkpoint 4 → 5)
-  { x: 71.6, y: 27.4, s: 0.8 },
-  { x: 75.6, y: 22.6, s: 0.9 },
-  { x: 68.8, y: 22.2, s: 0.75 },
-  // prominent pine cluster on the rocky target ground (checkpoint 5)
-  { x: 80.6, y: 12.6, s: 0.85 },
-  { x: 84.4, y: 9.8, s: 1 },
-  { x: 89.8, y: 10.8, s: 0.9 },
-  { x: 93.8, y: 14.6, s: 0.8 },
+  // the grove leg ד׳ passes, and the pine cluster on rocky ground at נ.ס (model data)
+  ...GROVE_PINES,
+  ...TARGET_PINES,
   // scattered cover
   { x: 33.5, y: 40.5, s: 0.8 },
   { x: 21, y: 45, s: 0.75 },
@@ -140,49 +141,71 @@ const BUSHES: Deco[] = [
   { x: 95, y: 36, s: 0.7 },
 ];
 
-const ROCKS: Deco[] = [
-  { x: 9, y: 61, s: 0.7 },
-  { x: 37.5, y: 65.5, s: 0.7 },
-  { x: 66, y: 62, s: 0.7 },
-  // rocky ground at the target
-  { x: 93.6, y: 21.2, s: 0.95 },
-  { x: 95.2, y: 26, s: 0.75 },
-  { x: 80.4, y: 17.4, s: 0.7 },
-];
+const ROCKS: Deco[] = [{ x: 9, y: 61, s: 0.7 }, { x: 37.5, y: 65.5, s: 0.7 }, { x: 66, y: 62, s: 0.7 }, ...TARGET_ROCKS];
 
 const CAIRNS: Deco[] = [
   { x: 41.5, y: 60.8, s: 0.8 },
   { x: 74.6, y: 37.6, s: 0.8 },
 ];
 
-// ——— Leg tag (azimuth + distance, reusing the numbers from the card text) ———
-function LegTag({ at, anchor, az, m, reduce }: { at: Pt; anchor: Pt; az: number; m: number; reduce: boolean }) {
+/** Per leg: which side of the leg its tag sits on (1 = right of the walking direction) and how far along it slides, clear of terrain, markers and labels. */
+const TAG_PLACE: { side: 1 | -1; along: number }[] = [
+  { side: 1, along: 0 },
+  { side: -1, along: 0 },
+  { side: 1, along: 2 },
+  { side: 1, along: 0 },
+];
+const TAG_W = 15.6;
+const TAG_H = 8.4;
+/** Gap between the leg and the nearest edge of its tag. */
+const TAG_GAP = 2.2;
+
+// ——— Leg tag: the leg's letter, azimuth and distance (the numbers of the list) ———
+function LegTag({ legIdx, hidden, dashed, reduce }: { legIdx: number; hidden: boolean; dashed: boolean; reduce: boolean }) {
+  const leg = LEGS[legIdx];
+  const a = POINT_XY[leg.from];
+  const b = POINT_XY[leg.to];
+  const mid = lerp(a, b, 0.5);
+  const place = TAG_PLACE[legIdx];
+  const r = (leg.az * Math.PI) / 180;
+  // out = how far the box reaches along the leg's normal + a gap, so the tag never covers its own leg
+  const out = (TAG_W / 2) * Math.abs(Math.cos(r)) + (TAG_H / 2) * Math.abs(Math.sin(r)) + TAG_GAP;
+  const at = {
+    x: fx(mid.x + place.side * Math.cos(r) * out + Math.sin(r) * place.along),
+    y: fx(mid.y + place.side * Math.sin(r) * out - Math.cos(r) * place.along),
+  };
   return (
-    <g>
-      <line
-        x1={anchor.x}
-        y1={anchor.y}
-        x2={at.x}
-        y2={at.y}
-        stroke={ORANGE}
-        strokeWidth={0.28}
-        strokeDasharray="0.7 0.55"
-        strokeLinecap="round"
-      />
-      <circle cx={anchor.x} cy={anchor.y} r={0.55} fill={ORANGE} />
+    <g data-tag-leg={legIdx} data-hidden={hidden || undefined} pointerEvents="none">
+      <line x1={mid.x} y1={mid.y} x2={at.x} y2={at.y} stroke={ORANGE} strokeWidth={0.28} strokeDasharray="0.7 0.55" strokeLinecap="round" />
+      <circle cx={mid.x} cy={mid.y} r={0.7} fill={ORANGE_DEEP} />
       <g transform={`translate(${at.x} ${at.y})`}>
         <motion.g
           initial={reduce ? false : { opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, ease: EASE, delay: reduce ? 0 : 0.25 }}
         >
-          <rect x={-5.5} y={-3.55} width={11} height={7.9} rx={1.9} fill="#566b46" opacity={0.12} transform="translate(0 0.45)" />
-          <rect x={-5.5} y={-3.95} width={11} height={7.9} rx={1.9} fill={PAPER} stroke={ORANGE} strokeWidth={0.32} />
-          <text y={-0.6} textAnchor="middle" fontSize={2.8} fontWeight={800} fill={ORANGE_DEEP} style={FONT}>
-            {pad3(az)}°
+          <rect x={-TAG_W / 2} y={-TAG_H / 2 + 0.4} width={TAG_W} height={TAG_H} rx={1.9} fill="#566b46" opacity={0.12} />
+          <rect
+            x={-TAG_W / 2}
+            y={-TAG_H / 2}
+            width={TAG_W}
+            height={TAG_H}
+            rx={1.9}
+            fill={PAPER}
+            stroke={ORANGE}
+            strokeWidth={0.32}
+            strokeDasharray={dashed ? '1.1 0.7' : undefined}
+          />
+          {/* the leg's letter first, on the right (Hebrew reading order); the drawing itself is not mirrored */}
+          <circle cx={TAG_W / 2 - 3.1} cy={0} r={2.3} fill={ORANGE_DEEP} />
+          <text x={TAG_W / 2 - 3.1} y={0.05} textAnchor="middle" dominantBaseline="central" fontSize={2.5} fontWeight={800} fill="#FFFFFF" style={FONT}>
+            {leg.letter}
           </text>
-          <text y={2.55} textAnchor="middle" fontSize={2.1} fontWeight={600} fill={INK} style={FONT}>
-            {`${m} מ׳`}
+          <text x={-1.9} y={-0.55} textAnchor="middle" fontSize={3} fontWeight={800} fill={ORANGE_DEEP} style={FONT} direction="ltr">
+            {hidden ? '?°' : deg(leg.az)}
+          </text>
+          <text x={-1.9} y={2.95} textAnchor="middle" fontSize={2.4} fontWeight={700} fill={INK} style={FONT}>
+            {hidden ? '? מ׳' : `${leg.m} מ׳`}
           </text>
         </motion.g>
       </g>
@@ -196,9 +219,9 @@ function AzimuthArc({ p, az }: { p: Pt; az: number }) {
   const a0 = { x: p.x, y: fx(p.y - r) };
   const a1 = polar(p, az, r);
   return (
-    <g>
+    <g data-arc>
       <line x1={p.x} y1={fx(p.y - 3.7)} x2={p.x} y2={fx(p.y - 9.2)} stroke={SAGE_DARK} strokeWidth={0.3} strokeDasharray="0.7 0.5" />
-      <text x={p.x} y={fx(p.y - 9.9)} textAnchor="middle" fontSize={1.7} fontWeight={700} fill={SAGE_DARK} style={FONT}>
+      <text x={p.x} y={fx(p.y - 9.9)} textAnchor="middle" fontSize={2.2} fontWeight={700} fill={SAGE_DARK} style={FONT}>
         צ
       </text>
       <path d={`M ${a0.x} ${a0.y} A ${r} ${r} 0 0 1 ${a1.x} ${a1.y}`} fill="none" stroke={ORANGE_DEEP} strokeWidth={0.36} strokeLinecap="round" />
@@ -207,50 +230,105 @@ function AzimuthArc({ p, az }: { p: Pt; az: number }) {
 }
 
 function Arrowhead({ at, az, fill }: { at: Pt; az: number; fill: string }) {
+  return <path d="M0 -1.9 L 1.5 1.2 L 0 0.5 L -1.5 1.2 Z" transform={`translate(${at.x} ${at.y}) rotate(${az})`} fill={fill} />;
+}
+
+/** The arrow sits a fixed distance before the leg's end (not a fraction of it), clear of the end marker and the tag. */
+function arrowAt(a: Pt, b: Pt): Pt {
+  const L = Math.hypot(b.x - a.x, b.y - a.y);
+  return lerp(a, b, Math.max(0.5, (L - 6.5) / L));
+}
+
+/** A ring around a sign the story names (a pin for a point on the stream); solid = the sign to check, dashed = one passed on the way. */
+function Halo({ feature, role, reduce }: { feature: keyof typeof FEATURES; role: 'point' | 'along' | 'end'; reduce: boolean }) {
+  const f = FEATURES[feature];
   return (
-    <path d="M0 -1.35 L 1.05 0.85 L 0 0.35 L -1.05 0.85 Z" transform={`translate(${at.x} ${at.y}) rotate(${az})`} fill={fill} />
+    <motion.g
+      data-halo={feature}
+      data-role={role}
+      pointerEvents="none"
+      initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, delay: reduce ? 0 : 0.3 }}
+    >
+      {f.pin ? (
+        <circle cx={f.at.x} cy={f.at.y} r={f.rx} fill={PAPER} stroke={ORANGE_DEEP} strokeWidth={0.45} strokeDasharray={role === 'along' ? '0.8 0.5' : undefined} />
+      ) : (
+      <ellipse
+        cx={f.at.x}
+        cy={f.at.y}
+        rx={f.rx}
+        ry={f.ry}
+        transform={f.rotate ? `rotate(${f.rotate} ${f.at.x} ${f.at.y})` : undefined}
+        fill={ORANGE}
+        fillOpacity={role === 'along' ? 0.04 : 0.08}
+        stroke={ORANGE_DEEP}
+        strokeWidth={role === 'along' ? 0.3 : 0.4}
+        strokeDasharray={role === 'along' ? '1 0.8' : undefined}
+      />
+      )}
+    </motion.g>
+  );
+}
+
+function HaloLabel({ feature, role }: { feature: keyof typeof FEATURES; role: 'point' | 'along' | 'end' }) {
+  const f = FEATURES[feature];
+  if (!f.labelAt) return null;
+  const w = fx(f.label.length * 1.4 + 2.8);
+  const h = 4;
+  return (
+    <g data-halo-label={feature} pointerEvents="none">
+      {/* a pin's label stands off the stream, so a dotted leader ties it to the pin */}
+      {f.pin && <line x1={f.at.x} y1={f.at.y} x2={f.labelAt.x} y2={f.labelAt.y} stroke={ORANGE_DEEP} strokeWidth={0.25} strokeDasharray="0.5 0.45" />}
+      <rect
+        x={fx(f.labelAt.x - w / 2)}
+        y={fx(f.labelAt.y - h / 2)}
+        width={w}
+        height={h}
+        rx={h / 2}
+        fill={PAPER}
+        stroke={ORANGE_DEEP}
+        strokeWidth={0.22}
+        strokeDasharray={role === 'along' ? '0.9 0.6' : undefined}
+      />
+      <text x={f.labelAt.x} y={fx(f.labelAt.y + 0.05)} textAnchor="middle" dominantBaseline="central" fontSize={2.4} fontWeight={700} fill={ORANGE_DEEP} style={FONT}>
+        {f.label}
+      </text>
+    </g>
   );
 }
 
 export function RouteMap({
-  legs,
-  activeStep,
+  stop: stopIdx,
+  done,
   onSelect,
   ariaLabel,
 }: {
-  legs: RouteLeg[];
-  activeStep: number;
-  onSelect: (i: number) => void;
+  /** Index into STOPS. */
+  stop: number;
+  /** Whether the learner has written leg ד׳. */
+  done: boolean;
+  onSelect: (stopIdx: number) => void;
   ariaLabel: string;
 }) {
   const reduce = !!useReducedMotion();
-
-  // checkpoints, derived from the leg bearings/distances (leg 0 = departure bearing)
-  const points: Pt[] = [START];
-  for (let i = 1; i < legs.length; i++) points.push(polar(points[i - 1], legs[i].az, legs[i].m / M_PER_UNIT));
-
-  const step = activeStep;
-  const cur = legs[step];
-  // current leg geometry: from checkpoint (step-1) to checkpoint step; step 0 = departure bearing from נ.ה
-  const legFrom = step === 0 ? polar(points[0], cur.az, 3.9) : points[step - 1];
-  const legTo = step === 0 ? polar(points[0], cur.az, 10.5) : points[step];
-  const legMid = lerp(legFrom, legTo, 0.5);
-  const n = sideNormal(cur.az, TAG_SIDE[step]);
-  const u = polar({ x: 0, y: 0 }, cur.az, 1);
-  const tagAt = {
-    x: fx(legMid.x + n.x * TAG_OFFSET[step] + u.x * TAG_SHIFT[step]),
-    y: fx(legMid.y + n.y * TAG_OFFSET[step] + u.y * TAG_SHIFT[step]),
-  };
-  const arcAt = step === 0 ? points[0] : points[step - 1];
+  const stop: Stop = STOPS[stopIdx];
+  const legsState = legStates(stop);
+  const pointsState = pointStates(stop);
+  const shown = shownLeg(stop);
+  const shownHidden = shown !== null && isHidden(shown, done);
+  const rings = halosOf(stop, done);
+  const points = POINT_XY;
   const scaleLen = fx(500 / M_PER_UNIT);
 
   return (
     <svg
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       className="block w-full h-auto select-none"
-      style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
+      style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
       role="img"
       aria-label={ariaLabel}
+      data-stop={`${stop.kind}:${stop.i}`}
     >
       <defs>
         <linearGradient id="pl6-paper" x1="0" y1="0" x2="0" y2="1">
@@ -273,15 +351,15 @@ export function RouteMap({
       </defs>
 
       {/* Paper base + warm sun wash */}
-      <rect x="0" y="0" width={VB_W} height={VB_H} fill="url(#pl6-paper)" />
-      <rect x="0" y="0" width={VB_W} height={VB_H} fill="url(#pl6-sun)" />
+      <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="url(#pl6-paper)" />
+      <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="url(#pl6-sun)" />
 
       {/* Fine map grid */}
       {Array.from({ length: 9 }).map((_, i) => (
-        <line key={'gx' + i} x1={(i + 1) * 10} y1="0" x2={(i + 1) * 10} y2={VB_H} className="stroke-border-subtle" strokeWidth="0.08" />
+        <line key={'gx' + i} x1={(i + 1) * 10} y1="0" x2={(i + 1) * 10} y2={VIEW_H} className="stroke-border-subtle" strokeWidth="0.08" />
       ))}
       {Array.from({ length: 9 }).map((_, i) => (
-        <line key={'gy' + i} x1="0" y1={(i + 1) * 10} x2={VB_W} y2={(i + 1) * 10} className="stroke-border-subtle" strokeWidth="0.08" />
+        <line key={'gy' + i} x1="0" y1={(i + 1) * 10} x2={VIEW_W} y2={(i + 1) * 10} className="stroke-border-subtle" strokeWidth="0.08" />
       ))}
 
       {/* Broad topographic contour lines */}
@@ -294,20 +372,14 @@ export function RouteMap({
         <path key={'c' + i} d={d} fill="none" stroke="#C9A56B" strokeWidth="0.2" opacity="0.4" strokeLinecap="round" />
       ))}
 
-      {/* Stream — bends right at checkpoint 2 and is crossed just after it */}
-      {(() => {
-        const d =
-          'M-3 47 C 7 48.5, 16 52.5, 22.5 56 C 26.5 58, 29.6 58.6, 30.8 61.6 C 32 65, 33.2 70, 39 73 C 47 77, 60 76.5, 72 78.5 C 84 80.5, 94 79, 103 80.5';
-        return (
-          <g>
-            <path d={d} fill="none" stroke="#7FB4C6" strokeWidth="2.4" strokeLinecap="round" opacity="0.45" />
-            <path d={d} fill="none" stroke="#4f8397" strokeWidth="0.45" strokeLinecap="round" opacity="0.55" />
-          </g>
-        );
-      })()}
+      {/* Stream — bends south at point 2; leg ב׳ crosses it just after */}
+      <g>
+        <path d={pathD(STREAM)} fill="none" stroke="#7FB4C6" strokeWidth="2.4" strokeLinecap="round" opacity="0.45" />
+        <path d={pathD(STREAM)} fill="none" stroke="#4f8397" strokeWidth="0.45" strokeLinecap="round" opacity="0.55" />
+      </g>
 
-      {/* Ridge saddle — two summits with the low pass (col) the route threads at checkpoint 3 */}
-      <g transform={`translate(${points[2].x} ${points[2].y}) rotate(56.7)`}>
+      {/* Ridge saddle — two summits with the low pass (col) the route threads at point 3 */}
+      <g transform={`translate(${points[2].x} ${points[2].y}) rotate(${SADDLE_ROTATE})`}>
         <path
           d="M -15.5 0 C -15.5 -8, -5 -8.6, 0 -3.4 C 5 -8.6, 15.5 -8, 15.5 0 C 15.5 8, 5 8.6, 0 3.4 C -5 8.6, -15.5 8, -15.5 0 Z"
           fill="url(#pl6-hill)"
@@ -320,7 +392,7 @@ export function RouteMap({
           strokeWidth="0.2"
           opacity="0.55"
         />
-        {[-8.9, 8.9].map((cx) => (
+        {[-SUMMIT_OFFSET, SUMMIT_OFFSET].map((cx) => (
           <g key={cx}>
             <ellipse cx={cx} cy={0} rx={5.2} ry={4.9} fill="none" stroke="#7a8a5a" strokeWidth="0.18" opacity="0.6" />
             <ellipse cx={cx} cy={0} rx={3.3} ry={3.1} fill="#c9c79b" opacity="0.45" stroke="#7a8a5a" strokeWidth="0.16" />
@@ -329,18 +401,10 @@ export function RouteMap({
         ))}
       </g>
 
-      {/* Wide dirt road the route crosses at checkpoint 4 */}
+      {/* Wide dirt road the route crosses at point 4 */}
       <g>
-        <path d="M49 15.5 C 57 23, 63 30, 69.5 36.3 C 76 42.6, 83 50, 92 57.5 C 96 61, 100 63, 104 64" fill="none" stroke="#C9A56B" strokeWidth="1.8" strokeLinecap="round" opacity="0.4" />
-        <path
-          d="M49 15.5 C 57 23, 63 30, 69.5 36.3 C 76 42.6, 83 50, 92 57.5 C 96 61, 100 63, 104 64"
-          fill="none"
-          stroke="#9c7e48"
-          strokeWidth="0.3"
-          strokeDasharray="1.4 1"
-          strokeLinecap="round"
-          opacity="0.6"
-        />
+        <path d={pathD(ROAD)} fill="none" stroke="#9c7e48" strokeWidth="2" strokeLinecap="round" opacity="0.55" />
+        <path d={pathD(ROAD)} fill="none" stroke="#EADBB5" strokeWidth="1.45" strokeLinecap="round" />
       </g>
 
       {/* Terrain objects (all kept clear of the route) */}
@@ -359,8 +423,16 @@ export function RouteMap({
         ))}
       </g>
 
+      {/* rings on the signs of the selection (under the route, so lines and markers stay crisp) */}
+      <g key={'rings' + stopIdx + String(done)}>
+        {rings.map((h) => (
+          <Halo key={h.feature} feature={h.feature} role={h.role} reduce={reduce} />
+        ))}
+      </g>
+
       {/* saddle name — beside the pass, clear of the route and the leg tags */}
-      <g>
+      <g pointerEvents="none">
+        <line x1={49.6} y1={56.4} x2={fx(points[2].x - 1.9)} y2={fx(points[2].y + 2.9)} stroke={SAGE_DARK} strokeWidth={0.22} strokeDasharray="0.5 0.45" />
         <rect x={43.4} y={56.3} width={7.4} height={3.5} rx={1.75} fill={PAPER} opacity={0.92} stroke={HAIR} strokeWidth={0.15} />
         <text x={47.1} y={58.9} textAnchor="middle" fontSize="2.3" fontWeight={700} fill={SAGE_DARK} style={FONT}>
           אוכף
@@ -369,63 +441,107 @@ export function RouteMap({
 
       {/* ——— Route ——— */}
       {/* dirt trail bed under every leg */}
-      {points.slice(1).map((b, k) => (
-        <line key={'bed' + k} x1={points[k].x} y1={points[k].y} x2={b.x} y2={b.y} stroke="#cdba90" strokeWidth="2.3" strokeLinecap="round" opacity="0.5" />
+      {LEGS.map((leg, j) => (
+        <line
+          key={'bed' + j}
+          x1={points[leg.from].x}
+          y1={points[leg.from].y}
+          x2={points[leg.to].x}
+          y2={points[leg.to].y}
+          stroke="#cdba90"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
       ))}
-      {/* leg k+1 connects checkpoint k → k+1; done = muted solid, current = orange, later = dashed */}
-      {points.slice(1).map((b, k) => {
-        const legIdx = k + 1;
-        const a = points[k];
-        if (legIdx < step) {
-          return <line key={'leg' + legIdx} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={SAGE_DARK} strokeWidth="0.8" strokeLinecap="round" opacity="0.75" />;
-        }
-        if (legIdx > step) {
-          return (
-            <line
-              key={'leg' + legIdx}
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={ORANGE}
-              strokeWidth="0.55"
-              strokeLinecap="round"
-              strokeDasharray="1.3 1.1"
-              opacity="0.6"
-            />
-          );
-        }
-        return null;
+      {/* walked = muted solid, ahead = dashed; the shown leg is drawn below */}
+      {LEGS.map((leg, j) => {
+        const a = points[leg.from];
+        const b = points[leg.to];
+        const st = legsState[j];
+        return (
+          <g key={'leg' + j} data-leg={j} data-state={st} data-az={leg.az} data-m={leg.m} data-from={leg.from} data-to={leg.to}>
+            {st === 'walked' && <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={SAGE_DARK} strokeWidth="0.8" strokeLinecap="round" opacity="0.75" />}
+            {st === 'ahead' && (
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={ORANGE} strokeWidth="0.55" strokeLinecap="round" strokeDasharray="1.3 1.1" opacity="0.6" />
+            )}
+          </g>
+        );
       })}
 
-      {/* current leg (or the departure bearing at step 0) */}
-      <g key={'cur' + step}>
-        <AzimuthArc p={arcAt} az={cur.az} />
-        <line x1={legFrom.x} y1={legFrom.y} x2={legTo.x} y2={legTo.y} stroke={ORANGE} strokeWidth="2.2" strokeLinecap="round" opacity="0.2" />
-        <motion.path
-          d={`M ${legFrom.x} ${legFrom.y} L ${legTo.x} ${legTo.y}`}
-          fill="none"
-          stroke={ORANGE}
-          strokeWidth="1.05"
-          strokeLinecap="round"
-          initial={reduce ? false : { pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.55, ease: EASE }}
-        />
-        <motion.g
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2, delay: reduce ? 0 : 0.4 }}
-        >
-          <Arrowhead at={step === 0 ? legTo : lerp(legFrom, legTo, 0.64)} az={cur.az} fill={ORANGE_DEEP} />
-        </motion.g>
-      </g>
+      {/* the shown leg: the selected one (solid) or the one leaving the selected point (dashed) */}
+      {shown !== null && (
+        <g key={'cur' + stopIdx} data-shown-leg={shown}>
+          <AzimuthArc p={points[LEGS[shown].from]} az={LEGS[shown].az} />
+          <line
+            x1={points[LEGS[shown].from].x}
+            y1={points[LEGS[shown].from].y}
+            x2={points[LEGS[shown].to].x}
+            y2={points[LEGS[shown].to].y}
+            stroke={ORANGE}
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            opacity={stop.kind === 'leg' ? 0.2 : 0.12}
+          />
+          {stop.kind === 'leg' ? (
+            <motion.path
+              d={`M ${points[LEGS[shown].from].x} ${points[LEGS[shown].from].y} L ${points[LEGS[shown].to].x} ${points[LEGS[shown].to].y}`}
+              fill="none"
+              stroke={ORANGE}
+              strokeWidth={1.05}
+              strokeLinecap="round"
+              data-line="solid"
+              initial={reduce ? false : { pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.55, ease: EASE }}
+            />
+          ) : (
+            <motion.path
+              d={`M ${points[LEGS[shown].from].x} ${points[LEGS[shown].from].y} L ${points[LEGS[shown].to].x} ${points[LEGS[shown].to].y}`}
+              fill="none"
+              stroke={ORANGE}
+              strokeWidth={0.9}
+              strokeLinecap="butt"
+              strokeDasharray="1.7 1.3"
+              data-line="dashed"
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35, ease: EASE }}
+            />
+          )}
+          <motion.g initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: reduce ? 0 : 0.4 }}>
+            <Arrowhead at={arrowAt(points[LEGS[shown].from], points[LEGS[shown].to])} az={LEGS[shown].az} fill={ORANGE_DEEP} />
+          </motion.g>
+        </g>
+      )}
 
-      {/* ——— Checkpoint markers (click = select that checkpoint) ——— */}
+      {/* leg hit lines — click a leg to select it (under the markers) */}
+      {LEGS.map((leg, j) => (
+        <line
+          key={'hit' + j}
+          data-leg-hit={j}
+          x1={points[leg.from].x}
+          y1={points[leg.from].y}
+          x2={points[leg.to].x}
+          y2={points[leg.to].y}
+          stroke="transparent"
+          strokeWidth="3.4"
+          className="cursor-pointer"
+          onClick={() => onSelect(stopIndex('leg', j))}
+        />
+      ))}
+
+      {rings.map((h) => (
+        <HaloLabel key={'hl' + h.feature} feature={h.feature} role={h.role} />
+      ))}
+
+      {/* ——— Points (click = select that point) ——— */}
       {points.map((p, i) => {
         const isTarget = i === points.length - 1;
-        const isActive = i === step;
-        const isPassed = i < step;
+        const st = pointsState[i];
+        const isActive = st === 'focus';
+        const isPassed = st === 'passed' || st === 'from';
+        const isTo = st === 'to';
         let fill = '#FFFFFF';
         let ring = SAGE_DARK;
         let numFill = SAGE_DARK;
@@ -437,19 +553,27 @@ export function RouteMap({
           fill = SAGE;
           ring = SAGE_DARK;
           numFill = '#FFFFFF';
-        } else if (isTarget) {
+        } else if (isTo || isTarget) {
           ring = ORANGE;
           numFill = ORANGE_DEEP;
         }
-        const r = isActive ? 2.75 : isTarget ? 2.6 : 2.3;
-        const endLabel = i === 0 ? 'נ.ה' : isTarget ? 'נ.ס' : null;
+        const r = isActive ? 2.75 : isTarget || isTo ? 2.6 : 2.3;
+        const endLabel = POINTS[i].abbr ?? null;
         // end-point label pill: fixed offset (doesn't jump with the active radius); target's nudged east, clear of the arriving leg
         const lx = isTarget ? fx(p.x + 1.6) : p.x;
         return (
-          <g key={i} className="group cursor-pointer" onClick={() => onSelect(i)}>
+          <g
+            key={i}
+            className="group cursor-pointer"
+            onClick={() => onSelect(stopIndex('point', i))}
+            data-marker={i}
+            data-state={st}
+            data-x={p.x}
+            data-y={p.y}
+          >
             <circle cx={p.x} cy={p.y} r={4.6} fill="transparent" />
             <ellipse cx={p.x} cy={fx(p.y + r + 0.55)} rx={r * 0.9} ry={r * 0.3} fill="#4A5240" opacity="0.14" />
-            <circle cx={p.x} cy={p.y} r={r + 0.85} fill={PAPER} stroke={HAIR} strokeWidth="0.15" />
+            <circle cx={p.x} cy={p.y} r={r + 0.85} fill={PAPER} stroke={isTo ? ORANGE : HAIR} strokeWidth={isTo ? 0.35 : 0.15} />
             <circle
               cx={p.x}
               cy={p.y}
@@ -467,39 +591,22 @@ export function RouteMap({
             )}
             <circle cx={p.x} cy={p.y} r={r} fill={fill} stroke={ring} strokeWidth={isActive || isPassed ? 0.3 : 0.45} />
             {(isActive || isPassed) && <ellipse cx={p.x} cy={fx(p.y - r * 0.4)} rx={r * 0.58} ry={r * 0.28} fill="#FFFFFF" opacity="0.2" />}
-            <text
-              x={p.x}
-              y={p.y}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={isTarget ? 2.6 : 2.4}
-              fontWeight={800}
-              fill={numFill}
-              style={FONT}
-            >
-              {isTarget ? 'B' : i + 1}
+            <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize={isTarget ? 2.6 : 2.4} fontWeight={800} fill={numFill} style={FONT}>
+              {POINTS[i].n}
             </text>
             {endLabel && (
               <g>
                 <rect
-                  x={fx(lx - 3.4)}
+                  x={fx(lx - 3.7)}
                   y={fx(p.y + 4.05)}
-                  width={6.8}
-                  height={3.4}
-                  rx={1.7}
+                  width={7.4}
+                  height={3.7}
+                  rx={1.85}
                   fill={PAPER}
                   stroke={isTarget ? ORANGE : SAGE_DARK}
                   strokeWidth="0.22"
                 />
-                <text
-                  x={lx}
-                  y={fx(p.y + 6.52)}
-                  textAnchor="middle"
-                  fontSize="2.1"
-                  fontWeight={700}
-                  fill={isTarget ? ORANGE_DEEP : SAGE_DARK}
-                  style={FONT}
-                >
+                <text x={lx} y={fx(p.y + 6.75)} textAnchor="middle" fontSize="2.3" fontWeight={700} fill={isTarget ? ORANGE_DEEP : SAGE_DARK} style={FONT}>
                   {endLabel}
                 </text>
               </g>
@@ -508,15 +615,17 @@ export function RouteMap({
         );
       })}
 
-      {/* azimuth / distance tag of the current leg */}
+      {/* azimuth / distance tag of the shown leg */}
       <AnimatePresence mode="wait">
-        <motion.g
-          key={'tag' + step}
-          initial={{ opacity: 1 }}
-          exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, transition: { duration: 0.15 } }}
-        >
-          <LegTag at={tagAt} anchor={legMid} az={cur.az} m={cur.m} reduce={reduce} />
-        </motion.g>
+        {shown !== null && (
+          <motion.g
+            key={'tag' + stopIdx + String(done)}
+            initial={{ opacity: 1 }}
+            exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, transition: { duration: 0.15 } }}
+          >
+            <LegTag legIdx={shown} hidden={shownHidden} dashed={stop.kind === 'point'} reduce={reduce} />
+          </motion.g>
+        )}
       </AnimatePresence>
 
       {/* ——— Map furniture ——— */}
@@ -534,24 +643,30 @@ export function RouteMap({
         ))}
         <path d="M0 -2.3 L 0.7 0 L 0 0.5 L -0.7 0 Z" className="fill-accent" />
         <path d="M0 2.3 L 0.7 0 L 0 -0.5 L -0.7 0 Z" fill="#9aa1a8" />
-        <text x="0" y="-3.85" textAnchor="middle" fontSize="1.7" fontWeight={700} className="fill-brand-dark" style={FONT}>
+        <text x="0" y="-4.1" textAnchor="middle" fontSize="2.2" fontWeight={700} className="fill-brand-dark" style={FONT}>
           צ
         </text>
       </g>
-      <g transform={`translate(${fx(93 - scaleLen)} 87.2)`} opacity="0.75">
-        <rect x="0" y="0" width={scaleLen} height="0.9" fill="#FFFFFF" className="stroke-border-strong" strokeWidth="0.12" />
-        <rect x="0" y="0" width={fx(scaleLen / 4)} height="0.9" className="fill-terrain-ridge" />
-        <rect x={fx(scaleLen / 2)} y="0" width={fx(scaleLen / 4)} height="0.9" className="fill-terrain-ridge" />
-        <text x="0" y="-0.7" textAnchor="middle" fontSize="1.6" className="fill-fg-dim" style={FONT}>
-          0
-        </text>
-        <text x={scaleLen} y="-0.7" textAnchor="middle" fontSize="1.6" className="fill-fg-dim" style={FONT}>
-          500מ׳
-        </text>
+      {/* scale bar — outlined while leg ד׳ is to be measured against it */}
+      <g transform={`translate(${fx(90.5 - scaleLen)} 87.2)`} data-scale-bar data-hint={shownHidden || undefined}>
+        {shownHidden && (
+          <rect x={-3.8} y={-3.8} width={fx(scaleLen + 8.4)} height={5.8} rx={1.6} fill={PAPER} fillOpacity={0.85} stroke={ORANGE_DEEP} strokeWidth={0.3} strokeDasharray="1 0.7" />
+        )}
+        <g opacity={shownHidden ? 1 : 0.8}>
+          <rect x="0" y="0" width={scaleLen} height="0.9" fill="#FFFFFF" className="stroke-border-strong" strokeWidth="0.12" />
+          <rect x="0" y="0" width={fx(scaleLen / 4)} height="0.9" className="fill-terrain-ridge" />
+          <rect x={fx(scaleLen / 2)} y="0" width={fx(scaleLen / 4)} height="0.9" className="fill-terrain-ridge" />
+          <text x="0" y="-0.9" textAnchor="middle" fontSize="2.2" className="fill-fg-muted" style={FONT}>
+            0
+          </text>
+          <text x={scaleLen} y="-0.9" textAnchor="middle" fontSize="2.2" className="fill-fg-muted" style={FONT}>
+            500 מ׳
+          </text>
+        </g>
       </g>
 
       {/* edge vignette for depth */}
-      <rect x="0" y="0" width={VB_W} height={VB_H} fill="url(#pl6-vignette)" pointerEvents="none" />
+      <rect x="0" y="0" width={VIEW_W} height={VIEW_H} fill="url(#pl6-vignette)" pointerEvents="none" />
     </svg>
   );
 }

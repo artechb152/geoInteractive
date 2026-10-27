@@ -24,8 +24,8 @@
  */
 import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
 import { MEASUREMENT_MODEL as M } from './measurementModel.data';
-import { ELLIPSOID_Z, N_Z_PER_M, SURVEY_SPAN, Z_PER_M, Z_SCALE, geoidZ, groundZ, stationWorld, undulationAt, type Pt, type Size, type Vec3 } from './measurementLayout';
-import type { StationId } from './measurementMission.data';
+import { ELLIPSOID_Z, N_Z_PER_M, STATION_IDS, SURVEY_SPAN, Z_PER_M, Z_SCALE, geoidZ, groundZ, stationWorld, undulationAt, type Pt, type Size, type Vec3 } from './measurementLayout';
+import { STATIONS, type StationId } from './measurementMission.data';
 
 export type LandView = { readonly az: number; readonly elev: number };
 
@@ -223,6 +223,81 @@ export function livePins(cam: LandCamera, size: Size, grid: HeightGrid | null, c
     return { ...projectWith(cam.matrix, p, size), hidden: grid && !clear ? hiddenBy(grid, p, cam.eye) : false };
   };
   return { A: pin('A'), B: pin('B'), C: pin('C') };
+}
+
+// ---------------------------------------------------------------- the close-up of H (the geoid view)
+
+export type Rect = { x: number; y: number; w: number; h: number };
+/**
+ * The close-up of the picked station's H on the see-through model: its box (px, at the stage's top
+ * corner), title row, the least padding round the station's heights inside it, the length under
+ * which H — or the ellipsoid crossing it — is too short to read (the section's close-up uses the
+ * same), and the most it enlarges.
+ */
+export const HEIGHT_LENS = { w: 168, h: 92, title: 20, pad: 10, below: 16, maxK: 8 } as const;
+/** A station pin over its ground point (px): half the width of its head, and its height above the point. */
+const PIN = { half: 21, up: 54 } as const;
+
+export type HeightLens = {
+  /** Times larger than the model, in both directions. */
+  k: number;
+  /** The close-up's box in the stage, and the part of it the enlarged model fills (under the title, inside the border). */
+  box: Rect;
+  view: Rect;
+  /** The stretch of the model it shows, framed round the station (stage px): `view` is it, k times larger. */
+  frame: Rect;
+  /** The station's ground point, and the geoid and the ellipsoid right under it (stage px). */
+  ground: Pt;
+  geoid: Pt;
+  ellipsoid: Pt;
+};
+
+const overlaps = (a: Rect, b: Rect, gap: number) => a.x < b.x + b.w + gap && b.x < a.x + a.w + gap && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+
+/**
+ * The geoid view's close-up of H, or null where the model shows it well enough. H is drawn from the
+ * geoid right under the station up to its ground point; where that is shorter than HEIGHT_LENS.below
+ * — or the ellipsoid, lying between the two (N < 0), crosses it closer than that to either end — it
+ * is unclear in the model which surface H starts from. The stretch round the station is then drawn
+ * again in a box at the stage's top corner on the station's side: the same camera cropped to a frame
+ * round the station, an exact whole number of times larger in both directions, so H, h and N keep
+ * their proportions. Null too where the frame leaves the stage, or the box would cover the frame or
+ * a station pin (from an angle the reader turned to) — the model then shows H as it is.
+ */
+export function heightLens(cam: LandCamera, size: Size, id: StationId, pins: Record<StationId, Pt>): HeightLens | null {
+  const L = HEIGHT_LENS;
+  const [x, y, z] = stationWorld(id);
+  const at = (zz: number) => projectWith(cam.matrix, [x, y, zz], size);
+  const ground = at(z);
+  const geoid = at(geoidZ(STATIONS[id].N));
+  const ellipsoid = at(ELLIPSOID_Z);
+  if (!ground.ahead || !geoid.ahead || !ellipsoid.ahead) return null;
+  const d = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+  const spans = [d(ground, geoid), ...(STATIONS[id].N < 0 ? [d(geoid, ellipsoid), d(ellipsoid, ground)] : [])];
+  if (Math.min(...spans) >= L.below) return null;
+
+  // the enlarged model fills the box under its title, a little under the border on every side
+  const vw = L.w - 4;
+  const vh = L.h - L.title - 3;
+  const xs = [ground.x, geoid.x, ellipsoid.x];
+  const ys = [ground.y, geoid.y, ellipsoid.y];
+  const k = Math.min(
+    L.maxK,
+    Math.floor((vh - 2 * L.pad) / Math.max(1, Math.max(...ys) - Math.min(...ys))),
+    Math.floor((vw - 2 * L.pad) / Math.max(1, Math.max(...xs) - Math.min(...xs))),
+  );
+  if (k < 2) return null;
+  const frame = { w: vw / k, h: vh / k, x: (Math.max(...xs) + Math.min(...xs)) / 2 - vw / k / 2, y: (Math.max(...ys) + Math.min(...ys)) / 2 - vh / k / 2 };
+  if (frame.x < 0 || frame.y < 0 || frame.x + frame.w > size.w || frame.y + frame.h > size.h) return null;
+
+  const heads = STATION_IDS.map((s) => ({ x: pins[s].x - PIN.half, y: pins[s].y - PIN.up, w: 2 * PIN.half, h: PIN.up }));
+  const corners = ground.x >= size.w / 2 ? [size.w - L.w, 0] : [0, size.w - L.w];
+  for (const bx of corners) {
+    const box = { x: bx, y: 0, w: L.w, h: L.h };
+    if (overlaps(box, frame, 6) || heads.some((h) => overlaps(box, h, 2))) continue;
+    return { k, box, view: { x: bx + 2, y: L.title + 1, w: vw, h: vh }, frame, ground, geoid, ellipsoid };
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- the ground

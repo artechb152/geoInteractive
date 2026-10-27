@@ -363,7 +363,6 @@ export function ReliefCoverIntroScene() {
           items={QUIZ_ITEMS}
           visuals={QUIZ_VISUALS}
           centerChoices
-          autoAdvance
           showScore={false}
           showPosition={false}
           showFinalScore={false}

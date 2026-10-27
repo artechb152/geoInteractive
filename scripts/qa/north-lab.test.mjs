@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TRUE_NORTH_ANGLE, GRID_NORTH_ANGLE, TARGET_TRUE_BEARING, DECLINATION_START, DECLINATION_MIN, DECLINATION_MAX,
-  normalize, northAngles, referenceAngle, azimuthFrom, bearings, clampDeclination, formatSigned, declinationText,
+  normalize, northAngles, referenceAngle, azimuthFrom, bearings, clampDeclination, formatSigned, declinationText, relationText,
   clockwiseSweep, arcPath, wedgePath, arcLabelBox, ARC_R, spreadRow, arrowLabels, insetLabels, insetAngles,
   LAB_W, LAB_H, LAB_MARGIN, LAB_A, LAB_B, B_RADIUS, POINT_R, ARROW_LEN, RING, RING_NUMBER_R, ARC_LABEL, INSET,
   INSET_GAIN, INSET_ORIGIN, INSET_ARROW_LEN, NOTE_POS,
@@ -179,7 +179,7 @@ test('measurement number: inside the face, off every line, for every choice and 
   assert.ok(ARC_LABEL.r - ARC_LABEL.w / 2 > 0, "number beyond the arc");
 });
 
-test('inset: enlarged ×4 angles keep side and order; labels print the source values', () => {
+test('inset: enlarged ×4 angles keep side and order; name-only labels sit in the inset, apart', () => {
   assert.equal(INSET_GAIN, 4);
   for (const d of STEPS) {
     const a = insetAngles(d);
@@ -188,7 +188,7 @@ test('inset: enlarged ×4 angles keep side and order; labels print the source va
     const labels = insetLabels(d);
     for (let i = 0; i < labels.length; i++) {
       const L = labels[i];
-      assert.equal(L.value, northAngles(d)[L.id], 'label shows the source value');
+      assert.equal(L.value, northAngles(d)[L.id], 'label keeps the source value (printed on the main map only)');
       assert.ok(inside(L.box, INSET, 4), `${L.id} @ ${d} inside inset`);
       assert.ok(L.box.y > INSET.y + 22, `${L.id} @ ${d} under the inset title`);
       for (let j = i + 1; j < labels.length; j++) assert.ok(!boxesOverlap(L.box, labels[j].box, 1), `inset ${L.id}/${labels[j].id} @ ${d}`);
@@ -196,5 +196,31 @@ test('inset: enlarged ×4 angles keep side and order; labels print the source va
     const tipY = Math.max(...labels.map((l) => l.tip.y));
     assert.ok(INSET_ORIGIN.y + 6 < INSET.y + INSET.h && tipY < INSET_ORIGIN.y, 'arrows inside');
     close(Math.hypot(labels[0].tip.x - INSET_ORIGIN.x, labels[0].tip.y - INSET_ORIGIN.y), INSET_ARROW_LEN, 1e-9);
+  }
+});
+
+test('relation line: names the side, agrees with the computed azimuths, never a blanket rule', () => {
+  assert.equal(relationText('true', -6), 'זה הבסיס להשוואה: הזוויות שעל החצים במפה נמדדות ממנו.');
+  assert.equal(relationText('true', 7), relationText('true', -6), 'true north does not follow the slider');
+  assert.equal(relationText('grid', -6), 'בדוגמה, צפון הרשת נוטה 2° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־2°.');
+  assert.equal(relationText('grid', 9), relationText('grid', -6), 'grid north does not follow the slider');
+  assert.equal(relationText('magnetic', -6), 'בדוגמה, הצפון המגנטי נוטה 6° מערבה מהצפון האמיתי, ולכן האזימוט גדול ב־6°.');
+  assert.equal(relationText('magnetic', 0), 'בדוגמה, הצפון המגנטי חופף לצפון האמיתי, ולכן האזימוט זהה.');
+  assert.equal(relationText('magnetic', 10), 'בדוגמה, הצפון המגנטי נוטה 10° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־10°.');
+  assert.equal(relationText('magnetic', -5.6), relationText('magnetic', -6), 'whole degrees, like the readouts');
+  for (const d of STEPS) {
+    for (const id of ['grid', 'magnetic']) {
+      const t = relationText(id, d);
+      const diff = bearings(d)[id] - bearings(d).true; // > 0: larger than the true azimuth
+      assert.ok(t.startsWith('בדוגמה, '), `${id} @ ${d}: marked as example data`);
+      assert.ok(!/תמיד|מוסיפים|מחסירים/.test(t), `${id} @ ${d}: no blanket rule`);
+      if (diff === 0) assert.match(t, /חופף.*זהה/);
+      else {
+        assert.ok(t.includes(`${Math.abs(diff)}°`), `${id} @ ${d}: the difference ${diff}° is named`);
+        assert.equal(t.includes('מערבה'), diff > 0, `${id} @ ${d}: west ↔ larger`);
+        assert.equal(t.includes('גדול'), diff > 0, `${id} @ ${d}: larger only when west`);
+        assert.equal(t.includes('קטן'), diff < 0, `${id} @ ${d}: smaller only when east`);
+      }
+    }
   }
 });

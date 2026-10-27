@@ -15,7 +15,10 @@
  * taught later in the lesson).
  *
  * Highlights are discrete states — a selection changes them once, with a short
- * fade; nothing loops.
+ * fade; nothing loops. Each state highlights only what its tip's text is about.
+ *
+ * `data-*` hooks (focus, halo, marker state, layers, walked lines, position)
+ * are read by scripts/qa/planning-tips.test.mjs.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion } from 'framer-motion';
@@ -170,9 +173,11 @@ function Callout({ at, children, tone = 'ink', dashed = false }: { at: Pt; child
 }
 
 /** Highlight ring around the feature a tip is about. Dashed = expected, not (yet) seen. */
-function Halo({ p, r, dashed = false }: { p: Pt; r: number; dashed?: boolean }) {
+function Halo({ p, r, dashed = false, name }: { p: Pt; r: number; dashed?: boolean; name: string }) {
   return (
     <circle
+      data-halo={name}
+      data-expected={dashed || undefined}
       cx={p.x}
       cy={p.y}
       r={r}
@@ -189,16 +194,21 @@ function Arrowhead({ at, az, fill = ORANGE_DEEP, s = 1 }: { at: Pt; az: number; 
   return <path d="M0 -1.35 L 1.05 0.85 L 0 0.35 L -1.05 0.85 Z" transform={`translate(${at.x} ${at.y}) rotate(${fx(az)}) scale(${s})`} fill={fill} />;
 }
 
-/** "קטע n · כ־… מ׳" — the leg tag (the route-story map's tag, with a leg number instead of a bearing). */
-function LegTag({ at, anchor, title, meters }: { at: Pt; anchor: Pt; title: string; meters: number }) {
+/**
+ * "קטע n · כ־… מ׳" — the leg tag (the route-story map's tag, with a leg number
+ * instead of a bearing). Sage = a distance that has been checked and matches.
+ */
+function LegTag({ at, anchor, title, meters, tone = 'orange' }: { at: Pt; anchor: Pt; title: string; meters: number; tone?: 'orange' | 'sage' }) {
+  const line = tone === 'sage' ? SAGE_DARK : ORANGE;
+  const ink = tone === 'sage' ? SAGE_DARK : ORANGE_DEEP;
   return (
-    <g>
-      <line x1={anchor.x} y1={anchor.y} x2={at.x} y2={at.y} stroke={ORANGE} strokeWidth={0.28} strokeDasharray="0.7 0.55" strokeLinecap="round" />
-      <circle cx={anchor.x} cy={anchor.y} r={0.55} fill={ORANGE} />
+    <g data-tone={tone}>
+      <line x1={anchor.x} y1={anchor.y} x2={at.x} y2={at.y} stroke={line} strokeWidth={0.28} strokeDasharray="0.7 0.55" strokeLinecap="round" />
+      <circle cx={anchor.x} cy={anchor.y} r={0.55} fill={line} />
       <g transform={`translate(${at.x} ${at.y})`}>
         <rect x={-6} y={-3.6} width={12} height={8} rx={1.9} fill="#566b46" opacity={0.12} transform="translate(0 0.45)" />
-        <rect x={-6} y={-4} width={12} height={8} rx={1.9} fill={PAPER} stroke={ORANGE} strokeWidth={0.32} />
-        <text y={-0.7} textAnchor="middle" fontSize={2.4} fontWeight={800} fill={ORANGE_DEEP} style={FONT}>
+        <rect x={-6} y={-4} width={12} height={8} rx={1.9} fill={PAPER} stroke={line} strokeWidth={0.32} />
+        <text y={-0.7} textAnchor="middle" fontSize={2.4} fontWeight={800} fill={ink} style={FONT}>
           {title}
         </text>
         <text y={2.6} textAnchor="middle" fontSize={2.3} fontWeight={600} fill={INK} style={FONT}>
@@ -231,7 +241,7 @@ function Marker({ p, kind, n, state }: { p: Pt; kind: 'start' | 'cp' | 'end'; n?
   }
   const endLabel = kind === 'start' ? 'נ.ה' : kind === 'end' ? 'נ.ס' : null;
   return (
-    <g>
+    <g data-marker={kind === 'cp' ? n : kind} data-state={state} data-x={p.x} data-y={p.y}>
       <ellipse cx={p.x} cy={fx(p.y + r + 0.55)} rx={r * 0.9} ry={r * 0.3} fill="#4A5240" opacity="0.14" />
       <circle cx={p.x} cy={p.y} r={r + 0.85} fill={PAPER} stroke={HAIR} strokeWidth="0.15" />
       <circle cx={p.x} cy={p.y} r={r} fill={fill} stroke={ring} strokeWidth={state === 'idle' ? 0.45 : 0.3} />
@@ -257,7 +267,7 @@ function Marker({ p, kind, n, state }: { p: Pt; kind: 'start' | 'cp' | 'end'; n?
 }
 
 /** Legend glyphs for the board under the map — drawn like the map's own marks. */
-export function TipsLegendGlyph({ kind }: { kind: 'route' | 'ahead' | 'walked' | 'checkpoint' | 'position' }) {
+export function TipsLegendGlyph({ kind }: { kind: 'route' | 'ahead' | 'walked' | 'checkpoint' | 'verified' | 'position' }) {
   return (
     <svg viewBox="0 0 20 12" className="h-3.5 w-6 shrink-0 overflow-visible" aria-hidden>
       {kind === 'route' && <line x1="1.5" y1="6" x2="18.5" y2="6" stroke={ORANGE} strokeWidth="1.8" strokeLinecap="round" />}
@@ -269,6 +279,12 @@ export function TipsLegendGlyph({ kind }: { kind: 'route' | 'ahead' | 'walked' |
           <text x="10" y="6" textAnchor="middle" dominantBaseline="central" fontSize="6" fontWeight={800} fill={SAGE_DARK} style={FONT}>
             1
           </text>
+        </g>
+      )}
+      {kind === 'verified' && (
+        <g>
+          <circle cx="10" cy="6" r="4.6" fill={SAGE} stroke={SAGE_DARK} strokeWidth="0.8" />
+          <path d="M7.9 6.1 L9.4 7.6 L12.2 4.6" fill="none" stroke="#FFFFFF" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </g>
       )}
       {kind === 'position' && (
@@ -319,7 +335,8 @@ export function NavTipsMap({ focus, ariaLabel }: { focus: MapFocus; ariaLabel: s
       if (nav === 'verify') return i <= 1 ? 'passed' : 'idle';
       if (nav === 'compare') return i <= 1 ? 'passed' : i === 2 ? 'active' : 'idle';
       if (nav === 'combine') return i <= 2 ? 'passed' : 'idle';
-      return i <= 2 ? 'passed' : i === 3 ? 'active' : i === 4 ? 'active' : 'idle';
+      // mismatch: the saddle is the last verified point; the road crossing is expected and missing
+      return i <= 2 ? 'passed' : i === 3 ? 'active' : 'idle';
     }
     if (focus === 'ends') return i === 0 || i === 4 ? 'active' : 'idle';
     if (focus === 'checkpoints') return i >= 1 && i <= 3 ? 'active' : 'idle';
@@ -340,6 +357,7 @@ export function NavTipsMap({ focus, ariaLabel }: { focus: MapFocus; ariaLabel: s
       style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
       role="img"
       aria-label={ariaLabel}
+      data-focus={focus}
     >
       <defs>
         <linearGradient id={`${id}-paper`} x1="0" y1="0" x2="0" y2="1">
@@ -428,7 +446,7 @@ export function NavTipsMap({ focus, ariaLabel }: { focus: MapFocus; ariaLabel: s
 
       {/* ——— Halos under the route (the features a tip is about) ——— */}
       <AnimatePresence mode="wait" initial={false}>
-        <motion.g key={'halo-' + focus} {...fade}>
+        <motion.g key={'halo-' + focus} data-layer="halos" {...fade}>
           <FocusHalos focus={focus} />
         </motion.g>
       </AnimatePresence>
@@ -443,23 +461,23 @@ export function NavTipsMap({ focus, ariaLabel }: { focus: MapFocus; ariaLabel: s
       {POINTS.slice(1).map((b, k) => {
         const a = POINTS[k];
         if (k < walked) {
-          return <line key={'leg' + k} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={SAGE_DARK} strokeWidth="0.85" strokeLinecap="round" opacity="0.8" />;
+          return <line key={'leg' + k} data-walked="leg" x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={SAGE_DARK} strokeWidth="0.85" strokeLinecap="round" opacity="0.8" />;
         }
         if (!nav) {
           return (
-            <line key={'leg' + k} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={ORANGE} strokeWidth={planStrong ? 1.05 : 0.7} strokeLinecap="round" opacity={planStrong ? 1 : 0.7} />
+            <line key={'leg' + k} data-planned="leg" x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={ORANGE} strokeWidth={planStrong ? 1.05 : 0.7} strokeLinecap="round" opacity={planStrong ? 1 : 0.7} />
           );
         }
         // navigate: the rest of the plan is still ahead — dashed, as in the route-story map
-        return <line key={'leg' + k} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={ORANGE} strokeWidth="0.55" strokeLinecap="round" strokeDasharray="1.3 1.1" opacity="0.7" />;
+        return <line key={'leg' + k} data-ahead="leg" x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={ORANGE} strokeWidth="0.55" strokeLinecap="round" strokeDasharray="1.3 1.1" opacity="0.7" />;
       })}
       {/* the part of a leg walked so far (compare) or walked off the plan (mismatch) */}
-      {nav === 'compare' && <line x1={P1.x} y1={P1.y} x2={POSITION.compare.x} y2={POSITION.compare.y} stroke={SAGE_DARK} strokeWidth="0.85" strokeLinecap="round" opacity="0.8" />}
-      {nav === 'mismatch' && <line x1={P2.x} y1={P2.y} x2={DRIFT_END.x} y2={DRIFT_END.y} stroke={SAGE_DARK} strokeWidth="0.85" strokeLinecap="round" opacity="0.8" />}
+      {nav === 'compare' && <line data-walked="part" x1={P1.x} y1={P1.y} x2={POSITION.compare.x} y2={POSITION.compare.y} stroke={SAGE_DARK} strokeWidth="0.85" strokeLinecap="round" opacity="0.8" />}
+      {nav === 'mismatch' && <line data-walked="drift" x1={P2.x} y1={P2.y} x2={DRIFT_END.x} y2={DRIFT_END.y} stroke={SAGE_DARK} strokeWidth="0.85" strokeLinecap="round" opacity="0.8" />}
 
       {/* ——— Overlays on the route (arrows, tags) ——— */}
       <AnimatePresence mode="wait" initial={false}>
-        <motion.g key={'over-' + focus} {...fade}>
+        <motion.g key={'over-' + focus} data-layer="marks" {...fade}>
           <FocusRouteMarks focus={focus} />
         </motion.g>
       </AnimatePresence>
@@ -470,17 +488,21 @@ export function NavTipsMap({ focus, ariaLabel }: { focus: MapFocus; ariaLabel: s
       ))}
 
       {/* ——— Current position (navigate screen only) ——— */}
-      {nav && <UnitPuck x={px} y={py} r={2} />}
+      {nav && (
+        <g data-position={nav} data-x={POSITION[nav].x} data-y={POSITION[nav].y}>
+          <UnitPuck x={px} y={py} r={2} />
+        </g>
+      )}
 
       {/* ——— Labels on top ——— */}
       <AnimatePresence mode="wait" initial={false}>
-        <motion.g key={'labels-' + focus} {...fade}>
+        <motion.g key={'labels-' + focus} data-layer="labels" {...fade}>
           <FocusLabels focus={focus} />
         </motion.g>
       </AnimatePresence>
 
       {/* ——— Map furniture: north arrow + scale bar ——— */}
-      <g transform="translate(93.5 9)" opacity="0.75">
+      <g transform="translate(93.5 9)" opacity="0.85">
         <circle r="3.4" fill={PAPER} opacity="0.8" />
         <circle r="3.4" fill="none" className="stroke-border-strong" strokeWidth="0.2" />
         <circle r="2.6" fill="none" className="stroke-border-strong" strokeWidth="0.12" />
@@ -494,18 +516,18 @@ export function NavTipsMap({ focus, ariaLabel }: { focus: MapFocus; ariaLabel: s
         ))}
         <path d="M0 -2.3 L 0.7 0 L 0 0.5 L -0.7 0 Z" className="fill-accent" />
         <path d="M0 2.3 L 0.7 0 L 0 -0.5 L -0.7 0 Z" fill="#9aa1a8" />
-        <text x="0" y="-3.85" textAnchor="middle" fontSize="1.9" fontWeight={700} className="fill-brand-dark" style={FONT}>
+        <text x="0" y="-3.85" textAnchor="middle" fontSize="2.2" fontWeight={700} className="fill-brand-dark" style={FONT}>
           צ
         </text>
       </g>
-      <g transform={`translate(${fx(86 - 500 / M_PER_UNIT)} 7.4)`} opacity="0.75">
+      <g transform={`translate(${fx(86 - 500 / M_PER_UNIT)} 7.4)`} opacity="0.85">
         <rect x="0" y="0" width={fx(500 / M_PER_UNIT)} height="0.9" fill="#FFFFFF" className="stroke-border-strong" strokeWidth="0.12" />
         <rect x="0" y="0" width={fx(500 / M_PER_UNIT / 4)} height="0.9" className="fill-terrain-ridge" />
         <rect x={fx(500 / M_PER_UNIT / 2)} y="0" width={fx(500 / M_PER_UNIT / 4)} height="0.9" className="fill-terrain-ridge" />
-        <text x="0" y="-0.8" textAnchor="middle" fontSize="1.8" className="fill-fg-dim" style={FONT}>
+        <text x="0" y="-0.8" textAnchor="middle" fontSize="2.2" className="fill-fg-dim" style={FONT}>
           0
         </text>
-        <text x={fx(500 / M_PER_UNIT)} y="-0.8" textAnchor="middle" fontSize="1.8" className="fill-fg-dim" style={FONT}>
+        <text x={fx(500 / M_PER_UNIT)} y="-0.8" textAnchor="middle" fontSize="2.2" className="fill-fg-dim" style={FONT}>
           500 מ׳
         </text>
       </g>
@@ -521,44 +543,40 @@ function FocusHalos({ focus }: { focus: MapFocus }) {
     case 'ends':
       return (
         <>
-          <Halo p={{ x: 87.6, y: 59 }} r={6.2} />
-          <Halo p={{ x: 13, y: 21.4 }} r={8.2} />
+          <Halo name="start" p={{ x: 87.6, y: 59 }} r={6.2} />
+          <Halo name="end" p={{ x: 13, y: 21.4 }} r={8.2} />
         </>
       );
     case 'route':
       return (
         <>
-          <Halo p={SUMMIT_N} r={5.6} />
-          <Halo p={P2} r={4.4} />
+          <Halo name="summit-n" p={SUMMIT_N} r={5.6} />
+          <Halo name="cp2" p={P2} r={4.4} />
         </>
       );
     case 'checkpoints':
       return (
         <>
           {[P1, P2, P3].map((p, i) => (
-            <Halo key={i} p={p} r={4.4} />
+            <Halo key={i} name={`cp${i + 1}`} p={p} r={4.4} />
           ))}
         </>
       );
     case 'verify':
-      return <Halo p={P1} r={4.6} />;
+      return <Halo name="cp1" p={P1} r={4.6} />;
     case 'compare':
       return (
         <>
-          <Halo p={SUMMIT_N} r={5} />
-          <Halo p={SUMMIT_S} r={5} />
-          <Halo p={P2} r={4.2} dashed />
+          <Halo name="summit-n" p={SUMMIT_N} r={5} />
+          <Halo name="summit-s" p={SUMMIT_S} r={5} />
+          <Halo name="cp2" p={P2} r={4.2} dashed />
         </>
       );
     case 'combine':
-      return <Halo p={P2} r={4.6} />;
+      return <Halo name="cp2" p={P2} r={4.6} />;
     case 'mismatch':
-      return (
-        <>
-          <Halo p={P3} r={4.6} dashed />
-          <Halo p={{ x: 13, y: 21.4 }} r={8.2} />
-        </>
-      );
+      // only the mismatch: the road crossing that was expected and has not appeared
+      return <Halo name="cp3" p={P3} r={4.6} dashed />;
     default:
       return null;
   }
@@ -611,7 +629,7 @@ function FocusRouteMarks({ focus }: { focus: MapFocus }) {
       return (
         <>
           <Arrowhead at={lerp(P1, P2, 0.66)} az={bearing(P1, P2)} fill={SAGE_DARK} s={1.2} />
-          <LegTag at={LEG_TAG_AT[1]} anchor={lerp(P1, P2, LEG_TAG_ANCHOR[1])} title="מרחק" meters={TIP_LEGS[1].m} />
+          <LegTag at={LEG_TAG_AT[1]} anchor={lerp(P1, P2, LEG_TAG_ANCHOR[1])} title="מרחק" meters={TIP_LEGS[1].m} tone="sage" />
         </>
       );
     default:
@@ -683,9 +701,6 @@ function FocusLabels({ focus }: { focus: MapFocus }) {
             צפוי: חציית דרך עפר
           </Callout>
           <Callout at={{ x: 40.5, y: 20.6 }}>{`כ־${TIP_LEGS[2].m} מ׳: דרך העפר לא הופיעה`}</Callout>
-          <Callout at={{ x: 18.5, y: 9.4 }} tone="sage">
-            מאמתים את ההגעה ליעד
-          </Callout>
         </>
       );
     default:

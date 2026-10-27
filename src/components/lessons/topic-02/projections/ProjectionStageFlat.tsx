@@ -10,7 +10,8 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { segmentHitsEllipsoid } from '../geo-globe/geoCoords';
 import { sampleEarth, type EarthPixels } from './earthRaster';
 import {
-  CAM_FOV, CONTACT_LAT, DEMO, baseView, fitCamera, framePoints, gridLines, outlineOf, parallelLine, project, sheetPoint, viewBasis, type Method, type Vec3, type XY,
+  CAM_FOV, CIRCLES, CIRCLE_R, CONTACT_LAT, baseView, circleOnMap, circlesOn, fitCamera, framePoints, gridLines, outlineOf, parallelLine, sheetPoint, smallCircle, viewBasis,
+  type Method, type Vec3, type XY,
 } from './projectionsModel';
 import type { StageView } from './ProjectionStage3D';
 
@@ -121,7 +122,7 @@ export const ProjectionStageFlat = memo(function ProjectionStageFlat({ view, pix
     const c = toPx([0, 0, 0]);
     const D = Math.hypot(cam[0], cam[1], cam[2]);
     const R = (H / 2) * (Math.tan(Math.asin(1 / D)) / tanV);
-    // the globe's own lines: graticule, sample parallel (front side only)
+    // the globe's own lines: graticule, equal circles (front side only)
     const gGrid: Vec3[][] = [];
     for (let lat = -75; lat <= 75; lat += 15) gGrid.push(Array.from({ length: 97 }, (_, k) => onGlobe(lat, -180 + (360 * k) / 96)));
     for (let lon = -180; lon < 180; lon += 15) gGrid.push(Array.from({ length: 49 }, (_, k) => onGlobe(-84 + (168 * k) / 48, lon)));
@@ -130,10 +131,9 @@ export const ProjectionStageFlat = memo(function ProjectionStageFlat({ view, pix
       c,
       R,
       globeGrid: front(gGrid),
-      globeSel: view.demo ? front([Array.from({ length: 145 }, (_, k) => onGlobe(DEMO.lat, -180 + (360 * k) / 144))]) : '',
+      globeCircles: view.demo ? front(CIRCLES.map((cc) => smallCircle(cc.lat, cc.lon, CIRCLE_R).map((q) => onGlobe(q.lat, q.lon)))) : '',
       globeContact: m && m !== 'az' ? front([Array.from({ length: 145 }, (_, k) => onGlobe(CONTACT_LAT[m], -180 + (360 * k) / 144))]) : '',
-      globePoint: view.demo && !segmentHitsEllipsoid(cam, onGlobe(DEMO.lat, DEMO.lon).map((v) => v * 1.0005) as Vec3, 1e-4) ? toPx(onGlobe(DEMO.lat, DEMO.lon)) : null,
-      sheet: null as null | { grid: { seen: string; hidden: string }; outline: { seen: string; hidden: string }; sel: string; contact: string; point: XY | null; pole: XY | null },
+      sheet: null as null | { grid: { seen: string; hidden: string }; outline: { seen: string; hidden: string }; circles: string; contact: string; pole: XY | null },
     };
     if (m) {
       const g = gridLines(m);
@@ -141,19 +141,17 @@ export const ProjectionStageFlat = memo(function ProjectionStageFlat({ view, pix
         const r = ls.map((l) => runs(onSheet(l)));
         return { seen: path(r.flatMap((x) => x.seen)), hidden: path(r.flatMap((x) => x.hidden)) };
       };
-      const pt = onSheet([project(m, DEMO.lat, DEMO.lon)])[0];
       out.sheet = {
         grid: split([...g.parallels, ...g.meridians]),
         outline: split([outlineOf(m)]),
-        sel: view.demo ? path(runs(onSheet(parallelLine(m, DEMO.lat))).seen) : '',
+        // as in 3-D: the sheet's own circles once it is well open
+        circles: view.demo && circlesOn(view.p) >= 0.5 ? path(CIRCLES.flatMap((cc) => runs(onSheet(circleOnMap(m, cc))).seen)) : '',
         contact: m === 'az' ? '' : path(runs(onSheet(parallelLine(m, CONTACT_LAT[m]))).seen),
-        // as in 3-D: the sheet's copy of the point once the sheet is (nearly) the flat map
-        point: view.demo && (m === 'az' || view.p >= 0.8) && !segmentHitsEllipsoid(cam, pt, 1e-4) ? toPx(pt) : null,
         pole: m === 'az' ? toPx(onSheet([[0, 0]])[0]) : null,
       };
     }
     return out;
-  }, [size, m, e, b.el, b.az, view.demo]);
+  }, [size, m, e, b.el, b.az, view.demo, view.p]);
 
   // the globe image for this view, scaled to the projected body
   useEffect(() => {
@@ -186,16 +184,14 @@ export const ProjectionStageFlat = memo(function ProjectionStageFlat({ view, pix
           <svg aria-hidden className="absolute inset-0 h-full w-full overflow-visible">
             <path d={scene.globeGrid} fill="none" stroke="#FFFFFF" strokeOpacity={0.4} strokeWidth={1} />
             {scene.globeContact && <path d={scene.globeContact} fill="none" className="stroke-brand-dark" strokeWidth={2.5} strokeDasharray="7 5" />}
-            {scene.globeSel && <path d={scene.globeSel} fill="none" className="stroke-accent" strokeWidth={2.25} />}
-            {scene.globePoint && <circle cx={scene.globePoint[0]} cy={scene.globePoint[1]} r={5.5} className="fill-accent stroke-white" strokeWidth={2.25} />}
+            {scene.globeCircles && <path d={scene.globeCircles} fill="none" className="stroke-accent" strokeWidth={2.25} />}
             {scene.sheet && (
               <g fill="none">
                 <path d={scene.sheet.grid.seen} className="stroke-fg" strokeOpacity={0.45} strokeWidth={1} />
                 <path d={scene.sheet.outline.seen} className="stroke-fg" strokeOpacity={0.7} strokeWidth={1.5} />
                 {scene.sheet.contact && <path d={scene.sheet.contact} className="stroke-brand-dark" strokeWidth={2.5} strokeDasharray="7 5" />}
-                {scene.sheet.sel && <path d={scene.sheet.sel} className="stroke-accent" strokeWidth={2.25} />}
+                {scene.sheet.circles && <path d={scene.sheet.circles} className="stroke-accent" strokeWidth={2.25} />}
                 {scene.sheet.pole && <circle cx={scene.sheet.pole[0]} cy={scene.sheet.pole[1]} r={4.5} className="fill-brand-dark stroke-white" strokeWidth={2} />}
-                {scene.sheet.point && <circle cx={scene.sheet.point[0]} cy={scene.sheet.point[1]} r={5.5} className="fill-accent stroke-white" strokeWidth={2.25} />}
               </g>
             )}
           </svg>

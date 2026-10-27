@@ -1,0 +1,77 @@
+{
+  "report": {
+    "1440x1122-tab1": {
+      "card": {
+        "top": 220,
+        "bottom": 940,
+        "left": 64,
+        "right": 1116
+      },
+      "cardHeightRef": 920,
+      "svg": {
+        "top": 319,
+        "bottom": 914,
+        "left": 90,
+        "right": 716
+      },
+      "innerHeight": 1122,
+      "hScroll": 0,
+      "scale": 0.7827,
+      "overlaps": [],
+      "clipped": [],
+      "escaped": 0,
+      "smallestTextPx": 11,
+      "selected": "גבעה מתונהקווים מרווחים",
+      "svgLabel": "גבעה מתונה — מפת קווי גובה וחתך לאורך A–B"
+    },
+    "1440x1122-tab2": {
+      "card": {
+        "top": 220,
+        "bottom": 940,
+        "left": 64,
+        "right": 1116
+      },
+      "cardHeightRef": 920,
+      "svg": {
+        "top": 319,
+        "bottom": 914,
+        "left": 90,
+        "right": 716
+      },
+      "innerHeight": 1122,
+      "hScroll": 0,
+      "scale": 0.7827,
+      "overlaps": [],
+      "clipped": [],
+      "escaped": 0,
+      "smallestTextPx": 11,
+      "selected": "הר תלולקווים צפופים",
+      "svgLabel": "הר תלול — מפת קווי גובה וחתך לאורך A–B"
+    },
+    "1440x1122-tab3": {
+      "card": {
+        "top": 220,
+        "bottom": 940,
+        "left": 64,
+        "right": 1116
+      },
+      "cardHeightRef": 920,
+      "svg": {
+        "top": 319,
+        "bottom": 914,
+        "left": 90,
+        "right": 716
+      },
+      "innerHeight": 1122,
+      "hScroll": 0,
+      "scale": 0.7827,
+      "overlaps": [],
+      "clipped": [],
+      "escaped": 0,
+      "smallestTextPx": 11,
+      "selected": "מצוקשינוי גובה חד",
+      "svgLabel": "מצוק — מפת קווי גובה וחתך לאורך A–B"
+    }
+  },
+  "failures": []
+}

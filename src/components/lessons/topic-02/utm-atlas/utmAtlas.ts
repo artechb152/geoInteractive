@@ -94,12 +94,25 @@ export function zoneRangeAt(zone: number, lat: number): { w: number; e: number }
   return b ? { w: b.w, e: b.e } : null;
 }
 
-/** Outline polygon [lon, lat][] of a zone over its whole coverage (stepped where an exception applies). */
-export function zoneOutline(zone: number): [number, number][] {
-  const bands = zoneBands(zone);
+const outlineOf = (bands: Band[]): [number, number][] => {
   const west: [number, number][] = bands.flatMap((b) => [[b.w, b.s] as [number, number], [b.w, b.n] as [number, number]]);
   const east: [number, number][] = [...bands].reverse().flatMap((b) => [[b.e, b.n] as [number, number], [b.e, b.s] as [number, number]]);
   return [...west, ...east];
+};
+
+/** Outline polygon [lon, lat][] of a zone over its whole coverage (stepped where an exception applies). */
+export const zoneOutline = (zone: number) => outlineOf(zoneBands(zone));
+
+/** Outline of a zone on one side of the equator — the part a hemisphere letter names ("54N");
+    the whole zone without a hemisphere. */
+export function cellOutline(zone: number, hemisphere: Hemisphere | null): [number, number][] {
+  if (!hemisphere) return zoneOutline(zone);
+  const bands = zoneBands(zone).flatMap((b) => {
+    const s = hemisphere === 'N' ? Math.max(b.s, 0) : b.s;
+    const n = hemisphere === 'S' ? Math.min(b.n, 0) : b.n;
+    return s < n ? [{ ...b, s, n }] : [];
+  });
+  return outlineOf(bands);
 }
 
 export type Segment = [[number, number], [number, number]];
@@ -175,6 +188,11 @@ export function readUtm(p: LatLon): UtmReading {
     range: zoneRangeAt(zone, p.lat)!,
     exception: exceptionAt({ lat: p.lat, lon }),
   };
+}
+
+/** Practice: what a click on the map chooses — the zone at that place and its side of the equator. */
+export function cellAt(p: LatLon): { zone: number; hemisphere: Hemisphere } {
+  return { zone: utmZoneOf({ lat: p.lat, lon: normLon(p.lon) }), hemisphere: hemisphereOf(p.lat) };
 }
 
 /** The demo point carried into another zone: same latitude, same offset from the central

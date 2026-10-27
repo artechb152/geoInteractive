@@ -2574,6 +2574,8 @@ node scripts/qa/gate.mjs build-worktree --cwd "$WT" -- npx next build; echo "bui
 node scripts/qa/gate.mjs tsc-worktree --cwd "$WT" -- npx tsc --noEmit -p tsconfig.json; echo "worktree tsc exit $?"
 git worktree remove --force "$WT"; git worktree prune
 ```
+> **Later note (2026-10-27):** do not reuse this block. It force-removes the worktree while the `node_modules` junction is still inside it. The procedure was replaced after a cleanup incident; use `scripts/qa-worktree.ps1` as described in `docs/dev-environment.md`.
+
 Expected:
 - `build exit 0`, and `qa-output/gates/build-worktree.log` lists the static export, including `/lessons/topic-02`.
 - `worktree tsc exit 0`.

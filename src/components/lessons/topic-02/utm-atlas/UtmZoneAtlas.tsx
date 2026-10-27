@@ -13,7 +13,18 @@
    One point drives everything (utmAtlas.ts): both maps, the zone, the hemisphere, E/N and
    the explanation are all derived from it, and switching views keeps it. Practice ("מצאו את
    גריניץ׳", then three new points) runs in the same card on its own state, so going back to
-   the exploration finds the point where it was. */
+   the exploration finds the point where it was.
+
+   Practice, map pass 2026-10-26: the map is the tool. The learner finds the point and clicks
+   its zone on either map (or moves the choice with the arrows on the world map); the click's
+   side of the equator is the hemisphere, so a choice is a cell — zone 54 north of the
+   equator is "54N". Both maps keep what reading needs: zone numbers and boundary longitudes
+   in the enlargement, the equator and which side is N / S. The choice is drawn in the pick
+   tone (dark), never a verdict; a check marks the checked choice ✓ / ✕ in the card, hints
+   grow per wrong part and point at places on the map (1: what to look at, 2: the marked
+   boundaries or side); after two failed checks the learner may ask for the answer. A part
+   checked right is locked; the answer is drawn in the accent tone only once verified or shown.
+   The feedback sits under the enlargement, so the maps never move while the learner works. */
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useReducedMotion } from 'framer-motion';
@@ -23,15 +34,15 @@ import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import { L } from '../Ltr';
 import { fromUtm } from '../reference-systems/utm';
-import { AtlasMap, type Chip, type Marks, type TopLabel } from './AtlasMap';
-import { BODY, Cell, Changing, Feedback, HEADING, HEMI_ITEMS, LABEL, Segmented, VALUE, ZoneRow, ZoneStepper } from './atlasControls';
+import { AtlasMap, type Cell as MapCell, type Chip, type Marks, type TopLabel } from './AtlasMap';
+import { BODY, Cell, Changing, Feedback, HEADING, Segmented, VALUE, VerdictMark, ZoneStepper } from './atlasControls';
 import {
   FRAME_ASPECT, WORLD_VIEW, fracX, fracY, gridStep, latForN, lonForE, readingLines, regionView, scaleBarKm, viewBottom, viewTop, zoneGrid, zoneWindow,
   KM_PER_DEG, type View,
 } from './atlasGeometry';
 import { useBasemap } from './useBasemap';
 import {
-  DATUM, GREENWICH_ZONE, HEMI_NAME, NORTH_LIMIT, OPENING, PRESETS, SOUTH_LIMIT, TRANSFER, centralMeridian, clampLat, fmtLat, fmtLon,
+  DATUM, GREENWICH_ZONE, HEMI_NAME, NORTH_LIMIT, OPENING, PRESETS, SOUTH_LIMIT, TRANSFER, cellAt, centralMeridian, clampLat, fmtLat, fmtLon,
   inCoverage, moveToZone, normLon, readUtm, regularZone, utmZoneOf, wrapZone, zoneBoundarySegments, zoneEast,
   zoneRangeAt, zoneStep, zoneWest, type Hemisphere, type LatLon, type Place, type UtmReading,
 } from './utmAtlas';
@@ -47,7 +58,35 @@ type Event =
   | { kind: 'outside'; lat: number }
   | { kind: 'view'; to: InsetKind };
 
-type Check = { zone: number; hemi: Hemisphere | null; zoneOk: boolean; hemiOk: boolean };
+type Attempt = { zone: number; hemi: Hemisphere | null; zoneOk: boolean; hemiOk: boolean };
+/** One practice task. `pick` / `hemiPick` are the learner's current choice; `last` is the last
+    check, which the feedback and the map marks follow; a part checked right is done (locked);
+    `zoneMiss` / `hemiMiss` count wrong checks per part and set the hint level. */
+type Task = {
+  pick: number | null;
+  hemiPick: Hemisphere | null;
+  last: Attempt | null;
+  zoneMiss: number;
+  hemiMiss: number;
+  fails: number;
+  zoneDone: boolean;
+  hemiDone: boolean;
+  shown: boolean;
+};
+type Result = 'solved' | 'shown';
+const freshTask = (greenwich: boolean): Task => ({
+  pick: null,
+  hemiPick: null,
+  last: null,
+  zoneMiss: 0,
+  hemiMiss: 0,
+  fails: 0,
+  zoneDone: false,
+  hemiDone: greenwich,
+  shown: false,
+});
+/** Failed checks before "הצגת התשובה" is offered. */
+const SHOW_AFTER = 2;
 
 const RAD = Math.PI / 180;
 /** Keeps a unit on the line of its number ("500000 מ׳"). */
@@ -143,13 +182,11 @@ export function UtmZoneAtlas() {
 
   /* practice state */
   const [mode, setMode] = useState<Mode>('explore');
-  const [pick, setPick] = useState<number | null>(null);
-  const [hemiPick, setHemiPick] = useState<Hemisphere | null>(null);
-  const [check, setCheck] = useState<Check | null>(null);
+  const [task, setTask] = useState<Task>(() => freshTask(true));
   const [item, setItem] = useState(0);
-  const [practiceRow, setPracticeRow] = useState(GREENWICH_ZONE);
-  /** The practice zone row stays put while the chosen zone is on it; it pages only when it must. */
-  const follow = (z: number) => setPracticeRow((c) => (Math.abs(zoneStep(c, z)) <= 2 ? c : z));
+  const [results, setResults] = useState<Result[]>([]);
+  /** Practice: the cell a click would choose, under the mouse. */
+  const [hover, setHover] = useState<MapCell | null>(null);
 
   const worldRef = useRef<HTMLDivElement>(null);
   const insetRef = useRef<HTMLDivElement>(null);
@@ -161,20 +198,22 @@ export function UtmZoneAtlas() {
 
   const target = mode === 'transfer' || mode === 'done' ? TRANSFER[Math.min(item, TRANSFER.length - 1)] : null;
   const targetReading = useMemo(() => (target ? readUtm(target) : null), [target]);
-  const revealed = mode === 'done' || (mode === 'transfer' && Boolean(check?.zoneOk && check?.hemiOk));
+  /** What the current task asks for (Greenwich has no hemisphere part). */
+  const answer = mode === 'greenwich' ? { zone: GREENWICH_ZONE, hemi: null } : targetReading ? { zone: targetReading.zone, hemi: targetReading.hemisphere } : null;
+  const solved = task.zoneDone && task.hemiDone;
+  /** The answer may be drawn: verified by a check, shown on request, or the practice is over. */
+  const over = mode === 'done' || (mode !== 'explore' && (solved || task.shown));
   /** The metres view: the enlargement and its grid lead, the world map is the small locator. */
   const gridMode = mode === 'explore' && insetKind === 'grid';
   const worldLeads = !gridMode;
 
   /* ── the enlargement's window per mode ── */
+  /* In practice the window never follows a choice: it frames Greenwich, or the new point, and stays. */
   const insetTarget: View = useMemo(() => {
     if (mode === 'explore') return exploreView.view;
-    if (mode === 'greenwich') {
-      const z = check ? check.zone : pick;
-      return z ? zoneWindow({ w: zoneWest(z), e: zoneEast(z) }, GREENWICH_LAT, 'zones') : regionView(0, GREENWICH_LAT, 21);
-    }
+    if (mode === 'greenwich') return regionView(0, GREENWICH_LAT, 21);
     return regionView(target!.lon, target!.lat, 21);
-  }, [mode, exploreView, pick, check, target]);
+  }, [mode, exploreView, target]);
   const inset = useTweenedView(insetTarget, reduce);
 
   /* ── exploration actions ── */
@@ -184,14 +223,16 @@ export function UtmZoneAtlas() {
 
   /** One short announcement per settled change: held arrow keys or a burst of clicks say it once. */
   const sayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const say = (r: UtmReading) => {
+  const sayLater = (text: string) => {
     if (sayTimer.current) clearTimeout(sayTimer.current);
-    const text =
-      insetKind === 'grid'
-        ? `מזרח ${r.eText}, צפון ${r.nText} מטרים, בפלח ${r.zone} ${HEMI_NAME[r.hemisphere]}.`
-        : `פלח ${r.zone}, חצי הכדור ה${HEMI_NAME[r.hemisphere]}.`;
     sayTimer.current = setTimeout(() => setAnnounce(text), 500);
   };
+  const say = (r: UtmReading) =>
+    sayLater(
+      insetKind === 'grid'
+        ? `מזרח ${r.eText}, צפון ${r.nText} מטרים, בפלח ${r.zone} ${HEMI_NAME[r.hemisphere]}.`
+        : `פלח ${r.zone}, חצי הכדור ה${HEMI_NAME[r.hemisphere]}.`,
+    );
   useEffect(() => () => void (sayTimer.current && clearTimeout(sayTimer.current)), []);
 
   const placeAt = (p: LatLon, phase: 'start' | 'move' | 'end', source: 'world' | 'inset', onPin: boolean) => {
@@ -272,43 +313,100 @@ export function UtmZoneAtlas() {
   };
 
   /* ── practice actions ── */
+  /* The choice is made on the map: a click (or the arrows) chooses a zone and, for a point, the
+     side of the equator. It is the learner's choice only — nothing says whether it is right. */
   const startGreenwich = () => {
     setMode('greenwich');
-    setPick(null);
-    setHemiPick(null);
-    setCheck(null);
-    setPracticeRow(GREENWICH_ZONE);
+    setTask(freshTask(true));
+    setResults([]);
+    setHover(null);
     focusTitle();
   };
   const startTransfer = (i = 0) => {
     setMode('transfer');
     setItem(i);
-    setPick(null);
-    setHemiPick(null);
-    setCheck(null);
-    setPracticeRow(GREENWICH_ZONE);
+    setTask(freshTask(false));
+    setHover(null);
     focusTitle();
   };
   const backToExplore = () => {
     setMode('explore');
-    setCheck(null);
+    setHover(null);
     focusTitle();
   };
-  const choose = (z: number) => {
-    if (revealed || (mode === 'greenwich' && check?.zoneOk)) return;
-    setPick(z);
-    setCheck(null);
-    follow(z);
+  /** What choosing a cell gives: a part already checked right stays as it is; Greenwich has no hemisphere. */
+  const chosenCell = (zone: number | null, hemisphere: Hemisphere | null) => ({
+    zone: task.zoneDone ? task.pick : zone,
+    hemisphere: mode === 'greenwich' ? null : task.hemiDone ? task.hemiPick : hemisphere,
+  });
+  const choose = (zone: number | null, hemisphere: Hemisphere | null) => {
+    if (over) return;
+    const c = chosenCell(zone, hemisphere);
+    if (c.zone === task.pick && c.hemisphere === task.hemiPick) return;
+    setTask((t) => ({ ...t, pick: c.zone, hemiPick: c.hemisphere }));
+    // a screen reader hears the choice and the strip's longitudes — what the eye reads above the enlargement
+    const r = c.zone != null ? zoneRangeAt(c.zone, insetTarget.lat0) : null;
+    const parts: string[] = [];
+    if (c.zone != null) parts.push(`פלח ${c.zone}${r ? `, בין ${fmtLon(r.w)} ל־${fmtLon(r.e)}` : ''}`);
+    if (c.hemisphere) parts.push(`חצי הכדור ה${HEMI_NAME[c.hemisphere]}`);
+    sayLater(`בחרתם: ${parts.join(', ')}.`);
   };
-  const chooseHemi = (h: Hemisphere) => {
-    if (revealed) return;
-    setHemiPick(h);
-    setCheck(null);
+  const pickAt = (p: LatLon, phase: 'start' | 'move' | 'end') => {
+    if (phase === 'end' || !inCoverage(p.lat)) return;
+    const c = cellAt(p);
+    choose(c.zone, c.hemisphere);
   };
+  const hoverAt = (p: LatLon | null) => {
+    let next: MapCell | null = null;
+    if (p && inCoverage(p.lat) && !over) {
+      const at = cellAt(p);
+      const c = chosenCell(at.zone, at.hemisphere);
+      if (c.zone != null) next = { zone: c.zone, hemisphere: c.hemisphere };
+    }
+    setHover((h) => (h?.zone === next?.zone && h?.hemisphere === next?.hemisphere ? h : next));
+  };
+  /** The arrows on the world map: ← / → the zone to the west / east (map order), ↑ / ↓ the side of the equator. */
+  const pickKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const dz = ({ ArrowLeft: -1, ArrowRight: 1 } as Record<string, number>)[e.key];
+    const h = ({ ArrowUp: 'N', ArrowDown: 'S' } as Record<string, Hemisphere>)[e.key];
+    if (!dz && !h) return;
+    e.preventDefault();
+    if (over) return;
+    if (dz) {
+      if (task.zoneDone) return sayLater(`הפלח כבר נכון.${mode === 'transfer' ? ' בחרו את חצי הכדור: חץ למעלה או למטה.' : ''}`);
+      // nothing chosen yet: start at the enlargement's west (→) or east (←) edge, not at the point
+      const edge = insetTarget.lon0 + (dz > 0 ? -1 : 1) * (insetTarget.w / 2 - 0.01);
+      choose(task.pick == null ? utmZoneOf({ lat: insetTarget.lat0, lon: normLon(edge) }) : wrapZone(task.pick + dz), task.hemiPick);
+    } else if (mode === 'transfer') {
+      if (task.hemiDone) return sayLater('חצי הכדור כבר נכון. בחרו פלח בחץ ימינה או שמאלה.');
+      choose(task.pick, h);
+    }
+  };
+  const record = (r: Result) =>
+    setResults((rs) => {
+      const next = [...rs];
+      next[mode === 'greenwich' ? 0 : item + 1] = r;
+      return next;
+    });
   const runCheck = () => {
-    if (pick == null) return;
-    if (mode === 'greenwich') setCheck({ zone: pick, hemi: null, zoneOk: pick === GREENWICH_ZONE, hemiOk: true });
-    else if (targetReading && hemiPick) setCheck({ zone: pick, hemi: hemiPick, zoneOk: pick === targetReading.zone, hemiOk: hemiPick === targetReading.hemisphere });
+    if (!answer || task.pick == null || (answer.hemi && !task.hemiPick)) return;
+    const zoneOk = task.pick === answer.zone;
+    const hemiOk = !answer.hemi || task.hemiPick === answer.hemi;
+    setTask((t) => ({
+      ...t,
+      last: { zone: t.pick!, hemi: t.hemiPick, zoneOk, hemiOk },
+      zoneMiss: t.zoneMiss + (zoneOk ? 0 : 1),
+      hemiMiss: t.hemiMiss + (hemiOk ? 0 : 1),
+      fails: t.fails + (zoneOk && hemiOk ? 0 : 1),
+      zoneDone: t.zoneDone || zoneOk,
+      hemiDone: t.hemiDone || hemiOk,
+    }));
+    if (zoneOk && hemiOk) record('solved');
+  };
+  const showAnswer = () => {
+    setTask((t) => ({ ...t, shown: true }));
+    record('shown');
   };
   const nextItem = () => {
     if (item + 1 < TRANSFER.length) startTransfer(item + 1);
@@ -316,10 +414,6 @@ export function UtmZoneAtlas() {
       setMode('done');
       focusTitle();
     }
-  };
-  const practicePointer = (p: LatLon, phase: 'start' | 'move' | 'end') => {
-    if (phase !== 'start') return;
-    choose(regularZone(p.lon));
   };
 
   /* ── what each map shows ── */
@@ -340,77 +434,132 @@ export function UtmZoneAtlas() {
         { key: 'outside', lat: -85, fx: 0.5, style: { transform: 'translate(-50%, -50%)' }, children: <span dir="rtl">מחוץ לתחום <L>UTM</L></span> },
       ];
   const insetChips: Chip[] = [];
+  /** The verified zone (accent) and the learner's choice (pick tone), for the labels above both maps. */
   let focusZone: number | null = null;
+  let pickZone: number | null = null;
+  /** Boundary longitudes above the enlargement that a state points at (accent wins over pick). */
+  const lonTone = new Map<number, 'accent' | 'pick'>();
+  const markLon = (lon: number, tone: 'accent' | 'pick') => {
+    const k = normLon(lon);
+    if (lonTone.get(k) !== 'accent') lonTone.set(k, tone);
+  };
+  const worldLine = (lon: number) => ({ lon, s: SOUTH_LIMIT, n: NORTH_LIMIT });
+  const insetLine = (lon: number) => ({ lon, s: Math.max(SOUTH_LIMIT, viewBottom(inset)), n: Math.min(NORTH_LIMIT, viewTop(inset)) });
+  const pointAt = (lines: number[]) => {
+    worldMarks.boundaries = lines.map(worldLine);
+    insetMarks.boundaries = lines.map(insetLine);
+  };
+  /** The hemisphere the maps may name as the point's: always in exploration, in practice only once verified or shown. */
+  let namedHemi: Hemisphere | null = null;
+  /** Practice: the side of the equator the learner chose, in the pick tone until it is verified. */
+  let chosenHemi: Hemisphere | null = null;
 
   if (mode === 'explore') {
     focusZone = reading.zone;
+    namedHemi = reading.hemisphere;
     worldMarks.focusZone = reading.zone;
     worldMarks.pin = { lat: point.lat, lon: point.lon, label: 'A' };
     worldMarks.locator = inset;
     insetMarks.focusZone = reading.zone;
     insetMarks.pin = { lat: point.lat, lon: point.lon, label: 'A' };
     if (crossed) {
-      worldMarks.boundary = { lon: crossed.lon, s: SOUTH_LIMIT, n: NORTH_LIMIT };
-      insetMarks.boundary = { lon: crossed.lon, s: Math.max(SOUTH_LIMIT, viewBottom(inset)), n: Math.min(NORTH_LIMIT, viewTop(inset)) };
-      insetChips.push({ key: 'crossed', lon: crossed.lon, fy: 0.78, tone: 'accent', style: { transform: 'translate(-50%, -50%)' }, children: <span dir="rtl">גבול <L>{fmtLon(crossed.lon)}</L></span> });
+      pointAt([crossed.lon]);
+      markLon(crossed.lon, 'accent');
     }
     if (event.kind === 'pick' && event.prev.hemisphere !== reading.hemisphere) {
       worldMarks.equator = 'highlight';
       insetMarks.equator = 'highlight';
     }
   } else if (mode === 'greenwich') {
-    const z = check ? check.zone : pick;
-    focusZone = z;
     worldMarks.greenwich = true;
     insetMarks.greenwich = true;
     worldMarks.locator = inset;
-    if (z) {
-      const tone = check?.zoneOk ? 'accent' : 'pick';
-      worldMarks.focusZone = z;
-      worldMarks.focusTone = tone;
-      insetMarks.focusZone = z;
-      insetMarks.focusTone = tone;
-    }
-    if (check && !check.zoneOk && check.zone === 30) {
-      insetMarks.boundary = { lon: 0, s: Math.max(SOUTH_LIMIT, viewBottom(inset)), n: Math.min(NORTH_LIMIT, viewTop(inset)) };
-    }
-    insetChips.push({ key: 'greenwich', lon: 0, fy: 0.16, tone: 'strong', style: { transform: 'translate(6px, 0)' }, children: <span dir="rtl">גריניץ׳ <L>0°</L></span> });
+    // "the western boundary" is read on the map: west is its left side
+    insetChips.push(
+      { key: 'greenwich', lon: 0, fy: 0.16, tone: 'strong', style: { transform: 'translate(6px, 0)' }, children: <span dir="rtl">גריניץ׳</span> },
+      { key: 'west', fx: 0.015, fy: 0.5, style: { transform: 'translateY(-50%)' }, children: <span dir="rtl">מערב</span> },
+      { key: 'east', fx: 0.985, fy: 0.5, style: { transform: 'translate(-100%, -50%)' }, children: <span dir="rtl">מזרח</span> },
+    );
     worldChips.push({ key: 'greenwich', lon: 0, fy: 0.06, tone: 'strong', style: { transform: 'translate(5px, 0)' }, children: <span dir="rtl">גריניץ׳</span> });
-    if (check && z) {
-      insetChips.push(
-        { key: 'w', lon: zoneWest(z), fy: 0.78, tone: check.zoneOk || z === 30 ? 'accent' : 'strong', style: { transform: 'translate(-50%, -50%)' }, children: <L>{fmtLon(zoneWest(z))}</L> },
-        { key: 'e', lon: zoneEast(z), fy: 0.78, tone: check.zoneOk || z === 30 ? 'accent' : 'strong', style: { transform: 'translate(-50%, -50%)' }, children: <L>{fmtLon(zoneEast(z))}</L> },
-      );
+    if (over) {
+      focusZone = GREENWICH_ZONE;
+      worldMarks.focusZone = insetMarks.focusZone = GREENWICH_ZONE;
+      markLon(zoneWest(GREENWICH_ZONE), 'accent');
+      markLon(zoneEast(GREENWICH_ZONE), 'accent');
+    } else if (task.last && (task.last.zone === 30 || task.zoneMiss >= 2)) {
+      // hint 1 after 30: Greenwich is its EASTERN edge; hint 2: the line the zone asked for starts at
+      pointAt([0]);
+      if (task.zoneMiss >= 2) markLon(0, 'accent');
     }
   } else if (target && targetReading) {
     const letter = TRANSFER_LETTERS[Math.min(item, TRANSFER.length - 1)];
     worldMarks.pin = { lat: target.lat, lon: target.lon, label: letter };
     insetMarks.pin = { lat: target.lat, lon: target.lon, label: letter };
     worldMarks.locator = inset;
-    if (revealed) {
+    if (over || task.zoneDone) {
+      // the verified zone; its side of the equator too once that is verified (or shown)
       focusZone = targetReading.zone;
       worldMarks.focusZone = insetMarks.focusZone = targetReading.zone;
-    } else if (check) {
-      worldMarks.focusZone = insetMarks.focusZone = check.zone;
-      worldMarks.focusTone = insetMarks.focusTone = 'pick';
-      if (!check.zoneOk) {
-        const lon = zoneStep(check.zone, targetReading.zone) > 0 ? targetReading.range.w : targetReading.range.e;
-        worldMarks.boundary = { lon, s: SOUTH_LIMIT, n: NORTH_LIMIT };
-        insetMarks.boundary = { lon, s: Math.max(SOUTH_LIMIT, viewBottom(inset)), n: Math.min(NORTH_LIMIT, viewTop(inset)) };
-        insetChips.push({ key: 'boundary', lon, fy: 0.78, tone: 'accent', style: { transform: 'translate(-50%, -50%)' }, children: <span dir="rtl">גבול <L>{fmtLon(lon)}</L></span> });
-      }
-      if (!check.hemiOk) worldMarks.equator = insetMarks.equator = 'highlight';
+      if (over || task.hemiDone) worldMarks.focusHemisphere = insetMarks.focusHemisphere = targetReading.hemisphere;
+      markLon(targetReading.range.w, 'accent');
+      markLon(targetReading.range.e, 'accent');
+    } else if (task.zoneMiss >= 2) {
+      // hint 2: the two boundaries the point lies between — the number above them is the learner's to read
+      pointAt([targetReading.range.w, targetReading.range.e]);
+      markLon(targetReading.range.w, 'accent');
+      markLon(targetReading.range.e, 'accent');
     }
+    if (over || task.hemiDone) namedHemi = targetReading.hemisphere;
+    else if (task.hemiMiss >= 1) worldMarks.equator = insetMarks.equator = 'highlight';
   }
 
-  /* world: zone numbers along the top (the small locator shows none) */
+  /* practice: the choice on the map in the pick tone — the learner's, not a verdict. Once the answer
+     is shown, a different last choice stays drawn as theirs beside it. */
+  if (mode === 'greenwich' || mode === 'transfer') {
+    const pick: MapCell | null = task.pick != null ? { zone: task.pick, hemisphere: task.hemiPick } : null;
+    const isAnswer = pick != null && answer != null && pick.zone === answer.zone && pick.hemisphere === answer.hemi;
+    if (pick && !solved && !(task.shown && isAnswer)) {
+      worldMarks.pick = insetMarks.pick = pick;
+      if (!task.zoneDone) {
+        pickZone = pick.zone;
+        const r = zoneRangeAt(pick.zone, insetTarget.lat0) ?? { w: zoneWest(pick.zone), e: zoneEast(pick.zone) };
+        markLon(r.w, 'pick');
+        markLon(r.e, 'pick');
+      }
+    }
+    if (!over && !task.hemiDone) chosenHemi = task.hemiPick;
+    if (hover && !over && !(pick && hover.zone === pick.zone && hover.hemisphere === pick.hemisphere)) worldMarks.hover = insetMarks.hover = hover;
+  }
+
+  /* which side of the equator is N and which S, by the equator at the map's east edge; the point's
+     side in the accent tone (exploration, or verified), the learner's choice in the pick tone */
+  const hemiChips = (fx: number): Chip[] =>
+    (['N', 'S'] as const).map((h) => ({
+      key: `hemi-${h}`,
+      fx,
+      lat: 0,
+      tone: namedHemi === h ? 'accent' : chosenHemi === h ? 'pick' : 'plain',
+      style: { transform: h === 'N' ? 'translate(-100%, calc(-100% - 3px))' : 'translate(-100%, 3px)' },
+      children: (
+        <span dir="rtl" data-hemi-chip={h}>
+          {HEMI_NAME[h]} <L>{h}</L>
+        </span>
+      ),
+    }));
+  if (!gridMode && mode !== 'greenwich') worldChips.push(...hemiChips(0.988));
+
+  /* world: zone numbers along the top as anchors (the small locator shows none) */
+  const near = (z: number, other: number | null) => other != null && Math.abs(zoneStep(z, other)) < 4;
   const worldTop: TopLabel[] = [1, 15, 30, 45, 60]
-    .filter((z) => focusZone == null || Math.abs(zoneStep(z, focusZone)) >= 4)
+    .filter((z) => !near(z, focusZone) && !near(z, pickZone))
     .map((z) => ({ key: `z${z}`, fx: fracX(WORLD_VIEW, zoneWest(z) + 3), text: z }));
   if (focusZone != null) worldTop.push({ key: 'focus', fx: fracX(WORLD_VIEW, zoneWest(focusZone) + 3), text: focusZone, tone: 'accent' });
+  // a choice beside the shown answer keeps its number in the enlargement and the card; here the two would collide
+  if (pickZone != null && !(focusZone != null && Math.abs(zoneStep(pickZone, focusZone)) < 3))
+    worldTop.push({ key: 'pick', fx: fracX(WORLD_VIEW, zoneWest(pickZone) + 3), text: pickZone, tone: 'pick' });
 
-  /* enlargement: boundary longitudes along the top; zone numbers inside (hidden in transfer until revealed) */
-  const insetTop: TopLabel[] = useMemo(() => {
+  /* enlargement: boundary longitudes along the top — the focus zone's in bold, the ones a state points at underlined */
+  const insetLons = useMemo(() => {
     const west = inset.lon0 - inset.w / 2;
     const east = inset.lon0 + inset.w / 2;
     const lons = new Set<number>();
@@ -420,35 +569,58 @@ export function UtmZoneAtlas() {
       const x = inset.lon0 + normLon(x1 - inset.lon0);
       if (x > west + 0.3 && x < east - 0.3) lons.add(normLon(x1));
     }
-    const focusRange = focusZone != null ? zoneRangeAt(focusZone, inset.lat0) : null;
-    return [...lons].map((lon) => ({
-      key: `b${lon}`,
-      fx: fracX(inset, lon),
-      text: <L>{fmtLon(lon)}</L>,
-      tone: focusRange && (lon === normLon(focusRange.w) || lon === normLon(focusRange.e)) ? ('strong' as const) : ('muted' as const),
-    }));
-  }, [inset, focusZone]);
+    return [...lons];
+  }, [inset]);
+  const focusRange = focusZone != null ? zoneRangeAt(focusZone, inset.lat0) : null;
+  const insetTop: TopLabel[] = insetLons.map((lon) => ({
+    key: `b${lon}`,
+    fx: fracX(inset, lon),
+    text: <L>{fmtLon(lon)}</L>,
+    tone: lonTone.get(lon) ?? (focusRange && (lon === normLon(focusRange.w) || lon === normLon(focusRange.e)) ? 'strong' : 'muted'),
+  }));
 
-  const showZoneNumbers = mode !== 'transfer' || revealed;
-  if (showZoneNumbers && !gridMode) {
-    const midLat = Math.max(SOUTH_LIMIT, Math.min(NORTH_LIMIT - 0.01, inset.lat0));
+  /* zone numbers inside the enlargement: read on the map, in exploration and in practice alike;
+     the verified zone in the accent tone, the learner's choice in the pick tone */
+  const midLat = Math.max(SOUTH_LIMIT, Math.min(NORTH_LIMIT - 0.01, inset.lat0));
+  if (!gridMode) {
     const seen = new Set<number>();
     for (let lon = inset.lon0 - inset.w / 2; lon <= inset.lon0 + inset.w / 2; lon += 0.5) {
       const z = utmZoneOf({ lat: midLat, lon });
       if (seen.has(z)) continue;
       seen.add(z);
       const r = zoneRangeAt(z, midLat);
-      if (!r) continue;
-      const fx = fracX(inset, (r.w + r.e) / 2);
+      const fx = r ? fracX(inset, (r.w + r.e) / 2) : -1;
       if (fx < 0.05 || fx > 0.95) continue;
       insetChips.push({
         key: `zone${z}`,
         fx,
         fy: 0.05,
-        tone: z === focusZone ? 'accent' : 'strong',
+        tone: z === focusZone ? 'accent' : z === pickZone ? 'pick' : 'strong',
         style: { transform: 'translateX(-50%)' },
-        children: <span data-zone-number={z} className="text-base">{z}</span>,
+        children: (
+          <span data-zone-number={z} className="text-base">
+            {z}
+          </span>
+        ),
       });
+    }
+  }
+
+  /* the enlargement names the equator when it is in view (the metres grid names it below); with a
+     point to place in practice, also which side is N and which S — the equator's name moves west */
+  if (!gridMode && viewBottom(inset) < -0.5 && viewTop(inset) > 0.5) {
+    const fy = fracY(inset, 0);
+    const sides = mode === 'transfer';
+    if (fy > 0.12 && fy < 0.92) {
+      insetChips.push({
+        key: 'eq',
+        fx: sides ? 0.015 : 0.97,
+        lat: 0,
+        tone: insetMarks.equator === 'highlight' ? 'accent' : 'strong',
+        style: { transform: sides ? 'translateY(calc(-100% - 3px))' : 'translate(-100%, calc(-100% - 3px))' },
+        children: <span dir="rtl">קו המשווה</span>,
+      });
+      if (sides) insetChips.push(...hemiChips(0.985));
     }
   }
 
@@ -538,7 +710,7 @@ export function UtmZoneAtlas() {
       : mode === 'greenwich'
         ? 'משימה 1 מתוך 4 · גריניץ׳'
         : mode === 'transfer'
-          ? `משימה ${item + 2} מתוך 4 · נקודה ${letter}`
+          ? `משימה ${item + 2} מתוך 4 · פלח וחצי כדור`
           : 'סיימתם את התרגול';
   const instruction: ReactNode =
     mode === 'explore' ? (
@@ -547,32 +719,37 @@ export function UtmZoneAtlas() {
           גררו את A בתקריב ובדקו איך משתנים <L>E</L> ו־<L>N</L>.
         </>
       ) : (
-        'בחרו נקודה במפה ובדקו באיזה פלח היא נמצאת.'
+        'לחצו במפה או גררו את A. הפלח שלה מודגש, וחצי הכדור מסומן ליד קו המשווה.'
       )
     ) : mode === 'greenwich' ? (
       <>
-        בחרו את הפלח שגבולו המערבי הוא קו גריניץ׳, <L>0°</L>. בחרו פלח בכפתורים או במפה, ואז לחצו ״בדיקת הבחירה״.
+        באיזה פלח קו גריניץ׳ (<L>0°</L>) הוא הגבול המערבי? לחצו במפה על הפלח, ואחר כך על ״בדיקת הבחירה״.
       </>
     ) : mode === 'transfer' ? (
       <>
-        הנקודה {letter}: {target!.name}, <L>{latLonText(target!.lat, target!.lon)}</L>. באיזה פלח ובאיזה חצי כדור היא נמצאת? בחרו פלח בכפתורים או במפה, ואז
-        לחצו ״בדיקת הבחירה״.
+        באיזה פלח ובאיזה חצי כדור נמצאת {letter}? לחצו במפה על הפלח שלה, בצד של קו המשווה שבו היא נמצאת, ואחר כך על ״בדיקת הבחירה״.
       </>
     ) : (
-      'זיהיתם פלח וחצי כדור לשלוש נקודות חדשות.'
+      'אפשר לחזור לחקירה ולבדוק נקודות נוספות, או לתרגל שוב.'
     );
 
   const pinHelpId = `${uid}-pin-help`;
+  const pickHelpId = `${uid}-pick-help`;
+  const practising = mode === 'greenwich' || mode === 'transfer';
+  /* In practice the descriptions give a screen reader what the eye reads: the point's place and the
+     zones in the enlargement (the arrows then name each zone's longitudes). */
+  const targetText = target ? `נקודה ${letter}, ${target.name}, ב־${latLonText(target.lat, target.lon)}.` : '';
+  const insetZones = insetChips.filter((c) => c.key.startsWith('zone')).map((c) => c.key.slice(4));
   const worldDesc =
     mode === 'explore'
       ? `מפת איתור עולמית עם 60 פלחי UTM. נקודה A ב־${latLonText(point.lat, point.lon)}, פלח ${reading.zone} מודגש.`
-      : 'מפת איתור עולמית עם 60 פלחי UTM.';
+      : `מפת איתור עולמית עם 60 פלחי UTM, קו המשווה${mode === 'greenwich' ? ' וקו גריניץ׳' : ''}. ${targetText}`.trim();
   const insetDesc =
     mode === 'explore'
       ? gridMode
         ? `תקריב של פלח ${reading.zone} עם רשת המטרים שלו. A: מזרח ${reading.eText}, צפון ${reading.nText}.`
         : `תקריב של פלח ${reading.zone} ושכניו. נקודה A מסומנת.`
-      : 'תקריב אזורי עם גבולות הפלחים.';
+      : `תקריב אזורי: פלחים ${insetZones.join(', ')}, עם הגבולות וקווי האורך שלהם${mode === 'greenwich' ? ' וקו גריניץ׳' : ''}. ${targetText}`.trim();
   const step = gridStep(inset);
 
   return (
@@ -587,6 +764,7 @@ export function UtmZoneAtlas() {
       data-inset={insetKind}
       data-lead={worldLeads ? 'world' : 'inset'}
       data-event={event.kind}
+      data-task-state={mode === 'greenwich' || mode === 'transfer' ? (solved ? 'solved' : task.shown ? 'shown' : task.last ? 'tried' : 'open') : undefined}
     >
       {/* what this view teaches, its one action, and the switch between the two views */}
       <div className="flex items-start justify-between gap-6">
@@ -623,14 +801,17 @@ export function UtmZoneAtlas() {
               chips={worldChips}
               frameRef={worldRef}
               pinRef={worldPinRef}
-              onPointer={mode === 'explore' ? (p, phase, onPin) => placeAt(p, phase, 'world', onPin) : mode === 'done' ? undefined : practicePointer}
+              onPointer={mode === 'explore' ? (p, phase, onPin) => placeAt(p, phase, 'world', onPin) : practising ? (p, phase) => pickAt(p, phase) : undefined}
+              onHover={practising ? hoverAt : undefined}
+              keyboard={practising ? { label: mode === 'greenwich' ? 'בחירת פלח במפה' : 'בחירת פלח וחצי כדור במפה', describedBy: pickHelpId, onKey: pickKey } : undefined}
               onPinKey={mode === 'explore' ? (e) => nudge(e, 'world') : undefined}
               pinAria={mode === 'explore' ? `נקודה A במפת העולם, ${latLonText(point.lat, point.lon)}` : undefined}
               pinDescribedBy={pinHelpId}
             />
           </div>
           <p className={cn(BODY, worldLeads && 'mt-2')} data-locator-note>
-            מפת איתור, לא מפת <L>UTM</L>.{worldLeads && ' כל רצועה היא פלח.'}
+            מפת איתור, לא מפת <L>UTM</L>.{worldLeads && ' כל רצועה היא פלח; המסגרת הכתומה מוגדלת בתקריב.'}
+            {practising && ' בוחרים בלחיצה על הפלח בכל אחת משתי המפות, או בחצים.'}
           </p>
         </section>
 
@@ -643,10 +824,12 @@ export function UtmZoneAtlas() {
             basemap={basemap}
             marks={insetMarks}
             topLabels={insetTop}
+            linked={worldLeads && mode !== 'done'}
             chips={insetChips}
             frameRef={insetRef}
             pinRef={insetPinRef}
-            onPointer={mode === 'explore' ? (p, phase, onPin) => placeAt(p, phase, 'inset', onPin) : mode === 'done' ? undefined : practicePointer}
+            onPointer={mode === 'explore' ? (p, phase, onPin) => placeAt(p, phase, 'inset', onPin) : practising ? (p, phase) => pickAt(p, phase) : undefined}
+            onHover={practising ? hoverAt : undefined}
             onPinKey={mode === 'explore' ? (e) => nudge(e, 'inset') : undefined}
             pinAria={mode === 'explore' ? `נקודה A בתקריב, ${latLonText(point.lat, point.lon)}` : undefined}
             pinDescribedBy={pinHelpId}
@@ -669,26 +852,33 @@ export function UtmZoneAtlas() {
               <ZonesCard reading={reading} event={event} reduce={reduce} />
             )
           ) : mode === 'done' ? (
-            <DoneCard onBack={backToExplore} onAgain={startGreenwich} />
+            <DoneCard results={results} onBack={backToExplore} onAgain={startGreenwich} />
           ) : (
             <PracticeCard
               mode={mode}
               item={item}
               target={target}
               targetReading={targetReading}
-              pick={pick}
-              hemiPick={hemiPick}
-              check={check}
-              rowCenter={practiceRow}
-              onPick={choose}
-              onPage={(d) => setPracticeRow((c) => wrapZone(c + d))}
-              onHemi={chooseHemi}
+              task={task}
+              reduce={reduce}
               onCheck={runCheck}
+              onShow={showAnswer}
               onTransfer={() => startTransfer(0)}
               onNext={nextItem}
             />
           )}
         </div>
+
+        {/* under the enlargement: the hints point at the maps right above them, and the maps stay put */}
+        {(mode === 'greenwich' || mode === 'transfer') && (task.last || task.shown) && (
+          <div className="col-start-2 row-start-3 min-w-0 self-start" data-practice-feedback={mode}>
+            {mode === 'greenwich' ? (
+              <GreenwichFeedback task={task} />
+            ) : (
+              <TransferFeedback task={task} target={target!} r={targetReading!} letter={letter} />
+            )}
+          </div>
+        )}
 
         {mode === 'explore' && (
           <div className="col-start-2 row-start-3 flex flex-wrap items-start gap-3 self-start" data-secondary>
@@ -715,6 +905,11 @@ export function UtmZoneAtlas() {
       <p id={pinHelpId} className="sr-only">
         אפשר לגרור את הנקודה, ללחוץ במפה או להזיז אותה בחצים. במפת העולם צעד החץ הוא 6 מעלות מזרחה או מערבה ו־5 מעלות צפונה או דרומה; בתקריב
         חצי מעלה, וברשת המטרים 10 קילומטרים. עם Shift הצעד קטן יותר.
+      </p>
+      <p id={pickHelpId} className="sr-only">
+        {mode === 'greenwich'
+          ? 'חץ ימינה או שמאלה מעביר לפלח הסמוך, מזרחה או מערבה. אחר כך Tab אל ״בדיקת הבחירה״.'
+          : 'חץ ימינה או שמאלה מעביר לפלח הסמוך, מזרחה או מערבה; חץ למעלה בוחר את חצי הכדור הצפוני, וחץ למטה את הדרומי. אחר כך Tab אל ״בדיקת הבחירה״.'}
       </p>
       <p className="sr-only" aria-live="polite" data-announce>
         {announce}
@@ -1020,19 +1215,29 @@ function explainMetres(r: UtmReading, ev: Event): ReactNode {
 
 /* ── practice ─────────────────────────────────────────────────────────────── */
 
+/** "בין 132°E ל־138°E": a zone's two boundaries — the lines the maps label above the enlargement. */
+const between = (z: number, lat: number) => {
+  const r = zoneRangeAt(z, lat) ?? { w: zoneWest(z), e: zoneEast(z) };
+  return (
+    <>
+      בין <L>{fmtLon(r.w)}</L> ל־<L>{fmtLon(r.e)}</L>
+    </>
+  );
+};
+const SIDE: Record<Hemisphere, string> = { N: 'מצפון', S: 'מדרום' };
+const tryAgain = (fails: number) => (fails >= SHOW_AFTER ? 'בחרו שוב במפה ובדקו, או הציגו את התשובה.' : 'בחרו שוב במפה ובדקו.');
+
+/** The task, the choice read back from the map (the exploration card's cells, filled by the learner;
+    ✓ / ✕ only on a checked choice) and the actions. The feedback sits under the enlargement. */
 function PracticeCard({
   mode,
   item,
   target,
   targetReading,
-  pick,
-  hemiPick,
-  check,
-  rowCenter,
-  onPick,
-  onPage,
-  onHemi,
+  task,
+  reduce,
   onCheck,
+  onShow,
   onTransfer,
   onNext,
 }: {
@@ -1040,139 +1245,245 @@ function PracticeCard({
   item: number;
   target: Place | null;
   targetReading: UtmReading | null;
-  pick: number | null;
-  hemiPick: Hemisphere | null;
-  check: Check | null;
-  rowCenter: number;
-  onPick: (z: number) => void;
-  onPage: (d: number) => void;
-  onHemi: (h: Hemisphere) => void;
+  task: Task;
+  reduce: boolean;
   onCheck: () => void;
+  onShow: () => void;
   onTransfer: () => void;
   onNext: () => void;
 }) {
-  const hemiId = useId();
-  const solved = Boolean(check && check.zoneOk && check.hemiOk);
-  const ready = pick != null && (mode === 'greenwich' || hemiPick != null);
+  const solved = task.zoneDone && task.hemiDone;
+  const over = solved || task.shown;
+  /* a check needs a full choice that differs from the one just checked */
+  const changed = !task.last || task.last.zone !== task.pick || task.last.hemi !== task.hemiPick;
+  const complete = task.pick != null && (mode === 'greenwich' || task.hemiPick != null);
+  const ready = complete && changed;
   const letter = TRANSFER_LETTERS[item];
-  const verdict = check ? (check.zoneOk ? 'right' : 'wrong') : null;
+  /* ✓ / ✕ belong to the checked choice only: a new choice drops the mark until it is checked */
+  const zoneVerdict = task.zoneDone ? 'right' : task.last && task.pick === task.last.zone ? 'wrong' : null;
+  const hemiVerdict = task.hemiDone ? 'right' : task.last && task.hemiPick === task.last.hemi ? 'wrong' : null;
 
   /* A short verdict for screen readers (the explanation stays readable text, not a live region);
-     a solved check swaps its button for the way forward, and focus moves there. */
+     a solved or shown task swaps its button for the way forward, and focus moves there. */
   const [status, setStatus] = useState('');
   const actionRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!check) {
+    if (!task.last && !task.shown) {
       setStatus('');
       return;
     }
-    const ok = check.zoneOk && check.hemiOk;
-    const text = ok
-      ? `נכון: פלח ${check.zone}${check.hemi ? `, חצי הכדור ה${HEMI_NAME[check.hemi]}` : ''}.`
-      : 'לא נכון. ההסבר מופיע מתחת לבחירה; נסו שוב.';
+    const hemiPart = (h: Hemisphere | null) => (h ? `, חצי הכדור ה${HEMI_NAME[h]}` : '');
+    let text: string;
+    if (task.shown && targetReading) text = `התשובה: פלח ${targetReading.zone}${hemiPart(targetReading.hemisphere)}.`;
+    else if (task.shown) text = `התשובה: פלח ${GREENWICH_ZONE}.`;
+    else if (solved) text = `נכון: פלח ${task.last!.zone}${hemiPart(task.last!.hemi)}.`;
+    else {
+      const parts = [task.last!.zoneOk ? 'הפלח נכון' : 'הפלח לא נכון'];
+      if (mode === 'transfer') parts.push(task.last!.hemiOk ? 'חצי הכדור נכון' : 'חצי הכדור לא נכון');
+      text = `${parts.join(', ')}. הרמז מופיע מתחת לתקריב; בחרו שוב במפה.`;
+    }
     setStatus((s) => (s === text ? `${text}​` : text));
-    if (ok) requestAnimationFrame(() => actionRef.current?.querySelector('button')?.focus());
-  }, [check]);
+    if (solved || task.shown) requestAnimationFrame(() => actionRef.current?.querySelector('button')?.focus());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task.last, task.shown]);
 
   return (
     <div className="flex flex-col gap-3" data-practice={mode}>
       <p role="status" className="sr-only" data-verdict>
         {status}
       </p>
-      <div className="rounded-xl border border-border/80 p-4">
-        <div className={cn(LABEL, 'mb-2')}>פלח</div>
-        <ZoneRow center={rowCenter} selected={pick} onSelect={onPick} onPage={onPage} label="בחירת פלח" verdict={verdict} />
+      {/* the place, not its coordinates: where it is, and so its zone and side, is read on the map */}
+      {mode === 'transfer' && target && (
+        <p className={BODY} data-task-data>
+          <span className="font-display font-bold">נקודה {letter}</span> · {target.name}
+        </p>
+      )}
+      <div
+        className={cn('grid rounded-xl border border-border/80 [&>*+*]:border-s [&>*+*]:border-border/60', mode === 'transfer' ? 'grid-cols-2' : 'grid-cols-1')}
+        data-row="choice"
+      >
+        <Cell label="הפלח שבחרתם">
+          <span className={cn(VALUE, VALUE_BOX, 'relative min-w-[4.5rem]')} data-choice="zone">
+            <Changing value={String(task.pick ?? '')} reduce={reduce}>
+              {task.pick ?? '—'}
+            </Changing>
+            {zoneVerdict && <VerdictMark verdict={zoneVerdict} />}
+          </span>
+        </Cell>
         {mode === 'transfer' && (
-          <>
-            <div id={hemiId} className={cn(LABEL, 'mb-2 mt-4')}>
-              חצי כדור
-            </div>
-            <Segmented items={HEMI_ITEMS} value={hemiPick} onChange={onHemi} labelledBy={hemiId} className="w-[13.5rem]" />
-          </>
+          <Cell label="חצי הכדור שבחרתם">
+            <span className={cn(VALUE, VALUE_BOX, 'relative')} data-choice="hemisphere">
+              <Changing value={task.hemiPick ?? ''} reduce={reduce}>
+                {task.hemiPick ? (
+                  <>
+                    {HEMI_NAME[task.hemiPick]} <L>{task.hemiPick}</L>
+                  </>
+                ) : (
+                  '—'
+                )}
+              </Changing>
+              {hemiVerdict && <VerdictMark verdict={hemiVerdict} />}
+            </span>
+          </Cell>
         )}
-        <div ref={actionRef} className="mt-4">
-          {solved ? (
-            <Button variant="primary" size="md" className="min-w-[12rem]" onClick={mode === 'greenwich' ? onTransfer : onNext}>
-              {mode === 'greenwich' ? 'לנקודות חדשות' : item + 1 < TRANSFER.length ? 'לנקודה הבאה' : 'לסיום התרגול'}
-            </Button>
-          ) : (
-            <Button variant="primary" size="md" className="min-w-[12rem]" onClick={onCheck} disabled={!ready}>
+      </div>
+      <div ref={actionRef} className="flex flex-wrap items-center gap-3">
+        {over ? (
+          <Button variant="primary" size="md" className="min-w-[12rem]" onClick={mode === 'greenwich' ? onTransfer : onNext}>
+            {mode === 'greenwich' ? 'לנקודות חדשות' : item + 1 < TRANSFER.length ? 'לנקודה הבאה' : 'לסיום התרגול'}
+          </Button>
+        ) : (
+          <>
+            {/* unchanged since the last check: dimmed but still focused (a wrong check keeps the keyboard here) */}
+            <Button
+              variant="primary"
+              size="md"
+              className={cn('min-w-[12rem]', complete && !ready && 'cursor-not-allowed opacity-45 hover:brightness-100 active:translate-y-0')}
+              onClick={() => ready && onCheck()}
+              disabled={!complete}
+              aria-disabled={(complete && !ready) || undefined}
+            >
               בדיקת הבחירה
             </Button>
-          )}
-        </div>
+            {task.fails >= SHOW_AFTER && (
+              <Button variant="secondary" size="md" onClick={onShow} data-show-answer>
+                הצגת התשובה
+              </Button>
+            )}
+          </>
+        )}
       </div>
-      {check && (mode === 'greenwich' ? <GreenwichFeedback check={check} /> : <TransferFeedback check={check} target={target!} r={targetReading!} letter={letter} />)}
     </div>
   );
 }
 
-function GreenwichFeedback({ check }: { check: Check }) {
-  const z = check.zone;
-  if (check.zoneOk)
+/** Greenwich: right → why 31 (the line is its western, left-hand edge); wrong → what the checked
+    zone's edges are (1), then where to look on the map (2). */
+function GreenwichFeedback({ task }: { task: Task }) {
+  if (task.zoneDone)
     return (
-      <Feedback tone="right">
+      <Feedback tone="right" className="[&_p+p]:mt-1.5">
         <p>
-          נכון. פלח 31 משתרע מ־<L>0°</L> עד <L>6°E</L>, ולכן גבולו המערבי הוא גריניץ׳: 30 פלחים של <L>6°</L> מ־<L>180°W</L> מגיעים בדיוק ל־<L>0°</L>.
+          נכון: פלח 31. קו גריניץ׳ (<L>0°</L>) הוא הגבול המערבי שלו, הקו בצד השמאלי שלו במפה, והפלח משתרע ממנו מזרחה עד <L>6°E</L>. פלח 30, שממערב לקו,
+          מסתיים בו.
         </p>
       </Feedback>
     );
-  if (z === 30)
+  if (task.shown)
     return (
-      <Feedback tone="wrong">
-        <p>
-          פלח 30 משתרע מ־<L>6°W</L> עד <L>0°</L>: גריניץ׳ הוא גבולו המזרחי. שם הפלח מסתיים, ולא מתחיל. נסו שוב.
+      <Feedback tone="info">
+        <p data-answer>
+          התשובה: פלח 31. הוא מתחיל בקו גריניץ׳ (<L>0°</L>) ומשתרע מזרחה עד <L>6°E</L>, ולכן הקו הוא הגבול המערבי שלו. פלח 30 מסתיים בקו, ואצלו זה הגבול
+          המזרחי.
         </p>
       </Feedback>
     );
+  const z = task.last!.zone;
+  const level = Math.min(task.zoneMiss, 2);
   return (
-    <Feedback tone="wrong">
-      <p>
-        פלח {z} משתרע מ־<L>{fmtLon(zoneWest(z))}</L> עד <L>{fmtLon(zoneEast(z))}</L>, ולכן גבולו המערבי אינו <L>0°</L>. נסו שוב.
+    <Feedback tone="wrong" className="[&_p+p]:mt-1.5">
+      <p data-hint="zone" data-level={level}>
+        {z === 30 ? (
+          <>בחרתם בפלח 30. הוא נמצא ממערב לקו גריניץ׳ ומסתיים בו, ולכן אצלו הקו הוא הגבול המזרחי.</>
+        ) : (
+          <>
+            בחרתם בפלח {z}, {between(z, GREENWICH_LAT)}: קו גריניץ׳ אינו הגבול המערבי שלו.
+          </>
+        )}{' '}
+        {level >= 2
+          ? 'רמז: במפה מערב הוא שמאל. מצאו בתקריב את הרצועה שקו גריניץ׳ המודגש הוא הקו השמאלי שלה, וקראו את המספר שבראשה.'
+          : z === 30
+            ? 'הגבול המערבי של פלח הוא הקו בצד השמאלי שלו במפה.'
+            : 'מצאו בתקריב את הקו הכהה של גריניץ׳ ובדקו אילו פלחים נוגעים בו.'}
       </p>
+      <p>{tryAgain(task.fails)}</p>
     </Feedback>
   );
 }
 
-function TransferFeedback({ check, target, r, letter }: { check: Check; target: Place; r: UtmReading; letter: string }) {
-  const lonT = <L>{fmtLon(target.lon, 2)}</L>;
-  const latT = <L>{fmtLat(target.lat, 2)}</L>;
-  const northOf = sideOfEquator(r);
-  if (check.zoneOk && check.hemiOk)
+/** A new point: right → how the point, the zone's boundaries and the equator give the cell (and its
+    E/N there); wrong → per part, hint 1 says what to look at on the map, hint 2 points at what the
+    maps now mark; a part right is said once. */
+function TransferFeedback({ task, target, r, letter }: { task: Task; target: Place; r: UtmReading; letter: string }) {
+  const where = (
+    <>
+      {letter} ב־<L>{fmtLon(target.lon, 2)}</L>, {between(r.zone, r.lat)}, שהם גבולות פלח {r.zone}, וב־<L>{fmtLat(target.lat, 2)}</L>, {SIDE[r.hemisphere]} לקו המשווה
+    </>
+  );
+  const cell = <L>{`${r.zone}${r.hemisphere}`}</L>;
+  if (task.zoneDone && task.hemiDone)
     return (
-      <Feedback tone="right">
+      <Feedback tone="right" className="[&_p+p]:mt-1.5">
         <p>
-          נכון: {lonT} נמצא בין <L>{fmtLon(r.range.w)}</L> ל־<L>{fmtLon(r.range.e)}</L>, ו־{latT} {northOf} לקו המשווה. ברשת של פלח {r.zone}, הנקודה {letter}{' '}
-          היא <L>E {r.eText}</L>
+          נכון: {cell}. {where}, ולכן בחצי הכדור ה{HEMI_NAME[r.hemisphere]}.
+        </p>
+        <p>
+          במטרים, ברשת {cell}: <L>E {r.eText}</L>
           {NBSP}מ׳, <L>N {r.nText}</L>
           {NBSP}מ׳ (<L>{DATUM}</L>).
         </p>
       </Feedback>
     );
-  const pickRange = { w: zoneWest(check.zone), e: zoneEast(check.zone) };
-  const east = zoneStep(check.zone, r.zone) > 0;
+  if (task.shown)
+    return (
+      <Feedback tone="info">
+        <p data-answer>
+          התשובה: {cell}, פלח {r.zone} בחצי הכדור ה{HEMI_NAME[r.hemisphere]}. {where}.
+        </p>
+      </Feedback>
+    );
+  const last = task.last!;
+  const zl = Math.min(task.zoneMiss, 2);
+  const hl = Math.min(task.hemiMiss, 2);
   return (
-    <Feedback tone="wrong">
-      {!check.zoneOk && (
-        <p>
-          פלח {check.zone} משתרע מ־<L>{fmtLon(pickRange.w)}</L> עד <L>{fmtLon(pickRange.e)}</L>, ו־{lonT} אינו בתחום הזה: הנקודה {east ? 'מזרחית' : 'מערבית'} לגבול{' '}
-          <L>{fmtLon(east ? r.range.w : r.range.e)}</L>.
+    <Feedback tone="wrong" className="[&_p+p]:mt-1.5">
+      {task.zoneDone ? (
+        <p data-hint="zone" data-level={0}>
+          הפלח נכון: {r.zone}.
+        </p>
+      ) : (
+        <p data-hint="zone" data-level={zl}>
+          בחרתם בפלח {last.zone}, {between(last.zone, target.lat)}, ו־{letter} לא נמצאת בתחום הזה.{' '}
+          {zl >= 2 ? (
+            <>
+              רמז: {letter} נמצאת בין <L>{fmtLon(r.range.w)}</L> ל־<L>{fmtLon(r.range.e)}</L>, הקווים הכתומים. קראו בתקריב את המספר שבראש הרצועה
+              שביניהם.
+            </>
+          ) : (
+            <>בתקריב, בדקו בין אילו שני קווים מקווקווים נמצאת הסיכה {letter}.</>
+          )}
         </p>
       )}
-      {!check.hemiOk && (
-        <p>
-          {latT} {northOf} לקו המשווה, ולכן חצי הכדור הוא {HEMI_NAME[r.hemisphere]} (<L>{r.hemisphere}</L>).
+      {task.hemiDone ? (
+        <p data-hint="hemi" data-level={0}>
+          חצי הכדור נכון: {HEMI_NAME[r.hemisphere]} (<L>{r.hemisphere}</L>).
+        </p>
+      ) : (
+        <p data-hint="hemi" data-level={hl}>
+          בחרתם בחצי הכדור ה{HEMI_NAME[last.hemi!]} (<L>{last.hemi}</L>).{' '}
+          {hl >= 2 ? (
+            <>
+              רמז: במפה הסיכה {letter} נמצאת {r.hemisphere === 'N' ? 'מעל ' : 'מתחת ל'}קו המשווה, כלומר {SIDE[r.hemisphere]} לו.
+            </>
+          ) : (
+            <>
+              חצי הכדור נקבע לפי צד קו המשווה שבו נמצאת הסיכה. בדקו במפה: {letter} מעל הקו המודגש או מתחתיו?
+            </>
+          )}
         </p>
       )}
-      <p>נסו שוב.</p>
+      <p>{tryAgain(task.fails)}</p>
     </Feedback>
   );
 }
 
-function DoneCard({ onBack, onAgain }: { onBack: () => void; onAgain: () => void }) {
+function DoneCard({ results, onBack, onAgain }: { results: Result[]; onBack: () => void; onAgain: () => void }) {
+  const total = 1 + TRANSFER.length;
+  const own = results.filter((r) => r === 'solved').length;
   return (
     <div className="flex flex-col gap-3" data-practice="done">
-      <Feedback tone="right">
+      <Feedback tone={own === total ? 'right' : 'info'} className="[&_p+p]:mt-1.5">
+        <p data-summary={own}>{own === total ? 'פתרתם את כל המשימות בעצמכם.' : `פתרתם ${own} מתוך ${total} משימות בעצמכם; ${total - own === 1 ? 'במשימה אחת' : `ב־${total - own} משימות`} הוצגה התשובה.`}</p>
         <p>
           כדי לפרש מספרי <L>E</L> ו־<L>N</L> צריך לדעת שלושה דברים: הפלח, חצי הכדור והדאטום.
         </p>

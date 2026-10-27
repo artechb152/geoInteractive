@@ -1,7 +1,8 @@
 'use client';
 
 /* ─────────────── דאטום — overlays above the 3-D globe ───────────────
-   Label chips, their leader lines, and the close-up's tangent leaders. The
+   Label chips, their leader lines, the close-up's tangent leaders, and the
+   legend of the reference marks (GuideLegend). The
    markup is static React; DatumGlobe3D moves the line ends every rendered
    frame through these refs (projected 3-D anchors, no per-frame re-render)
    and hides a label whose anchor is hidden. Kept out of DatumGlobe3D so the
@@ -39,7 +40,7 @@ export type OverlayRefs = {
   leaders: Record<ChipId, RefObject<SVGLineElement | null>>;
   dots: Record<ChipId, RefObject<SVGCircleElement | null>>;
   marker: RefObject<HTMLDivElement | null>;
-  /** station 3: the other check point */
+  /** station 2: the other check point */
   markerAlt: RefObject<HTMLDivElement | null>;
   insetLeaders: [RefObject<SVGLineElement | null>, RefObject<SVGLineElement | null>];
 };
@@ -89,5 +90,33 @@ export function GlobeOverlays({ refs, emph, labels }: { refs: OverlayRefs; emph:
         );
       })}
     </>
+  );
+}
+
+/** The reference marks, named: the selected pose (orange, with its own axes), the pose it is compared
+    with (dashed), and the Earth's rotation axis and centre (fixed). Plain text rows with line swatches —
+    a legend, not a control. */
+const INK = '#38432E'; // fg — the Earth's centre and axis, and the outline compared with
+
+export function GuideLegend({ current, other, className, style }: { current: string; other: string; className?: string; style?: React.CSSProperties }) {
+  const rows: { label: string; swatch: React.ReactNode }[] = [
+    { label: current, swatch: <path d="M2 7 H26" stroke={CHIP_COLOR.ellipsoid} strokeWidth={3} strokeLinecap="round" /> },
+    { label: other, swatch: <path d="M2 7 H26" stroke={INK} strokeOpacity={0.75} strokeWidth={2} strokeDasharray="5 4" /> },
+    {
+      label: 'מרכז כדור הארץ וציר הסיבוב',
+      swatch: <path d="M14 0 V14 M9 7 H19" stroke={INK} strokeOpacity={0.8} strokeWidth={1.8} />,
+    },
+  ];
+  return (
+    <ul aria-hidden className={cn('pointer-events-none absolute space-y-1 rounded-xl bg-bg-elevated/85 px-3 py-2', className)} style={style}>
+      {rows.map((r) => (
+        <li key={r.label} className="flex items-center gap-2 text-sm leading-snug text-fg">
+          <svg viewBox="0 0 28 14" width="28" height="14" className="shrink-0" fill="none">
+            {r.swatch}
+          </svg>
+          {r.label}
+        </li>
+      ))}
+    </ul>
   );
 }

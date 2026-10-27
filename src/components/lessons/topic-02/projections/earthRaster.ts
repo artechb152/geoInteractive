@@ -189,10 +189,10 @@ export const frameOf = (box: Box, scale: number) => ({
 
 const cache = new Map<string, ImageData>();
 
-/** The map's raster (transparent outside the map), cached per method, size and source. */
+/** The map's raster (transparent outside the map), cached per method, size, box and source. */
 export function mapImage(px: EarthPixels, m: Method, box: Box, scale: number): ImageData {
   const f = frameOf(box, scale);
-  const key = `${px.source}|${m}|${f.w}x${f.h}`;
+  const key = `${px.source}|${m}|${f.w}x${f.h}|${box.x0.toFixed(4)},${box.y1.toFixed(4)}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const img = new ImageData(f.w, f.h);

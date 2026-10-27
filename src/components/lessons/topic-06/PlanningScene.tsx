@@ -1,28 +1,16 @@
 'use client';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { motion, useReducedMotion, useSpring, useTransform } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { Icon, type IconName } from '@/components/Icon';
+import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
-import { RouteMap, type RouteLeg } from './PlanningRouteMap';
+import { RouteStoryBuilder } from './route-story/RouteStoryBuilder';
+import { RadioRow } from './terrain-nav/RadioRow';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
-type Checkpoint = {
-id: string;
-label: string;
-feature: string;
-icon: IconName;
-};
-const CHECKPOINTS: Checkpoint[] = [
- { id: '1', label: 'נקודה 1: נקודת ההתחלה (נ.ה)', feature: 'יציאה לנקודה 2 — אזימוט 035°, כ־500 מ׳: מאמתים את נקודת ההתחלה במפה ובשטח, ובודקים את הכיוון ואת המרחק לעיקול הנחל.', icon: 'flag' },
- { id: '2', label: 'נקודה 2: עיקול הנחל', feature: 'אזימוט 035°, כ־500 מ׳ מנקודה 1: מזהים את עיקול הנחל ומשווים את צורת הערוץ וסביבתו למפה. לאחר אימות המיקום ממשיכים לכיוון האוכף.', icon: 'wave' },
- { id: '3', label: 'נקודה 3: אוכף הרכס', feature: 'אזימוט 065°, כ־700 מ׳ מנקודה 2: מזהים את האוכף שבין שתי הפסגות. בודקים את התאמת צורת הקרקע, הכיוון והמרחק לתכנון כדי לאמת את המיקום.', icon: 'mountain' },
- { id: '4', label: 'נקודה 4: חציית דרך עפר', feature: 'אזימוט 050°, כ־500 מ׳ מנקודה 3: מזהים את דרך העפר ובודקים את כיוונה ואת נקודת החצייה ביחס לתכנון. ממשיכים ממנה אל החורשה.', icon: 'truck' },
- { id: '5', label: 'נקודה 5: נקודת הסיום (נ.ס)', feature: 'אזימוט 040°, כ־600 מ׳ מנקודה 4: עוברים בחורשה ומזהים את קבוצת האורנים בקרקע הסלעית. מאמתים את נקודת הסיום לפי הסימנים שסביבה והמרחק שעברנו.', icon: 'target' },
-];
 // Laptop fit — every screen of this part is laid out at the 1920×1080 reference
 // width and shrunk uniformly (never enlarged) to the room the site header and the
 // lesson side nav leave. width = the section's content box at the reference
-// viewport (max-w-lesson 1408 − 2 × lg:px-8). Screens 2–4 sit below the fold, so
+// viewport (max-w-lesson 1408 − 2 × lg:px-8). Screens 2–3 sit below the fold, so
 // their height budget is one viewport minus the fixed site header (--header-h,
 // 80px) and the 24px page inset above and below, not their page offset.
 const PLANNING_FIT = { width: 1344, reserveTop: 104, reserveBottom: 24 } as const;
@@ -30,7 +18,7 @@ const PLANNING_FIT = { width: 1344, reserveTop: 104, reserveBottom: 24 } as cons
 export function PlanningScene() {
 return (
  <section id="scene-planning" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
- {/* Screen 1 · title + concept. Each screen of this part shrinks on its own, like a slide (see PLANNING_FIT). */}
+ {/* Screen 1 · title + the one definition. Each screen of this part shrinks on its own, like a slide (see PLANNING_FIT). */}
  <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveBottom={PLANNING_FIT.reserveBottom}>
  <SceneHeader
 step="03.2"
@@ -40,29 +28,12 @@ title={
           תכנון ציר: בניית <span className="gradient-text">סיפור דרך</span>
           </>
         }
-intro="לפני היציאה מחלקים את המסלול לקטעים ומתארים את הכיוון, המרחק וסימני השטח בכל קטע. התכנון מסייע לעקוב אחר ההתקדמות ולזהות סטייה מהמסלול."
+intro={
+ <>
+ <strong className="text-fg">סיפור דרך (Route Description)</strong> הוא תיאור מסודר של המסלול בקטעים: לכל קטע כיוון, מרחק וסימני שטח. בסוף כל קטע בודקים את המיקום מול המפה.
+ </>
+}
  />
-
- {/* Concept · read before the builder — plain info text (no cards), so the builder is the first strong surface */}
- <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-12">
- <div>
- <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- סיפור דרך <span className="font-medium text-fg-muted text-base md:text-lg">(Route Description)</span>
- </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
- תיאור מסודר של המסלול, הכולל <strong className="text-fg">כיוונים, מרחקים וסימנים צפויים בשטח</strong>. בכל קטע בוחרים נקודות שבהן אפשר לבדוק את המיקום ביחס למפה.
- </p>
- </div>
-
- <div>
- <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- תכנון מראש ובקרה בתנועה
- </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
- הכנת סיפור הדרך מרכזת את הנתונים הדרושים לפני היציאה. במהלך התנועה ממשיכים <strong className="text-fg">להשוות בין התכנון לשטח</strong> ולבדוק כל אי־התאמה.
- </p>
- </div>
- </div>
  </LessonViewportFit>
 
  {/* Screen 2 · route-story builder (list + map) */}
@@ -70,183 +41,15 @@ intro="לפני היציאה מחלקים את המסלול לקטעים ומת�
  <RouteStoryBuilder />
  </LessonViewportFit>
 
- {/* Screen 3 · pacing demo — its my-12 stays inside the box (a flex item contains its children's margins), so the gaps scale with it */}
- <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveTop={PLANNING_FIT.reserveTop} reserveBottom={PLANNING_FIT.reserveBottom}>
- <div className="my-12">
+ {/* Screen 3 · pacing demo — mt-12 sits on the unscaled wrapper, so the gap between the activities is the
+     same 48px as everywhere else in the lesson */}
+ <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveTop={PLANNING_FIT.reserveTop} reserveBottom={PLANNING_FIT.reserveBottom} className="mt-12">
  <PacingDemo />
- </div>
  </LessonViewportFit>
 
- {/* Screen 4 · summary */}
- <LessonViewportFit referenceWidth={PLANNING_FIT.width} reserveTop={PLANNING_FIT.reserveTop} reserveBottom={PLANNING_FIT.reserveBottom}>
- <ConclusionCard />
- </LessonViewportFit>
  </section>
  );
 }
-// Azimuth (°) + distance (m) of each checkpoint's leg — the same numbers the
-// card text opens with. They drive the to-scale map geometry and its leg tags.
-// Card 1 = the departure bearing out of נ.ה; cards 2–5 = the leg arriving there.
-const LEGS: RouteLeg[] = [
-  { az: 35, m: 500 },
-  { az: 35, m: 500 },
-  { az: 65, m: 700 },
-  { az: 50, m: 500 },
-  { az: 40, m: 600 },
-];
-
-function RouteStoryBuilder() {
-const [active, setActive] = useState(0);
-const titleId = useId();
-const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-const last = CHECKPOINTS.length - 1;
-
-const go = (i: number, focus = false) => {
-  const next = Math.max(0, Math.min(last, i));
-  setActive(next);
-  if (focus) btnRefs.current[next]?.focus();
-};
-
-// ↓ / ← (forward in RTL) → next checkpoint · ↑ / → → previous · Home / End
-const onListKey = (e: React.KeyboardEvent<HTMLOListElement>) => {
-  const from = btnRefs.current.indexOf(e.target as HTMLButtonElement);
-  const base = from >= 0 ? from : active;
-  const target: Record<string, number> = {
-    ArrowDown: base + 1,
-    ArrowLeft: base + 1,
-    ArrowUp: base - 1,
-    ArrowRight: base - 1,
-    Home: 0,
-    End: last,
-  };
-  if (!(e.key in target)) return;
-  e.preventDefault();
-  go(target[e.key], true);
-};
-
-return (
- <div data-qa="route-builder" className="surface-elevated p-6 lg:p-8 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 items-start">
- <div>
- <div id={titleId} className="font-display text-lg font-bold leading-snug text-fg md:text-xl">
- סיפור דרך בחמש נקודות
- </div>
- <p className="mt-1 text-sm text-fg-muted leading-relaxed mb-4">
- בחרו נקודה כדי לראות במפה את קטע הדרך הקשור אליה. בכל תיאור מופיעים <strong className="text-fg">אזימוט</strong>, <strong className="text-fg">מרחק משוער</strong> וסימנים לבדיקת המיקום. הנתונים הם דוגמה לימודית.
- </p>
- <ol aria-labelledby={titleId} onKeyDown={onListKey} className="space-y-2.5">
- {CHECKPOINTS.map((c, i) => {
-const isActive = active === i;
-const passed = active > i;
-// Split the bearing/distance lead from the description at the first colon.
-const cut = c.feature.indexOf(':');
-const head = cut > -1 ? c.feature.slice(0, cut + 1) : '';
-const tail = cut > -1 ? c.feature.slice(cut + 1) : c.feature;
-return (
- <li key={c.id}>
- <button
- type="button"
- ref={(el) => {
-   btnRefs.current[i] = el;
- }}
- onClick={() => go(i)}
- aria-current={isActive ? 'step' : undefined}
- className={cn(
- // tint is a layer over a solid white base (same recipe as lesson 2's options)
- 'group relative isolate w-full p-4 text-start flex items-start gap-3 rounded-xl border bg-bg-elevated cursor-pointer transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
- isActive
-   ? 'border-accent before:bg-accent/10'
-   : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
- )}
- >
- {/* state badge — mirrors the map marker: orange = current, sage ✓ = passed */}
- <span
-className={cn(
- 'size-9 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200',
-isActive
- ? 'bg-accent text-white'
- : passed
- ? 'bg-brand/15 text-brand-dark'
- : 'text-fg-muted'
- )}
- >
- {passed && !isActive ? (
- <Icon name="check" size={18} strokeWidth={2.5} />
- ) : (
- <Icon name={c.icon} size={18} />
- )}
- </span>
- <div className="flex-1 min-w-0 text-start">
- <div className="font-display font-bold text-base leading-tight text-fg">
- {c.label}
- </div>
- <div className="text-sm mt-1 leading-relaxed text-fg-muted">
- {head && <span className="font-display font-bold tabular-nums text-fg">{head}</span>}
- {tail}
- </div>
- </div>
- </button>
- </li>
- );
- })}
- </ol>
- </div>
-
- <div className="lg:sticky lg:top-24">
- <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
- <span className="text-sm font-display font-semibold text-fg-muted">
- סיפור דרך · 5 נקודות · 4 קטעי דרך
- </span>
- <div className="flex items-center gap-2.5">
- <button
-   type="button"
-   onClick={() => go(active - 1)}
-   disabled={active === 0}
-   aria-label="הנקודה הקודמת"
-   className="size-9 rounded-xl border border-border bg-bg-elevated grid place-items-center text-fg-muted transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] hover:text-fg disabled:opacity-40 disabled:pointer-events-none"
- >
-   <Icon name="arrow-right" size={16} strokeWidth={2} />
- </button>
- <div className="flex items-center gap-1" aria-hidden>
-   {CHECKPOINTS.map((c, i) => (
-     <span
-       key={c.id}
-       className={cn(
-         'h-1.5 rounded-full transition-all duration-300 ease-snap motion-reduce:transition-none',
-         i === active ? 'w-6 bg-accent' : i < active ? 'w-3 bg-brand' : 'w-3 bg-border'
-       )}
-     />
-   ))}
- </div>
- <span dir="ltr" className="text-sm font-display font-bold tabular-nums text-fg-muted w-8 text-center" aria-hidden>
-   {active + 1}/{CHECKPOINTS.length}
- </span>
- <button
-   type="button"
-   onClick={() => go(active + 1)}
-   disabled={active === last}
-   aria-label="הנקודה הבאה"
-   className="size-9 rounded-xl border border-border bg-bg-elevated grid place-items-center text-fg-muted transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] hover:text-fg disabled:opacity-40 disabled:pointer-events-none"
- >
-   <Icon name="arrow-left" size={16} strokeWidth={2} />
- </button>
- </div>
- </div>
- <div className="overflow-hidden rounded-xl border border-border/70">
- <RouteMap
-   legs={LEGS}
-   activeStep={active}
-   onSelect={(i) => go(i)}
-   ariaLabel={`מפת סיפור הדרך — ${CHECKPOINTS[active].label}`}
- />
- </div>
- <p className="sr-only" aria-live="polite">
- {CHECKPOINTS[active].label}
- </p>
- </div>
- </div>
- );
-}
-
 // Footprint pair (walking toward inline-end — the same way the RTL slider grows)
 function FootPair({ className }: { className?: string }) {
   return (
@@ -274,10 +77,54 @@ const TRAIL_MARKS = 10;
 /** inline-start offset of a slider fraction, matching the native thumb centre */
 const alongTrack = (fr: number) => `calc(${THUMB_PX / 2}px + (100% - ${THUMB_PX}px) * ${fr})`;
 
+/** Double-pace lengths to compare (metres): the example's 1.5 and one shorter, one longer stride. */
+const PACE_OPTIONS = [1.4, 1.5, 1.6] as const;
+const fmtPace = (p: number) => p.toFixed(1);
+const fmtStep = (p: number) => String(Math.round((p / 2) * 100) / 100);
+
+/**
+ * One stride: four footprints walking toward inline-end (left), a single step
+ * between the two feet, a double step from one foot to the same foot again —
+ * the one that is counted. A schematic, not a map; text anchors are explicit.
+ */
+function StepDiagram({ pace }: { pace: number }) {
+  const xs = [86, 62, 38, 14];
+  return (
+    <svg
+      viewBox="0 0 100 50"
+      className="block w-full h-auto"
+      role="img"
+      aria-label={`צעד: מרגל אחת לרגל השנייה, כ־${fmtStep(pace)} מ׳. צעד כפול: עד שאותה רגל נוגעת שוב בקרקע, ${fmtPace(pace)} מ׳. סופרים את הצעדים הכפולים.`}
+    >
+      <line x1={3} y1={25} x2={97} y2={25} className="stroke-border-strong" strokeWidth={0.4} strokeDasharray="1.2 1" opacity={0.6} />
+      {xs.map((x, k) => (
+        <g key={k} transform={`translate(${x} ${k % 2 === 1 ? 21 : 29})`} className={k % 2 === 0 ? 'fill-accent' : 'fill-fg-dim'}>
+          <ellipse cx={2.6} cy={0} rx={5.2} ry={2.3} />
+          <circle cx={-3.9} cy={-1.6} r={1.05} />
+          <circle cx={-4.4} cy={0.4} r={0.9} />
+          <circle cx={-3.8} cy={2.2} r={0.72} />
+        </g>
+      ))}
+      {/* single step: between the two different feet */}
+      <path d={`M ${xs[0] + 2.6} 16.5 V 12.5 H ${xs[1] + 2.6} V 16.5`} className="stroke-fg-muted" strokeWidth={0.55} fill="none" />
+      <text x={(xs[0] + xs[1]) / 2 + 2.6} y={8.6} textAnchor="middle" fontSize={5.6} fontWeight={600} className="fill-fg font-display">
+        {`צעד ≈ ${fmtStep(pace)} מ׳`}
+      </text>
+      {/* double step: from a foot to the same foot again — the one that is counted */}
+      <path d={`M ${xs[0] + 2.6} 33.5 V 37.5 H ${xs[2] + 2.6} V 33.5`} className="stroke-accent" strokeWidth={0.8} fill="none" />
+      <text x={(xs[0] + xs[2]) / 2 + 2.6} y={46.4} textAnchor="middle" fontSize={5.6} fontWeight={800} className="fill-ember-deep font-display">
+        {`צעד כפול = ${fmtPace(pace)} מ׳`}
+      </text>
+    </svg>
+  );
+}
+
 function PacingDemo() {
 const [distance, setDistance] = useState(500);
-const stepLength = 1.5; // Illustrative double-pace length, not a universal average.
-const paces = Math.round(distance / stepLength);
+const [pace, setPace] = useState<number>(1.5); // the example's double pace; each navigator measures their own
+const paceLabelId = useId();
+const paces = Math.round(distance / pace);
+const steps = Math.round((distance / pace) * 2);
 const reduce = useReducedMotion();
 const frac = (distance - PACE_MIN) / (PACE_MAX - PACE_MIN);
 const lastMark = Math.floor(frac * (TRAIL_MARKS - 1) + 1e-6);
@@ -291,15 +138,31 @@ useEffect(() => {
 return (
  <div data-qa="pacing" className="surface-elevated p-6 lg:p-8">
  <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">ספירת צעדים: הערכת מרחק</h3>
- <p className="mt-2 mb-8 max-w-2xl text-base leading-relaxed text-fg-muted">
- צעד כפול הוא זוג צעדים; סופרים בכל פעם שאותה רגל נוגעת בקרקע. שנו את המרחק במחוון כדי לראות את מספר הצעדים הכפולים המשוער. בהדגמה מניחים אורך של 1.5 מטר לצעד כפול; בפועל נדרשת מדידה אישית.
+ <p className="mt-2 mb-6 max-w-3xl text-base leading-relaxed text-fg-muted">
+ את המרחק מתכננים במטרים, ובשטח סופרים <strong className="text-fg">צעדים כפולים</strong>: צעד כפול לכל נגיעה של אותה רגל בקרקע. אורך הצעד הכפול שונה מאדם לאדם.
  </p>
 
- <div className="grid md:grid-cols-[minmax(0,1.25fr)_auto_minmax(0,1fr)] gap-6 md:gap-5 items-stretch">
+ <div className="grid md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.2fr)_auto_minmax(0,0.85fr)] gap-6 md:gap-5 items-stretch">
+ {/* what is counted: one step vs one double step, at the chosen personal length */}
+ <div className="rounded-xl bg-bg-accent/60 p-5 flex flex-col" data-qa="pace-length">
+ <div id={paceLabelId} className="text-sm font-display font-semibold text-fg-muted">אורך הצעד הכפול שלכם (לפי מדידה אישית):</div>
+ <RadioRow
+   labelledBy={paceLabelId}
+   options={PACE_OPTIONS.map((p) => ({ id: p, label: `${fmtPace(p)} מ׳` }))}
+   value={pace}
+   onChange={(p) => setPace(p)}
+   className="mt-2"
+   data="pace"
+ />
+ <div className="mt-auto pt-3">
+ <StepDiagram pace={pace} />
+ </div>
+ </div>
+
  <div className="rounded-xl bg-bg-accent/60 p-5 sm:p-6 flex flex-col justify-center">
  <div className="flex justify-between items-end mb-4">
  <span className="text-sm font-display font-semibold text-fg-muted">מרחק מתוכנן:</span>
- <span className="text-4xl font-display font-bold text-fg tabular-nums">{distance} מ׳</span>
+ <span className="text-4xl font-display font-bold text-fg tabular-nums">{distance.toLocaleString('en-US')} מ׳</span>
  </div>
 
  {/* footprint trail — grows with the distance, head mark rides above the thumb */}
@@ -344,7 +207,7 @@ className={cn(
   '[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:box-border [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:mt-1 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bg-elevated [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-accent [&::-webkit-slider-thumb]:shadow-cta-ember',
   '[&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:box-border [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-bg-elevated [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-accent'
 )}
-aria-label="מרחק במטרים"
+aria-label="מרחק מתוכנן במטרים"
 aria-valuetext={`${distance} מטרים`}
  />
  </div>
@@ -361,53 +224,53 @@ aria-valuetext={`${distance} מטרים`}
  style={{ insetInlineStart: alongTrack(pct / 100) }}
  >
  <span className="block h-1.5 w-px bg-border-strong/70 mb-0.5" aria-hidden />
- {val === 50 ? '50 מ׳' : val.toLocaleString()}
+ {val === 50 ? '50 מ׳' : val.toLocaleString('en-US')}
  </span>
  );
  })}
  </div>
  </div>
 
- {/* cause → effect: slider distance drives the pace count */}
+ {/* cause → effect: distance and pace length drive the count */}
  <div className="hidden md:grid place-items-center text-fg-muted" aria-hidden>
  <Icon name="arrow-left" size={20} strokeWidth={2} />
  </div>
 
- <div className="p-6 rounded-xl flex flex-col items-center justify-center text-center bg-bg-accent/60">
- <div className="text-sm font-display font-semibold text-fg-muted mb-2">מספר משוער</div>
+ <div className="p-6 rounded-xl flex flex-col items-center justify-center text-center bg-bg-accent/60" data-qa="pace-result">
+ <div className="text-sm font-display font-semibold text-fg-muted mb-2">סופרים בערך</div>
  <motion.div className="text-6xl font-display font-bold text-fg tabular-nums mb-2" aria-hidden>{pacesShown}</motion.div>
- <span className="sr-only" aria-live="polite">כ־{paces} צעדים כפולים למרחק של {distance} מטרים</span>
+ <span className="sr-only" aria-live="polite">כ־{paces} צעדים כפולים, שהם כ־{steps} צעדים, למרחק של {distance} מטרים בצעד כפול של {fmtPace(pace)} מטרים</span>
  <div className="text-sm font-bold text-fg">צעדים כפולים</div>
- <div className="text-sm text-fg-muted mt-4 tabular-nums">חישוב לדוגמה: {distance} מ׳ ÷ 1.5 מ׳ ≈ {paces} צעדים כפולים</div>
+ <div className="text-sm text-fg-muted mt-1 tabular-nums" data-qa="pace-steps">כ־{steps.toLocaleString('en-US')} צעדים, שניים בכל צעד כפול</div>
+ <div dir="ltr" className="text-sm text-fg-muted mt-3 tabular-nums" data-qa="pace-calc">{distance.toLocaleString('en-US')} מ׳ ÷ {fmtPace(pace)} מ׳ ≈ {paces.toLocaleString('en-US')}</div>
  </div>
  </div>
 
- <div className="mt-8 grid sm:grid-cols-2 gap-6">
- <div className="flex gap-3 items-start">
+ <div className="mt-6 grid sm:grid-cols-2 gap-6">
+ <div className="flex gap-3 items-start" data-qa="pace-personal">
  <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">1</div>
+ <div className="text-sm text-fg-muted leading-relaxed">
+ <p>
+ <strong className="text-fg">מדידה אישית ותנאי השטח:</strong> כל מנווט מודד את הצעד הכפול שלו בתנאים דומים לשטח, כי שיפוע, קרקע לא אחידה ומשקל הציוד משנים אותו.
+ </p>
+ {/* How to measure is extra detail: one click (or Enter) away, natively keyboard-operable. */}
+ <details className="mt-1" data-qa="pace-measure">
+ <summary className="w-fit cursor-pointer rounded font-display font-semibold text-fg underline decoration-border-strong decoration-2 underline-offset-4 hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+ איך מודדים צעד כפול?
+ </summary>
+ <p className="mt-1">
+ הולכים 100 מ׳ מדודים במישור וסופרים צעדים כפולים. מי שסופר 67 צעדים כפולים ב־100 מ׳ מקבל צעד כפול של כ־1.5 מ׳. חוזרים על המדידה כמה פעמים.
+ </p>
+ </details>
+ </div>
+ </div>
+ <div className="flex gap-3 items-start" data-qa="pace-not-proof">
+ <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">2</div>
  <p className="text-sm text-fg-muted leading-relaxed">
- <strong className="text-fg">מדידה אישית:</strong> הולכים קטע מדוד של 100 מטר במישור וסופרים צעדים כפולים. חוזרים על המדידה כדי לקבל אומדן מייצג.
- </p>
- </div>
- <div className="flex gap-3 items-start">
- <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">!</div>
- <p className="text-sm text-fg-muted leading-relaxed">
- <strong className="text-fg">התאמה לתנאים:</strong> שיפוע, קרקע לא אחידה ומשקל הציוד משפיעים על אורך הצעד. מתרגלים את הספירה בתנאים דומים ומשלבים אותה עם בדיקת סימני שטח.
+ <strong className="text-fg">הספירה אינה הוכחת הגעה:</strong> היא מעריכה כמה הלכתם, לא איפה אתם. בתום הספירה מחפשים את סימן השטח של סוף הקטע (בקטע א׳ זה עיקול הנחל), ורק הוא מאשר שהגעתם.
  </p>
  </div>
  </div>
- </div>
- );
-}
-function ConclusionCard() {
-return (
- <div className="surface p-5 sm:p-6">
- <div className="font-display text-lg font-bold leading-snug text-fg md:text-xl mb-2">
- סיכום התכנון
- </div>
- <p className="text-base text-fg leading-relaxed text-pretty">
- <strong className="text-fg">סיפור דרך</strong> מקשר בין המסלול במפה לבין הסימנים הצפויים בשטח. <strong className="text-fg">ספירת צעדים</strong> מוסיפה אומדן למרחק שעברנו. השילוב בין כיוון, מרחק וסימני שטח מסייע לבדוק את ההתקדמות לאורך המסלול.
- </p>
  </div>
  );
 }

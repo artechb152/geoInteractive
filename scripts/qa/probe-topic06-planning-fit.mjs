@@ -62,7 +62,7 @@ const state = (page) =>
   page.evaluate(() => {
     const section = document.getElementById('scene-planning');
     const cards = [...section.querySelectorAll('[data-qa="route-builder"] ol button')];
-    const counter = section.querySelector('[data-qa="route-builder"] span[dir="ltr"]');
+    const counter = section.querySelector('[data-qa="route-builder"] [data-stop-label]');
     const pacing = section.querySelector('[data-qa="pacing"]');
     return {
       active: cards.findIndex((c) => c.getAttribute('aria-current') === 'step'),
@@ -118,10 +118,10 @@ async function runViewport(w, h) {
   const cards = section.locator('[data-qa="route-builder"] ol button');
   await cards.nth(2).click();
   steps.push({ after: 'click card 3', ...(await state(page)) });
-  await section.getByRole('button', { name: 'הנקודה הבאה' }).click();
+  await section.getByRole('button', { name: 'לנקודה או לקטע הבא' }).click();
   steps.push({ after: 'next', ...(await state(page)) });
-  await section.getByRole('button', { name: 'הנקודה הקודמת' }).click();
-  await section.getByRole('button', { name: 'הנקודה הקודמת' }).click();
+  await section.getByRole('button', { name: 'לנקודה או לקטע הקודם' }).click();
+  await section.getByRole('button', { name: 'לנקודה או לקטע הקודם' }).click();
   steps.push({ after: 'prev x2', ...(await state(page)) });
   await cards.nth(1).focus();
   await page.keyboard.press('End');

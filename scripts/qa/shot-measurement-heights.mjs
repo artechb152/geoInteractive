@@ -102,7 +102,7 @@ for (const [W, H] of SIZES) {
   await page.getByRole('tab', { name: 'גליות וגובה', exact: true }).click();
   await page.waitForTimeout(1200);
   // the task, solved through: B → A → C
-  const input = page.getByLabel('מהו הגובה מעל פני הים?');
+  const input = page.getByLabel(/^מהו הגובה מעל פני הים בתחנה [ABC]\?$/);
   const check = page.getByRole('button', { name: 'בדיקת תשובה' });
   for (const [id, answer] of [
     ['B', '120'],

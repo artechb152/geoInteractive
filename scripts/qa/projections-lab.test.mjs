@@ -1,15 +1,17 @@
 // Tests for the projections lab model (topic-02 #scene-coordinates-2 — "היטלים: מכדור למפה",
 // projections/projectionsModel.ts): the three projections and their inverses, the surfaces in 3-D
 // (contact, no cut into the globe, continuous unrolling, isometry), the camera fit, the slider's
-// keys, and the practice: order, check, correction, hint, summary and repeat.
+// keys, the equal circles (the distortion), the copy (one idea + one action a phase), and the practice:
+// rounds, windows, check, the first miss (where to look), the second (the answer shown), summary, repeat.
 // Run: node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/projections-lab.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  METHODS, SURFACE_SCALE, CYL_LAT_MAX, CONE_PHI0, CONE_N, CONE_RHO0, CONE_RHO_OUT, CONE_THETA_MAX, CONE_APEX_Y, AZ_RHO_MAX, DEMO, CONTACT_LAT, COVERAGE,
+  METHODS, SURFACE_SCALE, CYL_LAT_MAX, CONE_PHI0, CONE_N, CONE_RHO0, CONE_RHO_OUT, CONE_THETA_MAX, CONE_APEX_Y, AZ_RHO_MAX, CONTACT_LAT, COVERAGE,
   project, unproject, inCoverage, MAP_BOX, gridLines, outlineOf, sheetMesh, sheetPoint, sheetOutline, baseView, viewBasis, framePoints, fitCamera, FLOOR_Y,
-  phaseOf, sliderKey, demoDuration, ENDS, PHASE_LABEL, EXPLAIN, START_HINT, TAB_NAME, SURFACE_NAME,
-  FIRST_ORDER, REPEAT_ORDERS, initialPractice, practiceReducer, targetOf, feedbackOf, wrongMessage, RIGHT, HINT, PICK_PROMPT, SUMMARY,
+  CIRCLES, CIRCLE_R, smallCircle, circleOnMap, parallelScale, regionBox, mapOpacity, circlesOn,
+  phaseOf, sliderKey, demoDuration, ENDS, PHASE_LABEL, STEPS, TAB_NAME, SURFACE_NAME,
+  ROUNDS, WINDOW, MAX_MISSES, initialPractice, practiceReducer, targetOf, isPart, isOver, feedbackOf, RIGHT, SHOWN, MADE, LOOK, PICK_PROMPT, SUMMARY,
 } from '../../src/components/lessons/topic-02/projections/projectionsModel.ts';
 import { geodeticToScene, B } from '../../src/components/lessons/topic-02/geo-globe/geoCoords.ts';
 
@@ -83,15 +85,59 @@ test('plane: polar azimuthal equidistant — circles about the pole, radial meri
   close(AZ_RHO_MAX, 80 * D, 1e-15);
 });
 
-test('the demonstration point lies on all three maps, inside every sheet', () => {
-  for (const m of METHODS) {
-    assert.ok(inCoverage(m, DEMO.lat), m);
-    const [x, y] = project(m, DEMO.lat, DEMO.lon);
-    const b = MAP_BOX[m];
-    assert.ok(x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1, `${m} box`);
+/* ── the equal circles: the distortion ── */
+
+test('the equal circles are true circles on the sphere, whole inside every map', () => {
+  const ang = (a, b) =>
+    Math.acos(Math.min(1, Math.sin(a.lat * D) * Math.sin(b.lat * D) + Math.cos(a.lat * D) * Math.cos(b.lat * D) * Math.cos((a.lon - b.lon) * D))) / D;
+  for (const c of CIRCLES) {
+    for (const q of smallCircle(c.lat, c.lon, CIRCLE_R)) close(ang(c, q), CIRCLE_R, 1e-9, 'on the circle');
+    for (const m of METHODS) {
+      assert.ok(inCoverage(m, c.lat - CIRCLE_R) && inCoverage(m, c.lat + CIRCLE_R), `${m}: the ${c.lat}° circle leaves the map`);
+      for (const [x, y] of circleOnMap(m, c)) assert.ok(unproject(m, x, y), `${m}: a point of the ${c.lat}° circle is off the map`);
+    }
   }
-  // the highlighted parallel is not a line of contact
-  for (const m of METHODS) assert.ok(Math.abs(DEMO.lat - CONTACT_LAT[m]) >= 10, `${m}: the sample parallel is clear of the contact`);
+});
+
+test('on the map a circle keeps its height and stretches east–west by the parallel scale', () => {
+  for (const m of METHODS)
+    for (const c of CIRCLES) {
+      const pts = circleOnMap(m, c);
+      const [cx, cy] = project(m, c.lat, c.lon);
+      // the local east and north directions on the map, at the centre
+      const [ex, ey] = project(m, c.lat, c.lon + 0.01);
+      const [nx, ny] = project(m, c.lat + 0.01, c.lon);
+      const e = [ex - cx, ey - cy].map((v) => v / Math.hypot(ex - cx, ey - cy));
+      const n = [nx - cx, ny - cy].map((v) => v / Math.hypot(nx - cx, ny - cy));
+      let w = 0;
+      let h = 0;
+      for (const [x, y] of pts) {
+        w = Math.max(w, Math.abs((x - cx) * e[0] + (y - cy) * e[1]));
+        h = Math.max(h, Math.abs((x - cx) * n[0] + (y - cy) * n[1]));
+      }
+      close(h, CIRCLE_R * D, CIRCLE_R * D * 0.01, `${m} ${c.lat}°: meridians are true`);
+      close(w / h, parallelScale(m, c.lat), 0.03 * parallelScale(m, c.lat), `${m} ${c.lat}°: width / height`);
+    }
+  // each method keeps a different circle true: the one at (or nearest) its contact
+  const best = (m) => CIRCLES.reduce((a, c) => (parallelScale(m, c.lat) < parallelScale(m, a.lat) ? c : a)).lat;
+  assert.deepEqual(METHODS.map(best), [20, 45, 70]);
+  close(parallelScale('cone', CONE_PHI0), 1, 1e-12, 'the cone is true along its contact');
+  close(parallelScale('cyl', 0), 1, 1e-12);
+  close(parallelScale('az', 90), 1, 1e-12);
+  // and the stretch grows away from it: the cylinder ×2.9 at 70°N, the plane ×1.3 at 20°N
+  close(parallelScale('cyl', 70), 2.92, 0.01);
+  close(parallelScale('cone', 70), 1.17, 0.01);
+  close(parallelScale('az', 20), 1.30, 0.01);
+  for (const m of METHODS) for (const c of CIRCLES) assert.ok(parallelScale(m, c.lat) >= 1 - 1e-12, `${m}: equidistant maps never shrink a circle`);
+});
+
+test('in the lab the map comes in as the surface unrolls, and the circles once it is well open', () => {
+  assert.ok(mapOpacity(0) > 0.2 && mapOpacity(0) < 0.35, 'a faint preview at the start');
+  close(mapOpacity(1), 1, 1e-12);
+  assert.ok(mapOpacity(0.5) > mapOpacity(0.2));
+  assert.equal(circlesOn(0), 0);
+  assert.equal(circlesOn(0.4), 0);
+  close(circlesOn(1), 1, 1e-12);
 });
 
 test('grid lines are the graticule every 15°, inside each map', () => {
@@ -204,7 +250,7 @@ test('at 100 % the sheet IS the map: a plane, outer face to the viewer, east to 
     close(o.n[1], nrm[1], 1e-9);
   }
   // the developed sector keeps its flat geometry: distance from the apex = ρ
-  const [cx, cy] = project('cone', DEMO.lat, DEMO.lon);
+  const [cx, cy] = project('cone', 31.8, 35.2);
   const pc = sheetPoint('cone', 1, cx, cy).p;
   close(Math.hypot(pc[0] - ref[0], pc[1] - ref[1], pc[2] - ref[2]), Math.hypot(cx, cy) * SURFACE_SCALE, 1e-9);
 });
@@ -266,87 +312,151 @@ test('phases and the slider keys: ← and ↑ advance (toward "מפה שטוחה
   assert.equal(PHASE_LABEL.az.mid, 'מעבר למבט על');
   close(demoDuration(0), 5, 1e-12);
   assert.ok(demoDuration(0.9) >= 0.5 && demoDuration(0.9) < 1);
-  assert.equal(EXPLAIN.cyl.end, 'גליל נפתח למלבן. בדוגמה הזו מתקבלת רשת של קווים ישרים.');
-  assert.equal(EXPLAIN.cone.end, 'חרוט נפתח למניפה. קווי הרוחב מקושתים וקווי האורך מתכנסים.');
-  assert.equal(EXPLAIN.az.end, 'המישור כבר שטוח. במבט על מתקבלת רשת מעגלית סביב מרכז ההיטל.');
-  assert.equal(START_HINT.cyl, 'הזיזו את המחוון או הפעילו את ההדגמה כדי לפתוח את המשטח.');
   assert.deepEqual(METHODS.map((m) => TAB_NAME[m]), ['גלילי', 'חרוטי', 'אזימוטלי']);
+});
+
+/* ── the copy: one idea and one action a phase ── */
+
+test('every phase says one idea and one short action; the end asks to compare', () => {
+  const sentences = (t) => t.split(/[.:](?:\s|$)/).filter((x) => x.trim()).length;
+  for (const m of METHODS)
+    for (const ph of ['start', 'mid', 'end']) {
+      const { idea, act } = STEPS[m][ph];
+      assert.ok(idea && act, `${m} ${ph}`);
+      assert.ok(sentences(idea) <= 2, `${m} ${ph}: one idea, at most two sentences — ${idea}`);
+      assert.ok(act.split(/\s+/).length <= 7, `${m} ${ph}: a short action — ${act}`);
+      assert.ok(act.endsWith('.'), act);
+    }
+  // the unrolling never stretches (cylinder, cone) — the distortion comes from carrying the globe onto
+  // the surface, so the step does not contradict "a sphere cannot be flattened without stretching";
+  // the plane has nothing to unroll
+  for (const m of ['cyl', 'cone']) assert.ok(STEPS[m].mid.idea.includes('בלי להימתח') && STEPS[m].mid.idea.includes('לא בפריסה'), m);
+  assert.ok(STEPS.az.mid.idea.includes('אין מה לפרוס'));
+  // the end names the distortion against the contact, and asks for the comparison
+  for (const m of METHODS) {
+    assert.ok(STEPS[m].end.idea.includes('נמתחים'), m);
+    assert.ok(STEPS[m].end.act.includes('השוו'), m);
+  }
+  assert.ok(STEPS.cyl.end.idea.includes('קו המשווה'));
+  assert.ok(STEPS.cone.end.idea.includes('45°'));
+  assert.ok(STEPS.az.end.idea.includes('הקוטב'));
 });
 
 /* ── practice ── */
 
-test('practice: first order is conic, azimuthal, cylindrical — never the tabs’ order', () => {
-  assert.deepEqual(FIRST_ORDER, ['cone', 'az', 'cyl']);
-  for (const o of REPEAT_ORDERS) {
-    assert.notDeepEqual(o, ['cyl', 'cone', 'az']);
-    assert.deepEqual([...o].sort(), ['az', 'cone', 'cyl']);
+test('practice: four tasks a round — all three methods, one again, never twice in a row; mostly windows', () => {
+  assert.equal(initialPractice().order.length, 4);
+  assert.notEqual(targetOf(initialPractice()), 'cyl', 'the first task is not the opening tab');
+  for (const r of ROUNDS) {
+    assert.equal(r.length, 4);
+    assert.deepEqual([...new Set(r.map((t) => t.m))].sort(), ['az', 'cone', 'cyl']);
+    for (let i = 1; i < r.length; i++) assert.notEqual(r[i].m, r[i - 1].m, 'no method twice in a row');
+    assert.equal(r.filter((t) => !t.part).length, 1, 'one whole map a round');
   }
+  // the repeated method is not always the last task: elimination never gives it away
+  const lastRepeats = ROUNDS.map((r) => r.slice(0, 3).some((t) => t.m === r[3].m));
+  assert.ok(lastRepeats.includes(false) && lastRepeats.includes(true));
 });
 
-test('practice: a choice is marked but not checked; check only with a choice; a miss stays open', () => {
+test('practice: each window is inside its map, smaller than it, and hides the outline', () => {
+  for (const m of METHODS) {
+    const w = WINDOW[m];
+    const b = MAP_BOX[m];
+    assert.ok(w.x1 - w.x0 < b.x1 - b.x0 || w.y1 - w.y0 < b.y1 - b.y0, `${m}: a window, not the whole map`);
+    for (let i = 0; i <= 20; i++)
+      for (let j = 0; j <= 20; j++) {
+        const x = w.x0 + ((w.x1 - w.x0) * i) / 20;
+        const y = w.y0 + ((w.y1 - w.y0) * j) / 20;
+        assert.ok(unproject(m, x, y), `${m}: the window shows paper outside the map at ${x.toFixed(2)}, ${y.toFixed(2)}`);
+      }
+  }
+  // the plane's window keeps the parallels 45°–75°N whole (closed circles round the pole)
+  assert.ok(WINDOW.az.x1 > project('az', 45, 90)[0] && WINDOW.az.y0 < project('az', 45, 0)[1]);
+  // regionBox bounds the region it is given
+  const r = regionBox('cone', 25, 70, -30, 60);
+  const [x, y] = project('cone', 40, 10);
+  assert.ok(x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1);
+});
+
+test('practice: a choice is marked but not checked; check only with a choice', () => {
   let s = initialPractice();
   assert.equal(targetOf(s), 'cone');
-  assert.deepEqual(feedbackOf(s), { tone: 'info', text: PICK_PROMPT, hint: null });
+  assert.equal(isPart(s), false);
+  assert.deepEqual(feedbackOf(s), { tone: 'info', text: PICK_PROMPT });
   s = run(s, { type: 'check' });
-  assert.equal(s.tries, 0, 'no check without a choice');
+  assert.equal(s.misses, 0, 'no check without a choice');
   s = run(s, { type: 'pick', m: 'cyl' });
   assert.equal(s.pick, 'cyl');
   assert.equal(s.checked, null, 'a choice alone is not checked');
-  s = run(s, { type: 'check' });
-  assert.equal(s.checked, 'cyl');
-  assert.equal(s.solved[0], false);
-  const f = feedbackOf(s);
-  assert.equal(f.tone, 'wrong');
-  assert.equal(f.text, 'הגליל נפתח למלבן. במפת היעד קווי הרוחב מקושתים וקווי האורך מתכנסים — בדקו איזה משטח יכול ליצור את הרשת הזו.');
-  assert.ok(!f.text.includes('חרוט'), 'the miss does not name the answer');
-  // checking the same choice again does nothing; next is closed
-  assert.equal(run(s, { type: 'check' }).tries, 1);
-  assert.equal(run(s, { type: 'next' }).index, 0);
-  // a hint points at the grid
-  s = run(s, { type: 'hint' });
-  assert.equal(feedbackOf(s).hint, HINT);
-  // another choice clears the old check (the surface it showed goes too)
-  s = run(s, { type: 'pick', m: 'cone' });
-  assert.equal(s.checked, null);
-  assert.equal(feedbackOf(s).tone, 'info');
-  s = run(s, { type: 'check' });
-  assert.equal(s.solved[0], true);
-  assert.deepEqual(feedbackOf(s), { tone: 'right', text: RIGHT.cone, hint: null });
-  // solved: choices are frozen
-  assert.equal(run(s, { type: 'pick', m: 'az' }).pick, 'cone');
+  assert.equal(run(s, { type: 'next' }).index, 0, 'next is closed while the task is open');
 });
 
-test('practice: every miss names what the chosen surface makes and what the target shows, never the answer', () => {
+test('practice: a first miss says what the choice makes and where to look — never the answer', () => {
+  let s = run(initialPractice(), { type: 'pick', m: 'cyl' }, { type: 'check' });
+  assert.equal(s.checked, 'cyl');
+  assert.equal(s.misses, 1);
+  assert.equal(isOver(s), false);
+  const f = feedbackOf(s);
+  assert.equal(f.tone, 'wrong');
+  assert.equal(f.text, `${MADE.cyl} ${LOOK}`);
   for (const t of METHODS)
     for (const c of METHODS) {
       if (c === t) continue;
-      const w = wrongMessage(c, t);
-      assert.ok(w.endsWith('בדקו איזה משטח יכול ליצור את הרשת הזו.'), w);
-      assert.ok(w.startsWith(`ה${SURFACE_NAME[c]}`), `${c}→${t} starts with the chosen surface: ${w}`);
+      const w = feedbackOf({ ...initialPractice(), order: [{ m: t, part: true }, ...initialPractice().order.slice(1)], pick: c, checked: c, misses: 1 }).text;
       assert.ok(!w.includes(SURFACE_NAME[t]), `${c}→${t} names the answer: ${w}`);
-      assert.ok(w.includes('במפת היעד'), w);
+      assert.ok(w.includes(LOOK), w);
     }
+  // checking the same choice again does nothing
+  assert.equal(run(s, { type: 'check' }).misses, 1);
+  // another choice clears the old check (its surface goes too); the cue stays on screen
+  s = run(s, { type: 'pick', m: 'az' });
+  assert.equal(s.checked, null);
+  assert.deepEqual(feedbackOf(s), { tone: 'info', text: LOOK });
+  // right on the second try: answered
+  s = run(s, { type: 'pick', m: 'cone' }, { type: 'check' });
+  assert.equal(s.outcome[0], 'right');
+  assert.deepEqual(feedbackOf(s), { tone: 'right', text: RIGHT.cone });
+  // over: choices are frozen
+  assert.equal(run(s, { type: 'pick', m: 'az' }).pick, 'cone');
 });
 
-test('practice: three right answers (after corrections) reach the summary; repeat resets only practice', () => {
+test('practice: a second miss shows the answer and why; the task is then over', () => {
+  assert.equal(MAX_MISSES, 2);
+  let s = run(initialPractice(), { type: 'pick', m: 'cyl' }, { type: 'check' }, { type: 'pick', m: 'az' }, { type: 'check' });
+  assert.equal(s.misses, 2);
+  assert.equal(s.outcome[0], 'shown');
+  assert.equal(isOver(s), true);
+  assert.deepEqual(feedbackOf(s), { tone: 'shown', text: SHOWN.cone });
+  for (const m of METHODS) assert.ok(SHOWN[m].startsWith(`התשובה: ${SURFACE_NAME[m]}.`), SHOWN[m]);
+  s = run(s, { type: 'next' });
+  assert.equal(s.index, 1);
+  assert.equal(s.misses, 0);
+  assert.equal(s.pick, null);
+});
+
+test('practice: four tasks over (answered or shown) reach the summary; repeat resets only practice', () => {
   let s = initialPractice();
-  for (const [i, m] of FIRST_ORDER.entries()) {
-    if (i === 1) s = run(s, { type: 'pick', m: 'cyl' }, { type: 'check' }); // one miss on the way
-    s = run(s, { type: 'pick', m }, { type: 'check' });
-    assert.equal(s.solved[i], true);
-    if (i < 2) s = run(s, { type: 'next' });
+  for (const [i, t] of initialPractice().order.entries()) {
+    if (i === 1) s = run(s, { type: 'pick', m: t.m === 'cyl' ? 'az' : 'cyl' }, { type: 'check' }); // one miss on the way
+    if (i === 2) {
+      const wrong = METHODS.filter((m) => m !== t.m);
+      s = run(s, { type: 'pick', m: wrong[0] }, { type: 'check' }, { type: 'pick', m: wrong[1] }, { type: 'check' }); // shown
+    } else s = run(s, { type: 'pick', m: t.m }, { type: 'check' });
+    assert.ok(isOver(s));
+    if (i < 3) s = run(s, { type: 'next' });
   }
-  assert.equal(s.index, 2);
+  assert.deepEqual(s.outcome, ['right', 'right', 'shown', 'right']);
   assert.equal(s.done, false, 'no automatic move to the summary');
   s = run(s, { type: 'finish' });
   assert.equal(s.done, true);
   assert.equal(feedbackOf(s), null);
   assert.deepEqual(SUMMARY.map((x) => `${x.surface}→${x.shape}`), ['גליל→מלבן', 'חרוט→מניפה', 'מישור→מפה עגולה בדוגמה הקוטבית']);
+  assert.ok(SUMMARY.every((x) => x.near.startsWith('עיוות קטן ליד')));
   const again = run(s, { type: 'restart' });
   assert.equal(again.done, false);
   assert.equal(again.index, 0);
-  assert.deepEqual(again.solved, [false, false, false]);
-  assert.notDeepEqual(again.order, FIRST_ORDER);
+  assert.deepEqual(again.outcome, [null, null, null, null]);
+  assert.deepEqual(again.order, ROUNDS[1]);
   assert.equal(again.round, 1);
   // finishing early is refused
   assert.equal(run(initialPractice(), { type: 'finish' }).done, false);

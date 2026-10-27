@@ -21,6 +21,8 @@ import { Topic09Lesson } from '@/components/lessons/topic-09/Topic09Lesson';
 import { Topic10Lesson } from '@/components/lessons/topic-10/Topic10Lesson';
 import { Topic11Lesson } from '@/components/lessons/topic-11/Topic11Lesson';
 import { Topic12Lesson } from '@/components/lessons/topic-12/Topic12Lesson';
+import { NavigationSim } from '@/components/lessons/topic-06/navigation-sim/NavigationSim';
+import { CartographyPractice } from '@/components/lessons/topic-02/cartography-practice/CartographyPractice';
 
 const customLearn: Record<string, () => React.ReactNode> = {
   'topic-01': () => <Topic01Lesson />,
@@ -35,6 +37,12 @@ const customLearn: Record<string, () => React.ReactNode> = {
   'topic-10': () => <Topic10Lesson />,
   'topic-11': () => <Topic11Lesson />,
   'topic-12': () => <Topic12Lesson />,
+};
+
+// A lesson's own practice, where it has one; the others keep the placeholder.
+const customPractice: Record<string, () => React.ReactNode> = {
+  'topic-02': () => <CartographyPractice />,
+  'topic-06': () => <NavigationSim />,
 };
 
 export function generateStaticParams() {
@@ -75,7 +83,7 @@ export default async function LessonPage({
       prev={prev && { id: prev.id, shortTitle: prev.shortTitle }}
       next={next && { id: next.id, shortTitle: next.shortTitle }}
       learn={learn}
-      practice={<InteractionPlaceholder kind={lesson.interactions[0]} />}
+      practice={customPractice[topicId] ? customPractice[topicId]() : <InteractionPlaceholder kind={lesson.interactions[0]} />}
       check={
         questions.length > 0 ? (
           <Quiz questions={questions} />
