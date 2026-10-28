@@ -10,8 +10,9 @@
 //              tab, same run): the lesson's one fit scale, one fit only (no double shrink), the same edges, padding,
 //              title and body size on screen
 //   fit        the card runs from under the header to above 1122 px in every state at 1440 × 1122, hints and
-//              feedback included
-//   tabs       practice → knowledge check → practice → learn → practice, and a reload: each tab shows its content,
+//              feedback included; and at the reference width (1344, scale 1) the card is ≤ 760 px tall in every state,
+//              so a 1920 × 910 view shows it whole under the header (two wrong lines + both hints is the tallest)
+//   tabs      practice → knowledge check → practice → learn → practice, and a reload: each tab shows its content,
 //              the practice reopens at the demonstration (the tabs keep no state), no page errors
 //   demo       080° drawn from the tower leaves it on the wrong side (its probe reads 260°); reversed, the line runs
 //              at 260° and every probe on it reads 080°; probes lie on the line
@@ -79,12 +80,18 @@ async function open(browser, { reduced = false } = {}) {
 
 const top = (page) => page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
 let tallest = { bottom: 0, label: '' };
+/** The card's outer height at the reference width (1344, scale 1): ≤ this in every state, so a 1920 × 910 view shows it whole. */
+const MAX_REF_HEIGHT = 760;
+let tallestRef = { height: 0, label: '' };
 const fits = async (page, label) => {
   await top(page);
   await page.waitForTimeout(200);
   const b = await page.locator(A).boundingBox();
   if (b.y + b.height > tallest.bottom) tallest = { bottom: b.y + b.height, label };
   check(b.y >= 96 && b.y + b.height <= 1122, `fit · ${label}: card ${Math.round(b.y)}–${Math.round(b.y + b.height)} px (under the header, ≤ 1122)`);
+  const ref = await page.locator(A).evaluate((el) => el.offsetHeight);
+  if (ref > tallestRef.height) tallestRef = { height: ref, label };
+  check(ref <= MAX_REF_HEIGHT, `fit · ${label}: ${ref} reference px (≤ ${MAX_REF_HEIGHT})`);
 };
 /** A card's frame on screen: its fit scale (and how many fits hold it), edges, padding, title and body size. */
 const frame = (page, sel) =>
@@ -421,8 +428,12 @@ try {
   await btn(page, 'בדיקה').click();
   check(!(await btn(page, 'הצגת הפתרון').isVisible()), 'no solution right after the first wrong check');
   await btn(page, 'רמז').click();
+  await btn(page, 'רמז נוסף').click();
+  check((await page.locator(`${A} [data-hint]`).count()) === 2 && (await feedback(page)) === 'lines-reverse+reverse', 'B: two wrong lines and both hints (the tallest state)');
+  await fits(page, 'B · lines two wrong + two hints');
   await btn(page, 'הצגת הפתרון').click();
   check((await feedback(page)) === 'lines-solved' && (await input(page, 'antenna').inputValue()) === '124' && (await input(page, 'summit').inputValue()) === '58', 'the solution fills 124° and 058°');
+  await fits(page, 'B · lines solved');
   await shot(page, '16-b-lines-solved.png');
   await btn(page, 'המשך: סימון המיקום').click();
   await clickWorld(page, { E: 600, N: 1500 });
@@ -441,9 +452,13 @@ try {
   await input(page, 'tower').fill('13');
   await btn(page, 'בדיקה').click();
   check((await feedback(page)) === 'verify-reverse', 'B verify, 013° (not reversed): named');
+  await btn(page, 'רמז').click();
+  await btn(page, 'רמז נוסף').click();
+  await fits(page, 'B · verify wrong + two hints');
   await input(page, 'tower').fill('193');
   await btn(page, 'בדיקה').click();
   check((await state(page)).step === 'done', 'B verify, 193°: done');
+  await fits(page, 'B · done');
   await shot(page, '18-b-done.png');
   // C, the third position
   await btn(page, 'תרחיש נוסף').click();
@@ -473,6 +488,8 @@ try {
   check(await btn(page, 'התחלה מחדש').isDisabled(), 'restart is off when there is nothing to clear');
   check(errors.length === 0, `no page errors${errors.length ? `: ${errors.join(' | ')}` : ''}`);
   console.log(`     tallest state: ${tallest.label}, card ends at ${Math.round(tallest.bottom)} px`);
+  console.log(`     tallest at the reference width: ${tallestRef.label}, ${tallestRef.height} px`);
+  check(tallestRef.height <= MAX_REF_HEIGHT, `fit: the tallest state (${tallestRef.label}) is ${tallestRef.height} ≤ ${MAX_REF_HEIGHT} reference px`);
   await ctx.close();
 
   // ================================================================ keyboard only, reduced motion

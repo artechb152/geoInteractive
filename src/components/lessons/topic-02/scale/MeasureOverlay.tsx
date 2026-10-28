@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { formatNumber, type SheetPoint } from './geo';
 import type { OverlayContext } from './SheetViewport';
 import { ACCENT, HAIRLINE, INK, Label, PAPER, dash, pillSize, sw } from './overlayParts';
@@ -9,11 +10,11 @@ const MM_UNITS = 1000 / 240; // 1 mm on a 24 cm sheet, in sheet units
 const clamp = (q: SheetPoint): SheetPoint => ({ x: Math.min(1000, Math.max(0, q.x)), y: Math.min(1000, Math.max(0, q.y)) });
 
 // Screen-px sizes (divided by ppu, so they hold while zooming).
-const R = 11; // lettered disc radius
+const R = 14; // lettered disc radius
 const LEAD = 8; // leader between a point and its disc's rim
 const STEP = R + LEAD; // point → disc centre
-const HIT = 18; // invisible pointer target around the disc (≥ 24 px target)
-const DOT = 2; // ink dot radius at the measured point (4 px), with a 1 px paper edge
+const HIT = 20; // invisible pointer target around the disc (≥ 24 px target)
+const DOT = 3; // ink dot radius at the measured point (6 px), with a 1.5 px paper edge
 const TICK = 10; // longest (cm) ruler tick
 const NUM_FS = 13; // ruler numerals
 const NUM_H = 10; // numeral glyph height used for clearance
@@ -21,7 +22,13 @@ const NUM_GAP = 3; // tick end → numeral, numeral → ruler edge
 const NUM_MIN_SPACING = 28; // label every cm only when cm ticks are at least this far apart
 const RULER_EXT = 6; // ruler body beyond each end, so the end numerals sit on paper
 const END_TICK = 7; // half-length of the dimension line's end ticks (no ruler)
+const RIPPLE = 20; // radius a placed point's ripple spreads to
+const LIFT = 1.08; // disc scale while dragged
+// Gentle, no overshoot: a short ease-out for every landing.
+const SETTLE = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 const numW = (n: number) => String(n).length * NUM_FS * 0.6;
+// Scale SVG groups about their own centre.
+const ABOUT_CENTRE = { transformBox: 'fill-box', transformOrigin: 'center' } as const;
 
 type Props = {
   a: SheetPoint | null;
@@ -32,8 +39,13 @@ type Props = {
   reading: number | null;
   ctx: OverlayContext;
   letters: readonly [string, string];
-  onMove?: (which: 0 | 1, p: SheetPoint) => void;
+  /** `start`: the first move of a drag or a key press (one undo step), not its continuation. */
+  onMove?: (which: 0 | 1, p: SheetPoint, start: boolean) => void;
   names?: readonly [string, string];
+  /** Per point: bumps when it lands somewhere new, replaying its ripple and pop (0: never animated). */
+  pulse?: readonly [number, number];
+  /** Bumps when A–B becomes whole, drawing the line in and fading the ruler in (0: never animated). */
+  segment?: number;
 };
 
 type Axis = { ux: number; uy: number; nx: number; ny: number; len: number; px: number };
@@ -91,8 +103,10 @@ function discFor(p: SheetPoint, out: { x: number; y: number }, side: { x: number
  * what is measured. With a reading, a sheet ruler lies on one side of the segment and the reading chip
  * on the other; without one (orthophoto stage) the segment is a dimension line with end ticks.
  */
-export function MeasureOverlay({ a, b, cm, reading, ctx, letters, onMove, names }: Props) {
+export function MeasureOverlay({ a, b, cm, reading, ctx, letters, onMove, names, pulse = [0, 0], segment = 0 }: Props) {
   const { ppu } = ctx;
+  const still = useReducedMotion() ?? false;
+  const drawIn = segment > 0 && !still;
   const both = a !== null && b !== null;
   const ax = both ? axisOf(a, b, ppu) : null;
   const up = { x: 0, y: -1 };
@@ -107,14 +121,46 @@ export function MeasureOverlay({ a, b, cm, reading, ctx, letters, onMove, names 
   const ruler = showRuler ? rulerLayout(ax, cm, ppu) : null;
   return (
     <g data-qa="measure">
-      {ruler && ax && a && b && cm !== null && <Ruler a={a} b={b} ax={ax} cm={cm} ppu={ppu} layout={ruler} />}
-      {both && <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={ACCENT} strokeWidth={sw(ruler ? 3 : 2.5, ppu)} strokeLinecap="round" />}
+      {/* The ruler and chip fade in once the line has drawn itself from A to B. */}
+      <motion.g key={`ruler-${segment}`} initial={drawIn ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={{ duration: 0.25, delay: 0.3 }}>
+        {ruler && ax && a && b && cm !== null && <Ruler a={a} b={b} ax={ax} cm={cm} ppu={ppu} layout={ruler} />}
+      </motion.g>
+      {both && (
+        <motion.line
+          key={`line-${segment}`}
+          x1={a.x}
+          y1={a.y}
+          x2={b.x}
+          y2={b.y}
+          stroke={ACCENT}
+          strokeWidth={sw(ruler ? 3 : 2.5, ppu)}
+          strokeLinecap="round"
+          initial={drawIn ? { pathLength: 0 } : false}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
       {both && ax && !ruler && <DimensionTicks a={a} b={b} ax={ax} ppu={ppu} />}
       {both && ax && ruler && reading !== null && (
-        <ReadingChip a={a} b={b} ax={ax} rulerW={ruler.width} ppu={ppu} text={`${formatNumber(reading, 1)} ס״מ`} />
+        <motion.g key={`chip-${segment}`} initial={drawIn ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={{ duration: 0.25, delay: 0.3 }}>
+          <ReadingChip a={a} b={b} ax={ax} rulerW={ruler.width} ppu={ppu} text={`${formatNumber(reading, 1)} ס״מ`} />
+        </motion.g>
       )}
       {[a, b].map((p, i) =>
-        p ? <Handle key={i} which={i as 0 | 1} p={p} disc={discs[i] ?? p} ctx={ctx} letter={letters[i]} onMove={onMove} name={names?.[i]} /> : null,
+        p ? (
+          <Handle
+            key={i}
+            which={i as 0 | 1}
+            p={p}
+            disc={discs[i] ?? p}
+            ctx={ctx}
+            letter={letters[i]}
+            onMove={onMove}
+            name={names?.[i]}
+            pulse={pulse[i]}
+            still={still}
+          />
+        ) : null,
       )}
     </g>
   );
@@ -213,6 +259,8 @@ function Handle({
   letter,
   onMove,
   name,
+  pulse,
+  still,
 }: {
   which: 0 | 1;
   /** The measured point. */
@@ -221,12 +269,21 @@ function Handle({
   disc: SheetPoint;
   ctx: OverlayContext;
   letter: string;
-  onMove?: (which: 0 | 1, p: SheetPoint) => void;
+  onMove?: (which: 0 | 1, p: SheetPoint, start: boolean) => void;
   name?: string;
+  pulse: number;
+  /** Reduced motion: no ripple, pop or lift. */
+  still: boolean;
 }) {
   const [focused, setFocused] = useState(false);
-  // Offset from the pointer to the point at grab time, so a drag never jumps the point.
-  const grab = useRef<{ dx: number; dy: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  // Offset from the pointer to the point at grab time, so a drag never jumps the point; `moved` once it has.
+  const grab = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
+  const pop = pulse > 0 && !still;
+  const release = () => {
+    grab.current = null;
+    setDragging(false);
+  };
   const editable = !!onMove;
   const { ppu } = ctx;
   const r = R / ppu;
@@ -250,16 +307,18 @@ function Handle({
         e.stopPropagation();
         e.currentTarget.setPointerCapture(e.pointerId);
         const u = ctx.toUnits(e.clientX, e.clientY);
-        grab.current = { dx: p.x - u.x, dy: p.y - u.y };
+        grab.current = { dx: p.x - u.x, dy: p.y - u.y, moved: false };
+        setDragging(true);
       }}
       onPointerMove={(e) => {
         const g = grab.current;
         if (!editable || !g || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
         const u = ctx.toUnits(e.clientX, e.clientY);
-        onMove(which, clamp({ x: u.x + g.dx, y: u.y + g.dy }));
+        onMove(which, clamp({ x: u.x + g.dx, y: u.y + g.dy }), !g.moved);
+        g.moved = true;
       }}
-      onPointerUp={() => (grab.current = null)}
-      onPointerCancel={() => (grab.current = null)}
+      onPointerUp={release}
+      onPointerCancel={release}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         if (!editable || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -269,10 +328,30 @@ function Handle({
         if (!v) return;
         e.preventDefault();
         e.stopPropagation();
-        onMove(which, clamp({ x: p.x + v[0], y: p.y + v[1] }));
+        onMove(which, clamp({ x: p.x + v[0], y: p.y + v[1] }), !e.repeat);
       }}
     >
+      {/* Landing: a ring spreads from the point and fades (replayed per pulse). */}
+      {pop && (
+        <motion.circle
+          key={`ripple-${pulse}`}
+          data-qa="point-ripple"
+          cx={p.x}
+          cy={p.y}
+          r={RIPPLE / ppu}
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth={sw(1.5, ppu)}
+          pointerEvents="none"
+          initial={{ scale: 0.3, opacity: 0.5 }}
+          animate={{ scale: 1, opacity: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={ABOUT_CENTRE}
+        />
+      )}
       {editable && <circle data-qa="handle-hit" cx={disc.x} cy={disc.y} r={HIT / ppu} fill="transparent" />}
+      {/* Paper casing under the leader, so it holds on the orthophoto. */}
+      <line x1={p.x + ux * from} y1={p.y + uy * from} x2={disc.x - ux * r} y2={disc.y - uy * r} stroke={PAPER} strokeWidth={sw(5, ppu)} strokeLinecap="round" />
       <line
         data-qa="handle-leader"
         x1={p.x + ux * from}
@@ -280,17 +359,41 @@ function Handle({
         x2={disc.x - ux * r}
         y2={disc.y - uy * r}
         stroke={ACCENT}
-        strokeWidth={sw(1.5, ppu)}
+        strokeWidth={sw(2.5, ppu)}
       />
       {focused && (
         <circle cx={disc.x} cy={disc.y} r={r + 5 / ppu} fill="none" stroke={ACCENT} strokeWidth={sw(2, ppu)} strokeDasharray={dash(ppu, 3, 3)} />
       )}
-      <circle data-qa="handle-disc" cx={disc.x} cy={disc.y} r={r} fill={PAPER} stroke={ACCENT} strokeWidth={sw(2.5, ppu)} />
-      <text x={disc.x} y={disc.y} fontSize={13 / ppu} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={INK}>
-        {letter}
-      </text>
-      {/* The measured point itself: ink, 4 px, with a 1 px paper edge (stroke centred on r = 2.5). */}
-      <circle data-qa="point-dot" cx={p.x} cy={p.y} r={(DOT + 0.5) / ppu} fill={INK} stroke={PAPER} strokeWidth={sw(1, ppu)} />
+      {/* The disc eases in when the point lands and lifts slightly while dragged. */}
+      <motion.g
+        key={`disc-${pulse}`}
+        initial={pop ? { scale: 0.75, opacity: 0 } : false}
+        animate={{ scale: dragging && !still ? LIFT : 1, opacity: 1 }}
+        transition={SETTLE}
+        style={ABOUT_CENTRE}
+      >
+        {/* Ink disc, ember rim on a paper casing: reads on map and orthophoto alike (as the locate pill). */}
+        <circle cx={disc.x} cy={disc.y} r={r} fill="none" stroke={PAPER} strokeWidth={sw(7, ppu)} />
+        <circle data-qa="handle-disc" cx={disc.x} cy={disc.y} r={r} fill={INK} stroke={ACCENT} strokeWidth={sw(3, ppu)} />
+        <text x={disc.x} y={disc.y} fontSize={15 / ppu} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={PAPER}>
+          {letter}
+        </text>
+      </motion.g>
+      {/* The measured point itself: ink, 6 px, with a 1.5 px paper edge (stroke centred on r = 3.75). */}
+      <motion.circle
+        key={`dot-${pulse}`}
+        data-qa="point-dot"
+        cx={p.x}
+        cy={p.y}
+        r={(DOT + 0.75) / ppu}
+        fill={INK}
+        stroke={PAPER}
+        strokeWidth={sw(1.5, ppu)}
+        initial={pop ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={SETTLE}
+        style={ABOUT_CENTRE}
+      />
     </g>
   );
 }

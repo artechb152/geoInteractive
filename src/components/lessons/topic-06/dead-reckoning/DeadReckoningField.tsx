@@ -15,8 +15,16 @@ import { AZIMUTH_DEG, HILL, PACE_M, ROADS, ROAD_WIDTH_M, START, VISIBILITY_M, WA
  * deviation), driven by the same distance value as the map's estimate.
  */
 
-const W = 560;
-const H = 440;
+/**
+ * The frame, 1 unit = 1 reference px: the view's column in the activity (FIELD_W wide) at the map's
+ * height beside it, so the 14–15 px labels keep their size at scale 1.
+ */
+const W = 344;
+const H = 358;
+export const FIELD_W = W;
+/** The pace counter's box (bottom, physical left); the field note on the HTML layer stays clear of it. */
+const COUNT = { x: 14, w: 136 } as const;
+export const FIELD_COUNTER_END = COUNT.x + COUNT.w;
 /** Units per metre: the 30 m of sight are a 72-unit radius. */
 const S = 2.4;
 const SIGHT = VISIBILITY_M * S;
@@ -41,7 +49,7 @@ const RIPPLES = (() => {
   return d;
 })();
 
-/** Sand streaks blown across the view (screen space, inside the haze only). */
+/** Sand streaks blown across the view (drawn for a 560 × 440 frame, scaled to this one; inside the haze only). */
 const STREAKS: readonly [number, number, number, number][] = [
   [20, 70, 150, 52], [210, 40, 360, 22], [380, 96, 540, 74], [30, 190, 120, 178],
   [420, 210, 548, 192], [40, 300, 170, 282], [360, 330, 500, 310], [150, 410, 300, 392],
@@ -127,7 +135,7 @@ export function DeadReckoningField({
         <rect x="0" y="0" width={W} height={H} className="fill-tanline-contour" />
         <g stroke="#FFFFFF" strokeOpacity={0.5} strokeWidth={3} strokeLinecap="round">
           {STREAKS.map(([x1, y1, x2, y2], i) => (
-            <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
+            <line key={i} x1={r1((x1 * W) / 560)} y1={r1((y1 * H) / 440)} x2={r1((x2 * W) / 560)} y2={r1((y2 * H) / 440)} />
           ))}
         </g>
       </g>
@@ -159,11 +167,11 @@ export function DeadReckoningField({
 
       {/* The pace count the navigator keeps — its target is the learner's own answer to step 1 */}
       <g data-field="count">
-        <rect x={14} y={H - 86} width={176} height={72} rx={10} className="fill-paper-bright stroke-tanline" strokeWidth={1.2} />
-        <text x={102} y={H - 70} textAnchor="middle" dominantBaseline="central" fontSize={14} fontWeight={700} className="fill-fg-muted font-display" direction="rtl">
+        <rect x={COUNT.x} y={H - 86} width={COUNT.w} height={72} rx={10} className="fill-paper-bright stroke-tanline" strokeWidth={1.2} />
+        <text x={COUNT.x + COUNT.w / 2} y={H - 70} textAnchor="middle" dominantBaseline="central" fontSize={14} fontWeight={700} className="fill-fg-muted font-display" direction="rtl">
           צעדים כפולים
         </text>
-        <text x={102} y={H - 46} textAnchor="middle" dominantBaseline="central" direction="ltr" className="font-display font-bold tabular-nums">
+        <text x={COUNT.x + COUNT.w / 2} y={H - 46} textAnchor="middle" dominantBaseline="central" direction="ltr" className="font-display font-bold tabular-nums">
           <tspan className={target === null ? 'fill-fg-muted' : 'fill-accent'} fontSize={24}>
             {pairs}
           </tspan>
@@ -171,7 +179,7 @@ export function DeadReckoningField({
             {`/ ${target ?? '?'}`}
           </tspan>
         </text>
-        <text x={102} y={H - 25} textAnchor="middle" dominantBaseline="central" fontSize={14} fontWeight={600} className="fill-fg font-display" direction="rtl">
+        <text x={COUNT.x + COUNT.w / 2} y={H - 25} textAnchor="middle" dominantBaseline="central" fontSize={14} fontWeight={600} className="fill-fg font-display" direction="rtl">
           {`כ־${metres.toLocaleString('en-US')} מ׳ מ־A`}
         </text>
       </g>

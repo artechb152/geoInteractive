@@ -1,6 +1,6 @@
 'use client';
 
-import { Component, useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type CSSProperties, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Maximize2, Minimize2, Minus, Plus, RotateCcw, ScanSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -53,6 +53,7 @@ export function TerrainNavModel({
   modelProps,
   ariaLabel,
   className,
+  style,
 }: {
   view: ViewStore;
   mode: 'learn' | 'practice';
@@ -62,6 +63,8 @@ export function TerrainNavModel({
   modelProps: Omit<ModelProps, 'view' | 'reduce' | 'onReady'>;
   ariaLabel: string;
   className?: string;
+  /** The panel's size (the activity sets its height). */
+  style?: CSSProperties;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [renderer, setRenderer] = useState<'pending' | 'live' | 'static'>('pending');
@@ -163,6 +166,7 @@ export function TerrainNavModel({
     <div
       ref={rootRef}
       className={cn('relative overflow-hidden rounded-xl border border-border/70 bg-[#E2E3DA]', fullscreen && 'rounded-none', className)}
+      style={fullscreen ? undefined : style}
       data-panel="model"
       data-renderer={renderer}
       data-view={st.mode}

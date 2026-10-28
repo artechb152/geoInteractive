@@ -24,7 +24,7 @@ type Tip<F extends MapFocus> = {
   /** why it helps, one sentence */
   why: string;
   /**
-   * What the map shows in this state — the caption under it and the map's
+   * What the map shows in this state — the caption beside it and the map's
    * accessible name. It describes the map; it does not repeat `what`.
    */
   map: string;
@@ -116,7 +116,9 @@ const NAV_LEGEND: LegendItem[] = [
  *     lessons 2 and 6, so the tips show at the lesson's interface size.
  *   - Heights: the tallest state of each screen at the reference width
  *     (measured 2026-10-27, one card per screen: plan and nav for every tip;
- *     the question with its longest feedback and its button), so the scale
+ *     the question with its longest feedback and its button; plan and nav
+ *     re-measured 2026-10-28 with the caption and legend beside the map —
+ *     the map board sets both, 743px, under the 760px screen budget), so the scale
  *     stays steady while learners switch tips or answer. Inside the lesson
  *     (LessonFitUniform) they are ignored; they apply where the scene is
  *     rendered on its own (the archive).
@@ -127,7 +129,7 @@ const NAV_LEGEND: LegendItem[] = [
  *     inline start (right) so the three screens share one right edge.
  */
 const FIT_WIDTH = 1344;
-const FIT_HEIGHT = { plan: 863, nav: 841, question: 532 } as const;
+const FIT_HEIGHT = { plan: 743, nav: 743, question: 532 } as const;
 const FIT_RESERVE_TOP = 104;
 const FIT_RESERVE_BOTTOM = 24;
 
@@ -200,7 +202,7 @@ export function PlanningTipsScene() {
 /**
  * One screen, one card: the title, the instruction, the tips as an accordion
  * (one open at a time, the first open on entry) and the shared map board as an
- * inset beside them. Choosing a tip updates the map and the caption under it,
+ * inset beside them. Choosing a tip updates the map and the caption beside it,
  * so every map highlight also has a text description.
  */
 function TipsScreen<F extends MapFocus>({
@@ -243,88 +245,110 @@ function TipsScreen<F extends MapFocus>({
       </h3>
       <p className="mt-2 mb-6 max-w-2xl text-base leading-relaxed text-fg-muted">{intro}</p>
 
-      {/* Text column 1fr · board 1.35fr — the same split as the techniques screen. */}
+      {/* Text column 1fr · board 1.35fr — the same split as the techniques screen.
+          The caption and the legend sit in the text column, beside the map (not under it),
+          so the screen is as tall as the map board. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
-        {/* Accordion — first child → RIGHT in RTL. Its headers match the four-stage accordion of the lesson's opening. */}
-        <div className="space-y-3">
-          {tips.map((t, i) => {
-            const isActive = active === t.id;
-            const btnId = `${uid}-btn-${t.id}`;
-            const panelId = `${uid}-panel-${t.id}`;
-            return (
-              <div
-                key={t.id}
-                className={cn(
-                  'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
-                  'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                  isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
-                )}
-              >
-                <button
-                  type="button"
-                  id={btnId}
-                  ref={(el) => {
-                    btnRefs.current[i] = el;
-                  }}
-                  onClick={() => setActive(t.id)}
-                  onKeyDown={(e) => onHeaderKey(e, i)}
-                  aria-expanded={isActive}
-                  aria-controls={isActive ? panelId : undefined}
-                  className="w-full p-4 text-start flex items-center gap-3 rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
-                >
-                  <span
-                    className={cn(
-                      'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                      isActive ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border',
-                    )}
-                  >
-                    <span className="font-display font-bold text-base">{i + 1}</span>
-                  </span>
-                  <div className="flex-1 min-w-0 text-start">
-                    <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">{t.title}</div>
-                  </div>
-                  <motion.span
-                    animate={{ rotate: isActive ? 180 : 0 }}
-                    transition={{ duration: reduce ? 0 : 0.25 }}
-                    className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </motion.span>
-                </button>
-
-                <AnimatePresence initial={false}>
-                  {isActive && (
-                    <motion.div
-                      key={`panel-${t.id}`}
-                      id={panelId}
-                      role="region"
-                      aria-labelledby={btnId}
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-5 pt-1 space-y-2">
-                        <p className="text-base leading-relaxed text-black">{t.what}</p>
-                        <p className="text-base leading-relaxed text-black">{t.why}</p>
-                      </div>
-                    </motion.div>
+        {/* Text column — first child → RIGHT in RTL: the accordion on top, the map's caption and legend at its foot. */}
+        <div className="flex flex-col lg:self-stretch">
+          {/* Accordion — its headers match the four-stage accordion of the lesson's opening. */}
+          <div className="space-y-2">
+            {tips.map((t, i) => {
+              const isActive = active === t.id;
+              const btnId = `${uid}-btn-${t.id}`;
+              const panelId = `${uid}-panel-${t.id}`;
+              return (
+                <div
+                  key={t.id}
+                  className={cn(
+                    'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
+                    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
+                    isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
                   )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
+                >
+                  <button
+                    type="button"
+                    id={btnId}
+                    ref={(el) => {
+                      btnRefs.current[i] = el;
+                    }}
+                    onClick={() => setActive(t.id)}
+                    onKeyDown={(e) => onHeaderKey(e, i)}
+                    aria-expanded={isActive}
+                    aria-controls={isActive ? panelId : undefined}
+                    className="w-full p-4 text-start flex items-center gap-3 rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
+                  >
+                    <span
+                      className={cn(
+                        'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
+                        isActive ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border',
+                      )}
+                    >
+                      <span className="font-display font-bold text-base">{i + 1}</span>
+                    </span>
+                    <div className="flex-1 min-w-0 text-start">
+                      <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">{t.title}</div>
+                    </div>
+                    <motion.span
+                      animate={{ rotate: isActive ? 180 : 0 }}
+                      transition={{ duration: reduce ? 0 : 0.25 }}
+                      className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </motion.span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isActive && (
+                      <motion.div
+                        key={`panel-${t.id}`}
+                        id={panelId}
+                        role="region"
+                        aria-labelledby={btnId}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4 pt-0.5 space-y-2">
+                          <p className="text-base leading-relaxed text-black">{t.what}</p>
+                          <p className="text-base leading-relaxed text-black">{t.why}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* The map's caption and legend — at the column's foot, level with the map's lower edge.
+              The caption keeps the height of the longest one, so nothing moves when tips switch. */}
+          <div className="mt-auto pt-4">
+            <p className="min-h-[4.0625rem] border-t border-border pt-3 text-base leading-relaxed text-black" aria-live="polite" data-tips-caption>
+              {activeTip.map}
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2" data-tips-legend>
+              {legend.map((it) => (
+                <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
+                  <TipsLegendGlyph kind={it.kind} />
+                  <span>{it.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* Map board — second child → LEFT in RTL; an inset in the screen's card. */}
         <div className="lg:sticky lg:top-24 self-start rounded-xl bg-bg-accent/60 p-4 sm:p-5" data-tips-board>
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="min-w-0">
-              <div className="text-sm font-display font-semibold text-fg-muted">{boardLabel}</div>
-              {boardNote && <div className="mt-0.5 text-sm text-fg-muted">{boardNote}</div>}
+          {/* One header line: the board's name (and note), and the tip counter. */}
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <div className="min-w-0 text-sm text-fg-muted">
+              <span className="font-display font-semibold">{boardLabel}</span>
+              {boardNote && <span> · {boardNote}</span>}
             </div>
             <span dir="ltr" className="text-sm font-display font-bold tabular-nums text-fg-muted" aria-hidden>
               {activeIndex + 1}/{tips.length}
@@ -333,18 +357,6 @@ function TipsScreen<F extends MapFocus>({
           <div className="overflow-hidden rounded-xl border border-border/70">
             <NavTipsMap focus={activeTip.id} ariaLabel={activeTip.map} />
           </div>
-          {/* Two lines kept for every caption (2 × 26px), so the board keeps its height across tips. */}
-          <p className="mt-4 min-h-[3.25rem] text-base leading-relaxed text-black" aria-live="polite" data-tips-caption>
-            {activeTip.map}
-          </p>
-          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2" data-tips-legend>
-            {legend.map((it) => (
-              <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
-                <TipsLegendGlyph kind={it.kind} />
-                <span>{it.label}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       </div>
     </div>

@@ -54,7 +54,7 @@ export const MAP_VIEWBOX = { x: -COLLAR_W, y: -COLLAR_EDGE, w: W + COLLAR_W + CO
 /** Width / height of the whole map frame — the activity sizes the map column with it, so map and observation share a height. */
 export const MAP_ASPECT = MAP_VIEWBOX.w / MAP_VIEWBOX.h;
 
-/** Type sizes in viewBox units (≈ 0.34 px per unit in the desktop map column: 40 ≈ 13.5 px, 48 ≈ 16 px). */
+/** Type sizes in viewBox units (≈ 0.36 px per unit in the map column at the lesson fit's 1344 px: 38 ≈ 13.8 px, 48 ≈ 17.5 px). */
 const FS = { feature: 46, small: 41, grid: 38, area: 48, contour: 40 } as const;
 /** Selection halo around a hypothesis centre — a selection mark, not an accuracy radius. */
 export const HALO_R = 55;

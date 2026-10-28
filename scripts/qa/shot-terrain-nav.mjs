@@ -4,7 +4,8 @@
 //   node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-terrain-nav.mjs [outDir] [--base=http://localhost:3001] [--capture-fallback]
 //
 // Checks (exit code 1 on any failure):
-//   layout        model and map side by side in one workspace (model at the inline start, ≈ 55 / 45, one height);
+//   layout        model and map side by side in one workspace (model at the inline start, ≈ 60 / 40, one height),
+//                 the route legend under both, the task in a column beside the map;
 //                 at 1440 × 1122 with the card under the site header, the practice check button is on screen
 //   copy          every approved text of both techniques is visible (nothing folded away); terrain association
 //                 comes first, dead reckoning below it
@@ -93,10 +94,14 @@ try {
   const model = await page.locator('[data-panel="model"]').boundingBox();
   const map = await page.locator('[data-panel="map"]').boundingBox();
   check(model.x > map.x, 'model at the inline start (right), map at the end (left)');
+  // Laptop fit (2026-10-28): the map panel is the sheet alone, the route legend runs under both views
+  // and the task sits in a column beside the map.
   const share = model.width / (model.width + map.width);
-  check(share > 0.49 && share < 0.55, `model ≈ 52 % of the two views (the map panel holds the route legend) (${(share * 100).toFixed(1)} %)`);
-  const legendBox = await page.locator('[data-panel="map"] [data-legend="route"]').boundingBox();
-  check(legendBox && legendBox.x < map.x + map.width / 2, 'the route legend sits in the map panel, at its outer (left) side');
+  check(share > 0.55 && share < 0.65, `model ≈ 60 % of the two views (the map panel is the sheet alone) (${(share * 100).toFixed(1)} %)`);
+  const legendBox = await page.locator('[data-activity="terrain-association"] [data-legend="route"]').boundingBox();
+  check(legendBox && legendBox.y >= map.y + map.height && legendBox.x < map.x + map.width && legendBox.x + legendBox.width > model.x, 'the route legend runs under both views');
+  const taskBox = await page.locator('[data-strip]').boundingBox();
+  check(taskBox && taskBox.x + taskBox.width <= map.x + 1 && taskBox.y < map.y, 'the task sits in a column beside the map (inline end)');
   check(Math.abs(model.height - map.height) < 1, 'model and map share one height');
   check(Math.abs(model.y - map.y) < 1, 'side by side');
   await shot(page, '01-learn.png');

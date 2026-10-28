@@ -1,8 +1,9 @@
 // Browser QA for the lesson-6 location-check activity ("באיזה אזור אתם נמצאים?"),
 // as implemented after task 30 and its follow-up (2026-10-27): field readings above
-// the views; the decision row (area → check → reset) under the observation; one
-// fixed-height result panel under both views; no road-split button, no GPS help
-// dialog, no measurement boxes, no "פירוט" popover.
+// the views; the decision (area → check → reset) at the top of a control column at
+// the inline end of the views, the map tools at its foot (2026-10-28: one screen,
+// card ≤ 760 px at 1344); one fixed-height result panel under the views; no
+// road-split button, no GPS help dialog, no measurement boxes, no "פירוט" popover.
 //
 // Usage (dev server running; default http://localhost:3000):
 //   node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-location-check.mjs [outDir] [--base=http://localhost:3000] [--capture-fallback]
@@ -10,7 +11,7 @@
 // Checks (exit code 1 on any failure):
 //   entry          the scene is reached through the side-nav button "עקרונות הניווט"
 //   fit            at 1440 × 1122, card under the site header: title, instruction, field readings,
-//                  both views, decision row, map tools and result panel inside the viewport and not
+//                  both views, decision, map tools and result panel inside the viewport and not
 //                  overlapping; body text ≥ 16 px; one live region; the result never overflows its
 //                  panel; nothing moves or resizes between states; the same card height in every run
 //   field readings 043° to the road split and about 300 m from the last known position (READINGS),
@@ -431,9 +432,16 @@ async function layout(page, label) {
   }
   const { observation, decision, mapTools, feedback, readings } = m.parts;
   if (readings && observation && readings.y + readings.h > observation.y) p.push('field readings not above the views');
-  if (decision && observation && decision.y < observation.y + observation.h) p.push('decision row not under the observation');
-  if (decision && mapTools && Math.abs(decision.y + decision.h / 2 - (mapTools.y + mapTools.h / 2)) > 3) p.push('decision row not level with the map tools');
-  if (feedback && decision && feedback.y < decision.y + decision.h) p.push('result panel not under the decision row');
+  // 2026-10-28 layout: the decision tops a control column at the inline end (left) of the map,
+  // level with the views' top; the map tools sit at its foot, level with the map's bottom edge.
+  const { map } = m.parts;
+  if (decision && map && decision.x + decision.w > map.x + 1) p.push('decision not beside the map at the inline end');
+  if (decision && observation && Math.abs(decision.y - observation.y) > 3) p.push('decision not level with the top of the views');
+  if (mapTools && map && Math.abs(mapTools.y + mapTools.h - (map.y + map.h)) > 3) p.push('map tools not level with the bottom of the map');
+  if (mapTools && decision && mapTools.y < decision.y + decision.h) p.push('map tools not under the decision');
+  if (feedback && decision && feedback.y < decision.y + decision.h) p.push('result panel not under the decision');
+  if (feedback && observation && feedback.y < observation.y + observation.h) p.push('result panel not under the views');
+  if (m.card.h / m.scale > 760.5) p.push(`card ${Math.round(m.card.h / m.scale)} px tall at 1344 (max 760)`);
   if (m.overflow > 0) p.push(`result overflows by ${m.overflow}px`);
   if (m.contentBottom > m.fbInnerBottom) p.push(`result content ends ${Math.round(m.contentBottom - m.fbInnerBottom)}px into the panel's padding`);
   if (m.minFont < 16) p.push(`text below 16px (${m.minFont})`);

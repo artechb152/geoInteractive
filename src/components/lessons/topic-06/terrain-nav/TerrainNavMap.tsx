@@ -42,14 +42,25 @@ import { featureInfo, pickFeature } from './terrainNavFeatures';
 
 const W = MAP_SHEET.width;
 const H = MAP_SHEET.height;
-const COLLAR_W = 66;
-const COLLAR_S = 58;
+const COLLAR_W = 76;
+const COLLAR_S = 68;
 const COLLAR_EDGE = 16;
-export const MAP_VIEWBOX = { x: -COLLAR_W, y: -COLLAR_EDGE, w: W + COLLAR_W + COLLAR_EDGE, h: H + COLLAR_EDGE + COLLAR_S } as const;
+/** East collar: room for the last easting (1400), set to the east of its line so it clears 1200. */
+const COLLAR_E = 46;
+export const MAP_VIEWBOX = { x: -COLLAR_W, y: -COLLAR_EDGE, w: W + COLLAR_W + COLLAR_E, h: H + COLLAR_EDGE + COLLAR_S } as const;
 export const MAP_ASPECT = MAP_VIEWBOX.w / MAP_VIEWBOX.h;
 
-/** Type sizes in viewBox units (≈ 0.28 px per unit in the desktop map column: 50 ≈ 14 px, 56 ≈ 16 px). */
+/**
+ * Type on the sheet is drawn at TYPE × its base size, and every plate, badge and offset that
+ * carries type grows with it (a scale about the mark's own anchor). The sheet is ~0.217 px per
+ * unit in the activity's 400 px map panel, so the small type (48 × TYPE ≈ 58.6 units) stays
+ * ≈ 12.7 px on screen and the names ≈ 14 px — the same as in the earlier, taller panel.
+ */
+const TYPE = 1.22;
+/** Base type sizes in viewBox units (before TYPE). */
 const FS = { label: 54, small: 48, grid: 48, contour: 48, letter: 58 } as const;
+/** A scale by TYPE about the point (x, y), for a mark that carries type. */
+const typeAbout = (x: number, y: number) => `translate(${r1(x)} ${r1(y)}) scale(${TYPE}) translate(${r1(-x)} ${r1(-y)})`;
 const HAIR = 3.2;
 const INDEX_W = 6.4;
 /** Grid lines: thinner and lighter than any contour, so a 200 m line never reads as relief. */
@@ -284,7 +295,7 @@ const MapBase = memo(function MapBase({ uid }: { uid: string }) {
         {labels.map((l) => {
           const m = worldToMap(l);
           return (
-            <g key={`${l.heightM}-${l.E}`} transform={`translate(${r1(m.x)} ${r1(m.y)}) rotate(${r1(upright(l.angleDeg))})`}>
+            <g key={`${l.heightM}-${l.E}`} transform={`translate(${r1(m.x)} ${r1(m.y)}) rotate(${r1(upright(l.angleDeg))}) scale(${TYPE})`}>
               <rect x={-38} y={-22} width={76} height={44} rx={6} fill={MAP.paper} />
               <text textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={FS.contour} fontWeight={700} fill={MAP.contour} className="font-display tabular-nums">
                 {l.heightM}
@@ -322,7 +333,7 @@ function PlateLabel({ x, y, size, weight, anchor = 'middle', fill = MAP.ink, chi
   const pad = size * 0.4;
   const left = anchor === 'middle' ? x - w / 2 : anchor === 'start' ? x - w + pad : x - pad;
   return (
-    <g pointerEvents="none">
+    <g pointerEvents="none" transform={typeAbout(x, y)}>
       <rect x={r1(left)} y={r1(y - h / 2)} width={r1(w)} height={r1(h)} rx={size * 0.25} fill={MAP.paper} fillOpacity={0.94} />
       <text x={r1(x)} y={r1(y)} textAnchor={anchor} dominantBaseline="central" direction="rtl" fontSize={size} fontWeight={weight} fill={fill} className="font-display">
         {children}
@@ -336,7 +347,7 @@ function SpotHeight({ s }: { s: Summit }) {
   // the value sits east of the triangle, or west of it near the sheet's east edge
   const x = m.x > W - 120 ? m.x - 98 : m.x + 14;
   return (
-    <g data-spot={s.id}>
+    <g data-spot={s.id} transform={typeAbout(m.x, m.y)}>
       <path d={`M${r1(m.x)} ${r1(m.y - 11)}l11 19h-22z`} fill={MAP.ink} />
       <rect x={r1(x)} y={r1(m.y - 22)} width={84} height={42} rx={6} fill={MAP.paper} fillOpacity={0.92} />
       <text x={r1(x + 4)} y={r1(m.y - 1)} textAnchor="start" direction="ltr" dominantBaseline="central" fontSize={FS.small} fontWeight={800} fill={MAP.ink} className="font-display tabular-nums">
@@ -348,13 +359,13 @@ function SpotHeight({ s }: { s: Summit }) {
 
 /** Local grid numbers: northings along the west side (read bottom-up), eastings under the sheet. */
 function GridLabels() {
-  const common = { fontSize: FS.grid, fontWeight: 600, fill: MAP.muted, className: 'font-display tabular-nums', dominantBaseline: 'central' as const, direction: 'ltr' as const };
+  const common = { fontSize: FS.grid * TYPE, fontWeight: 600, fill: MAP.muted, className: 'font-display tabular-nums', dominantBaseline: 'central' as const, direction: 'ltr' as const };
   const es = Array.from({ length: Math.floor(W / 200) + 1 }, (_, k) => k * 200);
   const ns = Array.from({ length: Math.floor(H / 200) }, (_, k) => (k + 1) * 200);
   return (
     <g pointerEvents="none">
       {es.map((E) => (
-        <text key={E} x={E} y={H + COLLAR_S / 2} textAnchor={E === 0 ? 'start' : E === W ? 'end' : 'middle'} {...common}>
+        <text key={E} x={E === W ? W + COLLAR_E - 6 : E} y={H + COLLAR_S / 2} textAnchor={E === 0 ? 'start' : E === W ? 'end' : 'middle'} {...common}>
           {E}
         </text>
       ))}
@@ -372,7 +383,7 @@ function NorthArrow() {
   const x = W - 62;
   const y = 26;
   return (
-    <g pointerEvents="none" data-map="north">
+    <g pointerEvents="none" data-map="north" transform={typeAbout(x + 46, y - 10)}>
       <rect x={x - 46} y={y - 10} width={92} height={170} rx={12} fill={MAP.paper} fillOpacity={0.94} />
       <text x={x} y={y + 28} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={FS.small} fontWeight={800} fill={MAP.ink} className="font-display">
         צפון
@@ -389,16 +400,16 @@ function ScaleBar() {
   const y = H - 46;
   return (
     <g pointerEvents="none" data-map="scale">
-      <rect x={12} y={y - 74} width={4 * seg + 136} height={104} rx={12} fill={MAP.paper} fillOpacity={0.94} />
+      <rect x={12} y={y - 84} width={4 * seg + 146} height={114} rx={12} fill={MAP.paper} fillOpacity={0.94} />
       {[0, 1, 2, 3].map((k) => (
         <rect key={k} x={x0 + k * seg} y={y} width={seg} height={16} fill={k % 2 === 0 ? MAP.ink : MAP.collar} stroke={MAP.ink} strokeWidth={2} />
       ))}
       {[0, 200, 400].map((m) => (
-        <text key={m} x={x0 + m} y={y - 28} textAnchor="middle" direction="ltr" dominantBaseline="central" fontSize={FS.small} fontWeight={600} fill={MAP.ink} className="font-display tabular-nums">
+        <text key={m} x={x0 + m} y={y - 34} textAnchor="middle" direction="ltr" dominantBaseline="central" fontSize={FS.small * TYPE} fontWeight={600} fill={MAP.ink} className="font-display tabular-nums">
           {m}
         </text>
       ))}
-      <text x={x0 + 4 * seg + 34} y={y + 8} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={FS.small} fontWeight={600} fill={MAP.ink} className="font-display">
+      <text x={x0 + 4 * seg + 42} y={y + 8} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={FS.small * TYPE} fontWeight={600} fill={MAP.ink} className="font-display">
         מ׳
       </text>
     </g>
@@ -534,7 +545,7 @@ function RouteLayer({ layer }: { layer: MapLayer }) {
       {(() => {
         const m = worldToMap(START);
         return (
-          <g data-checkpoint="A">
+          <g data-checkpoint="A" transform={typeAbout(m.x, m.y)}>
             <circle cx={m.x} cy={m.y} r={30} fill={MAP.accent} stroke={MAP.paper} strokeWidth={5} />
             <text x={m.x} y={m.y + 1} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={44} fontWeight={800} fill="#FFFFFF" className="font-display">
               A
@@ -575,7 +586,7 @@ function CandidateMark({ c, selected, hovered }: { c: MapCandidate; selected: bo
         strokeDasharray={selected ? undefined : '11 8'}
       />
       {!onPoint && <circle cx={m.x} cy={m.y} r={selected ? 9 : 7} fill={selected ? MAP.accent : MAP.ink} />}
-      <g transform={`translate(${r1(lx)} ${r1(ly)})`}>
+      <g transform={`translate(${r1(lx)} ${r1(ly)}) scale(${TYPE})`}>
         <rect x={-34} y={-34} width={68} height={68} rx={34} fill={selected ? MAP.accent : MAP.paper} stroke={selected ? MAP.accent : MAP.ink} strokeWidth={4} />
         <text textAnchor="middle" dominantBaseline="central" direction="rtl" y={2} fontSize={52} fontWeight={800} fill={selected ? '#FFFFFF' : MAP.ink} className="font-display">
           {c.letter}
@@ -597,25 +608,26 @@ function MeasureLine({ from, to, text, avoid }: { from: Point; to: Point; text: 
   // The value plate beside the line's middle, on the side farther from the other marked points.
   const nx = Math.sin(ang);
   const ny = -Math.cos(ang);
-  const w = plateW(text, FS.small);
+  const fs = FS.small * TYPE;
+  const w = plateW(text, fs);
   const offset = 30 + w / 2;
   // A side whose plate would leave the sheet loses to one that stays on it; the plate is then kept inside the neatline.
   const pad = 12;
-  const outside = (at: { x: number; y: number }) => Math.max(0, w / 2 + pad - at.x) + Math.max(0, at.x + w / 2 + pad - W) + Math.max(0, FS.small - at.y) + Math.max(0, at.y + FS.small - H);
+  const outside = (at: { x: number; y: number }) => Math.max(0, w / 2 + pad - at.x) + Math.max(0, at.x + w / 2 + pad - W) + Math.max(0, fs - at.y) + Math.max(0, at.y + fs - H);
   const sides = [1, -1].map((side) => {
     const at = { x: mid.x + nx * offset * side, y: mid.y + ny * offset * side };
     const clear = Math.min(...avoid.map((p) => worldToMap(p)).map((m) => Math.hypot(m.x - at.x, m.y - at.y)));
     return { at, clear, out: outside(at) };
   });
   const best = sides[0].out !== sides[1].out ? (sides[0].out < sides[1].out ? sides[0] : sides[1]) : sides[0].clear >= sides[1].clear ? sides[0] : sides[1];
-  const at = { x: Math.min(W - w / 2 - pad, Math.max(w / 2 + pad, best.at.x)), y: Math.min(H - FS.small, Math.max(FS.small, best.at.y)) };
+  const at = { x: Math.min(W - w / 2 - pad, Math.max(w / 2 + pad, best.at.x)), y: Math.min(H - fs, Math.max(fs, best.at.y)) };
   return (
     <g pointerEvents="none" data-overlay="measure">
       <path d={`M${r1(a.x)} ${r1(a.y)}L${r1(end.x)} ${r1(end.y)}`} stroke={MAP.paper} strokeWidth={11} strokeLinecap="round" strokeOpacity={0.85} />
       <path d={`M${r1(a.x)} ${r1(a.y)}L${r1(end.x)} ${r1(end.y)}`} stroke={MAP.ink} strokeWidth={5} strokeLinecap="round" />
       <path d={head} fill={MAP.ink} />
-      <rect x={r1(at.x - w / 2)} y={r1(at.y - FS.small * 0.7)} width={r1(w)} height={r1(FS.small * 1.4)} rx={8} fill={MAP.paper} fillOpacity={0.97} stroke={MAP.ink} strokeWidth={3} />
-      <text x={r1(at.x)} y={r1(at.y)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={FS.small} fontWeight={700} fill={MAP.ink} className="font-display tabular-nums">
+      <rect x={r1(at.x - w / 2)} y={r1(at.y - fs * 0.7)} width={r1(w)} height={r1(fs * 1.4)} rx={8} fill={MAP.paper} fillOpacity={0.97} stroke={MAP.ink} strokeWidth={3} />
+      <text x={r1(at.x)} y={r1(at.y)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={fs} fontWeight={700} fill={MAP.ink} className="font-display tabular-nums">
         {text}
       </text>
     </g>

@@ -1,11 +1,10 @@
 'use client';
 import { useEffect, useId, useState } from 'react';
-import { motion, useReducedMotion, useSpring, useTransform } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
 import { Icon } from '@/components/Icon';
 import { cn } from '@/lib/utils';
 import { RouteStoryBuilder } from './route-story/RouteStoryBuilder';
-import { RadioRow } from './terrain-nav/RadioRow';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 // Laptop fit — every screen of this part is laid out at the 1920×1080 reference
 // width and shrunk uniformly (never enlarged) to the room the site header and the
@@ -77,9 +76,16 @@ const TRAIL_MARKS = 10;
 /** inline-start offset of a slider fraction, matching the native thumb centre */
 const alongTrack = (fr: number) => `calc(${THUMB_PX / 2}px + (100% - ${THUMB_PX}px) * ${fr})`;
 
-/** Double-pace lengths to compare (metres): the example's 1.5 and one shorter, one longer stride. */
-const PACE_OPTIONS = [1.4, 1.5, 1.6] as const;
-const fmtPace = (p: number) => p.toFixed(1);
+const CUSTOM_MIN = 1;
+const CUSTOM_MAX = 2.2;
+const HEIGHT_MIN = 140;
+const HEIGHT_MAX = 210;
+/** Rule of thumb: a step is ≈ 0.415 × height, so a double pace is ≈ 0.83 × height. */
+const PACE_PER_HEIGHT = 0.83;
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const round2 = (v: number) => Math.round(v * 100) / 100;
+const paceFromHeight = (cm: number) => round2((clamp(cm, HEIGHT_MIN, HEIGHT_MAX) * PACE_PER_HEIGHT) / 100);
+const fmtPace = (p: number) => (Number.isInteger(Math.round(p * 100) / 10) ? p.toFixed(1) : p.toFixed(2));
 const fmtStep = (p: number) => String(Math.round((p / 2) * 100) / 100);
 
 /**
@@ -121,8 +127,40 @@ function StepDiagram({ pace }: { pace: number }) {
 
 function PacingDemo() {
 const [distance, setDistance] = useState(500);
-const [pace, setPace] = useState<number>(1.5); // the example's double pace; each navigator measures their own
+const [customPace, setCustomPace] = useState(1.5); // starts at the example's double pace; each navigator sets their own
+const [paceDraft, setPaceDraft] = useState('1.5');
+const [customBy, setCustomBy] = useState<'direct' | 'height'>('direct');
+const [heightCm, setHeightCm] = useState(175);
+const [heightDraft, setHeightDraft] = useState('175');
+const pace = customPace;
+const setCustom = (p: number) => {
+  const v = round2(clamp(p, CUSTOM_MIN, CUSTOM_MAX));
+  setCustomPace(v);
+  setPaceDraft(String(v));
+};
+const byHeight = customBy === "height";
+// both tabs share one gauge + number field; only the quantity differs
+const ctl = byHeight
+  ? {
+      min: HEIGHT_MIN, max: HEIGHT_MAX, step: 1, unit: 'ס״מ', value: heightCm, draft: heightDraft, setDraft: setHeightDraft,
+      label: "הגובה שלכם בסנטימטרים", valueText: `${heightCm} סנטימטרים`,
+      commit: (n: number, typing?: boolean) => {
+        const h = Math.round(clamp(n, HEIGHT_MIN, HEIGHT_MAX));
+        setHeightCm(h);
+        if (!typing) setHeightDraft(String(h));
+        setCustom(paceFromHeight(h));
+      },
+    }
+  : {
+      min: CUSTOM_MIN, max: CUSTOM_MAX, step: 0.01, unit: 'מ׳', value: customPace, draft: paceDraft, setDraft: setPaceDraft,
+      label: "אורך הצעד הכפול במטרים", valueText: `${fmtPace(customPace)} מטרים`,
+      commit: (n: number, typing?: boolean) => {
+        if (typing) setCustomPace(round2(n));
+        else setCustom(n);
+      },
+    };
 const paceLabelId = useId();
+const customId = useId();
 const paces = Math.round(distance / pace);
 const steps = Math.round((distance / pace) * 2);
 const reduce = useReducedMotion();
@@ -146,14 +184,92 @@ return (
  {/* what is counted: one step vs one double step, at the chosen personal length */}
  <div className="rounded-xl bg-bg-accent/60 p-5 flex flex-col" data-qa="pace-length">
  <div id={paceLabelId} className="text-sm font-display font-semibold text-fg-muted">אורך הצעד הכפול שלכם (לפי מדידה אישית):</div>
- <RadioRow
-   labelledBy={paceLabelId}
-   options={PACE_OPTIONS.map((p) => ({ id: p, label: `${fmtPace(p)} מ׳` }))}
-   value={pace}
-   onChange={(p) => setPace(p)}
-   className="mt-2"
-   data="pace"
- />
+ {(
+   <div className="mt-3 rounded-lg border border-border/80 bg-bg-elevated p-3" data-qa="pace-custom" aria-labelledby={paceLabelId} role="group">
+     <div className="relative flex gap-1.5" role="group" aria-label="דרך להגדרת הצעד הכפול">
+       {/* selected highlight slides between the two tabs (both flex-1, so one tab + the 6px gap apart) */}
+       <span
+         aria-hidden
+         className={cn(
+           'pointer-events-none absolute inset-y-0 start-0 w-[calc(50%-3px)] rounded-lg border-2 border-accent bg-accent/10 transition-transform duration-300 ease-snap motion-reduce:transition-none',
+           byHeight && 'rtl:-translate-x-[calc(100%+6px)] ltr:translate-x-[calc(100%+6px)]'
+         )}
+       />
+       {([['direct', 'אורך צעד'], ['height', 'לפי גובה']] as const).map(([id, label]) => (
+         <button
+           key={id}
+           type="button"
+           aria-pressed={customBy === id}
+           onClick={() => {
+             setCustomBy(id);
+             if (id === 'height') setCustom(paceFromHeight(heightCm));
+           }}
+           className={cn(
+             'relative h-8 flex-1 cursor-pointer rounded-lg border px-2 font-display text-sm text-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+             customBy === id ? 'border-transparent font-bold' : 'border-fg-dim/60 font-semibold hover:border-accent/60'
+           )}
+         >
+           {label}
+         </button>
+       ))}
+     </div>
+     <motion.div
+       key={customBy}
+       initial={reduce ? false : { opacity: 0, y: 4 }}
+       animate={{ opacity: 1, y: 0 }}
+       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+       className="mt-3 flex items-center gap-3"
+     >
+       <input
+         type="range"
+         min={ctl.min}
+         max={ctl.max}
+         step={ctl.step}
+         value={ctl.value}
+         onChange={(e) => ctl.commit(Number(e.target.value))}
+         className="h-2 min-w-0 flex-1 cursor-pointer accent-accent"
+         aria-label={ctl.label}
+         aria-valuetext={ctl.valueText}
+       />
+       <label className="flex items-center gap-1 text-sm font-display font-semibold text-fg-muted" htmlFor={`${customId}-value`}>
+         <input
+           id={`${customId}-value`}
+           type="number"
+           inputMode="decimal"
+           min={ctl.min}
+           max={ctl.max}
+           step={ctl.step}
+           dir="ltr"
+           value={ctl.draft}
+           onChange={(e) => {
+             ctl.setDraft(e.target.value);
+             const n = Number(e.target.value);
+             if (e.target.value !== "" && Number.isFinite(n) && n >= ctl.min && n <= ctl.max) ctl.commit(n, true);
+           }}
+           onBlur={() => ctl.commit(Number(ctl.draft) || ctl.value)}
+           className="h-9 w-20 rounded-lg border border-fg-dim/60 bg-bg-elevated px-2 text-center font-display text-base font-semibold tabular-nums text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+         />
+         {ctl.unit}
+       </label>
+     </motion.div>
+     <AnimatePresence initial={false}>
+       {byHeight && (
+         <motion.div
+           key="height-note"
+           initial={reduce ? false : { opacity: 0, height: 0 }}
+           animate={{ opacity: 1, height: 'auto' }}
+           exit={reduce ? undefined : { opacity: 0, height: 0 }}
+           transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+           className="overflow-hidden"
+         >
+           <p className="pt-1.5 text-[13px] leading-snug text-fg-muted">
+             הערכה: גובה × 0.83 ≈ {fmtPace(customPace)} מ׳. מדידה של 100 מ׳ מדויקת יותר.
+           </p>
+         </motion.div>
+       )}
+     </AnimatePresence>
+   </div>
+ )}
  <div className="mt-auto pt-3">
  <StepDiagram pace={pace} />
  </div>
@@ -246,15 +362,7 @@ aria-valuetext={`${distance} מטרים`}
  </div>
  </div>
 
- <div className="mt-6 grid sm:grid-cols-2 gap-6">
- <div className="flex gap-3 items-start" data-qa="pace-personal">
- <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">1</div>
- <div className="text-sm text-fg-muted leading-relaxed">
- <p>
- <strong className="text-fg">מדידה אישית ותנאי השטח:</strong> כל מנווט מודד את הצעד הכפול שלו בתנאים דומים לשטח, כי שיפוע, קרקע לא אחידה ומשקל הציוד משנים אותו.
- </p>
- {/* How to measure is extra detail: one click (or Enter) away, natively keyboard-operable. */}
- <details className="mt-1" data-qa="pace-measure">
+ <details className="mt-6 text-sm text-fg-muted leading-relaxed" data-qa="pace-measure">
  <summary className="w-fit cursor-pointer rounded font-display font-semibold text-fg underline decoration-border-strong decoration-2 underline-offset-4 hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
  איך מודדים צעד כפול?
  </summary>
@@ -262,15 +370,6 @@ aria-valuetext={`${distance} מטרים`}
  הולכים 100 מ׳ מדודים במישור וסופרים צעדים כפולים. מי שסופר 67 צעדים כפולים ב־100 מ׳ מקבל צעד כפול של כ־1.5 מ׳. חוזרים על המדידה כמה פעמים.
  </p>
  </details>
- </div>
- </div>
- <div className="flex gap-3 items-start" data-qa="pace-not-proof">
- <div className="w-4 shrink-0 text-center font-display font-bold text-sm leading-relaxed text-fg-muted">2</div>
- <p className="text-sm text-fg-muted leading-relaxed">
- <strong className="text-fg">הספירה אינה הוכחת הגעה:</strong> היא מעריכה כמה הלכתם, לא איפה אתם. בתום הספירה מחפשים את סימן השטח של סוף הקטע (בקטע א׳ זה עיקול הנחל), ורק הוא מאשר שהגעתם.
- </p>
- </div>
- </div>
  </div>
  );
 }

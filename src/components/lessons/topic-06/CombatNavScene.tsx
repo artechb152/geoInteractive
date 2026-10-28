@@ -204,15 +204,16 @@ return (
  <TerrainAssociationActivity
  copy={{ badge: support.badge, caption: support.caption, legend: support.legend }}
  onContinue={onContinue}
- header={
- <div className="mb-5">
+ // The title sits beside the lab's mode switch, the principle under it — the views beside the task column, one screen.
+ title={
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}
  </h3>
- <div className="mt-4 max-w-4xl">
+ }
+ intro={
+ <div>
  <SubHeading>עקרון הפעולה</SubHeading>
  <p className="text-base leading-relaxed text-black">{data.detail}</p>
- </div>
  </div>
  }
  />
@@ -221,19 +222,20 @@ return (
 }
 
 /* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════
-   One card, as technique 1: the title and the principle head it; the
+   One card, as technique 1: the title heads it, in one row with the task's
+   progress; the principle runs over the two views (its sub-heading run in, so
+   the whole screen and the closing principles fit one laptop view); the
    activity (dead-reckoning/DeadReckoningActivity) — the field view in the
-   storm beside the planning map, and a three-step task: plan the pace count,
-   set the compass and count, decide what the finished count proves. The
-   azimuth and the distance sit on the map and in the question, so there is
-   no example below. */
+   storm beside the planning map, and a three-step task in the column beside
+   them: plan the pace count, set the compass and count, decide what the
+   finished count proves. The azimuth and the distance sit on the map and in
+   the question, so there is no example below. */
 function DeadReckoningSection({ data, support }: { data: MethodData; support: SupportData }) {
 return (
  <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
  <DeadReckoningActivity
  copy={{ badge: support.badge, caption: support.caption, legend: support.legend }}
- header={
- <div className="mb-5">
+ title={
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}
  {INLINE_TERM.has(data.id) && (
@@ -243,11 +245,11 @@ return (
  </>
  )}
  </h3>
- <div className="mt-4 max-w-4xl">
- <SubHeading>עקרון הפעולה</SubHeading>
- <p className="text-base leading-relaxed text-black">{data.detail}</p>
- </div>
- </div>
+ }
+ intro={
+ <p className="text-base leading-relaxed text-black">
+ <span className="font-display font-bold">עקרון הפעולה:</span> {data.detail}
+ </p>
  }
  />
  </section>

@@ -32,13 +32,17 @@ import {
   type VerifyOption,
 } from './deadReckoningModel';
 import { DeadReckoningMap } from './DeadReckoningMap';
-import { DeadReckoningField } from './DeadReckoningField';
+import { DeadReckoningField, FIELD_COUNTER_END, FIELD_W } from './DeadReckoningField';
 
 /**
- * "ניווט עיוור" — the dead-reckoning activity of lesson 6. One card: the
- * technique's text (header / footer, owned by CombatNavScene), then a field
- * view and the planning map side by side, and one short task under them in
- * three steps:
+ * "ניווט עיוור" — the dead-reckoning activity of lesson 6. One card, laid out to
+ * fit one laptop screen in every state (≤ 760 px with the closing card under
+ * it, at the 1344 px reference): a title row (the technique's title, owned by
+ * CombatNavScene, the badge, the stepper and the reset), then the technique's
+ * principle, the field view and the planning map side by side with their
+ * caption and legend; beside them, at the inline end, the task column — the
+ * step's title, its controls and the feedback, which fills the column so the
+ * card never changes height. The task has three steps:
  *
  *   1 מתכננים   how many pace pairs is 1,200 m at the example's 1.5 m pace?
  *               The learner computes it: until it is checked right, nothing on
@@ -71,6 +75,9 @@ const Deg = ({ v }: { v: number }) => (
 );
 const roundM = (v: number) => (v >= 100 ? Math.round(v / 10) * 10 : Math.round(v));
 
+/** Width of the task column (reference px); the two views share the rest of the card. */
+const TASK_W = 340;
+
 const STEP_LABEL = ['מתכננים', 'מתקדמים', 'מאמתים'] as const;
 const VERIFY_LABEL: Record<VerifyOption, string> = {
   proof: 'הגענו ל־B: הספירה הושלמה.',
@@ -80,11 +87,15 @@ const VERIFY_LABEL: Record<VerifyOption, string> = {
 
 export function DeadReckoningActivity({
   copy,
-  header,
+  title: techniqueTitle,
+  intro,
   footer,
 }: {
   copy: DeadReckoningCopy;
-  header?: ReactNode;
+  /** The technique's title (its h3), at the inline start of the title row. */
+  title?: ReactNode;
+  /** The technique's principle, over the two views (it spans their width, not the task column's). */
+  intro?: ReactNode;
   /** Rendered under the task; told whether the count is known, so copy that gives it can wait for step 1. */
   footer?: (countKnown: boolean) => ReactNode;
 }) {
@@ -156,14 +167,10 @@ export function DeadReckoningActivity({
 
   return (
     <div className="surface-elevated p-6 lg:p-8" data-activity="dead-reckoning" data-step={state.step} data-done={v.done || undefined} aria-labelledby={titleId}>
-      {header}
-
-      {/* Task line: the step, its progress and the reset */}
+      {/* Title row: the technique, the conditions, the task's progress and the reset */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
-          <h4 id={titleId} className="font-display text-lg font-bold leading-snug text-black md:text-xl" aria-live="polite">
-            {title}
-          </h4>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
+          {techniqueTitle}
           {copy.badge && <StatusChip tone="badge">{copy.badge}</StatusChip>}
         </div>
         <div className="flex shrink-0 items-center gap-5">
@@ -175,52 +182,62 @@ export function DeadReckoningActivity({
         </div>
       </div>
 
-      {/* The two views: what you see (inline start) and the planning map */}
-      <div className="mt-4 grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 45fr) minmax(0, 55fr)' }}>
-        <div className="relative overflow-hidden rounded-xl border border-border/70 bg-paper-bright" data-panel="dr-field">
-          <DeadReckoningField
-            distM={distM}
-            heading={state.step === 'plan' ? null : state.step === 'heading' ? state.heading : AZIMUTH_DEG}
-            target={v.countKnown ? PLANNED_PAIRS : null}
-            label={`בשטח, מבט מלמעלה סביב המנווט: ${fieldNote}. סופת חול — רואים רק כ־${VISIBILITY_M} מ׳ סביבכם.`}
-            className="absolute inset-0 h-full w-full"
-          />
-          <span className="absolute start-3 top-3 rounded-lg bg-paper-bright/95 px-2.5 py-1 font-display text-base font-bold text-black shadow-sm">בשטח: מה שרואים סביבכם</span>
-          <span className="absolute bottom-3 start-3 max-w-[56%] rounded-lg bg-paper-bright/95 px-2.5 py-1 font-display text-base font-semibold leading-snug text-black shadow-sm" data-field-note>
-            {fieldNote}
-          </span>
-        </div>
-        <div className="relative aspect-[14/9] overflow-hidden rounded-xl border border-border/70 bg-white" data-panel="dr-map">
-          <DeadReckoningMap
-            distM={distM}
-            heading={state.heading}
-            showTicks={v.countKnown}
-            showHeading={state.step === 'heading'}
-            showDeviation={v.done}
-            className="absolute inset-0 h-full w-full"
-          />
-        </div>
-      </div>
-
-      {/* Caption and legend, beside the views they describe */}
-      <div className="mt-3" data-legend="dead-reckoning">
-        <p className="text-base leading-relaxed text-black">{copy.caption}</p>
-        <ul className="mt-1.5 flex flex-wrap gap-x-6 gap-y-1.5">
-          {copy.legend.map((it) => (
-            <li key={it.label} className="flex items-center gap-2 text-base leading-snug text-black">
-              <LegendGlyph kind={it.kind} />
-              <span>{!v.countKnown && it.labelBeforeCount ? it.labelBeforeCount : it.label}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* The task: instruction and controls at the inline start, feedback beside them */}
-      <div ref={stripRef} className="mt-4 grid items-stretch gap-6 border-t border-border-subtle pt-4" style={{ gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 1fr)' }} data-dr-strip={state.step}>
+      <div className="mt-3 grid gap-x-6" style={{ gridTemplateColumns: `minmax(0, 1fr) ${TASK_W}px` }}>
         <div className="min-w-0">
-          <StepControls state={state} dispatch={dispatch} onRestart={restart} />
+          {intro}
+
+          {/* The two views: what you see (inline start) and the planning map, at one height */}
+          <div className={cn('grid gap-4', intro && 'mt-3.5')} style={{ gridTemplateColumns: `${FIELD_W}px minmax(0, 1fr)` }}>
+            <div className="relative overflow-hidden rounded-xl border border-border/70 bg-paper-bright" data-panel="dr-field">
+              <DeadReckoningField
+                distM={distM}
+                heading={state.step === 'plan' ? null : state.step === 'heading' ? state.heading : AZIMUTH_DEG}
+                target={v.countKnown ? PLANNED_PAIRS : null}
+                label={`בשטח, מבט מלמעלה סביב המנווט: ${fieldNote}. סופת חול — רואים רק כ־${VISIBILITY_M} מ׳ סביבכם.`}
+                className="absolute inset-0 h-full w-full"
+              />
+              <span className="absolute start-3 top-3 rounded-lg bg-paper-bright/95 px-2.5 py-1 font-display text-base font-bold text-black shadow-sm">בשטח: מה שרואים סביבכם</span>
+              {/* Beside the pace counter (bottom, inline end): two lines at most */}
+              <span className="absolute bottom-3 start-3 rounded-lg bg-paper-bright/95 px-2.5 py-1 font-display text-base font-semibold leading-snug text-black shadow-sm" style={{ maxWidth: FIELD_W - FIELD_COUNTER_END - 22 }} data-field-note>
+                {fieldNote}
+              </span>
+            </div>
+            <div className="relative aspect-[14/9] overflow-hidden rounded-xl border border-border/70 bg-white" data-panel="dr-map">
+              <DeadReckoningMap
+                distM={distM}
+                heading={state.heading}
+                showTicks={v.countKnown}
+                showHeading={state.step === 'heading'}
+                showDeviation={v.done}
+                className="absolute inset-0 h-full w-full"
+              />
+            </div>
+          </div>
+
+          {/* Caption and legend, under the views they describe */}
+          <div className="mt-3" data-legend="dead-reckoning">
+            <p className="text-base leading-relaxed text-black">{copy.caption}</p>
+            <ul className="mt-1 flex flex-wrap gap-x-6 gap-y-1">
+              {copy.legend.map((it) => (
+                <li key={it.label} className="flex items-center gap-2 text-base leading-snug text-black">
+                  <LegendGlyph kind={it.kind} />
+                  <span>{!v.countKnown && it.labelBeforeCount ? it.labelBeforeCount : it.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <Feedback state={state} />
+
+        {/* The task column: the step, its instruction and controls, then the feedback, which fills the rest */}
+        <div ref={stripRef} className="flex min-w-0 flex-col" data-dr-strip={state.step}>
+          <h4 id={titleId} className="font-display text-lg font-bold leading-snug text-black md:text-xl" aria-live="polite">
+            {title}
+          </h4>
+          <div className="mt-2.5">
+            <StepControls state={state} dispatch={dispatch} onRestart={restart} />
+          </div>
+          <Feedback state={state} />
+        </div>
       </div>
 
       {footer?.(v.countKnown)}
@@ -393,7 +410,7 @@ function CompassControl({ value, onSet, onTurn }: { value: number; onSet: (deg: 
   const tip = { x: Math.sin(rad) * 44, y: -Math.cos(rad) * 44 };
   const arc = { x: Math.sin(rad) * 30, y: -Math.cos(rad) * 30 };
   return (
-    <div className="flex items-center gap-4" data-compass>
+    <div className="flex items-center gap-3.5" data-compass>
       <svg
         ref={ref}
         viewBox="-60 -60 120 120"
@@ -438,7 +455,8 @@ function CompassControl({ value, onSet, onTurn }: { value: number; onSet: (deg: 
         <div className="font-display text-3xl font-bold leading-none text-black tabular-nums" dir="ltr" data-heading-readout>
           {`${value}°`}
         </div>
-        <div dir="ltr" className="mt-2.5 flex gap-1.5">
+        {/* Two by two, to fit the task column: counter-clockwise on top, clockwise below */}
+        <div dir="ltr" className="mt-2.5 grid grid-cols-2 gap-1.5">
           {TURNS.map((t) => (
             <button
               key={t.by}
@@ -446,7 +464,7 @@ function CompassControl({ value, onSet, onTurn }: { value: number; onSet: (deg: 
               aria-label={t.aria}
               title={t.aria}
               onClick={() => onTurn(t.by)}
-              className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-xl border border-border bg-bg-elevated px-2.5 font-display text-base font-semibold text-black transition-colors duration-200 ease-snap hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex h-10 cursor-pointer items-center justify-center gap-1 rounded-xl border border-border bg-bg-elevated px-2.5 font-display text-base font-semibold text-black transition-colors duration-200 ease-snap hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               <t.Icon className="size-4" aria-hidden />
               {t.label}
@@ -594,13 +612,14 @@ function Feedback({ state }: { state: State }) {
 
   const icon = tone === 'right' ? <Check className="mt-0.5 size-5 shrink-0" aria-hidden /> : tone === 'wrong' ? <X className="mt-0.5 size-5 shrink-0" aria-hidden /> : <Info className="mt-0.5 size-5 shrink-0" aria-hidden />;
   return (
-    // Announced once per check (keyed by the attempt); a fixed minimum height keeps the views still.
+    // Announced once per check (keyed by the attempt). It fills the task column, whose height the views set,
+    // so no verdict changes the card's height (the column fits the longest one: scripts/qa/shot-dead-reckoning.mjs).
     <div
       role="status"
       aria-live="polite"
       aria-atomic="true"
       className={cn(
-        'min-h-[148px] rounded-xl border px-4 py-3',
+        'mt-3 min-h-0 flex-1 rounded-xl border px-4 py-3',
         tone === 'right' ? 'border-brand bg-brand/10' : tone === 'wrong' ? 'border-accent-hot/60 bg-bg-accent' : 'border-dashed border-border bg-bg-accent/50',
       )}
       data-dr-feedback={kind}

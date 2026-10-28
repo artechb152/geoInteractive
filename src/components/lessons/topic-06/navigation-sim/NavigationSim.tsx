@@ -158,7 +158,8 @@ function NavigationSimCard() {
 
   return (
     <section className="surface-elevated p-6 lg:p-8" data-activity="navigation-sim" data-step={state.step} data-scenario={sc.id} aria-labelledby={titleId}>
-      {/* Title and progress (the lesson's card tiers, as in the location check) */}
+      {/* Title and progress (the lesson's card tiers, as in the location check); the same-north note under the
+          progress, over the map, so the map alone sets the row's height */}
       <header className="flex items-end justify-between gap-6">
         <div className="min-w-0">
           <h2 id={titleId} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
@@ -166,17 +167,29 @@ function NavigationSimCard() {
           </h2>
           <p className="mt-1.5 text-base leading-snug text-fg-muted">בלי GPS: מצפן ושלושה עצמים שמזוהים גם בשטח וגם במפה.</p>
         </div>
-        <Stepper current={v.stepNumber} done={v.done} />
+        <div className="flex shrink-0 flex-col items-end gap-3">
+          <Stepper current={v.stepNumber} done={v.done} />
+          <p className="text-base leading-snug text-fg-muted" data-north-note>
+            כל הכיוונים בתרגיל נמדדים מאותו צפון: הצפון של המפה הוא גם הצפון של המצפן.
+          </p>
+        </div>
       </header>
 
-      <div className="mt-5 grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 37fr) minmax(0, 63fr)' }}>
+      {/* The map sets the row's height; every step (hints and feedback included) fits beside it. */}
+      <div className="mt-4 grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 37fr) minmax(0, 63fr)' }}>
         {/* The step: at the inline start */}
         <div ref={panelRef} className="flex min-w-0 flex-col" data-panel="navsim-step">
-          <p className="font-display text-sm font-bold text-fg-muted" data-scenario-label>
-            {demo ? 'הדגמה' : `תרחיש ${scenarioIdx + 1} מתוך ${SCENARIOS.length}`}
-          </p>
-          <StepPanel state={state} dispatch={dispatch} onActive={setActive} />
-          <div className="mt-auto flex items-center gap-3 border-t border-border-subtle pt-3">
+          <StepPanel
+            state={state}
+            dispatch={dispatch}
+            onActive={setActive}
+            label={
+              <p className="shrink-0 font-display text-sm font-bold text-fg-muted" data-scenario-label>
+                {demo ? 'הדגמה' : `תרחיש ${scenarioIdx + 1} מתוך ${SCENARIOS.length}`}
+              </p>
+            }
+          />
+          <div className="mt-auto flex items-center gap-3 border-t border-border-subtle pt-2.5">
             <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'reset' })} disabled={state.step === 'demo-1' || (state.step === 'choose' && state.chosen.length === 0)}>
               <RotateCcw className="size-4" aria-hidden />
               התחלה מחדש
@@ -204,9 +217,6 @@ function NavigationSimCard() {
               className="absolute inset-0 h-full w-full"
             />
           </div>
-          <p className="mt-2 text-base leading-snug text-fg-muted" data-north-note>
-            כל הכיוונים בתרגיל נמדדים מאותו צפון: הצפון של המפה הוא גם הצפון של המצפן.
-          </p>
           <MarkAnnouncer state={state} />
         </div>
       </div>
@@ -242,17 +252,23 @@ function Stepper({ current, done }: { current: 1 | 2 | 3 | 4 | 5; done: boolean 
 
 // ---------------------------------------------------------------- one step
 
-const H3 = ({ children }: { children: ReactNode }) => <h3 className="mt-1 font-display text-xl font-bold leading-snug text-black">{children}</h3>;
-const P = ({ children, className }: { children: ReactNode; className?: string }) => <p className={cn('mt-2 text-base leading-relaxed text-black', className)}>{children}</p>;
+/** The step's heading, with the scenario label at the row's inline end (the label stays first in reading order). */
+const H3 = ({ children, label }: { children: ReactNode; label: ReactNode }) => (
+  <div className="flex flex-row-reverse items-baseline justify-between gap-3">
+    {label}
+    <h3 className="min-w-0 font-display text-xl font-bold leading-snug text-black">{children}</h3>
+  </div>
+);
+const P = ({ children, className }: { children: ReactNode; className?: string }) => <p className={cn('mt-1.5 text-base leading-normal text-black', className)}>{children}</p>;
 
-function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Dispatch; onActive: (id: ObjectId | null) => void }) {
+function StepPanel({ state, dispatch, onActive, label }: { state: State; dispatch: Dispatch; onActive: (id: ObjectId | null) => void; label: ReactNode }) {
   const v = viewOf(state);
   const sc = v.scenario;
 
   if (state.step === 'demo-1') {
     return (
       <div data-controls="demo-1">
-        <H3>
+        <H3 label={label}>
           הדגמה: מדדתם <Deg v={DEMO.reading} /> אל מגדל המים
         </H3>
         <P>
@@ -274,7 +290,7 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
   if (state.step === 'demo-2') {
     return (
       <div data-controls="demo-2">
-        <H3>
+        <H3 label={label}>
           הכיוון ההפוך: <Ltr>{backAzimuthWorking(DEMO.reading)}</Ltr>
         </H3>
         <P>
@@ -294,7 +310,7 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
   if (state.step === 'choose') {
     return (
       <div data-controls="choose">
-        <H3>בחרו שני עצמים למדידה</H3>
+        <H3 label={label}>בחרו שני עצמים למדידה</H3>
         <P>לחצו על שני עצמים במפה או כאן. את השלישי נשמור לבדיקה בסוף.</P>
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="עצמים למדידה">
           {OBJECT_IDS.map((id, k) => {
@@ -334,10 +350,10 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
   if (state.step === 'lines') {
     return (
       <div data-controls="lines">
-        <H3>משרטטים קו מכל עצם</H3>
+        <H3 label={label}>משרטטים קו מכל עצם</H3>
         <P>המדידות הן מכם אל העצמים, אבל במפה הקו יוצא מהעצם אליכם. חשבו לכל מדידה את האזימוט החוזר והקלידו אותו.</P>
         <LineTable ids={v.pair!} state={state} dispatch={dispatch} onActive={onActive} onEnter={() => dispatch({ type: 'checkLines' })} />
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           {v.linesRight ? (
             <Button variant="primary" size="md" onClick={() => dispatch({ type: 'toMark' })} data-autofocus>
               המשך: סימון המיקום
@@ -348,9 +364,9 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
               בדיקה
             </Button>
           )}
+          <HelpButtons state={state} stage="lines" dispatch={dispatch} />
         </div>
-        <Feedback state={state} />
-        <HelpRow state={state} stage="lines" dispatch={dispatch} />
+        <Feedback state={state} hints={<Hints state={state} stage="lines" />} />
       </div>
     );
   }
@@ -359,9 +375,9 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
     const ok = v.markRight || state.help.mark.solved;
     return (
       <div data-controls="mark">
-        <H3>סמנו את המיקום שלכם</H3>
+        <H3 label={label}>סמנו את המיקום שלכם</H3>
         <P>לחצו על המפה בנקודה שבה אתם נמצאים לפי שני הקווים. במקלדת: הזיזו את הסימון בחיצים ולחצו Enter.</P>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           {ok ? (
             <Button variant="primary" size="md" onClick={() => dispatch({ type: 'toVerify' })} data-autofocus>
               המשך: אימות
@@ -372,9 +388,9 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
               בדיקה
             </Button>
           )}
+          <HelpButtons state={state} stage="mark" dispatch={dispatch} />
         </div>
-        <Feedback state={state} />
-        <HelpRow state={state} stage="mark" dispatch={dispatch} />
+        <Feedback state={state} hints={<Hints state={state} stage="mark" />} />
         {/* The map is the step's first control: focus lands on it */}
         <FocusMap />
       </div>
@@ -385,18 +401,18 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
     const third = v.third!;
     return (
       <div data-controls="verify">
-        <H3>אימות מול {OBJECTS[third].name}</H3>
+        <H3 label={label}>אימות מול {OBJECTS[third].name}</H3>
         <P>
           מדדתם גם אל {OBJECTS[third].name}: <Deg v={sc.readings[third]} />. הקלידו את האזימוט החוזר. אם המיקום נכון, הקו {OBJECTS[third].from} יעבור בחיתוך של שני הקווים.
         </P>
         <LineTable ids={[third]} state={state} dispatch={dispatch} onActive={onActive} onEnter={() => dispatch({ type: 'checkVerify' })} autofocus />
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <Button variant="primary" size="md" onClick={() => dispatch({ type: 'checkVerify' })} disabled={v.value(third) === null}>
             בדיקה
           </Button>
+          <HelpButtons state={state} stage="verify" dispatch={dispatch} />
         </div>
-        <Feedback state={state} />
-        <HelpRow state={state} stage="verify" dispatch={dispatch} />
+        <Feedback state={state} hints={<Hints state={state} stage="verify" />} />
       </div>
     );
   }
@@ -410,7 +426,7 @@ function StepPanel({ state, dispatch, onActive }: { state: State; dispatch: Disp
   const off = offCrossing(state.marker, sc.position);
   return (
     <div data-controls="done">
-      <H3>המיקום נמצא ואומת</H3>
+      <H3 label={label}>המיקום נמצא ואומת</H3>
       <div className="mt-2 flex items-start gap-2 rounded-xl border border-brand bg-brand/10 px-3.5 py-2.5 font-display text-base font-bold leading-snug text-black" role="status" data-navsim-feedback={state.help.verify.solved ? 'verify-solved' : 'verify-right'} data-mark-off={off ?? 0}>
         <Check className="mt-0.5 size-5 shrink-0" aria-hidden />
         <span>
@@ -446,22 +462,21 @@ function FocusMap() {
 // ---------------------------------------------------------------- lines: one row per object
 
 /** Object · its measurement · the line typed for it. */
-const COLS = 'minmax(0, 1fr) 5rem 7.5rem';
+const COLS = 'minmax(0, 1fr) 6.75rem 9.5rem';
 
 function LineTable({ ids, state, dispatch, onActive, onEnter, autofocus }: { ids: readonly ObjectId[]; state: State; dispatch: Dispatch; onActive: (id: ObjectId | null) => void; onEnter: () => void; autofocus?: boolean }) {
   const v = viewOf(state);
   const uid = useId();
   return (
-    <div className="mt-3" data-line-table>
-      <div className="grid items-end gap-x-3 border-b border-border-subtle pb-1.5 leading-tight" style={{ gridTemplateColumns: COLS }} aria-hidden>
+    <div className="mt-2.5" data-line-table>
+      {/* One header line: each column's name, then whose direction it is */}
+      <div className="grid items-baseline gap-x-3 whitespace-nowrap border-b border-border-subtle pb-1.5 leading-tight" style={{ gridTemplateColumns: COLS }} aria-hidden>
         <span className="font-display text-sm font-bold text-fg-muted">עצם</span>
         <span>
-          <span className="block font-display text-sm font-bold text-black">מדידה</span>
-          <span className="block text-sm text-fg-muted">מכם אליו</span>
+          <span className="font-display text-sm font-bold text-black">מדידה</span> <span className="text-sm text-fg-muted">מכם אליו</span>
         </span>
         <span>
-          <span className="block font-display text-sm font-bold text-black">קו במפה</span>
-          <span className="block text-sm text-fg-muted">ממנו אליכם</span>
+          <span className="font-display text-sm font-bold text-black">קו במפה</span> <span className="text-sm text-fg-muted">ממנו אליכם</span>
         </span>
       </div>
       {ids.map((id, k) => {
@@ -480,7 +495,7 @@ function LineTable({ ids, state, dispatch, onActive, onEnter, autofocus }: { ids
           }
         };
         return (
-          <div key={id} className="border-b border-border-subtle py-2" data-line-row={id} data-verdict={verdict?.kind}>
+          <div key={id} className="border-b border-border-subtle py-1.5" data-line-row={id} data-verdict={verdict?.kind}>
             <div className="grid items-center gap-x-3" style={{ gridTemplateColumns: COLS }}>
               <label htmlFor={`${uid}-${id}`} className="font-display text-base font-bold text-black">
                 {OBJECTS[id].name}
@@ -507,7 +522,7 @@ function LineTable({ ids, state, dispatch, onActive, onEnter, autofocus }: { ids
                     onFocus={() => onActive(id)}
                     onBlur={() => onActive(null)}
                     className={cn(
-                      'h-10 w-[4.25rem] rounded-xl border bg-bg-elevated px-2 text-center font-display text-lg font-bold tabular-nums text-black placeholder:text-fg-dim/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                      'h-9 w-[4.25rem] rounded-xl border bg-bg-elevated px-2 text-center font-display text-lg font-bold tabular-nums text-black placeholder:text-fg-dim/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
                       right ? 'border-brand bg-brand/10' : verdict ? 'border-accent-hot' : 'border-fg-dim/60',
                     )}
                     placeholder="___"
@@ -534,7 +549,7 @@ function LineTable({ ids, state, dispatch, onActive, onEnter, autofocus }: { ids
           </div>
         );
       })}
-      <p id={`${uid}-keys`} className="mt-1.5 text-sm text-fg-muted">
+      <p id={`${uid}-keys`} className="mt-1 text-sm text-fg-muted">
         החיצים <Ltr>↑ ↓</Ltr> מסובבים את הקו במעלה אחת.
       </p>
     </div>
@@ -571,7 +586,8 @@ function lineCause(id: ObjectId, value: number, verdict: Exclude<LineVerdict, { 
   );
 }
 
-function Feedback({ state }: { state: State }) {
+/** The verdict of the step, and under it (same box, as in the terrain association) the hints asked for. */
+function Feedback({ state, hints }: { state: State; hints?: ReactNode }) {
   const v = viewOf(state);
   const sc = v.scenario;
   let tone: Tone = 'info';
@@ -659,7 +675,7 @@ function Feedback({ state }: { state: State }) {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className={cn('mt-3 rounded-xl border px-3.5 py-2.5', tone === 'right' ? 'border-brand bg-brand/10' : tone === 'wrong' ? 'border-accent-hot/60 bg-bg-accent' : 'border-dashed border-border bg-bg-accent/50')}
+      className={cn('mt-2.5 rounded-xl border px-3.5 py-2', tone === 'right' ? 'border-brand bg-brand/10' : tone === 'wrong' ? 'border-accent-hot/60 bg-bg-accent' : 'border-dashed border-border bg-bg-accent/50')}
       data-navsim-feedback={kind}
     >
       <div key={`${kind}-${state.checks}`}>
@@ -675,6 +691,7 @@ function Feedback({ state }: { state: State }) {
           </ul>
         )}
       </div>
+      {hints}
     </div>
   );
 }
@@ -706,43 +723,47 @@ function hintText(state: State, stage: Stage, level: 1 | 2): ReactNode {
   );
 }
 
-function HelpRow({ state, stage, dispatch }: { state: State; stage: Stage; dispatch: Dispatch }) {
+/** The hint and solution offers: beside the step's main button (the same focus order as before: check, hint, solution). */
+function HelpButtons({ state, stage, dispatch }: { state: State; stage: Stage; dispatch: Dispatch }) {
   const offer = helpOffer(state, stage);
   const h = state.help[stage];
-  if (!offer.hint && !offer.solve && !offer.show) return null;
+  if (!offer.hint && !offer.solve) return null;
   return (
-    <div className="mt-2.5" data-help={stage}>
-      {offer.show && (
-        <ol className="space-y-1.5 rounded-xl bg-bg-accent/60 px-3.5 py-2.5 text-base leading-snug text-black">
-          {([1, 2] as const)
-            .filter((k) => k <= h.hint)
-            .map((k) => (
-              <li key={k} className="flex items-start gap-2" data-hint={k}>
-                <Lightbulb className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
-                <span>
-                  <span className="font-display font-bold">רמז {k}: </span>
-                  {hintText(state, stage, k)}
-                </span>
-              </li>
-            ))}
-        </ol>
+    <div className="flex flex-wrap gap-2" data-help={stage}>
+      {offer.hint && (
+        <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'hint', stage })}>
+          <Lightbulb className="size-4" aria-hidden />
+          {h.hint === 0 ? 'רמז' : 'רמז נוסף'}
+        </Button>
       )}
-      {(offer.hint || offer.solve) && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {offer.hint && (
-            <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'hint', stage })}>
-              <Lightbulb className="size-4" aria-hidden />
-              {h.hint === 0 ? 'רמז' : 'רמז נוסף'}
-            </Button>
-          )}
-          {offer.solve && (
-            <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'solve', stage })}>
-              הצגת הפתרון
-            </Button>
-          )}
-        </div>
+      {offer.solve && (
+        <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'solve', stage })}>
+          הצגת הפתרון
+        </Button>
       )}
     </div>
+  );
+}
+
+/** The hints asked for, in the feedback box under the verdict. */
+function Hints({ state, stage }: { state: State; stage: Stage }) {
+  const offer = helpOffer(state, stage);
+  const h = state.help[stage];
+  if (!offer.show) return null;
+  return (
+    <ol className="mt-1.5 space-y-1 border-t border-border-subtle pt-1.5 text-base leading-snug text-black" data-help={stage}>
+      {([1, 2] as const)
+        .filter((k) => k <= h.hint)
+        .map((k) => (
+          <li key={k} className="flex items-start gap-2" data-hint={k}>
+            <Lightbulb className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
+            <span>
+              <span className="font-display font-bold">רמז {k}: </span>
+              {hintText(state, stage, k)}
+            </span>
+          </li>
+        ))}
+    </ol>
   );
 }
 

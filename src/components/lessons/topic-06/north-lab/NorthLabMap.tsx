@@ -22,6 +22,7 @@ import {
   RING_SCALE,
   RING_TICK,
   TARGET_TRUE_BEARING,
+  TERRAIN,
   arcLabelBox,
   arcPath,
   arrowLabels,
@@ -109,7 +110,7 @@ const NorthLabSheet = memo(function NorthLabSheet({ uid }: { uid: string }) {
 
       <g clipPath={`url(#${clip})`}>
         {/* drawing order: terrain → grid → instrument body and its print; the live layer is NorthLabOverlay */}
-        <image href={TERRAIN_SRC} x={0} y={0} width={LAB_W} height={LAB_H} preserveAspectRatio="none" data-terrain />
+        <image href={TERRAIN_SRC} x={0} y={0} width={TERRAIN.w} height={TERRAIN.h} preserveAspectRatio="none" data-terrain />
 
         {/* printed grid: its north axis is GN */}
         <path d={GRID_D} transform={`rotate(${GRID_NORTH_ANGLE} ${LAB_A.x} ${LAB_A.y})`} fill="none" stroke={MAP.grid} strokeOpacity={0.66} strokeWidth={0.8} data-grid={GRID_NORTH_ANGLE} />
@@ -200,7 +201,7 @@ function ArrowLabelMark({ label, selected }: { label: ArrowLabel; selected: bool
       <text x={cx} y={r1(box.y + 12)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={15} fill="currentColor" className={selected ? 'font-display font-extrabold' : 'font-display font-bold'}>
         {meta.short}
       </text>
-      <text x={cx} y={r1(box.y + 27)} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={14} fill="currentColor" className="font-display font-bold tabular-nums">
+      <text x={cx} y={r1(box.y + 27)} textAnchor="middle" dominantBaseline="central" direction="ltr" fontSize={15} fill="currentColor" className="font-display font-bold tabular-nums">
         {formatSigned(label.value)}
       </text>
     </g>
@@ -214,7 +215,7 @@ function Inset({ declination, active }: { declination: number; active: NorthId }
   return (
     <g pointerEvents="none" data-inset>
       <rect x={INSET.x} y={INSET.y} width={INSET.w} height={INSET.h} rx={10} fill={WHITE} stroke={MAP.hairline} />
-      <text x={INSET.x + INSET.w / 2} y={INSET.y + 19} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={13} fill={INK} className="font-display font-bold">
+      <text x={INSET.x + INSET.w / 2} y={INSET.y + 19} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={14} fill={INK} className="font-display font-bold">
         הפרדה מוגדלת להמחשה
       </text>
       {order.map((id) => {
@@ -235,7 +236,7 @@ function Inset({ declination, active }: { declination: number; active: NorthId }
             {l.leader && (
               <line x1={cx} y1={r1(l.box.y + l.box.h)} x2={r1(l.tip.x)} y2={r1(l.tip.y - 3)} stroke="currentColor" strokeWidth={1} strokeOpacity={0.75} />
             )}
-            <text x={cx} y={r1(l.box.y + l.box.h / 2)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={13} fill="currentColor" className="font-display font-bold">
+            <text x={cx} y={r1(l.box.y + l.box.h / 2)} textAnchor="middle" dominantBaseline="central" direction="rtl" fontSize={14} fill="currentColor" className="font-display font-bold">
               {NORTHS[l.id].short}
             </text>
           </g>
@@ -293,11 +294,11 @@ function NorthLabOverlay({ declination, arcStart, active }: { declination: numbe
       ))}
 
       <circle cx={LAB_A.x} cy={LAB_A.y} r={POINT_R.a} fill={WHITE} stroke={INK} strokeWidth={2} data-point="A" />
-      <text x={LAB_A.x} y={LAB_A.y + 0.5} textAnchor="middle" dominantBaseline="central" fontSize={13} fill={INK} className="font-display font-bold">
+      <text x={LAB_A.x} y={LAB_A.y + 0.5} textAnchor="middle" dominantBaseline="central" fontSize={14} fill={INK} className="font-display font-bold">
         A
       </text>
       <circle cx={r1(LAB_B.x)} cy={r1(LAB_B.y)} r={POINT_R.b} className="fill-accent" stroke={WHITE} strokeWidth={2.5} data-point="B" />
-      <text x={r1(LAB_B.x)} y={r1(LAB_B.y + 0.5)} textAnchor="middle" dominantBaseline="central" fontSize={13} fill={WHITE} className="font-display font-bold">
+      <text x={r1(LAB_B.x)} y={r1(LAB_B.y + 0.5)} textAnchor="middle" dominantBaseline="central" fontSize={14} fill={WHITE} className="font-display font-bold">
         B
       </text>
 
@@ -323,7 +324,7 @@ function NorthLabOverlay({ declination, arcStart, active }: { declination: numbe
       <Inset declination={declination} active={active} />
 
       {/* RTL text: its end (left edge) sits at x */}
-      <text x={NOTE_POS.x} y={NOTE_POS.y} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={13} className="fill-fg-muted font-display font-semibold">
+      <text x={NOTE_POS.x} y={NOTE_POS.y} textAnchor="end" direction="rtl" dominantBaseline="central" fontSize={14} className="fill-fg-muted font-display font-semibold">
         הנתונים להמחשה בלבד
       </text>
     </svg>

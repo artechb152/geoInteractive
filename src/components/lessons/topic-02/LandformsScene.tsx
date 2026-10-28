@@ -420,14 +420,14 @@ function LinkedBoards({ children }: { children: [ReactNode, ReactNode] }) {
 
 function SlopeText({ slope, className, ...rest }: { slope: Slope; className?: string; 'aria-hidden'?: boolean }) {
   return (
-    <div className={cn('grid sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 lg:gap-4', className)} {...rest}>
-      <div>
+    <div className={cn('grid sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-2 lg:h-full gap-4 sm:gap-6 lg:gap-4', className)} {...rest}>
+      <div className="lg:flex lg:flex-col lg:justify-center">
         <InfoLabel>תיאור המדרון</InfoLabel>
-        <p className="text-base leading-relaxed text-fg">{slope.description}</p>
+        <p className="text-base leading-relaxed text-fg lg:text-lg lg:leading-loose">{slope.description}</p>
       </div>
-      <div>
+      <div className="lg:flex lg:flex-col lg:justify-center">
         <InfoLabel>זיהוי במפה</InfoLabel>
-        <p className="text-base leading-relaxed text-fg">{slope.contourHint}</p>
+        <p className="text-base leading-relaxed text-fg lg:text-lg lg:leading-loose">{slope.contourHint}</p>
       </div>
     </div>
   );
@@ -468,9 +468,10 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
           description sit in the first column (→ RIGHT in RTL) beside the linked
           drawings, as in the landforms block above, so switching a slope never
           pushes its description below the fold. */}
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
-        {/* Takes the width the drawings leave (28% of the row). */}
-        <div className="flex flex-col gap-5 lg:flex-1 lg:min-w-[15rem]">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(15rem,1fr)_72%] lg:gap-x-6 lg:gap-y-3">
+        {/* Takes the width the drawings leave (28% of the row). Stretches to the
+            bottom of the drawings (row 1); the caption sits in row 2. */}
+        <div className="flex flex-col gap-5 lg:min-w-0">
           <div
             role="tablist"
             aria-labelledby="lf-slopes-title"
@@ -524,7 +525,7 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
             id="lf-slope-panel"
             aria-labelledby={`lf-slope-tab-${active}`}
             aria-live="polite"
-            className="grid rounded-xl bg-bg-accent/60 p-4 sm:p-5 lg:p-4"
+            className="grid rounded-xl bg-bg-accent/60 p-4 sm:p-5 lg:flex-1 lg:p-5"
           >
             {slopes.map((s) => (
               <SlopeText key={s.id} slope={s} className="invisible [grid-area:1/1]" aria-hidden />
@@ -536,7 +537,7 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? { opacity: 1 } : { opacity: 0, y: -4 }}
                 transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
-                className="[grid-area:1/1]"
+                className="[grid-area:1/1] min-h-0"
               >
                 <SlopeText slope={meta} />
               </motion.div>
@@ -549,7 +550,7 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
             crossing straight down onto its contour line. Both keep a fixed aspect
             (height ≈ 0.62 × width); on short screens the laptop fit shrinks the
             whole screen instead of capping their width. */}
-        <div id="lf-slope-figure" className="min-w-0 lg:basis-[72%]">
+        <div id="lf-slope-figure" className="min-w-0">
           <LinkedBoards>
             <SlopeProfile slope={active} ariaLabel={`${meta.label} — מהצד: חתך השטח`} />
             <SlopeContours
@@ -558,10 +559,10 @@ function SlopeAnalyzer({ slopes, active, onSelect }: { slopes: Slope[]; active: 
               ariaLabel={`${meta.label} — במפה: קווי גובה במבט מלמעלה`}
             />
           </LinkedBoards>
-          <p className="mt-3 text-center text-base leading-relaxed text-fg">
-            כאשר הפרש הגובה בין הקווים קבוע, מרווחים קטנים יותר מעידים על מדרון תלול יותר.
-          </p>
         </div>
+        <p className="text-center text-base leading-relaxed text-fg lg:col-start-2 lg:row-start-2">
+          כאשר הפרש הגובה בין הקווים קבוע, מרווחים קטנים יותר מעידים על מדרון תלול יותר.
+        </p>
       </div>
     </div>
   );

@@ -64,6 +64,7 @@ export function NavigationExamplesPanel() {
       title="מדוע מיומנויות ניווט חשובות?"
       intro="שלוש דוגמאות מהמציאות ודוגמה מומצאת: כיוון, זיהוי מיקום ואימות היעד."
       panelId="navigation-history-detail-panel"
+      compact
     />
   );
 }

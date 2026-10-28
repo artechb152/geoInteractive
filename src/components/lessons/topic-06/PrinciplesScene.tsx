@@ -38,11 +38,11 @@ const SCREEN_REFERENCE_WIDTH = 1344;
 const SCREEN_RESERVE_TOP = 104;
 const SCREEN_RESERVE_BOTTOM = 24;
 /**
- * The compass + map screen (990px), the three-norths lab (1321px) and the
- * location check (818px) are taller than LESSON_FIT_MAX_HEIGHT, so they are
- * fitted as that height rather than their full height: a laptop shrinks them
- * to the same width as the other lesson screens (not a narrower, height-bound
- * one) and their foot scrolls. 1920 × 1080 stays at scale 1.
+ * The compass + map screen (753px), the three-norths lab (731px) and the
+ * location check (745px) are each laid out to fit one screen whole (≤ 760px,
+ * a 1920 × ~910 browser view at scale 1). They are still fitted as
+ * LESSON_FIT_MAX_HEIGHT, so a laptop shrinks them to the same width as the
+ * other lesson screens. 1920 × 1080 stays at scale 1.
  */
 const VIEW_REFERENCE_HEIGHT = LESSON_FIT_MAX_HEIGHT;
 
@@ -89,10 +89,14 @@ export function PrinciplesScene() {
         </ScreenFit>
       </div>
 
-      {/* The location check and the closing line share one screen, as in the techniques sub-topic. */}
+      {/* The location check fills one screen on its own; the closing line follows it as a short screen. */}
       <div className="mt-12">
         <ScreenFit referenceHeight={VIEW_REFERENCE_HEIGHT}>
           <GpsDeniedCard />
+        </ScreenFit>
+      </div>
+      <div className="mt-6">
+        <ScreenFit>
           <ConclusionCard />
         </ScreenFit>
       </div>
@@ -145,9 +149,14 @@ function AzimuthExplorer() {
 
   return (
     <div className="surface-elevated p-6 lg:p-8" data-activity="compass-map">
-      {/* Desktop: compass column at the inline start (right), map at the end
-          (left) with the card title above it, as in the selected mockup. */}
-      <div className="grid gap-x-7 gap-y-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+      {/* Desktop, one screen: a header row (instruction over the compass column,
+          title over the map), then the compass column at the inline start
+          (right) beside the map at the end (left). The column holds the whole
+          instrument story — compass, readouts, slider, definition and the
+          back-azimuth rule with its equation — and the map is sized to the
+          column's height (488px column → ≈ 762 × 635 px map at 1344; card
+          753px tall, under the 760px one-screen budget). */}
+      <div className="grid gap-x-7 gap-y-3 lg:grid-cols-[488px_minmax(0,1fr)]">
         <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl lg:col-start-2 lg:row-start-1 lg:self-end lg:text-end">
           מהמצפן אל המפה
         </h3>
@@ -156,35 +165,36 @@ function AzimuthExplorer() {
         </p>
 
         <div className="flex flex-col lg:col-start-1 lg:row-start-2">
-          <div className="mx-auto aspect-square w-full max-w-[340px]">
+          <div className="mx-auto aspect-square w-full max-w-[280px]">
             <CompassInstrument angle={angle} azimuthLabel={azimuthLabel} backLabel={backLabel} />
           </div>
           <AzimuthReadouts azimuth={azimuthLabel} back={backLabel} />
           <AzimuthSlider value={azimuth} onChange={setAzimuth} />
-          {/* The definition, beside the instrument; the back azimuth is the band below. */}
-          <p className="mt-5 text-base leading-relaxed text-black" data-azimuth-definition>
+          {/* The definition, under the instrument it describes. */}
+          <p className="mb-4 mt-3 text-base leading-relaxed text-black" data-azimuth-definition>
             <strong className="font-bold">אזימוט (Azimuth)</strong> הוא זווית אופקית הנמדדת מכיוון הצפון, עם כיוון השעון: צפון{' '}
             <span dir="ltr">0°</span> או <span dir="ltr">360°</span>, מזרח <span dir="ltr">90°</span>.
           </p>
+
+          {/* The back-azimuth rule and its live equation close the column, level
+              with the map's foot (mt-auto). Stacked, as the band's narrow form. */}
+          <div className="mt-auto flex flex-col items-center gap-2 rounded-2xl bg-bg-accent px-6 py-3 text-center">
+            <p className="max-w-md text-lg leading-snug text-black">
+              {/* each "180°" is an LTR island, so the degree sign stays after the digits;
+                  nowrap keeps a value with its word */}
+              אזימוט חוזר מצביע לכיוון ההפוך: מתחת <span className="whitespace-nowrap">ל־<span dir="ltr">180°</span></span>{' '}
+              <span className="whitespace-nowrap">מוסיפים <span dir="ltr">180°</span></span>, ומ־<span dir="ltr">180°</span> ומעלה{' '}
+              <span className="whitespace-nowrap">מפחיתים <span dir="ltr">180°</span></span>.
+            </p>
+            <p dir="ltr" className="shrink-0 font-display text-4xl font-bold leading-none tabular-nums text-fg" data-equation>
+              {azimuthLabel} {eq.op} 180° = {backLabel}
+            </p>
+          </div>
         </div>
 
-        <div className="lg:col-start-2 lg:row-start-2">
+        <div className="lg:col-start-2 lg:row-start-2 lg:self-end">
           <BearingMap angle={angle} azimuthLabel={azimuthLabel} backLabel={backLabel} />
         </div>
-      </div>
-
-      <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl bg-bg-accent px-6 py-5 text-center sm:flex-row sm:justify-center sm:gap-10 sm:text-start">
-        <p className="max-w-md text-lg leading-snug text-black">
-          {/* each "180°" is an LTR island, so the degree sign stays after the digits;
-              nowrap keeps a value with its word */}
-          אזימוט חוזר מצביע לכיוון ההפוך: מתחת <span className="whitespace-nowrap">ל־<span dir="ltr">180°</span></span>{' '}
-          <span className="whitespace-nowrap">מוסיפים <span dir="ltr">180°</span></span>, ומ־<span dir="ltr">180°</span> ומעלה{' '}
-          <span className="whitespace-nowrap">מפחיתים <span dir="ltr">180°</span></span>.
-        </p>
-        <span aria-hidden className="hidden w-px self-stretch bg-border sm:block" />
-        <p dir="ltr" className="shrink-0 font-display text-4xl font-bold leading-none tabular-nums text-fg" data-equation>
-          {azimuthLabel} {eq.op} 180° = {backLabel}
-        </p>
       </div>
 
       <span className="sr-only" aria-live="polite" aria-atomic="true">
@@ -235,7 +245,7 @@ function AzimuthSlider({ value, onChange }: { value: number; onChange: (v: numbe
     onChange(Math.max(0, Math.min(AZIMUTH_MAX, value + step)));
   };
   return (
-    <div dir="ltr" className="relative mt-5 w-full" data-slider>
+    <div dir="ltr" className="relative mt-4 w-full" data-slider>
       <div className="relative h-[26px]">
         <div aria-hidden className="absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-bg-accent ring-1 ring-inset ring-border" />
         <div
@@ -318,7 +328,7 @@ function GpsDeniedCard() {
 function ConclusionCard() {
   // Closing takeaway — a flat info card: no stripe, no icon tile, no entrance motion.
   return (
-    <div className="mt-6 surface p-5 sm:p-6">
+    <div className="surface p-5 sm:p-6">
       <p className="text-base text-fg leading-relaxed text-pretty">
         מודדים <strong className="text-fg">אזימוט ביחס לצפון המתאים</strong>, ובודקים את המיקום לפי כיוון, מרחק וסימני שטח, גם כשאין GPS.
       </p>

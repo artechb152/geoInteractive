@@ -284,22 +284,6 @@ const OPTION_IDLE = 'border-border bg-bg-elevated text-fg hover:border-brand/30 
 /** Illustrated choice cards and the token strip sit on a faint cream tint inside the white card. */
 const OPTION_IDLE_TINTED = 'border-border bg-bg-accent/60 text-fg hover:border-brand/30 hover:bg-brand/[0.03] cursor-pointer';
 
-/** A result mark: check (right) or x (wrong) in a filled circle; the text beside it names the result. */
-function ResultMark({ right, size = 'md' }: { right: boolean; size?: 'sm' | 'md' }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'grid shrink-0 place-items-center rounded-full text-bg-elevated',
-        size === 'sm' ? 'size-5' : 'size-6',
-        right ? 'bg-brand-dark' : 'bg-status-danger',
-      )}
-    >
-      <Icon name={right ? 'check' : 'x'} size={size === 'sm' ? 12 : 14} strokeWidth={3} />
-    </span>
-  );
-}
-
 /**
  * Stage layout — three regions that never share a look:
  *   item     — the item's name, large plain text (no box), and, with `visuals`, its illustration
@@ -526,9 +510,7 @@ function SortQuizStage<K extends string>({
               >
                 <span className="truncate">{it.label}</span>
                 {answeredIt &&
-                  (visuals ? (
-                    <ResultMark right={rightIt} size="sm" />
-                  ) : (
+                  (visuals ? null : (
                     <span aria-hidden className={cn('shrink-0', rightIt ? 'text-brand-dark' : 'text-status-danger')}>
                       <Icon name={rightIt ? 'check' : 'x'} size={15} strokeWidth={2.6} />
                     </span>
@@ -623,7 +605,6 @@ function SortQuizStage<K extends string>({
                         <Image src={art} alt="" width={1536} height={1024} sizes="225px" className="size-full object-contain" />
                       </span>
                       <span className="mt-2 inline-flex items-center gap-2">
-                        {(showRight || showWrong) && <ResultMark right={showRight} />}
                         {opt.label}
                       </span>
                     </>
@@ -660,11 +641,6 @@ function SortQuizStage<K extends string>({
                 )}
               >
                 <div className="flex items-start gap-3">
-                  {visuals && (
-                    <span className="mt-0.5">
-                      <ResultMark right={isRight} />
-                    </span>
-                  )}
                   <p className="text-base leading-relaxed text-fg">
                     <strong className="font-display font-bold">
                       {isRight ? 'נכון. ' : `לא בדיוק. הסיווג הנכון: ${answerLabel}. `}

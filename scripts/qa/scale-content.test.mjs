@@ -17,14 +17,12 @@ test('generated bounds match the geometry module', () => {
   }
 });
 
-test('locate buttons: known landmarks, each inside at least one sheet; the Kinneret only on 1:250,000', () => {
-  for (const l of LOCATE) {
-    assert.ok(l.id in LANDMARKS, l.id);
-    assert.ok(SHEET_IDS.some((id) => inside(id, LANDMARKS[l.id])), `${l.id} inside no sheet`);
-  }
-  assert.ok(LOCATE.some((l) => l.id === 'kinneret'));
-  assert.deepEqual(SHEET_IDS.filter((id) => inside(id, LANDMARKS.kinneret)), ['250k']);
-  for (const id of ['shibli', 'road7266']) for (const s of SHEET_IDS) assert.ok(inside(s, LANDMARKS[id]), `${id} on ${s}`);
+test('locate buttons: each place is on one sheet fewer — all three, then 1:50,000 and up, then 1:250,000 only', () => {
+  for (const l of LOCATE) assert.ok(l.id in LANDMARKS, l.id);
+  assert.deepEqual(
+    LOCATE.map((l) => SHEET_IDS.filter((id) => inside(id, LANDMARKS[l.id]))),
+    [['10k', '50k', '250k'], ['50k', '250k'], ['250k']],
+  );
 });
 
 test('the example pair lies inside all three sheets and reads 8.9 cm on 1:10,000', () => {

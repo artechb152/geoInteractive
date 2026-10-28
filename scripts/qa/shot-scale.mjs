@@ -4,7 +4,7 @@
 // Exit code 1 on any failure. Screenshots go to outDir (default design/screenshots/scale-redesign/qa).
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
-import { SHEETS } from '../../src/components/lessons/topic-02/scale/scaleSheets.data.ts';
+import { SHEETS, SHEET_IDS } from '../../src/components/lessons/topic-02/scale/scaleSheets.data.ts';
 import { EXAMPLE_PAIR, LANDMARKS, LOCATE, SHOWN_AS, ZOOM_SENTENCE } from '../../src/components/lessons/topic-02/scale/scaleContent.data.ts';
 import {
   formatDistance, formatNumber, groundDistanceM, insideSheet, lonLatToSheet, readCm, readingPrecisionM, sheetCm,
@@ -267,35 +267,46 @@ async function checkExplore() {
   ok((await block(page, 'explore-live').textContent()) === 'מפה 1:10,000: הדף מכסה 2.4 על 2.4 ק״מ, וכל ס״מ עליו הוא 100 מ׳ בשטח.', 'explore: readouts follow the sheet');
   await shot(page, 'explore-10k');
 
-  // Locate: Shibli inside → ring on the spot; the Kinneret outside → message.
+  // Locate: Kfar Tavor inside → ring on the spot; the Kinneret outside → message and an edge pointer. The
+  // coverage row shows each place on the three sheets (data-on, in the picker's order).
   const marker = L.locator('[data-qa="locate-marker"]');
   const line = block(page, 'locate-line');
-  const shibli = L.getByRole('button', { name: 'שיבלי', exact: true });
+  const coverage = () => Promise.all(SHEET_IDS.map((id) => L.locator(`[data-qa="locate-coverage-${id}"]`).getAttribute('data-on'))).then((v) => v.join());
+  const kfar = L.getByRole('button', { name: 'כפר תבור', exact: true });
   await sheetRadio(page, /1:50,000/).click();
   await waitMorph(page);
-  await shibli.click();
+  await kfar.click();
   await page.waitForTimeout(300);
-  ok((await shibli.getAttribute('aria-pressed')) === 'true', 'locate: the active button is pressed');
-  ok((await line.getAttribute('aria-live')) === 'polite' && (await line.innerText()) === 'שיבלי: סומן על המפה.', `locate: "${await line.innerText()}"`);
+  ok((await kfar.getAttribute('aria-pressed')) === 'true', 'locate: the active button is pressed');
+  ok((await line.getAttribute('aria-live')) === 'polite' && (await line.innerText()) === 'כפר תבור: סומן על המפה.', `locate: "${await line.innerText()}"`);
+  ok((await coverage()) === 'false,true,true', 'locate: Kfar Tavor is off 1:10,000, on 1:50,000 and 1:250,000');
+  ok((await L.locator('[data-qa="locate-coverage-50k"]').getAttribute('aria-current')) === 'true', 'locate: the shown sheet is current in the coverage row');
   const ring = await marker.locator('circle').last().boundingBox();
-  const want = await screenOfUnits(page, lonLatToSheet(SHEETS['50k'], LANDMARKS.shibli));
+  const want = await screenOfUnits(page, lonLatToSheet(SHEETS['50k'], LANDMARKS.kfarTavor));
   const d = Math.hypot(centre(ring).x - want.x, centre(ring).y - want.y);
-  ok(d <= 1, `locate: ring centred on Shibli (Δ ${d.toFixed(2)} px)`);
-  ok((await marker.locator('text').textContent()) === 'שיבלי', 'locate: the name pill reads "שיבלי"');
-  for (const name of ['הדרך לפסגה', 'פסגת הר תבור']) {
-    await L.getByRole('button', { name, exact: true }).click();
-    await page.waitForTimeout(200);
-    ok((await marker.count()) === 1 && (await line.innerText()) === `${name}: סומן על המפה.`, `locate: "${name}" marked on 1:50,000`);
-  }
-  ok((await shibli.getAttribute('aria-pressed')) === 'false', 'locate: only one button pressed');
+  ok(d <= 1, `locate: ring centred on Kfar Tavor (Δ ${d.toFixed(2)} px)`);
+  ok((await marker.locator('text').textContent()) === 'כפר תבור', 'locate: the name pill reads "כפר תבור"');
+  await L.getByRole('button', { name: 'פסגת הר תבור', exact: true }).click();
+  await page.waitForTimeout(200);
+  ok((await marker.count()) === 1 && (await line.innerText()) === 'פסגת הר תבור: סומן על המפה.', 'locate: "פסגת הר תבור" marked on 1:50,000');
+  ok((await coverage()) === 'true,true,true', 'locate: the summit is on all three sheets');
+  ok((await kfar.getAttribute('aria-pressed')) === 'false', 'locate: only one button pressed');
   const kinneret = L.getByRole('button', { name: 'הכנרת', exact: true });
   await kinneret.click();
   await page.waitForTimeout(250);
   ok((await line.innerText()) === 'הכנרת מחוץ לתחום המפה. עברו ל־1:250,000, שמכסה שטח רחב יותר.' && (await marker.count()) === 0, `locate: outside message "${await line.innerText()}"`);
+  ok((await coverage()) === 'false,false,true', 'locate: the Kinneret is on 1:250,000 only');
+  ok((await L.locator('[data-qa="locate-pointer-label"] text').textContent()) === 'הכנרת · מחוץ לדף', 'locate: an edge pointer names the Kinneret');
+  {
+    const head = await L.locator('[data-qa="locate-pointer"] path').last().boundingBox();
+    const vb = await vp.boundingBox();
+    ok(centre(head).x > vb.x + vb.width / 2 && centre(head).y < vb.y + vb.height / 2, 'locate: the pointer sits north-east, towards the Kinneret');
+  }
   await shot(page, 'locate-outside');
-  await sheetRadio(page, /1:250,000/).click();
+  // A coverage cell opens its sheet.
+  await L.locator('[data-qa="locate-coverage-250k"]').click();
   await waitMorph(page);
-  ok((await marker.count()) === 1 && (await line.innerText()) === 'הכנרת: סומן על המפה.', 'locate: the Kinneret marked on 1:250,000');
+  ok((await marker.count()) === 1 && (await line.innerText()) === 'הכנרת: סומן על המפה.' && (await L.locator('[data-qa="locate-pointer"]').count()) === 0, 'locate: the Kinneret marked on 1:250,000, no pointer');
   await shot(page, 'locate-kinneret-250k');
   await kinneret.click();
   await page.waitForTimeout(200);
@@ -318,7 +329,7 @@ async function checkExplore() {
         const clear = !ext || pill.x > ext.x + ext.width || pill.x + pill.width < ext.x || pill.y > ext.y + ext.height || pill.y + pill.height < ext.y;
         const within = pill.x >= vpBox.x && pill.y >= vpBox.y && pill.x + pill.width <= vpBox.x + vpBox.width && pill.y + pill.height <= vpBox.y + vpBox.height;
         ok(clear && within, `locate: "${l.label}" pill on ${id} clear of the extent label and inside the map`);
-        if (id === '50k' && l.id === 'shibli') await shot(page, 'locate-shibli');
+        if (id === '50k' && l.id === 'kfarTavor') await shot(page, 'locate-kfar-tavor');
       }
       await btn.click(); // release
       await page.waitForTimeout(100);
@@ -598,7 +609,6 @@ async function checkCompare() {
     (await L.locator('fieldset, input:not([type="range"]), [role="radiogroup"]').count()) === 0 && (await L.getByRole('button', { name: /בדיקה|כן|לא/ }).count()) === 0,
     'compare: no question, no options, no check button (scale picker hidden)',
   );
-  ok((await panel.locator('p').count()) === 2, 'compare: one instruction line + the sentence');
   const [k, x, y] = await viewOf(page);
   const { r: vpBox, w: local } = await frameOf(page);
   const size = vpBox.width; // screen, for the curtain checks below

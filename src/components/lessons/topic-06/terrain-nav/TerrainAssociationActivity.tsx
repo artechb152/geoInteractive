@@ -25,7 +25,7 @@ import {
 import { EVIDENCE_COUNT, INITIAL_STATE, reducer, view as viewOf, type Evaluation, type State } from './terrainNavState';
 import { createViewStore, type ViewStore } from './terrainNavViewStore';
 import { LEARN_FEATURES, featureInfo, pickFeature } from './terrainNavFeatures';
-import { MapSymbolLegend, RouteGlyph, TerrainNavMap, type MapLayer, type RouteGlyphKind } from './TerrainNavMap';
+import { MAP_ASPECT, MapSymbolLegend, RouteGlyph, TerrainNavMap, type MapLayer, type RouteGlyphKind } from './TerrainNavMap';
 import { FALLBACK, TerrainNavModel } from './TerrainNavModel';
 import { RadioRow } from './RadioRow';
 import type { ModelLabel, ModelProps } from './TerrainNav3D';
@@ -33,8 +33,9 @@ import type { ModelLabel, ModelProps } from './TerrainNav3D';
 /**
  * "ניווט לפי השטח" — the terrain-association lab of lesson 6 (alternative 1 of
  * design/mockups/combatnav-concepts-2026-10-12). One workspace: the live 3D
- * terrain model (inline start, ~55 %) and the topographic map drawn from the same
- * data (~45 %), with one task under them.
+ * terrain model (inline start) and the topographic map drawn from the same data,
+ * side by side at one height with the route legend under them, and the task in
+ * a column beside the map (inline end).
  *
  *   לימוד   the whole route — A, כיפה 1–3, the square (B) — with names. A click in
  *           either view (or the feature list) selects the same feature in both,
@@ -88,17 +89,35 @@ export type TerrainNavCopy = {
   readonly legend: readonly { readonly kind: RouteGlyphKind | (string & {}); readonly label: string }[];
 };
 
-/** `header` / `footer` — the technique's own text, set at the top and the foot of the card
- *  (one envelope per activity). */
+/**
+ * Laptop fit (the screen is at most 760 px tall at the 1344 px reference): the views are
+ * VIEW_H tall and the task column TASK_COLUMN_W wide; the feedback box keeps one height
+ * (FEEDBACK_H, its tallest verdict + hint), so no state moves the views.
+ */
+const VIEW_H = 400;
+const TASK_COLUMN_W = 440;
+/** The map panel's width for the sheet at VIEW_H (1 px border on each side). */
+const MAP_PANEL_W = Math.round((VIEW_H - 2) * MAP_ASPECT + 2);
+/** The feedback box: its tallest content (a wrong point with both hints) at the column's width. */
+const FEEDBACK_H = 222;
+/** The learn feature card: its tallest feature at the column's width. */
+const FEATURE_CARD_H = 120;
+/** Step ג: the measured line and the two answers, kept before a point is marked too. */
+const COMPARE_H = 68;
+
+/** `title` / `intro` / `footer` — the technique's own text: its title (set beside the mode
+ *  switch), its principle under it, and anything at the foot of the card (one envelope per activity). */
 export function TerrainAssociationActivity({
   copy,
   onContinue,
-  header,
+  title,
+  intro,
   footer,
 }: {
   copy: TerrainNavCopy;
   onContinue?: () => void;
-  header?: ReactNode;
+  title?: ReactNode;
+  intro?: ReactNode;
   footer?: ReactNode;
 }) {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
@@ -233,42 +252,46 @@ export function TerrainAssociationActivity({
   const titleId = `${uid}-title`;
 
   return (
-    <div className="surface-elevated p-6 lg:p-8" data-activity="terrain-association" data-mode={state.mode} aria-labelledby={titleId}>
-      {header}
+    <div className="surface-elevated p-6" data-activity="terrain-association" data-mode={state.mode} aria-labelledby={titleId}>
+      {/* One screen: the technique, the task line, the two views and their legend at the inline start;
+          the task itself (steps, check, feedback) in a column at the end, beside the map. */}
+      <div className="grid gap-x-8" style={{ gridTemplateColumns: `minmax(0, 1fr) ${TASK_COLUMN_W}px` }}>
+        <div className="flex min-w-0 flex-col">
+          {/* The technique's title, with the mode (and the practice's reset beside it) */}
+          <div className="flex items-start justify-between gap-6">
+            <div className="min-w-0 pt-0.5">{title}</div>
+            <div className="flex shrink-0 items-center gap-3">
+              {/* The practice's reset, beside the mode it belongs to (the summary has its own). */}
+              {state.mode === 'practice' && !v.finished && (
+                <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'restart' })}>
+                  <RotateCcw className="size-4" aria-hidden />
+                  התחלה מחדש
+                </Button>
+              )}
+              <ModeSwitch mode={state.mode} onChange={setMode} />
+            </div>
+          </div>
+          {intro && <div className="mt-1">{intro}</div>}
 
-      {/* Task line + mode */}
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {/* Task line: the activity's title and what to do, on one line */}
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h4 id={titleId} className="font-display text-lg font-bold leading-snug text-black md:text-xl">
               {state.mode === 'learn' ? 'חקרו את השטח' : v.finished ? 'סיכום הציר' : 'איפה אתם עכשיו?'}
             </h4>
             {copy.badge && <StatusChip tone="badge">{copy.badge}</StatusChip>}
+            {/* How to turn and zoom the model is written on the model itself. */}
+            <p className="text-base leading-snug text-black">
+              {state.mode === 'learn'
+                ? 'השוו את המודל למפה: בחרו עצם, והוא יודגש בשתי התצוגות.'
+                : v.finished
+                  ? 'כל ארבעת קטעי הדרך נבדקו. אפשר להתחיל מחדש או לעבור לניווט עיוור.'
+                  : 'אתם בסוף קטע הדרך. סמנו במפה היכן אתם, ואמתו בשתי ראיות מהשטח ובהשוואה לתכנון.'}
+            </p>
           </div>
-          {/* How to turn and zoom the model is written on the model itself. */}
-          <p className="mt-1.5 text-base leading-relaxed text-black">
-            {state.mode === 'learn'
-              ? 'השוו את המודל למפה: בחרו עצם, והוא יודגש בשתי התצוגות.'
-              : v.finished
-                ? 'כל ארבעת קטעי הדרך נבדקו. אפשר להתחיל מחדש או לעבור לניווט עיוור.'
-                : 'אתם בסוף קטע הדרך. סמנו במפה היכן אתם, ואמתו בשתי ראיות מהשטח ובהשוואה לתכנון.'}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {/* The practice's reset, beside the mode it belongs to (the summary has its own). */}
-          {state.mode === 'practice' && !v.finished && (
-            <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'restart' })}>
-              <RotateCcw className="size-4" aria-hidden />
-              התחלה מחדש
-            </Button>
-          )}
-          <ModeSwitch mode={state.mode} onChange={setMode} />
-        </div>
-      </div>
 
-      {/* The two views, one height: model at the inline start (right), map at the end (left) */}
-      <div className="mt-4 grid gap-6" style={{ gridTemplateColumns: 'minmax(0, 52fr) minmax(0, 48fr)' }}>
-        <TerrainNavModel
+          {/* The two views, one height: model at the inline start (right), map at the end (left) */}
+          <div className="mt-2.5 flex gap-4">
+            <TerrainNavModel
           view={view}
           mode={state.mode}
           reduce={reduce}
@@ -279,25 +302,26 @@ export function TerrainAssociationActivity({
               ? 'מודל תלת־ממדי של שטח האימון: שלוש כיפות לאורך הציר, נחל, חורשות, דרכי עפר וכפר עם כיכר. אפשר לסובב ולהתקרב; העצמים נבחרים גם במפה ובכפתורי הרשימה.'
               : 'התצפית מעמדת המנווט. אפשר להסתכל סביב ולהגדיל, בלי לזוז ממקומכם.'
           }
-          className="h-[488px]"
-        />
-        <MapPanel ready={terrainReady} layer={mapLayer} copy={copy} onPickFeature={(id) => dispatch({ type: 'selectFeature', id })} onPickCandidate={(id) => dispatch({ type: 'selectCandidate', id })} />
-      </div>
+              className="min-w-0 flex-1"
+              style={{ height: VIEW_H }}
+            />
+            <MapPanel ready={terrainReady} layer={mapLayer} copy={copy} onPickFeature={(id) => dispatch({ type: 'selectFeature', id })} onPickCandidate={(id) => dispatch({ type: 'selectCandidate', id })} />
+          </div>
 
-      {/* The caption under the views; the route legend sits beside the map, inside its panel */}
-      <p className="mt-3 text-base leading-relaxed text-black" data-legend="caption">
-        {copy.caption}
-      </p>
+          {/* Under the views: the route legend (drawn with the map's own marks), the caption and the map tools */}
+          <RouteLegend copy={copy} />
+        </div>
 
-      {/* The one task under the views */}
-      <div className="mt-3 border-t border-border-subtle pt-3">
-        {state.mode === 'learn' ? (
-          <LearnStrip state={state} info={info} onSelect={(id) => dispatch({ type: 'selectFeature', id })} onStart={() => setMode('practice')} view={view} />
-        ) : v.finished ? (
-          <Summary state={state} onRestart={() => dispatch({ type: 'restart' })} onContinue={onContinue} />
-        ) : (
-          leg && letters && <PracticeStrip state={state} leg={leg} letters={letters} dispatch={dispatch} />
-        )}
+        {/* The one task, beside the views */}
+        <div className="min-w-0">
+          {state.mode === 'learn' ? (
+            <LearnStrip state={state} info={info} onSelect={(id) => dispatch({ type: 'selectFeature', id })} onStart={() => setMode('practice')} view={view} />
+          ) : v.finished ? (
+            <Summary state={state} onRestart={() => dispatch({ type: 'restart' })} onContinue={onContinue} />
+          ) : (
+            leg && letters && <PracticeStrip state={state} leg={leg} letters={letters} dispatch={dispatch} />
+          )}
+        </div>
       </div>
 
       {footer}
@@ -360,9 +384,15 @@ function MapPanel({ ready, layer, copy, onPickFeature, onPickCandidate }: { read
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
   return (
-    // The sheet at the inline start (beside the model); the route legend and the map tools in a column at its outer side.
-    <div ref={ref} className={cn('relative flex h-[488px] rounded-xl border border-border/70 bg-white', fullscreen && 'h-full rounded-none p-4')} data-panel="map">
-      <div className="flex min-w-0 flex-1 items-center justify-center overflow-hidden rounded-s-xl">
+    // The sheet at the size of its own aspect, beside the model. Full screen takes the route legend
+    // and the map tools along, in a column at the sheet's outer side (under the views they stay behind).
+    <div
+      ref={ref}
+      className={cn('relative flex shrink-0 rounded-xl border border-border/70 bg-white', fullscreen && 'h-full rounded-none p-4')}
+      style={fullscreen ? undefined : { width: MAP_PANEL_W, height: VIEW_H }}
+      data-panel="map"
+    >
+      <div className={cn('flex min-w-0 flex-1 items-center justify-center overflow-hidden', fullscreen ? 'rounded-s-xl' : 'rounded-xl')}>
         {ready ? (
           <TerrainNavMap layer={layer} onPickFeature={onPickFeature} onPickCandidate={onPickCandidate} className="block h-full max-h-full w-full" />
         ) : (
@@ -371,18 +401,21 @@ function MapPanel({ ready, layer, copy, onPickFeature, onPickCandidate }: { read
           </span>
         )}
       </div>
-      <RouteLegend copy={copy} fullscreen={fullscreen} />
+      {fullscreen && <RouteLegend copy={copy} fullscreen />}
     </div>
   );
 }
 
-/** Opens the map panel full screen, or leaves it — from the legend column, so it never covers the sheet. */
+/** Opens the map panel full screen, or leaves it — from the legend, so it never covers the sheet. */
 function MapFullscreenButton({ fullscreen }: { fullscreen: boolean }) {
   return (
     <button
       type="button"
       onClick={() => (fullscreen ? document.exitFullscreen() : (document.querySelector('[data-activity="terrain-association"] [data-panel="map"]') as HTMLElement | null)?.requestFullscreen?.())}
-      className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className={cn(
+        'inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        fullscreen && 'h-10 w-full',
+      )}
     >
       {fullscreen ? <Minimize2 className="size-4" aria-hidden /> : <Maximize2 className="size-4" aria-hidden />}
       {fullscreen ? 'יציאה ממסך מלא' : 'מפה במסך מלא'}
@@ -390,34 +423,61 @@ function MapFullscreenButton({ fullscreen }: { fullscreen: boolean }) {
   );
 }
 
-/** The approved route legend of the technique (CombatNavScene SUPPORT.handrail), drawn with this map's own marks, and the map key on demand. */
-function RouteLegend({ copy, fullscreen }: { copy: TerrainNavCopy; fullscreen: boolean }) {
+/** The map key on demand (map symbols, not lesson text). */
+function MapKeyButton({ fullscreen }: { fullscreen?: boolean }) {
   return (
-    <div className="flex w-[200px] shrink-0 flex-col justify-between gap-3 border-s border-border-subtle bg-paper-bright/40 p-3" data-legend="route">
-      <ul className="space-y-2.5">
-        {copy.legend.map((it) => (
-          <li key={it.label} className="flex items-start gap-2 text-base leading-snug text-black">
-            <span className="mt-0.5 shrink-0">
-              <RouteGlyph kind={it.kind} />
-            </span>
-            <span>{it.label}</span>
-          </li>
-        ))}
+    <Popover
+      label="מקרא המפה"
+      trigger={
+        <span className={cn('inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black', fullscreen && 'h-10 w-full')}>
+          <ListTree className="size-4" aria-hidden />
+          מקרא המפה
+        </span>
+      }
+      wide
+    >
+      <MapSymbolLegend />
+    </Popover>
+  );
+}
+
+/**
+ * The approved route legend of the technique (CombatNavScene SUPPORT.handrail), drawn with this
+ * map's own marks, with the lab's caption and the map tools. Under the views: three columns of
+ * marks over the caption and the tools. In full screen: a column at the sheet's outer side.
+ */
+function RouteLegend({ copy, fullscreen }: { copy: TerrainNavCopy; fullscreen?: boolean }) {
+  const items = copy.legend.map((it) => (
+    <li key={it.label} className="flex items-start gap-2 text-base leading-snug text-black">
+      <span className="mt-0.5 shrink-0">
+        <RouteGlyph kind={it.kind} />
+      </span>
+      <span>{it.label}</span>
+    </li>
+  ));
+  if (fullscreen)
+    return (
+      <div className="flex w-[200px] shrink-0 flex-col justify-between gap-3 border-s border-border-subtle bg-paper-bright/40 p-3" data-legend="route">
+        <ul className="space-y-2.5">{items}</ul>
+        <div className="flex flex-col gap-2">
+          <MapKeyButton fullscreen />
+          <MapFullscreenButton fullscreen />
+        </div>
+      </div>
+    );
+  return (
+    <div className="mt-2.5" data-legend="band">
+      <ul className="grid justify-between gap-x-5 gap-y-1" style={{ gridTemplateColumns: 'repeat(3, max-content)' }} data-legend="route">
+        {items}
       </ul>
-      <div className="flex flex-col gap-2">
-        <Popover
-          label="מקרא המפה"
-          trigger={
-            <span className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold text-black">
-              <ListTree className="size-4" aria-hidden />
-              מקרא המפה
-            </span>
-          }
-          wide
-        >
-          <MapSymbolLegend />
-        </Popover>
-        <MapFullscreenButton fullscreen={fullscreen} />
+      <div className="mt-1.5 flex items-center justify-between gap-4">
+        <p className="min-w-0 text-base leading-snug text-black" data-legend="caption">
+          {copy.caption}
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
+          <MapKeyButton />
+          <MapFullscreenButton fullscreen={false} />
+        </div>
       </div>
     </div>
   );
@@ -510,8 +570,9 @@ function LearnStrip({ state, info, onSelect, onStart, view }: { state: State; in
           {showMore ? 'פחות עצמים' : `עוד ${MORE_FEATURES.length} עצמים בשטח`}
         </button>
       </div>
-      <div className="mt-3 grid items-start gap-6" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)' }}>
-        <div className="min-h-[88px] rounded-xl border border-border bg-bg-accent px-4 py-3" aria-live="polite" data-feature-card={f?.id ?? 'none'}>
+      {/* The feature card (one height for every feature), then the plan of the route */}
+      <div className="mt-4 flex flex-col gap-4">
+        <div className="rounded-xl border border-border bg-bg-accent px-4 py-3" style={{ minHeight: FEATURE_CARD_H }} aria-live="polite" data-feature-card={f?.id ?? 'none'}>
           {f ? (
             <>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -534,7 +595,7 @@ function LearnStrip({ state, info, onSelect, onStart, view }: { state: State; in
           <div className="mb-1.5 font-display text-base font-bold text-black" id="tn-plan-title">
             תכנון הציר
           </div>
-          <ul className="grid grid-cols-2 gap-x-5 gap-y-1" aria-labelledby="tn-plan-title" data-plan>
+          <ul className="grid grid-cols-1 gap-y-1" aria-labelledby="tn-plan-title" data-plan>
             {legs.map(({ l, p }) => (
               <li key={l.index} className="whitespace-nowrap text-base leading-snug text-black">
                 <span className="font-display font-semibold">
@@ -553,9 +614,10 @@ function LearnStrip({ state, info, onSelect, onStart, view }: { state: State; in
 
 // ---------------------------------------------------------------- practice
 
-/** Point + comparison · evidence · feedback. */
-const PRACTICE_COLUMNS = 'minmax(0, 0.78fr) minmax(0, 1.1fr) minmax(0, 1.22fr)';
+/** One step's heading (א / ב / ג name the parts the feedback refers to). */
+const STEP_HEADING = 'mb-1.5 font-display text-base font-bold text-black';
 
+/** The task column: progress and the plan, the three steps (א point, ב evidence, ג comparison), help and the check, and the feedback. */
 function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: Leg; letters: Record<CandidateId, string>; dispatch: (a: Parameters<typeof reducer>[1]) => void }) {
   const v = viewOf(state);
   const plan = plannedLeg(leg);
@@ -564,58 +626,79 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
   const locked = v.closed;
   const m = sel.candidate ? measuredTo(leg, sel.candidate) : null;
   return (
-    <div data-strip="practice" data-leg={leg.index + 1}>
-      {/* One grid: progress and the plan over the three inputs; help and the check over the feedback they lead to */}
-      <div className="grid items-stretch gap-x-6 gap-y-3" style={{ gridTemplateColumns: PRACTICE_COLUMNS }}>
-        <div className="col-span-2 flex min-w-0 items-center gap-x-5">
-          <Progress state={state} />
-          <p className="min-w-0 text-base text-black" data-plan-leg>
-            התכנון: מ{FROM_NAME(leg)} · אזימוט <Deg v={plan.bearingDeg} /> · מרחק {formatMetres(plan.distanceM)}
-          </p>
-        </div>
-        <div className="flex min-w-0 items-center justify-between gap-2">
-          {locked ? (
-            <span />
-          ) : (
-            <div className="flex items-center gap-1.5">
-              <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'hint' })} disabled={state.hint >= 2}>
-                <Lightbulb className="size-4" aria-hidden />
-                {state.hint === 0 ? 'רמז' : 'רמז נוסף'}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'reveal' })} disabled={state.attempts === 0} title={state.attempts === 0 ? 'ההסבר זמין אחרי בדיקה ראשונה' : undefined}>
-                <CircleHelp className="size-4" aria-hidden />
-                הצגת הסבר
-              </Button>
-            </div>
-          )}
-          {locked ? (
-            <Button variant="primary" size="sm" onClick={() => dispatch({ type: 'next' })}>
-              {leg.index === LEGS.length - 1 ? 'לסיכום הציר' : 'המשך לקטע הדרך הבא'}
-              <ArrowLeft className="size-4" aria-hidden />
-            </Button>
-          ) : (
-            <Button variant="primary" size="sm" onClick={() => dispatch({ type: 'check' })}>
-              בדיקת המיקום
-            </Button>
-          )}
-        </div>
+    <div className="flex flex-col" data-strip="practice" data-leg={leg.index + 1}>
+      <Progress state={state} />
+      <p className="mt-1 text-base leading-snug text-black" data-plan-leg>
+        התכנון: מ{FROM_NAME(leg)} · אזימוט <Deg v={plan.bearingDeg} /> · מרחק {formatMetres(plan.distanceM)}
+      </p>
 
-        {/* א. the point, and ג. the comparison with the plan */}
-        <div className="min-w-0">
-          <div id={`${uid}-pt`} className="mb-1.5 font-display text-base font-bold text-black">
-            א. היכן אתם? סמנו נקודה במפה או בחרו כאן
-          </div>
-          <RadioRow
-            labelledBy={`${uid}-pt`}
-            options={leg.candidates.map((id) => ({ id, label: letters[id], aria: `נקודה ${letters[id]}` }))}
-            value={sel.candidate}
-            disabled={locked}
-            onChange={(id) => dispatch({ type: 'selectCandidate', id })}
-            data="candidates"
-          />
-          <div className="mt-4 mb-1.5 font-display text-base font-bold text-black" id={`${uid}-cmp`}>
-            ג. כיוון ומרחק לעומת התכנון
-          </div>
+      {/* א. the point */}
+      <div className="mt-2">
+        <div id={`${uid}-pt`} className={STEP_HEADING}>
+          א. היכן אתם? סמנו נקודה במפה או בחרו כאן
+        </div>
+        <RadioRow
+          labelledBy={`${uid}-pt`}
+          options={leg.candidates.map((id) => ({ id, label: letters[id], aria: `נקודה ${letters[id]}` }))}
+          value={sel.candidate}
+          disabled={locked}
+          onChange={(id) => dispatch({ type: 'selectCandidate', id })}
+          data="candidates"
+        />
+      </div>
+
+      {/* ב. evidence */}
+      <div className="mt-2">
+        <div id={`${uid}-ev`} className={STEP_HEADING}>
+          ב. בחרו שתי ראיות שרואים בתצפית ובמפה
+        </div>
+        <ul className="space-y-1" role="group" aria-labelledby={`${uid}-ev`} data-evidence>
+          {leg.evidence.map((e) => {
+            const on = sel.evidence.includes(e.id);
+            const full = !on && sel.evidence.length >= EVIDENCE_COUNT;
+            const wrong = on && v.result?.kind === 'partial' && v.result.wrongEvidence.includes(e.id);
+            return (
+              <li key={e.id}>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={on}
+                  aria-disabled={locked || full}
+                  onClick={() => !locked && !full && dispatch({ type: 'toggleEvidence', id: e.id })}
+                  className={cn(
+                    'flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-1 text-start text-base leading-snug text-black transition-colors duration-200 ease-snap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                    wrong ? 'border-2 border-accent-hot/70 bg-bg-accent' : on ? 'border-2 border-accent bg-accent/10' : 'border border-border bg-bg-elevated hover:border-accent/60',
+                    (locked || full) && !on && 'cursor-not-allowed opacity-60 hover:border-border',
+                  )}
+                  data-evidence-id={e.id}
+                  data-wrong={wrong || undefined}
+                >
+                  <span aria-hidden className={cn('mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded border', on ? 'border-accent bg-accent text-white' : 'border-fg-dim bg-white')}>
+                    {on && <Check className="size-3.5" strokeWidth={3.5} />}
+                  </span>
+                  <span className="min-w-0 flex-1">{e.text}</span>
+                  {wrong && (
+                    <span className="mt-0.5 flex shrink-0 items-center gap-1 font-display text-base font-semibold text-black">
+                      <X className="size-4" aria-hidden />
+                      <span className="sr-only">לא נכון מכאן</span>
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="sr-only" aria-live="polite">
+          {sel.evidence.length >= EVIDENCE_COUNT && !locked ? 'נבחרו שתי ראיות. כדי להחליף ראיה, בטלו את הבחירה באחת מהן.' : ''}
+        </p>
+      </div>
+
+      {/* ג. the comparison with the plan — one height before and after a point is marked */}
+      <div className="mt-2">
+        <div className={STEP_HEADING} id={`${uid}-cmp`}>
+          ג. כיוון ומרחק לעומת התכנון
+        </div>
+        <div style={{ minHeight: COMPARE_H }}>
           {m ? (
             <>
               <p className="text-base leading-snug text-black" data-measured>
@@ -630,7 +713,7 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
                 value={sel.comparison}
                 disabled={locked}
                 onChange={(value) => dispatch({ type: 'setComparison', value })}
-                className="mt-2"
+                className="mt-1.5"
                 data="comparison"
               />
             </>
@@ -638,57 +721,39 @@ function PracticeStrip({ state, leg, letters, dispatch }: { state: State; leg: L
             <p className="text-base leading-snug text-black">אחרי שתסמנו נקודה יוצגו כאן הכיוון והמרחק אליה במפה.</p>
           )}
         </div>
+      </div>
 
-        {/* ב. evidence */}
-        <div className="min-w-0">
-          <div id={`${uid}-ev`} className="mb-1.5 font-display text-base font-bold text-black">
-            ב. בחרו שתי ראיות שרואים בתצפית ובמפה
+      {/* Help and the check, over the feedback they lead to */}
+      <div className="mt-2.5 flex min-w-0 items-center justify-between gap-2">
+        {locked ? (
+          <span />
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <Button variant="secondary" size="sm" onClick={() => dispatch({ type: 'hint' })} disabled={state.hint >= 2}>
+              <Lightbulb className="size-4" aria-hidden />
+              {state.hint === 0 ? 'רמז' : 'רמז נוסף'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'reveal' })} disabled={state.attempts === 0} title={state.attempts === 0 ? 'ההסבר זמין אחרי בדיקה ראשונה' : undefined}>
+              <CircleHelp className="size-4" aria-hidden />
+              הצגת הסבר
+            </Button>
           </div>
-          <ul className="space-y-1.5" role="group" aria-labelledby={`${uid}-ev`} data-evidence>
-            {leg.evidence.map((e) => {
-              const on = sel.evidence.includes(e.id);
-              const full = !on && sel.evidence.length >= EVIDENCE_COUNT;
-              const wrong = on && v.result?.kind === 'partial' && v.result.wrongEvidence.includes(e.id);
-              return (
-                <li key={e.id}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={on}
-                    aria-disabled={locked || full}
-                    onClick={() => !locked && !full && dispatch({ type: 'toggleEvidence', id: e.id })}
-                    className={cn(
-                      'flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-1.5 text-start text-base leading-snug text-black transition-colors duration-200 ease-snap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                      wrong ? 'border-2 border-accent-hot/70 bg-bg-accent' : on ? 'border-2 border-accent bg-accent/10' : 'border border-border bg-bg-elevated hover:border-accent/60',
-                      (locked || full) && !on && 'cursor-not-allowed opacity-60 hover:border-border',
-                    )}
-                    data-evidence-id={e.id}
-                    data-wrong={wrong || undefined}
-                  >
-                    <span aria-hidden className={cn('mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded border', on ? 'border-accent bg-accent text-white' : 'border-fg-dim bg-white')}>
-                      {on && <Check className="size-3.5" strokeWidth={3.5} />}
-                    </span>
-                    <span className="min-w-0 flex-1">{e.text}</span>
-                    {wrong && (
-                      <span className="mt-0.5 flex shrink-0 items-center gap-1 font-display text-base font-semibold text-black">
-                        <X className="size-4" aria-hidden />
-                        <span className="sr-only">לא נכון מכאן</span>
-                      </span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="sr-only" aria-live="polite">
-            {sel.evidence.length >= EVIDENCE_COUNT && !locked ? 'נבחרו שתי ראיות. כדי להחליף ראיה, בטלו את הבחירה באחת מהן.' : ''}
-          </p>
-        </div>
+        )}
+        {locked ? (
+          <Button variant="primary" size="sm" onClick={() => dispatch({ type: 'next' })}>
+            {leg.index === LEGS.length - 1 ? 'לסיכום הציר' : 'המשך לקטע הדרך הבא'}
+            <ArrowLeft className="size-4" aria-hidden />
+          </Button>
+        ) : (
+          <Button variant="primary" size="sm" onClick={() => dispatch({ type: 'check' })}>
+            בדיקת המיקום
+          </Button>
+        )}
+      </div>
 
-        {/* the verdict (and any hint) — beside the inputs, under the check */}
-        <div className="flex min-w-0 flex-col">
-          <Feedback state={state} leg={leg} letters={letters} />
-        </div>
+      {/* the verdict (and any hint) */}
+      <div className="mt-2">
+        <Feedback state={state} leg={leg} letters={letters} />
       </div>
     </div>
   );
@@ -839,8 +904,8 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
   }
   const hintAfter = hint && kind !== 'hint';
   return (
-    // Fixed minimum height: a verdict never moves the views. Announced once per check.
-    <div role="status" aria-live="polite" aria-atomic="true" className={cn('min-h-[120px] flex-1 rounded-xl border px-4 py-2.5', tone)} data-feedback={kind} data-hint={hint ? state.hint : undefined}>
+    // One height (the tallest verdict with a hint): no state moves the column. Announced once per check.
+    <div role="status" aria-live="polite" aria-atomic="true" className={cn('rounded-xl border px-4 py-2', tone)} style={{ height: FEEDBACK_H }} data-feedback={kind} data-hint={hint ? state.hint : undefined}>
       <div key={`${kind}-${state.attempts}-${state.revealed}-${state.hint}`}>
         <div className="flex items-start gap-2 font-display text-base font-bold leading-snug text-black">
           {icon}
@@ -869,11 +934,11 @@ function Feedback({ state, leg, letters }: { state: State; leg: Leg; letters: Re
 function Summary({ state, onRestart, onContinue }: { state: State; onRestart: () => void; onContinue?: () => void }) {
   return (
     <div data-strip="summary">
-      <div className="flex items-start justify-between gap-6">
+      <div className="flex flex-col gap-3">
         <p className="min-w-0 text-base leading-relaxed text-black">
           השלמתם את הציר מנקודת המוצא A עד הכיכר המרכזית בכפר. כך הבחנתם בין מקומות דומים: לפי סדר הסימנים בציר, הכיוון והמרחק מהסימן הקודם, והסימנים שליד כל נקודה.
         </p>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button variant="secondary" size="md" onClick={onRestart}>
             <RotateCcw className="size-4" aria-hidden />
             התחלה מחדש
@@ -886,7 +951,7 @@ function Summary({ state, onRestart, onContinue }: { state: State; onRestart: ()
           )}
         </div>
       </div>
-      <ol className="mt-3 grid grid-cols-4 gap-4" data-summary>
+      <ol className="mt-3 grid grid-cols-1 gap-2" data-summary>
         {LEGS.map((l) => {
           const p = plannedLeg(l);
           const o = state.outcomes[l.index];

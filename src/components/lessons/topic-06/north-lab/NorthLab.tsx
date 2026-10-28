@@ -118,71 +118,79 @@ export function NorthLab() {
         </p>
       </div>
 
-      {/* Desktop: the controls column at the inline start (right), the map at the
-          end (left), as in the selected mockup; DOM order starts with the controls. */}
-      <div className="grid gap-x-7 gap-y-4 lg:grid-cols-[304px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-2.5 lg:col-start-1 lg:row-start-1" data-controls>
-          <p id={tabsLabelId} className="font-display text-base font-bold leading-tight text-black md:text-lg">
-            מאיזה צפון מודדים?
+      {/* Desktop: the controls at the inline start (right), the map at the end
+          (left), as in the selected mockup; DOM order starts with the controls.
+          The controls fill one screen beside the map: the picker as a header
+          row, then two columns — the chosen north's definition | its reading,
+          the comparison | the declination slider — and the closing note under
+          them, ending with the map. */}
+      <div className="grid gap-x-7 gap-y-4 lg:grid-cols-[minmax(0,1fr)_608px]">
+        <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1" data-controls>
+          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:gap-4">
+            <p id={tabsLabelId} className="shrink-0 font-display text-base font-bold leading-tight text-black md:text-lg">
+              מאיזה צפון מודדים?
+            </p>
+
+            <div role="tablist" aria-labelledby={tabsLabelId} className="grid grid-cols-3 gap-2 lg:flex-1">
+              {NORTH_IDS.map((id, idx) => {
+                const isActive = id === active;
+                return (
+                  <button
+                    key={id}
+                    ref={(el) => {
+                      tabRefs.current[idx] = el;
+                    }}
+                    type="button"
+                    role="tab"
+                    id={tabId(id)}
+                    aria-selected={isActive}
+                    aria-controls={panelId}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => select(id)}
+                    onKeyDown={(e) => onTabKey(e, idx)}
+                    data-north={id}
+                    className={cn(
+                      'flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-center',
+                      'font-display text-base font-semibold leading-tight text-fg text-balance transition-colors duration-200 ease-snap',
+                      isActive
+                        ? 'border-accent bg-accent/10'
+                        : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
+                    )}
+                  >
+                    {NORTHS[id].label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <NorthInfoPanel active={active} panelId={panelId} labelledBy={tabId(active)} />
+
+            <div className="flex flex-col justify-center rounded-2xl bg-bg-accent px-4 py-4 text-center" data-reading>
+              <p className="font-display text-base font-bold leading-snug text-black">{readingLabel(active)}</p>
+              <p dir="ltr" className="mt-2 font-display text-5xl font-bold leading-none tabular-nums text-fg" data-readout="reading">
+                {formatDeg(azimuthFrom(arcStart))}
+              </p>
+              <p className="mt-2 text-balance text-base leading-snug text-black" data-relation>
+                {relationText(active, decl)}
+              </p>
+            </div>
+
+            <ComparisonTable values={values} active={active} />
+
+            <DeclinationControl value={declination} shown={decl} onChange={changeDeclination} onReset={reset} />
+          </div>
+
+          <p className="text-base leading-relaxed text-black lg:mt-auto" data-note>
+            <strong className="font-bold">במעבר בין מפה למצפן:</strong> בודקים את ההפרש בין צפון הרשת לצפון המגנטי ומתקנים את האזימוט בהתאם לנתונים העדכניים לאזור.
           </p>
-
-          <div role="tablist" aria-labelledby={tabsLabelId} className="grid grid-cols-3 gap-2">
-            {NORTH_IDS.map((id, idx) => {
-              const isActive = id === active;
-              return (
-                <button
-                  key={id}
-                  ref={(el) => {
-                    tabRefs.current[idx] = el;
-                  }}
-                  type="button"
-                  role="tab"
-                  id={tabId(id)}
-                  aria-selected={isActive}
-                  aria-controls={panelId}
-                  tabIndex={isActive ? 0 : -1}
-                  onClick={() => select(id)}
-                  onKeyDown={(e) => onTabKey(e, idx)}
-                  data-north={id}
-                  className={cn(
-                    'flex min-h-12 cursor-pointer items-center justify-center rounded-xl border px-2 py-2 text-center',
-                    'font-display text-base font-semibold leading-tight text-fg text-balance transition-colors duration-200 ease-snap',
-                    isActive
-                      ? 'border-accent bg-accent/10'
-                      : 'border-border bg-bg-elevated hover:border-brand/30 hover:bg-brand/[0.03]',
-                  )}
-                >
-                  {NORTHS[id].label}
-                </button>
-              );
-            })}
-          </div>
-
-          <NorthInfoPanel active={active} panelId={panelId} labelledBy={tabId(active)} />
-
-          <div className="rounded-2xl bg-bg-accent px-4 py-4 text-center" data-reading>
-            <p className="font-display text-base font-bold leading-snug text-black">{readingLabel(active)}</p>
-            <p dir="ltr" className="mt-2 font-display text-5xl font-bold leading-none tabular-nums text-fg" data-readout="reading">
-              {formatDeg(azimuthFrom(arcStart))}
-            </p>
-            <p className="mt-2 text-balance text-base leading-snug text-black" data-relation>
-              {relationText(active, decl)}
-            </p>
-          </div>
-
-          <ComparisonTable values={values} active={active} />
-
-          <DeclinationControl value={declination} shown={decl} onChange={changeDeclination} onReset={reset} />
         </div>
 
         <div className="lg:col-start-2 lg:row-start-1">
           <NorthLabMap declination={decl} arcStart={arcStart} active={active} />
         </div>
       </div>
-
-      <p className="mt-4 text-base leading-relaxed text-black" data-note>
-        <strong className="font-bold">במעבר בין מפה למצפן:</strong> בודקים את ההפרש בין צפון הרשת לצפון המגנטי ומתקנים את האזימוט בהתאם לנתונים העדכניים לאזור.
-      </p>
 
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}

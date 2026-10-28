@@ -28,16 +28,17 @@ import {
 } from './routeStoryModel';
 
 /**
- * The panel under the route-story list and map: the explanation of the
- * selected point or leg in three columns, or — on leg ד׳ — the same three
- * columns as the learner's entry for that leg (azimuth · distance · sign at
- * the end), each with its own feedback under its control. Every point and
- * leg view shares one height (the min-h), so stepping between them never moves
- * the card; only leg ד׳, the panel's tallest view, grows it downward.
+ * The panel under the route-story list, beside the map: the explanation of
+ * the selected point or leg as three stacked items, or — on leg ד׳ — the
+ * learner's entry for that leg (azimuth · distance · sign at the end), one row
+ * each, with its own feedback under its control. The map column is taller
+ * than the list column with any point or leg view, so stepping between them
+ * never moves the card; only leg ד׳ with all three feedbacks may grow it
+ * downward.
  */
 
 const COL_LABEL = 'text-base font-display font-bold text-fg';
-const BODY = 'mt-1 text-base leading-relaxed text-fg';
+const BODY = 'mt-0.5 text-base leading-relaxed text-fg';
 
 function Col({ label, children, id }: { label: string; children: ReactNode; id?: string }) {
   return (
@@ -46,6 +47,21 @@ function Col({ label, children, id }: { label: string; children: ReactNode; id?:
         {label}
       </div>
       {children}
+    </div>
+  );
+}
+
+/** A question row: the field's label beside its choices, the feedback under both. */
+function FieldRow({ label, id, children, feedback }: { label: string; id: string; children: ReactNode; feedback: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-3">
+        <div id={id} className={cn(COL_LABEL, 'w-32 shrink-0')}>
+          {label}
+        </div>
+        {children}
+      </div>
+      {feedback}
     </div>
   );
 }
@@ -77,13 +93,10 @@ function PointView({ i, done }: { i: number; done: boolean }) {
   const incoming = i > 0 ? i - 1 : null;
   const outgoing = i < LEGS.length ? i : null;
   const signHidden = i === LEGS[QUESTION_LEG].to && !done;
+  // no heading: the selected row right above names the point
   return (
     <div data-panel="point" data-point={i}>
-      <div className="font-display text-lg font-bold leading-snug text-fg">
-        נקודה {p.n} · {p.name}
-        {p.abbr && <span className="font-medium text-fg-muted"> ({p.abbr})</span>}
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-6">
+      <div className="space-y-2.5">
         <Col label="מה מזהים כאן">
           <p className={BODY}>{signHidden ? <span className="text-ember-deep">את הסימן שמאשר הגעה לכאן משלימים בקטע ד׳.</span> : p.identify}</p>
         </Col>
@@ -106,12 +119,12 @@ function LegView({ i }: { i: number }) {
   const end = legEnd(leg);
   return (
     <div data-panel="leg" data-leg={i}>
-      <div className="font-display text-lg font-bold leading-snug text-fg">
-        קטע {leg.letter} · מנקודה {leg.from + 1} ({POINTS[leg.from].name}) אל נקודה {leg.to + 1} ({end.name})
+      <div className="font-display text-base font-bold leading-snug text-fg-muted">
+        מנקודה {leg.from + 1} ({POINTS[leg.from].name}) אל נקודה {leg.to + 1} ({end.name})
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-6">
+      <div className="mt-1.5 space-y-2.5">
         <Col label="כיוון ומרחק">
-          <p className="mt-1 font-display text-2xl font-bold leading-tight text-fg tabular-nums">
+          <p className="mt-1 font-display text-2xl font-bold leading-none text-fg tabular-nums">
             <bdi>{deg(leg.az)}</bdi> · כ־{metres(leg.m)}
           </p>
         </Col>
@@ -137,7 +150,7 @@ function FieldFeedback({ state, field }: { state: State; field: Field }) {
     <div
       data-feedback={field}
       data-verdict={v}
-      className={cn('mt-2.5 flex items-start gap-2 rounded-xl border px-3 py-2 text-base leading-snug text-fg', v === 'right' ? 'border-brand bg-brand/10' : 'border-accent-hot/60 bg-bg-accent')}
+      className={cn('mt-2 flex items-start gap-2 rounded-xl border px-3 py-2 text-base leading-snug text-fg', v === 'right' ? 'border-brand bg-brand/10' : 'border-accent-hot/60 bg-bg-accent')}
     >
       {v === 'right' ? <Check className="mt-0.5 size-4 shrink-0 text-brand-dark" aria-hidden /> : <X className="mt-0.5 size-4 shrink-0 text-accent-hot" aria-hidden />}
       <span>{text}</span>
@@ -176,43 +189,37 @@ function QuestionView({ state, dispatch }: { state: State; dispatch: Dispatch<Ac
       <p className="mt-1 text-sm leading-snug text-fg-muted">
         קראו את הקטע המודגש במפה: את הכיוון לפי הצפון, את המרחק מול סרגל קנה המידה, ואת הסימן לפי מה שמצויר בסוף הקטע.
       </p>
-      <div className="mt-3 grid grid-cols-3 gap-6">
-        <Col label={FIELD_LABEL.az} id={`${uid}-az`}>
+      <div className="mt-3 space-y-3">
+        <FieldRow label={FIELD_LABEL.az} id={`${uid}-az`} feedback={<FieldFeedback state={state} field="az" />}>
           <RadioRow
             labelledBy={`${uid}-az`}
             options={AZ_OPTIONS.map((v) => ({ id: v, label: deg(v) }))}
             value={state.answer.az}
             disabled={state.done}
             onChange={(value) => dispatch({ type: 'choose', field: 'az', value })}
-            className="mt-2"
             data="az"
           />
-          <FieldFeedback state={state} field="az" />
-        </Col>
-        <Col label={FIELD_LABEL.m} id={`${uid}-m`}>
+        </FieldRow>
+        <FieldRow label={FIELD_LABEL.m} id={`${uid}-m`} feedback={<FieldFeedback state={state} field="m" />}>
           <RadioRow
             labelledBy={`${uid}-m`}
             options={M_OPTIONS.map((v) => ({ id: v, label: metres(v) }))}
             value={state.answer.m}
             disabled={state.done}
             onChange={(value) => dispatch({ type: 'choose', field: 'm', value })}
-            className="mt-2"
             data="m"
           />
-          <FieldFeedback state={state} field="m" />
-        </Col>
-        <Col label={FIELD_LABEL.end} id={`${uid}-end`}>
+        </FieldRow>
+        <FieldRow label={FIELD_LABEL.end} id={`${uid}-end`} feedback={<FieldFeedback state={state} field="end" />}>
           <RadioRow
             labelledBy={`${uid}-end`}
             options={END_OPTIONS.map((v) => ({ id: v, label: END_LABEL[v] }))}
             value={state.answer.end}
             disabled={state.done}
             onChange={(value) => dispatch({ type: 'choose', field: 'end', value })}
-            className="mt-2"
             data="end"
           />
-          <FieldFeedback state={state} field="end" />
-        </Col>
+        </FieldRow>
       </div>
       <div className="mt-4 flex items-center gap-4">
         <p
@@ -245,7 +252,7 @@ export function RouteStoryPanel({ state, dispatch }: { state: State; dispatch: D
   const stop = STOPS[state.stop];
   return (
     // A divider, not an inset: the per-answer feedback below is the inset (page → card → inset, no deeper).
-    <div className="mt-6 border-t border-border/70 pt-5 min-h-[140px]" data-qa="route-panel">
+    <div className="mt-3 border-t border-border/70 pt-3" data-qa="route-panel">
       {stop.kind === 'leg' && stop.i === QUESTION_LEG ? (
         <QuestionView state={state} dispatch={dispatch} />
       ) : stop.kind === 'leg' ? (

@@ -3429,3 +3429,33 @@ Brief: `design/docs/claude-topic02-integrated-practice-2026-10-27.md`. Handoff: 
 - **The ruler is laid by a button** from א towards ב and reads sheet cm (the SVG is drawn in sheet mm), like the scale lab's "ס״מ של דף מודפס". Tolerance = 2 mm on the ruler (±20 / ±40 m), said as „כ־”.
 - **Map marks are pointer-only;** the panel's buttons are the keyboard / screen-reader path, and a hidden per-step text gives the map's data (symbols, heights, segment lengths, grid values) without the answer words.
 - **One shared-component change:** `LessonShell` listens for `lesson:open-scene` ({ id }) and opens that sub-topic in the learn tab — the summary's review links. Nothing else in the shell changed.
+
+## Lesson 6 · תכנון ציר — the route-story builder fits one laptop screen (2026-10-28)
+
+Brief: the user asked for every lesson-6 interaction to fit the screen like lesson 2's do, with no scrolling up or down inside it, and chose the "detail beside the map" layout.
+
+- **Budget = lesson 2's activities.** They are ≤ ~845 reference px, so they fit 1536 × 864 and 1366 × 768. The builder was 930 px, and 1079 px once leg ד׳ was checked. It is now 766 px in every state (scale 0.8542 → 654 px at 1536 × 864, room 736; 557 px at 1366 × 768, room 640).
+- **The map is untouched** (same column, same size). The selected stop's panel moved from under list + map into the list column, under the list. Point and leg views are three stacked items. The point view has no heading, because the selected row right above names the point. The leg view keeps a one-line "from (name) to (name)".
+- **On leg ד׳ the list folds into one row of route chips.** These are the same buttons, order, roving tab stop and arrow keys, with numbered badges for points and "קטע X" chips for legs. The question takes the list's place, with each field's label beside its choices and the feedback under them. Any other stop unfolds the list again.
+- **The card never moves.** The list column is ≤ 700 px with every point/leg view (tallest 693), so the map column (700) sets the card's height. The question with three wrong feedbacks is 640.
+- **QA:** `route-story.e2e.test.mjs` 10/11. Its leg-ד׳ chip checks now read the list at נ.ס, because ד׳ shows the folded strip. The pacing test fails on the pacing card, which another session is rewriting (it now reads the new pace slider); this change does not touch it.
+
+## Lesson 6 · every screen fits one ~1920 × 910 view (2026-10-28, later)
+
+Brief: the user's screenshot showed their real view, 1920 × ~910 at scale 1 (782 px of room under the 104 px top reserve and 24 px bottom reserve). They asked that every interaction in lesson 6 fit that view whole, and that anything with a conflict be left as it is. Budget: ≤ 760 reference px (1344 wide) in each activity's tallest state.
+
+| Screen | Before | After | How |
+|---|---|---|---|
+| לפני שמתחילים · examples panel | 806 | 717–743 | `HistoricalCasesPanel` gained an opt-in `compact` prop (3:1 card thumbnails, tighter gaps, wider text column). Lesson 2 doesn't pass it and is unchanged (832). |
+| דגשים · לפני שיוצאים / במהלך הניווט | 863 / 841 | 743 / 743 | Map caption and legend moved beside the map; board name and note on one line; tighter accordion. |
+| טכניקות · ניווט לפי השטח | 1065–1133 | 754 | Task column beside the views; model and map 488 → 400 px tall, map lettering ×1.22 so it stays the same size on screen; fixed feedback box. Tab order now follows the column (א → ב → ג → help → feedback). No-WebGL stills are cropped a little more (not re-captured). |
+| טכניקות · ניווט עיוור | 1092–1204 | 756 (incl. closing card) | Title row with stepper; task column beside the views; views 443 → 356 px; map label sizes raised; "עקרון הפעולה:" inline (new colon). |
+| עקרונות · מהמצפן אל המפה | 990 | 753 | Back-azimuth band moved into the compass column; compass 340 → 280 px (bezel numbers ~9.6 px); map 910 → 762 px wide. |
+| עקרונות · שלושה סוגי צפון | 1110 | 731 | Controls in a 2×2 grid beside a 608 px map; map viewBox trimmed of empty margins (terrain drawn at native size via `TERRAIN`; rerunning the map generator needs that constant updated). |
+| עקרונות · באיזה אזור אתם נמצאים? | 880 | 745 | Controls moved into a 176 px column beside the map; views 478 → 407 px; feedback box fixed at its tallest content. The closing card is its own short screen now. |
+| תכנון ציר · סיפור דרך | 930–1079 | 766 | See the entry above. |
+| סיכום | 815 | 765 | Card padding py-5 → py-4. |
+| תרגול · חיתוך לאחור | 773–898 | 739–750 | Same-north note into the header, hints inside the feedback box, hint/solution buttons beside the main button, tighter line table. |
+
+- **Left as is:** the בדיקת ידע tab. It is a 5-question form (~2180 px) built from the quiz component every lesson shares. Fitting it would mean redesigning that shared quiz, so it scrolls as before.
+- **QA:** compass-map 9/9; north-lab 15/15 and shot 108/108; location-check 31/31 and shot 67/67 (its layout assertions rewritten for the control column); planning-tips 12/12; terrain-nav 20/20 and shot passed (two layout assertions updated); dead-reckoning 13/13 and shot 152/152; navigation-sim 21/21 and shot 164/164 (now asserts ≤ 760 px in every state); route-story e2e 10/11 (the pacing test fails on the pacing card another session is rewriting); `tsc --noEmit` 0 errors.

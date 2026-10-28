@@ -9,6 +9,7 @@ import {
   INITIAL_STATE,
   LEGS,
   POINTS,
+  QUESTION_LEG,
   STOPS,
   deg,
   describe,
@@ -24,9 +25,14 @@ import {
  * „סיפור דרך: חמש נקודות וארבעה קטעים” — the route-story activity of lesson
  * 6, one card: the story as a list that alternates the five points and the
  * four legs between them, the map beside it (drawn from the same data), and
- * under both a panel for the selected stop — what to see on the way and which
- * sign checks the position at the end — or, on leg ד׳, the learner's own
- * entry for that leg, read from the map.
+ * under the list a panel for the selected stop — what to see on the way and
+ * which sign checks the position at the end — or, on leg ד׳, the learner's
+ * own entry for that leg, read from the map.
+ *
+ * The panel sits beside the map, not under it, so the whole card fits one
+ * laptop screen (≤ ~790 px at the reference width, like lesson 2's
+ * activities). On leg ד׳ the list folds into one row of route chips (the
+ * same buttons, keys and order) to make room for the question.
  */
 
 const ROW =
@@ -49,6 +55,7 @@ export function RouteStoryBuilder() {
   const stop = STOPS[state.stop];
   const legsState = legStates(stop);
   const pointsState = pointStates(stop);
+  const folded = stop.kind === 'leg' && stop.i === QUESTION_LEG;
 
   const go = (i: number, focus = false) => {
     const next = Math.max(0, Math.min(last, i));
@@ -80,10 +87,15 @@ export function RouteStoryBuilder() {
           <h3 id={titleId} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
             סיפור דרך: חמש נקודות וארבעה קטעים
           </h3>
-          <p className="mt-2 mb-4 text-base text-fg-muted leading-relaxed">
+          <p className="mt-2 mb-3 text-base text-fg-muted leading-relaxed">
             כל <strong className="text-fg">קטע דרך</strong> מחבר שתי נקודות. בחרו נקודה או קטע, ברשימה או במפה. את <strong className="text-fg">קטע ד׳</strong> משלימים בעצמכם מהמפה. הנתונים לדוגמה בלבד.
           </p>
-          <ol aria-labelledby={titleId} onKeyDown={onListKey} className="space-y-1">
+          <ol
+            aria-labelledby={titleId}
+            onKeyDown={onListKey}
+            data-folded={folded || undefined}
+            className={folded ? 'flex flex-wrap items-center gap-1.5' : 'space-y-0.5'}
+          >
             {STOPS.map((s, k) => {
               const selected = state.stop === k;
               const common = {
@@ -98,26 +110,39 @@ export function RouteStoryBuilder() {
               if (s.kind === 'point') {
                 const p = POINTS[s.i];
                 const st = pointsState[s.i];
+                const badge = cn(
+                  'size-8 shrink-0 rounded-full grid place-items-center font-display text-sm font-bold tabular-nums transition-colors duration-200',
+                  st === 'focus'
+                    ? 'bg-accent text-white'
+                    : st === 'passed' || st === 'from'
+                      ? 'bg-brand/15 text-brand-dark'
+                      : st === 'to'
+                        ? 'border-2 border-accent bg-bg-elevated text-ember-deep'
+                        : 'border border-border-strong/60 bg-bg-elevated text-fg-muted'
+                );
+                if (folded) {
+                  // folded strip: the point is its numbered badge alone
+                  return (
+                    <li key={k}>
+                      <button
+                        {...common}
+                        data-stop-row={`point:${s.i}`}
+                        className={cn(badge, 'cursor-pointer hover:ring-2 hover:ring-brand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent')}
+                      >
+                        <span className="sr-only">נקודה {p.n}: {p.name}</span>
+                        <span aria-hidden>{p.n}</span>
+                      </button>
+                    </li>
+                  );
+                }
                 return (
                   <li key={k}>
                     <button
                       {...common}
                       data-stop-row={`point:${s.i}`}
-                      className={cn(ROW, 'py-1.5', selected ? 'border-accent before:bg-accent/10' : 'border-transparent hover:before:bg-brand/[0.04]')}
+                      className={cn(ROW, 'py-0.5', selected ? 'border-accent before:bg-accent/10' : 'border-transparent hover:before:bg-brand/[0.04]')}
                     >
-                      <span
-                        aria-hidden
-                        className={cn(
-                          'size-8 shrink-0 rounded-full grid place-items-center font-display text-sm font-bold tabular-nums transition-colors duration-200',
-                          st === 'focus'
-                            ? 'bg-accent text-white'
-                            : st === 'passed' || st === 'from'
-                              ? 'bg-brand/15 text-brand-dark'
-                              : st === 'to'
-                                ? 'border-2 border-accent bg-bg-elevated text-ember-deep'
-                                : 'border border-border-strong/60 bg-bg-elevated text-fg-muted'
-                        )}
-                      >
+                      <span aria-hidden className={badge}>
                         {p.n}
                       </span>
                       <span className="flex-1 min-w-0 font-display text-base font-bold leading-tight text-fg">
@@ -132,6 +157,29 @@ export function RouteStoryBuilder() {
               const leg = LEGS[s.i];
               const st = legsState[s.i];
               const hidden = isHidden(s.i, state.done);
+              const line = cn(
+                'border-s-[3px] transition-colors duration-200',
+                st === 'focus' ? 'border-solid border-accent' : st === 'next' ? 'border-dashed border-accent' : st === 'walked' ? 'border-solid border-brand' : 'border-dashed border-border-strong/70'
+              );
+              if (folded) {
+                // folded strip: the leg is its letter on a short stretch of route
+                return (
+                  <li key={k}>
+                    <button
+                      {...common}
+                      data-stop-row={`leg:${s.i}`}
+                      className={cn(
+                        ROW,
+                        'h-8 w-auto gap-1.5 px-2.5 bg-bg-elevated font-display text-sm font-bold text-fg',
+                        selected ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
+                      )}
+                    >
+                      <span aria-hidden className={cn('h-4', line)} />
+                      קטע {leg.letter}
+                    </button>
+                  </li>
+                );
+              }
               return (
                 <li key={k}>
                   <button
@@ -139,22 +187,17 @@ export function RouteStoryBuilder() {
                     data-stop-row={`leg:${s.i}`}
                     className={cn(
                       ROW,
-                      'py-2 bg-bg-elevated',
+                      'py-1 bg-bg-elevated',
                       selected ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
                     )}
                   >
                     {/* the leg as a stretch of route between two point badges: solid = selected / walked, dashed = leaving the selected point / ahead */}
                     <span aria-hidden className="w-8 shrink-0 flex justify-center">
-                      <span
-                        className={cn(
-                          'h-8 border-s-[3px] transition-colors duration-200',
-                          st === 'focus' ? 'border-solid border-accent' : st === 'next' ? 'border-dashed border-accent' : st === 'walked' ? 'border-solid border-brand' : 'border-dashed border-border-strong/70'
-                        )}
-                      />
+                      <span className={cn('h-7', line)} />
                     </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block font-display text-base font-bold leading-tight text-fg">קטע {leg.letter}</span>
-                      <span className="block text-sm leading-snug text-fg-muted">
+                    <span className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-display text-base font-bold leading-tight text-fg">קטע {leg.letter}</span>
+                      <span className="text-sm leading-snug text-fg-muted">
                         מנקודה {leg.from + 1} אל נקודה {leg.to + 1}
                         {hidden && ' · להשלמה'}
                       </span>
@@ -183,6 +226,8 @@ export function RouteStoryBuilder() {
               );
             })}
           </ol>
+
+          <RouteStoryPanel state={state} dispatch={dispatch} />
         </div>
 
         <div className="lg:sticky lg:top-24">
@@ -229,8 +274,6 @@ export function RouteStoryBuilder() {
           </div>
         </div>
       </div>
-
-      <RouteStoryPanel state={state} dispatch={dispatch} />
 
       <p className="sr-only" aria-live="polite" data-live>
         {describe(stop, state.done)}

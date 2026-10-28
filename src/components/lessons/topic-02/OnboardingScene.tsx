@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -228,23 +227,6 @@ export function OnboardingScene() {
       </LessonViewportFit>
 
       {/* The practical-examples panel moved to PracticalMeaningScene (before recap). */}
-      <div className="mt-20" />
-
-      {/* Screen 2 — the closing callout, shrunk by the same width rule so its
-          line breaks match the reference. Its own mt-8 is dropped inside the
-          fit box: unwrapped it collapsed into the 80px spacer above, wrapped
-          it would add to it. */}
-      <LessonViewportFit
-        referenceWidth={FIT_REFERENCE_WIDTH}
-        reserveTop={FIT_SITE_HEADER}
-        reserveBottom={0}
-        contentClassName="[&>section]:mt-0"
-      >
-        <ReadyCallout title="בהמשך השיעור" signature={false}>
-          <p>נלמד לזהות את מרכיבי השטח ולהבין כיצד הם מופיעים במפה. נכיר את התבליט, את התכסית ואת תבניות הנוף, ובהמשך נתרגל
-              <strong className="text-fg"> שימוש בקנה מידה, קריאת נקודות ציון ופענוח קווי גובה</strong>.</p>
-        </ReadyCallout>
-      </LessonViewportFit>
     </section>
   );
 }

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { CANDIDATES, READINGS, type CandidateId } from './locationCheckScenario';
 import { formatBearing, formatMetres } from './locationCheckGeometry';
 import { INITIAL_STATE, directionCheck, distanceCheck, reducer, view, type Evaluation, type State } from './locationCheckState';
-import { createLookStore, type LookStore } from './locationCheckViewStore';
+import { createLookStore } from './locationCheckViewStore';
 import { LocationCheckMap, MAP_ASPECT, MapLegend } from './LocationCheckMap';
 import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, type TapeMarker } from './LocationCheckObservation';
 
@@ -28,12 +28,17 @@ import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, type Tap
  * (locationCheckState.evaluate): the distance fits both areas, the direction
  * tells them apart. The groves are landmarks only.
  *
- * Desktop layout (RTL), one screen at 1440 × 1122: title and instruction on
- * top; the 3D observation (inline start, right) and the map (left) side by
- * side at one height; under the observation, in reading order, the area
- * choice, the check and the reset (level with the map tools under the map);
- * under both views, the fixed-height result of the last check.
+ * Layout (RTL, laid out at the lesson fit's 1344 px, ≤ 760 px tall in every
+ * state): title, instruction and field readings on top; then one row — the
+ * 3D observation (inline start, right), the map, and at the inline end a
+ * narrow control column: in reading order the area choice, the check and the
+ * reset on top, the map tools (legend, fullscreen) at its foot, level with
+ * the map's bottom edge; under the row, the full-width result of the last
+ * check, as tall as its tallest content.
  */
+
+/** Width of the control column at the inline end of the views row (px). */
+const CONTROLS_W = 176;
 
 /** A numeric range kept left-to-right inside Hebrew text (U+2066 … U+2069 isolate). */
 const ltr = (s: string) => `⁦${s}⁩`;
@@ -51,6 +56,7 @@ export function LocationCheckActivity() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const [lookStore] = useState(createLookStore);
   const { result, solved } = view(state);
+  const mapView = useFullscreen<HTMLDivElement>();
   const sel = state.selections;
   const uid = useId();
 
@@ -88,14 +94,35 @@ export function LocationCheckActivity() {
         </p>
       </div>
 
-      {/* The two views, one height: column widths follow their aspects. */}
-      <div className="mt-4 grid gap-3" style={{ gridTemplateColumns: `minmax(0, ${OBSERVATION_ASPECT}fr) minmax(0, ${MAP_ASPECT}fr)` }}>
+      {/* The two views at one height (column widths follow their aspects), then the control column. */}
+      <div
+        className="mt-4 grid gap-3"
+        style={{ gridTemplateColumns: `minmax(0, ${OBSERVATION_ASPECT}fr) minmax(0, ${MAP_ASPECT}fr) ${CONTROLS_W}px` }}
+      >
         <div className="min-w-0">
           <div className="overflow-hidden rounded-xl border border-border/70" data-panel="observation">
             <LocationCheckObservation lookStore={lookStore} markers={markers} />
           </div>
-          {/* Decision, in reading order: choose an area → check it → start over. Level with the map tools. */}
-          <div className="mt-2.5 flex items-center gap-x-5" data-decision>
+        </div>
+        <div className="min-w-0">
+          <div
+            ref={mapView.ref}
+            className={cn('overflow-hidden rounded-xl border border-border/70 bg-white', mapView.fullscreen && 'flex items-center justify-center p-4')}
+            data-panel="map"
+          >
+            <LocationCheckMap
+              selectedCandidate={sel.candidateId}
+              checked={checked}
+              solved={solved}
+              lookStore={lookStore}
+              onSelectCandidate={(id) => dispatch({ type: 'selectCandidate', id })}
+              className="block h-auto max-h-full w-full"
+            />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col">
+          {/* Decision, in reading order: choose an area → check it → start over. */}
+          <div className="flex flex-col gap-4" data-decision>
             <ChoiceRow
               id={`${uid}-area`}
               title="בחרו אזור"
@@ -103,27 +130,29 @@ export function LocationCheckActivity() {
               value={sel.candidateId}
               onChange={(id) => dispatch({ type: 'selectCandidate', id })}
             />
-            <div className="flex items-center gap-2">
-              <Button variant="primary" size="md" onClick={() => dispatch({ type: 'check' })}>
+            <div className="flex flex-col gap-1">
+              <Button variant="primary" size="md" className="w-full" onClick={() => dispatch({ type: 'check' })}>
                 בדקו את הבחירה
               </Button>
-              <Button variant="ghost" size="md" onClick={reset} title="איפוס הפעילות">
+              <Button variant="ghost" size="md" className="w-full" onClick={reset} title="איפוס הפעילות">
                 <RotateCcw className="size-4" aria-hidden />
                 איפוס
               </Button>
             </div>
           </div>
+          {/* Map tools at the foot of the column, level with the map's bottom edge. */}
+          <MapTools
+            className="mt-auto"
+            area={!!sel.candidateId}
+            checked={checked}
+            solved={solved}
+            fullscreen={mapView.fullscreen}
+            onToggleFullscreen={mapView.toggle}
+          />
         </div>
-        <MapColumn
-          selectedCandidate={sel.candidateId}
-          checked={checked}
-          solved={solved}
-          lookStore={lookStore}
-          onSelectCandidate={(id) => dispatch({ type: 'selectCandidate', id })}
-        />
       </div>
 
-      {/* The result, under both views and the decision row — it never moves them. */}
+      {/* The result, under the views row — it never moves it. */}
       <Feedback model={feedbackOf(state)} attempt={state.attempts} />
     </div>
   );
@@ -132,7 +161,19 @@ export function LocationCheckActivity() {
 // ---------------------------------------------------------------- pieces
 
 /** A small help disclosure: a trigger button and a note next to it; Esc or a click outside closes it. */
-function InfoPopover({ label, children, placement = 'below', trigger }: { label: string; children: ReactNode; placement?: 'below' | 'above'; trigger?: ReactNode }) {
+function InfoPopover({
+  label,
+  children,
+  placement = 'below',
+  trigger,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  placement?: 'below' | 'above';
+  trigger?: ReactNode;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const id = useId();
@@ -148,7 +189,7 @@ function InfoPopover({ label, children, placement = 'below', trigger }: { label:
     };
   }, [open]);
   return (
-    <span ref={ref} className="relative inline-flex">
+    <span ref={ref} className={cn('relative inline-flex', className)}>
       <button
         type="button"
         aria-expanded={open}
@@ -203,11 +244,11 @@ function ChoiceRow<T extends string>({
     refs.current[nextIdx]?.focus();
   };
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-choice="area">
+    <div className="flex flex-col gap-2" data-choice="area">
       <span id={id} className="whitespace-nowrap font-display text-base font-bold text-black">
         {title}
       </span>
-      <div role="radiogroup" aria-labelledby={id} className="flex gap-2">
+      <div role="radiogroup" aria-labelledby={id} className="grid grid-cols-2 gap-2">
         {options.map((o, i) => {
           const on = o.id === value;
           return (
@@ -238,20 +279,9 @@ function ChoiceRow<T extends string>({
   );
 }
 
-function MapColumn({
-  selectedCandidate,
-  checked,
-  solved,
-  lookStore,
-  onSelectCandidate,
-}: {
-  selectedCandidate: CandidateId | null;
-  checked: boolean;
-  solved: boolean;
-  lookStore: LookStore;
-  onSelectCandidate: (id: CandidateId) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
+/** Fullscreen for one element: its ref, whether it is the fullscreen element, and a toggle. */
+function useFullscreen<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement === ref.current);
@@ -262,42 +292,49 @@ function MapColumn({
     if (document.fullscreenElement) document.exitFullscreen();
     else ref.current?.requestFullscreen?.();
   };
+  return { ref, fullscreen, toggle };
+}
+
+/** The map's legend and fullscreen buttons; the legend opens above them, over the map. */
+function MapTools({
+  area,
+  checked,
+  solved,
+  fullscreen,
+  onToggleFullscreen,
+  className,
+}: {
+  area: boolean;
+  checked: boolean;
+  solved: boolean;
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
+  className?: string;
+}) {
   return (
-    <div className="min-w-0">
-      <div ref={ref} className={cn('overflow-hidden rounded-xl border border-border/70 bg-white', fullscreen && 'flex items-center justify-center p-4')} data-panel="map">
-        <LocationCheckMap
-          selectedCandidate={selectedCandidate}
-          checked={checked}
-          solved={solved}
-          lookStore={lookStore}
-          onSelectCandidate={onSelectCandidate}
-          className="block h-auto max-h-full w-full"
-        />
-      </div>
-      {/* Map tools, at the inline end under the map; the row is as tall as the decision row beside it, centred on it. */}
-      <div className="mt-2.5 flex h-12 items-center justify-end gap-2" data-map-tools>
-        <InfoPopover
-          label="מקרא המפה"
-          placement="above"
-          trigger={
-            <span className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold">
-              <ListTree className="size-4" aria-hidden />
-              מקרא
-            </span>
-          }
-        >
-          <MapLegend area={!!selectedCandidate} result={checked} solved={solved} />
-        </InfoPopover>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={fullscreen ? 'יציאה ממסך מלא' : 'הצגת המפה במסך מלא'}
-          title={fullscreen ? 'יציאה ממסך מלא' : 'הצגת המפה במסך מלא'}
-          className="flex size-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-paper-bright/70 text-black hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          {fullscreen ? <Minimize2 className="size-4" aria-hidden /> : <Maximize2 className="size-4" aria-hidden />}
-        </button>
-      </div>
+    <div className={cn('flex items-center gap-2', className)} data-map-tools>
+      <InfoPopover
+        label="מקרא המפה"
+        placement="above"
+        className="flex-1 [&>button]:w-full"
+        trigger={
+          <span className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-paper-bright/70 px-3 font-display text-base font-semibold">
+            <ListTree className="size-4" aria-hidden />
+            מקרא
+          </span>
+        }
+      >
+        <MapLegend area={area} result={checked} solved={solved} />
+      </InfoPopover>
+      <button
+        type="button"
+        onClick={onToggleFullscreen}
+        aria-label={fullscreen ? 'יציאה ממסך מלא' : 'הצגת המפה במסך מלא'}
+        title={fullscreen ? 'יציאה ממסך מלא' : 'הצגת המפה במסך מלא'}
+        className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-paper-bright/70 text-black hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        {fullscreen ? <Minimize2 className="size-4" aria-hidden /> : <Maximize2 className="size-4" aria-hidden />}
+      </button>
     </div>
   );
 }
@@ -391,7 +428,7 @@ function verdictOf(r: Exclude<Evaluation, { kind: 'missing' }>): { title: string
   return { title: `${area} אינו מתאים למדידות`, rows, next };
 }
 
-/** Fixed-height result area: what was checked, each measurement on the map beside the field, and what to do next. */
+/** Fixed-height result area (as tall as its tallest content, a verdict): what was checked, each measurement on the map beside the field, and what to do next. */
 function Feedback({ model, attempt }: { model: FeedbackModel; attempt: number }) {
   let kind: string = model.kind;
   let key = `${model.kind}-${attempt}`;
@@ -458,8 +495,9 @@ function Feedback({ model, attempt }: { model: FeedbackModel; attempt: number })
     );
   }
   return (
-    // Fixed height (the tallest state, a check): a result never lengthens the card or moves the controls. Announced once per check or choice.
-    <div role="status" aria-live="polite" aria-atomic="true" className={cn('mt-3 h-[150px] rounded-xl border px-4 py-3', tone)} data-feedback={kind}>
+    // Fixed height = the tallest state, a verdict (title, two rows, one line of next steps: 117 px, plus padding and
+    // border), so a result never lengthens the card or moves the controls. Announced once per check or choice.
+    <div role="status" aria-live="polite" aria-atomic="true" className={cn('mt-3 h-[144px] rounded-xl border px-4 py-3', tone)} data-feedback={kind}>
       <div key={key}>{body}</div>
     </div>
   );

@@ -101,11 +101,23 @@ export function wedgePath(c: XY, r: number, fromDeg: number, toDeg: number) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Map — viewBox units ≈ CSS px at the 1440 desktop layout
+// Map — drawn 608 px wide at the 1344 reference width (1 unit ≈ 0.97 px)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const LAB_W = 654;
-export const LAB_H = 628;
+/**
+ * The sheet (the map's viewBox), sized so the map sits beside the two control
+ * columns at the reference width. The north-west inset and the label row keep
+ * the top edge, so only the empty east strip and the band below the ring were
+ * trimmed (was 654 × 628).
+ */
+export const LAB_W = 630;
+export const LAB_H = 592;
+/**
+ * The terrain asset's own viewBox (map-paper.svg, generated at the earlier
+ * 654 × 628 sheet): drawn at this size from the sheet's origin and cropped by
+ * the sheet, never stretched to it.
+ */
+export const TERRAIN = { w: 654, h: 628 } as const;
 /** Keep every live mark this far inside the sheet edge. */
 export const LAB_MARGIN = 8;
 
@@ -160,8 +172,8 @@ export const INSET_GAIN = 4;
 export const INSET_ORIGIN: XY = { x: INSET.x + INSET.w / 2, y: INSET.y + INSET.h - 18 };
 export const INSET_ARROW_LEN = 96;
 
-/** "הנתונים להמחשה בלבד" — bottom-left corner of the sheet. */
-export const NOTE_POS: XY = { x: 16, y: LAB_H - 16 };
+/** "הנתונים להמחשה בלבד" — bottom-left corner of the sheet, just below the ring's image box. */
+export const NOTE_POS: XY = { x: 16, y: LAB_H - 12 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Labels — one row above the arrow tips, spread so they never overlap

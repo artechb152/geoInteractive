@@ -330,7 +330,6 @@ test('leg ד׳: wrong answers get feedback that explains without revealing; corr
   assert.match(await statusText(), /סיפור הדרך הושלם: 4 קטעים ו־2,300 מ׳/);
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'status', 'focus moves to the result');
   assert.deepEqual(s.tag.text, ['ד׳', '040°', '600 מ׳']);
-  assert.deepEqual(s.chips[3], ['040°', '600 מ׳']);
   assert.deepEqual(s.halos, ['grove:along', 'pines-rocks:end']);
   assert.ok(!s.scaleHint);
   assert.ok(s.card.bottom <= VIEW.height);
@@ -339,6 +338,8 @@ test('leg ד׳: wrong answers get feedback that explains without revealing; corr
   assert.equal(await page.locator(`${panel} [role="radiogroup"][aria-disabled="true"]`).count(), 3);
   // נ.ס now names its sign
   const p5 = await select(8);
+  // on leg ד׳ the list is folded into a strip; at נ.ס it is open again and shows the leg written
+  assert.deepEqual(p5.chips[3], ['040°', '600 מ׳']);
   assert.match(p5.panelText, /קבוצת אורנים בקרקע סלעית/);
   assert.deepEqual(p5.halos, ['pines-rocks:point']);
   await shot('q4-point5-done');
@@ -350,7 +351,7 @@ test('leg ד׳: wrong answers get feedback that explains without revealing; corr
   s = await read();
   assert.ok(!s.done);
   assert.ok(s.tag.hidden);
-  assert.deepEqual(s.chips[3], ['?°', '? מ׳']);
+  assert.deepEqual(s.chips, [[], [], [], []], 'leg ד׳ folds the list into a strip (no data chips)');
   assert.deepEqual(await feedback(), {});
   assert.equal(await page.locator(`${panel} [role="radio"][aria-checked="true"]`).count(), 0);
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'radio', 'focus back on the first choice');

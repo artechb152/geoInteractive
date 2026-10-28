@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SceneHeader } from './SceneHeader';
-import { ReadyCallout } from '@/components/lesson/ReadyCallout';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { Icon, type IconName } from '@/components/Icon';
 import { cn } from '@/lib/utils';
@@ -198,10 +197,6 @@ export function OnboardingScene() {
       >
         {/* Same structure as lesson 2's practical-examples panel; its own file. */}
         <NavigationExamplesPanel />
-
-        <ReadyCallout title="בהמשך השיעור" signature={false}>
-          <p>בחלק הבא, <strong className="text-fg">דגשים לתכנון ולניווט</strong>: מה מכינים לפני היציאה ומה בודקים בדרך.</p>
-        </ReadyCallout>
       </LessonViewportFit>
     </section>
   );

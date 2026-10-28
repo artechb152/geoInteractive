@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import {
   formatDistance, formatNumber, formatRatio, groundDistanceM, insideSheet, lonLatToSheet, metersPerSheetCm, readCm, readingPrecisionM,
   sheetCm, sheetToLonLat, type LatLon, type SheetPoint,
 } from './geo';
 import { ATTRIBUTION, SHEETS, SHEET_IDS, type SheetId, type SheetMeta } from './scaleSheets.data';
-import { EXAMPLE_PAIR, LANDMARKS, LOCATE, ZOOM_SENTENCE, shownSuffix, type LandmarkId } from './scaleContent.data';
-import { SheetViewport } from './SheetViewport';
+import { EXAMPLE_PAIR, LANDMARKS, LOCATE, LOCATE_RULE, ZOOM_SENTENCE, shownSuffix, type LandmarkId } from './scaleContent.data';
+import { SheetViewport, type OverlayContext } from './SheetViewport';
 import { MeasureOverlay } from './MeasureOverlay';
 import { FOCUS_RING, INSET, OPTION_ACTIVE, OPTION_BASE, OPTION_IDLE, SheetPicker, T5, T6, useRovingKeys } from './controls';
 import type { InitialView } from './useMapView';
 import { CURTAIN_LABELS, asset, layersFor, preloadFor } from './layers';
-import { INK, Label, Ring, dash, pillSize, sw } from './overlayParts';
+import { ACCENT, INK, Label, PAPER, Ring, dash, pillSize, sw } from './overlayParts';
 
 type LabMode = 'explore' | 'measure';
 const MODES: { id: LabMode; label: string }[] = [
@@ -32,6 +32,10 @@ const WORKSPACE_GRID = 'grid gap-x-6 gap-y-5 lg:grid-cols-[minmax(0,1fr)_minmax(
 
 const LETTERS = ['א', 'ב'] as const;
 type Pair = [LatLon | null, LatLon | null];
+/** Undo steps kept for the measure points (Ctrl+Z; Ctrl+Shift+Z or Ctrl+Y redoes). */
+const HISTORY = 50;
+const samePt = (p: LatLon | null, q: LatLon | null) => p === q || (!!p && !!q && p.lat === q.lat && p.lon === q.lon);
+const samePair = (p: Pair, q: Pair) => samePt(p[0], q[0]) && samePt(p[1], q[1]);
 
 // "הגדלה לעומת פירוט": the 1:250,000 map enlarged ×5 beside the real 1:50,000 of the same extent.
 const S50 = SHEETS['50k'];
@@ -51,7 +55,7 @@ const VIEW = 'compare' as const;
 const PAST_CHILD = 1.2;
 const OUT_STEP = 1.5;
 
-const RING_PX = 14;
+const RING_PX = 18;
 const HORIZONTAL_NOTE = 'זהו המרחק האופקי בקו ישר. בדרך מתפתלת או במעלה מדרון המרחק בפועל ארוך יותר.';
 const RULER_NOTE = 'הסרגל מראה ס״מ של דף מודפס ברוחב 24 ס״מ, לא של המסך.';
 /** Quiet time after the last change before the new distance is announced (drags and key repeats settle first). */
@@ -68,6 +72,10 @@ export function ScaleLab() {
   const [zoomCurtain, setZoomCurtain] = useState(INITIAL_CURTAIN);
   const [locate, setLocate] = useState<LandmarkId | null>(null);
   const [pts, setPts] = useState<Pair>([null, null]);
+  const [hist, setHist] = useState<{ past: Pair[]; future: Pair[] }>({ past: [], future: [] });
+  // Animation counters: a point's pulse bumps when it lands somewhere new (click, button, undo), the
+  // segment's when A–B first becomes whole; drags and arrow keys move without replaying them.
+  const [fx, setFx] = useState<{ pulse: [number, number]; segment: number }>({ pulse: [0, 0], segment: 0 });
   const preload = useMemo(() => preloadFor(SHEET_IDS), []);
   const keys = useRovingKeys(MODE_IDS, mode, (m) => switchMode(m));
   // The visible centre of the map, for "הוספת נקודה במרכז המפה" (kept current by the overlay render).
@@ -125,19 +133,57 @@ export function ScaleLab() {
   const sp = pts.map((p) => (p ? lonLatToSheet(sheet, p) : null)) as [SheetPoint | null, SheetPoint | null];
   const inside = sp.map((q) => q !== null && insideSheet(q));
   const bothInside = inside[0] && inside[1];
+  const animateChange = (prev: Pair, next: Pair) =>
+    setFx((f) => ({
+      pulse: [0, 1].map((i) => (next[i] && !samePt(prev[i], next[i]) ? f.pulse[i] + 1 : f.pulse[i])) as [number, number],
+      segment: next[0] && next[1] && !(prev[0] && prev[1]) ? f.segment + 1 : f.segment,
+    }));
+  const record = () => setHist((h) => ({ past: [...h.past, pts].slice(-HISTORY), future: [] }));
+  // One discrete step: one undo entry, animated.
+  const commit = (next: Pair) => {
+    if (samePair(pts, next)) return;
+    record();
+    animateChange(pts, next);
+    setPts(next);
+  };
   const place = (p: SheetPoint) => {
     const ll = sheetToLonLat(sheet, p);
-    setPts(([a, b]) => {
-      if (!a) return [ll, b];
-      if (!b) return [a, ll];
-      // Both placed: the click moves the nearer point.
-      const [qa, qb] = [lonLatToSheet(sheet, a), lonLatToSheet(sheet, b)];
-      return Math.hypot(qa.x - p.x, qa.y - p.y) <= Math.hypot(qb.x - p.x, qb.y - p.y) ? [ll, b] : [a, ll];
-    });
+    const [a, b] = pts;
+    if (!a) return commit([ll, b]);
+    if (!b) return commit([a, ll]);
+    // Both placed: the click moves the nearer point.
+    const [qa, qb] = [lonLatToSheet(sheet, a), lonLatToSheet(sheet, b)];
+    commit(Math.hypot(qa.x - p.x, qa.y - p.y) <= Math.hypot(qb.x - p.x, qb.y - p.y) ? [ll, b] : [a, ll]);
   };
-  const move = (which: 0 | 1, p: SheetPoint) => {
+  // A drag, a key press or a held arrow key records one undo step when it starts.
+  const move = (which: 0 | 1, p: SheetPoint, start: boolean) => {
     const ll = sheetToLonLat(sheet, p);
+    if (start) record();
     setPts((cur) => (which === 0 ? [ll, cur[1]] : [cur[0], ll]));
+  };
+  const undo = () => {
+    const prev = hist.past[hist.past.length - 1];
+    if (!prev) return;
+    setHist({ past: hist.past.slice(0, -1), future: [pts, ...hist.future] });
+    animateChange(pts, prev);
+    setPts(prev);
+  };
+  const redo = () => {
+    const next = hist.future[0];
+    if (!next) return;
+    setHist({ past: [...hist.past, pts], future: hist.future.slice(1) });
+    animateChange(pts, next);
+    setPts(next);
+  };
+  // Scoped to the lab (focus inside it), so other scenes keep their own Ctrl+Z. e.code, not e.key, so it
+  // also works on the Hebrew layout (where that key types ז).
+  const onUndoKeys = (e: KeyboardEvent) => {
+    if (mode !== 'measure' || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const isZ = e.code === 'KeyZ';
+    if (!isZ && e.code !== 'KeyY') return;
+    e.preventDefault();
+    if (isZ && !e.shiftKey) undo();
+    else redo();
   };
 
   let label: string;
@@ -153,9 +199,11 @@ export function ScaleLab() {
   const locateLabel = locate ? (LOCATE.find((l) => l.id === locate)?.label ?? LANDMARKS[locate].name) : '';
   // The first coarser sheet that shows the located place (named in the outside line).
   const cover = locate ? SHEET_IDS.slice(idx + 1).map((id) => SHEETS[id]).find((s) => insideSheet(lonLatToSheet(s, LANDMARKS[locate]))) : undefined;
+  // Which of the three sheets show the located place (the coverage row under the locate buttons).
+  const coverage = locate ? SHEET_IDS.filter((id) => insideSheet(lonLatToSheet(SHEETS[id], LANDMARKS[locate]))) : [];
 
   return (
-    <section data-qa="scale-lab" aria-label="מעבדת קנה מידה">
+    <section data-qa="scale-lab" aria-label="מעבדת קנה מידה" onKeyDown={onUndoKeys}>
       <div className={cn('surface-elevated p-5 sm:p-6', WORKSPACE_GRID)}>
         <div role="tablist" aria-label="מצב עבודה" onKeyDown={keys.onKeyDown} className="flex gap-2 lg:col-start-1 lg:row-start-1">
           {MODES.map((m) => {
@@ -198,6 +246,9 @@ export function ScaleLab() {
               locateLabel={locateLabel}
               locatedInside={located !== null && insideSheet(located)}
               coverDenominator={cover?.denominator ?? null}
+              coverage={coverage}
+              sheetId={sheetId}
+              onPickSheet={pickSheet}
               onLocate={setLocate}
             />
           ) : (
@@ -206,8 +257,10 @@ export function ScaleLab() {
               pts={pts}
               inside={inside as [boolean, boolean]}
               onCenter={() => place(centerRef.current)}
-              onExample={() => setPts([LANDMARKS[EXAMPLE_PAIR[0]], LANDMARKS[EXAMPLE_PAIR[1]]])}
-              onClear={() => setPts([null, null])}
+              onExample={() => commit([LANDMARKS[EXAMPLE_PAIR[0]], LANDMARKS[EXAMPLE_PAIR[1]]])}
+              onClear={() => commit([null, null])}
+              canUndo={hist.past.length > 0}
+              onUndo={undo}
             />
           )}
         </div>
@@ -249,6 +302,8 @@ export function ScaleLab() {
                     ctx={ctx}
                     letters={LETTERS}
                     onMove={move}
+                    pulse={fx.pulse}
+                    segment={fx.segment}
                     names={[0, 1].map((i) => `נקודה ${LETTERS[i]}. החיצים מזיזים מילימטר אחד על הדף; עם Shift – סנטימטר.`) as [string, string]}
                   />
                 );
@@ -263,9 +318,12 @@ export function ScaleLab() {
                   )}
                   {located && locate && insideSheet(located) && (
                     <g data-qa="locate-marker">
-                      <Ring p={located} ppu={ppu} r={RING_PX} />
-                      <Label p={located} ppu={ppu} text={locateLabel} dy={locateDy} qa="locate-label" />
+                      <Ring p={located} ppu={ppu} r={RING_PX} strong />
+                      <Label p={located} ppu={ppu} text={locateLabel} dy={locateDy} qa="locate-label" strong />
                     </g>
+                  )}
+                  {located && locate && !inView(located, ctx) && (
+                    <OffViewPointer p={located} ctx={ctx} text={insideSheet(located) ? locateLabel : `${locateLabel} · מחוץ לדף`} />
                   )}
                 </>
               );
@@ -278,7 +336,7 @@ export function ScaleLab() {
 }
 
 function ExplorePanel({
-  sheet, comparing, onCompare, locate, locateLabel, locatedInside, coverDenominator, onLocate,
+  sheet, comparing, onCompare, locate, locateLabel, locatedInside, coverDenominator, coverage, sheetId, onPickSheet, onLocate,
 }: {
   sheet: SheetMeta;
   comparing: boolean;
@@ -287,6 +345,9 @@ function ExplorePanel({
   locateLabel: string;
   locatedInside: boolean;
   coverDenominator: number | null;
+  coverage: readonly SheetId[];
+  sheetId: SheetId;
+  onPickSheet: (id: SheetId) => void;
   onLocate: (id: LandmarkId | null) => void;
 }) {
   const D = sheet.denominator;
@@ -304,6 +365,14 @@ function ExplorePanel({
         <div data-qa="zoom-compare" className="flex flex-col gap-3">
           <p className="text-base leading-relaxed text-fg">
             משמאל לקו: {ZOOM_LEFT}. מימין לקו: {ZOOM_RIGHT} של אותו תחום. גררו את הקו והשוו.
+          </p>
+          <p className="text-base leading-relaxed text-black">
+            כשמגדילים מפה, הכבישים, הסמלים והכיתובים נראים גדולים יותר, אבל רמת הפירוט נשארת כפי שהייתה במקור.
+            פרט שהושמט מהמפה כדי לשמור על קריאותה לא יופיע בעקבות ההגדלה.
+          </p>
+          <p className="text-base leading-relaxed text-black">
+            לעומת זאת, מפה שהוכנה בקנה מידה גדול יותר יכולה להציג יותר פרטים באותו אזור.
+            הזיזו את הקו וחפשו הבדלים בדרכים ובקווי הגובה: האם נוסף מידע, או שרק הסימנים גדלו?
           </p>
           <p data-qa="zoom-sentence" className={cn(INSET, 'font-display text-base font-bold leading-relaxed text-fg')}>
             {ZOOM_SENTENCE}
@@ -329,8 +398,9 @@ function ExplorePanel({
           </p>
 
           <div>
-            <div id="scale-lab-locate" className={cn(T5, 'mb-2')}>איתור במפה</div>
-            <div role="group" aria-labelledby="scale-lab-locate" className="grid grid-cols-2 gap-2">
+            <div id="scale-lab-locate" className={cn(T5, 'mb-1')}>איתור במפה</div>
+            <p className={cn(T6, 'mb-2')}>בחרו מקום ובדקו באילו מפות הוא מופיע.</p>
+            <div role="group" aria-labelledby="scale-lab-locate" className="grid grid-cols-3 gap-2">
               {LOCATE.map((l) => {
                 const on = locate === l.id;
                 return (
@@ -346,10 +416,16 @@ function ExplorePanel({
                 );
               })}
             </div>
+            {locate && <LocateCoverage name={locateLabel} coverage={coverage} sheetId={sheetId} onPick={onPickSheet} />}
             {/* Live region stays mounted; empty it takes no space. */}
             <p className={cn(T6, 'mt-2 empty:mt-0')} aria-live="polite" data-qa="locate-line">
               {locate ? (locatedInside ? `${locateLabel}: סומן על המפה.` : outsideLine(locateLabel, coverDenominator)) : ''}
             </p>
+            {locate && (
+              <p data-qa="locate-rule" className="mt-1 font-display text-sm font-bold text-fg">
+                {LOCATE_RULE}
+              </p>
+            )}
           </div>
         </>
       )}
@@ -376,7 +452,7 @@ function ExplorePanel({
 }
 
 function MeasurePanel({
-  sheet, pts, inside, onCenter, onExample, onClear,
+  sheet, pts, inside, onCenter, onExample, onClear, canUndo, onUndo,
 }: {
   sheet: SheetMeta;
   pts: Pair;
@@ -384,6 +460,8 @@ function MeasurePanel({
   onCenter: () => void;
   onExample: () => void;
   onClear: () => void;
+  canUndo: boolean;
+  onUndo: () => void;
 }) {
   const D = sheet.denominator;
   const precision = readingPrecisionM(D);
@@ -406,7 +484,7 @@ function MeasurePanel({
   return (
     <>
       <p className={T6} data-qa="measure-hint">
-        לחצו על המפה לסימון נקודה א ואז נקודה ב. לחיצה נוספת מזיזה את הנקודה הקרובה. אפשר גם לגרור נקודה או להזיז אותה בחיצים.
+        לחצו על המפה לסימון נקודה א ואז נקודה ב. לחיצה נוספת מזיזה את הנקודה הקרובה. אפשר גם לגרור נקודה או להזיז אותה בחיצים. <bdi dir="ltr">Ctrl+Z</bdi> מבטל את הפעולה האחרונה.
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={onCenter} className="btn-secondary h-10 px-4 text-sm">
@@ -417,6 +495,17 @@ function MeasurePanel({
         </button>
         <button type="button" onClick={onClear} disabled={!pts[0] && !pts[1]} className="btn-secondary h-10 px-4 text-sm disabled:opacity-50">
           ניקוי נקודות
+        </button>
+        {/* aria-disabled, not disabled: a disabled button drops focus out of the lab, and Ctrl+Z with it. */}
+        <button
+          type="button"
+          onClick={canUndo ? onUndo : undefined}
+          aria-disabled={!canUndo}
+          aria-keyshortcuts="Control+Z"
+          data-qa="measure-undo"
+          className="btn-secondary h-10 px-4 text-sm aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+        >
+          ביטול פעולה
         </button>
       </div>
 
@@ -502,6 +591,94 @@ function outsideLine(name: string, coverDenominator: number | null): string {
   return coverDenominator !== null
     ? `${name} מחוץ לתחום המפה. עברו ל־${formatRatio(coverDenominator)}, שמכסה שטח רחב יותר.`
     : `${name} מחוץ לתחום של כל שלוש המפות.`;
+}
+
+/**
+ * The located place on each of the three sheets, in the picker's order (so each cell sits under its sheet):
+ * ✓ on the sheet / ✗ off it. A cell opens that sheet; the shown one is outlined.
+ */
+function LocateCoverage({ name, coverage, sheetId, onPick }: { name: string; coverage: readonly SheetId[]; sheetId: SheetId; onPick: (id: SheetId) => void }) {
+  return (
+    <ul data-qa="locate-coverage" aria-label={`${name} בשלוש המפות`} className="mt-2 grid grid-cols-3 gap-2">
+      {SHEET_IDS.map((id) => {
+        const on = coverage.includes(id);
+        const shown = id === sheetId;
+        const ratio = formatRatio(SHEETS[id].denominator);
+        return (
+          <li key={id}>
+            <button
+              type="button"
+              onClick={() => onPick(id)}
+              aria-current={shown || undefined}
+              aria-label={`${ratio}: ${on ? 'מופיע במפה' : 'מחוץ לדף'}`}
+              data-qa={`locate-coverage-${id}`}
+              data-on={on}
+              className={cn(
+                'flex w-full flex-col items-center rounded-lg border px-2 py-1 text-center transition-colors duration-200 ease-snap',
+                FOCUS_RING,
+                shown ? 'border-accent bg-accent/10' : 'border-border-subtle bg-bg-elevated hover:border-brand/30',
+              )}
+            >
+              <span className="font-display text-sm font-bold tabular-nums text-fg">{ratio}</span>
+              <span className={cn('flex items-center gap-1 text-[13px] font-semibold', on ? 'text-brand-dark' : 'text-fg-dim')}>
+                <CoverMark on={on} />
+                {on ? 'מופיע' : 'מחוץ לדף'}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function CoverMark({ on }: { on: boolean }) {
+  return (
+    <svg aria-hidden viewBox="0 0 12 12" className="size-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      {on ? <path d="M2.5 6.5l2.5 2.5 4.5-5.5" /> : <path d="M3 3l6 6M9 3l-6 6" />}
+    </svg>
+  );
+}
+
+/** Half the visible side in sheet units; `p` is in view when it lies within that of the view centre. */
+const viewHalf = (ctx: OverlayContext) => 500 / ctx.k;
+function inView(p: SheetPoint, ctx: OverlayContext): boolean {
+  const h = viewHalf(ctx);
+  return Math.abs(p.x - ctx.center.x) <= h && Math.abs(p.y - ctx.center.y) <= h;
+}
+
+/** Inset of the pointer tip from the visible edge, in screen px. */
+const POINTER_INSET = 44;
+
+/**
+ * A place outside the visible square: an ember arrow on the view's edge, pointing from the view centre
+ * towards it, with its name on the inner side. North stays up, so the arrow gives the true direction.
+ */
+function OffViewPointer({ p, ctx, text }: { p: SheetPoint; ctx: OverlayContext; text: string }) {
+  const { ppu, center: c } = ctx;
+  const dx = p.x - c.x;
+  const dy = p.y - c.y;
+  const len = Math.hypot(dx, dy);
+  const [ux, uy] = [dx / len, dy / len];
+  const half = viewHalf(ctx) - POINTER_INSET / ppu;
+  const t = Math.min(Math.abs(dx) > 1e-9 ? half / Math.abs(dx) : Infinity, Math.abs(dy) > 1e-9 ? half / Math.abs(dy) : Infinity);
+  const tip = { x: c.x + dx * t, y: c.y + dy * t };
+  const u = (px: number) => px / ppu;
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const { w, h } = pillSize(text, ppu);
+  // The name pill sits behind the arrow's tail, its near edge 8 px past the tail end.
+  const back = u(40 + 8) + (Math.abs(ux) * w) / 2 + (Math.abs(uy) * h) / 2;
+  const at = { x: tip.x - ux * back, y: tip.y - uy * back };
+  return (
+    <g data-qa="locate-pointer" aria-hidden>
+      <g transform={`translate(${tip.x} ${tip.y}) rotate(${angle})`}>
+        <path d={`M${-u(40)} 0H${-u(10)}`} stroke={PAPER} strokeWidth={sw(10, ppu)} strokeLinecap="round" />
+        <path d={`M${-u(40)} 0H${-u(14)}`} stroke={ACCENT} strokeWidth={sw(5.5, ppu)} strokeLinecap="round" />
+        <path d={`M0 0L${-u(20)} ${-u(13)}V${u(13)}Z`} fill={ACCENT} stroke={PAPER} strokeWidth={sw(2.5, ppu)} strokeLinejoin="round" />
+      </g>
+      <Label p={at} ppu={ppu} text={text} dy={0} qa="locate-pointer-label" strong />
+    </g>
+  );
 }
 
 /** Extent of the next more detailed sheet: an ink long-dash frame; clicking it opens that sheet. */

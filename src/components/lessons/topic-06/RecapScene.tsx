@@ -33,13 +33,13 @@ export function RecapScene() {
 
       <div className="grid sm:grid-cols-2 gap-3">
         {TERMS.map((t, i) => (
-          <div key={t.term} className="surface p-5">
+          <div key={t.term} className="surface px-5 py-4">
             <div className="flex items-baseline gap-3">
               <span className="shrink-0 font-display text-base font-medium text-fg-muted">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="mb-1.5 font-display text-lg font-bold leading-snug text-fg md:text-xl">
+                <div className="mb-1 font-display text-lg font-bold leading-snug text-fg md:text-xl">
                   {t.term}
                 </div>
                 <div className="text-base leading-relaxed text-fg-muted text-pretty">

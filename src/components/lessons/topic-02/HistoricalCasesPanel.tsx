@@ -105,7 +105,15 @@ export function HistoricalCasesPanel({
   title = 'המשמעות המעשית של קריאת מפה',
   intro = 'ארבע דוגמאות לחשיבותם של רשת קואורדינטות, קנה מידה, קווי גובה והיטל מפה.',
   panelId = 'history-detail-panel',
-}: { cases?: HistoricalCase[]; title?: string; intro?: string; panelId?: string } = {}) {
+  compact = false,
+}: {
+  cases?: HistoricalCase[];
+  title?: string;
+  intro?: string;
+  panelId?: string;
+  /** Tighter spacing and shorter card thumbnails, so the panel fits one ~1920 × 910 screen (lesson 6). */
+  compact?: boolean;
+} = {}) {
   const [activeId, setActiveId] = useState(cases[0].id);
   const active = cases.find((c) => c.id === activeId) ?? cases[0];
 
@@ -117,7 +125,7 @@ export function HistoricalCasesPanel({
           them. Only the per-case art below is content. */}
 
       <div className="relative z-10">
-        <div className="mb-6 text-center md:mb-8">
+        <div className={cn('mb-6 text-center', compact ? 'md:mb-5' : 'md:mb-8')}>
           <h3 className="font-display text-2xl font-bold leading-tight text-paper-bright sm:text-3xl">
             {title}
           </h3>
@@ -160,6 +168,7 @@ export function HistoricalCasesPanel({
                     src={c.previewSrc}
                     alt={c.assetAlt}
                     aspect="21/9"
+                    className={compact ? 'aspect-[3/1]' : undefined}
                     fit="cover"
                     compactPlaceholder
                   />
@@ -172,7 +181,7 @@ export function HistoricalCasesPanel({
           })}
         </div>
 
-        <div className="relative mt-5 md:mt-6">
+        <div className={cn('relative mt-5', compact ? 'md:mt-4' : 'md:mt-6')}>
           <AnimatePresence mode="wait">
             <motion.div
               key={active.id}
@@ -181,10 +190,10 @@ export function HistoricalCasesPanel({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
-              className="grid overflow-hidden rounded-xl bg-paper-card md:grid-cols-[1.1fr_1fr]"
+              className={cn('grid overflow-hidden rounded-xl bg-paper-card', compact ? 'md:grid-cols-[1.35fr_1fr]' : 'md:grid-cols-[1.1fr_1fr]')}
             >
               {/* Text column — first child → right in RTL. */}
-              <div className="flex flex-col p-6 md:p-8">
+              <div className={cn('flex flex-col p-6', compact ? 'md:px-8 md:py-6' : 'md:p-8')}>
                 <h4 className="font-display text-lg font-bold leading-snug text-fg md:text-xl">{active.headline}</h4>
                 <div className="mt-1 text-sm font-display font-semibold text-fg-muted">{active.place}</div>
                 <p className="mt-4 text-base leading-relaxed text-fg">{active.lesson}</p>

@@ -28,14 +28,19 @@ export type LandmarkId = keyof typeof LANDMARKS;
 export const SHOWN_AS = { map: 'מפה טופוגרפית', ortho: 'תצלום אוויר (תצ״א)', compare: 'השוואה בווילון' } as const;
 export const shownSuffix = (mode: keyof typeof SHOWN_AS) => ` · מוצג: ${SHOWN_AS[mode]}`;
 
-/** Explore mode — locate buttons. `label` is the button text and the name drawn on the map. */
+/**
+ * Explore mode — locate buttons. `label` is the button text and the name drawn on the map. The places step
+ * out from the sheets' common centre, so each is on fewer sheets: the summit on all three, Kfar Tavor on
+ * 1:50,000 and 1:250,000, the Kinneret on 1:250,000 only (checked in scripts/qa/scale-content.test.mjs).
+ */
 export type LocateItem = { id: LandmarkId; label: string };
 export const LOCATE: readonly LocateItem[] = [
-  { id: 'shibli', label: 'שיבלי' },
-  { id: 'road7266', label: 'הדרך לפסגה' },
-  { id: 'kinneret', label: 'הכנרת' },
   { id: 'summit', label: 'פסגת הר תבור' },
+  { id: 'kfarTavor', label: 'כפר תבור' },
+  { id: 'kinneret', label: 'הכנרת' },
 ];
+/** The conclusion under the coverage row of the locate block. */
+export const LOCATE_RULE = 'ככל שהמפה מפורטת יותר, היא מכסה שטח קטן יותר.';
 
 /** Measure mode — "הצג דוגמה": from the basilica (א) to the village of Shibli (ב). */
 export const EXAMPLE_PAIR: readonly [LandmarkId, LandmarkId] = ['basilica', 'shibli'];

@@ -43,8 +43,8 @@ const m = (p: Point) => ({ x: p.E, y: H - p.N });
 const r1 = (v: number) => Math.round(v * 10) / 10;
 const pathOf = (pts: readonly XY[]) => pts.map(([E, N], k) => `${k ? 'L' : 'M'}${r1(E)} ${r1(H - N)}`).join('');
 
-/** Type sizes in viewBox units (≈ 0.49 px per unit in the desktop column: 30 ≈ 15 px). */
-const FS = { label: 30, small: 27, letter: 36 } as const;
+/** Type sizes in viewBox units (≈ 0.4 px per unit in the activity's 556 px map column: 33 ≈ 13 px, 36 ≈ 14.3 px). */
+const FS = { label: 36, small: 33, letter: 42 } as const;
 
 /** Unit vectors of the planned line, in map space. */
 const RAD = (AZIMUTH_DEG * Math.PI) / 180;

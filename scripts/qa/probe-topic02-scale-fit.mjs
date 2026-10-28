@@ -126,7 +126,7 @@ async function runViewport(w, h) {
   }
 
   // Locate.
-  await lab.getByRole('button', { name: 'שיבלי' }).click();
+  await lab.getByRole('button', { name: 'כפר תבור', exact: true }).click();
   await page.waitForTimeout(300);
   out.locate = await page.evaluate(() => {
     const m = document.querySelector('[data-qa="sheet-viewport"]').getBoundingClientRect();
@@ -138,7 +138,7 @@ async function runViewport(w, h) {
   });
   out.locate.ring &&= { fx: round(out.locate.ring.fx, 3), fy: round(out.locate.ring.fy, 3) };
   await shot('locate');
-  await lab.getByRole('button', { name: 'שיבלי' }).click();
+  await lab.getByRole('button', { name: 'כפר תבור', exact: true }).click();
 
   // Enlargement vs detail comparison + curtain drag.
   await page.click('[data-qa="zoom-compare-toggle"]');
