@@ -39,55 +39,39 @@ import {
   type Deco,
 } from './PlanningRouteMap';
 import { PaperHouse, UnitPuck, useSvgId } from './CombatNavVisuals';
+import {
+  BUILDING,
+  DESTINATION_PINES,
+  END,
+  M_PER_UNIT,
+  P1,
+  P2,
+  P3,
+  POINTS,
+  RIDGE_ROT,
+  ROAD,
+  START,
+  STREAM,
+  SUMMIT_N,
+  SUMMIT_S,
+  TIP_LEGS,
+  VB_H,
+  VB_W,
+  bearing,
+  fx,
+  lerp,
+  polar,
+  type Pt,
+} from './navTipsGeometry';
+
+export { TIP_LEGS };
 
 export type PlanFocus = 'ends' | 'route' | 'legs' | 'checkpoints';
 export type NavFocus = 'verify' | 'compare' | 'combine' | 'mismatch';
 export type MapFocus = PlanFocus | NavFocus;
 
-type Pt = { x: number; y: number };
-
-// ——— Geometry ———
-const VB_W = 100;
-const VB_H = 75;
-/** map scale — metres per SVG unit (the 500 מ׳ scale bar is drawn from it) */
-const M_PER_UNIT = 25;
-const START: Pt = { x: 86, y: 62 };
-
-/**
- * The planned route, leg by leg: נ.ה → 1 עיקול הנחל → 2 אוכף → 3 חציית דרך
- * עפר → נ.ס. `m` is the distance the scene quotes; `az` only places the leg.
- */
-export const TIP_LEGS = [
-  { az: 275, m: 500 },
-  { az: 298, m: 550 },
-  { az: 322, m: 600 },
-  { az: 292, m: 500 },
-] as const;
-
 /** The navigator who drifts in the "mismatch" state walks leg 3's distance on this bearing. */
 const DRIFT_AZ = 340;
-
-const fx = (n: number) => Math.round(n * 100) / 100;
-function polar(p: Pt, az: number, dist: number): Pt {
-  const r = (az * Math.PI) / 180;
-  return { x: fx(p.x + dist * Math.sin(r)), y: fx(p.y - dist * Math.cos(r)) };
-}
-function lerp(a: Pt, b: Pt, t: number): Pt {
-  return { x: fx(a.x + (b.x - a.x) * t), y: fx(a.y + (b.y - a.y) * t) };
-}
-const bearing = (a: Pt, b: Pt) => (Math.atan2(b.x - a.x, -(b.y - a.y)) * 180) / Math.PI;
-
-/** נ.ה, the three checkpoints, נ.ס */
-const POINTS: Pt[] = TIP_LEGS.reduce<Pt[]>((pts, leg) => [...pts, polar(pts[pts.length - 1], leg.az, leg.m / M_PER_UNIT)], [START]);
-const [, P1, P2, P3, END] = POINTS;
-
-// The ridge lies across the straight line נ.ה → נ.ס: that line climbs over its
-// northern summit, the planned route crosses at the saddle (P2) between them.
-const DIRECT_LEN = Math.hypot(END.x - START.x, END.y - START.y);
-const RIDGE_AXIS: Pt = { x: -(END.y - START.y) / DIRECT_LEN, y: (END.x - START.x) / DIRECT_LEN };
-const RIDGE_ROT = fx((Math.atan2(RIDGE_AXIS.y, RIDGE_AXIS.x) * 180) / Math.PI);
-const SUMMIT_N: Pt = { x: fx(P2.x + 8.9 * RIDGE_AXIS.x), y: fx(P2.y + 8.9 * RIDGE_AXIS.y) };
-const SUMMIT_S: Pt = { x: fx(P2.x - 8.9 * RIDGE_AXIS.x), y: fx(P2.y - 8.9 * RIDGE_AXIS.y) };
 
 /** Where the drifting navigator stands after leg 3's distance — short of the road. */
 const DRIFT_END = polar(P2, DRIFT_AZ, TIP_LEGS[2].m / M_PER_UNIT);
@@ -99,10 +83,6 @@ const POSITION: Record<NavFocus, Pt> = {
   mismatch: DRIFT_END,
 };
 
-// Paths are tuned to the points above: the stream bends at P1, the road is crossed at P3.
-const STREAM =
-  'M74 -2 C 73 10, 70 20, 71 30 C 72 40, 73 50, 69.5 56.5 C 67.5 60, 64 62, 59 64.5 C 52 68, 44 69, 36 70.5 C 26 72.5, 14 71.5, -2 74';
-const ROAD = 'M37 -2 C 35 8, 33 20, 31.9 31 C 30.8 42, 28 52, 24 62 C 21 69, 19 73, 17 77';
 const CONTOURS = [
   'M-4 13 C 14 8, 30 15, 48 9 S 84 13, 104 7',
   'M56 25 C 64 21, 80 27, 104 22',
@@ -112,11 +92,7 @@ const CONTOURS = [
 
 // Terrain objects — kept clear of the route, the markers and every label.
 const PINES: Deco[] = [
-  // the destination: a group of pines on rocky ground
-  { x: 9.2, y: 19.6, s: 0.85 },
-  { x: 12.6, y: 17.6, s: 1 },
-  { x: 16.8, y: 18.8, s: 0.85 },
-  { x: 7.2, y: 24.4, s: 0.75 },
+  ...DESTINATION_PINES,
   // scattered
   { x: 60, y: 17, s: 0.8 },
   { x: 65.5, y: 13.5, s: 0.75 },
@@ -138,8 +114,6 @@ const BUSHES: Deco[] = [
   { x: 94, y: 71, s: 0.7 },
 ];
 const CAIRNS: Deco[] = [{ x: 76, y: 29, s: 0.8 }];
-/** the prominent building beside נ.ה */
-const BUILDING: Pt = { x: 89.4, y: 55.6 };
 
 // ——— Map furniture ———
 const LABEL_SIZE = 2.4;
