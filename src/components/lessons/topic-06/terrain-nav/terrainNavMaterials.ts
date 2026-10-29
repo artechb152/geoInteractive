@@ -289,11 +289,69 @@ const NOISE_GLSL = /* glsl */ `
   }
 `;
 
+/**
+ * The refinements' helpers: how far the photo detail is calmed (0 near, set per
+ * pixel), and a photo sampled without visible repeats — a smooth noise over the
+ * tiles picks one of eight shifted copies, blended across the patch seams (after
+ * Quilez, "texture repetition"); the shared gradients keep the filtering sharp.
+ */
+const REFINE_GLSL = /* glsl */ `
+  float tnFar;
+  vec3 tnNoTile(sampler2D t, vec2 uv) {
+    float l = tnNoise(uv * 0.9 + 3.7) * 7.0;
+    float f = fract(l);
+    float ia = floor(l);
+    vec2 dx = dFdx(uv);
+    vec2 dy = dFdy(uv);
+    vec3 ca = textureGrad(t, uv + sin(vec2(3.0, 7.0) * ia), dx, dy).rgb;
+    vec3 cb = textureGrad(t, uv + sin(vec2(3.0, 7.0) * (ia + 1.0)), dx, dy).rgb;
+    vec3 dd = ca - cb;
+    return mix(ca, cb, smoothstep(0.2, 0.8, f - 0.1 * (dd.x + dd.y + dd.z)));
+  }
+`;
+
 export type GroundUniforms = {
   uHl: { value: THREE.Vector3 };
 };
 
-export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.Texture; cover: THREE.Texture; veg: THREE.Texture }, ids: THREE.Texture) {
+/**
+ * Where a ground material sits: the mapped sheet (from E = 0, N = 0, metres), the
+ * 3D transform of the model, the heights over which limestone starts to break
+ * through the tops, and how much of the rock photo shows (its strata read as
+ * stripes on steep, planar-mapped ground: a steeper world shows less of it).
+ * The default is this activity's; the planning lab passes its own.
+ */
+export type GroundFrame = {
+  readonly sheetW: number;
+  readonly sheetH: number;
+  readonly world: { readonly metresPerUnit: number; readonly originE: number; readonly originN: number; readonly datumM: number };
+  readonly rockHighM: readonly [number, number];
+  /** Scales the rock blend (1 = this activity's). */
+  readonly rockMix?: number;
+  readonly key: string;
+  /** Opt-in refinements (the planning lab); without them the shader is this activity's, unchanged. */
+  readonly refine?: GroundRefine;
+};
+
+/**
+ * Refinements for a model seen whole, from far and near:
+ *   photo detail  each photo sampled with a shifted copy per patch (no lattice of
+ *                 repeats), and its contrast calmed once a pixel covers metres;
+ *   tone          a map over `toneRect` (metres): R relief (0.5 = even ground,
+ *                 higher on crests and spurs, lower in hollows), G scrub cover —
+ *                 drier, paler crests and greener hollows, the ground under the
+ *                 maquis darker, so the land reads from afar as it does near;
+ *   highlight     a smooth mask (R ≥ 0.5 = lit, linear filter) in place of the
+ *                 id map's nearest texels, edged with an antialiased rim.
+ */
+export type GroundRefine = {
+  readonly tone: THREE.Texture;
+  readonly toneRect: { readonly minE: number; readonly minN: number; readonly sizeE: number; readonly sizeN: number };
+  readonly hlMask: THREE.Texture;
+};
+const TERRAIN_NAV_FRAME: GroundFrame = { sheetW: SHEET_W, sheetH: SHEET_H, world: WORLD3D, rockHighM: [380, 420], key: 'terrain-nav-ground' };
+
+export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.Texture; cover: THREE.Texture; veg: THREE.Texture }, ids: THREE.Texture, frame: GroundFrame = TERRAIN_NAV_FRAME) {
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0 });
   const uniforms = {
     uGrassD: { value: tex.grassD },
@@ -307,11 +365,14 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
     uCover: { value: masks.cover },
     uVeg: { value: masks.veg },
     uIds: { value: ids },
-    uIdSize: { value: new THREE.Vector2(SHEET_W / 2, SHEET_H / 2) },
+    uIdSize: { value: new THREE.Vector2(frame.sheetW / 2, frame.sheetH / 2) },
     uHl: { value: new THREE.Vector3(0, 0, 0) },
+    ...(frame.refine && { uTone: { value: frame.refine.tone }, uHlMask: { value: frame.refine.hlMask } }),
   };
-  const s = WORLD3D.metresPerUnit;
-  mat.customProgramCacheKey = () => 'terrain-nav-ground';
+  const R = frame.refine;
+  const w = frame.world;
+  const s = w.metresPerUnit;
+  mat.customProgramCacheKey = () => frame.key;
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
@@ -320,7 +381,7 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
         '#include <begin_vertex>',
         /* glsl */ `#include <begin_vertex>
         // Ground position in scenario metres: (E, height, N).
-        vTnM = vec3(transformed.x * ${s.toFixed(1)} + ${WORLD3D.originE.toFixed(1)}, transformed.y * ${s.toFixed(1)} + ${WORLD3D.datumM.toFixed(1)}, ${WORLD3D.originN.toFixed(1)} - transformed.z * ${s.toFixed(1)});
+        vTnM = vec3(transformed.x * ${s.toFixed(1)} + ${w.originE.toFixed(1)}, transformed.y * ${s.toFixed(1)} + ${w.datumM.toFixed(1)}, ${w.originN.toFixed(1)} - transformed.z * ${s.toFixed(1)});
         vTnN = objectNormal;`,
       );
     shader.fragmentShader = shader.fragmentShader
@@ -331,18 +392,18 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
         varying vec3 vTnN;
         uniform sampler2D uGrassD, uGrassN, uDryD, uDryN, uRockD, uRockN, uForestD, uLines, uCover, uVeg, uIds;
         uniform vec2 uIdSize;
-        uniform vec3 uHl;
-        ${NOISE_GLSL}
+        uniform vec3 uHl;${R ? '\n        uniform sampler2D uTone, uHlMask;' : ''}
+        ${NOISE_GLSL}${R ? REFINE_GLSL : ''}
         vec3 tnTex(sampler2D t, vec2 m, float a, float b) {
-          return mix(texture2D(t, m / a).rgb, texture2D(t, m / b + 0.37).rgb, 0.42);
+          return ${R ? 'mix(tnNoTile(t, m / a), tnNoTile(t, m / b + 0.37), 0.42)' : 'mix(texture2D(t, m / a).rgb, texture2D(t, m / b + 0.37).rgb, 0.42)'};
         }
         float tnDetail(sampler2D t, vec2 m, float a, float b, float contrast) {
           float l = dot(tnTex(t, m, a, b), vec3(0.299, 0.587, 0.114));
           float mean = dot(textureLod(t, vec2(0.5), 12.0).rgb, vec3(0.299, 0.587, 0.114));
-          return clamp(pow(l / max(mean, 1e-3), contrast), 0.3, 2.2);
+          return ${R ? 'mix(clamp(pow(l / max(mean, 1e-3), contrast), 0.3, 2.2), 1.0, tnFar)' : 'clamp(pow(l / max(mean, 1e-3), contrast), 0.3, 2.2)'};
         }
         vec3 tnNrm(sampler2D t, vec2 m, float a) {
-          return texture2D(t, m / a).xyz * 2.0 - 1.0;
+          return ${R ? 'tnNoTile(t, m / a)' : 'texture2D(t, m / a).xyz'} * 2.0 - 1.0;
         }
         float tnId(vec2 uv) {
           return floor(texture2D(uIds, uv).r * 255.0 + 0.5);
@@ -360,7 +421,13 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
         float tnSlope = clamp(1.0 - tnN0.y, 0.0, 1.0);
         float tnMacro = tnFbm(tnM / 300.0);
         float tnMeso = tnFbm(tnM / 48.0 + 11.0);
-        float tnFine = tnFbm(tnM / 10.0 + 5.0);
+        float tnFine = tnFbm(tnM / 10.0 + 5.0);${
+          R
+            ? /* glsl */ `
+        // metres per pixel: the photo detail calms once a pixel covers more than ~half a metre
+        tnFar = smoothstep(0.45, 3.0, length(fwidth(tnM))) * 0.7;`
+            : ''
+        }
         // Palette (linear): spring olive grass, sun-dried grass and earth, pale
         // limestone, road dust and its greener edge, grove litter, crops, yards, paving.
         const vec3 kGreen = vec3(0.075, 0.125, 0.03);
@@ -383,12 +450,27 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
         float dF = tnDetail(uForestD, tnM, 4.0, 14.0, 1.0);
         // Open ground: olive grass, drier and earthier on the steep, sunny faces and in patches;
         // limestone breaking through on the steepest slopes and the tops.
-        tnWDry = smoothstep(0.56, 0.86, tnMacro * 0.55 + tnMeso * 0.45 + tnFine * 0.15 + tnSlope * 0.9);
+        tnWDry = smoothstep(0.56, 0.86, tnMacro * 0.55 + tnMeso * 0.45 + tnFine * 0.15 + tnSlope * 0.9);${
+          R
+            ? /* glsl */ `
+        // the tone map, faded out at its rim: crests and sunny (south) faces dry, hollows and scrub stay green
+        vec2 tnTUv = (tnM - vec2(${R.toneRect.minE.toFixed(1)}, ${R.toneRect.minN.toFixed(1)})) / vec2(${R.toneRect.sizeE.toFixed(1)}, ${R.toneRect.sizeN.toFixed(1)});
+        vec2 tnTEdge = min(tnTUv, 1.0 - tnTUv);
+        float tnTIn = smoothstep(0.0, 0.08, min(tnTEdge.x, tnTEdge.y));
+        vec4 tnTone = texture2D(uTone, clamp(tnTUv, 0.0, 1.0));
+        float tnRelief = (tnTone.r - 0.5) * 2.0 * tnTIn;
+        float tnScrub = tnTone.g * tnTIn;
+        // softer dry patches than the default (no hard-edged blots on the far plain)
+        tnWDry = smoothstep(0.45, 1.0, tnMacro * 0.5 + tnMeso * 0.4 + tnFine * 0.12 + tnSlope * 0.9);
+        tnWDry = mix(tnWDry, 0.3, smoothstep(1.0, 6.0, length(fwidth(tnM))) * 0.75);
+        tnWDry = clamp(tnWDry + tnRelief * 0.5 + clamp(tnN0.z, 0.0, 1.0) * tnSlope * 1.2 - tnScrub * 0.3, 0.0, 1.0);`
+            : ''
+        }
         vec3 cG = mix(kGreen, kOlive, smoothstep(0.3, 0.7, tnMeso)) * dG;
         vec3 cD = mix(kDry, kSoil, smoothstep(0.45, 0.7, tnFine)) * mix(dD, dG, 0.35);
-        float tnHigh = smoothstep(380.0, 420.0, vTnM.y);
-        tnWRock = smoothstep(0.7, 0.92, tnMeso * 0.45 + tnFine * 0.55 + tnSlope * 2.0 + tnHigh * 0.08) * 0.75;
-        vec2 tnUv = vec2(tnM.x / ${SHEET_W.toFixed(1)}, tnM.y / ${SHEET_H.toFixed(1)});
+        float tnHigh = smoothstep(${frame.rockHighM[0].toFixed(1)}, ${frame.rockHighM[1].toFixed(1)}, vTnM.y);
+        tnWRock = smoothstep(0.7, 0.92, tnMeso * 0.45 + tnFine * 0.55 + tnSlope * 2.0 + tnHigh * 0.08) * ${(0.75 * (frame.rockMix ?? 1)).toFixed(3)};
+        vec2 tnUv = vec2(tnM.x / ${frame.sheetW.toFixed(1)}, tnM.y / ${frame.sheetH.toFixed(1)});
         float tnIn = step(0.0, tnUv.x) * step(tnUv.x, 1.0) * step(0.0, tnUv.y) * step(tnUv.y, 1.0);
         vec4 tnL = texture2D(uLines, tnUv) * tnIn;
         vec4 tnC = texture2D(uCover, tnUv) * tnIn;
@@ -399,7 +481,14 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
         vec3 tnCol = mix(cG, cD, tnWDry);
         tnCol = mix(tnCol, kStone * dR, tnWRock);
         float tnVar = (0.88 + 0.24 * tnMacro) * mix(0.84, 1.08, tnMeso);
-        tnCol *= tnVar;
+        tnCol *= tnVar;${
+          R
+            ? /* glsl */ `
+        // crests catch the light, hollows keep their own shade; the ground under the maquis is darker and greener
+        tnCol *= 1.0 + tnRelief * 0.24;
+        tnCol = mix(tnCol, kVerge * mix(dG, 1.0, 0.5), tnScrub * 0.5);`
+            : ''
+        }
         // grove and woodland floor, orchard floor (ploughed between the rows)
         tnCol = mix(tnCol, kLitter * dF, tnV.r * 0.8);
         tnCol = mix(tnCol, mix(kSoil, kDry, 0.4) * dD, tnV.b * 0.75);
@@ -417,7 +506,20 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
         // the square: paving with joints
         vec2 tnTile = abs(fract(tnM / 0.9) - 0.5);
         float tnJoint = smoothstep(0.42, 0.48, max(tnTile.x, tnTile.y));
-        tnCol = mix(tnCol, kPave * (0.94 + 0.12 * tnFine) * (1.0 - 0.07 * tnJoint), smoothstep(0.3, 0.7, tnV.g));
+        tnCol = mix(tnCol, kPave * (0.94 + 0.12 * tnFine) * (1.0 - 0.07 * tnJoint), smoothstep(0.3, 0.7, tnV.g));${
+          R
+            ? /* glsl */ `
+        // highlight: tint the selected features and edge them with a rim a few pixels wide, both
+        // antialiased on the smooth mask's 0.5 line (the id map's own boundary, so nothing spills over)
+        float tnMask = texture2D(uHlMask, tnUv).r * tnIn;
+        float tnAa = max(fwidth(tnMask), 1e-4);
+        float tnFill = smoothstep(0.5 - tnAa, 0.5 + tnAa, tnMask);
+        float tnRimW = clamp(tnAa * 2.6, 0.07, 0.34);
+        float tnRim = tnFill * (1.0 - smoothstep(0.5 + tnRimW - tnAa, 0.5 + tnRimW + tnAa, tnMask));
+        const vec3 kAccent = vec3(0.693, 0.205, 0.024);
+        tnCol = mix(tnCol, kAccent, 0.32 * tnFill);
+        tnCol = mix(tnCol, kAccent * 1.25, 0.9 * tnRim);`
+            : /* glsl */ `
         // highlight: tint and outline the selected features (id map, nearest texels)
         vec2 tnIdUv = tnUv;
         float tnHere = tnId(tnIdUv);
@@ -433,6 +535,7 @@ export function createGroundMaterial(tex: GroundTextures, masks: { lines: THREE.
           const vec3 kAccent = vec3(0.693, 0.205, 0.024);
           tnCol = mix(tnCol, kAccent, 0.32);
           tnCol = mix(tnCol, kAccent * 1.25, tnEdge * 0.9);
+        }`
         }
         diffuseColor.rgb *= tnCol;`,
       )

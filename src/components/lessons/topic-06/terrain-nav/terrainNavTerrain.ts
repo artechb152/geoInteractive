@@ -476,10 +476,14 @@ export function meshAxis(min: number, max: number, extentM: number, growth = 1.2
 export type ContourLine = { readonly pts: readonly XY[]; readonly closed: boolean };
 export type ContourLevel = { readonly heightM: number; readonly index: boolean; readonly lines: readonly ContourLine[] };
 
-/** Marching triangles on the grid's SW–NE triangles at one level. */
-function extractLevel(g: Float64Array, level: number): ContourLine[] {
-  const nE = GRID.nE;
-  const nN = GRID.nN;
+/**
+ * Marching triangles on the grid's SW–NE triangles at one level. `grid` is this
+ * sheet's by default; another row-major grid from the origin (the planning lab's)
+ * passes its own size and step.
+ */
+export function extractLevel(g: Float64Array, level: number, grid: { readonly nE: number; readonly nN: number; readonly stepM: number } = GRID): ContourLine[] {
+  const nE = grid.nE;
+  const nN = grid.nN;
   const H_EDGES = (nE - 1) * nN;
   const V_EDGES = nE * (nN - 1);
   const nEdges = H_EDGES + V_EDGES + (nE - 1) * (nN - 1);
@@ -502,10 +506,10 @@ function extractLevel(g: Float64Array, level: number): ContourLine[] {
     if (!seen[edge]) {
       seen[edge] = 1;
       const t = (level - hp) / (hq - hp);
-      const Ep = (p % nE) * GRID.stepM;
-      const Np = Math.floor(p / nE) * GRID.stepM;
-      const Eq = (q % nE) * GRID.stepM;
-      const Nq = Math.floor(q / nE) * GRID.stepM;
+      const Ep = (p % nE) * grid.stepM;
+      const Np = Math.floor(p / nE) * grid.stepM;
+      const Eq = (q % nE) * grid.stepM;
+      const Nq = Math.floor(q / nE) * grid.stepM;
       ptE[edge] = Ep + t * (Eq - Ep);
       ptN[edge] = Np + t * (Nq - Np);
     }
@@ -744,7 +748,7 @@ export type Tree = {
 };
 
 /** Bridson Poisson-disk sampling inside a ring. */
-function poissonInRing(ring: readonly Point[], minDist: number, margin: number, rand: () => number): Point[] {
+export function poissonInRing(ring: readonly Point[], minDist: number, margin: number, rand: () => number): Point[] {
   const xs = ring.map((p) => p.E);
   const ys = ring.map((p) => p.N);
   const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];

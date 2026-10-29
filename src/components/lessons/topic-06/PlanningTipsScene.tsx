@@ -5,75 +5,23 @@ import { Check, X } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
-import { NavTipsMap, TipsLegendGlyph, type MapFocus, type PlanFocus } from './NavTipsMap';
+import { PlanningLab } from './planning-lab/PlanningLab';
 import { NavigationReplayScreen } from './navigation-replay/NavigationReplayActivity';
 
 /**
  * „דגשים לתכנון ולניווט” — a practical bridge between the general four-stage
- * overview (OnboardingScene) and the techniques that follow. Two screens on
- * one route: what is prepared before leaving (the tips on the learning map),
- * and what is checked while moving — the navigation replay
- * (navigation-replay/, „מתי עוצרים לבדוק?”), four moments along the same
- * route over a live 3D model of the same ground. The copy restates the
- * lesson's existing explanations (OnboardingScene, PlanningScene,
+ * overview (OnboardingScene) and the techniques that follow. Two screens: what
+ * is prepared before leaving — an open planning lab on a live terrain model and
+ * its map (planning-lab/PlanningLab, 2026-10-29) — and what is checked while
+ * moving — the navigation replay (navigation-replay/, „מתי עוצרים לבדוק?”),
+ * four moments along a route over a live 3D model of the ground. The copy
+ * restates the lesson's existing explanations (OnboardingScene, PlanningScene,
  * content/topic-06.md); azimuth, north types and pacing stay in their own
  * sub-topics.
  */
 
-type Tip<F extends MapFocus> = {
-  id: F;
-  title: string;
-  /** the action, one sentence */
-  what: string;
-  /** why it helps, one sentence */
-  why: string;
-  /**
-   * What the map shows in this state — the caption beside it and the map's
-   * accessible name. It describes the map; it does not repeat `what`.
-   */
-  map: string;
-};
-
-const PLAN_TIPS: Tip<PlanFocus>[] = [
-  {
-    id: 'ends',
-    title: 'מכירים את המוצא ואת היעד',
-    what: 'מאתרים במפה את המוצא (נ.ה) ואת היעד (נ.ס), ובוחרים לכל אחד סימנים לאימות בשטח.',
-    why: 'כך יוצאים מהמקום הנכון, ובסוף מאשרים שמגיעים ליעד עצמו ולא רק לאזור קרוב אליו.',
-    map: 'במפה: נ.ה ליד מבנה בולט, ונ.ס בקבוצת אורנים על קרקע סלעית.',
-  },
-  {
-    id: 'route',
-    title: 'בוחרים מסלול לפי תנאי השטח',
-    what: 'משווים בין מסלולים אפשריים לפי המרחק, צורות הקרקע והקשיים הצפויים.',
-    why: 'כך צופים קשיים בשטח עוד לפני היציאה.',
-    map: 'במפה: הקו הישיר קצר יותר, אבל עובר מעל הפסגה. המסלול שנבחר עובר באוכף, הנקודה הנמוכה ברכס שבין שתי הפסגות.',
-  },
-  {
-    id: 'legs',
-    title: 'מחלקים את הדרך לקטעים',
-    what: 'מחלקים את המסלול לקטעי דרך מנקודה לנקודה, ולכל קטע מגדירים כיוון ומרחק משוער.',
-    why: 'כך יודעים בכל קטע לאן הולכים ולאיזה מרחק, וקל יותר לזהות סטייה.',
-    map: 'במפה: ארבעה קטעי דרך בין נ.ה לנ.ס. החץ מראה את הכיוון, והתווית מציינת את המרחק המשוער.',
-  },
-  {
-    id: 'checkpoints',
-    title: 'קובעים נקודות לבדיקת המיקום',
-    what: 'בוחרים לאורך המסלול סימנים שקל לזהות במפה ובשטח, ורושמים אותם בסיפור הדרך לפי סדר הופעתם.',
-    why: 'בכל סימן כזה בודקים את המיקום, וסיפור דרך שנלמד מראש מפחית עומס מחשבתי בזמן התנועה.',
-    map: 'במפה: עיקול הנחל, האוכף, חציית דרך העפר, ולבסוף האורנים על הקרקע הסלעית בנ.ס.',
-  },
-];
-
-type LegendItem = { kind: 'route' | 'ahead' | 'walked' | 'checkpoint' | 'verified' | 'position'; label: string };
-
-const PLAN_LEGEND: LegendItem[] = [
-  { kind: 'route', label: 'המסלול המתוכנן' },
-  { kind: 'checkpoint', label: 'נקודה לבדיקת המיקום' },
-];
-
 /**
- * Laptop fit — each of the three screens (planning tips, navigation tips, the
+ * Laptop fit — each of the three screens (the planning lab, the navigation replay, the
  * application question with its conclusion) shrinks on its own, like a slide,
  * so the whole screen fits under the site header once it is scrolled to. The
  * 1920×1080 layout is the reference: scale 1 there and on any screen with
@@ -82,12 +30,11 @@ const PLAN_LEGEND: LegendItem[] = [
  *     (max-w-lesson − lg:px-8), the same 1344px as every other screen of
  *     lessons 2 and 6, so the tips show at the lesson's interface size.
  *   - Heights: the tallest state of each screen at the reference width
- *     (measured 2026-10-27, one card per screen: plan and nav for every tip;
- *     the question with its longest feedback and its button; plan and nav
- *     re-measured 2026-10-28 with the caption and legend beside the map —
- *     the map board sets both, 743px, under the 760px screen budget; the nav
- *     screen became the navigation replay on 2026-10-29: 1027px with its title,
- *     every state — the decision area reserves its tallest), so the scale
+ *     (measured 2026-10-27, one card per screen; the question with its
+ *     longest feedback and its button; the planning lab measured 2026-10-29 —
+ *     its views and panel have fixed heights, 744px; the nav screen became the
+ *     navigation replay on 2026-10-29: 1027px with its title, every state —
+ *     the decision area reserves its tallest), so the scale
  *     stays steady while learners switch tips or answer. Inside the lesson
  *     (LessonFitUniform) they are ignored; they apply where the scene is
  *     rendered on its own (the archive).
@@ -98,7 +45,7 @@ const PLAN_LEGEND: LegendItem[] = [
  *     inline start (right) so the three screens share one right edge.
  */
 const FIT_WIDTH = 1344;
-const FIT_HEIGHT = { plan: 743, nav: 1027, question: 532 } as const;
+const FIT_HEIGHT = { plan: 744, nav: 1027, question: 532 } as const;
 const FIT_RESERVE_TOP = 104;
 const FIT_RESERVE_BOTTOM = 24;
 
@@ -132,15 +79,12 @@ export function PlanningTipsScene() {
       </LessonViewportFit>
 
       <ScreenFit height={FIT_HEIGHT.plan}>
-        <TipsScreen
-          screenId="plan"
-          title="לפני שיוצאים: מה צריך לתכנן?"
-          intro="בחרו דגש וראו אותו במפה."
-          boardLabel="מפת התכנון"
-          boardNote="דוגמה לימודית, נפרדת מתכנון הציר שבהמשך השיעור"
-          tips={PLAN_TIPS}
-          legend={PLAN_LEGEND}
-        />
+        <div data-tips-screen="plan">
+          <PlanningLab
+            title="לפני שיוצאים: מה צריך לתכנן?"
+            intro="בנו את התכנון על המפה ובחנו אותו בשטח: מוצא ויעד מזוהים, דרך שנבחרת לפי צורות הקרקע, כיוון ומרחק בכל קטע, וסימנים לבדיקת המיקום."
+          />
+        </div>
       </ScreenFit>
 
       <div className="mt-12">
@@ -158,170 +102,6 @@ export function PlanningTipsScene() {
         </ScreenFit>
       </div>
     </section>
-  );
-}
-
-/**
- * One screen, one card: the title, the instruction, the tips as an accordion
- * (one open at a time, the first open on entry) and the shared map board as an
- * inset beside them. Choosing a tip updates the map and the caption beside it,
- * so every map highlight also has a text description.
- */
-function TipsScreen<F extends MapFocus>({
-  screenId,
-  title,
-  intro,
-  boardLabel,
-  boardNote,
-  tips,
-  legend,
-}: {
-  screenId: string;
-  title: string;
-  intro: string;
-  boardLabel: string;
-  boardNote?: string;
-  tips: Tip<F>[];
-  legend: LegendItem[];
-}) {
-  const [active, setActive] = useState<F>(tips[0].id);
-  const reduce = !!useReducedMotion();
-  const uid = useId();
-  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const activeIndex = tips.findIndex((t) => t.id === active);
-  const activeTip = tips[activeIndex];
-  const last = tips.length - 1;
-
-  // ↓ / ↑ move between the tip headers, Home / End jump to the first / last (WAI-ARIA accordion).
-  const onHeaderKey = (e: ReactKeyboardEvent<HTMLButtonElement>, i: number) => {
-    const target: Record<string, number> = { ArrowDown: i === last ? 0 : i + 1, ArrowUp: i === 0 ? last : i - 1, Home: 0, End: last };
-    if (!(e.key in target)) return;
-    e.preventDefault();
-    btnRefs.current[target[e.key]]?.focus();
-  };
-
-  return (
-    <div role="group" aria-labelledby={`${uid}-title`} data-tips-screen={screenId} className="surface-elevated p-6 lg:p-8">
-      <h3 id={`${uid}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-        {title}
-      </h3>
-      <p className="mt-2 mb-6 max-w-2xl text-base leading-relaxed text-fg-muted">{intro}</p>
-
-      {/* Text column 1fr · board 1.35fr — the same split as the techniques screen.
-          The caption and the legend sit in the text column, beside the map (not under it),
-          so the screen is as tall as the map board. */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-6 items-start">
-        {/* Text column — first child → RIGHT in RTL: the accordion on top, the map's caption and legend at its foot. */}
-        <div className="flex flex-col lg:self-stretch">
-          {/* Accordion — its headers match the four-stage accordion of the lesson's opening. */}
-          <div className="space-y-2">
-            {tips.map((t, i) => {
-              const isActive = active === t.id;
-              const btnId = `${uid}-btn-${t.id}`;
-              const panelId = `${uid}-panel-${t.id}`;
-              return (
-                <div
-                  key={t.id}
-                  className={cn(
-                    'relative isolate overflow-hidden rounded-xl border bg-bg-elevated transition-colors duration-200 ease-snap',
-                    'before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap',
-                    isActive ? 'border-brand/45' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]',
-                  )}
-                >
-                  <button
-                    type="button"
-                    id={btnId}
-                    ref={(el) => {
-                      btnRefs.current[i] = el;
-                    }}
-                    onClick={() => setActive(t.id)}
-                    onKeyDown={(e) => onHeaderKey(e, i)}
-                    aria-expanded={isActive}
-                    aria-controls={isActive ? panelId : undefined}
-                    className="w-full p-4 text-start flex items-center gap-3 rounded-xl focus-visible:ring-inset focus-visible:ring-offset-0"
-                  >
-                    <span
-                      className={cn(
-                        'size-11 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ease-snap',
-                        isActive ? 'bg-brand-dark text-bg-elevated border-brand-dark' : 'bg-bg-accent text-fg-muted border-border',
-                      )}
-                    >
-                      <span className="font-display font-bold text-base">{i + 1}</span>
-                    </span>
-                    <div className="flex-1 min-w-0 text-start">
-                      <div className="font-display font-bold leading-snug text-black text-lg md:text-xl">{t.title}</div>
-                    </div>
-                    <motion.span
-                      animate={{ rotate: isActive ? 180 : 0 }}
-                      transition={{ duration: reduce ? 0 : 0.25 }}
-                      className={cn('shrink-0 inline-flex', isActive ? 'text-brand-dark' : 'text-fg-dim')}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </motion.span>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {isActive && (
-                      <motion.div
-                        key={`panel-${t.id}`}
-                        id={panelId}
-                        role="region"
-                        aria-labelledby={btnId}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: reduce ? 0 : 0.3, ease: EASE }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-4 pb-4 pt-0.5 space-y-2">
-                          <p className="text-base leading-relaxed text-black">{t.what}</p>
-                          <p className="text-base leading-relaxed text-black">{t.why}</p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* The map's caption and legend — at the column's foot, level with the map's lower edge.
-              The caption keeps the height of the longest one, so nothing moves when tips switch. */}
-          <div className="mt-auto pt-4">
-            <p className="min-h-[4.0625rem] border-t border-border pt-3 text-base leading-relaxed text-black" aria-live="polite" data-tips-caption>
-              {activeTip.map}
-            </p>
-            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2" data-tips-legend>
-              {legend.map((it) => (
-                <li key={it.label} className="flex items-center gap-2 text-[13px] text-fg-muted leading-snug">
-                  <TipsLegendGlyph kind={it.kind} />
-                  <span>{it.label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Map board — second child → LEFT in RTL; an inset in the screen's card. */}
-        <div className="lg:sticky lg:top-24 self-start rounded-xl bg-bg-accent/60 p-4 sm:p-5" data-tips-board>
-          {/* One header line: the board's name (and note), and the tip counter. */}
-          <div className="flex items-baseline justify-between gap-3 mb-3">
-            <div className="min-w-0 text-sm text-fg-muted">
-              <span className="font-display font-semibold">{boardLabel}</span>
-              {boardNote && <span> · {boardNote}</span>}
-            </div>
-            <span dir="ltr" className="text-sm font-display font-bold tabular-nums text-fg-muted" aria-hidden>
-              {activeIndex + 1}/{tips.length}
-            </span>
-          </div>
-          <div className="overflow-hidden rounded-xl border border-border/70">
-            <NavTipsMap focus={activeTip.id} ariaLabel={activeTip.map} />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 

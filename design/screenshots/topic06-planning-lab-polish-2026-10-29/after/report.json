@@ -1,0 +1,162 @@
+{
+  "gpu": "ANGLE (NVIDIA, NVIDIA RTX A5000 (0x00002231) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "dpr": 1,
+  "handles": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": true
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p2",
+      "hidden": false
+    }
+  ],
+  "handlesAtHome": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": true
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p2",
+      "hidden": false
+    }
+  ],
+  "modelDrag": {
+    "frames": 132,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.9,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterModelDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p2",
+      881,
+      558
+    ],
+    [
+      "p1",
+      430,
+      860
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "mapDrag": {
+    "frames": 172,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.8,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterMapDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p2",
+      881,
+      558
+    ],
+    [
+      "p1",
+      649,
+      656
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "handlesAfterMapDrag": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": false
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p2",
+      "hidden": false
+    }
+  ],
+  "orbitDrag": {
+    "frames": 177,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 33.4,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "wheelZoom": {
+    "frames": 81,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.9,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "fullscreen": true,
+  "fs-handles": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": true
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p3",
+      "hidden": false
+    }
+  ],
+  "fsOrbitDrag": {
+    "frames": 142,
+    "medianMs": 16.7,
+    "p95Ms": 16.7,
+    "maxMs": 16.8,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "errors": []
+}

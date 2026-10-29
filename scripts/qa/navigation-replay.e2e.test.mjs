@@ -199,7 +199,8 @@ test('summary connects the four principles and leads to the application question
 test('reset: back to moment 1, every answer cleared, focus on the first action', async () => {
   await page.evaluate(() => document.querySelector('[data-tips-screen="nav"]').scrollIntoView({ block: 'start', behavior: 'instant' }));
   await click('[data-reset]');
-  await page.waitForTimeout(300);
+  // moment 1 fades in after the old content leaves, and takes the focus once mounted (slower with the planning lab's model on the page)
+  await page.waitForFunction(() => document.activeElement?.getAttribute('data-action') === 'depart', null, { timeout: 3000 }).catch(() => {});
   const s = await state();
   assert.equal(s.active, 'depart');
   assert.deepEqual(s.done, []);
@@ -334,6 +335,7 @@ test('another sub-topic and back: one canvas, no errors', async () => {
   await page.goto('about:blank');
   await open(page);
   await liveReady(page);
-  assert.equal(await page.locator('canvas[data-engine], [data-activity="navigation-replay"] canvas').count(), 1);
+  // the replay's own canvas, once (the planning lab on screen 1 has its own model)
+  assert.equal(await page.locator('[data-activity="navigation-replay"] canvas').count(), 1);
   assert.deepEqual(errors, []);
 });

@@ -3479,6 +3479,77 @@ Brief: `DEAD_RECKONING_OPUS_PROMPT.txt`, approved direction 2 (mockup `dead-reck
 - **Measured on this machine** (headless Chromium, d3d11, 1440 px): 60 fps while walking. The first frame took 3–6 s on the production export and 4 s in dev. Resolution steps down (DPR 1.25 → 0.85) below 40 fps and back up when frames are fast again. This was not measured on weaker hardware.
 - **Follow-up (same day, user feedback):** the horizontal field of view is fixed at 64°, and the vertical one follows the frame's shape. Before, it was the other way round: a wider or shorter frame (1920 × 910 gives ~3:1) stretched the edges of the view when looking around. Each segment walk is now 1.4 s instead of 3.6 s, and the next segment's ground is built while the learner stands. Both "סופת חול · ראות כ־30 מ׳" and "המבט שלכם בשטח / ראות כ־30 מ׳" were removed at the user's request. The ~30 m of sight is still said in the walk's feedback, and the storm itself shows it.
 
+## 2026-10-29 — Lesson 6 · „לפני שיוצאים: מה צריך לתכנן?” rebuilt as an open planning lab
+
+Brief: the user's development prompt of 2026-10-29 (mockup `design/mockups/topic-06-planning-lab-2026-10-29/mockup-v2.png`, with the stations removed by the user). Code: `src/components/lessons/topic-06/planning-lab/`; the scene keeps `NavTipsMap` for the second screen only.
+
+- **No stations.** The mockup's four numbered steps, "שלב 2 מתוך 4", the step locks and the "המשך / חזרה" buttons are gone, per the user's explicit instruction. Three unnumbered tools (route editing, checkpoints, identify) are open from the start. The four planning tips survive as capabilities: identified A and B, the route judged by its ground, legs with a direction and a distance, and checkpoints.
+- **The practice area is its own fictional sheet** (1000 × 1200 m, `planningLabWorld.ts`), not the terrain-nav world, so that activity is untouched. It follows the tips' geography: A by a prominent building, a stream and a ravine climbing to the saddle, the two-summit ridge, a dirt road, B in a pine grove on rocks. The mockup's own geography (summits 422/398/356) was not copied. The straight line A → B crosses the western summit (504 m). The saddle is 416 m and the eastern summit 474 m; all values are read back from the height grid.
+- **Relief is real and unexaggerated** (vertical scale 1). It is stronger than terrain-nav's domes (about 160 m from the valleys to the top) so the saddle reads from the model's opening camera.
+- **Shared code was extended, not forked.** These are backward-compatible changes in terrain-nav:
+  - `extractLevel` takes an optional grid.
+  - `poissonInRing` and a few vegetation and wall helpers are exported, and so is `NorthArrow`.
+  - `createGroundMaterial` takes an optional frame (sheet size, 3D transform, rock heights, `rockMix`). The terrain-nav defaults are unchanged, and its 20 numeric tests pass.
+- **`rockMix` 0.3 here:** the shared rock photo (`rock_diff.jpg`) is a stratified wall. Planar-mapped onto this sheet's steeper slopes, its strata showed as stripes. Here the rock blend is damped, and rock shows through boulders instead.
+- **Checkpoints are route points.** Adding one inserts a point where the route already passes the feature, so the path does not move. Its number comes from its place along the route. A and B (the building, the rocks) need no checkpoint: they are the identified ends. A checkpoint dragged off its feature stays, marked "זזה מהסימן", until the learner moves it back or removes it.
+- **Pass tolerances:**
+  - lines: a crossing, or within 22 m along it;
+  - saddle: 60 m;
+  - summits: 70 m;
+  - building: 60 m;
+  - rocks: 45 m;
+  - areas: where the route enters them.
+- **Feedback:** the route's verdict (over a summit / through the saddle / over the crest elsewhere / around the ridge) comes from its own geometry and the ground under it. It never calls a route safe or correct. The example plan says it is one example, and undo returns the learner's route.
+- **Measures are labelled apart:** "אורך במפה" (horizontal) and "טיפוס מצטבר" (cumulative ascent along the ground). A leg's direction is an arrow plus an 8-wind word, not an azimuth (that is taught later).
+- **The model** is live WebGL, built from the same height grid as the contours. It has instanced maquis, oaks, olives and pines, the building and a water tank, shadows drawn once, and frames on demand. Handles are pointer-only on the model; the keyboard path is the map.
+  - The still for browsers without WebGL (`public/assets/lessons/topic06/planning-lab/overview.jpg`) is rendered from this model with no plan on it (`scripts/qa/shot-planning-lab.mjs --still`). It is labelled as a still.
+  - **Gap vs. the mockup:** the mockup's 3D is an AI image with photographic, forest-dense hills. The live model is real geometry with the lesson's shared photo textures and instanced vegetation. It reads the summits, the saddle, the ravine and the cover clearly, but it is not photorealistic.
+- **Fit:** 748 reference px in every state (the lesson's ~760 px budget). At 1440 × 1122 it is 585 px at scale 0.7827. At 1920 × 910 it spans 96–844 px.
+
+## 2026-10-29 — Lesson 6 planning lab: 3D polish
+
+Polish round for the planning lab's model (the user's request of 2026-10-29). The activity, its measurements and the order of checkpoints are unchanged. Before/after at the same cameras, light, route and selection, at 1440 × 1122 in the page and with the model in full screen: `design/screenshots/topic06-planning-lab-polish-2026-10-29/` (`before/`, `after/`, `full-run/`; `scripts/qa/shot-planning-lab-polish.mjs`). The mockup was used as a target for quality, not for geography or numbers.
+
+- **Ground repetition.** Cause: the shared ground shader tiles each photo texture at fixed 6 m and 23 m periods. The grass photo has strong green and brown blobs, so from afar they formed a regular lattice that read as a checkerboard.
+  - Fix: an opt-in `refine` frame option in `terrainNavMaterials.ts`, used only by the planning lab.
+    - Each photo is sampled through a per-patch shifted copy (after Quilez, "texture repetition").
+    - Photo contrast calms once a pixel covers more than about half a metre.
+    - The dry patches soften with distance.
+  - Terrain-nav does not pass `refine`. Its generated shader was compared with HEAD's and is identical apart from number formatting (`0.75` vs `0.750`).
+- **Ground tone from the shared data, not a picture.** A 10 m tone map is baked from the height grid and the cover. It covers the sheet plus 300 m around it (`planningLabTerrain` `TONE`/`toneGrid`, computed in `prepareWorld` slices).
+  - R is relief: the ground against its ≈70 m and ≈190 m surroundings. Crests and summits get drier and paler; hollows stay greener and keep their shade.
+  - G is scrub: `scrubCover()`, the same chance `shrubs()` draws from. The ground under the maquis is darker and greener, so far-off scrub reads as cover, not as a speckle.
+  - South-facing slopes dry with their steepness. Heights are unchanged and there is no vertical exaggeration.
+- **Vegetation.** Positions, sizes and the lists the map reads (`trees()`, `boulders()`) are unchanged.
+  - The baked self-shade of each clump is lifted (crowns to 0.42, shrubs to 0.5, boulders to 0.45), and the albedo pales a little with distance.
+  - Shrubs shrink into the ground's scrub tone between 1.35 and 2.5 km. Small boulders do the same between 1.1 and 2.1 km. The ≥ 2 m blocks of the rocks at B stay.
+  - Pine crowns use a grey-to-fresh Aleppo-pine pair, and every crown gets a small hashed variation in hue, lightness and crown width.
+  - Crowns no longer receive shadows from their neighbours; they still cast on the ground. Before, the dense grove read as one black mass.
+  - Within the sheet, the shrub list is identical. It now thins out over the last 140 m of the cover margin instead of stopping on a line.
+- **Relief and opening camera.**
+  - Sun from 255° at 30° elevation, intensity 3.4 (was 288° / 25° / 3.1).
+  - Hemisphere fill 1.15 (was 1.55), with a darker ground colour. Exposure 0.98 (was 0.88).
+  - The opening view now targets E 615, N 650 at 400 m, from 1500 m, polar 58°, azimuth 5°. Both summits are whole in the frame, with the saddle and the ravine climbing to it in the middle; before, the eastern summit was cut at the panel's edge.
+- **Hidden route points.** A handle is tested on rendered frames only, when the camera or the point moves. The sight line from the camera is marched over `heightAt()`, the drawn surface (`behindGround`). The point counts as hidden when the line passes more than 1 m under the ground before its last 15 m.
+  - A hidden point is drawn as a hollow dashed ring with the same letter or number, and the pointer passes through it. It cannot be grabbed on the slope in front of it, which would misplace it.
+  - It is selected and edited on the map, as before. While any point is hidden, a short note under the view hint explains the ring: „עיגול מקווקו: נקודה שמאחורי הרכס · עורכים אותה במפה”. **Assumption:** "הרכס" covers every occluder here; in this sheet that is the ridge, its summits or a knoll.
+  - Vegetation never hides a point; only the ground does.
+- **Highlight edges.** Cause: the shader read the 2 m feature-id map with nearest texels and drew a 1.5-texel neighbour test, so edges showed a staircase.
+  - Fix: a mask of the lit feature's texels, softened by two 3-texel box passes and read with linear filtering. It is rebuilt on the CPU only when the selection changes (≈7–17 ms).
+  - The fill and a rim a few pixels wide are antialiased on the mask's 0.5 line, using `fwidth`, at the cost of one extra texture fetch.
+  - A unit test checks that the lit area never strays more than one texel (2 m) from the feature and that its inside is fully lit.
+- **Performance** (Chrome with ANGLE/D3D11 on an NVIDIA RTX A5000, DPR 1, dev server):
+  - Unthrottled: dragging on the map and on the model, orbiting, wheel zoom and full-screen orbit all ran at 16.7 ms median frames with no long tasks, before and after.
+  - CPU throttled 4×, example plan with 10 handles: orbit frames ≈117–167 ms with or without the hidden-point test (noise between runs). That cost is the scene's existing per-frame work, not this pass.
+  - The extra GPU cost of the ground shader (about twice the photo fetches) was not isolated on this GPU, which stays vsync-bound. Weaker GPUs were not measured.
+- **Known gaps.**
+  - Very faint straight streaks remain on open ground at grazing angles; the strong lattice is gone.
+  - Beyond the tone map (300 m past the sheet), the far plain has noise-driven dry patches only.
+  - The grove's planted spacing reads regular up close, because its positions are the map's.
+  - The shadow map is drawn once, so the shadows of far shrubs remain where the shrubs have shrunk away.
+- **Merged with the navigation replay** (pushed by another session the same day, `c57c9a4`). Screen 1 is the planning lab and screen 2 is the replay; with both tips screens replaced, the unused tips accordion was removed from `PlanningTipsScene.tsx`. `planning-tips.test.mjs` keeps the scene frame, the fit and the question.
+  - Two minimal changes in `navigation-replay.e2e.test.mjs`, because the lab adds a second 3D canvas to the page. The canvas count is scoped to the replay. After reset, the test waits up to 3 s for focus to reach the first action; with the lab on the page it arrived ≈0.6–0.9 s after the click, past the old fixed 0.62 s wait. Both the lab and the replay draw no frames while idle.
+
 ## 2026-10-29 — ניווט עיוור: ground, wadi and dust realism pass
 
 Against `dead-reckoning-concept-02-mockup.png`. Kept: the walk's 1.4 s segments, the fixed 64° horizontal field of view (no stretch: a point 20° right of the look lands on the same pixel at every yaw, while dragging and mid-walk), the UI as it was, the scenario's geometry and the wadi's place, depth and crossing. Before/after: `design/screenshots/dead-reckoning-terrain-2026-10-29/` (`scripts/qa/shot-dead-reckoning-terrain.mjs`).

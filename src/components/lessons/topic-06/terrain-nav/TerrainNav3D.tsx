@@ -402,7 +402,7 @@ function Stream() {
  * clumps read in the light without faceting; a baked occlusion darkens the
  * underside and the inside.
  */
-function clumpGeometry(seed: number, lobes: [number, number, number, number][], detail: number, jitter: number) {
+export function clumpGeometry(seed: number, lobes: [number, number, number, number][], detail: number, jitter: number) {
   const rand = rng(seed);
   const parts = lobes.map(([x, y, z, r]) => new THREE.IcosahedronGeometry(r, detail).translate(x, y, z));
   const geo = mergeGeometries(parts);
@@ -432,7 +432,7 @@ function clumpGeometry(seed: number, lobes: [number, number, number, number][], 
   return geo;
 }
 
-function crownGeometry(seed: number, lobeCount: number, spread: number) {
+export function crownGeometry(seed: number, lobeCount: number, spread: number) {
   const rand = rng(seed);
   const lobes: [number, number, number, number][] = [[0, 0, 0, 0.7]];
   for (let k = 0; k < lobeCount; k++) {
@@ -444,7 +444,7 @@ function crownGeometry(seed: number, lobeCount: number, spread: number) {
   return clumpGeometry(seed ^ 0x2f1ac81d, lobes, 2, 0.08);
 }
 
-const CROWN: Record<Tree['kind'], [THREE.Color, THREE.Color]> = {
+export const CROWN: Record<Tree['kind'], [THREE.Color, THREE.Color]> = {
   pine: [new THREE.Color('#2A3A1A'), new THREE.Color('#3C4F24')],
   oak: [new THREE.Color('#3A4D20'), new THREE.Color('#596A2E')],
   olive: [new THREE.Color('#5E6A48'), new THREE.Color('#7D8662')],
@@ -453,7 +453,7 @@ const ACCENT = new THREE.Color('#D97E2B');
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** Fills an instanced mesh; refilled when `deps` change (the highlight). */
-function useInstances(ref: React.RefObject<THREE.InstancedMesh | null>, count: number, fill: (i: number, m: THREE.Matrix4, c: THREE.Color) => void, deps: readonly unknown[]) {
+export function useInstances(ref: React.RefObject<THREE.InstancedMesh | null>, count: number, fill: (i: number, m: THREE.Matrix4, c: THREE.Color) => void, deps: readonly unknown[]) {
   const invalidate = useThree((s) => s.invalidate);
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -675,7 +675,7 @@ function Stones() {
 // ---------------------------------------------------------------- village
 
 /** Walls with a procedural window pattern (two floors of windows on the long and short faces). */
-function wallMaterial() {
+export function wallMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: false, roughness: 0.9, metalness: 0 });
   mat.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader

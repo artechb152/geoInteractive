@@ -249,7 +249,7 @@ export function TerrainNavModel({
 }
 
 /** North arrow of the overview: turns with the camera (north stays north on the ground). */
-function NorthArrow({ yawDeg, topDown }: { yawDeg: number; topDown: boolean }) {
+export function NorthArrow({ yawDeg, topDown }: { yawDeg: number; topDown: boolean }) {
   return (
     <div className="flex size-14 flex-col items-center justify-center rounded-full border border-border bg-bg-elevated/95 shadow-sm" data-north={Math.round(topDown ? 0 : -yawDeg)}>
       <svg viewBox="-20 -20 40 40" className="size-11" aria-hidden>

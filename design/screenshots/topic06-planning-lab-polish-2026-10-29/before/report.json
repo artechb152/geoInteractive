@@ -1,0 +1,144 @@
+{
+  "gpu": "ANGLE (NVIDIA, NVIDIA RTX A5000 (0x00002231) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "dpr": 1,
+  "handles": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": false
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p2",
+      "hidden": false
+    }
+  ],
+  "modelDrag": {
+    "frames": 124,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.8,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterModelDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p2",
+      560,
+      420
+    ],
+    [
+      "p1",
+      430,
+      860
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "mapDrag": {
+    "frames": 156,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 33.4,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterMapDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p2",
+      560,
+      420
+    ],
+    [
+      "p1",
+      649,
+      656
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "handlesAfterMapDrag": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": false
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p2",
+      "hidden": false
+    }
+  ],
+  "orbitDrag": {
+    "frames": 117,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.8,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "wheelZoom": {
+    "frames": 73,
+    "medianMs": 16.7,
+    "p95Ms": 16.9,
+    "maxMs": 17,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "fullscreen": true,
+  "fs-handles": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": false
+    },
+    {
+      "id": "B",
+      "hidden": false
+    },
+    {
+      "id": "p3",
+      "hidden": false
+    }
+  ],
+  "fsOrbitDrag": {
+    "frames": 141,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.9,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "errors": []
+}

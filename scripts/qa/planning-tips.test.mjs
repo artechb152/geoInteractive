@@ -1,8 +1,11 @@
 // Behavioural acceptance tests for lesson 6 „דגשים לתכנון ולניווט”
-// (PlanningTipsScene.tsx + NavTipsMap.tsx), task 27. Screen 2 („במהלך הניווט”) became the
+// (PlanningTipsScene.tsx), task 27. Screen 2 („במהלך הניווט”) became the
 // navigation replay on 2026-10-29 — its own tests are scripts/qa/navigation-replay*.test.mjs;
 // here only its place in the scene is checked.
 // Restored to the public lesson on 2026-10-27 at the user's request.
+// 2026-10-29: screen 1 („לפני שיוצאים”) became the open planning lab — its own tests are
+// scripts/qa/planning-lab*.test.mjs. Both tips accordions are gone, so these tests keep the
+// scene's frame (which activity sits on each screen), the shared fit and the question.
 // Needs a running dev server. Run:
 //   node --test scripts/qa/planning-tips.test.mjs            (QA_BASE defaults to http://localhost:3000)
 //   QA_BASE=http://localhost:3041 node --test scripts/qa/planning-tips.test.mjs
@@ -13,8 +16,6 @@ import { chromium } from 'playwright';
 const BASE = process.env.QA_BASE ?? 'http://localhost:3000';
 const URL = `${BASE}/lessons/topic-06/#scene-tips`;
 const VIEW = { width: 1440, height: 1122 };
-const M_PER_UNIT = 25; // NavTipsMap scale
-const LEGS_M = [500, 550, 600, 500];
 
 let browser;
 let page;
@@ -39,130 +40,17 @@ after(async () => {
 
 const screen = (id) => `[data-tips-screen="${id}"]`;
 
-/** Open tip i of a screen and wait until the map shows only that state. */
-async function openTip(id, i, focus) {
-  await page.locator(`${screen(id)} button[aria-expanded]`).nth(i).click();
-  await page.waitForFunction(
-    ({ sel, focus }) => {
-      const svg = document.querySelector(`${sel} svg[role="img"]`);
-      if (svg?.getAttribute('data-focus') !== focus) return false;
-      return ['halos', 'marks', 'labels'].every((l) => svg.querySelectorAll(`[data-layer="${l}"]`).length === 1);
-    },
-    { sel: screen(id), focus },
-  );
-  await page.waitForTimeout(450); // fades and the panel height animation
-}
-
-/** Everything the tests read from one state. */
-const readState = (id) =>
-  page.evaluate((sel) => {
-    const root = document.querySelector(sel);
-    const svg = root.querySelector('svg[role="img"]');
-    const region = root.querySelector('[role="region"]');
-    const texts = (layer) => [...svg.querySelectorAll(`[data-layer="${layer}"] text`)].map((t) => t.textContent.trim());
-    return {
-      focus: svg.getAttribute('data-focus'),
-      ariaLabel: svg.getAttribute('aria-label'),
-      caption: root.querySelector('[data-tips-caption]').textContent.trim(),
-      what: region?.querySelectorAll('p')[0]?.textContent.trim() ?? '',
-      why: region?.querySelectorAll('p')[1]?.textContent.trim() ?? '',
-      openCount: root.querySelectorAll('button[aria-expanded="true"]').length,
-      halos: [...svg.querySelectorAll('[data-halo]')].map((h) => h.getAttribute('data-halo') + (h.hasAttribute('data-expected') ? '?' : '')).sort(),
-      labels: texts('labels'),
-      marks: texts('marks'),
-      tagTones: [...svg.querySelectorAll('[data-layer="marks"] [data-tone]')].map((g) => g.getAttribute('data-tone')),
-      markers: Object.fromEntries([...svg.querySelectorAll('[data-marker]')].map((m) => [m.getAttribute('data-marker'), m.getAttribute('data-state')])),
-      points: [...svg.querySelectorAll('[data-marker]')].map((m) => ({ id: m.getAttribute('data-marker'), x: +m.getAttribute('data-x'), y: +m.getAttribute('data-y') })),
-      walked: [...svg.querySelectorAll('[data-walked]')].map((l) => l.getAttribute('data-walked')),
-      ahead: svg.querySelectorAll('[data-ahead]').length,
-      planned: svg.querySelectorAll('[data-planned]').length,
-      position: (() => {
-        const p = svg.querySelector('[data-position]');
-        return p ? { id: p.getAttribute('data-position'), x: +p.getAttribute('data-x'), y: +p.getAttribute('data-y') } : null;
-      })(),
-      legend: [...root.querySelectorAll('[data-tips-legend] li > span')].map((s) => s.textContent.trim()),
-      height: Math.round(root.getBoundingClientRect().height),
-    };
-  }, screen(id));
-
-const PLAN = ['ends', 'route', 'legs', 'checkpoints'];
-const states = {};
-
-test('every tip: an action, a reason, and a caption that describes the map without repeating the action', async () => {
-  for (const [id, foci] of [['plan', PLAN]]) {
-    for (let i = 0; i < foci.length; i++) {
-      await openTip(id, i, foci[i]);
-      const s = await readState(id);
-      states[foci[i]] = s;
-      assert.equal(s.openCount, 1, `${foci[i]}: one tip open at a time`);
-      assert.ok(s.what.length > 30, `${foci[i]}: the action is written`);
-      assert.ok(s.why.length > 30, `${foci[i]}: the reason is written`);
-      assert.match(s.caption, /^במפה: /, `${foci[i]}: caption describes the map`);
-      assert.equal(s.ariaLabel, s.caption, `${foci[i]}: the caption is the map's accessible name`);
-      // no sentence of the caption is copied from the action or the reason
-      for (const sentence of s.caption.replace(/^במפה: /, '').split('. ').map((x) => x.replace(/\.$/, '')).filter((x) => x.length > 20)) {
-        assert.ok(!s.what.includes(sentence) && !s.why.includes(sentence), `${foci[i]}: caption repeats "${sentence}"`);
-      }
-    }
-  }
-});
-
-test('each state highlights exactly what its tip describes', () => {
-  const expect = {
-    ends: { halos: ['end', 'start'], labels: ['מבנה בולט', 'אורנים על קרקע סלעית'], active: ['start', 'end'] },
-    route: { halos: ['cp2', 'summit-n'], labels: ['הקו הישיר: מעל הפסגה', 'אוכף'], active: [] },
-    legs: { halos: [], labels: [], active: [] },
-    checkpoints: { halos: ['cp1', 'cp2', 'cp3'], labels: ['1 · עיקול הנחל', '2 · אוכף', '3 · חציית דרך עפר', 'נ.ס · אורנים על קרקע סלעית'], active: ['1', '2', '3'] },
-  };
-  for (const [focus, e] of Object.entries(expect)) {
-    const s = states[focus];
-    assert.deepEqual(s.halos, e.halos, `${focus}: halos`);
-    assert.deepEqual(s.labels, e.labels, `${focus}: map labels`);
-    const active = Object.entries(s.markers).filter(([, st]) => st === 'active').map(([k]) => k);
-    assert.deepEqual(active.sort(), [...e.active].sort(), `${focus}: markers in focus`);
-  }
-  assert.deepEqual(states.legs.marks, ['קטע 1', 'כ־500 מ׳', 'קטע 2', 'כ־550 מ׳', 'קטע 3', 'כ־600 מ׳', 'קטע 4', 'כ־500 מ׳'], 'legs: a tag per leg');
-});
-
-test('start, end, legs, distances and landmark order agree across all states', () => {
-  const ref = JSON.stringify(states.ends.points);
-  for (const f of PLAN) assert.equal(JSON.stringify(states[f].points), ref, `${f}: same points`);
-  const pts = states.ends.points;
-  assert.deepEqual(pts.map((p) => p.id), ['start', '1', '2', '3', 'end']);
-  for (let k = 0; k < 4; k++) {
-    const m = Math.hypot(pts[k + 1].x - pts[k].x, pts[k + 1].y - pts[k].y) * M_PER_UNIT;
-    assert.ok(Math.abs(m - LEGS_M[k]) < LEGS_M[k] * 0.01, `leg ${k + 1}: drawn ${m.toFixed(0)} m, tagged ${LEGS_M[k]} m`);
-  }
-  const story = states.checkpoints.caption;
-  const order = ['עיקול הנחל', 'האוכף', 'דרך העפר', 'האורנים'].map((w) => story.indexOf(w));
-  assert.ok(order.every((v, i) => v >= 0 && (i === 0 || v > order[i - 1])), 'route story in order');
-});
-
-test('the planning screen shows the plan only: no position, nothing walked', () => {
-  for (const f of PLAN) {
-    const s = states[f];
-    assert.equal(s.position, null, `${f}: no position before leaving`);
-    assert.deepEqual(s.walked, [], `${f}: nothing walked before leaving`);
-    assert.equal(s.planned, 4, `${f}: the planned route`);
-    assert.deepEqual(s.legend, ['המסלול המתוכנן', 'נקודה לבדיקת המיקום']);
-  }
-});
-
 test('no duplicated framing: the example note once, the old panel labels not at all; screen 2 is the replay', async () => {
   const text = await page.evaluate(() => document.getElementById('scene-tips').innerText);
   assert.equal(text.split('במהלך הניווט: מה צריך לבדוק?').length - 1, 1, 'screen 2 keeps its title');
   assert.equal(await page.locator('[data-tips-screen="nav"] [data-activity="navigation-replay"]').count(), 1, 'screen 2 is the replay');
-  assert.equal(text.split('דוגמה לימודית').length - 1, 1, 'note only on the planning board');
+  assert.equal(text.split('דוגמה לימודית').length - 1, 1, 'note only on the planning lab');
+  assert.equal(await page.locator('[data-tips-screen="plan"] [data-activity="planning-lab"]').count(), 1, 'screen 1 is the planning lab');
   for (const label of ['מה עושים', 'למה זה מועיל']) assert.ok(!text.includes(label), `no "${label}" heading`);
 });
 
-test('screens keep one height across tips (no jumps) and fit whole at 1440 × 1122', async () => {
-  for (const [id, foci] of [['plan', PLAN]]) {
-    const heights = foci.map((f) => states[f].height);
-    assert.equal(new Set(heights).size, 1, `${id}: heights ${heights.join(', ')}`);
-  }
-  for (const [id, i, focus] of [['plan', 3, 'checkpoints']]) {
-    await openTip(id, i, focus);
+test('the planning screen fits whole at 1440 × 1122, at the lesson\'s scale', async () => {
+  for (const id of ['plan']) {
     const r = await fitRect(id);
     // One scale for the whole lesson (LessonFitUniform): the column's width over the 1344px reference.
     assert.ok(Math.abs(Number(r.scale) - r.lessonScale) < 0.001, `${id}: the lesson's scale (${r.scale} vs ${r.lessonScale})`);
@@ -271,24 +159,6 @@ test('question: keyboard only — Tab between answers, Enter and Space choose', 
   assert.ok(r.bottom <= VIEW.height && r.top >= 80, `question ${r.top}–${r.bottom}`);
   await page.locator(`${Q} [data-tips-reset]`).click();
   await page.waitForTimeout(450);
-});
-
-test('tip accordion: ↓ ↑ Home End move between tips, Enter opens', async () => {
-  const headers = page.locator(`${screen('plan')} button[aria-expanded]`);
-  await headers.nth(0).focus();
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(450);
-  assert.equal(await headers.nth(1).getAttribute('aria-expanded'), 'true');
-  await page.keyboard.press('End');
-  await page.keyboard.press('Space');
-  await page.waitForTimeout(450);
-  assert.equal(await headers.nth(3).getAttribute('aria-expanded'), 'true');
-  await page.keyboard.press('ArrowDown'); // wraps to the first
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(450);
-  assert.equal(await headers.nth(0).getAttribute('aria-expanded'), 'true');
-  assert.equal(await page.evaluate(() => document.querySelector('[data-tips-screen="plan"] svg[role="img"]').getAttribute('data-focus')), 'ends');
 });
 
 test('no page errors', () => {
