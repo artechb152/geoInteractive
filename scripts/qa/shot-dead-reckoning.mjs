@@ -1,39 +1,40 @@
-// Browser QA for lesson 6 › טכניקות ניווט (task 28): the dead-reckoning activity, and the fit of both
-// technique cards at 1440 × 1122 in their tallest states.
+// Browser QA for lesson 6 › טכניקות ניווט: the dead-reckoning activity in the sandstorm (first-person 3D),
+// and the fit of both technique cards at 1440 × 1122 in their tallest states.
 //
 // Usage (dev server running):
 //   node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/shot-dead-reckoning.mjs [outDir] [--base=http://localhost:3000]
 //
 // Checks (exit code 1 on any failure):
-//   dead reckoning
-//     layout     field view at the inline start (right), planning map at the end (left), one height
-//     copy       the technique's approved text, caption and legend are visible
-//     no answer  step 1 asks for the count, so until it is checked right the count (800) is nowhere in the card —
-//                text, SVG or accessible name (the answer options aside): the field counter reads "/ ?", the map has
-//                no 100-pair ticks, the legend and the example withhold it; the right check turns them on; every
-//                restart (mouse or keys, in step 1 or at the end) withholds it again
-//     geometry   on screen, A→B points 62° and the ticks sit every 150 m; the compass arrow follows the setting;
-//                the estimate after 300 pairs is 450 m along the line; the 3° example ends at A + 1200 m @ 65°
-//     storm      the field is hazed beyond 30 m; the map carries no haze
-//     flows      every wrong pace answer explained, then right; a wrong compass refused, then 62°; counting by 100s;
-//                the wadi check at 300; the finished count asks, never announces arrival; both wrong decisions
-//                explained; the right one opens the explanation; restart clears everything
-//     keyboard   the whole task with keys only (focus follows each new step)
-//     reduced    with reduced motion the count is a cut
-//     text       body text ≥ 16 px (reference)
-//   fit          both cards end above 1122 px in every state (terrain: wrong point / partial / hint 2 on each leg,
-//                the explanation, the summary; dead reckoning: every step)
-//   console      no page errors
+//   layout     one dominant first-person view (≥ 90 % of the card's width), the planning map on demand inside it
+//   no answer  until the count is checked right, 800 is nowhere in the card — text, SVG or accessible names — the
+//              counter reads "/ ?", the map has no 100-pair ticks; every reset withholds it again
+//   flows      wrong counts named, then right; a wrong compass refused, then 062°; 100 pairs per press; the wadi
+//              identified at 400 (wrong, then right); the finished count asks, never announces arrival; both
+//              wrong decisions explained, the right one opens the map debrief; reset mid-walk and at the end
+//   sync       at every stop the camera stands on the 62° line at the counted distance, 1.7 m over the ground,
+//              the counter and the map's estimate agree with it
+//   wadi       a real depression ahead of the 400 stop (its centre ~15 m ahead), named only once identified, and
+//              its label gone at 500 (150 m later); nothing labels anything beyond sight
+//   input      rapid presses count one segment; looking around and opening / closing the map change nothing of
+//              the walk; closing the map returns focus to its button; the whole task with keys only
+//   reduced    with reduced motion a segment is a cut
+//   fallback   no WebGL: a labelled stand-in, no loader left; slow assets: the shared loader until the first frame
+//   lifecycle  away to another sub-topic and back three times: one canvas, no errors
+//   numbers    frames per second while walking, asset bytes and load time (reported)
+//   fit        both cards end above 1122 px in every state
+//   console    no page errors
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 import { LEGS } from '../../src/components/lessons/topic-06/terrain-nav/terrainNavPractice.ts';
-import { AZIMUTH_DEG, DEVIATION_DEG, DISTANCE_M, SHEET, START, TARGET, along } from '../../src/components/lessons/topic-06/dead-reckoning/deadReckoningModel.ts';
+import { AZIMUTH_DEG, PACE_M, START, STEP_PAIRS, WADI_CROSSING_M, WADI_STOP_PAIRS, along, SHEET } from '../../src/components/lessons/topic-06/dead-reckoning/deadReckoningModel.ts';
+import { eyeHeightAt, toScene } from '../../src/components/lessons/topic-06/dead-reckoning/deadReckoningTerrain.ts';
 
 const args = process.argv.slice(2);
-const outDir = args.find((a) => !a.startsWith('--')) ?? 'design/screenshots/combatnav-task28';
+const outDir = args.find((a) => !a.startsWith('--')) ?? 'design/screenshots/dead-reckoning-immersive';
 const BASE = (args.find((a) => a.startsWith('--base=')) ?? '--base=http://localhost:3000').slice(7);
 const URL = `${BASE}/lessons/topic-06/#scene-combatnav`;
-await mkdir(`${outDir}/dead-reckoning`, { recursive: true });
+await mkdir(`${outDir}/states`, { recursive: true });
+await mkdir(`${outDir}/checks`, { recursive: true });
 await mkdir(`${outDir}/terrain-fit`, { recursive: true });
 
 const failures = [];
@@ -46,21 +47,28 @@ const check = (cond, m) => (cond ? ok(m) : fail(m));
 
 const DR = '[data-activity="dead-reckoning"]';
 const TA = '[data-activity="terrain-association"]';
+const GPU = ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'];
 
-async function open(browser, { reduced = false } = {}) {
+async function open(browser, { reduced = false, route } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1122 }, reducedMotion: reduced ? 'reduce' : 'no-preference' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  if (route) await route(page);
   await page.goto(URL, { waitUntil: 'load', timeout: 180000 });
   await page.waitForSelector(DR, { timeout: 150000 });
+  await align(page, DR);
   return { ctx, page, errors };
 }
 const align = (page, sel) => page.evaluate((s) => window.scrollTo({ top: document.querySelector(s).getBoundingClientRect().top + window.scrollY - 96, behavior: 'instant' }), sel);
 const bottom = (page, sel) => page.evaluate((s) => Math.round(document.querySelector(s).getBoundingClientRect().bottom), sel);
+const ready = (page) => page.waitForSelector(`${DR} [data-view-ready]`, { timeout: 150000 });
 const shot = async (page, sel, file) => {
   await align(page, sel);
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(900);
   await page.screenshot({ path: `${outDir}/${file}` });
 };
 const fits = async (page, sel, label) => {
@@ -70,380 +78,498 @@ const fits = async (page, sel, label) => {
   check(b <= 1122, `fit · ${label}: card ends at ${b} px (≤ 1122)`);
   return b;
 };
-const drState = (page) => page.evaluate(() => window.__dr.state);
-const drFeedback = (page) => page.locator(`${DR} [data-dr-feedback]`).getAttribute('data-dr-feedback');
+const st = (page) => page.evaluate(() => window.__dr.state);
+const fb = (page) => page.locator(`${DR} [data-dr-feedback]`).getAttribute('data-dr-feedback');
 const btn = (page, name) => page.locator(DR).getByRole('button', { name });
-const turn = async (page, by) => {
-  const name = `סיבוב של ${Math.abs(by)}° ${by > 0 ? 'עם' : 'נגד'} כיוון השעון`;
-  await btn(page, name).click();
+const counterText = (page) => page.locator(`${DR} [data-counter]`).innerText();
+const typeCount = async (page, v) => {
+  await page.locator(`${DR} [data-count-input]`).fill(String(v));
+  await btn(page, 'בדיקה').click();
 };
-/** Map metres → screen px through the map's own CTM. */
-const mapToScreen = (page, pts) =>
-  page.locator('[data-panel="dr-map"] svg').evaluate((svg, ps) => {
-    const ctm = svg.getScreenCTM();
-    return ps.map(([x, y]) => {
-      const p = new DOMPoint(x, y).matrixTransform(ctm);
-      return [p.x, p.y];
-    });
-  }, pts);
-const screenToMap = (page, pts) =>
-  page.locator('[data-panel="dr-map"] svg').evaluate((svg, ps) => {
-    const inv = svg.getScreenCTM().inverse();
-    return ps.map(([x, y]) => {
-      const p = new DOMPoint(x, y).matrixTransform(inv);
-      return [p.x, p.y];
-    });
-  }, pts);
-const bearingOf = ([x1, y1], [x2, y2]) => ((Math.atan2(x2 - x1, -(y2 - y1)) * 180) / Math.PI + 360) % 360;
-const m = (p) => [p.E, SHEET.height - p.N];
-
-// The shortened copy of 2026-10-27 (lesson-6 copy cleanup); "the count is not proof" is step 3's answer.
-const APPROVED = [
-  'ניווט עיוור מתבסס על נקודת מוצא ידועה ועל אזימוט ומרחק שנקבעו מראש.',
-  'השיטה מתאימה כשהראות מוגבלת או שיש מעט סימנים מובחנים, ובתנאי שנקודת המוצא ידועה.',
-  'במפת התכנון רואים את כל הדרך, ובשטח רק כ־30 מ׳ סביבכם. ההליכה מוצגת ללא סטייה.',
-  'אזימוט — כיוון מצפן קבוע',
-];
-// The approved lines that carry the count, and what is shown in their place until it is checked.
-const LEGEND_FULL = 'מרחק — 1.2 ק״מ, כ־800 צעדים כפולים';
-const LEGEND_BEFORE = 'מרחק — 1.2 ק״מ';
-
-/** Every 800 in the card outside the pace options: text (shown or screen-reader only, SVG included) and accessible names. */
+const setHeading = async (page, deg) => {
+  // keys on the compass slider: the shortest way from the current setting
+  const slider = page.locator(`${DR} [data-travel-compass][role="slider"]`);
+  await slider.focus();
+  let cur = (await st(page)).heading;
+  let d = ((deg - cur + 540) % 360) - 180;
+  while (Math.abs(d) >= 10) {
+    await page.keyboard.press(d > 0 ? 'PageUp' : 'PageDown');
+    d -= d > 0 ? 10 : -10;
+  }
+  while (d !== 0) {
+    await page.keyboard.press(d > 0 ? 'ArrowRight' : 'ArrowLeft');
+    d -= Math.sign(d);
+  }
+  cur = (await st(page)).heading;
+  return cur;
+};
+const settle = (page, pairs) => page.waitForFunction((p) => window.__dr && !window.__dr.state.moving && window.__dr.state.pairs === p, pairs, { timeout: 30000 });
+const advance = async (page) => {
+  const before = (await st(page)).pairs;
+  await page.locator(`${DR} [data-advance="walk"]`).click();
+  await settle(page, before + STEP_PAIRS);
+  await page.waitForTimeout(350);
+};
+/** Every 800 in the card outside the learner's own input: text (shown or screen-reader only, SVG included) and accessible names. */
 const countLeaks = (page) =>
   page.locator(DR).evaluate((root) => {
     const re = /(?<![\d,.])800(?!\d)/;
-    const option = (el) => el?.closest('[data-radio="pace"]');
     const hits = [];
     const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    for (let t; (t = walk.nextNode()); ) if (re.test(t.textContent) && !option(t.parentElement)) hits.push(t.textContent.trim().slice(0, 50));
+    for (let t; (t = walk.nextNode()); ) if (re.test(t.textContent)) hits.push(t.textContent.trim().slice(0, 50));
     for (const el of root.querySelectorAll('*'))
       for (const a of ['aria-label', 'aria-valuetext', 'aria-description', 'title', 'alt'])
-        if (re.test(el.getAttribute(a) ?? '') && !option(el)) hits.push(`${a}: ${el.getAttribute(a).slice(0, 50)}`);
+        if (re.test(el.getAttribute(a) ?? '')) hits.push(`${a}: ${el.getAttribute(a).slice(0, 50)}`);
     return hits;
   });
-const fieldCount = (page) => page.locator('[data-field="count"]').textContent();
-const tickCount = (page) => page.locator('[data-panel="dr-map"] [data-tick]').count();
-const shows = (page, text) => page.locator(DR).getByText(text, { exact: true }).isVisible();
-const countHidden = async (page, label) => {
-  const leaks = await countLeaks(page);
-  check(leaks.length === 0, `${label}: the count appears nowhere in the card${leaks.length ? `: ${JSON.stringify(leaks)}` : ''}`);
-  check((await fieldCount(page)).includes('/ ?') && (await tickCount(page)) === 0, `${label}: the field counter waits ("/ ?"), the map has no 100-pair ticks`);
-  check(await shows(page, LEGEND_BEFORE), `${label}: the legend gives the distance, not the count`);
+/** The camera against the model at the current stop. */
+const syncAt = async (page, label) => {
+  const s = await st(page);
+  const m = s.pairs * PACE_M;
+  const p = along(m);
+  const [x, , z] = toScene(p.E, p.N, 0);
+  const cam = await page.evaluate(() => window.__drScene.camera());
+  const eye = eyeHeightAt(p.E, p.N);
+  check(Math.hypot(cam.x - x, cam.z - z) < 0.05, `sync · ${label}: camera on the line at ${m} m (off by ${Math.hypot(cam.x - x, cam.z - z).toFixed(3)} m)`);
+  check(Math.abs(cam.y - eye) < 0.02, `sync · ${label}: eye ${(cam.y - eye + 1.7).toFixed(2)} m over the ground`);
+  const txt = (await counterText(page)).replace(/\s+/g, ' ');
+  check(txt.includes(`${s.pairs.toLocaleString('en-US')} / `) && txt.includes(`כ־${m.toLocaleString('en-US')} מ׳`), `sync · ${label}: the counter reads ${s.pairs} pairs, ${m} m`);
 };
-const countShown = async (page, label) => {
-  check((await fieldCount(page)).includes('/ 800') && (await tickCount(page)) === 7, `${label}: the field counter is on ("/ 800"), the map shows the 100-pair ticks`);
-  check(await shows(page, LEGEND_FULL), `${label}: the approved legend line, with the count`);
-};
-const focusedRole = (page) => page.evaluate(() => [document.activeElement?.getAttribute('role'), document.activeElement?.closest('[data-radio]')?.getAttribute('data-radio')].join(':'));
 
-const browser = await chromium.launch({ channel: 'chrome' });
+const browser = await chromium.launch({ args: GPU });
+const metrics = {};
 try {
-  // ================================================================ dead reckoning
-  const { page, errors, ctx } = await open(browser);
-  await align(page, DR);
-  await page.waitForTimeout(800);
-
-  // ---- layout and copy
-  const field = await page.locator('[data-panel="dr-field"]').boundingBox();
-  const map = await page.locator('[data-panel="dr-map"]').boundingBox();
-  check(field.x > map.x, 'field view at the inline start (right), planning map at the end (left)');
-  check(Math.abs(field.height - map.height) < 1 && Math.abs(field.y - map.y) < 1, 'field view and map side by side, one height');
-  for (const t of APPROVED) check(await page.locator(DR).getByText(t, { exact: false }).first().isVisible(), `visible: ${t.slice(0, 40)}…`);
-  check((await page.locator(DR).getByText('סופת חול — בשטח בלבד').count()) === 1, 'legend: the storm limits the field, not the map');
-  await countHidden(page, 'opening');
-  check((await page.locator(`${DR} [data-controls="plan"]`).innerText()).includes('1,200 מ׳') && (await page.locator(`${DR} [data-controls="plan"]`).innerText()).includes('1.5 מ׳'), 'opening: the task gives the distance (1,200 m) and the double pace (1.5 m)');
-  await fits(page, DR, 'dead reckoning · plan');
-  await shot(page, DR, 'dead-reckoning/01-plan.png');
-
-  // ---- geometry on screen
-  const [a, b] = await mapToScreen(page, [m(START), m(TARGET)]);
-  const onScreen = bearingOf(a, b);
-  check(Math.abs(onScreen - AZIMUTH_DEG) < 0.3, `on screen, A→B points ${onScreen.toFixed(2)}° (62°): north up, not mirrored`);
-  check((await page.locator('[data-panel="dr-map"] [mask]').count()) === 0, 'the storm never covers the map');
-  const haze = await page.locator('[data-panel="dr-field"] [mask] rect').first().evaluate((r) => getComputedStyle(r).fillOpacity);
-  check(Number(haze) === 1, 'the field is fully hazed beyond the sight radius');
-  check((await page.locator('[data-field-note]').innerText()).includes('צומת הדרכים A'), 'at A the field shows the known junction');
-
-  // ---- step 1: the pace count
-  check(await btn(page, 'בדיקה').isDisabled(), 'no check before an answer');
-  const pace = (v) => page.locator(`${DR} [data-radio="pace"] [data-option="${v}"]`).click();
-  for (const [v, kind, needle] of [
-    [1800, 'pace-multiplied', 'הכפלתם'],
-    [1600, 'pace-single-steps', 'הצעדים הבודדים'],
-    [1200, 'pace-metres', 'במטרים'],
-  ]) {
-    await pace(v);
-    await btn(page, 'בדיקה').click();
-    check((await drFeedback(page)) === kind && (await page.locator(`${DR} [data-dr-feedback]`).innerText()).includes(needle), `${v}: explained (${needle})`);
-    check((await btn(page, /המשך: כיוון התנועה/).count()) === 0, `${v}: no way on with a wrong count`);
-    await countHidden(page, `${v} checked`);
-    await fits(page, DR, `dead reckoning · plan · ${v} wrong`);
-    if (v === 1800) await shot(page, DR, 'dead-reckoning/02-pace-wrong.png');
-  }
-  await pace(800);
-  check((await drFeedback(page)) === 'info', 'a changed answer clears the old verdict');
-  await countHidden(page, '800 chosen, not checked');
-  await btn(page, 'בדיקה').click();
-  const right = await page.locator(`${DR} [data-dr-feedback]`).innerText();
-  check((await drFeedback(page)) === 'pace-right' && right.includes('1,200 ÷ 1.5 = 800') && right.includes('750'), '800: right, with the division and another pace (1.6 m → 750)');
-  await countShown(page, '800 checked');
-  const ticks = await page.locator('[data-panel="dr-map"] [data-tick]').evaluateAll((els) =>
-    els.map((e) => {
-      const n = e.getAttribute('d').match(/-?\d+(\.\d+)?/g).map(Number);
-      return [(n[0] + n[2]) / 2, (n[1] + n[3]) / 2];
-    }),
-  );
-  check(
-    ticks.every(([x, y], k) => Math.abs(Math.hypot(x - m(START)[0], y - m(START)[1]) - 150 * (k + 1)) < 0.3),
-    'each tick is 150 m further along the line (100 pairs × 1.5 m)',
-  );
-  await fits(page, DR, 'dead reckoning · plan · right');
-  await shot(page, DR, 'dead-reckoning/03-pace-right.png');
-  await btn(page, /המשך: כיוון התנועה/).click();
-
-  // ---- step 2: the compass
-  check((await drState(page)).step === 'heading', 'on to the compass');
-  check((await page.evaluate(() => document.activeElement?.getAttribute('role'))) === 'slider', 'focus moves to the compass');
-  for (let k = 0; k < 3; k++) await turn(page, 10);
-  const arrow = await page.locator('[data-map="heading"] path').first().getAttribute('d');
-  const n = arrow.match(/-?\d+(\.\d+)?/g).map(Number);
-  check(Math.abs(bearingOf([n[0], n[1]], [n[2], n[3]]) - 30) < 0.2, 'the map arrow from A points where the compass is set (30°)');
-  await btn(page, /יציאה לדרך/).click();
-  const off = await page.locator(`${DR} [data-dr-feedback]`).innerText();
-  check((await drState(page)).step === 'heading' && (await drFeedback(page)) === 'heading-off', '30°: no departure');
-  check(off.includes('32°') && off.includes('עם כיוון השעון') && off.includes('660'), '30°: turn 32° clockwise; it would end ≈ 660 m from B (2·1200·sin16°)');
-  await fits(page, DR, 'dead reckoning · compass off');
-  await shot(page, DR, 'dead-reckoning/04-compass-off.png');
-  for (let k = 0; k < 27; k++) await turn(page, 10);
-  await turn(page, -1);
-  await turn(page, -1);
-  check((await drState(page)).heading === 298, 'turned to 298°');
-  await btn(page, /יציאה לדרך/).click();
-  check((await page.locator(`${DR} [data-dr-feedback]`).innerText()).includes('נגד כיוון השעון'), '298°: "measured counter-clockwise" explained');
-  for (let k = 0; k < 12; k++) await turn(page, 10);
-  for (let k = 0; k < 4; k++) await turn(page, 1);
-  check((await drState(page)).heading === 62, 'set to 62°');
-  await btn(page, /יציאה לדרך/).click();
-  check((await drState(page)).step === 'walk' && (await drFeedback(page)) === 'departed', '62°: under way');
-  check((await page.locator('[data-map="heading"]').count()) === 0, 'the compass arrow gives way to the count');
-
-  // ---- counting
-  const advance = () => btn(page, /עוד 100 צעדים כפולים/).click();
-  for (let k = 0; k < 3; k++) {
-    await advance();
-    await page.waitForTimeout(1100);
-  }
-  const s3 = await drState(page);
-  check(s3.pairs === 300 && (await page.locator('[data-field-pairs]').getAttribute('data-field-pairs')) === '300', 'three presses: 300 pairs in the strip and in the field');
-  check((await page.locator('[data-panel="dr-map"] [data-tick][data-on]').count()) === 3, 'three ticks passed on the map');
-  const est = await page.locator('[data-map="estimate"] circle').nth(1).boundingBox();
-  const [[ex, ey]] = await screenToMap(page, [[est.x + est.width / 2, est.y + est.height / 2]]);
-  const want = m(along(450));
-  check(Math.hypot(ex - want[0], ey - want[1]) < 3, `the estimate is 450 m along the 62° line (${Math.hypot(ex - want[0], ey - want[1]).toFixed(1)} m off)`);
-  check((await drFeedback(page)) === 'wadi' && (await page.locator('[data-field-note]').innerText()).includes('ערוץ יבש'), '300 pairs: the wadi — a check on the way, on the map at 450 m');
-  await fits(page, DR, 'dead reckoning · counting');
-  await shot(page, DR, 'dead-reckoning/05-wadi.png');
-  await advance();
-  await page.waitForTimeout(1100);
-  check(!(await page.locator('[data-field-note]').innerText()).includes('ערוץ'), '400 pairs: the wadi is out of sight again');
-  for (let k = 0; k < 4; k++) {
-    await advance();
-    await page.waitForTimeout(1100);
-  }
-  const s8 = await drState(page);
-  check(s8.pairs === 800 && s8.step === 'verify', '800 pairs: the count is complete — and a question follows');
-  const askTitle = await page.locator(`${DR} h4`).innerText();
-  check(!/הגעתם ל־B|הגעתם ליעד/.test(askTitle + (await page.locator(`${DR} [data-dr-feedback]`).innerText())), 'the finished count does not announce arrival');
-  check((await page.locator('[data-map="deviation"]').count()) === 0, 'no explanation before the decision');
-  await fits(page, DR, 'dead reckoning · decision');
-  await shot(page, DR, 'dead-reckoning/06-decision.png');
-
-  // ---- step 3: the decision
-  const decide = async (v) => {
-    await page.locator(`${DR} [data-radio="verify"] [data-option="${v}"]`).click();
-    await btn(page, 'בדיקה').click();
-  };
-  await decide('proof');
-  check((await drFeedback(page)) === 'verify-proof', '"the count proves it": wrong, explained');
-  await fits(page, DR, 'dead reckoning · decision wrong');
-  await shot(page, DR, 'dead-reckoning/07-decision-wrong.png');
-  await decide('keep-walking');
-  check((await drFeedback(page)) === 'verify-keep-walking', '"keep walking until you see it": wrong, explained');
-  await decide('estimate');
-  const done = await page.locator(`${DR} [data-dr-feedback]`).innerText();
-  check((await drFeedback(page)) === 'verify-right' && done.includes('31') && done.includes('63') && done.includes('80') && done.includes('160'), 'right: the 3° gaps (31 / 63 m), the short pace (80 m) and the landmark (160 m)');
-  const endC = page.locator('[data-map="deviation"] circle');
-  const [cx, cy] = [Number(await endC.getAttribute('cx')), Number(await endC.getAttribute('cy'))];
-  const end65 = m(along(DISTANCE_M, AZIMUTH_DEG + DEVIATION_DEG));
-  check(Math.abs(cx - end65[0]) < 0.11 && Math.abs(cy - end65[1]) < 0.11, 'the 3° example ends at A + 1,200 m @ 65°');
-  const devText = await page.locator('[data-map="deviation"]').innerText().catch(() => page.locator('[data-map="deviation"]').textContent());
-  check(/31 מ׳/.test(devText) && /63 מ׳/.test(devText), 'the gaps are labelled on the map: 31 m at 600 m, 63 m at the end');
-  check((await page.locator(DR).getAttribute('data-done')) === 'true', 'the task ends: "נדרש אימות"');
-  await fits(page, DR, 'dead reckoning · done');
-  await shot(page, DR, 'dead-reckoning/08-done.png');
-
-  // ---- text size (reference px: computed size ignores the fit transform)
-  const small = await page.locator(DR).evaluate((root) =>
-    [...root.querySelectorAll('p, li, h4, [role="radio"], [data-field-note], [data-heading-readout]')]
-      .filter((e) => e.offsetParent !== null && e.textContent.trim())
-      .map((e) => [e.textContent.trim().slice(0, 30), parseFloat(getComputedStyle(e).fontSize)])
-      .filter(([, s]) => s < 16),
-  );
-  check(small.length === 0, `body text ≥ 16 px${small.length ? `: ${JSON.stringify(small)}` : ''}`);
-
-  // ---- restart
-  await btn(page, 'התחלה מחדש').first().click();
-  const r = await drState(page);
-  check(r.step === 'plan' && r.pairs === 0 && r.pace === null && r.heading === 0 && r.verify === null, 'restart: back to step 1, everything cleared');
-  await page.waitForTimeout(300);
-  check((await page.locator('[data-field-pairs]').getAttribute('data-field-pairs')) === '0' && (await page.locator('[data-map="deviation"]').count()) === 0, 'restart: the field and the map back at A');
-  await countHidden(page, 'restart at the end');
-  check((await page.locator(TA).getAttribute('data-mode')) === 'learn', 'the terrain activity is untouched by this one');
-  check(errors.length === 0, `no page errors${errors.length ? `: ${errors.join(' | ')}` : ''}`);
-  await ctx.close();
-
-  // ---- keyboard only
+  // ================================================================ the whole task, mouse
   {
-    const k = await open(browser);
-    const p = k.page;
-    await align(p, DR);
-    await p.locator(`${DR} [data-radio="pace"] [role="radio"]`).first().focus();
-    await p.keyboard.press('ArrowLeft'); // next option in RTL: 1,200
-    await p.keyboard.press('Tab');
-    await p.keyboard.press('Enter');
-    check((await drFeedback(p)) === 'pace-metres', 'keys: a wrong count (1,200) is checked and explained');
-    await countHidden(p, 'keys · 1,200 checked');
-    await p.keyboard.press('Shift+Tab'); // back to the chosen option
-    await p.keyboard.press('ArrowRight'); // previous option in RTL: 800
-    check((await drState(p)).pace === 800 && (await drFeedback(p)) === 'info', 'keys: the answer is corrected to 800');
-    await p.keyboard.press('Tab');
-    await p.keyboard.press('Enter');
-    check((await drFeedback(p)) === 'pace-right', 'keys: the corrected count is checked right');
-    await countShown(p, 'keys · 800 checked');
-    // a restart from step 1: back past the answers to the task line's reset
-    await p.keyboard.press('Shift+Tab');
-    await p.keyboard.press('Shift+Tab');
-    check((await p.evaluate(() => document.activeElement?.textContent)).includes('התחלה מחדש'), 'keys: Shift+Tab reaches "התחלה מחדש"');
-    await p.keyboard.press('Enter');
-    check((await drState(p)).pace === null && (await drFeedback(p)) === 'info', 'keys: a restart in step 1 clears the answer');
-    check((await focusedRole(p)) === 'radio:pace', 'keys: after that restart, focus is back on the answers');
-    await countHidden(p, 'keys · restart in step 1');
-    await shot(p, DR, 'dead-reckoning/09a-keyboard-restart-plan.png');
-    await p.keyboard.press('Space'); // 800 (first option)
-    await p.keyboard.press('Tab');
-    await p.keyboard.press('Enter');
-    check((await drFeedback(p)) === 'pace-right', 'keys: choose and check the count');
-    await p.keyboard.press('Enter'); // the same button now leads on
-    check((await drState(p)).step === 'heading', 'keys: on to the compass');
-    await p.keyboard.press('Home');
-    for (let i = 0; i < 6; i++) await p.keyboard.press('PageUp');
-    await p.keyboard.press('ArrowRight');
-    await p.keyboard.press('ArrowUp');
-    check((await drState(p)).heading === 62, 'keys: the dial turns to 62° (PageUp ±10, arrows ±1)');
-    for (let i = 0; i < 5; i++) await p.keyboard.press('Tab');
-    check((await p.evaluate(() => document.activeElement?.textContent)).includes('יציאה לדרך'), 'keys: Tab reaches "יציאה לדרך" after the turn buttons');
-    await p.keyboard.press('Enter');
-    check((await drState(p)).step === 'walk', 'keys: under way');
-    for (let i = 0; i < 8; i++) await p.keyboard.press('Enter');
-    check((await drState(p)).step === 'verify', 'keys: counted to 800 on the focused button');
-    await p.keyboard.press('ArrowLeft'); // next option in RTL: "estimate"
-    await p.keyboard.press('Tab');
-    await p.keyboard.press('Enter');
-    check((await drFeedback(p)) === 'verify-right', 'keys: decide and check');
-    check((await p.evaluate(() => document.activeElement?.textContent)).includes('התחלה מחדש'), 'keys: focus lands on "התחלה מחדש"');
-    await p.keyboard.press('Enter');
-    check((await drState(p)).step === 'plan', 'keys: restart');
-    check((await focusedRole(p)) === 'radio:pace', 'keys: after the restart, focus is on the answers of step 1');
-    await countHidden(p, 'keys · restart at the end');
-    await shot(p, DR, 'dead-reckoning/09-keyboard-restart.png');
-    await k.ctx.close();
-  }
+    const { ctx, page, errors } = await open(browser);
+    const t0 = Date.now();
+    await ready(page);
+    metrics.firstFrameMs = Date.now() - t0;
+    await page.waitForTimeout(1200);
 
-  // ---- reduced motion: the count is a cut
-  {
-    const rm = await open(browser, { reduced: true });
-    const p = rm.page;
-    await align(p, DR);
-    await p.locator(`${DR} [data-radio="pace"] [data-option="800"]`).click();
-    await btn(p, 'בדיקה').click();
-    await btn(p, /המשך: כיוון התנועה/).click();
-    await btn(p, 'סיבוב של 10° עם כיוון השעון').click();
-    for (let i = 0; i < 5; i++) await btn(p, 'סיבוב של 10° עם כיוון השעון').click();
-    await btn(p, 'סיבוב של 1° עם כיוון השעון').click();
-    await btn(p, 'סיבוב של 1° עם כיוון השעון').click();
-    await btn(p, /יציאה לדרך/).click();
-    await btn(p, /עוד 100 צעדים כפולים/).click();
-    await p.waitForTimeout(60);
-    check((await p.locator('[data-field-pairs]').getAttribute('data-field-pairs')) === '100', 'reduced motion: the field jumps to 100 pairs at once');
-    await shot(p, DR, 'dead-reckoning/10-reduced-motion.png');
-    await rm.ctx.close();
-  }
+    // layout
+    const geo = await page.evaluate((s) => {
+      const card = document.querySelector(s).getBoundingClientRect();
+      const view = document.querySelector(`${s} [data-panel="dr-view"]`).getBoundingClientRect();
+      return { card: card.width, view: view.width, viewH: view.height };
+    }, DR);
+    check(geo.view / geo.card > 0.9, `layout: the first-person view spans ${(100 * geo.view / geo.card).toFixed(0)} % of the card`);
+    check((await page.locator(`${DR} [data-map-panel]`).count()) === 1, 'layout: the planning map is open while planning');
+    check((await page.locator(`${DR} canvas`).count()) === 1, 'layout: one live canvas');
 
-  // ================================================================ terrain association: tallest states
-  {
-    const t = await open(browser);
-    const p = t.page;
-    await p.waitForFunction(() => !document.querySelector('[data-panel="map"] [data-loading]'), null, { timeout: 120000 });
-    await fits(p, TA, 'terrain · learn');
-    await p.locator(`${TA} [data-mode-switch] [role="radio"]`).nth(1).click();
-    await p.waitForTimeout(800);
-    const tFeedback = () => p.locator(`${TA} [data-feedback]`).getAttribute('data-feedback');
-    const tCheck = () => p.locator(TA).getByRole('button', { name: 'בדיקת המיקום' }).click();
-    let worst = 0;
-    for (const leg of LEGS) {
-      const radios = p.locator(`${TA} [data-radio="candidates"] [role="radio"]`);
-      // wrong points, with the comparison and both hints
-      for (const c of leg.candidates) {
-        await radios.nth(leg.candidates.indexOf(c)).click();
-        const plate = await p.locator(`${TA} [data-overlay="measure"] rect`).evaluate((r) => [r.x.baseVal.value, r.y.baseVal.value, r.width.baseVal.value, r.height.baseVal.value]);
-        check(plate[0] >= 0 && plate[0] + plate[2] <= 1400 && plate[1] >= 0 && plate[1] + plate[3] <= 1750, `leg ${leg.index + 1} · point ${c}: the direction-and-distance label stays on the sheet`);
-      }
-      for (const c of leg.candidates.filter((x) => x !== leg.answer)) {
-        await radios.nth(leg.candidates.indexOf(c)).click();
-        await p.locator(`${TA} [data-radio="comparison"] [data-option="mismatch"]`).click();
-        await tCheck();
-        if ((await p.locator(TA).getByRole('button', { name: /רמז/ }).isEnabled())) await p.locator(TA).getByRole('button', { name: /רמז/ }).click();
-        if ((await p.locator(TA).getByRole('button', { name: /רמז/ }).isEnabled())) await p.locator(TA).getByRole('button', { name: /רמז/ }).click();
-        worst = Math.max(worst, await fits(p, TA, `terrain · leg ${leg.index + 1} · wrong point ${c} + hint 2`));
-      }
-      // the right point with both false statements and the wrong comparison
-      await radios.nth(leg.candidates.indexOf(leg.answer)).click();
-      for (const e of leg.evidence.filter((x) => !leg.correctEvidence.includes(x.id))) await p.locator(`${TA} [data-evidence-id="${e.id}"]`).click();
-      await p.locator(`${TA} [data-radio="comparison"] [data-option="mismatch"]`).click();
-      await tCheck();
-      check((await tFeedback()) === 'partial' && (await p.locator(`${TA} [data-evidence-id][data-wrong]`).count()) === 2, `leg ${leg.index + 1}: both false statements marked ✕`);
-      worst = Math.max(worst, await fits(p, TA, `terrain · leg ${leg.index + 1} · partial, both false + hint 2`));
-      if (leg.index === 0) await shot(p, TA, 'terrain-fit/leg1-partial-hint2.png');
-      if (leg.index === 3) await shot(p, TA, 'terrain-fit/leg4-partial-hint2.png');
-      await p.locator(TA).getByRole('button', { name: 'הצגת הסבר' }).click();
-      check((await tFeedback()) === 'explained', `leg ${leg.index + 1}: the explanation after a check`);
-      worst = Math.max(worst, await fits(p, TA, `terrain · leg ${leg.index + 1} · explained`));
-      if (leg.index === 1) {
-        // the practice reset, beside the mode switch: back to leg 1, still practising
-        await p.locator(TA).getByRole('button', { name: 'התחלה מחדש' }).click();
-        const st = await p.evaluate(() => window.__tn.state);
-        check(st.leg === 0 && st.mode === 'practice' && st.outcomes.every((o) => o === null), 'practice restart: back to leg 1, progress cleared, still in practice');
-        // walk back to leg 3 to continue the sweep
-        for (let k = 0; k < 2; k++) {
-          await tCheck();
-          await p.locator(TA).getByRole('button', { name: 'הצגת הסבר' }).click();
-          await p.locator(`${TA} [data-strip="practice"] button`, { hasText: 'המשך לקטע הדרך הבא' }).click();
-          await p.waitForTimeout(300);
-        }
-        continue;
-      }
-      await p.locator(`${TA} [data-strip="practice"] button`, { hasText: /המשך לקטע הדרך הבא|לסיכום הציר/ }).click();
-      await p.waitForTimeout(400);
+    // no answer before the check
+    check((await countLeaks(page)).length === 0, `no answer: nothing in the opening says 800 ${(await countLeaks(page)).join(' | ')}`);
+    check((await page.locator(`${DR} [data-tick]`).count()) === 0, 'no answer: the map has no 100-pair ticks yet');
+    check((await page.locator(`${DR} [data-count-target]`).innerText()) === '?', 'no answer: the counter target reads ?');
+    await shot(page, DR, 'states/01-opening-prep.png');
+    await fits(page, DR, 'opening');
+
+    for (const [v, kind] of [
+      [1800, 'count-multiplied'],
+      [1600, 'count-single-steps'],
+      [1200, 'count-metres'],
+      [750, 'count-other'],
+    ]) {
+      await typeCount(page, v);
+      check((await fb(page)) === kind, `count ${v}: feedback "${kind}"`);
+      check((await countLeaks(page)).length === 0, `no answer: still withheld after ${v}`);
+      if (v === 1800) await shot(page, DR, 'states/02-count-wrong.png');
+      await fits(page, DR, `count ${v} wrong`);
     }
-    worst = Math.max(worst, await fits(p, TA, 'terrain · summary'));
-    await shot(p, TA, 'terrain-fit/summary.png');
-    ok(`terrain: tallest state ends at ${worst} px`);
-    check(t.errors.length === 0, `terrain sweep: no page errors${t.errors.length ? `: ${t.errors.join(' | ')}` : ''}`);
-    await t.ctx.close();
+    await typeCount(page, 800);
+    check((await st(page)).countChecked === 800 && (await page.locator(`${DR} [data-tick]`).count()) === 7, 'count 800: right — the map draws its ticks');
+    check((await page.locator(`${DR} [data-count-target]`).innerText()) === '800', 'count 800: the counter target appears');
+
+    // compass: a wrong setting is refused, the view turns with the setting
+    await setHeading(page, 298);
+    await page.waitForTimeout(900);
+    const yaw298 = await page.evaluate(() => window.__dr.look.yaw);
+    check(Math.abs(((yaw298 - 298 + 540) % 360) - 180) < 2, `compass 298°: the view turns with it (${yaw298.toFixed(1)}°)`);
+    await btn(page, 'יציאה לדרך').click();
+    check((await fb(page)) === 'heading-off' && (await st(page)).step === 'plan', 'compass 298°: refused, explained (counter-clockwise)');
+    await fits(page, DR, 'compass wrong');
+    await setHeading(page, AZIMUTH_DEG);
+    check((await st(page)).heading === 62, 'compass: set to 062°');
+    await shot(page, DR, 'states/03-compass-062.png');
+    await btn(page, 'יציאה לדרך').click();
+    await page.waitForTimeout(1500);
+    let s = await st(page);
+    check(s.step === 'walk' && s.pairs === 0, 'depart: under way from A');
+    check((await page.locator(`${DR} [data-map-panel]`).count()) === 0, 'depart: the map closes; the view is the field');
+    await syncAt(page, 'A');
+    await shot(page, DR, 'states/04-depart-A.png');
+
+    // looking around changes nothing of the walk
+    const surf = await page.locator(`${DR} [data-look-surface]`).boundingBox();
+    await page.mouse.move(surf.x + surf.width / 2, surf.y + surf.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(surf.x + surf.width / 2 - 260, surf.y + surf.height / 2 + 30, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    s = await st(page);
+    const lookYaw = await page.evaluate(() => window.__dr.look.yaw);
+    check(Math.abs(((lookYaw - 62 + 540) % 360) - 180) > 20 && s.heading === 62 && s.pairs === 0, `look around: the head turns (${lookYaw.toFixed(0)}°), the walking azimuth stays 062°`);
+    check((await page.locator(`${DR} [data-view-readout]`).getAttribute('aria-hidden')) !== 'true', 'look around: "כיוון המבט" is named apart from the walking direction');
+
+    // rapid presses: one segment
+    const adv = page.locator(`${DR} [data-advance="walk"]`);
+    await adv.click();
+    for (let k = 0; k < 4; k++) await adv.click({ force: true, timeout: 2000 }).catch(() => {});
+    await settle(page, 100);
+    await page.waitForTimeout(1500);
+    s = await st(page);
+    check(s.pairs === 100, `rapid presses: one segment counted (${s.pairs})`);
+    const yawAfter = await page.evaluate(() => window.__dr.look.yaw);
+    check(Math.abs(((yawAfter - 62 + 540) % 360) - 180) < 2, 'walking turns the head back to the walking direction');
+    await syncAt(page, '100');
+
+    await advance(page);
+    await advance(page);
+    await syncAt(page, '300');
+    // the map's estimate agrees
+    await page.locator(`${DR} [data-map-toggle]`).click();
+    await page.waitForTimeout(500);
+    const walked = Number(await page.locator(`${DR} [data-map-walked]`).getAttribute('data-map-walked'));
+    check(walked === 450, `sync · 300: the map's estimate is at ${walked} m`);
+    check(await page.evaluate(() => document.activeElement?.hasAttribute('data-map-close')), 'map: focus moves to its close button');
+    await shot(page, DR, 'states/05-map-open-300.png');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    check((await page.locator(`${DR} [data-map-panel]`).count()) === 0 && (await page.evaluate(() => document.activeElement?.hasAttribute('data-map-toggle'))), 'map: Escape closes it, focus back on "מפת התכנון"');
+    check((await st(page)).pairs === 300, 'map: opening and closing keeps the count');
+    await shot(page, DR, 'states/06-walk-before-wadi-300.png');
+    await fits(page, DR, 'walking');
+
+    // the wadi
+    await advance(page);
+    s = await st(page);
+    check(s.pairs === WADI_STOP_PAIRS, `wadi: the 400-pair stop`);
+    await syncAt(page, '400');
+    const ahead = WADI_CROSSING_M - s.pairs * PACE_M;
+    check(ahead > 0 && ahead <= 30, `wadi: its centre line ${ahead} m ahead — inside the ~30 m of sight`);
+    const proj = await page.evaluate(([E, N]) => window.__drScene.project(E, N, 0), [along(WADI_CROSSING_M).E, along(WADI_CROSSING_M).N]);
+    const box = await page.locator(`${DR} [data-panel="dr-view"]`).boundingBox();
+    check(proj[2] < 1 && proj[1] > 0 && proj[1] < box.height / 0.7827, `wadi: the crossing projects inside the view (${proj.map((v) => v.toFixed(1)).join(', ')})`);
+    check((await page.locator(`${DR} [data-wadi-label]`).count()) === 0, 'wadi: not named before it is identified');
+    check((await page.locator(`${DR} [data-advance="walk"]`).isDisabled()), 'wadi: identify it before walking on');
+    await shot(page, DR, 'states/07-wadi-in-sight-400.png');
+    await page.locator(`${DR} [data-compare-map]`).click();
+    await page.waitForTimeout(600);
+    check((await page.locator(`${DR} [data-map-panel]`).count()) === 1, 'wadi: "השוואה למפה" opens the same planning map');
+    await shot(page, DR, 'states/08-wadi-compare-map.png');
+    await page.locator(`${DR} [data-map-close]`).click();
+    await page.locator(`${DR} [data-radio="sign"] [data-option="road"]`).click();
+    await btn(page, 'בדיקה').click();
+    check((await fb(page)) === 'sign-road', 'wadi: "דרך עפר" is explained as wrong');
+    await fits(page, DR, 'wadi wrong');
+    await page.locator(`${DR} [data-radio="sign"] [data-option="wadi"]`).click();
+    await btn(page, 'בדיקה').click();
+    await page.waitForTimeout(700);
+    check((await fb(page)) === 'sign-right', 'wadi: identified');
+    check((await page.locator(`${DR} [data-wadi-label]`).count()) === 1, 'wadi: its label appears once identified');
+    // The label's dot sits on its 3-D anchor (drei Html under RTL drifts a label-width otherwise).
+    const dot = await page.locator(`${DR} [data-wadi-label] span`).last().boundingBox();
+    const cv = await page.locator(`${DR} canvas`).evaluate((c) => ({ ...c.getBoundingClientRect().toJSON(), w: c.clientWidth }));
+    const k = cv.width / cv.w;
+    const [ax, ay] = await page.evaluate(() => window.__drScene.projectWadiLabel());
+    const dx = dot.x + dot.width / 2 - (cv.x + ax * k);
+    const dy = dot.y + dot.height / 2 - (cv.y + ay * k);
+    check(Math.hypot(dx, dy) <= 3, `wadi: the label's dot on its anchor (off by ${dx.toFixed(1)}, ${dy.toFixed(1)} px)`);
+    await shot(page, DR, 'states/09-wadi-identified.png');
+    await fits(page, DR, 'wadi identified');
+
+    await advance(page);
+    await syncAt(page, '500');
+    check((await page.locator(`${DR} [data-wadi-label]`).count()) === 0, 'wadi: no label 150 m later');
+    check((await fb(page)) === 'past-wadi', 'after the wadi: it is behind, out of sight');
+    await shot(page, DR, 'states/10-after-wadi-500.png');
+
+    // a walk segment's frame rate
+    const fps = await page.evaluate(
+      () =>
+        new Promise((res) => {
+          let n = 0;
+          const t0 = performance.now();
+          const tick = () => {
+            n += 1;
+            if (performance.now() - t0 < 2500) requestAnimationFrame(tick);
+            else res((n * 1000) / (performance.now() - t0));
+          };
+          document.querySelector('[data-advance="walk"]').click();
+          requestAnimationFrame(tick);
+        }),
+    );
+    metrics.walkFps = Math.round(fps);
+    await settle(page, 600);
+    await advance(page);
+    await advance(page);
+    s = await st(page);
+    check(s.step === 'verify' && s.pairs === 800, 'the count completes into a question, not an arrival');
+    await syncAt(page, '800');
+    check(!(await page.locator(DR).innerText()).includes('הגעתם'), 'no arrival is announced');
+    await shot(page, DR, 'states/11-count-complete-800.png');
+    await fits(page, DR, 'decision');
+    for (const v of ['proof', 'keep-walking']) {
+      await page.locator(`${DR} [data-radio="verify"] [data-option="${v}"]`).click();
+      await btn(page, 'בדיקה').click();
+      check((await fb(page)) === `verify-${v}`, `decision "${v}": explained`);
+      if (v === 'proof') await shot(page, DR, 'states/12-decision-wrong.png');
+      await fits(page, DR, `decision ${v}`);
+    }
+    await page.locator(`${DR} [data-radio="verify"] [data-option="estimate"]`).click();
+    await btn(page, 'בדיקה').click();
+    await page.waitForTimeout(800);
+    check((await fb(page)) === 'verify-right' && (await page.locator(`${DR} [data-map="deviation"]`).count()) === 1, 'decision "estimate": right — the map debrief opens on the 3° case');
+    await shot(page, DR, 'states/13-debrief-deviation.png');
+    await fits(page, DR, 'debrief');
+    await page.locator(`${DR} [data-debrief="short-pace"]`).click();
+    check((await page.locator(`${DR} [data-map="short-pace"]`).count()) === 1, 'debrief: the short pace drawn');
+    await shot(page, DR, 'states/14-debrief-short-pace.png');
+
+    await page.locator(DR).getByRole('button', { name: 'איפוס' }).click();
+    await page.waitForTimeout(1200);
+    s = await st(page);
+    check(s.step === 'plan' && s.pairs === 0 && s.count === null && s.heading === 0 && s.verify === null && s.sign === null, 'reset at the end: back to the opening');
+    check((await countLeaks(page)).length === 0 && (await page.locator(`${DR} [data-tick]`).count()) === 0, 'reset: the count is withheld again');
+    const cam0 = await page.evaluate(() => window.__drScene.camera());
+    check(Math.hypot(cam0.x, cam0.z) < 0.05 && Math.abs(cam0.yaw) < 1, 'reset: the camera is back at A, facing north');
+    check((await page.locator(`${DR} [data-map-panel]`).count()) === 1, 'reset: the planning map is open again');
+    await shot(page, DR, 'states/15-reset.png');
+
+    // reset in the middle of a segment
+    await typeCount(page, 800);
+    await setHeading(page, 62);
+    await btn(page, 'יציאה לדרך').click();
+    await page.waitForTimeout(600);
+    await page.locator(`${DR} [data-advance="walk"]`).click();
+    await page.waitForTimeout(1200);
+    await page.locator(DR).getByRole('button', { name: 'איפוס' }).click();
+    await page.waitForTimeout(1500);
+    s = await st(page);
+    const cam1 = await page.evaluate(() => window.__drScene.camera());
+    check(s.step === 'plan' && s.pairs === 0 && !s.moving && Math.hypot(cam1.x, cam1.z) < 0.05, 'reset mid-walk: count, camera and walk back at A');
+
+    check(errors.length === 0, `no page errors${errors.length ? `: ${errors.slice(0, 3).join(' | ')}` : ''}`);
+    const res = await page.evaluate(() =>
+      performance
+        .getEntriesByType('resource')
+        .filter((e) => e.name.includes('/dead-reckoning/'))
+        .map((e) => ({ name: e.name.split('/dead-reckoning/')[1], kb: Math.round((e.encodedBodySize || e.transferSize) / 1024), ms: Math.round(e.duration) })),
+    );
+    metrics.assets = res;
+    metrics.assetKb = res.reduce((a, r) => a + r.kb, 0);
+    await ctx.close();
+  }
+
+  // ================================================================ keyboard only
+  {
+    const { ctx, page, errors } = await open(browser);
+    await ready(page);
+    await page.locator(`${DR} [data-count-input]`).focus();
+    await page.keyboard.type('1600');
+    await page.keyboard.press('Enter');
+    check((await fb(page)) === 'count-single-steps', 'keys: a wrong count with Enter');
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('800');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    check(await page.evaluate(() => document.activeElement?.getAttribute('role') === 'slider'), 'keys: focus moves to the compass');
+    for (let k = 0; k < 6; k++) await page.keyboard.press('PageUp');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    check((await st(page)).heading === 62, 'keys: compass to 062° with Page Up and arrows');
+    for (let k = 0; k < 5; k++) await page.keyboard.press('Tab');
+    check(await page.evaluate(() => document.activeElement?.getAttribute('data-advance') === 'depart'), 'keys: Tab reaches "יציאה לדרך"');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    check(await page.evaluate(() => document.activeElement?.getAttribute('data-advance') === 'walk'), 'keys: focus on the advance button');
+    for (let k = 0; k < 4; k++) {
+      await page.keyboard.press('Enter');
+      await settle(page, (k + 1) * 100);
+      await page.waitForTimeout(200);
+      check(await page.evaluate(() => document.activeElement?.getAttribute('data-advance') === 'walk' || document.activeElement?.getAttribute('role') === 'radio'), `keys: focus kept after segment ${k + 1}`);
+    }
+    check(await page.evaluate(() => document.activeElement?.closest('[data-radio="sign"]') !== null), 'keys: at the wadi, focus on its options');
+    await page.keyboard.press('ArrowLeft'); // RTL: next option
+    await page.keyboard.press('ArrowRight'); // back to the first (wadi)
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    check((await fb(page)) === 'sign-right', 'keys: the wadi identified');
+    // look around with the keys, on the focused view
+    await page.locator(`${DR} [data-look-surface]`).focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(800);
+    const y = await page.evaluate(() => window.__dr.look.yaw);
+    check(Math.abs(y - 92) < 2, `keys: arrows turn the head (${y.toFixed(0)}°)`);
+    await page.keyboard.press('Home');
+    await page.waitForTimeout(900);
+    check(Math.abs((await page.evaluate(() => window.__dr.look.yaw)) - 62) < 2, 'keys: Home faces the walking direction');
+    // the map by keys
+    await page.locator(`${DR} [data-map-toggle]`).focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Enter'); // the focused close button
+    await page.waitForTimeout(300);
+    check((await page.locator(`${DR} [data-map-panel]`).count()) === 0 && (await page.evaluate(() => document.activeElement?.hasAttribute('data-map-toggle'))), 'keys: the map opens and closes, focus returns');
+    await page.locator(`${DR} [data-advance="walk"]`).focus();
+    for (let k = 5; k <= 8; k++) {
+      await page.keyboard.press('Enter');
+      await settle(page, k * 100);
+      await page.waitForTimeout(200);
+    }
+    check(await page.evaluate(() => document.activeElement?.closest('[data-radio="verify"]') !== null), 'keys: the decision has focus');
+    await page.keyboard.press('ArrowLeft'); // estimate
+    await page.keyboard.press('Tab'); // "בדיקה"
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    check((await fb(page)) === 'verify-right', 'keys: the whole task done with keys only');
+    check(errors.length === 0, `keys: no page errors${errors.length ? `: ${errors.slice(0, 3).join(' | ')}` : ''}`);
+    await ctx.close();
+  }
+
+  // ================================================================ reduced motion: a segment is a cut
+  {
+    const { ctx, page } = await open(browser, { reduced: true });
+    await ready(page);
+    await typeCount(page, 800);
+    await setHeading(page, 62);
+    await btn(page, 'יציאה לדרך').click();
+    await page.waitForTimeout(400);
+    await page.locator(`${DR} [data-advance="walk"]`).click();
+    await page.waitForTimeout(150);
+    const s = await st(page);
+    check(s.pairs === 100 && !s.moving, 'reduced motion: the segment is a cut');
+    await page.waitForTimeout(300);
+    await syncAt(page, 'reduced 100');
+    await ctx.close();
+  }
+
+  // ================================================================ slow assets: the shared loader until the first frame
+  {
+    let release;
+    const held = new Promise((r) => (release = r));
+    const { ctx, page } = await open(browser, {
+      route: (p) =>
+        p.route('**/dead-reckoning/rocks.glb', async (route) => {
+          await held;
+          await route.continue();
+        }),
+    });
+    await page.waitForSelector(`${DR} [data-panel="dr-view"] [data-loading]`, { timeout: 60000 });
+    await page.waitForTimeout(1500);
+    check((await page.locator(`${DR} [data-panel="dr-view"] [data-loading]`).innerText()).includes('טוען שטח מדברי תלת־ממדי'), 'slow assets: the shared loader names the model');
+    await page.screenshot({ path: `${outDir}/checks/loading.png`, clip: await page.locator(`${DR} [data-panel="dr-view"]`).boundingBox() });
+    release();
+    await ready(page);
+    await page.waitForTimeout(600);
+    check((await page.locator(`${DR} [data-panel="dr-view"] [data-loading]`).count()) === 0, 'slow assets: the loader is gone once the scene is drawn');
+    await ctx.close();
+  }
+
+  // ================================================================ a short screen (1920 × 910): the view and the toolbar fit together
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1920, height: 910 } });
+    const page = await ctx.newPage();
+    await page.goto(URL, { waitUntil: 'load', timeout: 180000 });
+    await page.waitForSelector(DR, { timeout: 150000 });
+    await align(page, DR);
+    await ready(page);
+    const g = await page.evaluate((s) => {
+      const r = (q) => document.querySelector(`${s} ${q}`).getBoundingClientRect();
+      return { view: r('[data-panel="dr-view"]'), bar: r('[data-dr-toolbar]'), map: r('[data-map-panel]') };
+    }, DR);
+    check(g.bar.bottom <= 910 - 24 && g.view.height >= 400, `1920 × 910: view (${Math.round(g.view.height)} px) and toolbar end at ${Math.round(g.bar.bottom)} px (≤ 886)`);
+    check(g.map.bottom <= g.view.bottom && g.map.top >= g.view.top, '1920 × 910: the planning map fits inside the view');
+    await page.screenshot({ path: `${outDir}/checks/viewport-1920x910.png` });
+    await ctx.close();
+  }
+
+  // ================================================================ away and back: one canvas, no errors
+  {
+    const { ctx, page, errors } = await open(browser);
+    await ready(page);
+    for (let k = 0; k < 3; k++) {
+      await page.goto('about:blank');
+      await page.goto(`${BASE}/lessons/topic-06/#scene-principles`, { waitUntil: 'load' });
+      await page.waitForTimeout(800);
+      await page.goto(URL, { waitUntil: 'load' });
+      await page.waitForSelector(DR, { timeout: 120000 });
+      await align(page, DR);
+      await ready(page);
+    }
+    check((await page.locator(`${DR} canvas`).count()) === 1, 'lifecycle: one canvas after going away and back three times');
+    check(errors.length === 0, `lifecycle: no errors${errors.length ? `: ${errors.slice(0, 3).join(' | ')}` : ''}`);
+    await ctx.close();
   }
 } finally {
   await browser.close();
 }
 
+// ================================================================ no WebGL: the labelled stand-in
+{
+  const nogl = await chromium.launch({ args: ['--disable-webgl', '--disable-webgl2', '--disable-3d-apis'] });
+  const ctx = await nogl.newContext({ viewport: { width: 1440, height: 1122 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(URL, { waitUntil: 'load', timeout: 180000 });
+  await page.waitForSelector(DR, { timeout: 150000 });
+  await align(page, DR);
+  await page.waitForSelector(`${DR} [data-fallback]`, { timeout: 30000 }).catch(() => {});
+  check((await page.locator(`${DR} [data-fallback]`).count()) === 1, 'no WebGL: the stand-in view is shown');
+  check((await page.locator(`${DR} [data-fallback]`).innerText()).includes('תצוגה חלופית'), 'no WebGL: it says it is a stand-in');
+  check((await page.locator(`${DR} [data-panel="dr-view"] [data-loading]`).count()) === 0, 'no WebGL: no loader left spinning');
+  await typeCount(page, 800);
+  check((await st(page)).countChecked === 800, 'no WebGL: the task still works');
+  await page.screenshot({ path: `${outDir}/checks/no-webgl.png` });
+  check(errors.length === 0, `no WebGL: no page errors${errors.length ? `: ${errors.slice(0, 3).join(' | ')}` : ''}`);
+  await nogl.close();
+}
+
+// ================================================================ terrain association: tallest states (technique 1, same screen part)
+{
+  const b2 = await chromium.launch({ args: GPU });
+  const t = await open(b2);
+  const p = t.page;
+  await p.waitForFunction(() => !document.querySelector('[data-panel="map"] [data-loading]'), null, { timeout: 120000 });
+  await fits(p, TA, 'terrain · learn');
+  await p.locator(`${TA} [data-mode-switch] [role="radio"]`).nth(1).click();
+  await p.waitForTimeout(800);
+  const tFeedback = () => p.locator(`${TA} [data-feedback]`).getAttribute('data-feedback');
+  const tCheck = () => p.locator(TA).getByRole('button', { name: 'בדיקת המיקום' }).click();
+  let worst = 0;
+  for (const leg of LEGS) {
+    const radios = p.locator(`${TA} [data-radio="candidates"] [role="radio"]`);
+    for (const c of leg.candidates.filter((x) => x !== leg.answer)) {
+      await radios.nth(leg.candidates.indexOf(c)).click();
+      await p.locator(`${TA} [data-radio="comparison"] [data-option="mismatch"]`).click();
+      await tCheck();
+      if (await p.locator(TA).getByRole('button', { name: /רמז/ }).isEnabled()) await p.locator(TA).getByRole('button', { name: /רמז/ }).click();
+      if (await p.locator(TA).getByRole('button', { name: /רמז/ }).isEnabled()) await p.locator(TA).getByRole('button', { name: /רמז/ }).click();
+      worst = Math.max(worst, await fits(p, TA, `terrain · leg ${leg.index + 1} · wrong point ${c} + hint 2`));
+    }
+    await radios.nth(leg.candidates.indexOf(leg.answer)).click();
+    for (const e of leg.evidence.filter((x) => !leg.correctEvidence.includes(x.id))) await p.locator(`${TA} [data-evidence-id="${e.id}"]`).click();
+    await p.locator(`${TA} [data-radio="comparison"] [data-option="mismatch"]`).click();
+    await tCheck();
+    worst = Math.max(worst, await fits(p, TA, `terrain · leg ${leg.index + 1} · partial + hint 2`));
+    await p.locator(TA).getByRole('button', { name: 'הצגת הסבר' }).click();
+    check((await tFeedback()) === 'explained', `terrain · leg ${leg.index + 1}: the explanation after a check`);
+    worst = Math.max(worst, await fits(p, TA, `terrain · leg ${leg.index + 1} · explained`));
+    await p.locator(`${TA} [data-strip="practice"] button`, { hasText: /המשך לקטע הדרך הבא|לסיכום הציר/ }).click();
+    await p.waitForTimeout(400);
+  }
+  worst = Math.max(worst, await fits(p, TA, 'terrain · summary'));
+  await shot(p, TA, 'terrain-fit/summary.png');
+  ok(`terrain: tallest state ends at ${worst} px`);
+  check(t.errors.length === 0, `terrain sweep: no page errors${t.errors.length ? `: ${t.errors.join(' | ')}` : ''}`);
+  await b2.close();
+}
+
+void START;
+void SHEET;
+console.log('\nmetrics', JSON.stringify(metrics, null, 1));
 console.log(failures.length ? `\n${failures.length} failure(s)` : '\nall checks passed');
 process.exit(failures.length ? 1 : 0);

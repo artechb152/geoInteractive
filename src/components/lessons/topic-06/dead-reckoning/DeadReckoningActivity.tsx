@@ -1,246 +1,324 @@
 'use client';
 
-import { useEffect, useId, useReducer, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { animate, useMotionValue, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Check, Footprints, Info, RotateCcw, RotateCw, X } from 'lucide-react';
+import { useEffect, useId, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { animate, motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'framer-motion';
+import { Check, Eye, Footprints, Info, Map as MapIcon, RotateCcw, RotateCw, Wind, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StatusChip } from '@/components/ui/StatusChip';
 import { cn } from '@/lib/utils';
-import { LegendGlyph, type GlyphKind } from '../CombatNavVisuals';
+import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { RadioRow } from '../terrain-nav/RadioRow';
-import { normalizeDegrees } from '../locationCheckGeometry';
+import { signedTurn } from '../locationCheckGeometry';
 import {
   AZIMUTH_DEG,
+  COUNT_MAX,
+  DEBRIEF_CASES,
   DEVIATION_DEG,
   DISTANCE_M,
   HILL,
   INITIAL_STATE,
   OTHER_PACE_M,
   PACE_M,
-  PACE_OPTIONS,
   PLANNED_PAIRS,
+  SEGMENT_M,
   SHORT_PACE_M,
   STEP_PAIRS,
   VISIBILITY_M,
   WADI_CROSSING_M,
+  WADI_STOP_PAIRS,
   deviationGap,
   pairsToMetres,
   reducer,
   shortPaceShortfall,
   view as viewOf,
+  type DebriefCase,
+  type SignOption,
   type State,
   type VerifyOption,
 } from './deadReckoningModel';
+import { DEFAULT_PITCH, LookRig } from './deadReckoningLook';
 import { DeadReckoningMap } from './DeadReckoningMap';
-import { DeadReckoningField, FIELD_COUNTER_END, FIELD_W } from './DeadReckoningField';
+import { DeadReckoningView } from './DeadReckoningView';
+import { TravelCompass, formatAzimuth } from './TravelCompass';
 
 /**
- * "ניווט עיוור" — the dead-reckoning activity of lesson 6. One card, laid out to
- * fit one laptop screen in every state (≤ 760 px with the closing card under
- * it, at the 1344 px reference): a title row (the technique's title, owned by
- * CombatNavScene, the badge, the stepper and the reset), then the technique's
- * principle, the field view and the planning map side by side with their
- * caption and legend; beside them, at the inline end, the task column — the
- * step's title, its controls and the feedback, which fills the column so the
- * card never changes height. The task has three steps:
+ * "ניווט עיוור" — the dead-reckoning activity of lesson 6, inside a sandstorm,
+ * seen from the navigator's own eyes. One card: the title row (title, short
+ * description, the conditions chip; the stepper; a quiet reset), the live
+ * first-person view with the planning map on demand, a toolbar under it (the
+ * compass, the walking direction, the pace counter and the estimate, the
+ * advance button), the task panel and one status line.
  *
  *   1 מתכננים   how many pace pairs is 1,200 m at the example's 1.5 m pace?
- *               The learner computes it: until it is checked right, nothing on
- *               the card shows the count (view().countKnown) — the right check
- *               switches on the counter, the map's ticks and the copy that
- *               carries it.
- *   2 מתקדמים   set the compass to 62° (the map's arrow turns with it), then
- *               count in hundreds; map and field move from one distance value
- *   3 מאמתים    the count is complete — what does it prove? The right answer
- *               opens the explanation: a 3° error drawn to scale, the short
- *               pace, and the landmark to verify against.
+ *               (typed; each common slip is named), then set the compass to
+ *               062° — the view turns with it. Until the count is checked
+ *               right, nothing on the card shows it (view().countKnown).
+ *   2 מתקדמים   each press walks 100 pairs (150 m): the camera really moves
+ *               through the terrain, the counter and the map's estimate follow
+ *               the same motion value. At 400 pairs a dry wadi crosses the
+ *               way, 15 m ahead: compare it with the map and name it; its
+ *               label appears only then, and only while it is in sight.
+ *   3 מאמתים    the count is complete — what does it prove? After the
+ *               learner's answer, the map debrief: a 3° error and a short
+ *               pace drawn to scale, and the landmark to verify against.
  *
- * Every wrong answer says what went wrong and stays open for another try;
- * "התחלה מחדש" resets the whole task.
+ * Rapid presses: a segment is one reducer state (`moving`); presses while it
+ * runs are ignored and the button is disabled, so a count can never be
+ * doubled or skip the wadi stop. "איפוס" returns everything — count, camera,
+ * compass, answers, map — to the opening.
  */
 
-/** The technique's approved board copy, owned by CombatNavScene (SUPPORT.dead). */
+/** The technique's board copy, owned by CombatNavScene. */
 export type DeadReckoningCopy = {
-  readonly badge?: string;
-  readonly caption: string;
-  /** `labelBeforeCount` stands in for a label that gives the count, until step 1 is checked right. */
-  readonly legend: readonly { readonly kind: GlyphKind; readonly label: string; readonly labelBeforeCount?: string }[];
+  /** The conditions chip. */
+  readonly badge: string;
+  /** The method's principle — the status line once the task is done (earlier it would answer the task's questions). */
+  readonly principle: string;
 };
 
 const n = (v: number) => v.toLocaleString('en-US');
 const Deg = ({ v }: { v: number }) => (
   <bdi dir="ltr" className="tabular-nums">
-    {`${v}°`}
+    {formatAzimuth(v)}
   </bdi>
 );
 const roundM = (v: number) => (v >= 100 ? Math.round(v / 10) * 10 : Math.round(v));
 
-/** Width of the task column (reference px); the two views share the rest of the card. */
-const TASK_W = 340;
+/** Reference px. The view's height in the approved composition (1440 × 1122). */
+const FRAME_H = 560;
+/** Lowest view height on short screens, and what sits above and beside it down to the toolbar's foot (card padding, title row, toolbar). */
+const FRAME_MIN = 400;
+const CHROME_TO_TOOLBAR = 367;
+/** Viewport px the lesson keeps above (site header + gap) and below a screen (LessonFitUniform). */
+const VIEWPORT_RESERVE = 104 + 24;
+
+/**
+ * The view keeps the mockup's 560 px where the screen has room (1440 × 1122: the whole card fits). On a
+ * shorter screen (1920 × 910, a laptop at 125 %) the card cannot fit whole, so the view gives up height,
+ * down to 400 px, until the view and the toolbar — what the walk needs — fit one screen together.
+ * The lesson fit's scale does not depend on this card's height, so this cannot feed back into it.
+ */
+function useFrameHeight() {
+  const scale = useLessonViewportScale();
+  const [vh, setVh] = useState<number | null>(null);
+  useEffect(() => {
+    const on = () => setVh(window.innerHeight);
+    on();
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  if (vh === null) return FRAME_H;
+  const room = (vh - VIEWPORT_RESERVE) / (scale || 1) - CHROME_TO_TOOLBAR;
+  return Math.round(Math.min(FRAME_H, Math.max(FRAME_MIN, room)));
+}
+const COMPASS_PX = 164;
+/** One 150 m segment on screen, seconds. */
+const WALK_S = 3.6;
 
 const STEP_LABEL = ['מתכננים', 'מתקדמים', 'מאמתים'] as const;
+const SIGN_LABEL: Record<SignOption, string> = { wadi: 'ערוץ יבש', road: 'דרך עפר', hill: 'גבעה עם אנטנה' };
 const VERIFY_LABEL: Record<VerifyOption, string> = {
-  proof: 'הגענו ל־B: הספירה הושלמה.',
-  estimate: 'אנחנו באזור B לפי האומדן, וצריך לאמת את המיקום.',
-  'keep-walking': 'ממשיכים באותו כיוון עד שרואים את B.',
+  proof: 'הגענו ל־B',
+  estimate: 'אנחנו באזור B לפי האומדן — צריך לאמת',
+  'keep-walking': 'ממשיכים באותו כיוון עד שרואים את B',
 };
+const DEBRIEF_LABEL: Record<DebriefCase, string> = { deviation: `סטייה של ${DEVIATION_DEG}° בכיוון`, 'short-pace': `צעד כפול של ${SHORT_PACE_M} מ׳` };
 
-export function DeadReckoningActivity({
-  copy,
-  title: techniqueTitle,
-  intro,
-  footer,
-}: {
-  copy: DeadReckoningCopy;
-  /** The technique's title (its h3), at the inline start of the title row. */
-  title?: ReactNode;
-  /** The technique's principle, over the two views (it spans their width, not the task column's). */
-  intro?: ReactNode;
-  /** Rendered under the task; told whether the count is known, so copy that gives it can wait for step 1. */
-  footer?: (countKnown: boolean) => ReactNode;
-}) {
+export function DeadReckoningActivity({ copy, title, intro }: { copy: DeadReckoningCopy; title?: ReactNode; intro?: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const v = viewOf(state);
-  // Bumped by every restart, so focus returns to step 1 even when the restart is made in step 1.
+  const reduce = !!useReducedMotion();
+  const uid = useId();
+  // Bumped by every reset, so focus and the view return to the opening even when reset at the opening.
   const [round, setRound] = useState(0);
+  const look = useMemo(() => new LookRig(), []);
+  const distM = useMotionValue(0);
+  const [mapOpen, setMapOpen] = useState(true);
+  const mapButtonRef = useRef<HTMLButtonElement>(null);
+  const mapCloseRef = useRef<HTMLButtonElement>(null);
+  const frameH = useFrameHeight();
+
   const restart = () => {
     dispatch({ type: 'restart' });
     setRound((r) => r + 1);
+    setMapOpen(true);
+    look.aim(0, DEFAULT_PITCH, true);
   };
-  const reduce = !!useReducedMotion();
-  const uid = useId();
-  const titleId = `${uid}-title`;
 
-  // One distance value drives the map's estimate and the field view: they cannot drift apart.
-  const distM = useMotionValue(0);
+  // ---- the walk: one segment per press, one motion value for the camera, the counter and the map
   useEffect(() => {
-    const target = pairsToMetres(state.pairs);
-    if (reduce || target <= distM.get()) {
-      distM.jump(target);
+    if (!state.moving) {
+      const at = pairsToMetres(state.pairs);
+      if (Math.abs(distM.get() - at) > 0.01) distM.jump(at);
       return;
     }
-    const c = animate(distM, target, { duration: 0.9, ease: [0.45, 0, 0.55, 1] });
+    const to = pairsToMetres(state.pairs + STEP_PAIRS);
+    look.aim(AZIMUTH_DEG, DEFAULT_PITCH);
+    if (reduce) {
+      distM.jump(to);
+      dispatch({ type: 'arrive' });
+      return;
+    }
+    const c = animate(distM, to, { duration: WALK_S, ease: [0.45, 0, 0.55, 1], onComplete: () => dispatch({ type: 'arrive' }) });
     return () => c.stop();
-  }, [state.pairs, reduce, distM]);
+  }, [state.moving, state.pairs, round, reduce, distM, look]);
+
+  // ---- the head follows the body while the compass is set; the opening faces north, up the dirt road
+  useEffect(() => {
+    if (v.phase === 'compass') look.aim(state.heading, DEFAULT_PITCH);
+  }, [v.phase, state.heading, look]);
+  useEffect(() => {
+    if (state.step === 'walk' && state.pairs === 0 && !state.moving) look.aim(AZIMUTH_DEG, DEFAULT_PITCH);
+  }, [state.step, state.pairs, state.moving, look]);
+
+  // ---- the map: open while planning, closed on the way (the learner opens it when needed), the debrief opens it
+  useEffect(() => {
+    if (state.step === 'walk' && state.pairs === 0) setMapOpen(false);
+  }, [state.step, state.pairs]);
+  useEffect(() => {
+    if (v.done) setMapOpen(true);
+  }, [v.done]);
+  const toggleMap = (open: boolean, returnFocus = true) => {
+    setMapOpen(open);
+    if (open) requestAnimationFrame(() => mapCloseRef.current?.focus({ preventScroll: true }));
+    else if (returnFocus) requestAnimationFrame(() => mapButtonRef.current?.focus({ preventScroll: true }));
+  };
 
   // Dev-only handle for scripts/qa/shot-dead-reckoning.mjs.
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') return;
-    const w = window as unknown as { __dr?: unknown };
-    w.__dr = { state, distM: distM.get() };
+    const w = window as unknown as { __dr?: unknown; __drDev?: unknown };
+    w.__dr = {
+      state,
+      distM: distM.get(),
+      get look() {
+        return { yaw: look.yaw, pitch: look.pitch };
+      },
+      mapOpen,
+    };
+    // Camera controls for the visual QA shots (scripts/qa/shot-dead-reckoning.mjs) — never the task's state.
+    w.__drDev = { place: (m: number, yaw: number, pitch = DEFAULT_PITCH) => (distM.jump(m), look.aim(yaw, pitch, true)) };
     return () => {
       delete w.__dr;
+      delete w.__drDev;
     };
-  }, [state, distM]);
+  });
 
-  // A new step, or a restart, moves keyboard focus to the step's first control (the old one is gone or disabled).
-  const stripRef = useRef<HTMLDivElement>(null);
-  const stepKey = `${round}:${state.step}:${v.done}`;
-  // Compared with the last key rather than a "first render" flag: StrictMode re-runs the
-  // mount effect, and a flag then focused (and ringed) the first pace option, 800, on arrival.
+  // A new step or phase moves keyboard focus to its first control, marked data-autofocus wherever it sits
+  // (the count field, the compass, the advance button, the landmark's options…); the old one is gone or disabled.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const stepKey = `${round}:${state.step}:${v.phase}:${v.atWadi && v.sign !== 'right'}:${v.counted}:${v.done}`;
   const lastStepKey = useRef(stepKey);
   useEffect(() => {
     if (lastStepKey.current === stepKey) return;
     lastStepKey.current = stepKey;
-    const el = stripRef.current?.querySelector<HTMLElement>('[data-autofocus], [role="radio"][tabindex="0"], [role="slider"], button:not([disabled])');
+    const el =
+      rootRef.current?.querySelector<HTMLElement>('[data-autofocus]:not([disabled])') ??
+      panelRef.current?.querySelector<HTMLElement>('input, [role="radio"][tabindex="0"], button:not([disabled])');
     el?.focus({ preventScroll: true });
   }, [stepKey]);
 
-  const atStart = state.step === 'plan' || state.step === 'heading';
-  const fieldNote = atStart
-    ? 'צומת הדרכים A — נקודת מוצא מזוהה'
-    : v.atWadi
-      ? 'ערוץ יבש — סימן שאפשר להשוות למפה'
-      : v.counted
-        ? 'חול בלבד — אין סימן מזוהה בטווח הראייה'
-        : 'חול בלבד — אין סימן בטווח הראייה';
-  const title =
-    state.step === 'plan'
-      ? 'מתכננים: כמה צעדים כפולים עד B?'
-      : state.step === 'heading'
-        ? 'מכוונים את המצפן'
+  const instruction =
+    v.phase === 'count'
+      ? 'חשבו כמה צעדים כפולים תספרו עד B.'
+      : v.phase === 'compass'
+        ? 'כוונו את המצפן לאזימוט התכנון: הוא יקבע את כיוון ההליכה.'
         : state.step === 'walk'
-          ? 'מתקדמים וסופרים'
+          ? v.atWadi && v.sign !== 'right'
+            ? 'זיהיתם סימן בשטח? השוו אותו למפת התכנון.'
+            : 'שמרו על האזימוט וספרו צעדים. מה אפשר לזהות בדרך?'
           : v.done
-            ? 'סיום: נדרש אימות'
-            : 'מאמתים: מה הספירה מוכיחה?';
+            ? 'תחקיר: מה יכול להזיז את נקודת הסיום?'
+            : 'הספירה הושלמה. מה ידוע כעת, ומה צריך לאמת?';
+
+  const fallbackLabel = `השטח סביבכם במבט מלמעלה, ${n(Math.round(v.metres))} מ׳ מ־A באזימוט ${AZIMUTH_DEG}°. סופת חול — רואים רק כ־${VISIBILITY_M} מ׳.`;
 
   return (
-    <div className="surface-elevated p-6 lg:p-8" data-activity="dead-reckoning" data-step={state.step} data-done={v.done || undefined} aria-labelledby={titleId}>
-      {/* Title row: the technique, the conditions, the task's progress and the reset */}
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
-          {techniqueTitle}
-          {copy.badge && <StatusChip tone="badge">{copy.badge}</StatusChip>}
+    <div ref={rootRef} className="surface-elevated p-8" data-activity="dead-reckoning" data-step={state.step} data-phase={v.phase ?? undefined} data-pairs={state.pairs} data-moving={state.moving || undefined} data-done={v.done || undefined}>
+      {/* Title row: the technique and its conditions; the progress and the instruction; a quiet reset */}
+      <div className="grid items-start gap-x-8" style={{ gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)' }}>
+        <div className="min-w-0">
+          {title}
+          {intro && <div className="mt-1">{intro}</div>}
+          <StatusChip tone="badge" className="mt-2.5 px-3.5 py-1.5 text-base" icon={<Wind className="size-4" aria-hidden />}>
+            {copy.badge}
+          </StatusChip>
         </div>
-        <div className="flex shrink-0 items-center gap-5">
+        <div className="flex flex-col items-center pt-1">
           <Stepper current={v.stepNumber} done={v.done} />
-          <Button variant="secondary" size="sm" onClick={restart} disabled={state === INITIAL_STATE}>
-            <RotateCcw className="size-4" aria-hidden />
-            התחלה מחדש
+          {/* Announced when the step or phase changes; each check and each stop is announced by the feedback */}
+          <p className="mt-4 text-center font-display text-lg font-semibold leading-snug text-black" aria-live="polite" data-instruction>
+            {instruction}
+          </p>
+        </div>
+        <div className="flex justify-end pt-1">
+          <Button variant="ghost" size="sm" onClick={restart} disabled={state === INITIAL_STATE} className="text-base text-black">
+            <RotateCcw className="size-[18px]" aria-hidden />
+            איפוס
           </Button>
         </div>
       </div>
 
-      <div className="mt-3 grid gap-x-6" style={{ gridTemplateColumns: `minmax(0, 1fr) ${TASK_W}px` }}>
-        <div className="min-w-0">
-          {intro}
-
-          {/* The two views: what you see (inline start) and the planning map, at one height */}
-          <div className={cn('grid gap-4', intro && 'mt-3.5')} style={{ gridTemplateColumns: `${FIELD_W}px minmax(0, 1fr)` }}>
-            <div className="relative overflow-hidden rounded-xl border border-border/70 bg-paper-bright" data-panel="dr-field">
-              <DeadReckoningField
+      <div className="mt-5">
+        <DeadReckoningView
+          distM={distM}
+          look={look}
+          walkHeading={v.phase === 'compass' || v.phase === 'count' ? state.heading : AZIMUTH_DEG}
+          wadiLabel={v.atWadi && v.wadiKnown}
+          reduceMotion={reduce}
+          height={frameH}
+          fallbackLabel={fallbackLabel}
+          countTarget={v.countKnown ? PLANNED_PAIRS : null}
+          mapButton={
+            <button
+              ref={mapButtonRef}
+              type="button"
+              onClick={() => toggleMap(!mapOpen)}
+              aria-expanded={mapOpen}
+              aria-controls={`${uid}-map`}
+              className={cn(
+                'inline-flex h-11 items-center gap-2 rounded-xl px-4 font-display text-base font-bold text-black shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                mapOpen ? 'bg-paper-bright ring-2 ring-accent/70' : 'bg-paper-bright/95 hover:bg-white',
+              )}
+              data-map-toggle
+            >
+              <MapIcon className="size-5" aria-hidden />
+              מפת התכנון
+            </button>
+          }
+          mapOpen={mapOpen}
+          mapInset={mapWidth(frameH) + 24 + 12}
+          mapPanel={
+            mapOpen && (
+              <MapPanel
+                id={`${uid}-map`}
+                frameH={frameH}
+                state={state}
                 distM={distM}
-                heading={state.step === 'plan' ? null : state.step === 'heading' ? state.heading : AZIMUTH_DEG}
-                target={v.countKnown ? PLANNED_PAIRS : null}
-                label={`בשטח, מבט מלמעלה סביב המנווט: ${fieldNote}. סופת חול — רואים רק כ־${VISIBILITY_M} מ׳ סביבכם.`}
-                className="absolute inset-0 h-full w-full"
+                closeRef={mapCloseRef}
+                onClose={() => toggleMap(false)}
+                onDebrief={(value) => dispatch({ type: 'setDebrief', value })}
               />
-              <span className="absolute start-3 top-3 rounded-lg bg-paper-bright/95 px-2.5 py-1 font-display text-base font-bold text-black shadow-sm">בשטח: מה שרואים סביבכם</span>
-              {/* Beside the pace counter (bottom, inline end): two lines at most */}
-              <span className="absolute bottom-3 start-3 rounded-lg bg-paper-bright/95 px-2.5 py-1 font-display text-base font-semibold leading-snug text-black shadow-sm" style={{ maxWidth: FIELD_W - FIELD_COUNTER_END - 22 }} data-field-note>
-                {fieldNote}
-              </span>
-            </div>
-            <div className="relative aspect-[14/9] overflow-hidden rounded-xl border border-border/70 bg-white" data-panel="dr-map">
-              <DeadReckoningMap
-                distM={distM}
-                heading={state.heading}
-                showTicks={v.countKnown}
-                showHeading={state.step === 'heading'}
-                showDeviation={v.done}
-                className="absolute inset-0 h-full w-full"
-              />
-            </div>
-          </div>
-
-          {/* Caption and legend, under the views they describe */}
-          <div className="mt-3" data-legend="dead-reckoning">
-            <p className="text-base leading-relaxed text-black">{copy.caption}</p>
-            <ul className="mt-1 flex flex-wrap gap-x-6 gap-y-1">
-              {copy.legend.map((it) => (
-                <li key={it.label} className="flex items-center gap-2 text-base leading-snug text-black">
-                  <LegendGlyph kind={it.kind} />
-                  <span>{!v.countKnown && it.labelBeforeCount ? it.labelBeforeCount : it.label}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* The task column: the step, its instruction and controls, then the feedback, which fills the rest */}
-        <div ref={stripRef} className="flex min-w-0 flex-col" data-dr-strip={state.step}>
-          <h4 id={titleId} className="font-display text-lg font-bold leading-snug text-black md:text-xl" aria-live="polite">
-            {title}
-          </h4>
-          <div className="mt-2.5">
-            <StepControls state={state} dispatch={dispatch} onRestart={restart} />
-          </div>
-          <Feedback state={state} />
-        </div>
+            )
+          }
+        />
       </div>
 
-      {footer?.(v.countKnown)}
+      <Toolbar state={state} look={look} distM={distM} dispatch={dispatch} />
+
+      <div ref={panelRef} className="mt-4" data-dr-panel={v.phase ?? state.step}>
+        <TaskPanel state={state} dispatch={dispatch} onOpenMap={() => toggleMap(true)} />
+      </div>
+
+      <p className="mt-4 border-t border-border pt-3.5 text-center text-base leading-snug text-black" data-status-line>
+        {v.done ? (
+          <>
+            <span className="font-display font-bold">עקרון הפעולה: </span>
+            {copy.principle}
+          </>
+        ) : state.step === 'plan' ? `נקודת המוצא: צומת דרכי עפר (A). היעד B: ${n(DISTANCE_M)} מ׳ באזימוט ${formatAzimuth(AZIMUTH_DEG)}.` : `כל התקדמות: ${STEP_PAIRS} צעדים כפולים = ${n(SEGMENT_M)} מ׳, באזימוט ${formatAzimuth(AZIMUTH_DEG)}.`}
+      </p>
     </div>
   );
 }
@@ -249,20 +327,27 @@ export function DeadReckoningActivity({
 
 function Stepper({ current, done }: { current: 1 | 2 | 3; done: boolean }) {
   return (
-    <ol className="flex items-center gap-1.5" aria-label="שלבי המשימה" data-stepper={done ? 'done' : current}>
+    <ol className="flex items-center" aria-label="שלבי המשימה" data-stepper={done ? 'done' : current}>
       {STEP_LABEL.map((label, i) => {
         const k = i + 1;
         const complete = k < current || (k === current && done);
         const now = k === current && !done;
         return (
-          <li key={label} className="flex items-center gap-1.5" aria-current={now ? 'step' : undefined}>
-            {i > 0 && <span aria-hidden className={cn('h-0.5 w-4 rounded', k <= current ? 'bg-accent' : 'bg-border')} />}
-            <span className={cn('flex size-6 items-center justify-center rounded-full border-2 font-display text-sm font-bold', complete ? 'border-accent bg-accent text-white' : now ? 'border-accent bg-white text-black' : 'border-border bg-white text-black')}>
-              {complete ? <Check className="size-3.5" strokeWidth={3.5} aria-hidden /> : k}
-            </span>
-            <span className={cn('font-display text-base', now ? 'font-bold text-black' : 'font-semibold text-fg-muted')}>
-              {label}
-              <span className="sr-only">{complete ? ' — הושלם' : now ? ' — השלב הנוכחי' : ''}</span>
+          <li key={label} className="flex items-center" aria-current={now ? 'step' : undefined}>
+            {i > 0 && <span aria-hidden className={cn('mx-3 h-px w-16', k <= current ? 'bg-fg-dim' : 'bg-border')} />}
+            <span className="flex items-center gap-2.5">
+              <span
+                className={cn(
+                  'flex size-9 items-center justify-center rounded-full font-display text-base font-bold',
+                  complete ? 'bg-pine text-white' : now ? 'bg-accent text-white shadow-cta-ember' : 'border border-border bg-bg-accent text-black',
+                )}
+              >
+                {complete ? <Check className="size-5" strokeWidth={3} aria-hidden /> : k}
+              </span>
+              <span className={cn('font-display text-base', now ? 'font-bold text-accent' : 'font-semibold text-black')}>
+                {label}
+                <span className="sr-only">{complete ? ' — הושלם' : now ? ' — השלב הנוכחי' : ''}</span>
+              </span>
             </span>
           </li>
         );
@@ -271,114 +356,9 @@ function Stepper({ current, done }: { current: 1 | 2 | 3; done: boolean }) {
   );
 }
 
-// ---------------------------------------------------------------- the step's controls
+// ---------------------------------------------------------------- the toolbar under the view
 
 type Dispatch = (a: Parameters<typeof reducer>[1]) => void;
-
-function StepControls({ state, dispatch, onRestart }: { state: State; dispatch: Dispatch; onRestart: () => void }) {
-  const v = viewOf(state);
-  const uid = useId();
-  if (state.step === 'plan') {
-    return (
-      <div data-controls="plan">
-        <p className="text-base leading-relaxed text-black">
-          מ־A ל־B: אזימוט <Deg v={AZIMUTH_DEG} />, מרחק {n(DISTANCE_M)} מ׳. לפי מדידה אישית, הצעד הכפול שלכם באורך {PACE_M} מ׳ (הנחת הדוגמה).
-        </p>
-        <div id={`${uid}-q`} className="mt-2 mb-1.5 font-display text-base font-bold text-black">
-          כמה צעדים כפולים תספרו?
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <RadioRow
-            labelledBy={`${uid}-q`}
-            options={PACE_OPTIONS.map((p) => ({ id: p, label: n(p) }))}
-            value={state.pace}
-            disabled={v.pace === 'right'}
-            onChange={(value) => dispatch({ type: 'choosePace', value })}
-            data="pace"
-          />
-          {v.pace === 'right' ? (
-            <Button variant="primary" size="md" onClick={() => dispatch({ type: 'toHeading' })} className="ms-auto">
-              המשך: כיוון התנועה
-              <ArrowLeft className="size-4" aria-hidden />
-            </Button>
-          ) : (
-            <Button variant="primary" size="md" onClick={() => dispatch({ type: 'checkPace' })} disabled={state.pace === null} className="ms-auto">
-              בדיקה
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
-  if (state.step === 'heading') {
-    return (
-      <div data-controls="heading">
-        <p className="text-base leading-relaxed text-black">
-          סובבו את המצפן לאזימוט <Deg v={AZIMUTH_DEG} />: הוא נמדד מהצפון, עם כיוון השעון. החץ הכהה במפה מראה לאן תלכו.
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <CompassControl value={state.heading} onSet={(value) => dispatch({ type: 'setHeading', value })} onTurn={(by) => dispatch({ type: 'turn', by })} />
-          <Button variant="primary" size="md" onClick={() => dispatch({ type: 'depart' })} className="ms-auto">
-            יציאה לדרך
-            <ArrowLeft className="size-4" aria-hidden />
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  if (state.step === 'walk') {
-    return (
-      <div data-controls="walk">
-        <p className="text-base leading-relaxed text-black">
-          כל לחיצה: {STEP_PAIRS} צעדים כפולים = {n(pairsToMetres(STEP_PAIRS))} מ׳, באזימוט <Deg v={AZIMUTH_DEG} />. עקבו אחרי הספירה במפה ובשטח.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <Button variant="primary" size="md" onClick={() => dispatch({ type: 'advance' })}>
-            <Footprints className="size-4" aria-hidden />
-            {`עוד ${STEP_PAIRS} צעדים כפולים`}
-          </Button>
-          <p className="font-display text-base font-semibold text-black" data-count={state.pairs}>
-            נספרו <bdi className="tabular-nums">{n(state.pairs)}</bdi> מתוך {n(PLANNED_PAIRS)} · כ־{n(v.metres)} מ׳ מ־A
-          </p>
-        </div>
-      </div>
-    );
-  }
-  // verify
-  if (v.done) {
-    return (
-      <div data-controls="done">
-        <p className="text-base leading-relaxed text-black">סיימתם את הספירה והגעתם לאומדן של B. כדי לאשר שזה B, צריך סימן שטח מזוהה, או כיוון ומרחק אליו.</p>
-        <Button variant="secondary" size="md" onClick={onRestart} className="mt-3" data-autofocus>
-          <RotateCcw className="size-4" aria-hidden />
-          התחלה מחדש
-        </Button>
-      </div>
-    );
-  }
-  return (
-    <div data-controls="verify">
-      <div id={`${uid}-q`} className="mb-2 text-base leading-relaxed text-black">
-        <span className="font-display font-bold">ספרתם {n(PLANNED_PAIRS)} צעדים כפולים באזימוט <Deg v={AZIMUTH_DEG} />. סביבכם רק חול. מה אפשר לקבוע?</span>
-      </div>
-      <RadioRow
-        labelledBy={`${uid}-q`}
-        options={(['proof', 'estimate', 'keep-walking'] as const).map((id) => ({ id, label: VERIFY_LABEL[id] }))}
-        value={state.verify}
-        onChange={(value) => dispatch({ type: 'chooseVerify', value })}
-        stacked
-        data="verify"
-      />
-      <div className="mt-3 flex justify-end">
-        <Button variant="primary" size="md" onClick={() => dispatch({ type: 'checkVerify' })} disabled={state.verify === null}>
-          בדיקה
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------- the compass
 
 const TURNS = [
   { by: -10, label: '10°', aria: 'סיבוב של 10° נגד כיוון השעון', Icon: RotateCcw },
@@ -387,91 +367,208 @@ const TURNS = [
   { by: 10, label: '10°', aria: 'סיבוב של 10° עם כיוון השעון', Icon: RotateCw },
 ] as const;
 
-/** A compass dial (drag, click or arrow keys) with fine-turn buttons; clockwise from north, as an azimuth is read. */
-function CompassControl({ value, onSet, onTurn }: { value: number; onSet: (deg: number) => void; onTurn: (by: number) => void }) {
-  const ref = useRef<SVGSVGElement>(null);
-  const dragging = useRef(false);
-  const fromPointer = (e: ReactPointerEvent<SVGSVGElement>) => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    const dx = e.clientX - (r.left + r.width / 2);
-    const dy = e.clientY - (r.top + r.height / 2);
-    if (Math.hypot(dx, dy) < r.width * 0.08) return;
-    onSet(Math.round(normalizeDegrees((Math.atan2(dx, -dy) * 180) / Math.PI)) % 360);
-  };
-  const onKey = (e: ReactKeyboardEvent<SVGSVGElement>) => {
-    const by = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 }[e.key];
-    if (by !== undefined) onTurn(by);
-    else if (e.key === 'Home') onSet(0);
-    else return;
-    e.preventDefault();
-  };
-  const rad = (value * Math.PI) / 180;
-  const tip = { x: Math.sin(rad) * 44, y: -Math.cos(rad) * 44 };
-  const arc = { x: Math.sin(rad) * 30, y: -Math.cos(rad) * 30 };
+function Toolbar({ state, look, distM, dispatch }: { state: State; look: LookRig; distM: MotionValue<number>; dispatch: Dispatch }) {
+  const v = viewOf(state);
+  const setting = v.phase === 'compass';
+  const travel = v.phase ? state.heading : AZIMUTH_DEG;
+  const live = useTransform(distM, (d) => n(Math.round(d / PACE_M)));
+  const metres = useTransform(distM, (d) => `כ־${n(Math.round(d))} מ׳ לפי הספירה`);
+  const pct = useTransform(distM, (d) => `${Math.round((100 * d) / DISTANCE_M)}%`);
+  const advance =
+    state.step === 'plan' ? (
+      <Button variant="primary" size="lg" className="min-w-[17rem] rounded-full" onClick={() => dispatch({ type: 'depart' })} disabled={!setting} data-advance="depart">
+        <Footprints className="size-5" aria-hidden />
+        יציאה לדרך
+      </Button>
+    ) : state.step === 'walk' ? (
+      <Button variant="primary" size="lg" className={cn('min-w-[17rem] rounded-full', state.moving && 'cursor-progress opacity-70')} onClick={() => dispatch({ type: 'advance' })} disabled={!v.canAdvance && !state.moving} aria-disabled={state.moving || undefined} data-advance="walk" data-autofocus={!v.atWadi || v.sign === 'right' ? '' : undefined}>
+        <Footprints className="size-5" aria-hidden />
+        {/* While a segment runs the button keeps its focus (a disabled button would drop it) and presses are ignored. */}
+        {state.moving ? 'מתקדמים…' : `התקדמות: ${STEP_PAIRS} צעדים כפולים`}
+      </Button>
+    ) : (
+      <Button variant="primary" size="lg" className="min-w-[17rem] rounded-full" disabled data-advance="counted">
+        <Check className="size-5" aria-hidden />
+        הספירה הושלמה
+      </Button>
+    );
   return (
-    <div className="flex items-center gap-3.5" data-compass>
-      <svg
-        ref={ref}
-        viewBox="-60 -60 120 120"
-        className="size-[124px] shrink-0 cursor-pointer touch-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        role="slider"
-        tabIndex={0}
-        aria-label="כיוון המצפן (אזימוט)"
-        aria-valuemin={0}
-        aria-valuemax={359}
-        aria-valuenow={value}
-        aria-valuetext={`${value} מעלות`}
-        onPointerDown={(e) => {
-          dragging.current = true;
-          e.currentTarget.setPointerCapture(e.pointerId);
-          fromPointer(e);
-        }}
-        onPointerMove={(e) => dragging.current && fromPointer(e)}
-        onPointerUp={() => (dragging.current = false)}
-        onPointerCancel={() => (dragging.current = false)}
-        onKeyDown={onKey}
-      >
-        <circle r={57} className="fill-paper-bright stroke-border" strokeWidth={2} />
-        {value > 0 && <path d={`M0 0L0 -30A30 30 0 ${value > 180 ? 1 : 0} 1 ${arc.x.toFixed(2)} ${arc.y.toFixed(2)}Z`} className="fill-accent" fillOpacity={0.18} />}
-        {Array.from({ length: 36 }, (_, k) => {
-          const a = (k * 10 * Math.PI) / 180;
-          const r0 = k % 9 === 0 ? 46 : k % 3 === 0 ? 49 : 51;
-          return <line key={k} x1={Math.sin(a) * r0} y1={-Math.cos(a) * r0} x2={Math.sin(a) * 55} y2={-Math.cos(a) * 55} className="stroke-fg-muted" strokeWidth={k % 3 === 0 ? 1.6 : 0.9} />;
-        })}
-        <text x={0} y={-35} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={800} className="fill-fg font-display">
-          צ
-        </text>
-        {[90, 180, 270].map((d) => (
-          <text key={d} x={Math.sin((d * Math.PI) / 180) * 35} y={-Math.cos((d * Math.PI) / 180) * 35} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700} direction="ltr" className="fill-fg-muted font-display tabular-nums">
-            {d}
-          </text>
-        ))}
-        <line x1={0} y1={0} x2={tip.x.toFixed(2)} y2={tip.y.toFixed(2)} className="stroke-accent" strokeWidth={3.5} strokeLinecap="round" />
-        <polygon points="0,-52 6,-40 -6,-40" className="fill-accent" transform={`rotate(${value})`} />
-        <circle r={4} className="fill-fg" />
-      </svg>
-      <div>
-        <div className="font-display text-3xl font-bold leading-none text-black tabular-nums" dir="ltr" data-heading-readout>
-          {`${value}°`}
-        </div>
-        {/* Two by two, to fit the task column: counter-clockwise on top, clockwise below */}
-        <div dir="ltr" className="mt-2.5 grid grid-cols-2 gap-1.5">
-          {TURNS.map((t) => (
-            <button
-              key={t.by}
-              type="button"
-              aria-label={t.aria}
-              title={t.aria}
-              onClick={() => onTurn(t.by)}
-              className="inline-flex h-10 cursor-pointer items-center justify-center gap-1 rounded-xl border border-border bg-bg-elevated px-2.5 font-display text-base font-semibold text-black transition-colors duration-200 ease-snap hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <t.Icon className="size-4" aria-hidden />
-              {t.label}
-            </button>
-          ))}
+    <div className="mt-3 flex items-center gap-7 px-2" data-dr-toolbar>
+      {/* The compass and the walking direction */}
+      <div className="flex items-center gap-5">
+        <TravelCompass
+          look={look}
+          travel={travel}
+          size={COMPASS_PX}
+          onTurn={setting ? (by) => dispatch({ type: 'turn', by }) : undefined}
+          onSet={setting ? (value) => dispatch({ type: 'setHeading', value }) : undefined}
+        />
+        <div className="min-w-[10.5rem]">
+          <div className="font-display text-base font-bold text-black">כיוון התנועה</div>
+          <div className="font-display text-[42px] font-bold leading-tight text-black tabular-nums" dir="ltr" data-heading-readout>
+            {formatAzimuth(travel)}
+          </div>
+          {setting ? (
+            <div dir="ltr" className="mt-1 grid grid-cols-4 gap-1" data-turns>
+              {TURNS.map((t) => (
+                <button
+                  key={t.by}
+                  type="button"
+                  aria-label={t.aria}
+                  title={t.aria}
+                  onClick={() => dispatch({ type: 'turn', by: t.by })}
+                  className="inline-flex h-9 cursor-pointer items-center justify-center gap-0.5 rounded-lg border border-border bg-bg-elevated px-1.5 font-display text-base font-semibold text-black transition-colors hover:border-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <t.Icon className="size-3.5" aria-hidden />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <ViewReadout look={look} travel={travel} />
+          )}
         </div>
       </div>
+
+      <span aria-hidden className="h-24 w-px bg-border" />
+
+      {/* The pace count and what it gives */}
+      <div className="flex min-w-0 flex-1 flex-col items-center" data-counter>
+        <div className="font-display font-bold leading-none text-black tabular-nums" dir="ltr">
+          <span className="text-[40px]">
+            {state.moving ? <motion.span>{live}</motion.span> : n(state.pairs)}
+          </span>
+          <span className="text-[40px] text-fg-dim">{' / '}</span>
+          <span className="text-[40px]" data-count-target>
+            {v.countKnown ? n(PLANNED_PAIRS) : '?'}
+          </span>
+        </div>
+        <div className="mt-1 font-display text-base font-bold text-black">צעדים כפולים</div>
+        <div className="text-base text-black">{state.moving ? <motion.span>{metres}</motion.span> : `כ־${n(v.metres)} מ׳ לפי הספירה`}</div>
+        {/* Fills from the inline start (right), as the course's own progress bars do */}
+        <div className="mt-2 flex w-full max-w-[19rem] items-center gap-3">
+          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-border/70">
+            <motion.div className="absolute inset-y-0 start-0 rounded-full bg-accent" style={{ width: pct }} />
+          </div>
+          <motion.span dir="ltr" className="w-12 text-start text-base font-semibold text-black tabular-nums">
+            {pct}
+          </motion.span>
+        </div>
+      </div>
+
+      <span aria-hidden className="h-24 w-px bg-border" />
+
+      <div className="flex shrink-0 justify-end">{advance}</div>
+    </div>
+  );
+}
+
+/** Under the walking direction: where the head points, when it is turned away from it. */
+function ViewReadout({ look, travel }: { look: LookRig; travel: number }) {
+  const yaw = useSyncExternalStore(
+    (fn) => look.subscribe(fn),
+    () => Math.round(look.yaw) % 360,
+    () => travel,
+  );
+  const off = Math.abs(signedTurn(travel, yaw)) > 3;
+  return (
+    <div className={cn('mt-1 font-display text-base font-semibold text-black transition-opacity', off ? 'opacity-100' : 'opacity-0')} aria-hidden={!off} data-view-readout>
+      כיוון המבט: <Deg v={yaw} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- the task panel
+
+function TaskPanel({ state, dispatch, onOpenMap }: { state: State; dispatch: Dispatch; onOpenMap: () => void }) {
+  const v = viewOf(state);
+  const uid = useId();
+  const [text, setText] = useState('');
+  useEffect(() => {
+    if (state.count === null && state.countChecked === null) setText('');
+  }, [state.count, state.countChecked]);
+
+  let body: ReactNode;
+  if (v.phase === 'count') {
+    body = (
+      <form
+        className="flex flex-wrap items-center gap-x-4 gap-y-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          dispatch({ type: 'checkCount' });
+        }}
+        data-controls="count"
+      >
+        <label htmlFor={`${uid}-count`} className="font-display text-base font-bold text-black">
+          {`מרחק ${n(DISTANCE_M)} מ׳, צעד כפול ${PACE_M} מ׳ (מדידה אישית). כמה צעדים כפולים תספרו?`}
+        </label>
+        <input
+          id={`${uid}-count`}
+          dir="ltr"
+          inputMode="numeric"
+          autoComplete="off"
+          value={text}
+          onChange={(e) => {
+            const t = e.target.value.replace(/[^\d]/g, '').slice(0, String(COUNT_MAX).length);
+            setText(t);
+            dispatch({ type: 'setCount', value: t === '' ? null : Number(t) });
+          }}
+          data-autofocus
+          className="h-11 w-28 rounded-xl border border-fg-dim/60 bg-white px-3 text-center font-display text-lg font-bold text-black tabular-nums focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          aria-describedby={`${uid}-fb`}
+          data-count-input
+        />
+        <Button type="submit" variant="primary" size="md" disabled={state.count === null || !!v.count}>
+          בדיקה
+        </Button>
+      </form>
+    );
+  } else if (v.phase === 'compass') {
+    body = (
+      <div className="font-display text-base font-bold text-black" data-controls="compass">
+        {`סובבו את המצפן (גרירה, חיצים או הכפתורים) לאזימוט `}
+        <Deg v={AZIMUTH_DEG} />
+        {`, ואז „יציאה לדרך”. האזימוט נמדד מהצפון, עם כיוון השעון.`}
+      </div>
+    );
+  } else if (state.step === 'walk' && v.atWadi && v.sign !== 'right') {
+    body = (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-controls="sign">
+        <span id={`${uid}-q`} className="font-display text-base font-bold text-black">
+          משהו חוצה את הדרך לפניכם. מה זה, לפי המפה?
+        </span>
+        <RadioRow labelledBy={`${uid}-q`} options={(['wadi', 'road', 'hill'] as const).map((id) => ({ id, label: SIGN_LABEL[id] }))} value={state.sign} onChange={(value) => dispatch({ type: 'chooseSign', value })} data="sign" />
+        <Button variant="primary" size="md" onClick={() => dispatch({ type: 'checkSign' })} disabled={state.sign === null || !!v.sign}>
+          בדיקה
+        </Button>
+        <Button variant="secondary" size="md" onClick={onOpenMap} className="ms-auto border-accent text-accent" data-compare-map>
+          <MapIcon className="size-5" aria-hidden />
+          השוואה למפה
+        </Button>
+      </div>
+    );
+  } else if (state.step === 'verify' && !v.done) {
+    body = (
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-controls="verify">
+        <span id={`${uid}-q`} className="font-display text-base font-bold text-black">
+          {`ספרתם ${n(PLANNED_PAIRS)} צעדים כפולים באזימוט `}
+          <Deg v={AZIMUTH_DEG} />
+          {'. סביבכם רק חול. מה אפשר לקבוע?'}
+        </span>
+        <RadioRow labelledBy={`${uid}-q`} options={(['proof', 'estimate', 'keep-walking'] as const).map((id) => ({ id, label: VERIFY_LABEL[id] }))} value={state.verify} onChange={(value) => dispatch({ type: 'chooseVerify', value })} data="verify" />
+        <Button variant="primary" size="md" onClick={() => dispatch({ type: 'checkVerify' })} disabled={state.verify === null || !!v.verify} className="ms-auto">
+          בדיקה
+        </Button>
+      </div>
+    );
+  } else {
+    body = null;
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-white px-5 py-3.5">
+      {body && <div className="mb-2.5">{body}</div>}
+      <Feedback state={state} id={`${uid}-fb`} onOpenMap={onOpenMap} />
     </div>
   );
 }
@@ -480,40 +577,36 @@ function CompassControl({ value, onSet, onTurn }: { value: number; onSet: (deg: 
 
 type Tone = 'info' | 'wrong' | 'right';
 
-function Feedback({ state }: { state: State }) {
+function Feedback({ state, id, onOpenMap }: { state: State; id: string; onOpenMap: () => void }) {
   const v = viewOf(state);
   let tone: Tone = 'info';
   let title: ReactNode = null;
   let lines: ReactNode[] = [];
   let kind = 'info';
+  let action: ReactNode = null;
 
-  if (state.step === 'plan') {
-    if (v.pace === 'right') {
-      tone = 'right';
-      kind = 'pace-right';
-      title = (
-        <>
-          נכון: {n(DISTANCE_M)} ÷ {PACE_M} = {n(PLANNED_PAIRS)} צעדים כפולים.
-        </>
-      );
-      lines = [`המספר נכון לצעד שנמדד בדוגמה (${PACE_M} מ׳). מי שהצעד הכפול שלו ${OTHER_PACE_M} מ׳ יספור ${n(DISTANCE_M / OTHER_PACE_M)}, ולכן כל מנווט מודד את הצעד שלו.`];
-    } else if (v.pace) {
+  if (v.phase === 'count') {
+    const c = v.count;
+    if (c && c !== 'right') {
       tone = 'wrong';
-      kind = `pace-${v.pace}`;
-      if (v.pace === 'multiplied') {
+      kind = `count-${c}`;
+      if (c === 'multiplied') {
         title = `${n(DISTANCE_M * PACE_M)} מתקבל מ־${n(DISTANCE_M)} × ${PACE_M}: הכפלתם.`;
-        lines = ['צעד כפול ארוך ממטר, ולכן יש פחות צעדים מאשר מטרים. חלקו את המרחק באורך הצעד הכפול.'];
-      } else if (v.pace === 'single-steps') {
+        lines = ['צעד כפול ארוך ממטר, ולכן יש פחות צעדים ממטרים. חלקו את המרחק באורך הצעד הכפול.'];
+      } else if (c === 'single-steps') {
         title = `${n(PLANNED_PAIRS * 2)} הוא מספר הצעדים הבודדים.`;
         lines = [`צעד כפול הוא שני צעדים, וסופרים אותו פעם אחת. חלקו את המרחק באורך הצעד הכפול (${PACE_M} מ׳).`];
-      } else {
+      } else if (c === 'metres') {
         title = `${n(DISTANCE_M)} הוא המרחק במטרים, לא מספר הצעדים.`;
         lines = [`כל צעד כפול שלכם מכסה ${PACE_M} מ׳. חלקו את המרחק באורך הצעד הכפול.`];
+      } else {
+        title = `${n(state.count ?? 0)} אינו מתאים לחישוב.`;
+        lines = [`חלקו את המרחק (${n(DISTANCE_M)} מ׳) באורך הצעד הכפול (${PACE_M} מ׳), ונסו שוב.`];
       }
     } else {
-      title = 'בחרו תשובה ולחצו ״בדיקה״.';
+      title = 'הקלידו מספר ולחצו ״בדיקה״.';
     }
-  } else if (state.step === 'heading') {
+  } else if (v.phase === 'compass') {
     const h = v.heading;
     if (h && h.kind === 'off') {
       tone = 'wrong';
@@ -540,24 +633,43 @@ function Feedback({ state }: { state: State }) {
       lines = [
         cause,
         <>
-          סובבו עוד <Deg v={Math.abs(h.turnDeg)} /> {h.turnDeg > 0 ? 'עם כיוון השעון' : 'נגד כיוון השעון'}. בכיוון הזה הייתם מסיימים כ־{n(roundM(h.endGapM))} מ׳ מ־B.
+          סובבו עוד {Math.abs(h.turnDeg)}° {h.turnDeg > 0 ? 'עם כיוון השעון' : 'נגד כיוון השעון'}. בכיוון הזה הייתם מסיימים כ־{n(roundM(h.endGapM))} מ׳ מ־B.
         </>,
       ].filter(Boolean);
     } else {
-      kind = 'heading-live';
+      tone = 'right';
+      kind = 'count-right';
       title = (
         <>
-          המצפן מכוון ל־<Deg v={state.heading} />.
+          נכון: {n(DISTANCE_M)} ÷ {PACE_M} = {n(PLANNED_PAIRS)} צעדים כפולים.
         </>
       );
-      lines = [
-        <>
-          החץ הכהה במפה יוצא מ־A בכיוון הזה. הקו המקווקו הוא התכנון: <Deg v={AZIMUTH_DEG} />.
-        </>,
-      ];
+      lines = [`המספר נכון לצעד שנמדד בדוגמה. מי שהצעד הכפול שלו ${OTHER_PACE_M} מ׳ יספור ${n(DISTANCE_M / OTHER_PACE_M)}, ולכן כל מנווט מודד את הצעד שלו.`];
     }
   } else if (state.step === 'walk') {
-    if (state.pairs === 0) {
+    if (v.atWadi && v.sign === 'right') {
+      tone = 'right';
+      kind = 'sign-right';
+      title = 'נכון: ערוץ יבש. הספירה והשטח מתיישבים.';
+      lines = [
+        `במפה הערוץ חוצה את הציר כ־${n(WADI_CROSSING_M)} מ׳ מ־A. לפי הספירה עברתם ${n(v.metres)} מ׳, והערוץ כ־${n(WADI_CROSSING_M - v.metres)} מ׳ לפניכם.`,
+        'ערוץ שחוצה את הציר מאמת את המרחק שעברתם, לא שאתם בדיוק על הקו: גם בסטייה קטנה הייתם פוגשים אותו.',
+      ];
+    } else if (v.atWadi && v.sign === 'wrong') {
+      tone = 'wrong';
+      kind = `sign-${state.sign}`;
+      title = state.sign === 'road' ? 'לא. דרכי העפר במפה נפגשות ב־A ואינן חוצות את הציר בהמשך.' : `לא. הגבעה עם האנטנה נמצאת ליד B, עוד כ־${n(DISTANCE_M - v.metres)} מ׳ לפי הספירה.`;
+      lines = ['לפניכם שקע בקרקע עם גדות. מצאו במפה את מה שחוצה את הציר ליד הסמן שלכם.'];
+    } else if (v.atWadi) {
+      kind = 'sign';
+      title = `${n(state.pairs)} צעדים כפולים: כ־${n(v.metres)} מ׳ מ־A.`;
+      lines = ['בטווח הראייה מופיע שקע שחוצה את הדרך. השוו אותו למפה ובחרו מה הוא.'];
+      action = null;
+    } else if (state.moving) {
+      kind = 'walking';
+      title = 'מתקדמים וסופרים…';
+      lines = [`${STEP_PAIRS} צעדים כפולים, באזימוט ${formatAzimuth(AZIMUTH_DEG)}.`];
+    } else if (state.pairs === 0) {
       tone = 'right';
       kind = 'departed';
       title = (
@@ -565,31 +677,29 @@ function Feedback({ state }: { state: State }) {
           המצפן מכוון ל־<Deg v={AZIMUTH_DEG} />: יוצאים מ־A.
         </>
       );
-      lines = ['הסמן במפה הוא אומדן לפי הספירה, לא מיקום שנבדק.'];
-    } else if (v.atWadi) {
-      kind = 'wadi';
-      title = 'בדיקה בדרך: חציתם ערוץ יבש.';
-      lines = [`במפה הערוץ חוצה את הציר ${n(WADI_CROSSING_M)} מ׳ מ־A, בדיוק לפי הספירה (${n(state.pairs)} צעדים כפולים). ערוץ שחוצה את הציר מאשר את המרחק שעברתם, לא סטייה לצדדים.`];
+      lines = ['בכל התקדמות הספירה עולה ב־100, והאומדן במפה זז איתה. האומדן אינו מיקום שנבדק.'];
     } else {
-      kind = 'walking';
-      title = (
-        <>
-          {n(state.pairs)} צעדים כפולים × {PACE_M} מ׳ = {n(v.metres)} מ׳ מ־A, באזימוט <Deg v={AZIMUTH_DEG} />.
-        </>
-      );
-      lines = [`במפה הסמן מתקדם לאורך הקו. בשטח רואים רק כ־${VISIBILITY_M} מ׳ סביבכם.`];
+      kind = state.pairs === WADI_STOP_PAIRS + STEP_PAIRS ? 'past-wadi' : 'walking-stop';
+      title = `${n(state.pairs)} צעדים כפולים × ${PACE_M} מ׳ = כ־${n(v.metres)} מ׳ מ־A.`;
+      lines = [
+        state.pairs === WADI_STOP_PAIRS + STEP_PAIRS
+          ? `הערוץ כבר ${n(v.metres - WADI_CROSSING_M)} מ׳ מאחוריכם, מחוץ לטווח הראייה. סביבכם רק חול ואבנים.`
+          : `סביבכם רק חול ואבנים: אין סימן מזוהה בטווח הראייה (כ־${VISIBILITY_M} מ׳).`,
+      ];
     }
   } else if (v.verify === 'right') {
     tone = 'right';
     kind = 'verify-right';
     title = 'נכון: הספירה נותנת אומדן, לא הוכחה.';
     lines = [
-      <>
-        שגיאות מצטברות: סטייה של {DEVIATION_DEG}° בלבד (הקו הכהה במפה) יוצרת פער של כ־{n(roundM(deviationGap(DISTANCE_M / 2)))} מ׳ אחרי {n(DISTANCE_M / 2)} מ׳. בסוף הדרך הפער כ־{n(roundM(deviationGap(DISTANCE_M)))} מ׳, יותר מטווח הראייה.
-      </>,
-      `גם צעד כפול של ${SHORT_PACE_M} מ׳ במקום ${PACE_M} מ׳ יעצור אתכם ${n(shortPaceShortfall())} מ׳ לפני B.`,
-      `לכן מאמתים מול סימן מזוהה: במפה יש גבעה עם אנטנה ${n(HILL.fromTargetM)} מ׳ צפון־מערבית ל־B. כשהראות משתפרת, בודקים מול הגבעה.`,
+      `סטייה של ${DEVIATION_DEG}° בלבד מזיזה את נקודת הסיום כ־${n(roundM(deviationGap(DISTANCE_M)))} מ׳ מ־B, וצעד כפול של ${SHORT_PACE_M} מ׳ במקום ${PACE_M} עוצר אתכם ${n(shortPaceShortfall())} מ׳ לפניה — הרבה מעבר לטווח הראייה.`,
+      `הצעד הבא: מאמתים מול סימן מזוהה — הגבעה עם האנטנה, ${n(HILL.fromTargetM)} מ׳ צפון־מערבית ל־B, כשהראות משתפרת — או בחיפוש זהיר סביב האומדן.`,
     ];
+    action = (
+      <button type="button" onClick={onOpenMap} className="font-display font-semibold text-black underline decoration-accent decoration-2 underline-offset-4 hover:text-accent">
+        לתחקיר במפה
+      </button>
+    );
   } else if (v.verify === 'wrong') {
     tone = 'wrong';
     kind = `verify-${state.verify}`;
@@ -598,7 +708,7 @@ function Feedback({ state }: { state: State }) {
       lines = [`סטייה קטנה בכיוון או צעד קצר יותר מזיזים את נקודת הסיום, ובראות של כ־${VISIBILITY_M} מ׳ לא תראו את ההבדל.`];
     } else {
       title = 'לא. בלי סימן מזוהה אין דרך לדעת שהגעתם, וגם לא מתי לעצור.';
-      lines = ['בסוף הספירה עוצרים באומדן, ומאמתים את המיקום מול סימן מזוהה: כשהראות משתפרת, או בחיפוש זהיר סביב האומדן.'];
+      lines = ['בסוף הספירה עוצרים באומדן, ומאמתים את המיקום מול סימן מזוהה.'];
     }
   } else {
     kind = 'verify';
@@ -610,32 +720,115 @@ function Feedback({ state }: { state: State }) {
     lines = ['בחרו מה אפשר לקבוע, ולחצו ״בדיקה״.'];
   }
 
-  const icon = tone === 'right' ? <Check className="mt-0.5 size-5 shrink-0" aria-hidden /> : tone === 'wrong' ? <X className="mt-0.5 size-5 shrink-0" aria-hidden /> : <Info className="mt-0.5 size-5 shrink-0" aria-hidden />;
+  const icon =
+    tone === 'right' ? (
+      <Check className="mt-0.5 size-5 shrink-0 text-brand-dark" strokeWidth={3} aria-hidden />
+    ) : tone === 'wrong' ? (
+      <X className="mt-0.5 size-5 shrink-0 text-accent-hot" strokeWidth={3} aria-hidden />
+    ) : kind === 'sign' ? (
+      <Eye className="mt-0.5 size-5 shrink-0" aria-hidden />
+    ) : (
+      <Info className="mt-0.5 size-5 shrink-0" aria-hidden />
+    );
   return (
-    // Announced once per check (keyed by the attempt). It fills the task column, whose height the views set,
-    // so no verdict changes the card's height (the column fits the longest one: scripts/qa/shot-dead-reckoning.mjs).
-    <div
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      className={cn(
-        'mt-3 min-h-0 flex-1 rounded-xl border px-4 py-3',
-        tone === 'right' ? 'border-brand bg-brand/10' : tone === 'wrong' ? 'border-accent-hot/60 bg-bg-accent' : 'border-dashed border-border bg-bg-accent/50',
-      )}
-      data-dr-feedback={kind}
-    >
-      <div key={`${kind}-${state.attempts}-${state.pairs}`}>
-        <div className="flex items-start gap-2 font-display text-base font-bold leading-snug text-black">
-          {icon}
-          <span>{title}</span>
+    // Announced once per check or stop (keyed); never per frame.
+    <div id={id} role="status" aria-live="polite" aria-atomic="true" data-dr-feedback={kind} data-tone={tone}>
+      <div key={`${kind}-${state.attempts}-${state.pairs}`} className="flex items-start gap-2.5">
+        {icon}
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base font-bold leading-snug text-black">{title}</div>
+          {lines.length > 0 && (
+            <ul className="mt-1 space-y-0.5 text-base leading-snug text-black">
+              {lines.map((l, i) => (
+                <li key={i}>{l}</li>
+              ))}
+            </ul>
+          )}
         </div>
-        {lines.length > 0 && (
-          <ul className="mt-1.5 space-y-1 text-base leading-snug text-black">
-            {lines.map((l, i) => (
-              <li key={i}>{l}</li>
+        {action && <div className="shrink-0 self-center">{action}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- the planning map over the view
+
+/** The map's width in the panel: as wide as the view's height allows at the sheet's 14:9, at most 676 px. */
+const mapWidth = (frameH: number) => Math.round(Math.min(676, ((frameH - 92) * 14) / 9));
+
+function MapPanel({
+  id,
+  frameH,
+  state,
+  distM,
+  closeRef,
+  onClose,
+  onDebrief,
+}: {
+  id: string;
+  frameH: number;
+  state: State;
+  distM: MotionValue<number>;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+  onDebrief: (c: DebriefCase) => void;
+}) {
+  const v = viewOf(state);
+  const uid = useId();
+  return (
+    <div
+      id={id}
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={`${uid}-t`}
+      className="absolute end-3 top-3 z-10 rounded-xl bg-white p-3 shadow-[0_10px_30px_rgba(60,45,25,0.28)]"
+      style={{ width: mapWidth(frameH) + 24 }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+      data-no-look
+      data-map-panel
+    >
+      <div className="flex items-center justify-between gap-3 px-1 pb-2">
+        <h4 id={`${uid}-t`} className="font-display text-lg font-bold text-black">
+          מפת התכנון
+        </h4>
+        {v.done && (
+          <div className="flex items-center gap-1.5" role="group" aria-label="תחקיר: מה הזיז את נקודת הסיום">
+            {DEBRIEF_CASES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={state.debrief === c}
+                onClick={() => onDebrief(c)}
+                className={cn(
+                  'h-9 rounded-lg px-3 font-display text-base font-bold text-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                  state.debrief === c ? 'border-2 border-accent bg-accent/10' : 'border border-border bg-white hover:border-accent/60',
+                )}
+                data-debrief={c}
+              >
+                {DEBRIEF_LABEL[c]}
+              </button>
             ))}
-          </ul>
+          </div>
         )}
+        <button ref={closeRef} type="button" onClick={onClose} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 font-display text-base font-semibold text-black hover:bg-bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" data-map-close>
+          <X className="size-5" aria-hidden />
+          סגירה
+        </button>
+      </div>
+      <div className="relative aspect-[14/9] overflow-hidden rounded-lg border border-border/70" data-panel="dr-map">
+        <DeadReckoningMap
+          distM={distM}
+          heading={state.heading}
+          showTicks={v.countKnown}
+          showHeading={v.phase === 'compass'}
+          debrief={v.done ? state.debrief : null}
+          className="absolute inset-0 h-full w-full"
+        />
       </div>
     </div>
   );

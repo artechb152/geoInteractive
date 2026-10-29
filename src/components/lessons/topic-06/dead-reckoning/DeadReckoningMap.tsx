@@ -6,14 +6,17 @@ import { MAP } from '../../topic-02/topographyTerrainStyle';
 import { WATER } from '../terrain-nav/TerrainNavMap';
 import {
   AZIMUTH_DEG,
+  DEBRIEF_END,
   DEVIATION_DEG,
   DISTANCE_M,
   HILL,
+  PACE_M,
   PLANNED_PAIRS,
   ROADS,
   ROAD_WIDTH_M,
   SHEET,
   START,
+  SHORT_PACE_M,
   STEP_PAIRS,
   TARGET,
   VISIBILITY_M,
@@ -21,6 +24,8 @@ import {
   along,
   deviationGap,
   pairsToMetres,
+  shortPaceShortfall,
+  type DebriefCase,
   type Point,
   type XY,
 } from './deadReckoningModel';
@@ -36,6 +41,8 @@ import {
  * has computed the count, since the ticks spell it out — solid orange = the distance
  * counted so far, white-and-blue puck = the position the count gives (an
  * estimate, not a checked one), dark arrow = where the compass points now.
+ * In the debrief, one error case drawn to scale: the same count walked 3° off,
+ * or with a 1.4 m pace — where it really ends, against B and the 30 m of sight.
  */
 
 const H = SHEET.height;
@@ -100,7 +107,7 @@ const Base = memo(function Base() {
       </Plate>
       {/* The dry wadi */}
       <path d={pathOf(WADI)} fill="none" stroke={WATER.line} strokeWidth={6} strokeDasharray="20 12" strokeLinecap="round" strokeLinejoin="round" />
-      <Plate x={548} y={H - 690} anchor="start">
+      <Plate x={682} y={H - 700} anchor="start">
         ערוץ יבש
       </Plate>
       {/* Dirt roads, cased */}
@@ -161,7 +168,7 @@ export function DeadReckoningMap({
   heading,
   showTicks,
   showHeading,
-  showDeviation,
+  debrief,
   className,
 }: {
   /** Metres counted along the planned line (animated) — drives the estimate. */
@@ -172,8 +179,8 @@ export function DeadReckoningMap({
   showTicks: boolean;
   /** Draw the compass direction from A (while setting it). */
   showHeading: boolean;
-  /** Draw the 3° example after the verify step. */
-  showDeviation: boolean;
+  /** The error case drawn after the verify step. */
+  debrief: DebriefCase | null;
   className?: string;
 }) {
   const a = m(START);
@@ -184,7 +191,8 @@ export function DeadReckoningMap({
   const walked = reached * pairsToMetres(STEP_PAIRS);
   const hr = (heading * Math.PI) / 180;
   const hEnd = { x: a.x + 330 * Math.sin(hr), y: a.y - 330 * Math.cos(hr) };
-  const mid = m(along(DISTANCE_M / 2));
+  // The distance label sits on the second half of the line, clear of the wadi crossing.
+  const mid = m(along(DISTANCE_M * 0.71));
   return (
     <svg
       viewBox={`0 0 ${SHEET.width} ${H}`}
@@ -222,10 +230,10 @@ export function DeadReckoningMap({
       <motion.line x1={a.x} y1={a.y} x2={ex} y2={ey} className="stroke-accent" strokeWidth={7} strokeLinecap="round" />
 
       {/* The 3° example: the same 1,200 m walked at 65° — the gap grows with the distance */}
-      {showDeviation && (
+      {debrief === 'deviation' && (
         <g data-map="deviation">
           {(() => {
-            const end = m(along(DISTANCE_M, AZIMUTH_DEG + DEVIATION_DEG));
+            const end = m(DEBRIEF_END.deviation);
             const half = m(along(DISTANCE_M / 2, AZIMUTH_DEG + DEVIATION_DEG));
             const halfPlan = m(along(DISTANCE_M / 2));
             const gap = (d: number) => `${Math.round(deviationGap(d))} מ׳`;
@@ -234,6 +242,7 @@ export function DeadReckoningMap({
                 <path d={`M${a.x} ${a.y}L${r1(end.x)} ${r1(end.y)}`} fill="none" className="stroke-fg" strokeWidth={4} strokeDasharray="9 9" strokeLinecap="round" />
                 <path d={`M${r1(halfPlan.x)} ${r1(halfPlan.y)}L${r1(half.x)} ${r1(half.y)}`} className="stroke-accent-hot" strokeWidth={4} strokeLinecap="round" />
                 <path d={`M${r1(b.x)} ${r1(b.y)}L${r1(end.x)} ${r1(end.y)}`} className="stroke-accent-hot" strokeWidth={4} strokeLinecap="round" />
+                <circle cx={r1(end.x)} cy={r1(end.y)} r={VISIBILITY_M} fill="none" className="stroke-fg" strokeWidth={2.6} strokeDasharray="6 6" />
                 <circle cx={r1(end.x)} cy={r1(end.y)} r={10} fill="#FFFFFF" className="stroke-fg" strokeWidth={3.5} />
                 <Plate x={half.x + SE.x * 44} y={half.y + SE.y * 44}>
                   {gap(DISTANCE_M / 2)}
@@ -243,6 +252,28 @@ export function DeadReckoningMap({
                 </Plate>
                 <Plate x={m(along(860, AZIMUTH_DEG + DEVIATION_DEG)).x + SE.x * 70} y={m(along(860, AZIMUTH_DEG + DEVIATION_DEG)).y + SE.y * 70} size={FS.small}>
                   {`סטייה של ${DEVIATION_DEG}°`}
+                </Plate>
+              </>
+            );
+          })()}
+        </g>
+      )}
+
+      {/* The short pace: the full count with 1.4 m pairs stops 80 m short of B, on the line */}
+      {debrief === 'short-pace' && (
+        <g data-map="short-pace">
+          {(() => {
+            const end = m(DEBRIEF_END['short-pace']);
+            return (
+              <>
+                <path d={`M${r1(end.x)} ${r1(end.y)}L${r1(b.x)} ${r1(b.y)}`} className="stroke-accent-hot" strokeWidth={6} strokeLinecap="round" />
+                <circle cx={r1(end.x)} cy={r1(end.y)} r={VISIBILITY_M} fill="none" className="stroke-fg" strokeWidth={2.6} strokeDasharray="6 6" />
+                <circle cx={r1(end.x)} cy={r1(end.y)} r={10} fill="#FFFFFF" className="stroke-fg" strokeWidth={3.5} />
+                <Plate x={end.x + SE.x * 58} y={end.y + SE.y * 58}>
+                  {`${Math.round(shortPaceShortfall())} מ׳ לפני B`}
+                </Plate>
+                <Plate x={end.x + SE.x * 58} y={end.y + SE.y * 58 + 46} size={FS.small} weight={600}>
+                  {`צעד ${SHORT_PACE_M} במקום ${PACE_M} מ׳`}
                 </Plate>
               </>
             );

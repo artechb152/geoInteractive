@@ -6,7 +6,7 @@ import type { IconName } from '@/components/Icon';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import type { GlyphKind } from './CombatNavVisuals';
 import { TerrainAssociationActivity } from './terrain-nav/TerrainAssociationActivity';
-import { DeadReckoningActivity } from './dead-reckoning/DeadReckoningActivity';
+import { DeadReckoningActivity, type DeadReckoningCopy } from './dead-reckoning/DeadReckoningActivity';
 type Method = 'handrail' | 'dead';
 type MethodData = {
 id: Method;
@@ -41,12 +41,12 @@ detail: 'ניווט עיוור מתבסס על נקודת מוצא ידועה ו
 // the quiz both use "Dead Reckoning"); it sits inline beside the Hebrew name.
 const INLINE_TERM: ReadonlySet<Method> = new Set<Method>(['dead']);
 
-// — Per-technique supporting content: the lab's caption and legend (technique 1), the explanation board (technique 2) —
+// — Per-technique supporting content: the lab's caption and legend (technique 1), the sandstorm's board copy (technique 2) —
 // `kind` picks the legend glyph, which mirrors the diagram mark 1:1.
-type LegendItem = { kind: GlyphKind; label: string; labelBeforeCount?: string };
+type LegendItem = { kind: GlyphKind; label: string };
 type SupportData = { badge?: string; caption: string; legend: LegendItem[] };
 
-const SUPPORT: Record<Method, SupportData> = {
+const SUPPORT: Record<'handrail', SupportData> = {
 handrail: {
 caption: 'הציר עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר (B).',
 legend: [
@@ -58,21 +58,14 @@ legend: [
  { kind: 'target', label: 'היעד — הכיכר המרכזית בכפר (B)' },
 ],
 },
-dead: {
-badge: 'סופת חול · ראות מוגבלת',
-// The walk itself has no deviation; the verify step shows a compass error and a short pace where they apply (task 28).
-caption: 'במפת התכנון רואים את כל הדרך, ובשטח רק כ־30 מ׳ סביבכם. ההליכה מוצגת ללא סטייה.',
-legend: [
- { kind: 'bearing', label: 'אזימוט — כיוון מצפן קבוע' },
- // The count is the answer to the activity's step 1: the distance alone until it is checked right.
- { kind: 'distance', label: 'מרחק — 1.2 ק״מ, כ־800 צעדים כפולים', labelBeforeCount: 'מרחק — 1.2 ק״מ' },
- { kind: 'unit', label: 'מנווט; במפה — אומדן לפי הספירה' },
- { kind: 'storm', label: 'סופת חול — בשטח בלבד' },
- { kind: 'start', label: 'נקודת מוצא (A)' },
- { kind: 'target', label: 'נקודת יעד (B)' },
-],
-},
 };
+
+/**
+ * Technique 2 in a sandstorm (dead-reckoning/DeadReckoningActivity): the conditions chip, and the principle
+ * (METHODS.dead.detail), which closes the task once its last decision is made — shown earlier, it would
+ * answer the activity's own questions (the count, what the finished count proves).
+ */
+const DEAD_COPY: Omit<DeadReckoningCopy, 'principle'> = { badge: 'סופת חול · ראות כ־30 מ׳' };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Laptop fit — the part's three learning screens (the opening, technique 1,
@@ -180,7 +173,7 @@ className="rounded font-display font-semibold underline decoration-border-strong
 
  {/* Technique 2 and the closing principles share one screen, as at the reference. */}
  <ScreenFit className="mt-12 scroll-mt-24">
- <DeadReckoningSection data={METHODS[1]} support={SUPPORT.dead} />
+ <DeadReckoningSection data={METHODS[1]} />
  <ConclusionCard />
  </ScreenFit>
  </section>
@@ -222,19 +215,18 @@ return (
 }
 
 /* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════
-   One card, as technique 1: the title heads it, in one row with the task's
-   progress; the principle runs over the two views (its sub-heading run in, so
-   the whole screen and the closing principles fit one laptop view); the
-   activity (dead-reckoning/DeadReckoningActivity) — the field view in the
-   storm beside the planning map, and a three-step task in the column beside
-   them: plan the pace count, set the compass and count, decide what the
-   finished count proves. The azimuth and the distance sit on the map and in
-   the question, so there is no example below. */
-function DeadReckoningSection({ data, support }: { data: MethodData; support: SupportData }) {
+   One card (dead-reckoning/DeadReckoningActivity): the title, the one-line
+   description and the conditions chip head it, beside the task's progress;
+   the navigator's own view inside the sandstorm fills it, with the planning
+   map on demand, the compass and the pace counter under it. The task —
+   prepare the count and the compass, walk the leg in 100-pair segments past
+   one landmark, decide what the finished count proves — teaches the
+   principle, which closes the card at the end. */
+function DeadReckoningSection({ data }: { data: MethodData }) {
 return (
  <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
  <DeadReckoningActivity
- copy={{ badge: support.badge, caption: support.caption, legend: support.legend }}
+ copy={{ ...DEAD_COPY, principle: data.detail }}
  title={
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}
@@ -246,11 +238,7 @@ return (
  )}
  </h3>
  }
- intro={
- <p className="text-base leading-relaxed text-black">
- <span className="font-display font-bold">עקרון הפעולה:</span> {data.detail}
- </p>
- }
+ intro={<p className="text-lg leading-snug text-black">{data.oneLiner}</p>}
  />
  </section>
 );
