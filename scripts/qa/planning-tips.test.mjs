@@ -1,5 +1,7 @@
 // Behavioural acceptance tests for lesson 6 „דגשים לתכנון ולניווט”
-// (PlanningTipsScene.tsx + NavTipsMap.tsx), task 27.
+// (PlanningTipsScene.tsx + NavTipsMap.tsx), task 27. Screen 2 („במהלך הניווט”) became the
+// navigation replay on 2026-10-29 — its own tests are scripts/qa/navigation-replay*.test.mjs;
+// here only its place in the scene is checked.
 // Restored to the public lesson on 2026-10-27 at the user's request.
 // Needs a running dev server. Run:
 //   node --test scripts/qa/planning-tips.test.mjs            (QA_BASE defaults to http://localhost:3000)
@@ -84,11 +86,10 @@ const readState = (id) =>
   }, screen(id));
 
 const PLAN = ['ends', 'route', 'legs', 'checkpoints'];
-const NAV = ['verify', 'compare', 'combine', 'mismatch'];
 const states = {};
 
 test('every tip: an action, a reason, and a caption that describes the map without repeating the action', async () => {
-  for (const [id, foci] of [['plan', PLAN], ['nav', NAV]]) {
+  for (const [id, foci] of [['plan', PLAN]]) {
     for (let i = 0; i < foci.length; i++) {
       await openTip(id, i, foci[i]);
       const s = await readState(id);
@@ -112,11 +113,6 @@ test('each state highlights exactly what its tip describes', () => {
     route: { halos: ['cp2', 'summit-n'], labels: ['הקו הישיר: מעל הפסגה', 'אוכף'], active: [] },
     legs: { halos: [], labels: [], active: [] },
     checkpoints: { halos: ['cp1', 'cp2', 'cp3'], labels: ['1 · עיקול הנחל', '2 · אוכף', '3 · חציית דרך עפר', 'נ.ס · אורנים על קרקע סלעית'], active: ['1', '2', '3'] },
-    verify: { halos: ['cp1'], labels: ['מיקום מזוהה: עיקול הנחל', 'הכיוון לקטע הבא'], active: [] },
-    compare: { halos: ['cp2?', 'summit-n', 'summit-s'], labels: ['פסגה', 'פסגה', 'צפוי: אוכף'], active: ['2'] },
-    combine: { halos: ['cp2'], labels: ['כיוון', 'סימן: אוכף'], active: [] },
-    // the mismatch only: the expected road crossing — the destination is not highlighted
-    mismatch: { halos: ['cp3?'], labels: ['צפוי: חציית דרך עפר', 'כ־600 מ׳: דרך העפר לא הופיעה'], active: ['3'] },
   };
   for (const [focus, e] of Object.entries(expect)) {
     const s = states[focus];
@@ -126,37 +122,23 @@ test('each state highlights exactly what its tip describes', () => {
     assert.deepEqual(active.sort(), [...e.active].sort(), `${focus}: markers in focus`);
   }
   assert.deepEqual(states.legs.marks, ['קטע 1', 'כ־500 מ׳', 'קטע 2', 'כ־550 מ׳', 'קטע 3', 'כ־600 מ׳', 'קטע 4', 'כ־500 מ׳'], 'legs: a tag per leg');
-  // the three agreeing data in "combine" share one colour (sage = checked and matching)
-  assert.deepEqual(states.combine.marks, ['מרחק', 'כ־550 מ׳']);
-  assert.deepEqual(states.combine.tagTones, ['sage']);
-  assert.equal(states.mismatch.markers.end, 'idle', 'mismatch: destination not in focus');
 });
 
 test('start, end, legs, distances and landmark order agree across all states', () => {
   const ref = JSON.stringify(states.ends.points);
-  for (const f of [...PLAN, ...NAV]) assert.equal(JSON.stringify(states[f].points), ref, `${f}: same points`);
+  for (const f of PLAN) assert.equal(JSON.stringify(states[f].points), ref, `${f}: same points`);
   const pts = states.ends.points;
   assert.deepEqual(pts.map((p) => p.id), ['start', '1', '2', '3', 'end']);
   for (let k = 0; k < 4; k++) {
     const m = Math.hypot(pts[k + 1].x - pts[k].x, pts[k + 1].y - pts[k].y) * M_PER_UNIT;
     assert.ok(Math.abs(m - LEGS_M[k]) < LEGS_M[k] * 0.01, `leg ${k + 1}: drawn ${m.toFixed(0)} m, tagged ${LEGS_M[k]} m`);
   }
-  assert.ok(states.combine.caption.includes(`כ־${LEGS_M[1]} מ׳`), 'combine quotes leg 2');
-  assert.ok(states.mismatch.caption.includes(`כ־${LEGS_M[2]} מ׳`), 'mismatch quotes leg 3');
   const story = states.checkpoints.caption;
   const order = ['עיקול הנחל', 'האוכף', 'דרך העפר', 'האורנים'].map((w) => story.indexOf(w));
   assert.ok(order.every((v, i) => v >= 0 && (i === 0 || v > order[i - 1])), 'route story in order');
-  // where the navigator stands, and how far the drift went
-  const at = (id) => pts.find((p) => p.id === id);
-  assert.deepEqual([states.verify.position.x, states.verify.position.y], [at('1').x, at('1').y], 'verify: at checkpoint 1');
-  assert.deepEqual([states.combine.position.x, states.combine.position.y], [at('2').x, at('2').y], 'combine: at the saddle');
-  const drift = states.mismatch.position;
-  const fromSaddle = Math.hypot(drift.x - at('2').x, drift.y - at('2').y) * M_PER_UNIT;
-  assert.ok(Math.abs(fromSaddle - LEGS_M[2]) < 6, `mismatch: walked leg 3's distance (${fromSaddle.toFixed(0)} m)`);
-  assert.ok(Math.hypot(drift.x - at('3').x, drift.y - at('3').y) * M_PER_UNIT > 150, 'mismatch: not at the road crossing');
 });
 
-test('planned route, walked way and current position are told apart', () => {
+test('the planning screen shows the plan only: no position, nothing walked', () => {
   for (const f of PLAN) {
     const s = states[f];
     assert.equal(s.position, null, `${f}: no position before leaving`);
@@ -164,31 +146,22 @@ test('planned route, walked way and current position are told apart', () => {
     assert.equal(s.planned, 4, `${f}: the planned route`);
     assert.deepEqual(s.legend, ['המסלול המתוכנן', 'נקודה לבדיקת המיקום']);
   }
-  const walked = { verify: ['leg'], compare: ['leg', 'part'], combine: ['leg', 'leg'], mismatch: ['leg', 'leg', 'drift'] };
-  for (const f of NAV) {
-    const s = states[f];
-    assert.equal(s.position?.id, f, `${f}: current position shown`);
-    assert.deepEqual(s.walked, walked[f], `${f}: walked way`);
-    assert.equal(s.ahead + s.walked.filter((w) => w === 'leg').length, 4, `${f}: the rest of the plan is dashed`);
-    assert.deepEqual(s.legend, ['מיקום נוכחי', 'הדרך שעברתם', 'נקודה מזוהה', 'המשך המסלול המתוכנן']);
-    const passed = Object.entries(s.markers).filter(([, st]) => st === 'passed').map(([k]) => k);
-    assert.ok(passed.includes('start'), `${f}: the start is verified`);
-  }
 });
 
-test('no duplicated framing: "אותה מפה", the example note and the old panel labels appear once / not at all', async () => {
+test('no duplicated framing: the example note once, the old panel labels not at all; screen 2 is the replay', async () => {
   const text = await page.evaluate(() => document.getElementById('scene-tips').innerText);
-  assert.equal(text.split('אותה מפה').length - 1, 1, 'navigation board only');
+  assert.equal(text.split('במהלך הניווט: מה צריך לבדוק?').length - 1, 1, 'screen 2 keeps its title');
+  assert.equal(await page.locator('[data-tips-screen="nav"] [data-activity="navigation-replay"]').count(), 1, 'screen 2 is the replay');
   assert.equal(text.split('דוגמה לימודית').length - 1, 1, 'note only on the planning board');
   for (const label of ['מה עושים', 'למה זה מועיל']) assert.ok(!text.includes(label), `no "${label}" heading`);
 });
 
 test('screens keep one height across tips (no jumps) and fit whole at 1440 × 1122', async () => {
-  for (const [id, foci] of [['plan', PLAN], ['nav', NAV]]) {
+  for (const [id, foci] of [['plan', PLAN]]) {
     const heights = foci.map((f) => states[f].height);
     assert.equal(new Set(heights).size, 1, `${id}: heights ${heights.join(', ')}`);
   }
-  for (const [id, i, focus] of [['plan', 3, 'checkpoints'], ['nav', 3, 'mismatch']]) {
+  for (const [id, i, focus] of [['plan', 3, 'checkpoints']]) {
     await openTip(id, i, focus);
     const r = await fitRect(id);
     // One scale for the whole lesson (LessonFitUniform): the column's width over the 1344px reference.
@@ -301,7 +274,7 @@ test('question: keyboard only — Tab between answers, Enter and Space choose', 
 });
 
 test('tip accordion: ↓ ↑ Home End move between tips, Enter opens', async () => {
-  const headers = page.locator(`${screen('nav')} button[aria-expanded]`);
+  const headers = page.locator(`${screen('plan')} button[aria-expanded]`);
   await headers.nth(0).focus();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
@@ -315,7 +288,7 @@ test('tip accordion: ↓ ↑ Home End move between tips, Enter opens', async () 
   await page.keyboard.press('Enter');
   await page.waitForTimeout(450);
   assert.equal(await headers.nth(0).getAttribute('aria-expanded'), 'true');
-  assert.equal(await page.evaluate(() => document.querySelector('[data-tips-screen="nav"] svg[role="img"]').getAttribute('data-focus')), 'verify');
+  assert.equal(await page.evaluate(() => document.querySelector('[data-tips-screen="plan"] svg[role="img"]').getAttribute('data-focus')), 'ends');
 });
 
 test('no page errors', () => {

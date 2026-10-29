@@ -5,15 +5,19 @@ import { Check, X } from 'lucide-react';
 import { SceneHeader } from './SceneHeader';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
-import { NavTipsMap, TipsLegendGlyph, TIP_LEGS, type MapFocus, type NavFocus, type PlanFocus } from './NavTipsMap';
+import { NavTipsMap, TipsLegendGlyph, type MapFocus, type PlanFocus } from './NavTipsMap';
+import { NavigationReplayScreen } from './navigation-replay/NavigationReplayActivity';
 
 /**
  * „דגשים לתכנון ולניווט” — a practical bridge between the general four-stage
  * overview (OnboardingScene) and the techniques that follow. Two screens on
- * one learning map: what is prepared before leaving, and what is checked while
- * moving. The copy restates the lesson's existing explanations (OnboardingScene,
- * PlanningScene, content/topic-06.md); azimuth, north types and pacing stay in
- * their own sub-topics.
+ * one route: what is prepared before leaving (the tips on the learning map),
+ * and what is checked while moving — the navigation replay
+ * (navigation-replay/, „מתי עוצרים לבדוק?”), four moments along the same
+ * route over a live 3D model of the same ground. The copy restates the
+ * lesson's existing explanations (OnboardingScene, PlanningScene,
+ * content/topic-06.md); azimuth, north types and pacing stay in their own
+ * sub-topics.
  */
 
 type Tip<F extends MapFocus> = {
@@ -61,48 +65,11 @@ const PLAN_TIPS: Tip<PlanFocus>[] = [
   },
 ];
 
-const NAV_TIPS: Tip<NavFocus>[] = [
-  {
-    id: 'verify',
-    title: 'מאמתים מיקום וכיוון לפני ההתקדמות',
-    what: 'יוצאים לכל קטע דרך מנקודה מזוהה, ובודקים במפה ובמצפן את הכיוון לקטע הבא.',
-    why: 'כך לא יוצאים מנקודה שגויה או בכיוון שגוי.',
-    map: 'במפה: אתם בעיקול הנחל (נקודה 1), והחץ מראה את הכיוון לקטע הבא, אל האוכף.',
-  },
-  {
-    id: 'compare',
-    title: 'משווים בין הצפוי לנראה בשטח',
-    what: 'בתנועה משווים את הסימנים בשטח לסיפור הדרך: האם הם מופיעים בסדר הצפוי ובצורה שבמפה.',
-    why: 'סימן שמופיע שלא בסדר הצפוי, או בצורה אחרת, מרמז על סטייה, ומגלים אותה כשהיא עוד קטנה.',
-    map: 'במפה: עיקול הנחל מאחוריכם. הסימן הבא הוא אוכף בין שתי פסגות, ואותו מחפשים בשטח.',
-  },
-  {
-    id: 'combine',
-    title: 'משלבים כיוון, מרחק וסימני שטח',
-    what: 'בודקים את המיקום לפי כמה נתונים יחד: הכיוון שבו הלכתם, המרחק שעברתם והסימנים סביבכם.',
-    why: 'קל לבלבל בין מקומות דומים, והתאמה של כל הנתונים אמינה יותר מהסתמכות על סימן דומה אחד.',
-    map: `במפה: הגעתם לאוכף. הכיוון מעיקול הנחל, המרחק (כ־${TIP_LEGS[1].m} מ׳) וצורת שתי הפסגות מתאימים לתכנון.`,
-  },
-  {
-    id: 'mismatch',
-    title: 'בודקים אי־התאמה לפני שממשיכים',
-    what: 'כשסימן צפוי אינו מופיע או שהשטח אינו תואם לתכנון, לא ממשיכים מיד: משווים את הסביבה למפה ובודקים כיוון ומרחק מהנקודה המזוהה האחרונה.',
-    why: 'כך לא ממשיכים מנקודה שגויה, וחוזרים למסלול כל עוד זה קל.',
-    map: `במפה: כ־${TIP_LEGS[2].m} מ׳ אחרי האוכף הייתם אמורים לחצות דרך עפר, אבל היא לא הופיעה. הדרך שעברתם מראה שהכיוון סטה מהמסלול.`,
-  },
-];
-
 type LegendItem = { kind: 'route' | 'ahead' | 'walked' | 'checkpoint' | 'verified' | 'position'; label: string };
 
 const PLAN_LEGEND: LegendItem[] = [
   { kind: 'route', label: 'המסלול המתוכנן' },
   { kind: 'checkpoint', label: 'נקודה לבדיקת המיקום' },
-];
-const NAV_LEGEND: LegendItem[] = [
-  { kind: 'position', label: 'מיקום נוכחי' },
-  { kind: 'walked', label: 'הדרך שעברתם' },
-  { kind: 'verified', label: 'נקודה מזוהה' },
-  { kind: 'ahead', label: 'המשך המסלול המתוכנן' },
 ];
 
 /**
@@ -118,7 +85,9 @@ const NAV_LEGEND: LegendItem[] = [
  *     (measured 2026-10-27, one card per screen: plan and nav for every tip;
  *     the question with its longest feedback and its button; plan and nav
  *     re-measured 2026-10-28 with the caption and legend beside the map —
- *     the map board sets both, 743px, under the 760px screen budget), so the scale
+ *     the map board sets both, 743px, under the 760px screen budget; the nav
+ *     screen became the navigation replay on 2026-10-29: 1027px with its title,
+ *     every state — the decision area reserves its tallest), so the scale
  *     stays steady while learners switch tips or answer. Inside the lesson
  *     (LessonFitUniform) they are ignored; they apply where the scene is
  *     rendered on its own (the archive).
@@ -129,7 +98,7 @@ const NAV_LEGEND: LegendItem[] = [
  *     inline start (right) so the three screens share one right edge.
  */
 const FIT_WIDTH = 1344;
-const FIT_HEIGHT = { plan: 743, nav: 743, question: 532 } as const;
+const FIT_HEIGHT = { plan: 743, nav: 1027, question: 532 } as const;
 const FIT_RESERVE_TOP = 104;
 const FIT_RESERVE_BOTTOM = 24;
 
@@ -168,7 +137,7 @@ export function PlanningTipsScene() {
           title="לפני שיוצאים: מה צריך לתכנן?"
           intro="בחרו דגש וראו אותו במפה."
           boardLabel="מפת התכנון"
-          boardNote="דוגמה לימודית, נפרדת מסיפור הדרך שבהמשך"
+          boardNote="דוגמה לימודית, נפרדת מתכנון הציר שבהמשך השיעור"
           tips={PLAN_TIPS}
           legend={PLAN_LEGEND}
         />
@@ -176,14 +145,7 @@ export function PlanningTipsScene() {
 
       <div className="mt-12">
         <ScreenFit height={FIT_HEIGHT.nav}>
-          <TipsScreen
-            screenId="nav"
-            title="במהלך הניווט: מה צריך לבדוק?"
-            intro="בחרו דגש וראו במפה מה בודקים במיקום הנוכחי."
-            boardLabel="אותה מפה, עם המיקום הנוכחי"
-            tips={NAV_TIPS}
-            legend={NAV_LEGEND}
-          />
+          <NavigationReplayScreen />
         </ScreenFit>
       </div>
 
