@@ -83,8 +83,13 @@ const SUN_AZ = 28;
 const SUN_EL = 34;
 
 /** Instance capacity per shape. */
-const CAPACITY: Record<string, number> = { stone: 2600, rock: 700, rock07: 700, boulder: 260, shrub: 420 };
+const CAPACITY: Record<string, number> = { stone: 2600, rock: 900, rock07: 900, boulder: 260, shrub: 420 };
 const family = (shape: string) => shape.replace(/_[a-z]$/, '');
+/**
+ * How far from the eye each family is drawn, metres (chunk centre to eye, so up to ~17 m more): beyond it
+ * the storm leaves a pebble a pixel or two at a few per cent contrast, so it costs triangles and shows nothing.
+ */
+const DRAW_M: Record<string, number> = { stone: 46, rock: 80, rock07: 80, boulder: 120, shrub: 120 };
 
 export type SceneProps = {
   /** Metres walked along the planned line (animated by the activity). */
@@ -145,7 +150,8 @@ export default function DeadReckoningScene3D(props: SceneProps) {
 
 // ---------------------------------------------------------------- the world
 
-type ChunkRec = { mesh: THREE.Mesh; rocks: Map<string, Float32Array>; shrubs: Map<string, Float32Array> };
+type Packed = Map<string, { m: Float32Array; c: Float32Array }>;
+type ChunkRec = { i: number; j: number; mesh: THREE.Mesh; rocks: Packed; shrubs: Packed };
 type Scatter = ReturnType<typeof scatterChunk>;
 
 function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
@@ -168,7 +174,8 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
       normal: [textures[4], textures[5], textures[6], textures[7]],
       roughness: textures[8],
     };
-    DUST.uDustNoise.value = createDustNoise();
+    const dustNoise = createDustNoise();
+    DUST.uDustNoise.value = dustNoise;
     const macro = createMacroNoise();
     const ground = createGroundMaterial(tex, macro);
     const sunDir = new THREE.Vector3(Math.sin((SUN_AZ * Math.PI) / 180) * Math.cos((SUN_EL * Math.PI) / 180), Math.sin((SUN_EL * Math.PI) / 180), -Math.cos((SUN_AZ * Math.PI) / 180) * Math.cos((SUN_EL * Math.PI) / 180));
@@ -197,6 +204,9 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
           rockMats.set(srcMat, mat);
         }
         const im = new THREE.InstancedMesh(src.geometry, mat, CAPACITY[fam] ?? 400);
+        // Each piece its own shade of stone (or of dry twigs).
+        im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(im.instanceMatrix.count * 3), 3);
+        im.instanceColor.setUsage(THREE.DynamicDrawUsage);
         im.count = 0;
         im.frustumCulled = false;
         im.castShadow = fam !== 'stone';
@@ -241,16 +251,19 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     grains.frustumCulled = false;
     grains.renderOrder = 5;
 
-    return { ground, macro, instanced, rockMats, sky, grains, grainMat, sunDir };
+    return { ground, macro, dustNoise, instanced, rockMats, sky, grains, grainMat, sunDir };
   }, [gl, textures, rocksGltf, shrubsGltf]);
 
   useEffect(() => {
     gl.toneMapping = THREE.NeutralToneMapping;
     scene.background = null;
+    // Attached here as well as where it is made: React's development double mount runs the cleanup below in
+    // between, and without this the storm would lose its drifting density (and the sky its billows) in dev.
+    DUST.uDustNoise.value = res.dustNoise;
     return () => {
       res.ground.dispose();
       res.macro.dispose();
-      DUST.uDustNoise.value?.dispose();
+      res.dustNoise.dispose();
       DUST.uDustNoise.value = null;
       for (const m of res.rockMats.values()) m.dispose();
       for (const list of res.instanced.values()) for (const im of list) im.dispose();
@@ -287,14 +300,24 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
       a.push(t);
       by.set(t.shape, a);
     }
-    const out = new Map<string, Float32Array>();
+    const out: Packed = new Map();
     for (const [shape, ts] of by) {
-      const f = new Float32Array(ts.length * 16);
-      ts.forEach((t, k) => instanceMatrix(t, f, k * 16));
-      out.set(shape, f);
+      const m = new Float32Array(ts.length * 16);
+      const c = new Float32Array(ts.length * 3);
+      ts.forEach((t, k) => {
+        instanceMatrix(t, m, k * 16);
+        c[k * 3] = t.tone * (1 + 0.07 * t.warm);
+        c[k * 3 + 1] = t.tone;
+        c[k * 3 + 2] = t.tone * (1 - 0.1 * t.warm);
+      });
+      out.set(shape, { m, c });
     }
     return out;
   };
+
+  /** A chunk and its neighbours (whose rocks shade its ground too). */
+  const NEIGHBOURS = [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [-1, 1], [1, -1]] as const;
+  const scatterPending = (i: number, j: number) => NEIGHBOURS.find(([di, dj]) => Math.abs(j + dj) <= 4 && !scatterCache.current.has(`${i + di},${j + dj}`));
 
   const buildOne = (i: number, j: number) => {
     const key = `${i},${j}`;
@@ -302,7 +325,7 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     const own = scatterOf(i, j);
     // Contact shadows from rocks of the neighbouring chunks too, so they don't stop at an edge.
     const occ: Occluder[] = [...own.occluders];
-    for (const [di, dj] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [-1, 1], [1, -1]] as const) {
+    for (const [di, dj] of NEIGHBOURS.slice(1)) {
       if (Math.abs(j + dj) > 4) continue;
       for (const o of scatterOf(i + di, j + dj).occluders) occ.push(o);
     }
@@ -320,23 +343,27 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     mesh.matrixAutoUpdate = false;
     mesh.name = `chunk ${key}`;
     groundGroup.current?.add(mesh);
-    chunks.current.set(key, { mesh, rocks: packInstances(own.rocks), shrubs: packInstances(own.shrubs) });
+    chunks.current.set(key, { i, j, mesh, rocks: packInstances(own.rocks), shrubs: packInstances(own.shrubs) });
     instancesDirty.current = true;
   };
 
-  const rebuildInstances = () => {
+  /** Fill the instanced meshes from the chunks near enough to `u` for each family (DRAW_M). */
+  const rebuildInstances = (u: number) => {
     const fill = new Map<THREE.InstancedMesh, number>();
     for (const list of res.instanced.values()) for (const im of list) fill.set(im, 0);
     for (const rec of chunks.current.values()) {
+      const dist = Math.hypot((rec.i + 0.5) * CHUNK_M - u, (rec.j + 0.5) * CHUNK_M);
       for (const src of [rec.rocks, rec.shrubs]) {
-        for (const [shape, mats] of src) {
+        for (const [shape, { m, c }] of src) {
+          if (dist > DRAW_M[family(shape)] + CHUNK_M * 0.71) continue;
           const list = res.instanced.get(shape);
           if (!list) continue;
           for (const im of list) {
             const at = fill.get(im)!;
-            const n = Math.min(mats.length / 16, im.instanceMatrix.count - at);
+            const n = Math.min(m.length / 16, im.instanceMatrix.count - at);
             if (n <= 0) continue;
-            (im.instanceMatrix.array as Float32Array).set(mats.subarray(0, n * 16), at * 16);
+            (im.instanceMatrix.array as Float32Array).set(m.subarray(0, n * 16), at * 16);
+            (im.instanceColor!.array as Float32Array).set(c.subarray(0, n * 3), at * 3);
             fill.set(im, at + n);
           }
         }
@@ -347,6 +374,9 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
       im.instanceMatrix.clearUpdateRanges();
       im.instanceMatrix.addUpdateRange(0, n * 16);
       im.instanceMatrix.needsUpdate = true;
+      im.instanceColor!.clearUpdateRanges();
+      im.instanceColor!.addUpdateRange(0, n * 3);
+      im.instanceColor!.needsUpdate = true;
     }
     instancesDirty.current = false;
   };
@@ -403,6 +433,7 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
 
   // ---- camera and streaming, every frame
   const lastU = useRef(Number.NaN);
+  const frameU = useRef(Number.NaN);
   const perf = useRef({ t: 0, frames: 0, dpr: 1.25, checked: 0, fast: 0, fps: 0 });
   useEffect(() => {
     const u = distM.get();
@@ -421,6 +452,7 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
           return [((v.x + 1) / 2) * el.clientWidth, ((1 - v.y) / 2) * el.clientHeight, v.z];
         },
         fps: () => perf.current,
+        renderInfo: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures }),
         projectWadiLabel: () => {
           const v = new THREE.Vector3(...wadiAnchorRef.current).project(camera);
           const el = gl.domElement;
@@ -442,17 +474,30 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     const u = distM.get();
     if (Math.abs(u - lastU.current) > 4 || Number.isNaN(lastU.current)) {
       syncChunks(u);
+      // The near families follow the eye.
+      if (Math.floor(u / 8) !== Math.floor(lastU.current / 8) || Number.isNaN(lastU.current)) instancesDirty.current = true;
       lastU.current = u;
     }
-    // Build within a time budget; more while loading.
+    // Build within a time budget; more while loading. While the eye moves, only what its own view needs: the
+    // ground of the segment after this one waits until the walker stops (the walk itself was built beforehand).
     const budget = initial.current.done ? 6 : 40;
+    const moving = Math.abs(u - frameU.current) > 0.05;
+    frameU.current = u;
     const t0 = performance.now();
     while (queue.current.length && performance.now() - t0 < budget) {
-      const c = queue.current.shift()!;
+      const c = queue.current[0];
+      if (moving && initial.current.done && Math.abs((c.i + 0.5) * CHUNK_M - u) > CHUNK_REACH_M + CHUNK_M) break;
+      // The scatter of the chunk and of each neighbour is a step of its own, so no frame does them all at once.
+      const pending = scatterPending(c.i, c.j);
+      if (pending) {
+        scatterOf(c.i + pending[0], c.j + pending[1]);
+        continue;
+      }
+      queue.current.shift();
       buildOne(c.i, c.j);
     }
     if (instancesDirty.current && (performance.now() - lastRebuild.current > 120 || !initial.current.done)) {
-      rebuildInstances();
+      rebuildInstances(u);
       lastRebuild.current = performance.now();
     }
 
@@ -523,11 +568,11 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
   return (
     <>
       <primitive object={res.sky} />
-      <hemisphereLight args={['#e6d3b8', '#8a6c50', 3.0]} />
+      <hemisphereLight args={['#e6d3b8', '#7a5f46', 2.5]} />
       <directionalLight
         ref={sun}
         color="#ffe6c4"
-        intensity={3.4}
+        intensity={4.1}
         target={sunTarget}
         castShadow
         shadow-mapSize={[2048, 2048]}

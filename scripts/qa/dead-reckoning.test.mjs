@@ -208,6 +208,33 @@ test('the wadi is a real channel where the map puts it: ~1.8 m deep, plain on bo
   }
 });
 
+test('the wadi is a natural channel, not a cut trench: gentle and steep reaches, its two banks unlike', () => {
+  // Cross-sections every 4 m along the reach north-west of the crossing; on each side, the steepest slope.
+  const [a, b] = [M.WADI[4], M.WADI[6]];
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const t = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+  const n = [-t[1], t[0]];
+  const steepest = (c, side) => {
+    let best = 0;
+    for (let d = 1; d < 13; d += 0.25) {
+      const h0 = T.heightAt(c[0] + n[0] * side * d, c[1] + n[1] * side * d);
+      const h1 = T.heightAt(c[0] + n[0] * side * (d + 0.5), c[1] + n[1] * side * (d + 0.5));
+      best = Math.max(best, (h1 - h0) / 0.5);
+    }
+    return best;
+  };
+  const sections = [];
+  for (let s = 4; s < len - 4; s += 4) {
+    const c = [a[0] + t[0] * s, a[1] + t[1] * s];
+    sections.push([steepest(c, 1), steepest(c, -1)]);
+  }
+  const all = sections.flat();
+  assert.ok(Math.min(...all) < 0.6, `a gentle reach (steepest ${Math.min(...all).toFixed(2)})`);
+  assert.ok(Math.max(...all) > 1.3, `a cut face (steepest ${Math.max(...all).toFixed(2)})`);
+  const unlike = sections.filter(([l, r]) => Math.abs(l - r) > 0.3).length;
+  assert.ok(unlike >= sections.length / 4, `the banks differ in ${unlike} of ${sections.length} sections`);
+});
+
 test('the eye: 1.7 m over the ground at every stop; the walk has no steps outside the wadi', () => {
   for (const pairs of M.STOPS) {
     const p = M.along(M.pairsToMetres(pairs));

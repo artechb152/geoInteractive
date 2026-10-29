@@ -18,7 +18,7 @@
  * tyre ruts), and the dry wadi: a 1.8 m deep channel with a sandy, gravelly bed
  * and steep, crumbling cut banks, carved along the map's own centre line.
  */
-import { AZIMUTH_DEG, ROADS, ROAD_WIDTH_M, START, WADI, WADI_WIDTH_M, type XY } from './deadReckoningModel';
+import { AZIMUTH_DEG, ROADS, ROAD_WIDTH_M, START, WADI, WADI_CROSSING_M, WADI_WIDTH_M, along, type XY } from './deadReckoningModel';
 
 // ---------------------------------------------------------------- frames
 
@@ -120,10 +120,14 @@ function segments(pts: readonly XY[]): { segs: Seg[]; box: [number, number, numb
   }
   return { segs, box };
 }
-/** Distance to a polyline and the arc length of the nearest point (for noise that runs along it). */
-function nearest(segs: Seg[], E: number, N: number): { d: number; s: number } {
+/**
+ * Distance to a polyline, the arc length of the nearest point (for noise that runs along it) and the side
+ * of the line the point is on (+1 left of its direction, −1 right) — the wadi's two banks differ.
+ */
+function nearest(segs: Seg[], E: number, N: number): { d: number; s: number; side: number } {
   let best = Infinity;
   let s = 0;
+  let side = 1;
   for (const g of segs) {
     let t = ((E - g.ax) * g.dx + (N - g.ay) * g.dy) / g.len2;
     t = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -133,40 +137,162 @@ function nearest(segs: Seg[], E: number, N: number): { d: number; s: number } {
     if (d2 < best) {
       best = d2;
       s = g.along0 + t * Math.sqrt(g.len2);
+      side = g.dx * -py - g.dy * -px >= 0 ? 1 : -1;
     }
   }
-  return { d: Math.sqrt(best), s };
+  return { d: Math.sqrt(best), s, side };
 }
 
 const WADI_GEOM = segments(WADI);
 const ROAD_GEOM = ROADS.map((r) => segments(r.pts));
-const NEAR_WADI_M = WADI_WIDTH_M / 2 + 12;
+/** How far from its centre line the wadi shapes the ground: the channel, then the rills that drain into it. */
+const NEAR_WADI_M = WADI_WIDTH_M / 2 + 34;
 const NEAR_ROAD_M = ROAD_WIDTH_M / 2 + 6;
 const inBox = (b: [number, number, number, number], E: number, N: number, m: number) => E > b[0] - m && E < b[2] + m && N > b[1] - m && N < b[3] + m;
 
 // ---------------------------------------------------------------- the wadi's cross-section
 
-/** Depth of the channel below the plain, metres. */
+/** Depth of the channel below the plain, metres (at the crossing; it varies by about ±0.4 m elsewhere). */
 export const WADI_DEPTH_M = 1.8;
-/** Half-width of the flat bed (the banks rise from here to WADI_WIDTH_M / 2). */
-const BED_HALF_M = 3.3;
+/** Half-width of the bed (the banks rise from here to about WADI_WIDTH_M / 2). */
+const BED_HALF_M = 3.0;
+/** Arc length of the wadi where the planned line crosses it: the reach the walker sees and crosses. */
+const S_CROSS = (() => {
+  const p = along(WADI_CROSSING_M);
+  return nearest(WADI_GEOM.segs, p.E, p.N).s;
+})();
 
-/** Depth carved at distance `d` from the centre line; `s` (arc length) and the local noise make the banks irregular. */
-function wadiCut(d: number, s: number): { depth: number; bed: number; bank: number } {
-  const top = WADI_WIDTH_M / 2 + 1.2 * noise(s / 9, 3.7) + 0.5 * noise(s / 2.6, 8.1);
-  const bed = BED_HALF_M + 0.7 * noise(s / 13, 1.3);
+/** A small integer hash, 0–1 (deterministic placement of mounds and rills). */
+function hash01(a: number, b: number, salt: number): number {
+  let h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(salt, 2246822519)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/**
+ * Rills draining the plain into the wadi, square to it, and the notches they cut into its banks: `axis` is
+ * the distance from the nearest rill's axis (metres), `amp` its strength (many reaches have none), `len`
+ * how far onto the plain it reaches from the bank top.
+ */
+function rillAt(s: number, d: number, side: number): { axis: number; amp: number; len: number } {
+  const SP = 8.5;
+  // The rills wander as they climb away from the channel.
+  const g = s / SP + 0.5 * noise(d / 9 + side * 3.1, s / 31 + 2.2);
+  const k = Math.round(g);
+  const amp = smoothstep(0.35, 0.75, hash01(k, side, 0x71)) * (0.6 + 0.4 * hash01(k, side, 0x72));
+  return { axis: Math.abs(g - k) * SP, amp, len: 5 + 15 * hash01(k, side, 0x73) };
+}
+
+/**
+ * The wadi's cross-section at distance `d` from its centre line on `side`, at arc length `s`. The two banks
+ * are independent: each changes height, steepness and distance from the centre along the channel —
+ * gentle slopes and short cut faces, bulges and recesses, the notches of rills, slump benches, a crumbling
+ * face and a talus of fallen material at its foot. Near the crossing the depth stays WADI_DEPTH_M and the
+ * banks moderate (the walker goes down and up them); the scenario's scale and place do not change.
+ */
+function wadiCut(d: number, s: number, side: number): { depth: number; bed: number; bank: number; foot: number; rill: number } {
+  const nearX = 1 - smoothstep(14, 42, Math.abs(s - S_CROSS));
+  const so = side * 2.9;
+  const rill = rillAt(s, d, side);
+  // Steepness: gentle reaches and short cut faces, independent on each bank; moderate at the crossing.
+  const steep = smoothstep(-0.3, 0.3, noise(s / 14, 4.4 + so) + 0.35 * noise(s / 5, 2.2 + so));
+  // Along the gentle reaches the plain leans into the channel (a shoulder), so the bank stands lower there.
+  const shoulder = 0.5 * (1 - steep) * (1 - 0.5 * nearX);
+  // Bank top: wanders in and out, recedes where a rill has cut a notch into it.
+  const notch = rill.amp * Math.pow(Math.max(0, 1 - rill.axis / 1.9), 1.4);
+  const top = WADI_WIDTH_M / 2 + 1.5 * noise(s / 13, 3.7 + so) + 0.6 * noise(s / 3.6, 8.1 + so) + 0.25 * noise(s / 1.1, 4.4 + so) + 1.5 * notch;
   if (d >= top) {
-    // A low crumbling lip and the first metre of the plain sloping into the channel.
+    // A crumbling lip, the shoulder, the first metres of the plain sloping into the channel, and the rills.
     const lip = Math.max(0, 1 - (d - top) / 2.2);
-    return { depth: 0.12 * lip * lip, bed: 0, bank: lip * 0.6 };
+    const sh = shoulder * (1 - smoothstep(0, 8, d - top));
+    const out = (d - top) / rill.len;
+    const rw = 0.45 + 0.8 * Math.max(0, 1 - out);
+    const rc = out < 1 ? rill.amp * (1 - smoothstep(0.45, 1, out)) * (0.06 + 0.3 * Math.max(0, 1 - out)) * Math.pow(Math.max(0, 1 - rill.axis / rw), 1.6) : 0;
+    return { depth: 0.12 * lip * lip + sh + rc, bed: 0, bank: lip * 0.55 * (0.5 + 0.5 * steep), foot: 0, rill: rc };
   }
-  const floor = WADI_DEPTH_M + 0.12 * noise(s / 6, 5.5);
-  // The bed: shallow braided runnels and bars.
-  if (d <= bed) return { depth: floor - 0.08 * (1 - d / bed) + 0.1 * noise(s / 3.1, d / 1.6), bed: 1, bank: 0 };
+  // (The bed's own runnels and bars, below, add up to ~0.15 m: the crossing is held at WADI_DEPTH_M overall.)
+  const floor = WADI_DEPTH_M - 0.15 * nearX + (1 - nearX) * 0.4 * noise(s / 47, 7.7) + 0.1 * noise(s / 6, 5.5);
+  const bed = Math.min(top - 2.2, BED_HALF_M + 0.85 * noise(s / 17, 1.3 + so));
+  // The bed: braided runnels and bars, meeting the banks without a step.
+  if (d <= bed) {
+    const q = d / bed;
+    return { depth: floor - 0.08 * (1 - q) + 0.1 * noise(s / 3.1, d / 1.6) * (1 - q * q), bed: 1, bank: 0, foot: smoothstep(0.75, 1, q) * 0.5, rill: 0 };
+  }
   const t = (d - bed) / (top - bed);
-  // A cut bank: a talus near the bed, steep near the top (t³), with erosion runnels down its face.
-  const runnels = 0.26 * Math.abs(noise(s / 1.4, t * 2.2)) * Math.sin(Math.PI * t) + 0.12 * noise(s / 0.6, t * 4.0) * t;
-  return { depth: floor * (1 - t * t * t) + runnels, bed: Math.max(0, 1 - t * 2.5), bank: 1 };
+  const k = 1.4 + 3.0 * steep * (1 - 0.45 * nearX) + 0.9 * nearX;
+  // A slump bench in some reaches: the lower half of the face pushed out, the upper half cut back.
+  const bench = smoothstep(0.15, 0.45, noise(s / 15, 9.9 + so)) * 0.11 * Math.sin(2 * Math.PI * t);
+  let z = Math.min(1, Math.max(0, Math.pow(t, k) - bench));
+  // Talus: material fallen from the face piles up at its foot, more under steep faces.
+  const foot = Math.sin(Math.PI * Math.min(1, t / 0.32));
+  const talus = (t < 0.32 ? foot : 0) * (0.06 + 0.16 * steep) * (0.55 + 0.45 * noise(s / 1.7, 6.6 + so));
+  // A crumbling face: blocky clods and erosion runnels, irregularly spaced and stronger in some reaches; on the
+  // steep faces the ledges of the alluvium's layers, a hand's breadth apart.
+  const sw = s + 1.6 * noise(t * 2.5, s / 5 + so);
+  const ridge = 1 - Math.abs(noise(sw / 0.9, t * 2.6 + so));
+  const runAmp = 0.35 + 0.65 * smoothstep(-0.2, 0.35, noise(s / 9, 6.6 + so));
+  const below = z * floor; // metres under the bank top
+  const ledges = 0.045 * steep * Math.sin((2 * Math.PI * below) / 0.36 + 2.5 * noise(s / 7, 1.9 + so));
+  const face = Math.sin(Math.PI * t) * (0.2 * runAmp * Math.abs(noise(sw / 1.5, t * 2)) + 0.1 * (0.4 + steep) * (ridge * ridge - 0.5) + ledges);
+  return {
+    // (floor − lip − shoulder) so the face meets the plain's lip and shoulder at the top without a step.
+    depth: (floor - 0.12 - shoulder) * (1 - z) + 0.12 + shoulder + face - talus,
+    bed: Math.max(0, 1 - t * 4),
+    bank: smoothstep(0.08, 0.35, t) * (0.45 + 0.55 * steep),
+    foot: t < 0.32 ? foot : 0,
+    rill: 0,
+  };
+}
+
+// ---------------------------------------------------------------- sand mounds
+
+/** Mounds of wind-blown sand caught by scrub (nebkhas): one cell in MOUND_CELL_M squared holds at most one. */
+const MOUND_CELL_M = 6.5;
+export type Mound = { E: number; N: number; r: number; h: number };
+/** Every cell's mound is fixed, and each height sample looks at nine cells: worked out once per cell. */
+const MOUNDS = new Map<number, Mound | null>();
+/** The mound of a cell, if it has one — none on the roads, in the wadi or on the walker's line. */
+export function moundOf(cx: number, cy: number): Mound | null {
+  const key = cx * 8192 + cy;
+  let m = MOUNDS.get(key);
+  if (m === undefined) {
+    m = findMound(cx, cy);
+    MOUNDS.set(key, m);
+  }
+  return m;
+}
+function findMound(cx: number, cy: number): Mound | null {
+  const p = hash01(cx, cy, 0x3a);
+  const E = (cx + 0.15 + 0.7 * hash01(cx, cy, 0x3b)) * MOUND_CELL_M;
+  const N = (cy + 0.15 + 0.7 * hash01(cx, cy, 0x3c)) * MOUND_CELL_M;
+  // Scrub (and so sand caught in it) gathers in belts.
+  const belt = smoothstep(-0.25, 0.35, fbm(E / 40 - 5, N / 40 + 9, 2));
+  if (p > 0.14 + 0.3 * belt) return null;
+  const v = (E - START.E) * LEG.rE + (N - START.N) * LEG.rN;
+  if (Math.abs(v) < 3) return null;
+  for (const g of ROAD_GEOM) if (inBox(g.box, E, N, 9) && nearest(g.segs, E, N).d < ROAD_WIDTH_M / 2 + 3) return null;
+  if (inBox(WADI_GEOM.box, E, N, 14) && nearest(WADI_GEOM.segs, E, N).d < WADI_WIDTH_M / 2 + 3.5) return null;
+  const size = hash01(cx, cy, 0x3d);
+  return { E, N, r: 0.9 + 1.2 * size, h: 0.12 + 0.28 * size };
+}
+
+/** Height of the sand mounds at a point: round on the windward side, a long tail downwind. */
+function moundsAt(E: number, N: number): number {
+  const cx = Math.floor(E / MOUND_CELL_M);
+  const cy = Math.floor(N / MOUND_CELL_M);
+  let h = 0;
+  for (let b = -1; b <= 1; b++)
+    for (let a = -1; a <= 1; a++) {
+      const m = moundOf(cx + a, cy + b);
+      if (!m) continue;
+      const dE = E - m.E;
+      const dN = N - m.N;
+      const al = dE * WE + dN * WN; // downwind is positive
+      const cr = dE * WN - dN * WE;
+      const q = (al > 0 ? al / 2.6 : al) ** 2 + cr * cr;
+      if (q < 9 * m.r * m.r) h = Math.max(h, m.h * Math.exp(-q / (m.r * m.r)));
+    }
+  return h;
 }
 
 // ---------------------------------------------------------------- the height field and its masks
@@ -181,9 +307,13 @@ export type Surface = {
   drift: number;
   /** Compacted road surface, 0–1. */
   road: number;
+  /** The foot of a wadi bank, where fallen stones and soil gather, 0–1 (for the scatter). */
+  foot: number;
+  /** Sand piled up: the mounds and the filled hollows, 0–1 (for the scatter: few stones show through). */
+  sand: number;
 };
 
-const S: Surface = { h: 0, ground: 1, stony: 0, bank: 0, drift: 0, road: 0 };
+const S: Surface = { h: 0, ground: 1, stony: 0, bank: 0, drift: 0, road: 0, foot: 0, sand: 0 };
 /** Wind blows towards this azimuth; drifts are elongated along it. */
 export const WIND_DEG = 320;
 const WR = (WIND_DEG * Math.PI) / 180;
@@ -197,24 +327,35 @@ const WN = Math.cos(WR);
 export function surfaceAt(E: number, N: number): Surface {
   // Large and medium relief.
   const broad = 2.1 * fbm(E / 170, N / 170, 3) + 0.55 * fbm(E / 38 + 40, N / 38, 3);
+  // Swales and low rises, tens of metres across — what the eye reads in the ground's silhouette. Sand has
+  // filled the swales, so their bottoms are flatter than the rises are round.
+  let swell = 0.42 * fbm(E / 17 + 3.3, N / 17 - 6.1, 3);
+  const fill = smoothstep(-0.04, -0.22, swell);
+  if (swell < -0.06) swell = -0.06 + (swell + 0.06) * 0.45;
   // Hummocks and micro-relief.
-  let fine = 0.14 * fbm(E / 7.5, N / 7.5 + 13, 3) + 0.05 * fbm(E / 1.9, N / 1.9, 2) + 0.025 * fbm(E / 0.7 + 5, N / 0.7, 2);
+  let fine = swell + 0.14 * fbm(E / 7.5, N / 7.5 + 13, 3) + 0.05 * fbm(E / 1.9, N / 1.9, 2) + 0.025 * fbm(E / 0.7 + 5, N / 0.7, 2);
 
-  // Wind-shaped sand: patches of low drifts stretched along the wind.
+  // Wind-shaped sand: patches of low drifts stretched along the wind, and the mounds caught by scrub.
   const patch = smoothstep(0.05, 0.45, fbm(E / 46 + 7, N / 46 - 3, 2));
   const a = E * WE + N * WN; // along the wind
   const c = E * WN - N * WE; // across it
   const dune = Math.max(0, fbm(a / 11, c / 3.6, 2) + 0.15);
   fine += patch * 0.32 * dune;
+  const mound = moundsAt(E, N);
 
   // Low rock outcrops: rare, broken, with gravel around them.
   let outcrop = smoothstep(0.42, 0.62, fbm(E / 28 - 11, N / 28 + 5, 2));
 
-  let stony = 0.2 + 0.45 * smoothstep(-0.1, 0.45, fbm(E / 15 + 3, N / 15 - 8, 3));
-  let drift = patch * (0.35 + 0.65 * smoothstep(0, 0.4, dune));
+  // Gravel lies where the wind has stripped the fines — on the rises; sand in the swales and the mounds.
+  const rise = smoothstep(0.06, 0.3, swell);
+  let stony = 0.14 + 0.45 * smoothstep(-0.1, 0.45, fbm(E / 15 + 3, N / 15 - 8, 3)) + 0.4 * rise;
+  let drift = Math.max(patch * (0.35 + 0.65 * smoothstep(0, 0.4, dune)), 0.85 * fill, smoothstep(0.03, 0.14, mound));
+  stony *= 1 - 0.75 * fill;
+  let sand = Math.max(fill, smoothstep(0.02, 0.12, mound));
   let bank = 0;
   let road = 0;
   let rut = 0;
+  let foot = 0;
 
   // The dirt roads at A: levelled to the broad relief, compacted, two shallow tyre ruts.
   for (const g of ROAD_GEOM) {
@@ -229,23 +370,33 @@ export function surfaceAt(E: number, N: number): Surface {
     road = Math.max(road, core);
     stony *= 1 - 0.85 * core;
     drift *= 1 - 0.7 * core;
+    sand *= 1 - core;
   }
 
   const ridged = outcrop > 0 ? 1 - Math.abs(fbm(E / 3.2, N / 3.2, 3)) : 0;
-  let h = broad + fine + outcrop * (0.35 * ridged * ridged + 0.15) - rut;
+  // Clods and crusts: rounded lumps a hand to a stride across with creases between them, on the bare crust
+  // and at the foot of the banks; sand and the roads lie smooth.
+  const crust = Math.max(0, 1 - 1.1 * sand - road) * (0.55 + 0.45 * smoothstep(-0.2, 0.3, noise(E / 6 - 2, N / 6 + 7)));
+  const clods = crust * (0.075 * Math.abs(noise(E / 0.85 + 11, N / 0.85 - 4)) + 0.05 * Math.abs(noise(E / 1.7 - 3, N / 1.7 + 9)) - 0.05);
+  let h = broad + fine + mound + clods + outcrop * (0.35 * ridged * ridged + 0.15) - rut;
   stony = stony + 0.9 * outcrop;
 
   // The wadi.
   if (inBox(WADI_GEOM.box, E, N, NEAR_WADI_M)) {
-    const { d, s } = nearest(WADI_GEOM.segs, E, N);
+    const { d, s, side } = nearest(WADI_GEOM.segs, E, N);
     if (d < NEAR_WADI_M) {
-      const cut = wadiCut(d, s);
-      h -= cut.depth;
+      const cut = wadiCut(d, s, side);
+      // Rills and the lip fade out on the walker's line: a path, not a sequence of ditches.
+      const v = (E - START.E) * LEG.rE + (N - START.N) * LEG.rN;
+      h -= cut.depth - cut.rill * (1 - smoothstep(1.5, 4, Math.abs(v)));
       bank = Math.max(bank, cut.bank);
-      // The bed: sand in the middle of the flow, gravel bars along it.
+      foot = cut.foot;
+      // The bed: sand in the middle of the flow, gravel bars along it; stones and soil at the foot of the banks;
+      // the rills floored with washed gravel.
       const bars = smoothstep(-0.1, 0.35, fbm(s / 7, d / 2.5, 2));
-      stony = stony * (1 - cut.bed) + cut.bed * (0.55 + 0.4 * bars);
-      drift = drift * (1 - cut.bed) + cut.bed * (0.5 - 0.35 * bars);
+      stony = stony * (1 - cut.bed) + cut.bed * (0.55 + 0.4 * bars) + 0.55 * cut.foot + 1.2 * cut.rill;
+      drift = drift * (1 - cut.bed) * (1 - 0.6 * cut.bank) + cut.bed * (0.5 - 0.35 * bars);
+      sand *= 1 - Math.max(cut.bed, cut.bank);
     }
   }
 
@@ -255,6 +406,8 @@ export function surfaceAt(E: number, N: number): Surface {
   S.bank = Math.min(1, bank);
   S.road = road;
   S.ground = 1;
+  S.foot = foot;
+  S.sand = Math.min(1, sand);
   return S;
 }
 
@@ -448,6 +601,13 @@ const ROCK_RADIUS: Record<RockShape, number> = {
   stone_a: 0.07, stone_b: 0.06, stone_c: 0.07, stone_d: 0.05, stone_e: 0.06,
   rock_a: 0.16, rock_b: 0.18, rock_c: 0.17, rock_d: 0.18, rock07_a: 0.13, boulder_a: 0.62,
 };
+/** Height of each shape at scale 1, metres (the meshes' bounds) — burial is a share of it. */
+const ROCK_HEIGHT: Record<RockShape, number> = {
+  stone_a: 0.04, stone_b: 0.08, stone_c: 0.05, stone_d: 0.04, stone_e: 0.08,
+  rock_a: 0.15, rock_b: 0.08, rock_c: 0.09, rock_d: 0.12, rock07_a: 0.14, boulder_a: 0.54,
+};
+const STONES = ['stone_a', 'stone_b', 'stone_c', 'stone_d', 'stone_e'] as const;
+const ROCKS = ['rock_a', 'rock_b', 'rock_c', 'rock_d', 'rock07_a'] as const;
 
 export type Instance = {
   shape: string;
@@ -455,12 +615,16 @@ export type Instance = {
   x: number;
   y: number;
   z: number;
-  /** Yaw (rad), tilt axis angle and tilt (rad), uniform scale with a squash. */
+  /** Yaw (rad), tilt axis angle and tilt (rad), scale with a squash (height) and a stretch (length against width). */
   yaw: number;
   tiltDir: number;
   tilt: number;
   scale: number;
   squash: number;
+  stretch: number;
+  /** Brightness of this piece's stone (1 = the scan's own), and a shift to warmer (+) or greyer (−). */
+  tone: number;
+  warm: number;
 };
 export type Occluder = { x: number; z: number; r: number };
 
@@ -474,9 +638,13 @@ const PATH_CLEAR_M = 1.3;
 
 /**
  * Rocks and bushes standing in chunk (i, j) — deterministic, so a chunk rebuilt
- * later holds the same ones. Stones gather on gravel, outcrops, the wadi bed
- * and its banks; bushes favour the wadi's edges and sandy patches; none stand
- * on the roads or in the walker's way.
+ * later holds the same ones. Rocks lie in fields of gravel and cobbles a few
+ * metres across with quiet sand between them: thick on the rises, the outcrops,
+ * the wadi bed and, most of all, at the foot of its banks, where fallen stones
+ * gather; few show through the sand of the swales and mounds. Sizes follow a
+ * power law (many pebbles, few large stones), each piece with its own
+ * proportions, colour and depth of burial. Bushes stand on the sand mounds they
+ * have caught and along the wadi; none on the roads or in the walker's way.
  */
 export function scatterChunk(i: number, j: number): { rocks: Instance[]; shrubs: Instance[]; occluders: Occluder[] } {
   const rocks: Instance[] = [];
@@ -488,83 +656,119 @@ export function scatterChunk(i: number, j: number): { rocks: Instance[]; shrubs:
   const u0 = i * CHUNK_M;
   const v0 = j * CHUNK_M;
 
-  /** `sink`: metres below the ground at scale 1 (the scans' bases are uneven; a little burial seats them). */
-  const place = (shape: string, u: number, v: number, scale: number, sink: number, list: Instance[], tiltMax: number) => {
+  /** `burial`: share of the piece's height under the ground (sand buries deeper). */
+  const place = (shape: string, u: number, v: number, scale: number, height: number, burial: number, list: Instance[], tiltMax: number) => {
     const p = legToEN(u, v);
     const s = surfaceAt(p.E, p.N);
     const h = s.h;
-    // Local slope for the tilt: rocks settle into it.
+    const sand = s.sand;
+    // Local slope for the tilt: rocks settle into it (forward differences: thousands of pieces per chunk).
     const e = 0.3;
-    const hx = (heightAt(p.E + e, p.N) - heightAt(p.E - e, p.N)) / (2 * e);
-    const hn = (heightAt(p.E, p.N + e) - heightAt(p.E, p.N - e)) / (2 * e);
+    const hx = (heightAt(p.E + e, p.N) - h) / e;
+    const hn = (heightAt(p.E, p.N + e) - h) / e;
     const [x, , z] = toScene(p.E, p.N, 0);
+    const squash = 0.7 + rnd() * 0.5;
     list.push({
       shape,
       x,
-      y: h - sink * scale,
+      y: h - Math.min(0.75, burial + 0.3 * sand) * height * scale * squash,
       z,
       yaw: rnd() * Math.PI * 2,
       tiltDir: Math.atan2(-hn, hx),
-      tilt: Math.min(tiltMax, Math.atan(Math.hypot(hx, hn))) * 0.8 + (rnd() - 0.5) * 0.25,
+      tilt: Math.min(tiltMax, Math.atan(Math.hypot(hx, hn))) * 0.8 + (rnd() - 0.5) * 0.3,
       scale,
-      squash: 0.75 + rnd() * 0.45,
+      squash,
+      stretch: 0.78 + rnd() * 0.5,
+      // Most stones a little darker than the scan, a few weathered light; warmer or greyer by piece.
+      tone: 0.58 + 0.4 * rnd() + (rnd() < 0.08 ? 0.15 : 0),
+      warm: rnd() * 2 - 1,
     });
     return { x, z };
   };
 
-  // Jittered cells: medium rocks every ~5 m, stones every ~1.4 m near the walk, bushes every ~9 m.
+  // Jittered cells.
   const cells = (size: number, fn: (u: number, v: number) => void) => {
     for (let b = 0; b < CHUNK_M / size; b++) for (let a = 0; a < CHUNK_M / size; a++) fn(u0 + (a + rnd()) * size, v0 + (b + rnd()) * size);
   };
+  /** Fields of stones a few metres across, and quiet ground between them (0–1). */
+  const field = (E: number, N: number) => smoothstep(-0.18, 0.42, fbm(E / 9 + 31, N / 9 - 17, 3));
 
-  // Medium rocks and the odd boulder.
-  cells(4.2, (u, v) => {
+  // Rocks: alone or with a few smaller ones beside them; boulders on the banks, at their foot and on the outcrops.
+  cells(3.4, (u, v) => {
     if (Math.abs(v) < PATH_CLEAR_M + 0.6) return;
     const p = legToEN(u, v);
     const s = surfaceAt(p.E, p.N);
-    const want = 0.18 + 0.7 * s.stony + 0.5 * s.bank - 0.8 * s.road - 0.35 * s.drift;
+    const f = field(p.E, p.N);
+    const want = (0.08 + 0.65 * s.stony + 0.12 * s.bank + 0.9 * s.foot) * (0.3 + 1.0 * f) - 0.8 * s.road - 0.55 * s.sand;
     if (rnd() > want) return;
-    const boulder = rnd() < 0.06 + 0.12 * s.bank;
-    const shape: RockShape = boulder ? 'boulder_a' : (['rock_a', 'rock_b', 'rock_c', 'rock_d', 'rock07_a'] as const)[Math.floor(rnd() * 5)];
-    const scale = boulder ? 0.35 + rnd() * 0.75 : 1.0 + rnd() * rnd() * 3.6;
-    const at = place(shape, u, v, scale, boulder ? 0.1 : 0.035, rocks, 0.5);
+    const boulder = rnd() < 0.03 + 0.1 * s.bank + 0.12 * s.foot;
+    const shape: RockShape = boulder ? 'boulder_a' : ROCKS[Math.floor(rnd() * ROCKS.length)];
+    const scale = boulder ? 0.3 + 0.8 * rnd() ** 1.5 : 0.9 + 3.6 * rnd() ** 2.4;
+    // The whole piece, not only its centre, keeps off the walker's line.
+    if (Math.abs(v) < PATH_CLEAR_M + 0.6 + ROCK_RADIUS[shape] * scale * 1.3) return;
+    const at = place(shape, u, v, scale, ROCK_HEIGHT[shape], 0.08 + 0.4 * rnd() ** 1.4, rocks, 0.5);
     occluders.push({ x: at.x, z: at.z, r: ROCK_RADIUS[shape] * scale });
+    // Satellites: pieces broken off it, or smaller stones caught against it.
+    const k = rnd() < 0.55 ? 1 + Math.floor(rnd() * 3) : 0;
+    for (let c = 0; c < k; c++) {
+      const a = rnd() * Math.PI * 2;
+      const r = ROCK_RADIUS[shape] * scale * (1.1 + 1.6 * rnd());
+      const du = Math.cos(a) * r;
+      const dv = Math.sin(a) * r;
+      const sh: RockShape = ROCKS[Math.floor(rnd() * ROCKS.length)];
+      const sc = Math.max(0.8, scale * (0.25 + 0.35 * rnd()));
+      if (Math.abs(v + dv) < PATH_CLEAR_M + 0.6 + ROCK_RADIUS[sh] * sc * 1.3) continue;
+      place(sh, u + du, v + dv, sc, ROCK_HEIGHT[sh], 0.15 + 0.35 * rnd(), rocks, 0.5);
+    }
   });
 
-  // Small stones, in clusters, only where the eye can see them.
+  // Small stones, in fields, only where the eye can see them — denser close to the walk.
   if (near) {
-    cells(fine ? 1.1 : 2.2, (u, v) => {
+    cells(fine ? 0.75 : 1.9, (u, v) => {
       if (Math.abs(v) < 0.5) return;
       const p = legToEN(u, v);
       const s = surfaceAt(p.E, p.N);
-      // Clustered: stony ground in patches a few metres across, bare between them.
-      const clump = smoothstep(-0.25, 0.35, fbm(p.E / 6.5 + 31, p.N / 6.5 - 17, 2));
-      const want = (0.15 + 0.75 * s.stony + 0.4 * s.bank) * (0.35 + 0.9 * clump) - 0.9 * s.road - 0.45 * s.drift;
+      const f = field(p.E, p.N);
+      const want = (0.18 + 0.85 * s.stony + 0.12 * s.bank + 0.9 * s.foot) * (0.3 + 1.0 * f) - 0.9 * s.road - 0.6 * s.sand;
       if (rnd() > want) return;
-      const k = 1 + Math.floor(rnd() * 3);
+      const k = 1 + Math.floor(rnd() * (2 + 4 * f));
       for (let c = 0; c < k; c++) {
-        const shape: RockShape = (['stone_a', 'stone_b', 'stone_c', 'stone_d', 'stone_e'] as const)[Math.floor(rnd() * 5)];
-        const scale = 0.7 + rnd() * rnd() * 3.2;
-        const du = (rnd() - 0.5) * 0.9;
-        const dv = (rnd() - 0.5) * 0.9;
-        const at = place(shape, u + du, v + dv, scale, 0.012, rocks, 0.6);
+        const shape: RockShape = STONES[Math.floor(rnd() * STONES.length)];
+        const scale = 0.6 + 3.4 * rnd() ** 2.2;
+        const du = (rnd() - 0.5) * 1.1;
+        const dv = (rnd() - 0.5) * 1.1;
+        if (Math.abs(v + dv) < 0.5 + ROCK_RADIUS[shape] * scale) continue;
+        const at = place(shape, u + du, v + dv, scale, ROCK_HEIGHT[shape], 0.05 + 0.4 * rnd(), rocks, 0.6);
         if (scale > 1.4) occluders.push({ x: at.x, z: at.z, r: ROCK_RADIUS[shape] * scale });
       }
     });
   }
 
-  // Dry bushes.
+  // Dry bushes: on the sand mounds they caught (the chunk holding a mound's centre places its bush) …
+  const corners = [legToEN(u0, v0), legToEN(u0 + CHUNK_M, v0), legToEN(u0, v0 + CHUNK_M), legToEN(u0 + CHUNK_M, v0 + CHUNK_M)];
+  const cx0 = Math.floor(Math.min(...corners.map((c) => c.E)) / MOUND_CELL_M);
+  const cx1 = Math.floor(Math.max(...corners.map((c) => c.E)) / MOUND_CELL_M);
+  const cy0 = Math.floor(Math.min(...corners.map((c) => c.N)) / MOUND_CELL_M);
+  const cy1 = Math.floor(Math.max(...corners.map((c) => c.N)) / MOUND_CELL_M);
+  const shrubShape = (r: number): ShrubShape => (r < 0.15 ? 'shrub_b' : r < 0.4 ? 'shrub_c' : r < 0.72 ? 'shrub_d' : 'shrub_e');
+  for (let cy = cy0; cy <= cy1; cy++)
+    for (let cx = cx0; cx <= cx1; cx++) {
+      const m = moundOf(cx, cy);
+      if (!m) continue;
+      const u = (m.E - START.E) * LEG.aE + (m.N - START.N) * LEG.aN;
+      const v = (m.E - START.E) * LEG.rE + (m.N - START.N) * LEG.rN;
+      if (u < u0 || u >= u0 + CHUNK_M || v < v0 || v >= v0 + CHUNK_M) continue;
+      if (hash01(cx, cy, 0x3e) > 0.85) continue;
+      place(shrubShape(hash01(cx, cy, 0x3f)), u, v, 0.8 + 1.5 * (m.h - 0.12) + 0.3 * rnd(), 0.5, 0.1, shrubs, 0.15);
+    }
+  // … and where water runs: along the wadi's banks and bed.
   cells(6, (u, v) => {
     if (Math.abs(v) < PATH_CLEAR_M + 0.8) return;
     const p = legToEN(u, v);
     const s = surfaceAt(p.E, p.N);
-    // Desert scrub gathers where water runs: thickest along the wadi's banks and bed.
-    const nearWadi = s.bank > 0 || s.stony > 0.6 ? 0.45 : 0;
-    const want = 0.36 + 0.6 * s.bank + nearWadi + 0.25 * s.drift - 0.9 * s.road - 0.2 * s.stony;
+    const want = 0.06 + 0.55 * s.bank + 0.35 * s.foot + 0.1 * s.drift - 0.9 * s.road;
     if (rnd() > want) return;
-    const r = rnd();
-    const shape: ShrubShape = r < 0.12 ? 'shrub_b' : r < 0.35 ? 'shrub_c' : r < 0.7 ? 'shrub_d' : 'shrub_e';
-    place(shape, u, v, 0.75 + rnd() * 0.7, 0.04, shrubs, 0.15);
+    place(shrubShape(rnd()), u, v, 0.7 + rnd() * 0.7, 0.5, 0.08, shrubs, 0.15);
   });
 
   return { rocks, shrubs, occluders };
@@ -603,19 +807,20 @@ export function instanceMatrix(t: Instance, out: Float32Array, offset: number): 
   const r20 = t20 * cy + t22 * -sy;
   const r21 = t21;
   const r22 = t20 * sy + t22 * cy;
-  const sxz = t.scale;
+  const sxx = t.scale * t.stretch;
+  const szz = t.scale / t.stretch;
   const syy = t.scale * t.squash;
-  out[offset] = r00 * sxz;
-  out[offset + 1] = r10 * sxz;
-  out[offset + 2] = r20 * sxz;
+  out[offset] = r00 * sxx;
+  out[offset + 1] = r10 * sxx;
+  out[offset + 2] = r20 * sxx;
   out[offset + 3] = 0;
   out[offset + 4] = r01 * syy;
   out[offset + 5] = r11 * syy;
   out[offset + 6] = r21 * syy;
   out[offset + 7] = 0;
-  out[offset + 8] = r02 * sxz;
-  out[offset + 9] = r12 * sxz;
-  out[offset + 10] = r22 * sxz;
+  out[offset + 8] = r02 * szz;
+  out[offset + 9] = r12 * szz;
+  out[offset + 10] = r22 * szz;
   out[offset + 11] = 0;
   out[offset + 12] = t.x;
   out[offset + 13] = t.y;

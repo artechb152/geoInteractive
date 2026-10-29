@@ -164,7 +164,9 @@ vec3 dustSky(vec3 dir) {
   // Slow billows in the dust overhead, the same for the sky and for far surfaces.
   vec3 q = dir * 1.7 + vec3(uWind.x, 0.0, uWind.y) * (uTime * 0.0035);
   float n = texture(uDustNoise, q).r;
-  return c * (0.955 + 0.09 * n);
+  float n2 = texture(uDustNoise, dir * vec3(4.2, 7.0, 4.2) + vec3(0.31, 0.12, 0.71) + vec3(uWind.x, 0.0, uWind.y) * (uTime * 0.006)).r;
+  // (Smoothed value noise hardly strays from 0.5: stretched, so the billows show.)
+  return c * (0.925 + 0.11 * smoothstep(0.3, 0.7, n) + 0.04 * smoothstep(0.3, 0.7, n2));
 }
 
 float dustDensity(vec3 p) {
@@ -175,17 +177,28 @@ float dustDensity(vec3 p) {
   vec2 wd = normalize(uWind);
   vec3 r = vec3(dot(m.xz, wd) / 70.0, m.y / 5.0, dot(m.xz, vec2(-wd.y, wd.x)) / 9.0);
   float b = texture(uDustNoise, r + vec3(0.31, 0.17, 0.53)).r;
-  return 0.6 + 0.8 * (a * 0.55 + b * 0.45);
+  // Between 0.6 (a thin gap) and 1.2 (a dense bank), stretched so both occur, ~0.9 on average (the noise's
+  // mean is ~0.55): about a sixth of a surface's contrast still reaches the eye from 30 m, as above.
+  return 0.6 + 0.6 * smoothstep(0.33, 0.77, a * 0.55 + b * 0.45);
+}
+
+/** Mean dust density along a ray from the eye, sampled out to m metres (72 m and beyond: the same for every far point). */
+float dustAlong(vec3 dir, float m) {
+  return (dustDensity(cameraPosition + dir * (m * 0.25)) + dustDensity(cameraPosition + dir * (m * 0.6)) + dustDensity(cameraPosition + dir * (m * 0.92))) / 3.0;
+}
+
+/** The light the dust scatters towards the eye: thicker banks glow a little brighter — the veils drifting past. */
+vec3 dustGlow(vec3 dir, float rho) {
+  return dustSky(dir) * (1.0 + 0.16 * (rho - 1.0));
 }
 
 vec3 applyDust(vec3 col, vec3 wp) {
   vec3 ray = wp - cameraPosition;
   float d = length(ray);
   vec3 dir = ray / max(d, 1e-4);
-  float m = min(d, 72.0);
-  float rho = (dustDensity(cameraPosition + dir * (m * 0.25)) + dustDensity(cameraPosition + dir * (m * 0.6)) + dustDensity(cameraPosition + dir * (m * 0.92))) / 3.0;
+  float rho = dustAlong(dir, min(d, 72.0));
   float T = exp(-pow(d / uDustRange, uDustPower) * rho);
-  return mix(dustSky(dir), col, T);
+  return mix(dustGlow(dir, rho), col, T);
 }
 `;
 
@@ -312,9 +325,15 @@ alb = mix(alb, alb * vec3(1.1, 1.07, 1.03) + vec3(0.012, 0.009, 0.006), road * 0
 float mv = macro.r - 0.5;
 alb *= vec3(1.0 + mv * 0.5, 1.0 + mv * 0.42, 1.0 + mv * 0.3);
 alb *= 0.93 + 0.14 * macro2.r;
+// Metre-scale mottling — worn and crusted patches, finer and coarser grain — that still reads where the
+// scans' own detail has blurred into its average, a few tens of metres out.
+float mottle = texture2D(uMacro, rot2(wuv, 1.1) / 4.1 + 0.21).g;
+alb *= 0.9 + 0.2 * mottle;
 // Graded towards the local soil (the scans are from other deserts): less orange, a little greyer.
 float aLum = dot(alb, vec3(0.2126, 0.7152, 0.0722));
-alb = mix(alb, aLum * vec3(1.24, 1.0, 0.8), 0.68) * 0.85;
+alb = mix(alb, aLum * vec3(1.2, 1.0, 0.83), 0.68) * 0.8;
+// More local contrast than the scans carry: under the storm's flat light their pebbles and crusts would wash out.
+alb *= pow(max(dot(alb, vec3(0.2126, 0.7152, 0.0722)), 1e-3) / 0.15, 0.3);
 diffuseColor.rgb *= alb;
 `,
       )
@@ -331,7 +350,7 @@ float roughnessFactor = clamp(dot(rgh, w) * 1.04 + 0.02, 0.55, 1.0);
 {
   vec2 nA = w.x * (nA0.rg * 2.0 - 1.0) + w.y * (nA1.rg * 2.0 - 1.0) + w.z * (nA2.rg * 2.0 - 1.0) + w.w * (nA3.rg * 2.0 - 1.0);
   vec2 nB = w.x * (nB0.rg * 2.0 - 1.0) + w.y * (nB1.rg * 2.0 - 1.0) + w.z * (nB2.rg * 2.0 - 1.0) + w.w * (nB3.rg * 2.0 - 1.0);
-  vec2 nxy = mix(nA, rot2(nB, -ROT), sB) * (1.6 - 0.8 * road);
+  vec2 nxy = mix(nA, rot2(nB, -ROT), sB) * (1.9 - 1.0 * road);
   vec3 nt = vec3(nxy, sqrt(max(0.0, 1.0 - dot(nxy, nxy))));
   vec3 N = normalize(vGeoN);
   vec3 T = normalize(vec3(1.0, 0.0, 0.0) - N * N.x);
@@ -347,14 +366,14 @@ float roughnessFactor = clamp(dot(rgh, w) * 1.04 + 0.02, 0.55, 1.0);
 {
   // Hollows and rock contacts: the vertex AO, deepened in the low parts of the scanned relief.
   // Crevices of the scanned relief darker: the local contrast of a close, rough surface.
-  float ambientOcclusion = clamp(vAO * (0.66 + 0.5 * dot(hgt, w)), 0.0, 1.0);
+  float ambientOcclusion = clamp(vAO * (0.6 + 0.56 * dot(hgt, w)), 0.0, 1.0);
   reflectedLight.indirectDiffuse *= ambientOcclusion;
   reflectedLight.directDiffuse *= mix(1.0, ambientOcclusion, 0.55);
 }
 `,
       );
   };
-  m.customProgramCacheKey = () => 'dr-ground-v1';
+  m.customProgramCacheKey = () => 'dr-ground-v2';
   return m;
 }
 
@@ -394,12 +413,19 @@ export function patchRockMaterial(src: THREE.MeshStandardMaterial, tint: THREE.C
 {
   float lum = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(lum) * uTint * 2.2, 0.55);
-  float coat = smoothstep(0.35, 0.95, normalize(vUpN).y);
-  diffuseColor.rgb = mix(diffuseColor.rgb, uDustCoat, coat * 0.5);
+}`,
+      )
+      // The piece's own shade (instance colour) first, then the dust on its upper faces, the same on every piece.
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+{
+  float coat = smoothstep(0.45, 0.95, normalize(vUpN).y);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uDustCoat, coat * 0.3);
 }`,
       );
   };
-  m.customProgramCacheKey = () => `dr-rock-${key}`;
+  m.customProgramCacheKey = () => `dr-rock-v2-${key}`;
   return m;
 }
 
@@ -424,7 +450,7 @@ export function patchShrubMaterial(src: THREE.MeshStandardMaterial, key: string)
 }`,
     );
   };
-  m.customProgramCacheKey = () => `dr-shrub-${key}`;
+  m.customProgramCacheKey = () => `dr-shrub-v2-${key}`;
   return m;
 }
 
@@ -448,7 +474,8 @@ void main() {
 ${DUST_PARS}
 varying vec3 vDir;
 void main() {
-  gl_FragColor = vec4(dustSky(normalize(vDir)), 1.0);
+  vec3 dir = normalize(vDir);
+  gl_FragColor = vec4(dustGlow(dir, dustAlong(dir, 72.0)), 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`,

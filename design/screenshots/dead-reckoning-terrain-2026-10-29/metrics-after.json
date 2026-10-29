@@ -1,0 +1,64 @@
+{
+  "firstFrameMs": 5092,
+  "standing": {
+    "fps": 60,
+    "worstFrameMs": 17,
+    "framesOver34ms": 0
+  },
+  "renderInfo": {
+    "calls": 101,
+    "triangles": 4448896,
+    "geometries": 126,
+    "textures": 31
+  },
+  "rotationPx": [
+    {
+      "yaw": 0,
+      "px": 1010.525951629392
+    },
+    {
+      "yaw": 45,
+      "px": 1010.5259516293912
+    },
+    {
+      "yaw": 90,
+      "px": 1010.5259516293943
+    },
+    {
+      "yaw": 135,
+      "px": 1010.5259516293829
+    },
+    {
+      "yaw": 180,
+      "px": 1010.5259516293818
+    },
+    {
+      "yaw": 225,
+      "px": 1010.525951629385
+    },
+    {
+      "yaw": 270,
+      "px": 1010.5259516293943
+    },
+    {
+      "yaw": 315,
+      "px": 1010.5259516294079
+    }
+  ],
+  "turning": {
+    "fps": 60,
+    "worstFrameMs": 17,
+    "framesOver34ms": 0
+  },
+  "walking": {
+    "fps": 59,
+    "worstFrameMs": 67,
+    "framesOver34ms": 1
+  },
+  "walkMs": 1484,
+  "walkingClean": {
+    "fps": 60,
+    "worstFrameMs": 17,
+    "framesOver34ms": 0
+  }
+}
