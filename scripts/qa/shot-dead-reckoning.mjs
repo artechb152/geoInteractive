@@ -212,9 +212,10 @@ try {
     check((await page.locator(`${DR} [data-view-readout]`).getAttribute('aria-hidden')) !== 'true', 'look around: "כיוון המבט" is named apart from the walking direction');
 
     // rapid presses: one segment
-    const adv = page.locator(`${DR} [data-advance="walk"]`);
-    await adv.click();
-    for (let k = 0; k < 4; k++) await adv.click({ force: true, timeout: 2000 }).catch(() => {});
+    // five presses in one go, while the first segment runs
+    await page.locator(`${DR} [data-advance="walk"]`).evaluate((b) => {
+      for (let k = 0; k < 5; k++) b.click();
+    });
     await settle(page, 100);
     await page.waitForTimeout(1500);
     s = await st(page);

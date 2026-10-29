@@ -6,7 +6,7 @@ import type { IconName } from '@/components/Icon';
 import { LessonViewportFit } from '@/components/lesson/LessonViewportFit';
 import type { GlyphKind } from './CombatNavVisuals';
 import { TerrainAssociationActivity } from './terrain-nav/TerrainAssociationActivity';
-import { DeadReckoningActivity, type DeadReckoningCopy } from './dead-reckoning/DeadReckoningActivity';
+import { DeadReckoningActivity } from './dead-reckoning/DeadReckoningActivity';
 type Method = 'handrail' | 'dead';
 type MethodData = {
 id: Method;
@@ -59,13 +59,6 @@ legend: [
 ],
 },
 };
-
-/**
- * Technique 2 in a sandstorm (dead-reckoning/DeadReckoningActivity): the conditions chip, and the principle
- * (METHODS.dead.detail), which closes the task once its last decision is made — shown earlier, it would
- * answer the activity's own questions (the count, what the finished count proves).
- */
-const DEAD_COPY: Omit<DeadReckoningCopy, 'principle'> = { badge: 'סופת חול · ראות כ־30 מ׳' };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Laptop fit — the part's three learning screens (the opening, technique 1,
@@ -215,8 +208,8 @@ return (
 }
 
 /* ═══ Technique 2 — ניווט עיוור ═══════════════════════════════════════
-   One card (dead-reckoning/DeadReckoningActivity): the title, the one-line
-   description and the conditions chip head it, beside the task's progress;
+   One card (dead-reckoning/DeadReckoningActivity): the title and the one-line
+   description head it, beside the task's progress;
    the navigator's own view inside the sandstorm fills it, with the planning
    map on demand, the compass and the pace counter under it. The task —
    prepare the count and the compass, walk the leg in 100-pair segments past
@@ -226,7 +219,8 @@ function DeadReckoningSection({ data }: { data: MethodData }) {
 return (
  <section id={`combatnav-${data.id}`} aria-labelledby={`combatnav-${data.id}-title`} className="scroll-mt-24">
  <DeadReckoningActivity
- copy={{ ...DEAD_COPY, principle: data.detail }}
+ // The principle closes the task once its last decision is made — shown earlier, it would answer the activity's own questions.
+ copy={{ principle: data.detail }}
  title={
  <h3 id={`combatnav-${data.id}-title`} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
  {data.label}

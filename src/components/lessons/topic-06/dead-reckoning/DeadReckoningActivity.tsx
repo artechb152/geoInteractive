@@ -2,9 +2,8 @@
 
 import { useEffect, useId, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { animate, motion, useMotionValue, useReducedMotion, useTransform, type MotionValue } from 'framer-motion';
-import { Check, Eye, Footprints, Info, Map as MapIcon, RotateCcw, RotateCw, Wind, X } from 'lucide-react';
+import { Check, Eye, Footprints, Info, Map as MapIcon, RotateCcw, RotateCw, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { StatusChip } from '@/components/ui/StatusChip';
 import { cn } from '@/lib/utils';
 import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { RadioRow } from '../terrain-nav/RadioRow';
@@ -44,7 +43,7 @@ import { TravelCompass, formatAzimuth } from './TravelCompass';
 /**
  * "ניווט עיוור" — the dead-reckoning activity of lesson 6, inside a sandstorm,
  * seen from the navigator's own eyes. One card: the title row (title, short
- * description, the conditions chip; the stepper; a quiet reset), the live
+ * description; the stepper; a quiet reset), the live
  * first-person view with the planning map on demand, a toolbar under it (the
  * compass, the walking direction, the pace counter and the estimate, the
  * advance button), the task panel and one status line.
@@ -70,8 +69,6 @@ import { TravelCompass, formatAzimuth } from './TravelCompass';
 
 /** The technique's board copy, owned by CombatNavScene. */
 export type DeadReckoningCopy = {
-  /** The conditions chip. */
-  readonly badge: string;
   /** The method's principle — the status line once the task is done (earlier it would answer the task's questions). */
   readonly principle: string;
 };
@@ -88,7 +85,7 @@ const roundM = (v: number) => (v >= 100 ? Math.round(v / 10) * 10 : Math.round(v
 const FRAME_H = 560;
 /** Lowest view height on short screens, and what sits above and beside it down to the toolbar's foot (card padding, title row, toolbar). */
 const FRAME_MIN = 400;
-const CHROME_TO_TOOLBAR = 367;
+const CHROME_TO_TOOLBAR = 319;
 /** Viewport px the lesson keeps above (site header + gap) and below a screen (LessonFitUniform). */
 const VIEWPORT_RESERVE = 104 + 24;
 
@@ -112,8 +109,8 @@ function useFrameHeight() {
   return Math.round(Math.min(FRAME_H, Math.max(FRAME_MIN, room)));
 }
 const COMPASS_PX = 164;
-/** One 150 m segment on screen, seconds. */
-const WALK_S = 3.6;
+/** One 150 m segment on screen, seconds — a short glide, so counting on never feels like waiting. */
+const WALK_S = 1.4;
 
 const STEP_LABEL = ['מתכננים', 'מתקדמים', 'מאמתים'] as const;
 const SIGN_LABEL: Record<SignOption, string> = { wadi: 'ערוץ יבש', road: 'דרך עפר', hill: 'גבעה עם אנטנה' };
@@ -241,9 +238,6 @@ export function DeadReckoningActivity({ copy, title, intro }: { copy: DeadReckon
         <div className="min-w-0">
           {title}
           {intro && <div className="mt-1">{intro}</div>}
-          <StatusChip tone="badge" className="mt-2.5 px-3.5 py-1.5 text-base" icon={<Wind className="size-4" aria-hidden />}>
-            {copy.badge}
-          </StatusChip>
         </div>
         <div className="flex flex-col items-center pt-1">
           <Stepper current={v.stepNumber} done={v.done} />

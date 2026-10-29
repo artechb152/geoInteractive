@@ -7,7 +7,7 @@ import type { MotionValue } from 'framer-motion';
 import * as THREE from 'three';
 import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
-import { WADI_CROSSING_M, along } from './deadReckoningModel';
+import { SEGMENT_M, WADI_CROSSING_M, along } from './deadReckoningModel';
 import {
   CHUNK_M,
   CHUNK_REACH_M,
@@ -67,8 +67,13 @@ const SHRUBS_URL = `${DIR}/shrubs.glb`;
 /** The frame's background while the canvas has nothing to show (the storm's own haze colour). */
 export const DUST_BG = '#c1a484';
 
-/** Vertical field of view: ~76° across the activity's wide frame. */
-const FOV = 38;
+/**
+ * Horizontal field of view, fixed: the vertical one follows the frame's shape, so a wider or
+ * shorter view (1920 × 910 makes it ~3:1) shows more around, never a stretched edge. 64° keeps
+ * stones near the edges of the view round wherever one looks.
+ */
+const HFOV = 64;
+const vfovFor = (aspect: number) => (2 * Math.atan(Math.tan((HFOV * Math.PI) / 360) / aspect) * 180) / Math.PI;
 /**
  * Sun through the dust: high in the north-north-east, ahead of the walker — the
  * brightest haze is in front, rocks throw their soft shadows towards the eye
@@ -108,7 +113,7 @@ export default function DeadReckoningScene3D(props: SceneProps) {
         frameloop={props.active ? 'always' : 'never'}
         dpr={[0.85, 1.25]}
         shadows
-        camera={{ fov: FOV, near: 0.08, far: 600, position: [0, 1.7, 0] }}
+        camera={{ fov: vfovFor(1280 / 560), near: 0.08, far: 600, position: [0, 1.7, 0] }}
         gl={{ antialias: true, powerPreference: 'high-performance', stencil: false }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.NeutralToneMapping;
@@ -346,10 +351,16 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     instancesDirty.current = false;
   };
 
+  /**
+   * The chunks around the eye, plus those of the next segment ahead — built in the frames while the learner
+   * stands and reads, so a walk never waits for ground. The nearest come first.
+   */
   const syncChunks = (u: number) => {
     const want = new Set<string>();
     const order: { i: number; j: number; pri: number }[] = [];
-    for (const c of chunksAround(u)) {
+    const around = new Map<string, { i: number; j: number }>();
+    for (const c of [...chunksAround(u), ...chunksAround(u + SEGMENT_M)]) around.set(`${c.i},${c.j}`, c);
+    for (const c of around.values()) {
       const k = `${c.i},${c.j}`;
       want.add(k);
       if (!chunks.current.has(k)) {
@@ -364,7 +375,8 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     for (const [k, rec] of chunks.current) {
       if (want.has(k)) continue;
       const [i] = k.split(',').map(Number);
-      if (Math.abs((i + 0.5) * CHUNK_M - u) < CHUNK_REACH_M + CHUNK_M * 1.5) continue;
+      const cu = (i + 0.5) * CHUNK_M - u;
+      if (cu > -(CHUNK_REACH_M + CHUNK_M * 1.5) && cu < CHUNK_REACH_M + SEGMENT_M + CHUNK_M * 1.5) continue;
       groundGroup.current?.remove(rec.mesh);
       rec.mesh.geometry.dispose();
       chunks.current.delete(k);
@@ -372,7 +384,8 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     }
     for (const k of scatterCache.current.keys()) {
       const [i] = k.split(',').map(Number);
-      if (Math.abs((i + 0.5) * CHUNK_M - u) > CHUNK_REACH_M + CHUNK_M * 3) scatterCache.current.delete(k);
+      const cu = (i + 0.5) * CHUNK_M - u;
+      if (cu < -(CHUNK_REACH_M + CHUNK_M * 3) || cu > CHUNK_REACH_M + SEGMENT_M + CHUNK_M * 3) scatterCache.current.delete(k);
     }
   };
 
@@ -443,6 +456,14 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
       lastRebuild.current = performance.now();
     }
 
+    // The vertical field of view follows the frame's shape (the horizontal one is fixed).
+    const cam = camera as THREE.PerspectiveCamera;
+    const vfov = vfovFor(state.size.width / Math.max(1, state.size.height));
+    if (Math.abs(cam.fov - vfov) > 0.01) {
+      cam.fov = vfov;
+      cam.updateProjectionMatrix();
+    }
+
     // The eye: on the line, 1.7 m over the ground under the feet.
     const p = legToEN(u, 0);
     const [x, , z] = toScene(p.E, p.N, 0);
@@ -463,8 +484,8 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     }
     res.sky.position.copy(camera.position);
 
-    // Ready once the chunks around the eye are built and drawn.
-    if (!initial.current.done && queue.current.length === 0) {
+    // Ready once the chunks around the eye are built and drawn (the next segment's may still be coming).
+    if (!initial.current.done && !queue.current.some((c) => Math.abs((c.i + 0.5) * CHUNK_M - u) < CHUNK_REACH_M + CHUNK_M)) {
       initial.current.frames += 1;
       if (initial.current.frames >= 2) {
         initial.current.done = true;

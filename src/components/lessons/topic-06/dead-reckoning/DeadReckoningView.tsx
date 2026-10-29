@@ -8,14 +8,13 @@ import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import { signedTurn } from '../locationCheckGeometry';
-import { VISIBILITY_M } from './deadReckoningModel';
 import { DEFAULT_PITCH, type LookRig } from './deadReckoningLook';
 import { DeadReckoningField } from './DeadReckoningField';
 
 /**
  * The view frame of the dead-reckoning activity: the live first-person scene
  * (DeadReckoningScene3D, loaded on demand) with what belongs on it — the
- * conditions chip, the planning-map button, the look-around hint and the
+ * planning-map button, the look-around hint and the
  * "face the walking direction" button — and the planning map when it is open.
  *
  * Looking around: drag the view, or the arrow keys while it has focus (Home
@@ -173,11 +172,6 @@ export function DeadReckoningView({
         </div>
       ) : null}
 
-      {/* What the view is, and the storm's limit */}
-      <div className="pointer-events-none absolute start-4 top-4 rounded-lg bg-paper-bright/90 px-3 py-1.5 shadow-sm" data-view-chip>
-        <div className="font-display text-base font-bold leading-snug text-black">המבט שלכם בשטח</div>
-        <div className="text-base leading-snug text-black">{`ראות כ־${VISIBILITY_M} מ׳`}</div>
-      </div>
       {/* Under the open map its own close button takes over */}
       <div className={cn('absolute end-4 top-4', mapOpen && 'invisible')} data-no-look>
         {mapButton}
