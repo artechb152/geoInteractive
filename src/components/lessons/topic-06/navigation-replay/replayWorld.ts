@@ -9,7 +9,7 @@
  *
  * The map is never mirrored: map x grows east, world x grows east.
  */
-import { M_PER_UNIT, VB_H, VB_W, type Pt } from '../navTipsGeometry';
+import { M_PER_UNIT, VB_H, VB_W, type Pt } from './replayGeography';
 
 export type W2 = { x: number; z: number };
 

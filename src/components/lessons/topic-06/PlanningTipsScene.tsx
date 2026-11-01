@@ -45,7 +45,7 @@ import { NavigationReplayScreen } from './navigation-replay/NavigationReplayActi
  *     inline start (right) so the three screens share one right edge.
  */
 const FIT_WIDTH = 1344;
-const FIT_HEIGHT = { plan: 744, nav: 1027, question: 532 } as const;
+const FIT_HEIGHT = { plan: 744, nav: 760, question: 532 } as const;
 const FIT_RESERVE_TOP = 104;
 const FIT_RESERVE_BOTTOM = 24;
 

@@ -27,8 +27,7 @@ import {
 import { hash01 } from '../replayScatter';
 
 /** One maquis shrub, ~1 m tall and ~1.3 m wide, base at y = 0. */
-export function buildShrubGeometry(variant: number): BufferGeometry {
-  const cards = 120;
+export function buildShrubGeometry(variant: number, cards = 120): BufferGeometry {
   const pos: number[] = [];
   const nor: number[] = [];
   const uv: number[] = [];
@@ -50,9 +49,11 @@ export function buildShrubGeometry(variant: number): BufferGeometry {
     const phi = Math.acos(1 - 1.6 * h(2)); // mostly the upper part
     const depth = c < 16 ? 0.4 + 0.35 * h(3) : 0.8 + 0.22 * h(3);
     const dir = new Vector3(Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta));
-    const center = new Vector3(dir.x * sh.rx * depth, sh.cy + dir.y * sh.ry * depth, dir.z * sh.rz * depth);
+    // Lobed, asymmetric crowns rather than four repeated spherical silhouettes.
+    const lobe = 0.82 + 0.23 * Math.sin(theta * (3 + variant) + variant * 1.7) + 0.09 * Math.sin(theta * 7 - phi * 3);
+    const center = new Vector3(dir.x * sh.rx * depth * lobe, sh.cy + dir.y * sh.ry * depth * (0.86 + 0.2 * h(11)), dir.z * sh.rz * depth * lobe);
     if (center.y < 0.12) center.y = 0.12 + 0.1 * h(4);
-    const size = 0.34 + 0.2 * h(5);
+    const size = (0.24 + 0.29 * h(5)) * Math.sqrt(120 / cards);
     // the card faces outwards, turned and tipped at random
     const n = dir.clone().add(new Vector3(h(6) - 0.5, (h(7) - 0.5) * 0.6, h(8) - 0.5).multiplyScalar(0.9)).normalize();
     const t1 = new Vector3().crossVectors(up, n);

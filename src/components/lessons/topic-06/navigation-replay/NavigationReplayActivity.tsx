@@ -32,7 +32,7 @@ import { TipsLegendGlyph } from '../NavTipsMap';
 const EASE = [0.22, 1, 0.36, 1] as const;
 /** Width of the 3D panel at the reference width; the map takes the rest. */
 const VIEW_W = 690;
-const PANEL_H = 452;
+const PANEL_H = 370;
 /** The decision area's height: its tallest state (evidence + feedback, the debrief, the summary). */
 const DECISION_H = 160;
 
@@ -40,9 +40,9 @@ export function NavigationReplayScreen() {
   return (
     <div data-tips-screen="nav">
       {/* The screen's title and instruction, as in the approved mockup: centred above the activity card. */}
-      <header className="mb-5 text-center">
-        <h3 className="font-display text-4xl font-extrabold leading-[1.15] tracking-tight text-black">במהלך הניווט: מה צריך לבדוק?</h3>
-        <p className="mt-1.5 text-xl leading-snug text-black">השוו בין סיפור הדרך למה שנראה בשטח, והחליטו מתי נדרשת בדיקה.</p>
+      <header className="mb-2 text-center">
+        <h3 className="font-display text-3xl font-extrabold leading-tight tracking-tight text-black">במהלך הניווט: מה צריך לבדוק?</h3>
+        <p className="mt-1 text-base leading-snug text-black">השוו את דוגמת התכנון למראה השטח, והחליטו מתי נדרשת בדיקה.</p>
       </header>
       <NavigationReplayActivity />
     </div>
@@ -100,12 +100,13 @@ export function NavigationReplayActivity() {
   const revealTruth = state.active === 'after' && isDone(state, 'after');
 
   return (
-    <div role="group" aria-labelledby={`${uid}-title`} className="surface-elevated px-7 pb-6 pt-5" data-activity="navigation-replay" data-active={state.active} data-phase={ms.phase}>
+    <div role="group" aria-labelledby={`${uid}-title`} className="surface-elevated px-6 pb-4 pt-3" data-activity="navigation-replay" data-active={state.active} data-phase={ms.phase}>
       {/* header row: title (start), position in the replay and a quiet reset (end) */}
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <h4 id={`${uid}-title`} className="font-display text-3xl font-bold leading-tight text-black">
+      <div className="mb-2 flex items-center justify-between gap-5">
+        <h4 id={`${uid}-title`} className="sr-only">
           מתי עוצרים לבדוק?
         </h4>
+        <div className="min-w-0 flex-1"><Timeline state={state} onGo={goTo} onStep={step} /></div>
         <div className="flex items-center gap-5">
           <span className="text-base text-fg-muted" data-counter>
             רגע {moment.n} מתוך {MOMENTS.length}
@@ -154,14 +155,13 @@ export function NavigationReplayActivity() {
       </div>
 
       {/* the route story and the movement data for this moment */}
-      <div className="mt-3 grid grid-cols-2 gap-4" data-info>
+      <div className="mt-2 grid grid-cols-2 gap-3" data-info>
         <InfoCard title="סיפור הדרך" text={moment.story} data="story" />
         <InfoCard title="הנתון מהשטח" text={moment.field} data="field" />
       </div>
 
-      <Timeline state={state} onGo={goTo} onStep={step} />
-
-      <div className="mt-2.5 border-t border-border/80 pt-4">
+      <div className="mt-3 border-t border-border/80 pt-3" data-replay-footer>
+      <div className="min-w-0">
         <DecisionArea
           state={state}
           moment={moment}
@@ -177,10 +177,11 @@ export function NavigationReplayActivity() {
             advance('enroute');
           }}
           onAdvance={advance}
-          onLook={(yawDeg) => view.goTo({ ...view.get(), yawDeg, pitchDeg: -5 }, reduce)}
+          onLook={(yawDeg) => view.goTo({ ...view.get(), yawDeg, pitchDeg: 8 }, reduce)}
         />
       </div>
 
+      </div>
       {/* moment changes and resets, announced once */}
       <p className="sr-only" aria-live="polite" data-announce>
         {announce}
@@ -200,9 +201,9 @@ function EstimateGlyph() {
 
 function InfoCard({ title, text, data }: { title: string; text: string; data: string }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-bg-accent/50 px-5 py-3" data-info-card={data}>
-      <h5 className="font-display text-lg font-bold leading-snug text-black">{title}</h5>
-      <p className="mt-1 min-h-[1.625rem] text-base leading-relaxed text-black">{text}</p>
+    <div className="flex items-start gap-2 rounded-xl border border-border/70 bg-bg-accent/50 px-3 py-2" data-info-card={data}>
+      <h5 className="shrink-0 font-display text-base font-bold leading-relaxed text-black">{title}:</h5>
+      <p className="min-h-[2.5rem] text-base leading-snug text-black">{text}</p>
     </div>
   );
 }
@@ -212,10 +213,10 @@ function InfoCard({ title, text, data }: { title: string; text: string; data: st
 function Timeline({ state, onGo, onStep }: { state: ReplayState; onGo: (id: MomentId) => void; onStep: (d: 1 | -1) => void }) {
   const i = MOMENTS.findIndex((m) => m.id === state.active);
   return (
-    <nav aria-label="רגעי השחזור" className="mt-4" data-timeline>
-      <div className="flex items-center gap-6">
+    <nav aria-label="רגעי השחזור" className="pt-1" data-timeline>
+      <div className="flex items-center gap-2">
         {/* RTL: previous on the right, next on the left */}
-        <button type="button" onClick={() => onStep(-1)} disabled={i === 0} aria-label="לרגע הקודם" className="grid size-12 shrink-0 place-items-center rounded-xl border border-border bg-bg-elevated text-black shadow-sm transition-colors hover:bg-bg-accent disabled:opacity-35 disabled:shadow-none" data-prev>
+        <button type="button" onClick={() => onStep(-1)} disabled={i === 0} aria-label="לרגע הקודם" className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-bg-elevated text-black shadow-sm transition-colors hover:bg-bg-accent disabled:opacity-35 disabled:shadow-none" data-prev>
           <ChevronRight className="size-6" aria-hidden />
         </button>
         <ol className="relative flex flex-1 items-start justify-between">
@@ -230,7 +231,7 @@ function Timeline({ state, onGo, onStep }: { state: ReplayState; onGo: (id: Mome
                   type="button"
                   onClick={() => onGo(m.id)}
                   aria-current={active ? 'step' : undefined}
-                  className="group flex flex-col items-center gap-1.5 rounded-lg px-2 pb-1"
+                  className="group flex items-center gap-2 rounded-lg bg-bg-elevated px-2 pb-1"
                   data-moment={m.id}
                   data-done={done || undefined}
                 >
@@ -244,18 +245,18 @@ function Timeline({ state, onGo, onStep }: { state: ReplayState; onGo: (id: Mome
                   >
                     {m.n}
                   </span>
-                  <span className={cn('font-display text-lg leading-tight', active ? 'font-bold text-accent' : 'font-medium text-black')}>{m.label}</span>
+                  <span className={cn('font-display text-base leading-tight', active ? 'font-bold text-accent' : 'font-medium text-black')}>{m.label}</span>
                   <span className="sr-only">{done ? ' — הושלם' : ' — טרם הושלם'}</span>
                 </button>
               </li>
             );
           })}
         </ol>
-        <button type="button" onClick={() => onStep(1)} disabled={i === MOMENTS.length - 1} aria-label="לרגע הבא" className="grid size-12 shrink-0 place-items-center rounded-xl border border-border bg-bg-elevated text-black shadow-sm transition-colors hover:bg-bg-accent disabled:opacity-35 disabled:shadow-none" data-next>
+        <button type="button" onClick={() => onStep(1)} disabled={i === MOMENTS.length - 1} aria-label="לרגע הבא" className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-bg-elevated text-black shadow-sm transition-colors hover:bg-bg-accent disabled:opacity-35 disabled:shadow-none" data-next>
           <ChevronLeft className="size-6" aria-hidden />
         </button>
       </div>
-      <p className="mt-0.5 text-center text-base leading-snug text-fg-muted">אפשר לחזור לכל רגע ולבדוק שוב.</p>
+      <p className="sr-only">אפשר לחזור לכל רגע ולבדוק שוב.</p>
     </nav>
   );
 }
@@ -319,7 +320,7 @@ function FocusOnMount({ pendingFocus, promptRef, firstActionRef }: DecisionProps
 /** Two columns: the text (start / right) and the actions (end / left). */
 function Row({ text, actions }: { text: ReactNode; actions: ReactNode }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_440px] items-start gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)_350px] items-start gap-4">
       <div className="min-w-0">{text}</div>
       <div className="flex flex-col items-stretch gap-2.5">{actions}</div>
     </div>
@@ -329,10 +330,10 @@ function Row({ text, actions }: { text: ReactNode; actions: ReactNode }) {
 function Prompt({ promptRef, children, sub }: { promptRef: DecisionProps['promptRef']; children: ReactNode; sub?: ReactNode }) {
   return (
     <>
-      <h5 ref={promptRef} tabIndex={-1} className="font-display text-2xl font-bold leading-snug text-black outline-none" data-prompt>
+      <h5 ref={promptRef} tabIndex={-1} className="font-display text-lg font-bold leading-snug text-black outline-none" data-prompt>
         {children}
       </h5>
-      {sub && <p className="mt-1.5 text-base leading-relaxed text-black">{sub}</p>}
+      {sub && <p className="mt-1.5 text-base leading-snug text-black">{sub}</p>}
     </>
   );
 }
@@ -340,7 +341,7 @@ function Prompt({ promptRef, children, sub }: { promptRef: DecisionProps['prompt
 function Guided({ moment: m, state, promptRef, firstActionRef, onComplete, onAdvance, onLook }: DecisionProps) {
   const done = isDone(state, m.id);
   const checks = [
-    { key: 'place', label: 'המקום:', text: 'ערוץ הנחל היבש משנה כאן כיוון, כמו בעיקול שבמפה — זו נקודה מזוהה.', yaw: m.lookAt?.place },
+    { key: 'place', label: 'המקום:', text: 'המסלול חוצה כאן את הנחל היבש, כמו במפה — זו נקודה מזוהה.', yaw: m.lookAt?.place },
     { key: 'direction', label: 'הכיוון:', text: 'הקטע הבא מוביל אל האוכף, השקע שבין שתי הפסגות; במפה החץ מראה אותו.', yaw: m.lookAt?.direction },
   ];
   return (
@@ -348,7 +349,7 @@ function Guided({ moment: m, state, promptRef, firstActionRef, onComplete, onAdv
       text={
         <>
           <Prompt promptRef={promptRef}>{m.title}</Prompt>
-          <ul className="mt-2 space-y-2 text-base leading-relaxed text-black" data-guided>
+          <ul className="mt-2 space-y-1 text-base leading-snug text-black" data-guided>
             {checks.map((c) => (
               <li key={c.key} className="flex items-start gap-2">
                 <Check className="mt-1 size-4 shrink-0 text-brand-dark" strokeWidth={3} aria-hidden />
@@ -368,7 +369,7 @@ function Guided({ moment: m, state, promptRef, firstActionRef, onComplete, onAdv
       actions={
         done ? (
           <>
-            <p className="text-base leading-relaxed text-black">יצאתם מכאן אחרי שאימתתם מקום וכיוון.</p>
+            <p className="text-base leading-snug text-black">יצאתם מכאן אחרי שאימתתם מקום וכיוון.</p>
             <button ref={firstActionRef} type="button" className="btn-primary h-14 text-lg" onClick={() => onAdvance('enroute')}>
               לרגע הבא
             </button>
@@ -427,7 +428,7 @@ function Decision(p: DecisionProps) {
           )}
           {choiceFb?.next === 'evidence' && !picked && <Feedback tone="ok" lead={choiceFb.lead} body={null} />}
           {picked && <Feedback tone={verdictTone(picked.verdict)} lead={picked.verdict === 'right' ? null : picked.verdict === 'partial' ? 'חלקית.' : 'עוד לא.'} body={picked.feedback} />}
-          {settled && m.debrief && <p className="mt-2 text-base leading-relaxed text-black" data-debrief>{m.debrief}</p>}
+          {settled && m.debrief && <p className="mt-2 text-base leading-snug text-black" data-debrief>{m.debrief}</p>}
         </div>
       }
       actions={
@@ -466,7 +467,7 @@ function Decision(p: DecisionProps) {
           )}
           {settled && (
             <>
-              {m.outcome && <p className="text-base leading-relaxed text-black" data-outcome><strong className="font-bold">עכשיו: </strong>{m.outcome}</p>}
+              {m.outcome && <p className="text-base leading-snug text-black" data-outcome><strong className="font-bold">עכשיו: </strong>{m.outcome}</p>}
               <button ref={firstActionRef} type="button" className="btn-primary h-14 text-lg" onClick={() => onAdvance(nextOf(m.id))} data-action="next">
                 {m.continueLabel}
               </button>
@@ -492,7 +493,7 @@ function Feedback({ tone, lead, body }: { tone: 'ok' | 'partial' | 'wrong'; lead
       >
         {tone === 'wrong' ? <X className="size-3" strokeWidth={3} /> : <Check className="size-3" strokeWidth={3} />}
       </span>
-      <p className="text-base leading-relaxed text-black">
+      <p className="text-base leading-snug text-black">
         {lead && <strong className="me-1 font-bold">{lead}</strong>}
         {body}
       </p>
@@ -519,7 +520,7 @@ function Summary({ promptRef, onAdvance }: DecisionProps) {
           </button>
         </div>
       </div>
-      <ol className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2.5">
+      <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
         {PRINCIPLES.map((pr, i) => (
           <li key={pr.title} className="flex gap-3">
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-dark font-display text-sm font-bold text-white">{i + 1}</span>

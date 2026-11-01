@@ -44,7 +44,7 @@ test('no duplicated framing: the example note once, the old panel labels not at 
   const text = await page.evaluate(() => document.getElementById('scene-tips').innerText);
   assert.equal(text.split('במהלך הניווט: מה צריך לבדוק?').length - 1, 1, 'screen 2 keeps its title');
   assert.equal(await page.locator('[data-tips-screen="nav"] [data-activity="navigation-replay"]').count(), 1, 'screen 2 is the replay');
-  assert.equal(text.split('דוגמה לימודית').length - 1, 1, 'note only on the planning lab');
+  assert.equal(text.split('שטח לימודי בדיוני').length - 1, 1, 'note only on the planning lab');
   assert.equal(await page.locator('[data-tips-screen="plan"] [data-activity="planning-lab"]').count(), 1, 'screen 1 is the planning lab');
   for (const label of ['מה עושים', 'למה זה מועיל']) assert.ok(!text.includes(label), `no "${label}" heading`);
 });

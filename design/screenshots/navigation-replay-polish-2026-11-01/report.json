@@ -1,0 +1,194 @@
+{
+  "shots": [
+    {
+      "label": "1920-depart",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 770.5
+      },
+      "stats": {
+        "station": "depart",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2978,
+        "shrubsFar": 18037,
+        "cushions": 2597,
+        "grass": 4888,
+        "stones": 10066,
+        "rocks": 8609,
+        "eyeY": 323.7729285743464
+      }
+    },
+    {
+      "label": "1920-enroute",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 770.5
+      },
+      "stats": {
+        "station": "enroute",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2989,
+        "shrubsFar": 17984,
+        "cushions": 2587,
+        "grass": 4917,
+        "stones": 7732,
+        "rocks": 8775,
+        "eyeY": 339.41779482862495
+      }
+    },
+    {
+      "label": "1920-saddle",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 774.5
+      },
+      "stats": {
+        "station": "saddle",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2296,
+        "shrubsFar": 17746,
+        "cushions": 2628,
+        "grass": 6843,
+        "stones": 2323,
+        "rocks": 8729,
+        "eyeY": 417.32322551795573
+      }
+    },
+    {
+      "label": "1920-after",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 770.5
+      },
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    },
+    {
+      "label": "1920-evidence",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 770.5
+      },
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    },
+    {
+      "label": "1920-debrief",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 770.5
+      },
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    },
+    {
+      "label": "1920-summary",
+      "mode": "live",
+      "screen": {
+        "x": 158,
+        "y": 104,
+        "width": 1344,
+        "height": 770.5
+      },
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    },
+    {
+      "label": "1440-after",
+      "mode": "live",
+      "screen": {
+        "x": 64.05682373046875,
+        "y": 103.84375,
+        "width": 1051.9487915039062,
+        "height": 603.0703735351562
+      },
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    },
+    {
+      "label": "1366-after",
+      "mode": "live",
+      "screen": {
+        "x": 63.969970703125,
+        "y": 103.71875,
+        "width": 978.02880859375,
+        "height": 560.69287109375
+      },
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    }
+  ],
+  "errors": []
+}

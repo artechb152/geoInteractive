@@ -14,7 +14,7 @@
  *                 (the 3D camera stands there; the map shows it only in the
  *                 moment-4 debrief).
  */
-import { M_PER_UNIT, P1, P2, P3, TIP_LEGS, lerp, type Pt } from '../navTipsGeometry';
+import { M_PER_UNIT, P1, P2, P3, TIP_LEGS, LEG_PATHS, pointOnLeg, summitLook, lerp, type Pt } from './replayGeography';
 import { along, bearingW, distW, toMap, toWorld } from './replayWorld';
 
 export type MomentId = 'depart' | 'enroute' | 'saddle' | 'after';
@@ -67,18 +67,18 @@ const r = (m: number) => Math.round(m / 50) * 50;
 
 // ——— stations ———
 /** Moment 1 stands on the inner bank of the stream bend, beside the channel. */
-const AT_BEND = toMap(along(toWorld(P1), TIP_LEGS[1].az, 2));
+const AT_BEND = pointOnLeg(1, 0.015);
 /** Moment 2: under halfway along leg 2. */
-const LEG2_T = 0.45;
-const ON_LEG2 = lerp(P1, P2, LEG2_T);
-export const LEG2_SO_FAR_M = r(TIP_LEGS[1].m * LEG2_T); // ≈ 250 m
+const LEG2_T = 0.2;
+const ON_LEG2 = pointOnLeg(1, LEG2_T);
+export const LEG2_SO_FAR_M = r(TIP_LEGS[1].lengthM * LEG2_T); // rounded estimate from the example route
 /**
  * Moment 4, the truth: from the saddle the navigator walked leg 3's distance,
- * but on a heading 20° east of the plan — down the swale east of the low spur
- * instead of west of it.
+ * but on a heading 50° west of the plan — onto the south-facing flank
+ * of the western summit, which hides the road to the north.
  */
-export const DRIFT_AZ = TIP_LEGS[2].az + 20;
-export const DRIFT_END: Pt = toMap(along(toWorld(P2), DRIFT_AZ, TIP_LEGS[2].m));
+export const DRIFT_AZ = TIP_LEGS[2].az - 50;
+export const DRIFT_END: Pt = toMap(along(toWorld(P2), DRIFT_AZ, TIP_LEGS[2].lengthM));
 
 export const LEG3_PLAN_AZ = TIP_LEGS[2].az;
 
@@ -89,17 +89,17 @@ export const MOMENTS: Moment[] = [
     label: 'יציאה',
     title: 'לפני היציאה: מאמתים מקום וכיוון',
     kind: 'guided',
-    lastFix: { at: P1, name: 'עיקול הנחל' },
+    lastFix: { at: P1, name: 'חציית הנחל' },
     estimate: null,
     leg: 1,
     next: { at: P2, name: 'האוכף' },
-    story: `מעיקול הנחל: כ־${TIP_LEGS[1].m} מ׳ אל האוכף, השקע שבין שתי פסגות.`,
-    field: 'אתם בעיקול הנחל: המקום זוהה במפה ובשטח.',
-    viewText: 'מבט מגדת הנחל. משמאל ערוץ הנחל היבש מתעקל, ולפנים השטח עולה בהדרגה אל שתי פסגות מעוגלות עם שקע ביניהן.',
+    story: `מחציית הנחל: כ־${TIP_LEGS[1].m} מ׳ אל האוכף, השקע שבין שתי פסגות.`,
+    field: 'אתם בחציית הנחל: המקום זוהה במפה ובשטח.',
+    viewText: 'מבט מנקודת חציית הנחל. ערוץ הנחל היבש חוצה את המסלול, ולפנים המדרון עולה אל שתי פסגות ושקע ביניהן.',
     truth: { at: AT_BEND, walkedFromFix: [P1, AT_BEND] },
-    view: { yawDeg: 250, pitchDeg: -6 },
+    view: { yawDeg: summitLook(AT_BEND), pitchDeg: 8 },
     continueLabel: 'יוצאים לקטע הבא',
-    lookAt: { place: 236, direction: TIP_LEGS[1].az },
+    lookAt: { place: 255, direction: TIP_LEGS[1].az },
   },
   {
     id: 'enroute',
@@ -107,15 +107,15 @@ export const MOMENTS: Moment[] = [
     label: 'בדרך לאוכף',
     title: 'בדרך לאוכף',
     kind: 'decision',
-    lastFix: { at: P1, name: 'עיקול הנחל' },
+    lastFix: { at: P1, name: 'חציית הנחל' },
     estimate: { at: ON_LEG2, meters: LEG2_SO_FAR_M },
     leg: 1,
     next: { at: P2, name: 'אוכף' },
-    story: `מעיקול הנחל: כ־${TIP_LEGS[1].m} מ׳ אל האוכף, השקע שבין שתי פסגות.`,
-    field: `מרחק משוער מעיקול הנחל: כ־${LEG2_SO_FAR_M} מ׳.`,
+    story: `מחציית הנחל: כ־${TIP_LEGS[1].m} מ׳ אל האוכף, השקע שבין שתי פסגות.`,
+    field: `מרחק משוער מחציית הנחל: כ־${LEG2_SO_FAR_M} מ׳.`,
     viewText: 'מבט קדימה בעלייה מתונה. לפנים שתי פסגות מעוגלות, אחת מימין ואחת משמאל, ושקע ביניהן. שיחים ואבנים פזורים במדרון.',
     truth: { at: ON_LEG2, walkedFromFix: [P1, ON_LEG2] },
-    view: { yawDeg: TIP_LEGS[1].az, pitchDeg: -2 },
+    view: { yawDeg: summitLook(ON_LEG2), pitchDeg: 8 },
     expected: 'continue',
     onChoice: {
       continue: {
@@ -125,7 +125,7 @@ export const MOMENTS: Moment[] = [
       },
       check: {
         lead: 'בדיקה כאן אינה טעות.',
-        body: `מה אפשר לאמת עכשיו: השקע שבין שתי הפסגות נמצא לפניכם, בכיוון ההליכה; עיקול הנחל מאחוריכם והאוכף לפניכם, כמו בסיפור הדרך; וכ־${LEG2_SO_FAR_M} מ׳ מתוך ${TIP_LEGS[1].m} מתאימים לכך שעוד לא הגעתם. אין אי־התאמה, ולכן ממשיכים — ובודקים שוב באוכף.`,
+        body: `מה אפשר לאמת עכשיו: השקע שבין שתי הפסגות נמצא לפניכם, בכיוון ההליכה; חציית הנחל מאחוריכם והאוכף לפניכם, כמו בסיפור הדרך; וכ־${LEG2_SO_FAR_M} מ׳ מתוך ${TIP_LEGS[1].m} מתאימים לכך שעוד לא הגעתם. אין אי־התאמה, ולכן ממשיכים — ובודקים שוב באוכף.`,
         next: 'done',
       },
     },
@@ -161,15 +161,15 @@ export const MOMENTS: Moment[] = [
     label: 'באוכף',
     title: 'הגעתם לאוכף',
     kind: 'decision',
-    lastFix: { at: P1, name: 'עיקול הנחל' },
+    lastFix: { at: P1, name: 'חציית הנחל' },
     estimate: { at: P2, meters: TIP_LEGS[1].m },
     leg: 1,
     next: { at: P2, name: 'אוכף' },
-    story: `מעיקול הנחל: כ־${TIP_LEGS[1].m} מ׳ אל האוכף, נקודת בדיקה. משם: כ־${TIP_LEGS[2].m} מ׳ עד חציית דרך עפר.`,
-    field: `מרחק משוער מעיקול הנחל: כ־${TIP_LEGS[1].m} מ׳.`,
-    viewText: 'אתם בשקע נמוך בין שני מדרונות: מימין השטח עולה אל פסגה, ומאחוריכם משמאל אל פסגה שנייה. לפנים ומשמאל השטח יורד.',
-    truth: { at: P2, walkedFromFix: [P1, P2] },
-    view: { yawDeg: 342, pitchDeg: -2 },
+    story: `מחציית הנחל: כ־${TIP_LEGS[1].m} מ׳ אל האוכף, נקודת בדיקה. משם: כ־${TIP_LEGS[2].m} מ׳ עד חציית דרך עפר.`,
+    field: `מרחק משוער מחציית הנחל: כ־${TIP_LEGS[1].m} מ׳.`,
+    viewText: 'שני מדרונות עולים משני צדי האוכף. אפשר להביט סביב ולזהות את שתי הפסגות ואת הירידה לקטע הבא.',
+    truth: { at: P2, walkedFromFix: [...LEG_PATHS[1]] },
+    view: { yawDeg: TIP_LEGS[2].az - 24, pitchDeg: 6 },
     expected: 'check',
     onChoice: {
       continue: {
@@ -221,9 +221,9 @@ export const MOMENTS: Moment[] = [
     next: { at: P3, name: 'חציית דרך עפר' },
     story: `מהאוכף: כ־${TIP_LEGS[2].m} מ׳ עד חציית דרך עפר.`,
     field: `מרחק משוער מהנקודה המזוהה האחרונה: כ־${TIP_LEGS[2].m} מ׳.`,
-    viewText: 'מבט קדימה במורד מתון, בין שיחים ואבנים. משמאל השטח עולה מעט. דרך עפר אינה נראית סביבכם.',
+    viewText: 'מבט לאורך מדרון אבני עם שיחים ועשב. סביבכם גבעות ומדרונות. דרך עפר אינה נראית סביבכם.',
     truth: { at: DRIFT_END, walkedFromFix: [P2, DRIFT_END] },
-    view: { yawDeg: DRIFT_AZ, pitchDeg: -3 },
+    view: { yawDeg: DRIFT_AZ + 45, pitchDeg: -4 },
     expected: 'check',
     onChoice: {
       continue: {
@@ -273,7 +273,7 @@ const CROSS_W = toWorld(P3);
 export const DRIFT_FROM_CROSSING_M = distW(D_W, CROSS_W);
 export const DRIFT_TURN_DEG = Math.round(DRIFT_AZ - LEG3_PLAN_AZ);
 
-MOMENTS[3].debrief = `בשחזור: מהאוכף ירדתם בערוץ שממזרח לשלוחה נמוכה, ולא ממערב לה — הכיוון סטה צפונה בכ־${DRIFT_TURN_DEG}°. השלוחה מסתירה את דרך העפר, ואתם כ־${r(DRIFT_FROM_CROSSING_M)} מ׳ מנקודת החצייה המתוכננת. בשטח לא יודעים זאת מראש — הבדיקה היא שמגלה.`;
+MOMENTS[3].debrief = `בשחזור: מהאוכף המשכתם מערבה במקום לאורך מסלול הדוגמה. סטיית הכיוון של כ־${Math.abs(DRIFT_TURN_DEG)}° הביאה אתכם למדרון שמדרום לפסגה המערבית; הרכס מסתיר את דרך העפר. אתם כ־${r(DRIFT_FROM_CROSSING_M)} מ׳ מנקודת החצייה המתוכננת. בשטח לא יודעים זאת מראש — זו הסיבה לבדוק.`;
 
 export const MOMENT_IDS = MOMENTS.map((m) => m.id);
 export const momentById = (id: MomentId) => MOMENTS.find((m) => m.id === id)!;
@@ -286,7 +286,7 @@ export const mapBearing = (a: Pt, b: Pt) => bearingW(toWorld(a), toWorld(b));
 
 /** The four principles of the replaced screen, as the summary restates them. */
 export const PRINCIPLES: { title: string; moment: MomentId; line: string }[] = [
-  { title: 'מאמתים מיקום וכיוון לפני ההתקדמות', moment: 'depart', line: 'יצאתם מעיקול הנחל רק אחרי שזיהיתם אותו ובדקתם את הכיוון לאוכף.' },
+  { title: 'מאמתים מיקום וכיוון לפני ההתקדמות', moment: 'depart', line: 'יצאתם מחציית הנחל רק אחרי שזיהיתם אותו ובדקתם את הכיוון לאוכף.' },
   { title: 'משווים בין הצפוי לנראה בשטח', moment: 'enroute', line: 'בדרך, השקע בין שתי הפסגות הופיע כמו בתכנון — ולכן המשכתם.' },
   { title: 'משלבים כיוון, מרחק וסימני שטח', moment: 'saddle', line: 'באוכף, הצורה, הכיוון והמרחק התאימו יחד, והאוכף הפך לנקודה מזוהה.' },
   { title: 'בודקים אי־התאמה לפני שממשיכים', moment: 'after', line: 'כשדרך העפר לא הופיעה, עצרתם לבדוק — לפני שהסטייה גדלה.' },
@@ -306,15 +306,15 @@ export type MapState = {
 export function mapDescription(s: MapState): string {
   const m = s.moment;
   const parts: string[] = [];
-  if (m.id === 'depart') parts.push('במפה: אתם בעיקול הנחל, נקודה מזוהה. החץ מראה את הכיוון לקטע הבא, אל האוכף שבין שתי הפסגות.');
+  if (m.id === 'depart') parts.push('במפה: אתם בחציית הנחל, נקודה מזוהה. החץ מראה את הכיוון לקטע הבא, אל האוכף שבין שתי הפסגות.');
   else {
     const fixName = s.saddleFixed && m.id === 'saddle' ? 'האוכף' : m.lastFix.name;
     parts.push(`במפה: הנקודה המזוהה האחרונה — ${fixName}.`);
-    if (m.id === 'enroute') parts.push(`המסלול המתוכנן ממשיך אל האוכף. האומדן: כ־${m.estimate?.meters} מ׳ מעיקול הנחל, על המסלול.`);
-    if (m.id === 'saddle' && !s.saddleFixed) parts.push(`לפי האומדן, כ־${m.estimate?.meters} מ׳ מעיקול הנחל — האוכף שבין שתי הפסגות.`);
+    if (m.id === 'enroute') parts.push(`המסלול המתוכנן ממשיך אל האוכף. האומדן: כ־${m.estimate?.meters} מ׳ מחציית הנחל, על המסלול.`);
+    if (m.id === 'saddle' && !s.saddleFixed) parts.push(`לפי האומדן, כ־${m.estimate?.meters} מ׳ מחציית הנחל — האוכף שבין שתי הפסגות.`);
     if (m.id === 'saddle' && s.saddleFixed) parts.push('המסלול המתוכנן ממשיך ממנו אל חציית דרך העפר.');
     if (m.id === 'after') parts.push(`המסלול המתוכנן ממשיך ממנו כ־${m.estimate?.meters} מ׳ אל חציית דרך עפר; לפי האומדן הגעתם אליה.`);
-    if (m.id === 'after' && s.revealTruth) parts.push('בשחזור מסומנת גם הדרך שעברתם בפועל: צפונה מהמתוכנן, בערוץ שממזרח לשלוחה נמוכה, והמיקום בפועל — לפני דרך העפר.');
+    if (m.id === 'after' && s.revealTruth) parts.push('בשחזור מסומנת גם הדרך שעברתם בפועל: מערבה מהמתוכנן, והמיקום בפועל — מדרום לרכס שמסתיר את דרך העפר.');
   }
   return parts.join(' ');
 }

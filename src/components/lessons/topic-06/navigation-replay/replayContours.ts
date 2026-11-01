@@ -4,7 +4,7 @@
  * map units, joined into polylines and lightly smoothed. Nothing is drawn by
  * hand: a contour is where the ground has that height.
  */
-import type { Pt } from '../navTipsGeometry';
+import type { Pt } from './replayGeography';
 import { heightAt } from './replayTerrain';
 import { toWorld } from './replayWorld';
 

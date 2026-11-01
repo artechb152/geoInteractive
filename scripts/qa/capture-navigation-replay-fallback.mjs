@@ -25,10 +25,10 @@ await page.waitForSelector(A, { timeout: 180000 });
 await page.evaluate(() => document.querySelector('[data-tips-screen="nav"]').scrollIntoView({ block: 'start', behavior: 'instant' }));
 // the stills carry no interface: hide the ribbon, the controls and the focus ring
 await page.addStyleTag({ content: '[data-heading-ribbon],[data-view-controls]{visibility:hidden!important}[data-view-frame]::after{display:none!important}' });
-const ready = () => page.waitForFunction((s) => { const f = document.querySelector(s + ' [data-view-frame]'); return f?.hasAttribute('data-ready') && !f.querySelector('[data-loading]'); }, A, { timeout: 180000 });
+const ready = (id) => page.waitForFunction(({s,id}) => { const f = document.querySelector(s + ' [data-view-frame]'); return window.__replayStats?.station === id && f?.hasAttribute('data-ready') && !f.querySelector('[data-loading]'); }, {s:A,id}, { timeout: 180000 });
 for (let i = 0; i < MOMENTS.length; i++) {
   await page.click(`${A} [data-moment="${MOMENTS[i]}"]`);
-  await ready();
+  await ready(MOMENTS[i]);
   for (let q = 0; q < 4; q++) {
     await page.evaluate((q) => { const v = window.__replayView; const h = v.home(); v.goTo({ ...h, yawDeg: h.yawDeg + q * 90 }, true); }, q);
     await page.waitForTimeout(700);

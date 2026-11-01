@@ -11,9 +11,16 @@
 export type Look = { yawDeg: number; pitchDeg: number; vfovDeg: number };
 
 export const LOOK_LIMITS = { pitchMin: -22, pitchMax: 14, vfovMin: 16, vfovMax: 54 } as const;
-/** Opening field of view: ≈ 80° across the 1.55 : 1 frame. */
+/** Legacy zoom-dial value; the actual opening is a fixed 80° horizontally. */
 export const DEFAULT_VFOV = 54;
 export const EYE_HEIGHT_M = 1.7;
+
+/** vfovDeg is the existing zoom dial; project it to the actual frame using a
+ * fixed 80° horizontal opening. A shorter frame must not stretch the terrain. */
+export function verticalFovForAspect(zoom: number, aspect: number): number {
+  const horizontalTangent = Math.tan(40 * Math.PI / 180) * Math.tan(zoom * Math.PI / 360) / Math.tan(DEFAULT_VFOV * Math.PI / 360);
+  return 2 * Math.atan(horizontalTangent / Math.max(0.1, aspect)) * 180 / Math.PI;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const wrap = (d: number) => ((d % 360) + 360) % 360;

@@ -73,7 +73,7 @@ test('direct load of #scene-tips: the replay screen, the live view drawn, one ca
   assert.equal(await page.locator(`${A} canvas`).count(), 1);
   const heading = await page.locator('[data-tips-screen="nav"] h3').textContent();
   assert.equal(heading.trim(), 'במהלך הניווט: מה צריך לבדוק?');
-  assert.match(await page.locator('[data-tips-screen="nav"] header p').textContent(), /השוו בין סיפור הדרך למה שנראה בשטח/);
+  assert.match(await page.locator('[data-tips-screen="nav"] header p').textContent(), /השוו את דוגמת התכנון למראה השטח/);
   const stats = await page.evaluate(() => window.__replayStats);
   assert.equal(stats.station, 'depart');
   assert.ok(stats.shrubsNear > 500 && stats.rocks > 1000 && stats.grass > 1000, JSON.stringify(stats));
@@ -100,8 +100,8 @@ test('moment 4 before a decision: the plan, the last fix and the estimate — ne
   assert.equal(s.fix, 'האוכף');
   assert.equal(s.estimate, 1);
   assert.equal(s.truthMarks, 0, 'no true position or track on the map');
-  assert.match(s.story, /מהאוכף: כ־600 מ׳ עד חציית דרך עפר/);
-  assert.match(s.field, /מרחק משוער מהנקודה המזוהה האחרונה: כ־600 מ׳/);
+  assert.match(s.story, /מהאוכף: כ־450 מ׳ עד חציית דרך עפר/);
+  assert.match(s.field, /מרחק משוער מהנקודה המזוהה האחרונה: כ־450 מ׳/);
   for (const w of ['בפועל', 'שלוחה', 'סטה', 'סטייה', 'ממזרח', 'צפונה']) {
     assert.ok(!s.text.includes(w), `"${w}" visible before the decision`);
     assert.ok(!s.mapLabel.includes(w), `"${w}" in the map's accessible name`);
@@ -137,6 +137,7 @@ test('moment 4: continue → retry; check → a wrong and a partial reason expla
   assert.match(s.text, /עכשיו:/);
   assert.equal(s.height, h0, 'the card keeps its height');
   assert.deepEqual(s.done, ['after']);
+  assert.equal(await page.locator(`${A} [data-view-frame]`).getAttribute('data-mode'), 'live', 'the debrief keeps the live renderer');
 });
 
 test('answers stay per moment; the timeline steps and jumps without completing anything', async () => {
@@ -145,7 +146,7 @@ test('answers stay per moment; the timeline steps and jumps without completing a
   assert.equal(s.active, 'saddle');
   assert.equal(s.phase, 'viewing', 'moment 3 untouched');
   assert.equal(s.truthMarks, 0, 'no debrief leaks into moment 3');
-  assert.equal(s.fix, 'עיקול הנחל', 'the saddle is not verified yet');
+  assert.equal(s.fix, 'חציית הנחל', 'the saddle is not verified yet');
   await click('[data-moment="after"]');
   s = await state();
   assert.equal(s.phase, 'done');
@@ -161,7 +162,7 @@ test('the guided opening, a cautious check at moment 2, the saddle verified with
   const yaw = await page.evaluate(() => window.__replayView.get().yawDeg);
   await page.waitForTimeout(700);
   const yaw2 = await page.evaluate(() => window.__replayView.get().yawDeg);
-  assert.ok(Math.abs(yaw2 - 236) < 1, `"show in the field" turns to the stream (${yaw} → ${yaw2})`);
+  assert.ok(Math.abs(yaw2 - 255) < 1, `"show in the field" turns to the stream (${yaw} → ${yaw2})`);
   await click('[data-action="depart"]');
   await liveReady(page);
   let s = await state();

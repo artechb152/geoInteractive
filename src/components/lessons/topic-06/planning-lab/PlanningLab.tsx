@@ -33,7 +33,7 @@ import { PlanningLabModel } from './PlanningLabModel';
  * geometry and the height grid — never from which button was pressed — and
  * never calls a route "safe" or "the right one".
  *
- * This example is separate from the route story later in the lesson: nothing
+ * The fixed example is used by the navigation replay next; free routes stay in this lab. Nothing
  * planned here is carried into another screen.
  */
 
@@ -153,7 +153,7 @@ export function PlanningLab({ title, intro }: { title: string; intro: string }) 
           {title}
         </h3>
         <StatusChip tone="badge" className="mt-1.5 text-sm">
-          דוגמה לימודית · שטח בדיוני, נפרד מסיפור הדרך שבהמשך
+          שטח לימודי בדיוני · השחזור הבא ממשיך את דוגמת התכנון
         </StatusChip>
       </div>
       <p className="mt-1.5 text-base leading-relaxed text-fg-muted">{intro}</p>

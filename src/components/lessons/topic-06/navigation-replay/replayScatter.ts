@@ -49,10 +49,10 @@ const smoothstep = (a: number, b: number, t: number) => {
 /** Maquis density 0…1: clumped, thicker along the stream banks, none on the road or the bed. */
 export function shrubDensity(x: number, z: number, road: number, stream: number) {
   if (road < 4.5 || stream < 8) return 0;
-  const clumps = smoothstep(-0.25, 0.45, fbm(x / 75 + 3.3, z / 75 - 8.1, 3));
-  const patches = smoothstep(-0.5, 0.3, fbm(x / 340 - 1.9, z / 340 + 4.7, 2));
+  const clumps = smoothstep(-0.18, 0.22, fbm(x / 65 + 3.3, z / 65 - 8.1, 3));
+  const patches = smoothstep(-0.2, 0.22, fbm(x / 250 - 1.9, z / 250 + 4.7, 2));
   const banks = 0.7 * (1 - smoothstep(9, 36, stream));
-  return Math.min(1, 0.12 + 0.62 * clumps * patches + banks) * smoothstep(4.5, 9, road);
+  return Math.min(1, patches * (0.025 + 0.95 * clumps) + banks) * smoothstep(4.5, 9, road);
 }
 
 /** Exposed limestone 0…1 (the same field brightens the terrain's rock layer in the shader). */
@@ -78,7 +78,7 @@ const KINDS = {
     near: 5,
     far: 1500,
     chance: (x: number, z: number, road: number, stream: number) => shrubDensity(x, z, road, stream),
-    scale: (r: number) => 0.45 + 1.55 * r * r,
+    scale: (r: number) => 0.28 + 2.15 * r * r,
     variants: 4,
   },
   /** low grey-green cushions (thorny burnet, sage) between the shrubs */
@@ -105,7 +105,7 @@ const KINDS = {
     salt: 37,
     near: 1.0,
     far: 55,
-    chance: (x: number, z: number, road: number, stream: number) => (road < 2.4 ? 0.05 : stream < 7 ? 0.92 : 0.2 + 0.62 * rockiness(x, z)),
+    chance: (x: number, z: number, road: number, stream: number) => (road < 2.4 ? 0.05 : stream < 7 ? 0.92 : 0.04 + 0.62 * rockiness(x, z)),
     scale: (r: number) => 0.07 + 0.3 * r * r,
     variants: 5,
   },
@@ -134,7 +134,7 @@ const KINDS = {
     salt: 51,
     near: 3,
     far: 420,
-    chance: (x: number, z: number, road: number, stream: number) => (road < 5 ? 0 : stream < 7 ? 0.55 : 0.14 + 0.7 * rockiness(x, z)),
+    chance: (x: number, z: number, road: number, stream: number) => (road < 5 ? 0 : stream < 7 ? 0.55 : 0.025 + 0.68 * rockiness(x, z)),
     scale: (r: number) => 0.28 + 1.5 * r * r,
     variants: 11,
   },

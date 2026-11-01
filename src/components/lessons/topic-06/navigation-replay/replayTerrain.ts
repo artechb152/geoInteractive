@@ -25,9 +25,8 @@
  * Everything is deterministic (seeded gradient noise): the same point always
  * has the same height, on every device and quality setting.
  */
-import { P2, P3, POINTS as ROUTE_POINTS, RIDGE_AXIS, ROAD, STREAM, SUMMIT_N, SUMMIT_S, END, START, type Pt } from '../navTipsGeometry';
-import { PolyIndex, extendEnds, nearestOn, polyline, samplePath, toWorld, type Polyline, type W2 } from './replayWorld';
-
+import { heightAt as labHeight, roadOf, waterCourses } from '../planning-lab/planningLabTerrain';
+import { PolyIndex, polyline, type Polyline } from './replayWorld';
 // ───────────────────────────────────────────────────────────── noise
 
 function mulberry32(seed: number) {
@@ -122,209 +121,15 @@ const smax = (a: number, b: number, k: number) => {
   return Math.max(a, b) + (h * h * k) / 4;
 };
 
-// ───────────────────────────────────────────────────────────── features
-
-const W = (p: Pt) => toWorld(p);
-const AX: W2 = { x: RIDGE_AXIS.x, z: RIDGE_AXIS.y };
-const SADDLE = W(P2);
-const SN = W(SUMMIT_N);
-const SS = W(SUMMIT_S);
-
-/** Stream and road as world polylines, continued 6 km past the sheet's edge. */
-export const STREAM_LINE: Polyline = polyline(extendEnds(samplePath(STREAM).map(W), 6000));
-export const ROAD_LINE: Polyline = polyline(extendEnds(samplePath(ROAD).map(W), 6000));
-const STREAM_IDX = new PolyIndex(STREAM_LINE, 420);
-const ROAD_IDX = new PolyIndex(ROAD_LINE, 420);
-
-/** A floor profile along a polyline: heights at map points, linear in arc length, extrapolated past the ends. */
-function floorProfile(line: Polyline, stops: [Pt, number][], slopeHead: number, slopeTail: number) {
-  const s = stops.map(([p, h]) => [nearestOn(line, W(p)).s, h] as const).sort((a, b) => a[0] - b[0]);
-  return (at: number) => {
-    if (at <= s[0][0]) return s[0][1] + (s[0][0] - at) * slopeHead;
-    const last = s[s.length - 1];
-    if (at >= last[0]) return last[1] - (at - last[0]) * slopeTail;
-    for (let i = 1; i < s.length; i++)
-      if (at <= s[i][0]) {
-        const t = (at - s[i - 1][0]) / (s[i][0] - s[i - 1][0]);
-        return s[i - 1][1] + t * (s[i][1] - s[i - 1][1]);
-      }
-    return last[1];
-  };
-}
-
-/** Dry stream bed: 360 m where it enters the sheet in the north, ~331 m at the bend (checkpoint 1), 302 m in the west. */
-const STREAM_FLOOR = floorProfile(
-  STREAM_LINE,
-  [
-    [{ x: 74, y: -2 }, 361],
-    [{ x: 71, y: 30 }, 347],
-    [{ x: 66.4, y: 60.4 }, 331],
-    [{ x: 36, y: 70.5 }, 316],
-    [{ x: -2, y: 74 }, 302],
-  ],
-  0.008,
-  0.005,
-);
-/** The road's valley floor: 366 m in the north, ~350 m at the crossing (checkpoint 3), 318 m by the stream. */
-const ROAD_FLOOR = floorProfile(
-  ROAD_LINE,
-  [
-    [{ x: 37, y: -2 }, 365],
-    [P3, 350],
-    [{ x: 24, y: 62 }, 327],
-    [{ x: 17, y: 77 }, 318],
-  ],
-  0.006,
-  0.004,
-);
-
-/** The low spur north-west of the saddle: crest points (map) and crest heights (m). */
-const SPUR: { p: W2; h: number }[] = [
-  { p: W({ x: 44.6, y: 45.8 }), h: 377 },
-  { p: W({ x: 40.6, y: 37.0 }), h: 371 },
-  { p: W({ x: 37.1, y: 28.0 }), h: 368 },
-  { p: W({ x: 35.6, y: 19.0 }), h: 364 },
-  { p: W({ x: 35.4, y: 10.0 }), h: 362 },
-  { p: W({ x: 35.6, y: 2.0 }), h: 361 },
-];
-/**
- * The gully beside it, on its eastern side: it leaves the saddle's northern
- * slope and runs north-north-west until it opens into the road's valley.
- * Floor heights (m) at its points.
- */
-const GULLY: { p: W2; h: number }[] = [
-  { p: W({ x: 46.3, y: 47.4 }), h: 377 },
-  { p: W({ x: 43.6, y: 40.5 }), h: 370 },
-  { p: W({ x: 41.0, y: 33.0 }), h: 364 },
-  { p: W({ x: 39.0, y: 25.0 }), h: 359 },
-  { p: W({ x: 38.4, y: 15.0 }), h: 357 },
-  { p: W({ x: 38.6, y: 4.0 }), h: 356 },
-  { p: W({ x: 37.4, y: -8.0 }), h: 356 },
-];
-const GULLY_LINE = polyline(GULLY.map((g) => g.p));
-const SPUR_LINE = polyline(SPUR.map((s) => s.p));
-const SPUR_CUM = SPUR_LINE.cum;
-
-const KNOLL = W(END);
-const TERRACE = W(START);
-
-/** Base level the designed hills rise from. */
-const BASE = 352;
-
-/** A natural hill profile: convex top, long concave feet. r = distance / radius. */
-const hillProfile = (r: number) => 1 / (1 + Math.pow(r / 0.55, 3));
-
-function designed(x: number, z: number, base: number): number {
-  // ridge frame: u along the axis (+ towards the north-east summit), v across
-  const dx = x - SADDLE.x;
-  const dz = z - SADDLE.z;
-  const u = dx * AX.x + dz * AX.z;
-  const v = -dx * AX.z + dz * AX.x;
-  // a little domain warp so the hills are not circles
-  const wx = x + 38 * noise2(x / 260 + 3.1, z / 260 - 1.7);
-  const wz = z + 38 * noise2(x / 260 - 7.4, z / 260 + 2.2);
-  const rN = Math.hypot((wx - SN.x) / 1.05, wz - SN.z) / 295;
-  const rS = Math.hypot(wx - SS.x, (wz - SS.z) / 1.08) / 320;
-  const hillN = base + (428 - BASE) * hillProfile(rN);
-  const hillS = base + (409 - BASE) * hillProfile(rS);
-  // the col: lowest along the axis exactly at the saddle, falling away across it
-  const cross = 1 / (1 + Math.pow(Math.abs(v) / 130, 2.4));
-  const along = Math.max(0, 1 - Math.abs(u) / 300);
-  const col = base + (383 - BASE + 0.00045 * u * u) * cross * along;
-  let h = smax(smax(hillN, hillS, 6), col, 5);
-  // destination knoll (rocky, pines)
-  const rK = Math.hypot(wx - KNOLL.x, wz - KNOLL.z) / 230;
-  h = smax(h, base + (373 - BASE) * hillProfile(rK), 6);
-  // a low terrace by the start building
-  const rT = Math.hypot(x - TERRACE.x, z - TERRACE.z) / 260;
-  h = smax(h, base - 3 + 2 * hillProfile(rT), 4);
-  return h;
-}
-
-function spur(x: number, z: number): number {
-  const r = nearestOn(SPUR_LINE, { x, z });
-  if (r.d > 140) return -Infinity;
-  // crest height at the nearest point, linear between the crest points
-  let i = 1;
-  while (i < SPUR_CUM.length - 1 && SPUR_CUM[i] < r.s) i++;
-  const t = Math.min(1, Math.max(0, (r.s - SPUR_CUM[i - 1]) / (SPUR_CUM[i] - SPUR_CUM[i - 1])));
-  const crest = SPUR[i - 1].h + t * (SPUR[i].h - SPUR[i - 1].h);
-  // rounded cross-section, ~10 m high over ~60 m, fading out well before the road
-  const d = r.d / 55;
-  return crest - (10 * d * d) / (1 + 0.5 * d * d) - 30 * smoothstep(70, 140, r.d) - 4 * smoothstep(0.85, 1, r.s / SPUR_LINE.length);
-}
-
-function gullyFloor(x: number, z: number): { d: number; floor: number } {
-  const r = nearestOn(GULLY_LINE, { x, z });
-  let i = 1;
-  while (i < GULLY_LINE.cum.length - 1 && GULLY_LINE.cum[i] < r.s) i++;
-  const t = Math.min(1, Math.max(0, (r.s - GULLY_LINE.cum[i - 1]) / (GULLY_LINE.cum[i] - GULLY_LINE.cum[i - 1])));
-  return { d: r.d, floor: GULLY[i - 1].h + t * (GULLY[i].h - GULLY[i - 1].h) };
-}
-
-const CORE_R = 1400; // the sheet's half-diagonal ≈ 1.56 km
-
-/** The planned route (נ.ה → נ.ס), for keeping the random relief calm where the evidence must read. */
-const ROUTE_IDX = new PolyIndex(polyline(ROUTE_POINTS.map(W)), 420);
-
-/**
- * The terrain height (m above sea level). Deterministic and continuous; the
- * map's contours and every view are taken from it.
- */
-export function heightAt(x: number, z: number): number {
-  const rC = Math.hypot(x, z);
-  // How free the random relief may be: calm along the route and at the saddle, free elsewhere.
-  const route = ROUTE_IDX.query({ x, z }).d;
-  const free = 0.3 + 0.7 * smoothstep(50, 330, route);
-
-  // regional surface: gentle undulation, slightly higher to the north
-  let base = BASE + 10 * fbm(x / 1700 + 11.3, z / 1700 - 4.2, 3) - 0.004 * z;
-  // rolling hills: everywhere, stronger away from the route and beyond the sheet
-  const mid = smoothstep(CORE_R * 0.45, CORE_R * 1.5, rC);
-  base += (14 * free + 34 * mid) * (fbm(x / 640 - 2.7, z / 640 + 8.1, 4) + 0.35 * mid);
-  // broader hills that lift the skyline a kilometre out
-  base += mid * 115 * Math.max(0, fbm(x / 1500 + 6.2, z / 1500 - 3.4, 3) + 0.3);
-  // side gullies: valley lines where a noise field crosses zero, so they branch and wander
-  const g = Math.abs(fbm(x / 520 + 4.4, z / 520 - 2.9, 3));
-  base -= (6 + 4 * mid) * free * (1 - smoothstep(0, 0.22, g));
-  // ridges to the horizon
-  const far = smoothstep(2600, 7000, rC);
-  base += far * (50 + 120 * ridged(x / 2900 + 1.3, z / 2900 - 0.6, 4) + 40 * fbm(x / 1300, z / 1300, 3));
-
-  let h = designed(x, z, base);
-  // medium relief: undulation and rocky lumps (damped where the designed shapes must read cleanly)
-  h += (0.45 + 0.55 * free) * (3.2 * fbm(x / 230 + 5.5, z / 230 - 9.1, 4) + 2.4 * (ridged(x / 140 - 3.3, z / 140 + 1.9, 3) - 0.35));
-
-  // valleys: the floor replaces the slope near the line, banks wander and blend back out
-  const st = STREAM_IDX.query({ x, z });
-  if (st.d < 420) {
-    const floor = STREAM_FLOOR(st.s) + 0.6 * fbm(x / 90, z / 90, 2);
-    const d = st.d + 22 * fbm(x / 210 + 1.1, z / 210 + 6.6, 2);
-    const w = 1 - smoothstep(14, 175 + 45 * noise2(st.s / 380, 0.5), d);
-    h = Math.min(h, h + (floor - h) * w * (0.6 + 0.4 * w));
-    // the dry channel itself
-    if (st.d < 8) h -= 1.7 * (1 - smoothstep(2.6, 6.8, st.d + 0.8 * noise2(x / 14, z / 14)));
-  }
-  const rd = ROAD_IDX.query({ x, z });
-  if (rd.d < 420) {
-    const floor = ROAD_FLOOR(rd.s) + 0.5 * fbm(x / 120 - 4, z / 120 + 2, 2);
-    const d = rd.d + 30 * fbm(x / 260 - 3.1, z / 260 + 0.4, 2);
-    const w = 1 - smoothstep(26, 270 + 50 * noise2(rd.s / 420, 2.5), d);
-    h = Math.min(h, h + (floor - h) * w * w * (3 - 2 * w));
-    // the road bed: graded flat across its 4 m
-    if (rd.d < 6) h += (floor - h) * 0.7 * (1 - smoothstep(2.2, 6, rd.d));
-  }
-  // the gully east of the spur: a shallow, wandering V that opens into the road's valley
-  const gl = gullyFloor(x, z);
-  if (gl.d < 150) {
-    const d = gl.d + 10 * noise2(x / 90 + 2.2, z / 90 - 1.3);
-    const w = 1 - smoothstep(6, 120, d);
-    h = Math.min(h, h + (gl.floor + 0.4 * noise2(x / 30, z / 30) - h) * w * (0.55 + 0.45 * w));
-  }
-  // the spur rises out of the road valley's eastern slope
-  h = smax(h, spur(x, z), 7);
-  return h;
-}
+// Shared planning-lab geography: x east, z south; E=x+500, N=600-z.
+const worldLine = (pts: readonly (readonly number[])[]) => polyline(pts.map(([E,N])=>({x:E-500,z:600-N})));
+export const STREAM_LINE: Polyline = worldLine(waterCourses().stream.pts);
+export const ROAD_LINE: Polyline = worldLine(roadOf('road').pts);
+const RAVINE_LINE = worldLine(waterCourses().ravine.pts);
+const STREAM_IDX = new PolyIndex(STREAM_LINE,420);
+const ROAD_IDX = new PolyIndex(ROAD_LINE,420);
+const RAVINE_IDX = new PolyIndex(RAVINE_LINE,420);
+export function heightAt(x: number,z: number): number { return labHeight(x+500,600-z); }
 
 /** Fine ground texture, ≤ ±0.6 m: the 3D surface only. */
 export function microRelief(x: number, z: number): number {
@@ -335,7 +140,7 @@ export const groundAt = (x: number, z: number) => heightAt(x, z) + microRelief(x
 
 /** Distances (m) to the road and to the stream's centre line, capped at 420. */
 export function surfaceAt(x: number, z: number) {
-  return { roadD: ROAD_IDX.query({ x, z }).d, streamD: STREAM_IDX.query({ x, z }).d };
+  return { roadD: ROAD_IDX.query({ x, z }).d, streamD: Math.min(STREAM_IDX.query({ x, z }).d, RAVINE_IDX.query({ x, z }).d) };
 }
 
 
@@ -397,8 +202,9 @@ export async function buildGrid(cx: number, cz: number, half: number, step: numb
       const i = iz * n + ix;
       g.h[i] = heightAt(x, z);
       if (withSurface) {
-        g.road[i] = ROAD_IDX.query({ x, z }).d;
-        g.stream[i] = STREAM_IDX.query({ x, z }).d;
+        const surface = surfaceAt(x,z);
+        g.road[i] = surface.roadD;
+        g.stream[i] = surface.streamD;
       } else {
         g.road[i] = 420;
         g.stream[i] = 420;

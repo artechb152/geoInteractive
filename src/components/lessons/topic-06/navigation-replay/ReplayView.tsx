@@ -18,6 +18,7 @@ import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { cn } from '@/lib/utils';
 import type { ViewStore, Look } from './replayViewStore';
+import { verticalFovForAspect } from './replayViewStore';
 import type { W2 } from './replayWorld';
 import { ReplayFallback } from './ReplayFallback';
 
@@ -134,9 +135,9 @@ export function ReplayView({
     else void panelRef.current?.requestFullscreen?.();
   };
 
-  const hfov = size.h > 0 ? (2 * Math.atan(Math.tan((look.vfovDeg * Math.PI) / 360) * (size.w / size.h)) * 180) / Math.PI : 80;
+  const hfov = size.h > 0 ? (2 * Math.atan(Math.tan((verticalFovForAspect(look.vfovDeg, size.w / size.h) * Math.PI) / 360) * (size.w / size.h)) * 180) / Math.PI : 80;
   const live = mode === 'live';
-  const degPerPx = size.h > 0 ? look.vfovDeg / size.h : 0.1;
+  const degPerPx = size.h > 0 ? verticalFovForAspect(look.vfovDeg, size.w / size.h) / size.h : 0.1;
 
   const onKey = (e: React.KeyboardEvent) => {
     const k = e.key;

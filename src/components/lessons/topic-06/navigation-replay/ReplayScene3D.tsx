@@ -18,6 +18,7 @@ import {
   NeutralToneMapping,
   BackSide,
   Color,
+  CylinderGeometry,
   DirectionalLight,
   DynamicDrawUsage,
   FogExp2,
@@ -41,7 +42,8 @@ import {
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 import { StationTerrain, buildGrid, type TerrainGrid } from './replayTerrain';
 import { scatter, type Ground, type Instance } from './replayScatter';
-import { EYE_HEIGHT_M, type ViewStore } from './replayViewStore';
+import { replayTrees } from './replayLandmarks';
+import { EYE_HEIGHT_M, verticalFovForAspect, type ViewStore } from './replayViewStore';
 import type { W2 } from './replayWorld';
 import { buildTerrainGeometry } from './scene/terrainMesh';
 import { createTerrainMaterial, prepareGroundTextures } from './scene/terrainMaterial';
@@ -262,6 +264,7 @@ function World({ stationKey, station, view, onReady, onBusy, prefetch }: ScenePr
       <Lights station={station} />
       <Terrain built={built} ground={ground} station={station} />
       <Shrubs built={built} leaves={leaves} farAtlas={farAtlas} />
+      <SharedWoodland leaves={leaves} />
       <Grass list={built.grass} />
       <Rocks gltf={rocks} stones={built.stones} rocks={built.rocks} />
       <FirstFrame stationKey={built.key} onReady={onReady} onBusy={onBusy} />
@@ -301,8 +304,9 @@ function CameraRig({ view, station, eyeY }: { view: ViewStore; station: W2; eyeY
     const l = view.get();
     camera.position.set(station.x, eyeY, station.z);
     camera.rotation.set(l.pitchDeg * D2R, -l.yawDeg * D2R, 0, 'YXZ');
-    if (Math.abs(camera.fov - l.vfovDeg) > 1e-3) {
-      camera.fov = l.vfovDeg;
+    const vfov = verticalFovForAspect(l.vfovDeg, camera.aspect);
+    if (Math.abs(camera.fov - vfov) > 1e-3) {
+      camera.fov = vfov;
       camera.updateProjectionMatrix();
     }
     if (running) invalidate();
@@ -399,7 +403,7 @@ function fillInstances(mesh: InstancedMesh, list: Instance[], opts: { size: numb
     tmpObj.position.set(it.x, it.y - (opts.sink ?? 0) * it.scale, it.z);
     tmpObj.quaternion.copy(tmpQ);
     const s = it.scale * opts.size;
-    tmpObj.scale.set(s, s * (opts.scaleY ?? 1), s);
+    tmpObj.scale.set(s * (0.8 + 0.4 * it.tint), s * (opts.scaleY ?? 1) * (0.78 + 0.35 * it.tint), s * (1.16 - 0.25 * it.tint));
     tmpObj.updateMatrix();
     mesh.setMatrixAt(k, tmpObj.matrix);
     mesh.setColorAt(k, opts.tint(it));
@@ -447,8 +451,54 @@ function Instanced({
 /** Shrubs nearer than this cast shadows (the map is drawn once per station, so a wide one is cheap). */
 const SHADOW_R = 150;
 
+/** Oaks, olives and pines occupy the exact lab landmark positions. Their
+ * crowns use textured branch cards; the geometry remains genuinely 3D. */
+function SharedWoodland({leaves}: {leaves: Texture}) {
+  const resources = useMemo(() => {
+    const list = replayTrees();
+    const crownMaterial = createShrubMaterial(leaves);
+    crownMaterial.roughness = 0.96;
+    crownMaterial.color.setRGB(0.82,0.9,0.76);
+    const trunkMaterial = new MeshStandardMaterial({color:'#66533c',roughness:1});
+    const trunkGeometry = new CylinderGeometry(0.65,1,1,7);
+    const crowns = [0,1,2,3].map(v=>{
+      const geometry=buildShrubGeometry(v,280);
+      const group=list.filter((_,i)=>i%4===v);
+      const mesh=new InstancedMesh(geometry,crownMaterial,group.length);
+      const transform=new Object3D();
+      group.forEach((t,i)=>{
+        const c=t.crown;
+        const bottom=c.centerM-c.halfHeightM;
+        transform.position.set(t.x,bottom,t.z);
+        transform.rotation.set(0,t.spin,0);
+        transform.scale.set(c.radiusM/0.68,c.halfHeightM*2/1.1,c.radiusM/0.65);
+        transform.updateMatrix();mesh.setMatrixAt(i,transform.matrix);
+        mesh.setColorAt(i,new Color().setRGB(0.73+t.tone*.16,0.84+t.tone*.17,0.62+t.tone*.16));
+      });
+      mesh.instanceMatrix.needsUpdate=true;mesh.castShadow=true;mesh.receiveShadow=true;mesh.computeBoundingSphere();
+      return mesh;
+    });
+    const trunks=new InstancedMesh(trunkGeometry,trunkMaterial,list.length);
+    const transform=new Object3D();
+    list.forEach((t,i)=>{
+      const h=t.heightM*.68;
+      transform.position.set(t.x,t.baseM+h/2,t.z);
+      transform.rotation.set(0,t.spin,0);
+      transform.scale.set(t.kind==='pine'?.18:.24,h,t.kind==='pine'?.18:.24);
+      transform.updateMatrix();trunks.setMatrixAt(i,transform.matrix);
+    });
+    trunks.instanceMatrix.needsUpdate=true;trunks.castShadow=true;trunks.receiveShadow=true;trunks.computeBoundingSphere();
+    return {crowns,trunks,crownMaterial,trunkMaterial,trunkGeometry};
+  },[leaves]);
+  useEffect(()=>()=>{
+    resources.crowns.forEach(m=>{m.geometry.dispose();m.dispose();});
+    resources.trunks.dispose();resources.trunkGeometry.dispose();resources.trunkMaterial.dispose();resources.crownMaterial.dispose();
+  },[resources]);
+  return <group>{resources.crowns.map((m,i)=><primitive key={i} object={m}/>)}<primitive object={resources.trunks}/></group>;
+}
+
 // shrub colours: dark glossy lentisk ↔ grey-green ↔ olive
-const SHRUB_TINTS = [new Color(0.82, 0.92, 0.72), new Color(1.0, 1.02, 0.85), new Color(0.9, 0.9, 0.78), new Color(1.08, 1.04, 0.82)];
+const SHRUB_TINTS = [new Color(0.76, 0.9, 0.67), new Color(0.94, 1.01, 0.82), new Color(0.86, 0.9, 0.76), new Color(1.02, 0.98, 0.78)];
 const CUSHION_TINTS = [new Color(1.05, 1.08, 0.95), new Color(1.2, 1.15, 0.95), new Color(0.95, 1.0, 0.9)];
 const cushionTint = (i: Instance) => CUSHION_TINTS[Math.floor(i.tint * CUSHION_TINTS.length)].clone().multiplyScalar(0.95 + 0.3 * i.tint);
 const shrubTint = (i: Instance) => SHRUB_TINTS[Math.floor(i.tint * SHRUB_TINTS.length)].clone().multiplyScalar(0.85 + 0.25 * i.tint);
@@ -569,10 +619,10 @@ function Rocks({ gltf, stones, rocks }: { gltf: { scene: Object3D }; stones: Ins
             `#include <map_fragment>
 // limestone: lift and desaturate the scans (moss and red sandstone → pale grey), keep their detail
 float lum = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
-diffuseColor.rgb = mix(vec3(lum), diffuseColor.rgb, 0.3) * vec3(2.05, 2.0, 1.86) + 0.06;`,
+diffuseColor.rgb = mix(vec3(lum), diffuseColor.rgb, 0.3) * vec3(1.56, 1.52, 1.38) + 0.018;`,
           );
         };
-        c.customProgramCacheKey = () => 'navigation-replay-rock-v1';
+        c.customProgramCacheKey = () => 'navigation-replay-rock-v2';
         graded.set(src, c);
         m = c;
       }

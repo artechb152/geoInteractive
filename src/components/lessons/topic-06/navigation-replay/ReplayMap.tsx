@@ -15,15 +15,17 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { FONT, HAIR, INK, ORANGE, ORANGE_DEEP, PAPER, SAGE, SAGE_DARK } from '../PlanningRouteMap';
 import { useSvgId } from '../CombatNavVisuals';
-import { M_PER_UNIT, P1, P2, P3, ROAD, START, STREAM, SUMMIT_N, SUMMIT_S, bearing, fx, lerp, type Pt } from '../navTipsGeometry';
+import { M_PER_UNIT, P1, P2, P3, ROAD, RAVINE, LEG_PATHS, START, STREAM, SUMMIT_N, SUMMIT_S, bearing, fx, lerp, type Pt } from './replayGeography';
 import { contourLines, toPath, type Box } from './replayContours';
 import { heightAt, surfaceAt } from './replayTerrain';
 import { shrubDensity, hash01 } from './replayScatter';
 import { toWorld } from './replayWorld';
+import { replayTrees } from './replayLandmarks';
+import { fromLab, REPLAY_MAP_VIEW } from './replayGeography';
 import { DRIFT_END, mapDescription, type MapState } from './replayScenario';
 
 /** The crop of the planning sheet this map shows (map units): stream bend to road crossing. */
-export const MAP_VIEW: Box = { x: 17.6, y: 18.6, w: 63, h: 46.88 };
+export const MAP_VIEW: Box = REPLAY_MAP_VIEW;
 
 
 const STREAM_BLUE = '#4f8fb0';
@@ -52,6 +54,10 @@ function staticLayers() {
       const r = 0.2 + 0.12 * hash01(i, j, 5);
       maquis += `M${fx(px - r)} ${fx(py)}a${fx(r)} ${fx(r)} 0 1 0 ${fx(2 * r)} 0a${fx(r)} ${fx(r)} 0 1 0 ${fx(-2 * r)} 0`;
     }
+  for (const tree of replayTrees()) {
+    const p=fromLab(tree); const r=tree.crownR/M_PER_UNIT;
+    maquis += `M${fx(p.x-r)} ${fx(p.y)}a${fx(r)} ${fx(r)} 0 1 0 ${fx(2*r)} 0a${fx(r)} ${fx(r)} 0 1 0 ${fx(-2*r)} 0`;
+  }
   const peaks = [SUMMIT_N, SUMMIT_S].map((p) => {
     const w = toWorld(p);
     return { at: p, h: Math.round(heightAt(w.x, w.z)) };
@@ -142,9 +148,9 @@ export function ReplayMap({ state }: { state: MapState }) {
 
   // what is known in this state
   const fixAt = m.id === 'after' || (m.id === 'saddle' && saddleFixed) ? P2 : P1;
-  const fixName = fixAt === P2 ? 'האוכף' : 'עיקול הנחל';
-  const walked: Pt[] = fixAt === P2 ? [START, P1, P2] : [START, P1];
-  const ahead: Pt[] = fixAt === P2 ? [P2, P3] : [P1, P2, P3];
+  const fixName = fixAt === P2 ? 'האוכף' : 'חציית הנחל';
+  const walked: Pt[] = fixAt === P2 ? [...LEG_PATHS[0], ...LEG_PATHS[1].slice(1)] : [...LEG_PATHS[0]];
+  const ahead: Pt[] = fixAt === P2 ? [...LEG_PATHS[2]] : [...LEG_PATHS[1], ...LEG_PATHS[2].slice(1)];
   const fade = {
     initial: reduce ? false : ({ opacity: 0 } as const),
     animate: { opacity: 1 },
@@ -152,7 +158,7 @@ export function ReplayMap({ state }: { state: MapState }) {
     transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const },
   };
   const vb = `${MAP_VIEW.x} ${MAP_VIEW.y} ${MAP_VIEW.w} ${MAP_VIEW.h}`;
-  const scaleM = 500;
+  const scaleM = 250;
   const scaleU = scaleM / M_PER_UNIT;
   const sb = { x: MAP_VIEW.x + 2.6, y: MAP_VIEW.y + MAP_VIEW.h - 2.4 };
 
@@ -188,6 +194,7 @@ export function ReplayMap({ state }: { state: MapState }) {
         <path d={STREAM} fill="none" stroke="#A9CFE0" strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
         <path d={STREAM} fill="none" stroke={STREAM_BLUE} strokeWidth={0.34} strokeDasharray="1.5 0.7" strokeLinecap="round" data-layer="stream" />
         {/* dirt road: double line */}
+        <path d={RAVINE} fill="none" stroke={STREAM_BLUE} strokeWidth={0.22} strokeDasharray="0.7 0.5" />
         <path d={ROAD} fill="none" stroke="#8f6d3a" strokeWidth={1.25} strokeLinecap="round" />
         <path d={ROAD} fill="none" stroke="#F6E7C8" strokeWidth={0.7} strokeLinecap="round" data-layer="road" />
         {/* spot heights */}
@@ -234,7 +241,7 @@ export function ReplayMap({ state }: { state: MapState }) {
         <rect x={0} y={0} width={fx(scaleU / 2)} height={0.55} fill={INK} />
         {[0, scaleU / 2, scaleU].map((x, i) => (
           <text key={i} x={fx(x)} y={-0.6} textAnchor="middle" fontSize={1.55} fill={INK} style={FONT}>
-            {i === 0 ? '0' : i === 1 ? '250' : '500 מ׳'}
+            {i === 0 ? '0' : i === 1 ? '125' : '250 מ׳'}
           </text>
         ))}
       </g>
@@ -257,17 +264,17 @@ function DepartArrow() {
 function Labels({ state, fixAt }: { state: MapState; fixAt: Pt }) {
   const { moment: m, saddleFixed, revealTruth } = state;
   const out: ReactNode[] = [];
-  const fixLabel = m.id === 'depart' ? 'עיקול הנחל' : 'נקודה מזוהה אחרונה';
+  const fixLabel = m.id === 'depart' ? 'חציית הנחל' : 'נקודה מזוהה אחרונה';
   // the fix label sits east of its marker (clear of the route, which leaves westwards)
   out.push(
-    <Callout key="fix" at={fixAt === P1 ? { x: P1.x + 6.4, y: P1.y - 3.4 } : { x: P2.x + 9.4, y: P2.y + 0.1 }} tone="sage" data="fix">
+    <Callout key="fix" at={fixAt === P1 ? { x: P1.x - 4.5, y: P1.y - 2.6 } : { x: P2.x + 2.5, y: P2.y + 3.3 }} tone="sage" data="fix">
       {fixLabel}
     </Callout>,
   );
-  if (m.id === 'depart') out.push(<Callout key="dir" at={{ x: 53.6, y: 59.2 }} tone="orange" data="direction">הכיוון לקטע הבא</Callout>);
-  if (fixAt === P1) out.push(<Callout key="p2" at={{ x: P2.x - 4.6, y: P2.y - 2.9 }} data="next">אוכף</Callout>);
+  if (m.id === 'depart') out.push(<Callout key="dir" at={{ x: P1.x + 1.4, y: P1.y - 5 }} tone="orange" data="direction">הכיוון לקטע הבא</Callout>);
+  if (fixAt === P1) out.push(<Callout key="p2" at={{ x: P2.x + 3, y: P2.y - 2.5 }} data="next">אוכף</Callout>);
   out.push(
-    <Callout key="p3" at={{ x: P3.x - 7.2, y: P3.y + 0.1 }} data="crossing">
+    <Callout key="p3" at={{ x: P3.x + 1, y: P3.y - 2.9 }} data="crossing">
       חציית דרך עפר
     </Callout>,
   );

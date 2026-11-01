@@ -20,7 +20,7 @@ export type GroundTextures = {
 
 /** Average colours (linear) of the four albedo maps, for the far fade. */
 const FAR = {
-  grass: new Vector3(0.36, 0.3, 0.19),
+  grass: new Vector3(0.29, 0.29, 0.17),
   soil: new Vector3(0.24, 0.17, 0.11),
   limestone: new Vector3(0.48, 0.45, 0.4),
   gravel: new Vector3(0.43, 0.38, 0.31),
@@ -161,7 +161,7 @@ col *= mix(vec3(0.97, 0.94, 0.78), vec3(0.82, 0.92, 0.74), n3);
 col = mix(col, col * vec3(1.08, 0.86, 0.72), smoothstep(0.55, 0.8, nrFbm(xz / 60.0 + 3.0)) * 0.6);
 col *= 0.8 + 0.32 * n2;
 // low green herbs mottling the dry cover
-col = mix(col, col * vec3(0.7, 0.88, 0.58), smoothstep(0.46, 0.76, nrFbm(xz / 6.5 + 1.7)) * 0.65 * bw.x);
+col = mix(col, col * vec3(0.7, 0.88, 0.58), smoothstep(0.46, 0.76, nrFbm(xz / 6.5 + 1.7)) * 0.78 * bw.x);
 // thick maquis reads as darker ground where single shrubs are too small to draw
 float cover = smoothstep(0.45, 0.8, nrFbm(xz / 75.0 + 11.0)) * smoothstep(300.0, 1400.0, camDist);
 col *= 1.0 - 0.38 * cover;
@@ -184,6 +184,6 @@ vec2 nxy = (tn.rg * 2.0 - 1.0) * (1.0 - far) * 1.15;
 }`,
       );
   };
-  m.customProgramCacheKey = () => 'navigation-replay-terrain-v1';
+  m.customProgramCacheKey = () => 'navigation-replay-terrain-v2';
   return { material: m, uniforms };
 }
