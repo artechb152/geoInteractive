@@ -9,6 +9,8 @@
  * stands within a few metres of the eye, so the view is never blocked.
  */
 import { fbm, noise2 } from './replayTerrain';
+import { nearestOn, polyline, type W2 } from './replayWorld';
+import { finish, runBatched } from './replayBatch';
 
 export type Instance = {
   x: number;
@@ -147,23 +149,34 @@ export type KindName = keyof typeof KINDS;
  * `stride` > 1 visits every stride-th cell only — a far band drawn from the
  * same cells as the near one, so far shrubs are a subset of the near ones.
  */
-export function scatter(kind: KindName, ex: number, ez: number, g: Ground, band: { near?: number; far?: number; stride?: number } = {}): Instance[] {
+type Band = { near?: number; far?: number; stride?: number; path?: readonly W2[]; clearancePath?: readonly W2[] };
+export function scatter(kind: KindName, ex: number, ez: number, g: Ground, band: Band = {}): Instance[] {
+  return finish(scatterSteps(kind, ex, ez, g, band));
+}
+export function scatterAsync(kind: KindName, ex: number, ez: number, g: Ground, band: Band = {}, signal?: AbortSignal): Promise<Instance[]> {
+  return runBatched(scatterSteps(kind, ex, ez, g, band), signal);
+}
+function* scatterSteps(kind: KindName, ex: number, ez: number, g: Ground, band: Band): Generator<void, Instance[]> {
   const k: Kind = KINDS[kind];
   const far = band.far ?? k.far;
   const near = band.near ?? k.near;
   const stride = band.stride ?? 1;
   const out: Instance[] = [];
   const snap = (v: number) => Math.floor(v / stride) * stride;
-  const i0 = snap(Math.floor((ex - far) / k.cell));
-  const i1 = Math.floor((ex + far) / k.cell);
-  const j0 = snap(Math.floor((ez - far) / k.cell));
-  const j1 = Math.floor((ez + far) / k.cell);
+  const path = band.path ? polyline([...band.path]) : null;
+  const clearancePath = band.clearancePath ? polyline([...band.clearancePath]) : path;
+  const xs = band.path?.map(p => p.x) ?? [ex], zs = band.path?.map(p => p.z) ?? [ez];
+  const i0 = snap(Math.floor((Math.min(...xs) - far) / k.cell));
+  const i1 = Math.floor((Math.max(...xs) + far) / k.cell);
+  const j0 = snap(Math.floor((Math.min(...zs) - far) / k.cell));
+  const j1 = Math.floor((Math.max(...zs) + far) / k.cell);
   for (let j = j0; j <= j1; j += stride) {
     for (let i = i0; i <= i1; i += stride) {
       const x = (i + hash01(i, j, k.salt)) * k.cell;
       const z = (j + hash01(i, j, k.salt + 1)) * k.cell;
-      const dist = Math.hypot(x - ex, z - ez);
-      if (dist > far || dist < near) continue;
+      const dist = path ? nearestOn(path, {x,z}).d : Math.hypot(x - ex, z - ez);
+      const clearance = clearancePath ? nearestOn(clearancePath, {x,z}).d : dist;
+      if (dist > far || dist < near || clearance < k.near) continue;
       const pick = hash01(i, j, k.salt + 2);
       // cheap reject before the ground lookups
       if (pick > 0.92) continue;
@@ -175,8 +188,8 @@ export function scatter(kind: KindName, ex: number, ez: number, g: Ground, band:
       if (kind === 'shrub' && dist > 650 && r < 0.45) continue;
       let scale = k.scale(r);
       // near the eye, shrubs and rocks stay low, so the view is never walled off
-      if (kind === 'shrub' && dist < 18) scale = Math.min(scale, 0.35 + (0.55 * dist) / 18);
-      if (kind === 'rock' && dist < 10) scale = Math.min(scale, 0.25 + dist * 0.06);
+      if (kind === 'shrub' && clearance < 18) scale = Math.min(scale, 0.35 + (0.55 * clearance) / 18);
+      if (kind === 'rock' && clearance < 10) scale = Math.min(scale, 0.25 + clearance * 0.06);
       out.push({
         x,
         z,
@@ -189,6 +202,7 @@ export function scatter(kind: KindName, ex: number, ez: number, g: Ground, band:
         dist,
       });
     }
+    yield;
   }
   return out;
 }

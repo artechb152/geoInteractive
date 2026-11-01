@@ -17,15 +17,16 @@
  * in every state (the decision area reserves its tallest state), so the laptop
  * fit never rescales between moments.
  */
-import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Check, ChevronLeft, ChevronRight, RotateCcw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOMENTS, PRINCIPLES, momentById, type EvidenceOption, type Moment, type MomentId } from './replayScenario';
 import { initialReplayState, isDone, replayReducer, type ReplayState } from './replayState';
 import { createViewStore } from './replayViewStore';
-import { toWorld, type W2 } from './replayWorld';
-import { ReplayView } from './ReplayView';
+import { toWorld } from './replayWorld';
+import { ReplayView, type ViewMode } from './ReplayView';
+import { createWalkStore } from './replayWalk';
 import { ReplayMap } from './ReplayMap';
 import { TipsLegendGlyph } from '../NavTipsMap';
 
@@ -56,11 +57,18 @@ export function NavigationReplayActivity() {
   const moment = momentById(state.active);
   const ms = state.moments[state.active];
   const view = useMemo(() => createViewStore(MOMENTS[0].view), []);
+  const walk = useMemo(createWalkStore, []);
+  const walkPhase = useSyncExternalStore(walk.subscribe, walk.phase, walk.phase);
+  const travelling = walkPhase !== 'idle';
+  const [viewMode, setViewMode] = useState<ViewMode>('pending');
   const promptRef = useRef<HTMLHeadingElement>(null);
   const firstActionRef = useRef<HTMLButtonElement>(null);
+  const skipRef = useRef<HTMLButtonElement>(null);
   /** Focus to place once the decision area's new content has mounted (it fades in after the old one leaves). */
   const pendingFocus = useRef<'action' | 'prompt' | null>(null);
   const [announce, setAnnounce] = useState('');
+  useEffect(() => { if (travelling) skipRef.current?.focus({preventScroll:true}); }, [travelling]);
+  useEffect(() => () => walk.cancel(), [walk]);
 
   // a new moment: its station's opening look
   useEffect(() => view.setHome(moment.view), [moment, view]);
@@ -69,21 +77,22 @@ export function NavigationReplayActivity() {
     (window as unknown as { __replayView?: typeof view }).__replayView = view;
   }, [view]);
   const station = useMemo(() => toWorld(moment.truth.at), [moment]);
-  const prefetch = useMemo(() => MOMENTS.map((m) => [m.id, toWorld(m.truth.at)] as [string, W2]), []);
 
   const goTo = useCallback(
     (id: MomentId) => {
+      walk.cancel();
       dispatch({ type: 'goto', id });
       const m = momentById(id);
       setAnnounce(`רגע ${m.n} מתוך ${MOMENTS.length}: ${m.label}`);
     },
-    [],
+    [walk],
   );
   const step = (dir: 1 | -1) => {
     const i = MOMENTS.findIndex((m) => m.id === state.active) + dir;
     if (i >= 0 && i < MOMENTS.length) goTo(MOMENTS[i].id);
   };
   const reset = () => {
+    walk.cancel();
     dispatch({ type: 'reset' });
     view.setHome(MOMENTS[0].view);
     setAnnounce('הפעילות התחילה מחדש: רגע 1 מתוך 4, יציאה');
@@ -92,15 +101,29 @@ export function NavigationReplayActivity() {
   // after moving to a moment from the decision area, focus its prompt (not on a plain timeline click)
   const advance = (to: MomentId | 'summary') => {
     if (to === 'summary') dispatch({ type: 'summary', open: true });
+    else if (!reduce && viewMode === 'live' && walk.start(state.active, to, view.get())) {
+      setAnnounce('שחזור מואץ: מתקדמים לנקודה הבאה. אפשר לדלג להגעה.');
+      return;
+    }
     else goTo(to);
     pendingFocus.current = 'prompt';
   };
+  useEffect(() => {
+    if (walkPhase !== 'arrived') return;
+    const target = walk.target();
+    if (!target) return;
+    pendingFocus.current = 'prompt';
+    goTo(target);
+  }, [walkPhase, walk, goTo]);
+  useEffect(() => {
+    if ((reduce || viewMode === 'static') && travelling) walk.skip();
+  }, [reduce, viewMode, travelling, walk]);
 
   const saddleFixed = isDone(state, 'saddle');
   const revealTruth = state.active === 'after' && isDone(state, 'after');
 
   return (
-    <div role="group" aria-labelledby={`${uid}-title`} className="surface-elevated px-6 pb-4 pt-3" data-activity="navigation-replay" data-active={state.active} data-phase={ms.phase}>
+    <div role="group" aria-labelledby={`${uid}-title`} className="surface-elevated px-6 pb-4 pt-3" data-activity="navigation-replay" data-active={state.active} data-phase={ms.phase} data-travel={walkPhase}>
       {/* header row: title (start), position in the replay and a quiet reset (end) */}
       <div className="mb-2 flex items-center justify-between gap-5">
         <h4 id={`${uid}-title`} className="sr-only">
@@ -127,7 +150,8 @@ export function NavigationReplayActivity() {
           view={view}
           description={moment.viewText}
           reduce={reduce}
-          prefetch={prefetch}
+          walk={walk}
+          onMode={setViewMode}
           className="h-full"
         />
         <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-bg-elevated" data-panel="map">
@@ -149,7 +173,7 @@ export function NavigationReplayActivity() {
             </ul>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden rounded-b-xl">
-            <ReplayMap state={{ moment, saddleFixed, revealTruth }} />
+            <ReplayMap state={{ moment, saddleFixed, revealTruth }} walk={walk} travelling={travelling} />
           </div>
         </div>
       </div>
@@ -162,7 +186,12 @@ export function NavigationReplayActivity() {
 
       <div className="mt-3 border-t border-border/80 pt-3" data-replay-footer>
       <div className="min-w-0">
-        <DecisionArea
+        {travelling ? (
+          <div className="flex items-start justify-between gap-4" style={{minHeight:DECISION_H}} data-travel-status>
+            <p role="status" className="text-base leading-relaxed text-black">{walkPhase === 'preparing' ? 'מכינים את הקטע הבא…' : 'שחזור מואץ: מתקדמים אל הנקודה הבאה.'}</p>
+            <button ref={skipRef} type="button" className="btn-secondary h-10 px-4 text-base" onClick={()=>walk.skip()} data-skip-walk>דלגו להגעה</button>
+          </div>
+        ) : <DecisionArea
           state={state}
           moment={moment}
           reduce={reduce}
@@ -178,7 +207,7 @@ export function NavigationReplayActivity() {
           }}
           onAdvance={advance}
           onLook={(yawDeg) => view.goTo({ ...view.get(), yawDeg, pitchDeg: 8 }, reduce)}
-        />
+        />}
       </div>
 
       </div>

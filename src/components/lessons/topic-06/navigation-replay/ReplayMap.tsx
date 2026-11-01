@@ -19,7 +19,8 @@ import { M_PER_UNIT, P1, P2, P3, ROAD, RAVINE, LEG_PATHS, START, STREAM, SUMMIT_
 import { contourLines, toPath, type Box } from './replayContours';
 import { heightAt, surfaceAt } from './replayTerrain';
 import { shrubDensity, hash01 } from './replayScatter';
-import { toWorld } from './replayWorld';
+import { toWorld, toMap } from './replayWorld';
+import type { WalkStore } from './replayWalk';
 import { replayTrees } from './replayLandmarks';
 import { fromLab, REPLAY_MAP_VIEW } from './replayGeography';
 import { DRIFT_END, mapDescription, type MapState } from './replayScenario';
@@ -139,7 +140,7 @@ function TruthPuck({ p }: { p: Pt }) {
 
 const line = (pts: Pt[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join('');
 
-export function ReplayMap({ state }: { state: MapState }) {
+export function ReplayMap({ state, walk, travelling = false }: { state: MapState; walk?: WalkStore; travelling?: boolean }) {
   const reduce = !!useReducedMotion();
   const id = useSvgId('replaymap');
   const L = useMemo(staticLayers, []);
@@ -220,11 +221,12 @@ export function ReplayMap({ state }: { state: MapState }) {
             <FixMarker p={fixAt} name={fixName} />
             {fixAt === P1 && <PlanMarker p={P2} name="אוכף" />}
             <PlanMarker p={P3} name="חציית דרך עפר" />
-            {m.estimate && !(m.id === 'saddle' && saddleFixed) && <EstimateRing p={m.estimate.at} />}
+            {!travelling && m.estimate && !(m.id === 'saddle' && saddleFixed) && <EstimateRing p={m.estimate.at} />}
             {revealTruth && m.id === 'after' && <TruthPuck p={DRIFT_END} />}
-            <Labels state={state} fixAt={fixAt} />
+            <Labels state={state} fixAt={fixAt} travelling={travelling} />
           </motion.g>
         </AnimatePresence>
+        {travelling && walk && <WalkingEstimate walk={walk} />}
       </g>
 
       {/* north arrow (top-left) and scale bar (bottom-left) */}
@@ -261,7 +263,16 @@ function DepartArrow() {
   );
 }
 
-function Labels({ state, fixAt }: { state: MapState; fixAt: Pt }) {
+function WalkingEstimate({walk}: {walk: WalkStore}) {
+  const ref = useRef<SVGGElement>(null);
+  useEffect(()=>{
+    const update=()=>{const pose=walk.pose();if(!pose)return;const p=toMap(pose.at);ref.current?.setAttribute('transform',`translate(${p.x} ${p.y})`);};
+    update();return walk.subscribe(update);
+  },[walk]);
+  return <g ref={ref} data-walking-estimate><title>אומדן המיקום בזמן התנועה</title><EstimateRing p={{x:0,y:0}}/></g>;
+}
+
+function Labels({ state, fixAt, travelling }: { state: MapState; fixAt: Pt; travelling: boolean }) {
   const { moment: m, saddleFixed, revealTruth } = state;
   const out: ReactNode[] = [];
   const fixLabel = m.id === 'depart' ? 'חציית הנחל' : 'נקודה מזוהה אחרונה';
@@ -278,7 +289,7 @@ function Labels({ state, fixAt }: { state: MapState; fixAt: Pt }) {
       חציית דרך עפר
     </Callout>,
   );
-  if (m.estimate && !(m.id === 'saddle' && saddleFixed)) {
+  if (!travelling && m.estimate && !(m.id === 'saddle' && saddleFixed)) {
     const e = m.estimate.at;
     const at = m.id === 'after' ? { x: e.x + 8.6, y: e.y + 0.4 } : m.id === 'saddle' ? { x: e.x - 7.2, y: e.y + 3.4 } : { x: e.x + 3.4, y: e.y - 4.3 };
     out.push(

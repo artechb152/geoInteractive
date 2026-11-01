@@ -5,13 +5,14 @@
  * ssr:false) by ReplayView, which owns the frame, the controls, the loading
  * line and the fallback.
  *
- * Budget (desktop): one polar ground mesh (~0.7 M triangles out to 16 km),
+ * Budget (desktop): one polar ground mesh (~0.7 M triangles at a station,
+ * <1.4 M over the shared walking corridor, out to the same 16 km horizon),
  * instanced maquis (leaf-card shrubs near, billboards to 1.5 km), grass tufts
  * to 30 m, scanned stones and rocks; one sun shadow map around the
- * station (3072², ±165 m), refreshed only when the station changes; frameloop "demand" (a
- * frame only when the look changes), paused off-screen; DPR ≤ 1.5.
+ * station/corridor (3072²), refreshed only when its prepared world changes;
+ * frameloop "demand" (look or walking frames), paused off-screen; DPR ≤ 1.5.
  */
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, useTexture } from '@react-three/drei';
 import {
@@ -40,12 +41,13 @@ import {
   type Texture,
 } from 'three';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
-import { StationTerrain, buildGrid, type TerrainGrid } from './replayTerrain';
-import { scatter, type Ground, type Instance } from './replayScatter';
+import { createReplayPreparation, type PreparedWorld as Built } from './replayPreparation';
+import { worldKey } from './replayBuildCache';
+import type { WalkStore } from './replayWalk';
+import type { Instance } from './replayScatter';
 import { replayTrees } from './replayLandmarks';
 import { EYE_HEIGHT_M, verticalFovForAspect, type ViewStore } from './replayViewStore';
 import type { W2 } from './replayWorld';
-import { buildTerrainGeometry } from './scene/terrainMesh';
 import { createTerrainMaterial, prepareGroundTextures } from './scene/terrainMaterial';
 import { buildBillboardGeometry, buildGrassGeometry, buildShrubGeometry, createBillboardMaterial, createGrassMaterial, createShrubMaterial } from './scene/vegetation';
 
@@ -86,7 +88,7 @@ export type SceneProps = {
   onBusy: (busy: boolean) => void;
   onLost: () => void;
   /** Every station of the replay: prepared in the background once the first is drawn. */
-  prefetch: [string, W2][];
+  walk: WalkStore;
   /** The lazy chunk is in: the wrapper's loading line takes over from next/dynamic's. */
   onMount?: () => void;
 };
@@ -127,66 +129,9 @@ export default function ReplayScene3D(props: SceneProps) {
 
 // ───────────────────────────────────────────── terrain building (cached per station)
 
-let sharedGrids: Promise<{ core: TerrainGrid; coarse: TerrainGrid }> | null = null;
-const localGrids = new Map<string, Promise<TerrainGrid>>();
-
-function getShared() {
-  sharedGrids ??= (async () => {
-    const coarse = await buildGrid(0, 0, 17000, 140, false);
-    const core = await buildGrid(0, 0, 1650, 8, true);
-    return { core, coarse };
-  })();
-  return sharedGrids;
-}
-function getLocal(key: string, s: W2) {
-  let p = localGrids.get(key);
-  if (!p) {
-    p = buildGrid(s.x, s.z, 320, 2, true);
-    localGrids.set(key, p);
-  }
-  return p;
-}
-
-type Built = {
-  key: string;
-  terrain: StationTerrain;
-  geometry: BufferGeometry;
-  eyeY: number;
-  shrubsNear: Instance[];
-  shrubsFar: Instance[];
-  grass: Instance[];
-  cushions: Instance[];
-  stones: Instance[];
-  rocks: Instance[];
-};
-
-async function buildStation(key: string, s: W2): Promise<Built> {
-  const [{ core, coarse }, local] = await Promise.all([getShared(), getLocal(key, s)]);
-  const terrain = new StationTerrain([local, core, coarse]);
-  const ground: Ground = {
-    height: (x, z) => terrain.height(x, z),
-    road: (x, z) => terrain.road(x, z),
-    stream: (x, z) => terrain.stream(x, z),
-  };
-  const geometry = buildTerrainGeometry(terrain, s.x, s.z);
-  await new Promise((r) => setTimeout(r, 0));
-  return {
-    key,
-    terrain,
-    geometry,
-    eyeY: terrain.height(s.x, s.z) + EYE_HEIGHT_M,
-    shrubsNear: scatter('shrub', s.x, s.z, ground, { far: 240 }),
-    shrubsFar: scatter('shrub', s.x, s.z, ground, { near: 240, far: 1500, stride: 2 }),
-    grass: scatter('grass', s.x, s.z, ground),
-    cushions: scatter('cushion', s.x, s.z, ground),
-    stones: [...scatter('stone', s.x, s.z, ground), ...scatter('cobble', s.x, s.z, ground)],
-    rocks: [...scatter('rock', s.x, s.z, ground), ...scatter('rockNear', s.x, s.z, ground)],
-  };
-}
-
 // ───────────────────────────────────────────── the world
 
-function World({ stationKey, station, view, onReady, onBusy, prefetch }: SceneProps) {
+function World({ stationKey, station, view, onReady, onBusy, onLost, walk }: SceneProps) {
   const tex = useTexture(TEXTURE_URLS) as Texture[];
   const rocks = useGLTF(ROCKS_URL, false) as unknown as { scene: Object3D };
   const gl = useThree((s) => s.gl);
@@ -207,67 +152,78 @@ function World({ stationKey, station, view, onReady, onBusy, prefetch }: ScenePr
     }
   }, [skyTex, leaves, farAtlas]);
 
-  // build the station (async); keep showing the previous one until the new one is ready
+  const preparation = useRef<ReturnType<typeof createReplayPreparation> | null>(null);
+  const walkTarget = useSyncExternalStore(walk.subscribe, walk.target, walk.target);
+  const desired = worldKey(walkTarget ?? stationKey);
+  useEffect(() => {
+    const cache = createReplayPreparation();
+    preparation.current = cache;
+    const qa = window as unknown as {__replayPreparation?:()=>object;__replayGpu?:()=>object};
+    const inspect = () => ({ready:cache.ready,size:cache.size});
+    const gpu = () => ({geometries:gl.info.memory.geometries,textures:gl.info.memory.textures});
+    qa.__replayPreparation=inspect;qa.__replayGpu=gpu;
+    return () => {
+      cache.dispose(); preparation.current = null;
+      if(qa.__replayPreparation===inspect)delete qa.__replayPreparation;
+      if(qa.__replayGpu===gpu)delete qa.__replayGpu;
+    };
+  }, []);
   useEffect(() => {
     let cancelled = false;
+    const id = walk.get().id;
+    if (built?.key === desired) {
+      onBusy(false);
+      walk.ready(id);
+      invalidate();
+      return;
+    }
     onBusy(true);
-    buildStation(stationKey, station).then((b) => {
-      if (cancelled) {
-        b.geometry.dispose();
-        return;
-      }
-      setBuilt(b);
-      // read by the QA scripts (instance budget, station)
-      (window as unknown as { __replayStats?: object }).__replayStats = {
-        station: b.key,
-        terrainTriangles: (b.geometry.index?.count ?? 0) / 3,
-        shrubsNear: b.shrubsNear.length,
-        shrubsFar: b.shrubsFar.length,
-        cushions: b.cushions.length,
-        grass: b.grass.length,
-        stones: b.stones.length,
-        rocks: b.rocks.length,
-        eyeY: b.eyeY,
-      };
-    });
-    return () => {
-      cancelled = true;
-    };
-    // station follows stationKey
+    preparation.current!.get(desired).then(b => {
+      if (!cancelled) setBuilt(b);
+    }).catch(() => { if (!cancelled) onLost(); });
+    return () => { cancelled = true; };
+    // A key identifies a prepared world. Camera/answer updates must not rebuild it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stationKey]);
-
-  // dispose a replaced terrain geometry
-  useEffect(() => () => built?.geometry.dispose(), [built]);
-
-  // shadows are static: redraw the shadow map once per station
+  }, [desired, walkTarget]);
+  // dispose() frees the outgoing WebGL buffers; cached typed arrays remain
+  // usable, so revisiting can upload them without another CPU build.
+  useEffect(() => () => { built?.geometry.dispose(); }, [built]);
   useEffect(() => {
     if (!built) return;
     gl.shadowMap.needsUpdate = true;
     invalidate();
-  }, [built, gl, invalidate]);
-
-  // after idle time, prepare the other stations so moving between moments is quick
+    (window as unknown as { __replayStats?: object }).__replayStats = {
+      station: stationKey, world: built.key,
+      terrainTriangles: (built.geometry.index?.count ?? 0) / 3,
+      shrubsNear: built.shrubsNear.length, shrubsFar: built.shrubsFar.length,
+      cushions: built.cushions.length, grass: built.grass.length,
+      stones: built.stones.length, rocks: built.rocks.length,
+      eyeY: built.terrain.height(station.x, station.z) + EYE_HEIGHT_M,
+    };
+  }, [built, stationKey, station, gl, invalidate]);
+  // First draw the current station. Then spend small CPU batches preparing
+  // the one future world; enroute and saddle share the same full corridor.
   useEffect(() => {
     if (!built) return;
-    const id = window.setTimeout(() => {
-      for (const [k, s] of prefetch) getLocal(k, s);
-    }, 1500);
+    const cache = preparation.current!;
+    const next = built.key === 'depart' ? 'approach' : built.key === 'approach' ? 'after' : null;
+    if (!next) return;
+    const id = window.setTimeout(() => { void cache.get(next).catch(() => {}); }, 180);
     return () => window.clearTimeout(id);
-  }, [built, prefetch]);
+  }, [built]);
 
   if (!built) return null;
   return (
     <>
-      <CameraRig view={view} station={station} eyeY={built.eyeY} />
+      <CameraRig view={view} station={station} built={built} walk={walk} />
       <Sky texture={skyTex} />
-      <Lights station={station} />
-      <Terrain built={built} ground={ground} station={station} />
+      <Lights station={built.anchor} radius={built.shadowRadius} />
+      <Terrain built={built} ground={ground} station={built.anchor} />
       <Shrubs built={built} leaves={leaves} farAtlas={farAtlas} />
       <SharedWoodland leaves={leaves} />
       <Grass list={built.grass} />
       <Rocks gltf={rocks} stones={built.stones} rocks={built.rocks} />
-      <FirstFrame stationKey={built.key} onReady={onReady} onBusy={onBusy} />
+      <FirstFrame stationKey={built.key} onReady={() => { onReady(); if (built.key === worldKey(walk.target() ?? stationKey)) walk.ready(); }} onBusy={onBusy} />
     </>
   );
 }
@@ -289,27 +245,28 @@ function FirstFrame({ stationKey, onReady, onBusy }: { stationKey: string; onRea
   return null;
 }
 
-function CameraRig({ view, station, eyeY }: { view: ViewStore; station: W2; eyeY: number }) {
+function CameraRig({ view, station, built, walk }: { view: ViewStore; station: W2; built: Built; walk: WalkStore }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     const off = view.subscribe(() => invalidate());
-    return () => {
-      off();
-    };
-  }, [view, invalidate]);
-  useEffect(() => invalidate(), [station, eyeY, invalidate]);
-  useFrame(() => {
+    const offWalk = walk.subscribe(() => invalidate());
+    return () => { off(); offWalk(); };
+  }, [view, walk, invalidate]);
+  useEffect(() => invalidate(), [station, built, invalidate]);
+  useFrame((_, dt) => {
+    walk.step(dt * 1000);
+    const pose = walk.pose();
+    const at = pose?.at ?? station;
+    if (pose && walk.phase() !== 'preparing') view.set({yawDeg:pose.yawDeg,pitchDeg:pose.pitchDeg,vfovDeg:pose.vfovDeg});
     const running = view.step(performance.now());
     const l = view.get();
-    camera.position.set(station.x, eyeY, station.z);
+    camera.position.set(at.x, built.terrain.height(at.x,at.z) + EYE_HEIGHT_M, at.z);
+    (window as unknown as {__replayEye?:object}).__replayEye={x:at.x,z:at.z,y:camera.position.y,ground:built.terrain.height(at.x,at.z),phase:walk.phase()};
     camera.rotation.set(l.pitchDeg * D2R, -l.yawDeg * D2R, 0, 'YXZ');
     const vfov = verticalFovForAspect(l.vfovDeg, camera.aspect);
-    if (Math.abs(camera.fov - vfov) > 1e-3) {
-      camera.fov = vfov;
-      camera.updateProjectionMatrix();
-    }
-    if (running) invalidate();
+    if (Math.abs(camera.fov - vfov) > 1e-3) { camera.fov = vfov; camera.updateProjectionMatrix(); }
+    if (running || walk.phase() === 'walking') invalidate();
   });
   return null;
 }
@@ -358,7 +315,7 @@ function Sky({ texture }: { texture: Texture }) {
   return <mesh ref={mesh} geometry={geo} material={material} renderOrder={-1} frustumCulled={false} />;
 }
 
-function Lights({ station }: { station: W2 }) {
+function Lights({ station, radius }: { station: W2; radius: number }) {
   const sun = useRef<DirectionalLight>(null);
   useLayoutEffect(() => {
     const l = sun.current;
@@ -367,14 +324,14 @@ function Lights({ station }: { station: W2 }) {
     l.target.position.set(station.x, 380, station.z);
     l.target.updateMatrixWorld();
     const c = l.shadow.camera;
-    c.left = -165;
-    c.right = 165;
-    c.top = 165;
-    c.bottom = -165;
+    c.left = -radius;
+    c.right = radius;
+    c.top = radius;
+    c.bottom = -radius;
     c.near = 10;
     c.far = 2400;
     c.updateProjectionMatrix();
-  }, [station]);
+  }, [station, radius]);
   return (
     <>
       <directionalLight ref={sun} color={SUN_COLOR} intensity={4.0} castShadow shadow-mapSize={[3072, 3072]} shadow-bias={-0.0004} shadow-normalBias={0.05} />

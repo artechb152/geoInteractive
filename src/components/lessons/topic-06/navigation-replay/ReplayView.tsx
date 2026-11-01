@@ -8,7 +8,8 @@
  * Looking around: drag, or the keyboard on the focused view (← → turn,
  * ↑ ↓ tilt, + − zoom, Home back to the opening view). The eye never leaves
  * the station. Pointer deltas are screen px; inside the laptop fit they are
- * divided by its scale so a drag turns the view 1 : 1.
+ * divided by its scale so a drag turns the view 1 : 1. During a prepared walk
+ * replayWalk owns the eye and the decision area offers Skip to arrival.
  */
 import { Component, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
@@ -21,6 +22,7 @@ import type { ViewStore, Look } from './replayViewStore';
 import { verticalFovForAspect } from './replayViewStore';
 import type { W2 } from './replayWorld';
 import { ReplayFallback } from './ReplayFallback';
+import type { WalkStore } from './replayWalk';
 
 const LOADING_LABEL = 'טוען שטח תלת־ממדי…';
 
@@ -62,7 +64,7 @@ export function ReplayView({
   description,
   reduce,
   onMode,
-  prefetch,
+  walk,
   className,
 }: {
   stationKey: string;
@@ -74,8 +76,7 @@ export function ReplayView({
   description: string;
   reduce: boolean;
   onMode?: (m: ViewMode) => void;
-  /** All stations, so the scene can prepare them in the background. */
-  prefetch: [string, W2][];
+  walk: WalkStore;
   className?: string;
 }) {
   const uid = useId();
@@ -95,6 +96,8 @@ export function ReplayView({
   const fitScale = useLessonViewportScale();
   const drag = useRef<{ x: number; y: number; id: number } | null>(null);
   const look = useSyncExternalStore(view.subscribe, view.get, view.get);
+  const walkPhase = useSyncExternalStore(walk.subscribe, walk.phase, walk.phase);
+  const travelling = walkPhase !== 'idle';
 
   useEffect(() => {
     const m: ViewMode = hasWebGL() ? 'live' : 'static';
@@ -140,6 +143,7 @@ export function ReplayView({
   const degPerPx = size.h > 0 ? verticalFovForAspect(look.vfovDeg, size.w / size.h) / size.h : 0.1;
 
   const onKey = (e: React.KeyboardEvent) => {
+    if (travelling) return;
     const k = e.key;
     if (mode === 'static') {
       // the stills turn by quarters
@@ -186,7 +190,7 @@ export function ReplayView({
         aria-describedby={`${uid}-desc`}
         onKeyDown={onKey}
         onPointerDown={(e) => {
-          if (!live || e.button !== 0) return;
+          if (!live || travelling || e.button !== 0) return;
           if ((e.target as HTMLElement).closest('button')) return;
           drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -194,7 +198,7 @@ export function ReplayView({
         }}
         onPointerMove={(e) => {
           const d = drag.current;
-          if (!d || d.id !== e.pointerId) return;
+          if (travelling || !d || d.id !== e.pointerId) return;
           const s = fullscreen ? 1 : fitScale || 1;
           const dx = (e.clientX - d.x) / s;
           const dy = (e.clientY - d.y) / s;
@@ -220,7 +224,7 @@ export function ReplayView({
         style={{ touchAction: 'none' }}
         data-view-frame
         data-mode={mode}
-        data-ready={(live && ready && !busy) || undefined}
+        data-ready={(live && ready && !busy && !travelling) || undefined}
       >
         <p id={`${uid}-desc`} className="sr-only">
           {description}
@@ -237,7 +241,7 @@ export function ReplayView({
               onReady={() => setReady(true)}
               onBusy={setBusy}
               onLost={fallBack}
-              prefetch={prefetch}
+              walk={walk}
               onMount={onSceneMount}
             />
           </CanvasErrorBoundary>
@@ -246,7 +250,7 @@ export function ReplayView({
 
         <HeadingRibbon look={look} hfov={hfov} />
 
-        {(mode === 'live' || mode === 'static') && (
+        {!travelling && (mode === 'live' || mode === 'static') && (
           <div className="absolute bottom-3 z-10 flex gap-2" style={{ left: 12 }} dir="ltr" data-view-controls>
             <ViewButton label="הגדלה" onClick={() => view.zoom(0.8)} disabled={!live}>
               <Plus className="size-5" aria-hidden />
