@@ -328,12 +328,12 @@ alb *= 0.93 + 0.14 * macro2.r;
 // Metre-scale mottling — worn and crusted patches, finer and coarser grain — that still reads where the
 // scans' own detail has blurred into its average, a few tens of metres out.
 float mottle = texture2D(uMacro, rot2(wuv, 1.1) / 4.1 + 0.21).g;
-alb *= 0.9 + 0.2 * mottle;
+alb *= 0.85 + 0.28 * mottle;
 // Graded towards the local soil (the scans are from other deserts): less orange, a little greyer.
 float aLum = dot(alb, vec3(0.2126, 0.7152, 0.0722));
 alb = mix(alb, aLum * vec3(1.2, 1.0, 0.83), 0.68) * 0.8;
 // More local contrast than the scans carry: under the storm's flat light their pebbles and crusts would wash out.
-alb *= pow(max(dot(alb, vec3(0.2126, 0.7152, 0.0722)), 1e-3) / 0.15, 0.3);
+alb *= pow(max(dot(alb, vec3(0.2126, 0.7152, 0.0722)), 1e-3) / 0.15, 0.42);
 diffuseColor.rgb *= alb;
 `,
       )
@@ -373,7 +373,7 @@ float roughnessFactor = clamp(dot(rgh, w) * 1.04 + 0.02, 0.55, 1.0);
 `,
       );
   };
-  m.customProgramCacheKey = () => 'dr-ground-v2';
+  m.customProgramCacheKey = () => 'dr-ground-v3';
   return m;
 }
 

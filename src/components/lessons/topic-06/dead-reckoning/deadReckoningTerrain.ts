@@ -200,7 +200,7 @@ function wadiCut(d: number, s: number, side: number): { depth: number; bed: numb
   const shoulder = 0.5 * (1 - steep) * (1 - 0.5 * nearX);
   // Bank top: wanders in and out, recedes where a rill has cut a notch into it.
   const notch = rill.amp * Math.pow(Math.max(0, 1 - rill.axis / 1.9), 1.4);
-  const top = WADI_WIDTH_M / 2 + 1.5 * noise(s / 13, 3.7 + so) + 0.6 * noise(s / 3.6, 8.1 + so) + 0.25 * noise(s / 1.1, 4.4 + so) + 1.5 * notch;
+  const top = WADI_WIDTH_M / 2 + 1.5 * noise(s / 13, 3.7 + so) + 0.6 * noise(s / 3.6, 8.1 + so) + 0.25 * noise(s / 1.1, 4.4 + so) + 2.4 * notch;
   if (d >= top) {
     // A crumbling lip, the shoulder, the first metres of the plain sloping into the channel, and the rills.
     const lip = Math.max(0, 1 - (d - top) / 2.2);
@@ -219,7 +219,10 @@ function wadiCut(d: number, s: number, side: number): { depth: number; bed: numb
     return { depth: floor - 0.08 * (1 - q) + 0.1 * noise(s / 3.1, d / 1.6) * (1 - q * q), bed: 1, bank: 0, foot: smoothstep(0.75, 1, q) * 0.5, rill: 0 };
   }
   const t = (d - bed) / (top - bed);
-  const k = 1.4 + 3.0 * steep * (1 - 0.45 * nearX) + 0.9 * nearX;
+  // At the known crossing erosion has opened a broad ramp. The former high
+  // power compressed most of the rise into a continuous cut near the lip;
+  // retain cut faces elsewhere, but spread the same 1.8m rise here.
+  const k = 1.4 + 3.0 * steep * (1 - nearX) + 0.25 * nearX;
   // A slump bench in some reaches: the lower half of the face pushed out, the upper half cut back.
   const bench = smoothstep(0.15, 0.45, noise(s / 15, 9.9 + so)) * 0.11 * Math.sin(2 * Math.PI * t);
   let z = Math.min(1, Math.max(0, Math.pow(t, k) - bench));

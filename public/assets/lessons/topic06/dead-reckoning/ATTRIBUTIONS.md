@@ -43,3 +43,25 @@ The terrain (height field, wadi, roads, drifts), the scatter of rocks and bushes
 image is the lesson's own (`../compass/compass-body.webp`, `scripts/blender/build_compass_body.py`).
 No runtime network access: every file is served from this folder, so the static export and the
 SCORM package carry them.
+
+## Weathered stone silhouettes (2026-11-01)
+
+The live scene now loads `rounded-rocks.glb`, built by
+`scripts/blender/build_dead_reckoning_rounded_rocks.py` from
+[Sand Rocks Small 01](https://polyhaven.com/a/sand_rocks_small_01), by Rob Tuytel
+and Rico Cilliers, [CC0](https://polyhaven.com/license).
+
+Ten exposed, naturally weathered stone islands are extracted from the scan by
+cutting its connecting sandy base at 6.5 cm. The buried cut surfaces are capped;
+the original exposed UVs and scan textures are retained. Each piece is reduced
+to about 260 triangles (small stones), 850 (medium rocks) or 2,600 (the boulder), with shared 512px
+textures. Their names, radius/height bounds and base origins follow the existing
+scatter contract. `rock07_a` from the original `rocks.glb` remains
+as an occasional more fractured piece. The original asset is retained as a build
+input; the browser downloads only the replacement asset.
+
+Rebuild (the source glTF and its textures are downloaded once into the cache):
+
+```text
+blender --background --factory-startup --python scripts/blender/build_dead_reckoning_rounded_rocks.py -- --src <download-cache> --out public/assets/lessons/topic06/dead-reckoning
+```

@@ -1,0 +1,9 @@
+{
+  "checks": 18,
+  "firstFrameMs": 4175,
+  "idle": {
+    "fps": 60,
+    "worstFrameMs": 17
+  },
+  "errors": []
+}

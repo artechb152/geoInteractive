@@ -61,7 +61,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const DIR = `${BASE}/assets/lessons/topic06/dead-reckoning`;
 const LAYERS = ['ground', 'stony', 'bank', 'drift'] as const;
 const TEXTURE_URLS = [...LAYERS.map((l) => `${DIR}/ground/${l}_albedo.webp`), ...LAYERS.map((l) => `${DIR}/ground/${l}_normal.webp`), `${DIR}/ground/roughness.webp`];
-const ROCKS_URL = `${DIR}/rocks.glb`;
+const ROCKS_URL = `${DIR}/rounded-rocks.glb`;
 const SHRUBS_URL = `${DIR}/shrubs.glb`;
 
 /** The frame's background while the canvas has nothing to show (the storm's own haze colour). */
