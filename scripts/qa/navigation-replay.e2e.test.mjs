@@ -28,6 +28,8 @@ const watch = (p) => {
 
 async function open(viewport = { width: 1440, height: 1122 }, opts = {}) {
   const ctx = await browser.newContext({ viewport, ...opts });
+  // This suite exercises independent navigation; the walkthrough is tested separately.
+  await ctx.addInitScript(() => localStorage.setItem('geo9900:topic06:position-walkthrough:v1', 'skipped'));
   const p = await ctx.newPage();
   watch(p);
   await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 240000 });

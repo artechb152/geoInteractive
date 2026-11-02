@@ -7,6 +7,8 @@ await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1122 }, reducedMotion: 'reduce' });
+  // First-time guidance has its own action-driven walkthrough suite.
+  await page.addInitScript(() => localStorage.setItem('geo9900:topic06:position-walkthrough:v1', 'skipped'));
   const errors = [];
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(`${process.env.QA_BASE ?? 'http://localhost:3000'}/lessons/topic-06/#scene-tips`, { waitUntil: 'domcontentloaded', timeout: 180000 });

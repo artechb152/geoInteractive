@@ -35,6 +35,7 @@ import { SIGNS, STAND_IN_M, STOP_SEES, segmentOf, signAnchor, type SignId, type 
 import { FIX_NAME, STOPS, STOP_LABEL, TARGET_NAME, WALK_TO, arrivalText, debriefHeadline, msgText, round10, verdictText, visitLine } from './replayScenario';
 import { along, bearingW, distW, type W2 } from './replayWorld';
 import { heightAt } from './replayTerrain';
+import { ReplayWalkthroughCoach, ReplayWalkthroughIntro, WALKTHROUGH_STORAGE_KEY } from './ReplayWalkthrough';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 /** Width of the 3D panel at the reference width; the map takes the rest. */
@@ -57,7 +58,7 @@ export function NavigationReplayScreen() {
       <header className="mb-2 text-center">
         <h3 className="font-display text-3xl font-extrabold leading-tight tracking-tight text-black">במהלך הניווט: מה צריך לבדוק?</h3>
         <p className="mt-1 text-base leading-snug text-black">
-          הגיעו מחציית הנחל לחציית דרך העפר. התחילו בבדיקה מודרכת: בחרו סימן בשטח ומצאו אותו במפה. בהמשך, בכל תחנה החליטו: ממשיכים, או עוצרים לבדוק את המיקום.
+          הגיעו מחציית הנחל לחציית דרך העפר. התחילו בהתאמת שני סימנים: כל סימן גם בשטח וגם במפה. בהמשך, בכל תחנה החליטו: ממשיכים, או עוצרים לבדוק את המיקום.
         </p>
       </header>
       <NavigationReplayActivity />
@@ -88,6 +89,8 @@ export function NavigationReplayActivity() {
   const promptRef = useRef<HTMLHeadingElement>(null);
   const activityRef = useRef<HTMLDivElement>(null);
   const advanceFocus = useRef(false);
+  const [guideMode, setGuideMode] = useState<'waiting' | 'intro' | 'active' | 'off'>('waiting');
+  const [guideNote, setGuideNote] = useState('');
 
   const reviewing = run.review !== null;
   const shownIndex = reviewing ? run.review! : run.visits.length - 1;
@@ -96,6 +99,47 @@ export function NavigationReplayActivity() {
   const text = STOPS[shown.stop];
   const live = viewMode === 'live';
   const done = run.phase === 'done';
+  const guideActive = guideMode === 'active' && cur.stop === 'stream' && !reviewing;
+
+  // First-time help waits until its screen is visible, so it does not interrupt
+  // the planning activity above. Storage failure only makes the help reappear.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(WALKTHROUGH_STORAGE_KEY)) { setGuideMode('off'); return; }
+    } catch { /* the guided exercise also works without browser storage */ }
+    const el = activityRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+        setGuideMode('intro');
+        observer.disconnect();
+      }
+    }, { threshold: 0.4, rootMargin: '-80px 0px 0px 0px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const rememberGuide = (value: 'complete' | 'skipped') => {
+    try { localStorage.setItem(WALKTHROUGH_STORAGE_KEY, value); } catch { /* optional persistence */ }
+  };
+  useEffect(() => {
+    if (guideActive && cur.fix) rememberGuide('complete');
+  }, [guideActive, cur.fix]);
+  const skipGuide = () => {
+    rememberGuide('skipped');
+    advanceFocus.current = true;
+    setGuideMode('off');
+    setGuideNote('');
+  };
+  const startGuide = () => {
+    walk.cancel();
+    dispatch({ type: 'reset' });
+    setGuideNote('');
+    setHintOn(false);
+    setPicked({});
+    advanceFocus.current = true;
+    setGuideMode('active');
+  };
 
   // dev / QA hooks: the look, and the run
   useEffect(() => {
@@ -144,6 +188,9 @@ export function NavigationReplayActivity() {
   const reset = () => {
     walk.cancel();
     dispatch({ type: 'reset' });
+    setGuideNote('');
+    setPicked({});
+    setHintOn(false);
     setAnnounce('הפעילות התחילה מחדש: חציית הנחל.');
   };
 
@@ -166,16 +213,20 @@ export function NavigationReplayActivity() {
 
   // A list choice replaces its own control. Keep keyboard focus on the next
   // useful action; direct terrain/map clicks keep their existing focus.
-  useEffect(() => {
+  const focusNextAction = useCallback(() => {
     if (!advanceFocus.current) return;
-    advanceFocus.current = false;
     const selector = task.target === 'map' ? '[data-list="map"]'
       : task.target === 'view' ? '[data-list="view"]'
       : task.target === 'distance' ? '[data-action="distance"]'
       : task.target === 'commit' ? '[data-action="commit"]'
       : '[data-action="next"]';
-    activityRef.current?.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
-  }, [run, task.target]);
+    const control = activityRef.current?.querySelector<HTMLElement>(selector);
+    if (control) {
+      advanceFocus.current = false;
+      control.focus({ preventScroll: true });
+    }
+  }, [task.target]);
+  useEffect(focusNextAction, [run, guideMode, focusNextAction]);
 
   // the guided opening turns the view to its second sign once the first is matched
   useEffect(() => {
@@ -189,12 +240,22 @@ export function NavigationReplayActivity() {
   const onViewPick = useCallback(
     (p: ViewPick | null) => {
       const sign = p ? signFromView(p) : null;
+      if (guideActive && sign !== guidedNext) {
+        setGuideNote(`בהדרכה בוחרים עכשיו את ${guidedNext ? SIGNS[guidedNext].the : 'הסימן המסומן'}. לחצו על הסימון הכתום בתלת־ממד, או בחרו אותו מהרשימה למטה.`);
+        return;
+      }
+      setGuideNote('');
       if (sign && p?.hit) setPicked((m) => ({ ...m, [sign]: { x: p.hit!.x, z: p.hit!.z } }));
       dispatch({ type: 'pick-view', sign, from: 'view' });
     },
-    [dispatch],
+    [dispatch, guideActive, guidedNext],
   );
   const onListPick = (sign: SignId) => {
+    if (guideActive && sign !== guidedNext) {
+      setGuideNote(`כעת בחרו מהרשימה את ${guidedNext ? SIGNS[guidedNext].the : 'הסימן המסומן'}. נבצע יחד שתי התאמות, כל אחת בשטח ובמפה.`);
+      return;
+    }
+    setGuideNote('');
     advanceFocus.current = true;
     setPicked((m) => {
       const n = { ...m };
@@ -252,12 +313,21 @@ export function NavigationReplayActivity() {
       data-phase={run.phase}
       data-review={reviewing || undefined}
       data-travel={walkPhase}
+      data-walkthrough={guideMode}
     >
       <h4 id={`${uid}-title`} className="sr-only">
         במהלך הניווט: מה צריך לבדוק?
       </h4>
-      <RouteRow run={run} onReview={(i) => dispatch({ type: 'review', index: i })} onReset={reset} />
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1"><RouteRow run={run} onReview={(i) => dispatch({ type: 'review', index: i })} onReset={reset} /></div>
+        <button type="button" className="btn-ghost h-10 shrink-0 gap-2 px-3 text-base" onClick={() => setGuideMode('intro')} data-guide-replay>
+          <Lightbulb className="size-4" aria-hidden />איך מאמתים מיקום?
+        </button>
+      </div>
 
+      {guideMode === 'intro' && <ReplayWalkthroughIntro onStart={startGuide} onSkip={skipGuide} />}
+
+      {guideActive ? <ReplayWalkthroughCoach check={cur.check} fixed={!!cur.fix} note={guideNote} onSkip={skipGuide} /> : (
         <div className="mt-3 flex min-h-[84px] items-center gap-3 rounded-xl border border-brand/45 bg-bg-accent p-3" role="status" aria-live="polite" aria-atomic="true" data-next-task data-target={task.target}>
           <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-brand-dark bg-brand-dark text-bg-elevated">
             {task.target === 'distance' || task.target === 'walking' ? <Footprints className="size-5" /> : task.target === 'commit' || task.target === 'fixed' ? <Check className="size-5" /> : <MapPin className="size-5" />}
@@ -267,6 +337,7 @@ export function NavigationReplayActivity() {
             <p className="mt-1 text-base leading-relaxed text-black">{task.detail}</p>
           </div>
         </div>
+      )}
 
       {/* the field (start / right) and the planning map (end / left) */}
       <div className="mt-2 grid gap-4" style={{ gridTemplateColumns: `${VIEW_W}px minmax(0, 1fr)`, height: PANEL_H }}>
@@ -281,13 +352,13 @@ export function NavigationReplayActivity() {
             reduce={reduce}
             walk={walk}
             onMode={setViewMode}
-            pickPrompt={check && !check.pending ? (task.target !== 'view' ? 'אפשר להוסיף סימן נוסף בלחיצה בשטח' : guidedNext ? `לחצו על ${SIGNS[guidedNext].the}` : 'לחצו על סימן שאתם מזהים גם במפה') : null}
+            pickPrompt={check && !check.pending && (!guideActive || guidedNext) ? (task.target !== 'view' ? 'אפשר להוסיף סימן נוסף בלחיצה בשטח' : guidedNext ? `לחצו על ${SIGNS[guidedNext].the}` : 'לחצו על סימן שאתם מזהים גם במפה') : null}
             onPick={onViewPick}
             markers={markers}
-            className={cn('h-full', task?.target === 'view' && 'ring-2 ring-accent')}
+            className={cn('h-full', task.target === 'view' && 'ring-2 ring-accent', guideActive && check?.pending && 'opacity-60')}
           />
         )}
-        <MapPanel know={knowShown} fixes={fixes} done={done} pending={check?.pending ?? null}>
+        <MapPanel know={knowShown} fixes={fixes} done={done} pending={check?.pending ?? null} dimmed={guideActive && task.target === 'view'}>
           <ReplayMap
             know={knowShown}
             fixes={fixes}
@@ -305,7 +376,7 @@ export function NavigationReplayActivity() {
       </div>
 
       <div className="mt-3 border-t border-border/80 pt-3" data-replay-footer>
-        <div style={{ minHeight: DECISION_H }} data-decision={reviewing ? 'review' : run.phase}>
+        <div style={{ minHeight: guideActive ? 144 : DECISION_H }} data-decision={reviewing ? 'review' : run.phase}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${shownIndex}-${run.phase}-${shown.fix ? 'f' : ''}-${reviewing ? 'r' : ''}`}
@@ -326,17 +397,19 @@ export function NavigationReplayActivity() {
                   check={check}
                   promptRef={promptRef}
                   live={live}
+                  walkthrough={guideActive}
+                  onReady={focusNextAction}
                   hintOn={hintOn}
                   onHint={() => setHintOn(true)}
                   onListView={onListPick}
-                  onListMap={(sign) => { advanceFocus.current = true; dispatch({ type: 'pick-map', sign }); }}
+                  onListMap={(sign) => { setGuideNote(''); advanceFocus.current = true; dispatch({ type: 'pick-map', sign }); }}
                   onDistance={() => { advanceFocus.current = true; dispatch({ type: 'add-distance' }); }}
                   onCommit={() => dispatch({ type: 'commit' })}
                   onCancel={() => dispatch({ type: 'cancel-check' })}
                   onContinue={() => dispatch({ type: 'continue' })}
                 />
               ) : cur.fix ? (
-                <FixedBar run={run} promptRef={promptRef} onContinue={() => dispatch({ type: 'continue' })} />
+                <FixedBar run={run} promptRef={promptRef} onContinue={() => { if (guideActive) setGuideMode('off'); dispatch({ type: 'continue' }); }} />
               ) : (
                 <DecideBar run={run} promptRef={promptRef} onCheck={() => dispatch({ type: 'check' })} onContinue={() => dispatch({ type: 'continue' })} />
               )}
@@ -365,10 +438,10 @@ function mapDescription(run: RunState, v: Visit, k: Knowledge, done: boolean): s
 
 // ───────────────────────────────────────────── the map panel and its key
 
-function MapPanel({ know, fixes, done, pending, children }: { know: Knowledge; fixes: MapFix[]; done: boolean; pending: SignId | null; children: ReactNode }) {
+function MapPanel({ know, fixes, done, pending, dimmed, children }: { know: Knowledge; fixes: MapFix[]; done: boolean; pending: SignId | null; dimmed: boolean; children: ReactNode }) {
   const latest = fixes[fixes.length - 1];
   return (
-    <div className={cn('flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-bg-elevated', pending && 'ring-2 ring-accent')} data-panel="map">
+    <div className={cn('flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-bg-elevated', pending && 'ring-2 ring-accent', dimmed && 'opacity-60')} data-panel="map">
       <div className="flex h-9 shrink-0 items-center justify-between gap-3 px-3.5">
         <h5 className="font-display text-lg font-bold leading-none text-black">{pending ? `מצאו במפה: ${signName(pending)}` : 'מפת התכנון'}</h5>
         {!pending && <span className="text-[13px] text-fg-muted">{done ? 'תחקיר: מה קרה בפועל' : 'מה ידוע לנווט'}</span>}
@@ -668,6 +741,8 @@ function CheckBar({
   check,
   promptRef,
   live,
+  walkthrough,
+  onReady,
   hintOn,
   onHint,
   onListView,
@@ -679,6 +754,8 @@ function CheckBar({
 }: BarProps & {
   check: CheckState;
   live: boolean;
+  walkthrough: boolean;
+  onReady: () => void;
   hintOn: boolean;
   onHint: () => void;
   onListView: (s: SignId) => void;
@@ -699,7 +776,8 @@ function CheckBar({
   const feedback = check.verdict ? verdictText(check.verdict, FIX_NAME[v.stop], k) : check.msg ? { ...msgText(check.msg), lead: null as string | null, body: msgText(check.msg).text } : null;
   const canGoOn = nextStop(run) !== null;
   useEffect(() => {
-    if (run.visits.length > 1) promptRef.current?.focus({ preventScroll: true });
+    onReady();
+    if (run.visits.length > 1 && !walkthrough) promptRef.current?.focus({ preventScroll: true });
     // Focus after this bar mounts, once the previous phase's fade has ended.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -715,12 +793,12 @@ function CheckBar({
             <SignSelect label="בחירת הסימן במפה מרשימה" onPick={onListMap} data="map" />
           ) : task.target === 'view' ? (
             <SignSelect label="בחירת סימן בשטח מרשימה" onPick={onListView} data="view" exclude={check.matched} />
-          ) : (
+          ) : !walkthrough ? (
             <details className="mt-2 text-base text-black">
               <summary className="cursor-pointer py-2">הוספת סימן נוסף לבדיקה (לבחירה)</summary>
               <SignSelect label="בחירת סימן בשטח מרשימה" onPick={onListView} data="view" exclude={check.matched} />
             </details>
-          )}
+          ) : null}
           <div role="status" aria-live="polite" aria-atomic="true" className="min-h-[1.5rem]" data-check-feedback>
             {feedback && <Feedback tone={feedback.tone === 'info' ? 'info' : feedback.tone} lead={feedback.lead} body={feedback.body} data={check.verdict ? check.verdict.kind : check.msg?.kind} />}
           </div>
