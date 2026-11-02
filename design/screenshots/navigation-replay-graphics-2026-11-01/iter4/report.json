@@ -1,0 +1,65 @@
+{
+  "moments": {
+    "depart": {
+      "changeMs": 17286,
+      "dragFps": 61,
+      "stats": {
+        "station": "depart",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2978,
+        "shrubsFar": 18037,
+        "cushions": 2597,
+        "grass": 4888,
+        "stones": 10066,
+        "rocks": 8609,
+        "eyeY": 323.7729285743464
+      }
+    },
+    "enroute": {
+      "changeMs": 1961,
+      "dragFps": 59,
+      "stats": {
+        "station": "enroute",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2989,
+        "shrubsFar": 17984,
+        "cushions": 2587,
+        "grass": 4917,
+        "stones": 7732,
+        "rocks": 8775,
+        "eyeY": 339.41779482862495
+      }
+    },
+    "saddle": {
+      "changeMs": 1441,
+      "dragFps": 60,
+      "stats": {
+        "station": "saddle",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2296,
+        "shrubsFar": 17746,
+        "cushions": 2628,
+        "grass": 6843,
+        "stones": 2323,
+        "rocks": 8729,
+        "eyeY": 417.32322551795573
+      }
+    },
+    "after": {
+      "changeMs": 1460,
+      "dragFps": 61,
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    }
+  },
+  "errors": []
+}

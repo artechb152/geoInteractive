@@ -153,7 +153,7 @@ export function PlanningLabModel({ view, reduce, modelProps, className, style }:
           <span className="rounded-lg bg-pine/80 px-2.5 py-1 font-display text-sm font-semibold text-paper-bright">גררו לסיבוב · גלגלת להתקרבות</span>
           {ready && anyHidden && (
             <span className="rounded-lg bg-pine/80 px-2.5 py-1 font-display text-sm font-semibold text-paper-bright" data-hidden-note>
-              עיגול מקווקו: נקודה שמאחורי הרכס · עורכים אותה במפה
+              עיגול מקווקו: נקודה מוסתרת על ידי השטח · עורכים אותה במפה
             </span>
           )}
         </div>

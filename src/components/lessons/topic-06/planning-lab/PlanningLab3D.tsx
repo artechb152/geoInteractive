@@ -1,20 +1,19 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, Line, OrbitControls, useProgress, useTexture } from '@react-three/drei';
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
+import { Html, Line, OrbitControls, useGLTF, useProgress, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
-import { CROWN, clumpGeometry, crownGeometry, useInstances, wallMaterial } from '../terrain-nav/TerrainNav3D';
-import { createGroundMaterial } from '../terrain-nav/terrainNavMaterials';
-import { createSkyMaterial } from '../locationCheckMaterials';
-import { WATER } from '../terrain-nav/TerrainNavMap';
 import type { ViewStore } from '../terrain-nav/terrainNavViewStore';
 import { DEST, START, STREAM, WATER_TANK, WORLD, type Point } from './planningLabWorld';
-import { behindGround, boulders, buildings, crownShape, heightAt, insideSheet, shrubs, terrainMeshArrays, trees, waterCourses, type Tree } from './planningLabTerrain';
+import { bedStones, behindGround, boulders, buildings, crownShape, heightAt, insideSheet, shrubs, terrainMeshArrays, trees, understory, waterCourses, type Boulder, type Shrub, type Tree } from './planningLabTerrain';
 import { featureOf, legsOf, standsOn, type FeatureId } from './planningLabPlan';
 import { editable, type Action, type RouteNode, type Selection, type Tool } from './planningLabState';
-import { FEATURE_INDEX, GROUND_FRAME, TONE_RECT, buildFeatureIdTexture, buildGroundMasks, buildToneTexture, createHighlightMask } from './planningLabMaterials';
+import { FEATURE_INDEX, buildAnalysisTexture, buildFeatureIdTexture, buildGroundAreas, buildGroundLines, buildShadeTexture, buildToneTexture, createHighlightMask } from './planningLabMaterials';
+import { LAYERS, createLabGroundMaterial, stripToArray } from './planningLabGround';
+import { crownGeometry, foliageMaterial, liftShade, rockMaterial, shrubGeometry, trunkGeometry } from './planningLabCover';
+import { concreteMaterial, skyMaterial, stoneWallMaterial, tileRoofMaterial, waterMaterial } from './planningLabScenery';
 import { WORLD3D, fromWorld3, toWorld3 } from './planningLabView';
 
 /**
@@ -22,12 +21,22 @@ import { WORLD3D, fromWorld3, toWorld3 } from './planningLabView';
  * planningLabTerrain — the same height grid as the map's contours:
  *
  *   terrain  the 5 m sheet grid with its SW–NE triangles, unexaggerated, and an
- *            apron of the same generator to the hazy horizon; coloured by the
- *            shared terrain-nav ground shader (grass, dry grass, limestone and
- *            forest-floor photo textures blended by slope and noise, roads,
- *            beds and the rocks painted from the map's own lines).
+ *            apron of the same generator to the hazy horizon (normals evened
+ *            out over the apron's long cells); shaded by this lab's own ground
+ *            (planningLabGround): where each kind of ground lies is read from the
+ *            land — slope and aspect, relief, the sky each point sees, drainage
+ *            and wetness (planningLabAnalysis), the map's own roads, beds,
+ *            grove, woodland and orchard — and eight scanned CC0 layers at their
+ *            true size give the surface; the contact shade of all the cover.
  *   cover    every tree, shrub and boulder of the shared lists as instances on
- *            heightAt(); the building and the water tank at A.
+ *            heightAt() — umbrella pines whose crowns meet over the grove, low
+ *            oak domes, thickets of two or three bushes, tapered trunks
+ *            (planningLabCover); scanned limestone rocks; model-only cover below
+ *            the map's threshold: the grove's understory, the banks' shrubs,
+ *            stones in the beds; the stone house, its annex and the water tank
+ *            at A, the stream's water (planningLabScenery).
+ *   air      a sky photograph, a low west-north-west sun with soft
+ *            shadows, and a thin haze of the sky's own horizon colour.
  *   plan     the learner's route draped on the ground (sampled every 4 m), the
  *            straight line, and handles for every route point.
  *
@@ -35,21 +44,22 @@ import { WORLD3D, fromWorld3, toWorld3 } from './planningLabView';
  * heightAt() — the drawn surface — and the orbit is held while it moves. A
  * click on the ground (not a drag) is handed up as a ground point; the tool
  * decides what it does. Frames render on demand; the shadow map is drawn once
- * (the world is static) and dragging only moves the route.
+ * (the world is static) and dragging only moves the route. The canvas is
+ * supersampled within a pixel budget (Resolution), stepping down only while a
+ * slow GPU moves the view.
  */
 
 const S = WORLD3D.metresPerUnit;
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const TEX = `${BASE}/assets/lessons/topic06/location-check/textures`;
-const TEXTURE_URLS = {
-  grassD: `${TEX}/grass_diff.jpg`,
-  grassN: `${TEX}/grass_nor.jpg`,
-  dryD: `${TEX}/dry_diff.jpg`,
-  dryN: `${TEX}/dry_nor.jpg`,
-  rockD: `${TEX}/rock_diff.jpg`,
-  rockN: `${TEX}/rock_nor.jpg`,
-  forestD: `${TEX}/forest_diff.jpg`,
-};
+/**
+ * The lab's own ground scans, sky and rocks (CC0, Poly Haven; scripts/build-planning-lab-assets.mjs — the
+ * sky and the rocks copies of the navigation replay's, so a change to either model's files leaves the other as it is).
+ */
+const DIR = `${BASE}/assets/lessons/topic06/planning-lab`;
+/** The ground's eight scanned layers, each a strip of square layers (albedo; normal X / Y + displacement). */
+const STRIP_URLS = [`${DIR}/terrain/albedo.webp`, `${DIR}/terrain/normal.webp`];
+const SKY_URL = `${DIR}/sky.webp`;
+const ROCKS_URL = `${DIR}/rocks.glb`;
 
 const SHEET_CENTER = { E: 545, N: 610 };
 /**
@@ -59,8 +69,28 @@ const SHEET_CENTER = { E: 545, N: 610 };
 export const HOME_VIEW = { targetE: 615, targetN: 650, targetHeightM: 400, distanceM: 1500, polarDeg: 58, azimuthDeg: 5 } as const;
 
 const ACCENT = new THREE.Color('#D97E2B');
-/** Crown tones: terrain-nav's oaks and olives; the pines the grey to fresh green of Aleppo pine, so a dense grove reads as many trees from afar. */
-const CROWN_HERE: typeof CROWN = { ...CROWN, pine: [new THREE.Color('#3D5634'), new THREE.Color('#68844A')] };
+/** The haze at the horizon (sRGB #C3CDD3): the sky photograph's own colour there, and the fog's. */
+const HAZE = new THREE.Color('#C3CDD3');
+/** What the stream mirrors at a glancing angle: the sky a little above the horizon (linear, before tone mapping). */
+const SKY_REFLECTION = new THREE.Color('#B4C6D8');
+/**
+ * Crown tones, dark to light: Aleppo pine a grey, slightly bluish green, so the grove reads as a dark
+ * wood of many crowns from afar; kermes oak the deep green of the hills; olive silver-grey.
+ */
+const CROWN_HERE: Record<Tree['kind'], [THREE.Color, THREE.Color]> = {
+  pine: [new THREE.Color('#33452F'), new THREE.Color('#58704A')],
+  oak: [new THREE.Color('#2F3E22'), new THREE.Color('#4E5E32')],
+  olive: [new THREE.Color('#646C52'), new THREE.Color('#8A9172')],
+};
+/** Bark: Aleppo pine grey-brown with a red tinge, oak darker, olive grey. */
+const BARK: Record<Tree['kind'], string> = { pine: '#6A5747', oak: '#544A3E', olive: '#6E6656' };
+/**
+ * The maquis, by its plants: lentisk and phillyrea dark evergreen, calicotome olive, rock-rose grey-green,
+ * thorny burnet low and grey-brown in the dry season.
+ */
+const MAQUIS = ['#35422A', '#435033', '#59603A', '#6A6F52', '#756C55'].map((c) => new THREE.Color(c));
+/** The understory and the banks: greener, fresher growth (lentisk, buckthorn; oleander, bramble). */
+const LUSH = ['#33432A', '#3D4E2C', '#4A5C33', '#57683A', '#5E6640'].map((c) => new THREE.Color(c));
 const UP = new THREE.Vector3(0, 1, 0);
 const ORANGE = '#D97E2B';
 const LIFT_M = 2.4;
@@ -85,6 +115,27 @@ export type Lab3DProps = {
   /** CSS scale of the model on screen (the lesson fit); orbit speeds are divided by it. */
   pointerScale?: number;
 };
+
+/** Fills an instanced mesh; refilled when `deps` change (the highlight). */
+function useInstances(ref: React.RefObject<THREE.InstancedMesh | null>, count: number, fill: (i: number, m: THREE.Matrix4, c: THREE.Color) => void, deps: readonly unknown[]) {
+  const invalidate = useThree((s) => s.invalidate);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const m = new THREE.Matrix4();
+    const c = new THREE.Color();
+    for (let i = 0; i < count; i++) {
+      fill(i, m, c);
+      mesh.setMatrixAt(i, m);
+      mesh.setColorAt(i, c);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    invalidate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref, count, invalidate, ...deps]);
+}
 
 // ---------------------------------------------------------------- picking
 
@@ -148,6 +199,8 @@ function Picker({ onGround }: { onGround: (p: Point) => void }) {
 const tmpV = new THREE.Vector3();
 
 function CameraRig({ view, reduce }: { view: ViewStore; reduce: boolean }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
@@ -163,7 +216,39 @@ function CameraRig({ view, reduce }: { view: ViewStore; reduce: boolean }) {
   useEffect(() => {
     if (process.env.NODE_ENV === 'production') return;
     type GP = { E: number; N: number; h: number };
-    const w = window as unknown as { __plProbe?: (E: number, N: number, h?: number) => [number, number, boolean]; __plCamera?: (eye: GP, at: GP) => void };
+    const w = window as unknown as { __plProbe?: (E: number, N: number, h?: number) => [number, number, boolean]; __plCamera?: (eye: GP, at: GP) => void; __plRender?: () => { calls: number; triangles: number; textures: number; geometries: number } };
+    w.__plRender = () => {
+      // instanced cover: how many of each shape, at how many triangles each
+      const cover: Record<string, { n: number; tris: number }> = {};
+      scene.traverse((o) => {
+        const im = o as THREE.InstancedMesh;
+        if (!im.isInstancedMesh) return;
+        const key = (im.material as THREE.Material).customProgramCacheKey?.() ?? im.uuid;
+        const tris = (im.geometry.index ? im.geometry.index.count : im.geometry.getAttribute('position').count) / 3;
+        const c = (cover[key] ??= { n: 0, tris: 0 });
+        c.n += im.count;
+        c.tris += im.count * tris;
+      });
+      const buf = gl.getDrawingBufferSize(new THREE.Vector2());
+      return { calls: gl.info.render.calls, triangles: gl.info.render.triangles, textures: gl.info.memory.textures, geometries: gl.info.memory.geometries, pixelRatio: gl.getPixelRatio(), buffer: [buf.x, buf.y], cover };
+    };
+    // GPU cost of one frame: n frames drawn back to back, finished by a pixel read — at the canvas'
+    // own pixel ratio, or at `dpr` for the measurement (restored after it)
+    (w as unknown as { __plBench?: (n: number, dpr?: number) => number }).__plBench = (n, dpr) => {
+      const own = gl.getPixelRatio();
+      if (dpr) gl.setPixelRatio(dpr);
+      const px = new Uint8Array(4);
+      const ctx = gl.getContext();
+      gl.render(scene, camera);
+      ctx.readPixels(0, 0, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px);
+      const t = performance.now();
+      for (let k = 0; k < n; k++) gl.render(scene, camera);
+      ctx.readPixels(0, 0, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, px);
+      const ms = (performance.now() - t) / n;
+      if (dpr) gl.setPixelRatio(own);
+      invalidate();
+      return ms;
+    };
     const v = new THREE.Vector3();
     w.__plProbe = (E, N, h) => {
       v.set(...toWorld3(E, N, h ?? heightAt(E, N))).project(camera);
@@ -179,8 +264,9 @@ function CameraRig({ view, reduce }: { view: ViewStore; reduce: boolean }) {
     return () => {
       delete w.__plProbe;
       delete w.__plCamera;
+      delete w.__plRender;
     };
-  }, [camera, controls, invalidate, size.width, size.height]);
+  }, [camera, controls, gl, scene, invalidate, size.width, size.height]);
 
   const goal = (kind: 'home' | 'top' | 'focus', at?: Point) => {
     // straight down: the whole sheet, centred, with room for the end tags
@@ -239,68 +325,109 @@ function CameraRig({ view, reduce }: { view: ViewStore; reduce: boolean }) {
     const dir = camera.getWorldDirection(tmpV);
     const top = dir.y < -0.985;
     view.publishLive(top ? 0 : (Math.atan2(dir.x, -dir.z) * 180) / Math.PI, top);
+    // dev-only: frames drawn so far (the QA checks the model rests when nothing moves)
+    if (process.env.NODE_ENV !== 'production') {
+      const w = window as unknown as { __plFrames?: number };
+      w.__plFrames = (w.__plFrames ?? 0) + 1;
+    }
   });
   return null;
 }
 
 // ---------------------------------------------------------------- terrain and water
 
-function Terrain({ highlights }: { highlights: readonly FeatureId[] }) {
+/**
+ * Vertex normals of the terrain grid by central differences, each over about the same ground distance
+ * along both axes: on the sheet ±5 m; on the apron, where the rows lie up to hundreds of metres apart
+ * while the columns stay 5 m apart, the short axis is differenced over as long a stretch as the long one.
+ * (Averaged triangle normals there would shade the 5 m relief into long streaks across the far land.)
+ */
+function gridNormals(positions: Float32Array, nx: number, ny: number, xs: readonly number[], ns: readonly number[]) {
+  const out = new Float32Array(nx * ny * 3);
+  const y = (i: number, j: number) => positions[(j * nx + i) * 3 + 1] * S;
+  const span = (a: readonly number[], k: number) => (a[Math.min(a.length - 1, k + 1)] - a[Math.max(0, k - 1)]) / (k > 0 && k < a.length - 1 ? 2 : 1);
+  const n = new THREE.Vector3();
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const reach = Math.max(span(xs, i), span(ns, j));
+      let si = 1;
+      while (si < 64 && (xs[Math.min(nx - 1, i + si)] - xs[Math.max(0, i - si)]) / 2 < reach * 0.9) si++;
+      let sj = 1;
+      while (sj < 64 && (ns[Math.min(ny - 1, j + sj)] - ns[Math.max(0, j - sj)]) / 2 < reach * 0.9) sj++;
+      const i0 = Math.max(0, i - si);
+      const i1 = Math.min(nx - 1, i + si);
+      const j0 = Math.max(0, j - sj);
+      const j1 = Math.min(ny - 1, j + sj);
+      const dE = (y(i1, j) - y(i0, j)) / (xs[i1] - xs[i0]);
+      const dN = (y(i, j1) - y(i, j0)) / (ns[j1] - ns[j0]);
+      // three: x east, z south — the normal of h(E, N) is (−∂h/∂E, 1, +∂h/∂N)
+      n.set(-dE, 1, dN).normalize();
+      out.set([n.x, n.y, n.z], (j * nx + i) * 3);
+    }
+  }
+  return out;
+}
+
+type GroundSet = { albedo: THREE.DataArrayTexture; normal: THREE.DataArrayTexture; means: THREE.Vector3[] };
+
+function Terrain({ ground, highlights }: { ground: GroundSet; highlights: readonly FeatureId[] }) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
-  const tex = useTexture(TEXTURE_URLS);
   const geometry = useMemo(() => {
-    const { positions, index } = terrainMeshArrays(toWorld3);
+    const { positions, index, nx, ny, xs, ns } = terrainMeshArrays(toWorld3);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setIndex(new THREE.BufferAttribute(index, 1));
-    geo.computeVertexNormals();
+    geo.setAttribute('normal', new THREE.BufferAttribute(gridNormals(positions, nx, ny, xs, ns), 3));
     geo.computeBoundingSphere();
     return geo;
   }, []);
-  const masks = useMemo(buildGroundMasks, []);
+  const lines = useMemo(buildGroundLines, []);
+  const areas = useMemo(buildGroundAreas, []);
+  const analysis = useMemo(buildAnalysisTexture, []);
   const ids = useMemo(buildFeatureIdTexture, []);
   const tone = useMemo(buildToneTexture, []);
+  const shade = useMemo(buildShadeTexture, []);
   const hl = useMemo(() => createHighlightMask(ids), [ids]);
-  const { material, uniforms } = useMemo(() => {
-    const aniso = gl.capabilities.getMaxAnisotropy();
-    for (const [key, t] of Object.entries(tex)) {
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.colorSpace = key.endsWith('D') ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-      t.anisotropy = aniso;
-      t.needsUpdate = true;
-    }
-    for (const m of Object.values(masks)) {
-      m.anisotropy = aniso;
-      m.needsUpdate = true;
-    }
-    return createGroundMaterial(tex, masks, ids, { ...GROUND_FRAME, refine: { tone, toneRect: TONE_RECT, hlMask: hl.texture } });
-  }, [tex, masks, ids, tone, hl, gl]);
+  const material = useMemo(() => {
+    lines.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy());
+    return createLabGroundMaterial(ground, { lines, areas, tone, analysis, shade, hlMask: hl.texture });
+  }, [ground, lines, areas, tone, analysis, shade, hl, gl]);
   useEffect(() => {
-    const v = highlights.map((h) => FEATURE_INDEX[h] ?? 0);
-    uniforms.uHl.value.set(v[0] ?? 0, v[1] ?? 0, v[2] ?? 0);
-    hl.update(v.slice(0, 3));
+    hl.update(highlights.slice(0, 3).map((h) => FEATURE_INDEX[h] ?? 0));
     invalidate();
-  }, [highlights, uniforms, hl, invalidate]);
+  }, [highlights, hl, invalidate]);
+  // the angle of one drawn pixel, for the shader's metres-per-pixel (fov and canvas size change with full screen)
+  const px = useMemo(() => new THREE.Vector2(), []);
+  useFrame(({ camera }) => {
+    const fov = (camera as THREE.PerspectiveCamera).fov;
+    gl.getDrawingBufferSize(px);
+    (material.userData.uniforms as { uPxAngle: { value: number } }).uPxAngle.value = (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2)) / Math.max(1, px.y);
+  });
   useEffect(
     () => () => {
       geometry.dispose();
-      Object.values(masks).forEach((m) => m.dispose());
+      lines.dispose();
+      areas.dispose();
+      analysis.dispose();
       ids.dispose();
       tone.dispose();
+      shade.dispose();
       hl.texture.dispose();
       material.dispose();
     },
-    [geometry, masks, ids, tone, hl, material],
+    [geometry, lines, areas, analysis, ids, tone, shade, hl, material],
   );
   return <mesh geometry={geometry} material={material} receiveShadow castShadow raycast={() => null} />;
 }
 
+/** The stream's water: a ribbon on its bed, its edges (aAcross 0 and 1) fading into the wet bank. */
 function Stream() {
   const geo = useMemo(() => {
     const pts = waterCourses().stream.pts;
     const half = STREAM.waterWidthM / 2;
     const pos: number[] = [];
+    const across: number[] = [];
     const idx: number[] = [];
     for (let k = 0; k < pts.length; k++) {
       const a = pts[Math.max(0, k - 1)];
@@ -311,6 +438,7 @@ function Stream() {
       const [E, N] = pts[k];
       const h = Math.max(heightAt(E, N), heightAt(E + nx * half, N + ny * half), heightAt(E - nx * half, N - ny * half)) + 0.2;
       pos.push(...toWorld3(E + nx * half, N + ny * half, h), ...toWorld3(E - nx * half, N - ny * half, h));
+      across.push(0, 1);
       if (k) {
         const o = (k - 1) * 2;
         idx.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
@@ -318,14 +446,12 @@ function Stream() {
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aAcross', new THREE.Float32BufferAttribute(across, 1));
     g.setIndex(idx);
     g.computeVertexNormals();
     return g;
   }, []);
-  const mat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: new THREE.Color(WATER.line).lerp(new THREE.Color(WATER.fill), 0.35), roughness: 0.2, metalness: 0.05, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
-    [],
-  );
+  const mat = useMemo(() => waterMaterial(SKY_REFLECTION), []);
   useEffect(
     () => () => {
       geo.dispose();
@@ -338,79 +464,30 @@ function Stream() {
 
 // ---------------------------------------------------------------- vegetation, rocks, the building
 
-/** Lifts a clump's baked self-shade (its vertex colours) to `floor`, so a crown keeps its round form without going black. */
-function liftShade<G extends THREE.BufferGeometry>(geo: G, floor: number): G {
-  const col = geo.getAttribute('color');
-  for (let i = 0; i < col.count; i++) for (let c = 0; c < 3; c++) col.setComponent(i, c, floor + (1 - floor) * col.getComponent(i, c));
-  col.needsUpdate = true;
-  return geo;
-}
-
-/**
- * Shading for the cover seen from near and far: with distance the albedo pales
- * a little toward the haze, as the air does to dark foliage; and small cover
- * (`shrinkM`, instances under `keepAboveM` across) shrinks into the ground
- * between those distances — from there the ground's own scrub tone carries it,
- * instead of a speckle of dark dots a pixel wide.
- */
-function coverMaterial(key: string, { paleM = [700, 2600], pale = 0.28, shrinkM, keepAboveM = Infinity, roughness = 1 }: { paleM?: [number, number]; pale?: number; shrinkM?: [number, number]; keepAboveM?: number; roughness?: number }) {
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness, metalness: 0 });
-  const u = (m: number) => (m / S).toFixed(4);
-  mat.customProgramCacheKey = () => `planning-lab-cover-${key}`;
-  mat.onBeforeCompile = (shader) => {
-    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying float vCoverFar;').replace(
-      '#include <begin_vertex>',
-      /* glsl */ `#include <begin_vertex>
-      #ifdef USE_INSTANCING
-        float coverD = distance((modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition);
-      #else
-        float coverD = distance((modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz, cameraPosition);
-      #endif
-      vCoverFar = smoothstep(${u(paleM[0])}, ${u(paleM[1])}, coverD);${
-        shrinkM
-          ? `
-      #ifdef USE_INSTANCING
-        float coverSmall = ${Number.isFinite(keepAboveM) ? `1.0 - step(${u(keepAboveM)}, length(instanceMatrix[0].xyz))` : '1.0'};
-        transformed *= 1.0 - coverSmall * smoothstep(${u(shrinkM[0])}, ${u(shrinkM[1])}, coverD);
-      #endif`
-          : ''
-      }`,
-    );
-    shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vCoverFar;').replace(
-      '#include <color_fragment>',
-      /* glsl */ `#include <color_fragment>
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.22, 0.16), vCoverFar * ${pale.toFixed(2)});`,
-    );
-  };
-  return mat;
-}
-
 /** A small 0…1 hash of an instance's own numbers, for variety that the shared lists don't carry. */
 const hash01 = (a: number, b: number) => {
   const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
   return x - Math.floor(x);
 };
 
-function TreeKind({ kind, lit }: { kind: Tree['kind']; lit: boolean }) {
-  const list = useMemo(() => trees().filter((t) => t.kind === kind), [kind]);
-  const crown = useMemo(() => liftShade(kind === 'pine' ? crownGeometry(0x9b05688c, 10, 0.55) : kind === 'oak' ? crownGeometry(0x1f83d9ab, 9, 0.6) : crownGeometry(0x5be0cd19, 7, 0.62), 0.42), [kind]);
-  const trunk = useMemo(() => new THREE.CylinderGeometry(0.6, 1, 1, 6).translate(0, 0.5, 0), []);
-  const crownMat = useMemo(() => coverMaterial(`crown-${kind}`, { pale: 0.4 }), [kind]);
-  const trunkMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4A3E30', roughness: 1, metalness: 0 }), []);
-  const crownRef = useRef<THREE.InstancedMesh>(null);
-  const trunkRef = useRef<THREE.InstancedMesh>(null);
-  useEffect(
-    () => () => {
-      crown.dispose();
-      trunk.dispose();
-      crownMat.dispose();
-      trunkMat.dispose();
-    },
-    [crown, trunk, crownMat, trunkMat],
-  );
+/** Splits a list into `n` shapes by a hash of each item's place, so neighbours differ. */
+function byShape<T extends { E: number; N: number }>(list: readonly T[], n: number): T[][] {
+  const out: T[][] = Array.from({ length: n }, () => []);
+  for (const t of list) out[Math.min(n - 1, Math.floor(hash01(t.N * 1.7 + 3.1, t.E * 0.3) * n))].push(t);
+  return out;
+}
+
+const CROWN_SHAPES = 4;
+/** Leaf clumps (metres) and how open the crown is between them, per kind. */
+const FOLIAGE: Record<Tree['kind'], { clumpM: number; gap: number }> = { pine: { clumpM: 0.62, gap: 0.55 }, oak: { clumpM: 0.7, gap: 0.42 }, olive: { clumpM: 0.5, gap: 0.5 } };
+
+function Crowns({ kind, shape, list, material, lit }: { kind: Tree['kind']; shape: number; list: readonly Tree[]; material: THREE.Material; lit: boolean }) {
+  const geo = useMemo(() => liftShade(crownGeometry(kind, shape), 0.42), [kind, shape]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const ref = useRef<THREE.InstancedMesh>(null);
   const q = useMemo(() => new THREE.Quaternion(), []);
   useInstances(
-    crownRef,
+    ref,
     list.length,
     (i, m, c) => {
       const t = list[i];
@@ -419,51 +496,73 @@ function TreeKind({ kind, lit }: { kind: Tree['kind']; lit: boolean }) {
       const a = hash01(t.E, t.N);
       const b = hash01(t.N, t.E);
       q.setFromAxisAngle(UP, t.spin);
-      m.compose(new THREE.Vector3(...toWorld3(cs.E, cs.N, cs.centerM)), q, new THREE.Vector3((cs.radiusM * (0.86 + 0.28 * a)) / S, cs.halfHeightM / S, (cs.radiusM * (0.86 + 0.28 * b)) / S));
+      // the grove's pines spread 1.22× the map's crown circle and sit a little lower on the stem: their
+      // crowns meet as the canopy of a planted pine wood, read as one grove from afar
+      const wide = kind === 'pine' ? 1.22 : 1;
+      const lower = kind === 'pine' ? cs.halfHeightM * 0.12 : 0;
+      m.compose(new THREE.Vector3(...toWorld3(cs.E, cs.N, cs.centerM - lower)), q, new THREE.Vector3((cs.radiusM * wide * (0.86 + 0.28 * a)) / S, cs.halfHeightM / S, (cs.radiusM * wide * (0.86 + 0.28 * b)) / S));
       c.copy(CROWN_HERE[kind][0]).lerp(CROWN_HERE[kind][1], t.tone);
       c.offsetHSL((a - 0.5) * 0.05, 0, (b - 0.5) * 0.07);
       if (lit) c.lerp(ACCENT, 0.45);
     },
-    [lit],
+    [lit, list],
   );
+  // crowns cast on the ground but take no shadow from their neighbours: a dense grove stays green, not black
+  return <instancedMesh ref={ref} args={[geo, material, list.length]} castShadow raycast={() => null} />;
+}
+
+function TrunkShape({ kind, shape, list, material }: { kind: Tree['kind']; shape: number; list: readonly Tree[]; material: THREE.Material }) {
+  const geo = useMemo(() => trunkGeometry(shape + (kind === 'pine' ? 0 : 7)), [kind, shape]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const q = useMemo(() => new THREE.Quaternion(), []);
   useInstances(
-    trunkRef,
+    ref,
     list.length,
     (i, m, c) => {
       const t = list[i];
       const cs = crownShape(t);
-      const r = 0.22 + t.crownR * 0.03;
+      // a pine's stem a little thicker for its height; it runs up into the crown
+      const r = (kind === 'pine' ? 0.2 : 0.17) + t.crownR * 0.035;
       q.setFromAxisAngle(UP, t.spin);
-      m.compose(new THREE.Vector3(...toWorld3(t.E, t.N, t.baseM - 0.4)), q, new THREE.Vector3(r / S, (cs.centerM - t.baseM + 0.4) / S, r / S));
-      c.set('#FFFFFF');
+      m.compose(new THREE.Vector3(...toWorld3(t.E, t.N, t.baseM - 0.5)), q, new THREE.Vector3(r / S, (cs.centerM - t.baseM + 0.5) / S, r / S));
+      c.setScalar(0.88 + 0.24 * hash01(t.N, t.E));
     },
-    [],
+    [list],
+  );
+  return <instancedMesh ref={ref} args={[geo, material, list.length]} castShadow receiveShadow raycast={() => null} />;
+}
+
+function TreeKind({ kind, lit }: { kind: Tree['kind']; lit: boolean }) {
+  const list = useMemo(() => trees().filter((t) => t.kind === kind), [kind]);
+  const shapes = useMemo(() => byShape(list, CROWN_SHAPES), [list]);
+  const crownMat = useMemo(() => foliageMaterial(`crown-${kind}`, { ...FOLIAGE[kind], pale: 0.4 }), [kind]);
+  const trunkMat = useMemo(() => new THREE.MeshStandardMaterial({ color: BARK[kind], roughness: 0.95, metalness: 0 }), [kind]);
+  useEffect(
+    () => () => {
+      crownMat.dispose();
+      trunkMat.dispose();
+    },
+    [crownMat, trunkMat],
   );
   return (
     <group>
-      {/* crowns cast on the ground but take no shadow from their neighbours: a dense grove stays green, not black */}
-      <instancedMesh ref={crownRef} args={[crown, crownMat, list.length]} castShadow raycast={() => null} />
-      <instancedMesh ref={trunkRef} args={[trunk, trunkMat, list.length]} castShadow raycast={() => null} />
+      {shapes.map((l, k) => (
+        <Crowns key={k} kind={kind} shape={k} list={l} material={crownMat} lit={lit} />
+      ))}
+      {shapes.map((l, k) => (
+        <TrunkShape key={k} kind={kind} shape={k} list={l} material={trunkMat} />
+      ))}
     </group>
   );
 }
 
-/** Maquis: low lumpy clumps, olive to sage and grey-green; far off it shrinks into the ground's scrub tone. */
-function Maquis() {
-  const list = useMemo(() => shrubs(), []);
-  const geo = useMemo(() => liftShade(clumpGeometry(0x510e527f, [[0, 0.1, 0, 0.75], [0.45, 0, 0.15, 0.55], [-0.35, -0.02, -0.3, 0.6]], 1, 0.12).scale(1, 0.75, 1).translate(0, 0.42, 0), 0.5), []);
-  const mat = useMemo(() => coverMaterial('maquis', { shrinkM: [1350, 2500] }), []);
+const SHRUB_SHAPES = 6;
+
+function ShrubShape({ shape, list, material, palette }: { shape: number; list: readonly Shrub[]; material: THREE.Material; palette: readonly THREE.Color[] }) {
+  const geo = useMemo(() => liftShade(shrubGeometry(shape), 0.5), [shape]);
+  useEffect(() => () => geo.dispose(), [geo]);
   const ref = useRef<THREE.InstancedMesh>(null);
-  useEffect(
-    () => () => {
-      geo.dispose();
-      mat.dispose();
-    },
-    [geo, mat],
-  );
-  const A = useMemo(() => new THREE.Color('#3A4A22'), []);
-  const B = useMemo(() => new THREE.Color('#6F7745'), []);
-  const SAGE = useMemo(() => new THREE.Color('#7C7F5C'), []);
   const q = useMemo(() => new THREE.Quaternion(), []);
   useInstances(
     ref,
@@ -471,46 +570,118 @@ function Maquis() {
     (i, m, c) => {
       const s = list[i];
       q.setFromAxisAngle(UP, s.spin);
-      m.compose(new THREE.Vector3(...toWorld3(s.E, s.N, s.baseM - 0.15)), q, new THREE.Vector3(s.radiusM / S, s.heightM / S, s.radiusM / S));
-      c.copy(A).lerp(B, s.tone);
-      // one shrub in four the grey sage of the dry garrigue
+      // the clump covers the listed footprint; sunk a little into the slope
+      m.compose(new THREE.Vector3(...toWorld3(s.E, s.N, s.baseM - 0.25)), q, new THREE.Vector3((s.radiusM * 0.95) / S, (s.heightM * 1.05) / S, (s.radiusM * 0.95) / S));
+      // its plant: the darker evergreens most often, the grey and brown dwarf shrubs on the drier ground
       const g = hash01(s.E, s.N);
-      if (g > 0.75) c.lerp(SAGE, (g - 0.75) * 3);
+      const k = g < 0.32 ? 0 : g < 0.55 ? 1 : g < 0.72 ? 2 : g < 0.88 ? 3 : 4;
+      c.copy(palette[k]).lerp(palette[Math.min(4, k + 1)], s.tone * 0.35);
+      c.offsetHSL(0, 0, (hash01(s.N, s.E) - 0.5) * 0.04);
     },
-    [],
+    [list, palette],
   );
-  return <instancedMesh ref={ref} args={[geo, mat, list.length]} castShadow receiveShadow raycast={() => null} />;
+  return <instancedMesh ref={ref} args={[geo, material, list.length]} castShadow receiveShadow raycast={() => null} />;
 }
 
-function Boulders({ lit }: { lit: boolean }) {
-  const list = useMemo(() => boulders(), []);
-  const geo = useMemo(() => liftShade(clumpGeometry(0x1b2c3d4e, [[0, 0, 0, 1], [0.35, -0.1, 0.2, 0.7]], 1, 0.22).scale(1, 0.6, 0.85), 0.45), []);
-  // lone boulders shrink away with the maquis; the big blocks of the rocks at B (≥ 2 m) stay
-  const mat = useMemo(() => coverMaterial('boulders', { pale: 0.1, shrinkM: [1100, 2100], keepAboveM: 2, roughness: 0.92 }), []);
-  const ref = useRef<THREE.InstancedMesh>(null);
-  useEffect(
-    () => () => {
-      geo.dispose();
-      mat.dispose();
-    },
-    [geo, mat],
+/**
+ * Maquis: thickets of two or three bushes, dark evergreen to grey-green and grey-brown; the grove's
+ * understory and the banks' strip greener. Far off it shrinks into the ground's scrub tone.
+ */
+function Maquis() {
+  const shapes = useMemo(() => byShape(shrubs(), SHRUB_SHAPES), []);
+  const lush = useMemo(() => byShape(understory(), SHRUB_SHAPES), []);
+  const mat = useMemo(() => foliageMaterial('maquis', { clumpM: 0.42, gap: 0.36, shrinkM: [1350, 2500] }), []);
+  useEffect(() => () => mat.dispose(), [mat]);
+  return (
+    <group>
+      {shapes.map((l, k) => (
+        <ShrubShape key={k} shape={k} list={l} material={mat} palette={MAQUIS} />
+      ))}
+      {lush.map((l, k) => (
+        <ShrubShape key={`u${k}`} shape={k} list={l} material={mat} palette={LUSH} />
+      ))}
+    </group>
   );
-  const A = useMemo(() => new THREE.Color('#9E9684'), []);
-  const B = useMemo(() => new THREE.Color('#D3CAB3'), []);
+}
+
+type RockPart = { geometry: THREE.BufferGeometry; source: THREE.MeshStandardMaterial; stone: boolean };
+
+/** The scans of rocks.glb, each moved to stand on its own base at the origin and scaled to 1 m across. */
+function rockParts(scene: THREE.Object3D): RockPart[] {
+  const out: RockPart[] = [];
+  scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const g = mesh.geometry.clone();
+    g.computeBoundingBox();
+    const bb = g.boundingBox!;
+    const across = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) || 1;
+    g.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2).scale(1 / across, 1 / across, 1 / across);
+    g.computeBoundingSphere();
+    out.push({ geometry: g, source: mesh.material as THREE.MeshStandardMaterial, stone: mesh.name.startsWith('stone') });
+  });
+  return out;
+}
+
+function RockSet({ part, list, material, lit }: { part: RockPart; list: readonly Boulder[]; material: THREE.Material; lit: boolean }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
   const q = useMemo(() => new THREE.Quaternion(), []);
+  const e = useMemo(() => new THREE.Euler(), []);
   useInstances(
     ref,
     list.length,
     (i, m, c) => {
       const s = list[i];
-      q.setFromAxisAngle(UP, s.spin);
-      m.compose(new THREE.Vector3(...toWorld3(s.E, s.N, s.baseM + s.sizeM * 0.08)), q, new THREE.Vector3(s.sizeM / S, s.sizeM / S, s.sizeM / S));
-      c.copy(A).lerp(B, s.tone);
+      // across: the blocks at B a little larger than their spacing, the lone boulders about as drawn before
+      const across = s.sizeM * (s.atB ? 1.5 : 1.7);
+      const a = hash01(s.E, s.N);
+      e.set((a - 0.5) * 0.3, s.spin, (hash01(s.N, s.E) - 0.5) * 0.3);
+      q.setFromEuler(e);
+      m.compose(new THREE.Vector3(...toWorld3(s.E, s.N, s.baseM - across * 0.1)), q, new THREE.Vector3(across / S, (across * (0.8 + 0.4 * a)) / S, across / S));
+      c.setScalar(0.84 + 0.28 * s.tone);
       if (lit && s.atB) c.lerp(ACCENT, 0.5);
     },
-    [lit],
+    [lit, list],
   );
-  return <instancedMesh ref={ref} args={[geo, mat, list.length]} castShadow receiveShadow raycast={() => null} />;
+  return <instancedMesh ref={ref} args={[part.geometry, material, list.length]} castShadow receiveShadow raycast={() => null} />;
+}
+
+/** Boulders and the rocks at B: scanned limestone. Small ones are stones, larger ones rocks; the lone ones shrink away far off. */
+function Boulders({ rocks, lit }: { rocks: THREE.Object3D; lit: boolean }) {
+  const parts = useMemo(() => rockParts(rocks), [rocks]);
+  const mats = useMemo(() => {
+    const lone = new Map<THREE.Material, THREE.Material>();
+    const kept = new Map<THREE.Material, THREE.Material>();
+    for (const p of parts) {
+      if (!lone.has(p.source)) lone.set(p.source, rockMaterial(p.source, `lone-${p.source.name}`, { shrinkM: [1100, 2100] }));
+      if (!kept.has(p.source)) kept.set(p.source, rockMaterial(p.source, `kept-${p.source.name}`, {}));
+    }
+    return { lone, kept };
+  }, [parts]);
+  useEffect(
+    () => () => {
+      parts.forEach((p) => p.geometry.dispose());
+      [...mats.lone.values(), ...mats.kept.values()].forEach((m) => m.dispose());
+    },
+    [parts, mats],
+  );
+  const sets = useMemo(() => {
+    const all = [...boulders(), ...bedStones()];
+    const stones = parts.filter((p) => p.stone);
+    const rocks = parts.filter((p) => !p.stone);
+    return [
+      ...byShape(all.filter((b) => !b.atB && b.sizeM < 0.95), stones.length).map((list, k) => ({ part: stones[k], list, kept: false })),
+      ...byShape(all.filter((b) => !b.atB && b.sizeM >= 0.95), rocks.length).map((list, k) => ({ part: rocks[k], list, kept: false })),
+      ...byShape(all.filter((b) => b.atB), rocks.length).map((list, k) => ({ part: rocks[k], list, kept: true })),
+    ].filter((s) => s.list.length);
+  }, [parts]);
+  return (
+    <group>
+      {sets.map((s, k) => (
+        <RockSet key={k} part={s.part} list={s.list} material={(s.kept ? mats.kept : mats.lone).get(s.part.source)!} lit={lit} />
+      ))}
+    </group>
+  );
 }
 
 function roofGeometry() {
@@ -525,13 +696,20 @@ function roofGeometry() {
   return ng;
 }
 
-/** The prominent building at A: stone walls with windows, a tiled hip roof, a flat-roofed annex, and the water tank on its stand. */
+/** The tank's drum: 3.4 m tall, about its own centre. */
+const DRUM_HALF_M = 1.7;
+
+/** The prominent building at A: coursed stone walls with windows, a tiled hip roof, a flat-roofed annex, and the water tank on its stand. */
 function Building({ lit }: { lit: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
   const list = useMemo(() => buildings(), []);
   const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), []);
   const roof = useMemo(roofGeometry, []);
-  const walls = useMemo(wallMaterial, []);
-  const plain = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 }), []);
+  const walls = useMemo(stoneWallMaterial, []);
+  const tiles = useMemo(tileRoofMaterial, []);
+  const annexRoof = useMemo(() => concreteMaterial('#B2A992', 'annex'), []);
+  const drum = useMemo(() => concreteMaterial('#C9C3B4', 'tank', { streaks: true, topM: DRUM_HALF_M }), []);
+  const steel = useMemo(() => new THREE.MeshStandardMaterial({ color: '#5F5A50', roughness: 0.7, metalness: 0.3 }), []);
   const wallsRef = useRef<THREE.InstancedMesh>(null);
   const capsRef = useRef<THREE.InstancedMesh>(null);
   useEffect(
@@ -539,10 +717,17 @@ function Building({ lit }: { lit: boolean }) {
       box.dispose();
       roof.dispose();
       walls.dispose();
-      plain.dispose();
+      tiles.dispose();
+      annexRoof.dispose();
+      drum.dispose();
+      steel.dispose();
     },
-    [box, roof, walls, plain],
+    [box, roof, walls, tiles, annexRoof, drum, steel],
   );
+  useEffect(() => {
+    drum.color.set(lit ? '#E0A066' : '#C9C3B4');
+    invalidate();
+  }, [lit, drum, invalidate]);
   const q = useMemo(() => new THREE.Quaternion(), []);
   const top = (b: (typeof list)[number]) => b.floorM + b.heightM;
   useInstances(
@@ -570,14 +755,12 @@ function Building({ lit }: { lit: boolean }) {
     [lit],
   );
   const tankBase = heightAt(WATER_TANK.E, WATER_TANK.N);
-  const tankColor = lit ? '#E0A066' : '#C9C3B4';
   return (
     <group>
       <instancedMesh ref={wallsRef} args={[box, walls, list.length]} castShadow receiveShadow raycast={() => null} />
-      <instancedMesh ref={capsRef} args={[roof, plain, 1]} castShadow receiveShadow raycast={() => null} />
-      <mesh position={toWorld3(list[1].E, list[1].N, top(list[1]))} rotation={[0, -THREE.MathUtils.degToRad(list[1].angleDeg), 0]} castShadow raycast={() => null}>
+      <instancedMesh ref={capsRef} args={[roof, tiles, 1]} castShadow receiveShadow raycast={() => null} />
+      <mesh position={toWorld3(list[1].E, list[1].N, top(list[1]))} rotation={[0, -THREE.MathUtils.degToRad(list[1].angleDeg), 0]} material={annexRoof} castShadow receiveShadow raycast={() => null}>
         <boxGeometry args={[(list[1].widM - 0.6) / S, 0.35 / S, (list[1].lenM - 0.6) / S]} />
-        <meshStandardMaterial color="#B2A992" roughness={0.95} />
       </mesh>
       <group position={toWorld3(WATER_TANK.E, WATER_TANK.N, tankBase - 0.3)}>
         {[
@@ -586,14 +769,12 @@ function Building({ lit }: { lit: boolean }) {
           [1.3, 1.3],
           [-1.3, 1.3],
         ].map(([x, z], k) => (
-          <mesh key={k} position={[x / S, 4.5 / S, z / S]} castShadow raycast={() => null}>
+          <mesh key={k} position={[x / S, 4.5 / S, z / S]} material={steel} castShadow raycast={() => null}>
             <boxGeometry args={[0.35 / S, 9 / S, 0.35 / S]} />
-            <meshStandardMaterial color="#6F6A5E" roughness={0.8} />
           </mesh>
         ))}
-        <mesh position={[0, 10.6 / S, 0]} castShadow receiveShadow raycast={() => null}>
-          <cylinderGeometry args={[2.3 / S, 2.3 / S, 3.4 / S, 20]} />
-          <meshStandardMaterial color={tankColor} roughness={0.7} />
+        <mesh position={[0, 10.6 / S, 0]} material={drum} castShadow receiveShadow raycast={() => null}>
+          <cylinderGeometry args={[2.3 / S, 2.3 / S, (DRUM_HALF_M * 2) / S, 28]} />
         </mesh>
       </group>
     </group>
@@ -810,15 +991,16 @@ function Labels({ nodes, selection, highlights }: { nodes: readonly RouteNode[];
 // ---------------------------------------------------------------- sky, light, shadows
 
 /** Sun from the west-north-west, low: every slope seen from the south is side-lit, so summits, spurs and the saddle read by light and shade. */
+const SUN_AZ_DEG = 255;
 const SUN_DIR = (() => {
-  const az = THREE.MathUtils.degToRad(255);
+  const az = THREE.MathUtils.degToRad(SUN_AZ_DEG);
   const el = THREE.MathUtils.degToRad(30);
   return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el)).normalize();
 })();
 
-function SkyDome() {
+function SkyDome({ texture }: { texture: THREE.Texture }) {
   const camera = useThree((s) => s.camera);
-  const mat = useMemo(createSkyMaterial, []);
+  const mat = useMemo(() => skyMaterial(texture, SUN_AZ_DEG, HAZE), [texture]);
   const geo = useMemo(() => new THREE.SphereGeometry(200, 64, 32), []);
   const ref = useRef<THREE.Mesh>(null);
   useEffect(
@@ -849,8 +1031,8 @@ function Sun() {
       <directionalLight
         position={pos}
         target={target}
-        intensity={3.4}
-        color="#FFEBD0"
+        intensity={3.7}
+        color="#FFE7CC"
         castShadow
         shadow-mapSize={[4096, 4096]}
         shadow-camera-left={-half}
@@ -861,9 +1043,9 @@ function Sun() {
         shadow-camera-far={60}
         shadow-bias={-0.0008}
         shadow-normalBias={0.05}
-        shadow-radius={3}
+        shadow-radius={2.5}
       />
-      <hemisphereLight color="#D6E2EC" groundColor="#6B5E42" intensity={1.15} />
+      <hemisphereLight color="#BFD3EA" groundColor="#7A6A4E" intensity={1.0} />
     </>
   );
 }
@@ -886,11 +1068,88 @@ function StaticShadows({ onReady }: { onReady?: () => void }) {
 function SceneSetup() {
   const scene = useThree((s) => s.scene);
   useEffect(() => {
-    scene.fog = new THREE.FogExp2(new THREE.Color('#E2E3DA'), 0.019);
+    // the haze is the sky's own horizon colour, so the far hills fade into it without a seam
+    scene.fog = new THREE.FogExp2(HAZE.clone(), 0.013);
     return () => {
       scene.fog = null;
     };
   }, [scene]);
+  return null;
+}
+
+/**
+ * Pixels drawn per CSS pixel: as many as fit a budget of about 3.2 million, between 1 and 2 (and never
+ * fewer than the screen's own). In the lesson's panel that is twice the panel's size each way — every
+ * shrub, road and ridge line supersampled — and in full screen as much as the budget allows.
+ *
+ * On a slow GPU a moving view (an orbit, a drag) would stutter at that size: while frames come in back
+ * to back, the time between them is watched, and if the median runs past ~26 ms the resolution steps
+ * down (to 0.6 of it at most) until the view rests; 350 ms after the last frame it draws once more at full
+ * resolution. A fast GPU never steps down.
+ */
+const PIXEL_BUDGET = 3.2e6;
+function Resolution({ onDpr: setDpr }: { onDpr: (dpr: number) => void }) {
+  const size = useThree((s) => s.size);
+  const invalidate = useThree((s) => s.invalidate);
+  const full = useMemo(() => {
+    const own = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
+    const fit = Math.sqrt(PIXEL_BUDGET / Math.max(1, size.width * size.height));
+    return Math.min(2, Math.max(1, own, Math.min(2, fit)));
+  }, [size.width, size.height]);
+  const scale = useRef(1);
+  const last = useRef(0);
+  const gaps = useRef<number[]>([]);
+  const rest = useRef(0);
+  useEffect(() => {
+    scale.current = 1;
+    setDpr(full);
+  }, [full, setDpr]);
+  useEffect(() => () => window.clearTimeout(rest.current), []);
+  // dev-only: pin the pixel ratio for a measurement
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const w = window as unknown as { __plSetDpr?: (d: number) => void };
+    w.__plSetDpr = (d) => setDpr(d);
+    return () => {
+      delete w.__plSetDpr;
+    };
+  }, [setDpr]);
+  const seen = useMemo(() => new THREE.Matrix4(), []);
+  useFrame(({ camera }) => {
+    const now = performance.now();
+    const gap = now - last.current;
+    last.current = now;
+    // only while the camera itself moves (an orbit, a zoom, a tween): React has little to do then, so a
+    // slow frame is the GPU's — a drag's or the map's own work must not lower the resolution
+    const moving = !camera.matrixWorld.equals(seen);
+    seen.copy(camera.matrixWorld);
+    const g = gaps.current;
+    if (moving && gap < 120) g.push(gap);
+    if (g.length > 24) g.shift();
+    const fixed = process.env.NODE_ENV !== 'production' && (window as unknown as { __plFixedDpr?: boolean }).__plFixedDpr;
+    if (g.length >= 8 && !fixed) {
+      const recent = g.slice(-8).sort((a, b) => a - b);
+      if (recent[4] > 28 && scale.current > 0.6) {
+        scale.current = Math.max(0.6, scale.current * 0.8);
+        setDpr(full * scale.current);
+        g.length = 0;
+      } else if (g.length >= 24 && scale.current < 1 && [...g].sort((a, b) => a - b)[12] < 17.5) {
+        // a passing hitch (a first frame, the page busy): back up as soon as the frames keep pace again
+        scale.current = Math.min(1, scale.current * 1.25);
+        setDpr(full * scale.current);
+        g.length = 0;
+      }
+    }
+    window.clearTimeout(rest.current);
+    rest.current = window.setTimeout(() => {
+      gaps.current.length = 0;
+      if (scale.current < 1) {
+        scale.current = 1;
+        setDpr(full);
+        invalidate();
+      }
+    }, 350);
+  });
   return null;
 }
 
@@ -902,15 +1161,41 @@ function Progress({ onProgress }: { onProgress?: (p: number | undefined) => void
 }
 
 function World({ highlights, onReady }: { highlights: readonly FeatureId[]; onReady?: () => void }) {
+  const gl = useThree((s) => s.gl);
+  // Every file first, here: until all have loaded nothing below renders, so the one-off maps (the
+  // contact shade, the masks) are built once — not again on each render while the tree is suspended.
+  const sky = useTexture(SKY_URL);
+  const strips = useLoader(THREE.ImageLoader, STRIP_URLS);
+  const rocks = useGLTF(ROCKS_URL).scene;
+  useMemo(() => {
+    sky.wrapS = sky.wrapT = THREE.ClampToEdgeWrapping;
+    sky.colorSpace = THREE.SRGBColorSpace;
+    sky.needsUpdate = true;
+  }, [sky]);
+  const ground = useMemo<GroundSet>(() => {
+    const aniso = Math.min(8, gl.capabilities.getMaxAnisotropy());
+    const a = stripToArray(strips[0], LAYERS.length, true);
+    const n = stripToArray(strips[1], LAYERS.length, false);
+    a.texture.anisotropy = n.texture.anisotropy = aniso;
+    return { albedo: a.texture, normal: n.texture, means: a.means };
+  }, [strips, gl]);
+  useEffect(
+    () => () => {
+      ground.albedo.dispose();
+      ground.normal.dispose();
+    },
+    [ground],
+  );
   return (
     <>
-      <Terrain highlights={highlights} />
+      <SkyDome texture={sky} />
+      <Terrain ground={ground} highlights={highlights} />
       <Stream />
       <TreeKind kind="pine" lit={highlights.includes('grove')} />
       <TreeKind kind="oak" lit={false} />
       <TreeKind kind="olive" lit={highlights.includes('orchard')} />
       <Maquis />
-      <Boulders lit={highlights.includes('rocks')} />
+      <Boulders rocks={rocks} lit={highlights.includes('rocks')} />
       <Building lit={highlights.includes('building')} />
       <StaticShadows onReady={onReady} />
     </>
@@ -918,6 +1203,8 @@ function World({ highlights, onReady }: { highlights: readonly FeatureId[]; onRe
 }
 
 export default function PlanningLab3D({ view, reduce, nodes, selection, showDirect, highlights, dragging, dispatch, onGround, onReady, onProgress, onHidden, pointerScale = 1 }: Lab3DProps) {
+  // the canvas' pixel ratio (Resolution), passed as the Canvas prop so a re-render keeps it
+  const [dpr, setDpr] = useState(1);
   // the hidden route points, told up as one flag
   const hiddenIds = useRef(new Set<string>());
   const onHandleHidden = useCallback(
@@ -949,20 +1236,23 @@ export default function PlanningLab3D({ view, reduce, nodes, selection, showDire
   return (
     <Canvas
       aria-hidden
-      dpr={[1, 1.5]}
-      shadows={{ type: THREE.PCFSoftShadowMap }}
+      dpr={dpr}
+      // PCF with a radius: soft-edged shadows (three's PCFSoftShadowMap is deprecated and falls back to it)
+      shadows={{ type: THREE.PCFShadowMap }}
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ fov: 38, near: 5 / S, far: 30000 / S, position: home.pos }}
       frameloop="demand"
       // Inside the lesson's LessonViewportFit: size from the untransformed box.
       resize={LESSON_FIT_CANVAS_RESIZE}
       onCreated={({ gl }) => {
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 0.98;
+        // neutral: the scans' and the sky photograph's own colours, without a filmic shift
+        gl.toneMapping = THREE.NeutralToneMapping;
+        gl.toneMappingExposure = 1.12;
       }}
       style={{ position: 'absolute', inset: 0 }}
     >
       <SceneSetup />
+      <Resolution onDpr={setDpr} />
       <OrbitControls
         makeDefault
         target={home.target}
@@ -979,7 +1269,6 @@ export default function PlanningLab3D({ view, reduce, nodes, selection, showDire
       <CameraRig view={view} reduce={reduce} />
       <Picker onGround={onGround} />
       <Progress onProgress={onProgress} />
-      <SkyDome />
       <Sun />
       <Suspense fallback={null}>
         <World highlights={highlights} onReady={onReady} />
@@ -996,3 +1285,5 @@ export default function PlanningLab3D({ view, reduce, nodes, selection, showDire
     </Canvas>
   );
 }
+
+useGLTF.preload(ROCKS_URL);

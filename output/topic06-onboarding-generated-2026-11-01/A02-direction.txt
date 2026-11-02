@@ -1,0 +1,10 @@
+הנפשה 2 — קביעת כיוון לפני היציאה
+Start frame: F01-route-planning.png
+End frame: F02-departure-direction.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Animate the supplied planning frame into the supplied departure-direction frame as one continuous eight-second locked-camera shot. Preserve the exact terrain, three palms, hill, Y-junction, building, blue navigator identity, lighting, crop, orange route, checkpoint positions and hollow destination diamond. The navigator remains at the SAME departure point for the entire clip; walking has not started.
+
+0–2 s: Quietly fade the rejected gray dashed hill-crossing alternative while retaining the complete orange route. A hollow blue ground ring forms under the navigator's existing feet, emphasizing the checked departure point. 2–4 s: Reveal the enlarged educational baseplate compass in the exact position and orientation shown in the end frame. Its two-tone magnetic needle and its housing's orienting mark agree on the same fixed magnetic-north direction. Its separate orange direction-of-travel arrow is attached to the baseplate and points along the FIRST route leg toward the first checkpoint. 4–6 s: Reveal the short orange ground arrow repeating that same first-leg direction. Emphasize the north needle once, then the travel arrow once, through a subtle increase in local contrast rather than flashing or spinning. 6–8 s: Hold the final aligned state.
+
+The compass is an enlarged teaching aid. Its magnetic needle must NOT swing toward or track the destination. Do not invent a numerical azimuth or demonstrate a declination adjustment. Match the end frame, with no camera movement, walking, terrain morphing, new road, extra compass, map inset, text, labels, numbers, speech, music or watermark. If audio is generated, only quiet natural ambience.

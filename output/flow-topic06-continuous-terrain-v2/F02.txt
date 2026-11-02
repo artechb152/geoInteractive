@@ -1,0 +1,11 @@
+=== F02 | תמונה 3: יציאה — מצפן גדול בתוך אותו פריים ===
+קלט: F01 החדשה והמאושרת.
+שם לשמירה: F02-terrain-direction.png
+
+EDIT the supplied realistic terrain planning frame into the departure-direction keyframe. Keep the camera completely locked: identical perspective, lens, crop, lighting, geography and landmark pixel positions. Preserve the chosen orange route and both checkpoint locations. The same blue navigator remains stationary at departure in the same pose. Do not move it yet.
+
+Reduce the contrast of the discarded gray dashed shortcut. Add one large, tangible teaching compass in clear foreground space beside departure, occupying approximately one quarter of image width. It must not cover the navigator, first checkpoint or hill. The compass has realistic material thickness, a pale dial, one recognizable two-tone magnetic needle, a preset orienting mark and an orange direction-of-travel arrow FIXED to its baseplate. Use simple unnumbered markings.
+
+Align the entire compass baseplate with the FIRST leg of the chosen route toward the first checkpoint, not with a direct shortcut to the final destination. The north end of the magnetic needle sits within the preset orienting mark. It represents magnetic north, not a destination pointer. Add one broad orange ground arrow indicating the same first-leg direction. Add a blue hollow ring under the stationary navigator to emphasize checking the departure position.
+
+The compass is an oversized teaching prop added to the existing shot; the landscape is unchanged. No new camera angle, map view, inset, moving navigator, independently rotating travel arrow, needle aiming magically at the destination, numerical bearing, GPS interface, extra objects, text, captions, logos or watermarks. Preserve the visual language of the supplied frame exactly.

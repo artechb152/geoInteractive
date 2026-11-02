@@ -1,0 +1,12 @@
+=== A01 | הנפשה 1: החלופות נבנות על גבי השטח ===
+פריים התחלה: F00-terrain-base.png
+פריים סיום: F01-terrain-plan.png
+שם לשמירה: A01-terrain-planning.mp4
+
+Animate between the supplied start and end keyframes as ONE uninterrupted locked-camera shot of the same realistic three-dimensional terrain. Target a clear eight-second instructional sequence if that duration is available. Keep camera position, lens, crop, lighting, ground textures and every physical landmark fixed throughout. No cuts, zoom, orbit, overhead transition or map conversion. The only changes are educational overlays being drawn onto the existing ground.
+
+Briefly hold the unmarked terrain. Draw the gray dashed shortcut from the stationary blue navigator toward the existing destination junction, visibly following the steep exposed shoulder of the hill. Give the viewer a moment to recognize what it crosses. Then grow the thicker orange selected route from the SAME departure point around the hill's lower ground, beside the existing palms and onward to the SAME destination. Use a prominent traveling front and convincing thickness, matching the tangible orange boundary animation of lesson 2. Follow the terrain perspective without excavating, paving or changing the landscape.
+
+Settle the visual emphasis on the orange route while retaining the dashed gray alternative. Add the first hollow checkpoint disc beside the palms, then the second checkpoint farther along. Add the small hollow destination diamond at the junction. Each marker settles clearly rather than flashing. Hold the supplied completed end frame for about the final second.
+
+The navigator remains at departure throughout. No walking, compass, map, new landmark, changing vegetation, terrain morphing, text, numbers, narration, music, decorative particles, logos or watermarks. The result must remain understandable with sound off.

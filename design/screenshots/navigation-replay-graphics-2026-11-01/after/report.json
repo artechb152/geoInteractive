@@ -1,0 +1,71 @@
+{
+  "moments": {
+    "depart": {
+      "changeMs": 26616,
+      "dragFps": 61,
+      "stats": {
+        "station": "depart",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2978,
+        "shrubsFar": 18037,
+        "cushions": 2597,
+        "grass": 4888,
+        "stones": 10066,
+        "rocks": 8609,
+        "eyeY": 323.7729285743464
+      }
+    },
+    "enroute": {
+      "changeMs": 2097,
+      "dragFps": 61,
+      "stats": {
+        "station": "enroute",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2989,
+        "shrubsFar": 17984,
+        "cushions": 2587,
+        "grass": 4917,
+        "stones": 7732,
+        "rocks": 8775,
+        "eyeY": 339.41779482862495
+      }
+    },
+    "saddle": {
+      "changeMs": 1924,
+      "dragFps": 61,
+      "stats": {
+        "station": "saddle",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2296,
+        "shrubsFar": 17746,
+        "cushions": 2628,
+        "grass": 6843,
+        "stones": 2323,
+        "rocks": 8729,
+        "eyeY": 417.32322551795573
+      }
+    },
+    "after": {
+      "changeMs": 1552,
+      "dragFps": 60,
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    }
+  },
+  "errors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "SyntaxError: Invalid or unexpected token",
+    "%o\n\n%s ChunkLoadError: Loading chunk _app-pages-browser_src_components_lessons_topic-06_planning-lab_PlanningLab3D_tsx failed.\n(missing: http://localhost:3000/_next/static/chunks/_app-pages-browser_src_components_lessons_topic-06_planning-lab_PlanningLab3D_tsx.js)\n    at __webpack_require__.f.j (http://localhost:3000/_next/static/chunks/webpack.js?v=1793537262130:850:29)\n    at http://localhost:3000/_next/static/chunks/webpack.js?v=1793537262130:145:40\n    at Array.reduce (<anonymous>)\n    at __webpack_require__.e (http://localhost:3000/_next/static/chunks/webpack.js?v=1793537262130:144:67)\n    at fn.e (http://localhost:3000/_next/static/chunks/webpack.js?v=1793537262130:381:50)\n    at PlanningLab3D.loadableGenerated.modules [as loader] (webpack-internal:///(app-pages-browser)/./src/components/lessons/topic-06/planning-lab/PlanningLabModel.tsx:33:104)\n    at eval (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/shared/lib/lazy-dynamic/loadable.js:40:58)\n    at lazyInitializer (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react/cjs/react.development.js:455:24)\n    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23691:18)\n    at resolveLazy (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:5177:16)\n    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:10784:24)\n    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)\n    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15727:22)\n    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15547:41)\n    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15527:11)\n    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14991:13)\n    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16816:7)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:45:48) The above error occurred in the <Lazy> component. It was handled by the <CanvasErrorBoundary> error boundary."
+  ]
+}

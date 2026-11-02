@@ -1,0 +1,150 @@
+{
+  "msToReady": 5817,
+  "gpu": "ANGLE (NVIDIA, NVIDIA RTX A5000 (0x00002231) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "cameraGroundM": {
+    "saddle": {
+      "eye": 334.04817770260706,
+      "at": 415.73480578426825
+    },
+    "grove": {
+      "eye": 439.8956400456882,
+      "at": 360.7966204121112
+    },
+    "building": {
+      "eye": 355.9549300569415,
+      "at": 341.3984142609479
+    },
+    "rocks": {
+      "eye": 376.6645822657665,
+      "at": 365.77010940400214
+    },
+    "stream": {
+      "eye": 335.7865348438281,
+      "at": 326.5475168425837
+    },
+    "orchard": {
+      "eye": 343.9784990494445,
+      "at": 334.58624861686985
+    },
+    "flank": {
+      "eye": 343.41132917088544,
+      "at": 404.2766531898451
+    }
+  },
+  "nodesAtStart": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p1",
+      480,
+      613.5
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "modelDrag": {
+    "frames": 135,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.9,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterModelDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p1",
+      851.98,
+      1137.22
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "mapHandleAfterModelDrag": {
+    "dx": 0,
+    "dy": 0
+  },
+  "mapDrag": {
+    "frames": 155,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 17,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterMapDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p1",
+      649,
+      655.5
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "crossing": "saddle",
+  "modelHandleAfterMapDrag": {
+    "dx": 0,
+    "dyAboveGround": 0.7
+  },
+  "handlesAfterMapDrag": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": false
+    },
+    {
+      "id": "B",
+      "hidden": false
+    }
+  ],
+  "orbitDrag": {
+    "frames": 155,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.9,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "wheelZoom": {
+    "frames": 75,
+    "medianMs": 16.7,
+    "p95Ms": 16.9,
+    "maxMs": 17,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "fullscreen": true,
+  "fsOrbitDrag": {
+    "frames": 150,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 17,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "errors": []
+}

@@ -1,0 +1,10 @@
+הנפשה 1 — תכנון המסלול
+Start frame: F00-terrain-base.png
+End frame: F01-route-planning.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Create one continuous eight-second educational animation between the supplied start and end frames. Lock the camera, lens, crop, light and every physical detail of this realistic 3D landscape. Match the end frame precisely. The single blue navigator stays at departure, holding the same paper map. The rocky hill, exactly three palms, Y-junction and one stone building remain completely stationary.
+
+0–1 s: Hold the unmarked terrain. 1–3 s: Progressively draw the gray dashed hill-crossing alternative from the navigator's departure position to the Y-junction, visibly following the existing steep rocky hill. 3–5.5 s: Grow the thicker solid burnt-orange alternative from the same starting point, across the gentle low foreground, beside the palms and along the right-side track to the SAME junction. Both graphics conform to the ground's perspective and relief; they do not build roads or modify terrain. This oblique illustration compares terrain choices, not measured route lengths. 5.5–7 s: Draw the first hollow checkpoint ring beside the palms, then the second ring farther along the selected route, then the hollow destination diamond exactly at the junction. 7–8 s: Hold the complete planning frame so the alternatives and planned checks can be read.
+
+Use the tangible orange teaching-line style of the supplied end frame, with a single advancing drawing front and restrained shadows. Orange means the selected example route, not guaranteed safety. No walking, camera drift, zoom, pan, orbit, cuts, dissolves between scenes, map transformation, changing landmarks, extra people, labels, text, numbers, subtitles, speech, music or watermark. If audio is generated, only quiet natural ambience.

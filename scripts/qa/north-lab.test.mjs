@@ -200,19 +200,19 @@ test('inset: enlarged ×4 angles keep side and order; name-only labels sit in th
 });
 
 test('relation line: names the side, agrees with the computed azimuths, never a blanket rule', () => {
-  assert.equal(relationText('true', -6), 'זה הבסיס להשוואה: הזוויות שעל החצים במפה נמדדות ממנו.');
+  assert.equal(relationText('true', -6), 'הצפון האמיתי הוא נקודת הייחוס להשוואה.');
   assert.equal(relationText('true', 7), relationText('true', -6), 'true north does not follow the slider');
-  assert.equal(relationText('grid', -6), 'בדוגמה, צפון הרשת נוטה 2° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־2°.');
+  assert.equal(relationText('grid', -6), 'צפון הרשת נוטה 2° מזרחה מהאמיתי; האזימוט קטן ב־2°.');
   assert.equal(relationText('grid', 9), relationText('grid', -6), 'grid north does not follow the slider');
-  assert.equal(relationText('magnetic', -6), 'בדוגמה, הצפון המגנטי נוטה 6° מערבה מהצפון האמיתי, ולכן האזימוט גדול ב־6°.');
-  assert.equal(relationText('magnetic', 0), 'בדוגמה, הצפון המגנטי חופף לצפון האמיתי, ולכן האזימוט זהה.');
-  assert.equal(relationText('magnetic', 10), 'בדוגמה, הצפון המגנטי נוטה 10° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־10°.');
+  assert.equal(relationText('magnetic', -6), 'הצפון המגנטי נוטה 6° מערבה מהאמיתי; האזימוט גדול ב־6°.');
+  assert.equal(relationText('magnetic', 0), 'הצפון המגנטי חופף לצפון האמיתי; האזימוט זהה.');
+  assert.equal(relationText('magnetic', 10), 'הצפון המגנטי נוטה 10° מזרחה מהאמיתי; האזימוט קטן ב־10°.');
   assert.equal(relationText('magnetic', -5.6), relationText('magnetic', -6), 'whole degrees, like the readouts');
   for (const d of STEPS) {
     for (const id of ['grid', 'magnetic']) {
       const t = relationText(id, d);
       const diff = bearings(d)[id] - bearings(d).true; // > 0: larger than the true azimuth
-      assert.ok(t.startsWith('בדוגמה, '), `${id} @ ${d}: marked as example data`);
+      assert.ok(t.startsWith(''), `${id} @ ${d}: marked as example data`);
       assert.ok(!/תמיד|מוסיפים|מחסירים/.test(t), `${id} @ ${d}: no blanket rule`);
       if (diff === 0) assert.match(t, /חופף.*זהה/);
       else {

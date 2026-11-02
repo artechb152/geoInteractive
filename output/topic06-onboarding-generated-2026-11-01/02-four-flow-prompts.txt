@@ -1,0 +1,55 @@
+הנפשה 1 — תכנון המסלול
+Start frame: F00-terrain-base.png
+End frame: F01-route-planning.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Create one continuous eight-second educational animation between the supplied start and end frames. Lock the camera, lens, crop, light and every physical detail of this realistic 3D landscape. Match the end frame precisely. The single blue navigator stays at departure, holding the same paper map. The rocky hill, exactly three palms, Y-junction and one stone building remain completely stationary.
+
+0–1 s: Hold the unmarked terrain. 1–3 s: Progressively draw the gray dashed hill-crossing alternative from the navigator's departure position to the Y-junction, visibly following the existing steep rocky hill. 3–5.5 s: Grow the thicker solid burnt-orange alternative from the same starting point, across the gentle low foreground, beside the palms and along the right-side track to the SAME junction. Both graphics conform to the ground's perspective and relief; they do not build roads or modify terrain. This oblique illustration compares terrain choices, not measured route lengths. 5.5–7 s: Draw the first hollow checkpoint ring beside the palms, then the second ring farther along the selected route, then the hollow destination diamond exactly at the junction. 7–8 s: Hold the complete planning frame so the alternatives and planned checks can be read.
+
+Use the tangible orange teaching-line style of the supplied end frame, with a single advancing drawing front and restrained shadows. Orange means the selected example route, not guaranteed safety. No walking, camera drift, zoom, pan, orbit, cuts, dissolves between scenes, map transformation, changing landmarks, extra people, labels, text, numbers, subtitles, speech, music or watermark. If audio is generated, only quiet natural ambience.
+
+
+הנפשה 2 — קביעת כיוון לפני היציאה
+Start frame: F01-route-planning.png
+End frame: F02-departure-direction.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Animate the supplied planning frame into the supplied departure-direction frame as one continuous eight-second locked-camera shot. Preserve the exact terrain, three palms, hill, Y-junction, building, blue navigator identity, lighting, crop, orange route, checkpoint positions and hollow destination diamond. The navigator remains at the SAME departure point for the entire clip; walking has not started.
+
+0–2 s: Quietly fade the rejected gray dashed hill-crossing alternative while retaining the complete orange route. A hollow blue ground ring forms under the navigator's existing feet, emphasizing the checked departure point. 2–4 s: Reveal the enlarged educational baseplate compass in the exact position and orientation shown in the end frame. Its two-tone magnetic needle and its housing's orienting mark agree on the same fixed magnetic-north direction. Its separate orange direction-of-travel arrow is attached to the baseplate and points along the FIRST route leg toward the first checkpoint. 4–6 s: Reveal the short orange ground arrow repeating that same first-leg direction. Emphasize the north needle once, then the travel arrow once, through a subtle increase in local contrast rather than flashing or spinning. 6–8 s: Hold the final aligned state.
+
+The compass is an enlarged teaching aid. Its magnetic needle must NOT swing toward or track the destination. Do not invent a numerical azimuth or demonstrate a declination adjustment. Match the end frame, with no camera movement, walking, terrain morphing, new road, extra compass, map inset, text, labels, numbers, speech, music or watermark. If audio is generated, only quiet natural ambience.
+
+
+הנפשה 3 — הליכה, עצירה ובדיקת המיקום
+Start frame: F02-departure-direction.png
+End frame: F03-position-check.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Create one uninterrupted eight-second animation between these exact start and end frames. The camera is fully locked. Keep all rocks, shrubs, the hill, exactly three palms, Y-junction, building, lighting and ground texture fixed. Preserve the selected orange route, both planned checkpoint locations and the hollow destination diamond.
+
+Compress the journey in time while retaining continuous visible steps and natural gait. The clip is not a demonstration of real walking speed, distance or travel time.
+
+0–1 s: Fade out the enlarged teaching compass, the departure ring and the short direction arrow, leaving the route visible. 1–4 s: The SAME SINGLE blue navigator walks continuously from departure along the orange low-ground route to the FIRST hollow checkpoint beside the palms. Show every part of this short walk, using brisk but readable continuous motion rather than teleportation. Keep his boots grounded, natural leg articulation and perspective-correct apparent scale. Do not clone him or leave a second figure at departure. 4–5 s: He stops completely at that checkpoint, opens or raises his existing cream paper map, and looks between it and the landscape. 5–6 s: Trace the open orange outline around the existing rocky hill exactly as in the end frame; he looks at the hill and back to the map. 6–7 s: Draw the separate open bracket around the THREE existing palms; he looks at the palms and back to the map. 7–8 s: Hold the stopped checking pose with both landmarks emphasized.
+
+The map remains a physical handheld prop within the same shot. This is a deliberate comparison of two terrain references, not a GPS position fix or final arrival. Match the supplied end frame. No camera follow, zoom, viewpoint change, full-frame map, split screen, terrain morphing, new trees, moving landmarks, destination confirmation, tick mark, labels, text, speech, music or watermark. If audio is generated, quiet footsteps ending at the stop and natural ambience only.
+
+
+הנפשה 4 — המשך ישיר ללא איפוס מיקום — גרסה 3
+Start frame: F03-position-check.png
+End frame: F04-destination-verification.png
+משך מוצע: 8 שניות.
+
+להמשכיות מסרטון 3: עדיף לשמור את הפריים האחרון בפועל שלו ולהשתמש בו כ־Start frame במקום F03. תמונת הסיום נשארת F04. הפרומפט מתייחס תמיד למיקום הדמות בפריים הפתיחה שסופק בפועל. אין להוסיף את F00–F02 כרפרנסים למעבר הזה.
+
+Continue directly from the supplied START FRAME. Its visible person and his exact foot placement are the starting state of this shot. Preserve that opening composition. The END FRAME shows the later position of this SAME person.
+
+Exactly one blue navigator remains visible throughout, with the same clothes, headwear, backpack and paper map. His feet begin exactly where they are visible in the start frame. He turns gently in place toward the orange line ahead of him, keeping his ground position, then takes his FIRST step FORWARD from that position along the orange segment immediately ahead of his feet, toward the destination.
+
+From there he follows the visible orange line ahead of him all the way to the junction, tracing its existing curve from his current location. His progress along the route increases continuously from the first step until arrival. Show the entire movement with regular visible steps, smooth body motion and gradual perspective scaling. Keep walking through the middle of the clip rather than holding still and jumping to the endpoint. No backward step, reset, preliminary relocation, skipped section, sudden acceleration, teleportation, duplicate or crossfade.
+
+Use nearly the whole eight-second shot for this continuous walk. Gently remove only the hill and palm highlights during the walk. During the final second, he stops at the destination, briefly checks the junction and building against his map, and the local destination highlights appear. Fill the destination diamond after these checks.
+
+The camera and landscape remain locked. The ENTIRE orange route, its beginning, both rings and all endpoints stay fixed in their original pixels throughout; they are stationary teaching graphics, not a trail following the walker. No route growth or redrawing. Keep exactly one person in the final frame. No text, speech or music.
+

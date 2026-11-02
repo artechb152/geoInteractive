@@ -1,0 +1,997 @@
+{
+  "fps": 24,
+  "frames": [
+    {
+      "time": 1.25,
+      "file": "walk-000.png",
+      "box": [
+        408,
+        420,
+        462,
+        517
+      ],
+      "feet": [
+        18.0,
+        93.0
+      ],
+      "body_height": 90,
+      "blue_area": 1476
+    },
+    {
+      "time": 1.29167,
+      "file": "walk-001.png",
+      "box": [
+        408,
+        421,
+        464,
+        517
+      ],
+      "feet": [
+        20.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1474
+    },
+    {
+      "time": 1.33333,
+      "file": "walk-002.png",
+      "box": [
+        408,
+        421,
+        468,
+        515
+      ],
+      "feet": [
+        22.5,
+        90.0
+      ],
+      "body_height": 87,
+      "blue_area": 1455
+    },
+    {
+      "time": 1.375,
+      "file": "walk-003.png",
+      "box": [
+        410,
+        421,
+        470,
+        514
+      ],
+      "feet": [
+        23.0,
+        89.0
+      ],
+      "body_height": 86,
+      "blue_area": 1456
+    },
+    {
+      "time": 1.41667,
+      "file": "walk-004.png",
+      "box": [
+        410,
+        421,
+        472,
+        513
+      ],
+      "feet": [
+        26.0,
+        88.0
+      ],
+      "body_height": 85,
+      "blue_area": 1458
+    },
+    {
+      "time": 1.45833,
+      "file": "walk-005.png",
+      "box": [
+        413,
+        419,
+        474,
+        513
+      ],
+      "feet": [
+        26.0,
+        90.0
+      ],
+      "body_height": 87,
+      "blue_area": 1393
+    },
+    {
+      "time": 1.5,
+      "file": "walk-006.png",
+      "box": [
+        416,
+        417,
+        478,
+        513
+      ],
+      "feet": [
+        26.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1408
+    },
+    {
+      "time": 1.54167,
+      "file": "walk-007.png",
+      "box": [
+        424,
+        417,
+        480,
+        513
+      ],
+      "feet": [
+        21.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1332
+    },
+    {
+      "time": 1.58333,
+      "file": "walk-008.png",
+      "box": [
+        428,
+        417,
+        482,
+        513
+      ],
+      "feet": [
+        20.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1262
+    },
+    {
+      "time": 1.625,
+      "file": "walk-009.png",
+      "box": [
+        430,
+        415,
+        484,
+        513
+      ],
+      "feet": [
+        21.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1231
+    },
+    {
+      "time": 1.66667,
+      "file": "walk-010.png",
+      "box": [
+        434,
+        415,
+        488,
+        513
+      ],
+      "feet": [
+        19.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1190
+    },
+    {
+      "time": 1.70833,
+      "file": "walk-011.png",
+      "box": [
+        436,
+        415,
+        490,
+        513
+      ],
+      "feet": [
+        20.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1196
+    },
+    {
+      "time": 1.75,
+      "file": "walk-012.png",
+      "box": [
+        438,
+        415,
+        494,
+        513
+      ],
+      "feet": [
+        21.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1287
+    },
+    {
+      "time": 1.79167,
+      "file": "walk-013.png",
+      "box": [
+        442,
+        415,
+        496,
+        513
+      ],
+      "feet": [
+        19.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1304
+    },
+    {
+      "time": 1.83333,
+      "file": "walk-014.png",
+      "box": [
+        444,
+        415,
+        500,
+        513
+      ],
+      "feet": [
+        20.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1301
+    },
+    {
+      "time": 1.875,
+      "file": "walk-015.png",
+      "box": [
+        444,
+        416,
+        504,
+        513
+      ],
+      "feet": [
+        23.0,
+        93.0
+      ],
+      "body_height": 90,
+      "blue_area": 1347
+    },
+    {
+      "time": 1.91667,
+      "file": "walk-016.png",
+      "box": [
+        444,
+        415,
+        506,
+        513
+      ],
+      "feet": [
+        27.0,
+        94.0
+      ],
+      "body_height": 91,
+      "blue_area": 1328
+    },
+    {
+      "time": 1.95833,
+      "file": "walk-017.png",
+      "box": [
+        450,
+        415,
+        509,
+        505
+      ],
+      "feet": [
+        24.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1287
+    },
+    {
+      "time": 2.0,
+      "file": "walk-018.png",
+      "box": [
+        456,
+        415,
+        514,
+        505
+      ],
+      "feet": [
+        21.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1296
+    },
+    {
+      "time": 2.04167,
+      "file": "walk-019.png",
+      "box": [
+        460,
+        413,
+        516,
+        505
+      ],
+      "feet": [
+        20.0,
+        88.0
+      ],
+      "body_height": 85,
+      "blue_area": 1236
+    },
+    {
+      "time": 2.08333,
+      "file": "walk-020.png",
+      "box": [
+        464,
+        413,
+        520,
+        505
+      ],
+      "feet": [
+        20.0,
+        88.0
+      ],
+      "body_height": 85,
+      "blue_area": 1249
+    },
+    {
+      "time": 2.125,
+      "file": "walk-021.png",
+      "box": [
+        468,
+        413,
+        524,
+        506
+      ],
+      "feet": [
+        20.0,
+        89.0
+      ],
+      "body_height": 86,
+      "blue_area": 1293
+    },
+    {
+      "time": 2.16667,
+      "file": "walk-022.png",
+      "box": [
+        470,
+        411,
+        528,
+        507
+      ],
+      "feet": [
+        21.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1186
+    },
+    {
+      "time": 2.20833,
+      "file": "walk-023.png",
+      "box": [
+        474,
+        411,
+        530,
+        507
+      ],
+      "feet": [
+        21.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1133
+    },
+    {
+      "time": 2.25,
+      "file": "walk-024.png",
+      "box": [
+        478,
+        411,
+        534,
+        507
+      ],
+      "feet": [
+        21.0,
+        92.0
+      ],
+      "body_height": 89,
+      "blue_area": 1154
+    },
+    {
+      "time": 2.29167,
+      "file": "walk-025.png",
+      "box": [
+        480,
+        411,
+        538,
+        505
+      ],
+      "feet": [
+        21.0,
+        90.0
+      ],
+      "body_height": 87,
+      "blue_area": 1179
+    },
+    {
+      "time": 2.33333,
+      "file": "walk-026.png",
+      "box": [
+        480,
+        413,
+        542,
+        505
+      ],
+      "feet": [
+        26.0,
+        88.0
+      ],
+      "body_height": 85,
+      "blue_area": 1161
+    },
+    {
+      "time": 2.375,
+      "file": "walk-027.png",
+      "box": [
+        482,
+        413,
+        546,
+        503
+      ],
+      "feet": [
+        27.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1124
+    },
+    {
+      "time": 2.41667,
+      "file": "walk-028.png",
+      "box": [
+        484,
+        413,
+        550,
+        503
+      ],
+      "feet": [
+        29.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1082
+    },
+    {
+      "time": 2.45833,
+      "file": "walk-029.png",
+      "box": [
+        488,
+        413,
+        554,
+        501
+      ],
+      "feet": [
+        30.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1071
+    },
+    {
+      "time": 2.5,
+      "file": "walk-030.png",
+      "box": [
+        501,
+        413,
+        556,
+        501
+      ],
+      "feet": [
+        22.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1030
+    },
+    {
+      "time": 2.54167,
+      "file": "walk-031.png",
+      "box": [
+        504,
+        411,
+        560,
+        501
+      ],
+      "feet": [
+        22.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1053
+    },
+    {
+      "time": 2.58333,
+      "file": "walk-032.png",
+      "box": [
+        508,
+        409,
+        564,
+        499
+      ],
+      "feet": [
+        20.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1032
+    },
+    {
+      "time": 2.625,
+      "file": "walk-033.png",
+      "box": [
+        512,
+        409,
+        566,
+        499
+      ],
+      "feet": [
+        20.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1000
+    },
+    {
+      "time": 2.66667,
+      "file": "walk-034.png",
+      "box": [
+        518,
+        407,
+        576,
+        501
+      ],
+      "feet": [
+        21.0,
+        90.0
+      ],
+      "body_height": 87,
+      "blue_area": 1088
+    },
+    {
+      "time": 2.70833,
+      "file": "walk-035.png",
+      "box": [
+        524,
+        407,
+        578,
+        499
+      ],
+      "feet": [
+        18.0,
+        88.0
+      ],
+      "body_height": 85,
+      "blue_area": 1082
+    },
+    {
+      "time": 2.75,
+      "file": "walk-036.png",
+      "box": [
+        525,
+        409,
+        582,
+        499
+      ],
+      "feet": [
+        21.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1106
+    },
+    {
+      "time": 2.79167,
+      "file": "walk-037.png",
+      "box": [
+        526,
+        409,
+        586,
+        499
+      ],
+      "feet": [
+        24.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1114
+    },
+    {
+      "time": 2.83333,
+      "file": "walk-038.png",
+      "box": [
+        530,
+        409,
+        590,
+        495
+      ],
+      "feet": [
+        23.5,
+        82.0
+      ],
+      "body_height": 79,
+      "blue_area": 1107
+    },
+    {
+      "time": 2.875,
+      "file": "walk-039.png",
+      "box": [
+        534,
+        409,
+        594,
+        491
+      ],
+      "feet": [
+        23.5,
+        78.0
+      ],
+      "body_height": 75,
+      "blue_area": 1072
+    },
+    {
+      "time": 2.91667,
+      "file": "walk-040.png",
+      "box": [
+        542,
+        407,
+        598,
+        493
+      ],
+      "feet": [
+        20.0,
+        82.0
+      ],
+      "body_height": 79,
+      "blue_area": 1049
+    },
+    {
+      "time": 2.95833,
+      "file": "walk-041.png",
+      "box": [
+        546,
+        405,
+        600,
+        490
+      ],
+      "feet": [
+        19.0,
+        81.0
+      ],
+      "body_height": 78,
+      "blue_area": 988
+    },
+    {
+      "time": 3.0,
+      "file": "walk-042.png",
+      "box": [
+        550,
+        405,
+        604,
+        493
+      ],
+      "feet": [
+        20.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1041
+    },
+    {
+      "time": 3.04167,
+      "file": "walk-043.png",
+      "box": [
+        552,
+        405,
+        606,
+        493
+      ],
+      "feet": [
+        22.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1132
+    },
+    {
+      "time": 3.08333,
+      "file": "walk-044.png",
+      "box": [
+        556,
+        405,
+        610,
+        495
+      ],
+      "feet": [
+        22.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1086
+    },
+    {
+      "time": 3.125,
+      "file": "walk-045.png",
+      "box": [
+        560,
+        405,
+        614,
+        493
+      ],
+      "feet": [
+        21.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1034
+    },
+    {
+      "time": 3.16667,
+      "file": "walk-046.png",
+      "box": [
+        566,
+        405,
+        624,
+        494
+      ],
+      "feet": [
+        22.0,
+        85.0
+      ],
+      "body_height": 82,
+      "blue_area": 1164
+    },
+    {
+      "time": 3.20833,
+      "file": "walk-047.png",
+      "box": [
+        568,
+        405,
+        626,
+        493
+      ],
+      "feet": [
+        23.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1153
+    },
+    {
+      "time": 3.25,
+      "file": "walk-048.png",
+      "box": [
+        570,
+        405,
+        635,
+        491
+      ],
+      "feet": [
+        26.0,
+        82.0
+      ],
+      "body_height": 79,
+      "blue_area": 1124
+    },
+    {
+      "time": 3.29167,
+      "file": "walk-049.png",
+      "box": [
+        576,
+        405,
+        638,
+        489
+      ],
+      "feet": [
+        25.0,
+        80.0
+      ],
+      "body_height": 77,
+      "blue_area": 1036
+    },
+    {
+      "time": 3.33333,
+      "file": "walk-050.png",
+      "box": [
+        584,
+        405,
+        642,
+        489
+      ],
+      "feet": [
+        20.0,
+        80.0
+      ],
+      "body_height": 77,
+      "blue_area": 1030
+    },
+    {
+      "time": 3.375,
+      "file": "walk-051.png",
+      "box": [
+        588,
+        403,
+        646,
+        489
+      ],
+      "feet": [
+        20.0,
+        82.0
+      ],
+      "body_height": 79,
+      "blue_area": 1036
+    },
+    {
+      "time": 3.41667,
+      "file": "walk-052.png",
+      "box": [
+        592,
+        401,
+        644,
+        489
+      ],
+      "feet": [
+        19.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 961
+    },
+    {
+      "time": 3.45833,
+      "file": "walk-053.png",
+      "box": [
+        596,
+        400,
+        648,
+        489
+      ],
+      "feet": [
+        19.0,
+        85.0
+      ],
+      "body_height": 82,
+      "blue_area": 902
+    },
+    {
+      "time": 3.5,
+      "file": "walk-054.png",
+      "box": [
+        598,
+        399,
+        652,
+        489
+      ],
+      "feet": [
+        20.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 942
+    },
+    {
+      "time": 3.54167,
+      "file": "walk-055.png",
+      "box": [
+        602,
+        399,
+        656,
+        489
+      ],
+      "feet": [
+        20.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1019
+    },
+    {
+      "time": 3.58333,
+      "file": "walk-056.png",
+      "box": [
+        606,
+        399,
+        664,
+        489
+      ],
+      "feet": [
+        18.0,
+        86.0
+      ],
+      "body_height": 83,
+      "blue_area": 1001
+    },
+    {
+      "time": 3.625,
+      "file": "walk-057.png",
+      "box": [
+        608,
+        401,
+        668,
+        489
+      ],
+      "feet": [
+        19.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1007
+    },
+    {
+      "time": 3.66667,
+      "file": "walk-058.png",
+      "box": [
+        608,
+        401,
+        670,
+        489
+      ],
+      "feet": [
+        23.0,
+        84.0
+      ],
+      "body_height": 81,
+      "blue_area": 1117
+    },
+    {
+      "time": 3.70833,
+      "file": "walk-059.png",
+      "box": [
+        612,
+        401,
+        674,
+        487
+      ],
+      "feet": [
+        22.0,
+        82.0
+      ],
+      "body_height": 79,
+      "blue_area": 1028
+    },
+    {
+      "time": 3.75,
+      "file": "walk-060.png",
+      "box": [
+        614,
+        401,
+        677,
+        487
+      ],
+      "feet": [
+        24.0,
+        82.0
+      ],
+      "body_height": 79,
+      "blue_area": 1023
+    },
+    {
+      "time": 3.79167,
+      "file": "walk-061.png",
+      "box": [
+        618,
+        402,
+        682,
+        485
+      ],
+      "feet": [
+        24.0,
+        79.0
+      ],
+      "body_height": 76,
+      "blue_area": 998
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+=== F04 | תמונה 5: הגעה — זיהוי היעד בלי לשנות מצלמה ===
+קלט: F03 המאושרת.
+שם לשמירה: F04-terrain-arrival.png
+
+EDIT the supplied stopped position-check frame into the destination-verification keyframe. Keep the SAME locked camera, lens, crop, lighting and landscape. The hill, palms, road junction and building remain at their exact existing pixel locations. Do not zoom in, reframe, switch to a close-up or enlarge physical landmarks.
+
+Remove the earlier hill ring and palm bracket. Preserve the entire chosen orange route and both checkpoints. Move the SAME SINGLE blue navigator along the route to the EXACT intended destination junction beside the existing stone building. The figure is stopped at the junction itself, not somewhere in the surrounding area. Preserve correct perspective rather than enlarging the distant figure to foreground size. The paper map is folded or held low as a small physical prop.
+
+Make the destination checks visually prominent using bold teaching overlays anchored to the existing objects. Trace one thick open ring around the junction's three-arm road pattern while leaving all arms visible. Add one separate thick open bracket around the existing rectangular stone building. The overlays, not a camera change, bring attention to the two identifying signs. Keep the road and building shapes clearly visible inside them. Fill the existing small destination diamond at the junction to indicate that verification has been completed.
+
+Preserve realistic terrain materials and sharp focus throughout. No changed geography, new building, altered road connections, floating map, full-frame map, inset, split screen, zoom, camera move, broad arrival-radius effect, GPS lock, giant success tick, celebration, duplicate person, text, labels, numbers, logo or watermark.

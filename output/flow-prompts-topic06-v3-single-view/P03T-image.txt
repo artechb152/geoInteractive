@@ -1,0 +1,7 @@
+Edit the approved departure image into the stopped position-check state. Preserve the same full-width 16:9 terrain scene, oblique camera, rocky hill, palm cluster, tracks, junction, stone building, light and deep focus. Remove the oversized compass and its temporary direction arrow; retain the chosen orange route and checkpoints.
+
+Place the same single solid-blue three-dimensional navigator at the FIRST planned checkpoint, after following the chosen route around the lower side of the hill. The navigator is visibly stopped, with feet on the ground and the same body design as before. Do not introduce a duplicate figure or a GPS marker. The first checkpoint is in a location where both the hill and palms are clearly visible and separated.
+
+Emphasize the existing hill with a broad unfilled burnt-orange ring, and the existing palm cluster with a large open bracket. These two distinct shapes identify the features that will be matched to the map. Keep the hill's geometry, the exact palm cluster and the whole road network unchanged. The completed route segment can be slightly stronger than the remaining route, without changing the route's location.
+
+The image must communicate a deliberate stop to inspect recognizable terrain features. There is only one view, filling the frame. No paper-map panel, inset, split screen, added hill, new palms, expanding terrain, thin crisscrossing sightlines, automatic success tick, blurred landmarks, text, letters, numbers, captions, logos or watermarks.

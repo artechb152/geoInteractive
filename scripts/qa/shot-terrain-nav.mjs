@@ -43,16 +43,14 @@ const fail = (m) => {
 const ok = (m) => console.log('ok  ', m);
 const check = (cond, m) => (cond ? ok(m) : fail(m));
 
-// The shortened copy of 2026-10-27 (lesson-6 copy cleanup).
+// The shortened copy of 2026-10-29 (lesson-6 focused cleanup).
 const APPROVED = [
-  'בוחרים סימנים שאפשר לזהות במפה ובשטח',
-  'השיטה מתאימה כשיש סימנים בולטים לאורך הדרך והראות מאפשרת להשוות אותם למפה.',
+  'מזהים במפה ובשטח סימנים',
+  'מתאים כשהסימנים ברורים והראות טובה.',
   'הציר עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר (B).',
-  'כיפה — צורת קרקע בולטת (תבליט)',
-  'כפר — מבנים על הקרקע (תכסית)',
-  'הציר — מסימן לסימן',
-  'נקודת מוצא (A)',
-  'היעד — הכיכר המרכזית בכפר (B)',
+  'כיפה — תבליט',
+  'כפר — תכסית',
+  'ציר הניווט',
   'ניווט עיוור מתבסס על נקודת מוצא ידועה ועל אזימוט ומרחק שנקבעו מראש.',
   'השיטה מתאימה כשהראות מוגבלת או שיש מעט סימנים מובחנים, ובתנאי שנקודת המוצא ידועה.',
   'במפת התכנון רואים את כל הדרך, ובשטח רק כ־30 מ׳ סביבכם. ההליכה מוצגת ללא סטייה.',
@@ -94,14 +92,25 @@ try {
   const model = await page.locator('[data-panel="model"]').boundingBox();
   const map = await page.locator('[data-panel="map"]').boundingBox();
   check(model.x > map.x, 'model at the inline start (right), map at the end (left)');
-  // Laptop fit (2026-10-28): the map panel is the sheet alone, the route legend runs under both views
-  // and the task sits in a column beside the map.
+  // Learning (2026-11-02): no side column — the views take the card's width, the feature bar sits over
+  // them, the info strip (feature, route plan) and the route legend under both; the mode switch is the
+  // one way into practice.
+  const card = await page.locator('[data-activity="terrain-association"]').boundingBox();
+  const fitK = await page.locator('[data-activity="terrain-association"]').evaluate((el) => el.getBoundingClientRect().width / el.offsetWidth);
+  check((await page.locator('[data-strip]').count()) === 0, 'learning: no task column');
+  check(map.x - card.x < 30 * fitK && card.x + card.width - (model.x + model.width) < 30 * fitK, 'learning: the views span the card');
+  check(Math.round(model.height / fitK) === 448, `learning: views 448 px tall (${(model.height / fitK).toFixed(0)})`);
   const share = model.width / (model.width + map.width);
-  check(share > 0.55 && share < 0.65, `model ≈ 60 % of the two views (the map panel is the sheet alone) (${(share * 100).toFixed(1)} %)`);
-  const legendBox = await page.locator('[data-activity="terrain-association"] [data-legend="route"]').boundingBox();
-  check(legendBox && legendBox.y >= map.y + map.height && legendBox.x < map.x + map.width && legendBox.x + legendBox.width > model.x, 'the route legend runs under both views');
-  const taskBox = await page.locator('[data-strip]').boundingBox();
-  check(taskBox && taskBox.x + taskBox.width <= map.x + 1 && taskBox.y < map.y, 'the task sits in a column beside the map (inline end)');
+  check(share > 0.65 && share < 0.78, `learning: model ≈ 70 % of the two views (the map panel is the sheet alone) (${(share * 100).toFixed(1)} %)`);
+  const barBox = await page.locator('[data-feature-bar]').boundingBox();
+  check(barBox && barBox.y + barBox.height <= model.y && model.y - (barBox.y + barBox.height) < 16 * fitK, 'learning: the feature bar sits right over the views');
+  const infoBox = await page.locator('[data-learn-info]').boundingBox();
+  check(infoBox && infoBox.y >= map.y + map.height && infoBox.x <= map.x + 1 && infoBox.x + infoBox.width >= model.x + model.width - 1, 'learning: the info strip runs under both views');
+  // One line: the marks under the model, the caption under the map.
+  const legendBox = await page.locator('[data-activity="terrain-association"] [data-legend="band"]').boundingBox();
+  check(legendBox && legendBox.y >= infoBox.y + infoBox.height && legendBox.x < map.x + map.width && legendBox.x + legendBox.width > model.x, 'the route legend and its caption run under both views');
+  check((await page.locator('[data-activity="terrain-association"] button', { hasText: 'התחילו לתרגל' }).count()) === 0, 'one way into practice: no "התחילו לתרגל" button');
+  check((await page.locator('[data-mode-switch] [role="radio"][aria-checked="true"]').innerText()) === 'לימוד', 'the switch shows לימוד as the active mode');
   check(Math.abs(model.height - map.height) < 1, 'model and map share one height');
   check(Math.abs(model.y - map.y) < 1, 'side by side');
   await shot(page, '01-learn.png');
@@ -114,8 +123,9 @@ try {
   const terrainTop = (await page.locator('#combatnav-handrail').boundingBox()).y;
   const deadTop = (await page.locator('#combatnav-dead').boundingBox()).y;
   check(terrainTop < deadTop, 'terrain association first, dead reckoning below');
-  // The only disclosures: the map key (symbols, not lesson text) and the feature list's "more" toggle (buttons, not lesson text).
-  check((await page.locator('#scene-combat [aria-expanded]:not([aria-label="מקרא המפה"]):not([data-feature-more])').count()) === 0, 'no accordion in the sub-topic');
+  // The only disclosures: the map key and the full feature list (symbols and buttons, not lesson text),
+  // and the info strip's own details and route plan.
+  check((await page.locator('#scene-combat [aria-expanded]:not([aria-label="מקרא המפה"]):not([data-popover="all-features"]):not([data-route-plan] button)').count()) === 0, 'no accordion in the sub-topic');
 
   // ---- registration (labels on the canvas' own projection) and the map's marks
   const panel = model;
@@ -138,15 +148,35 @@ try {
     check(Math.abs(cx - m.x) < 0.01 && Math.abs(cy - m.y) < 0.01, `map mark ${id} at worldToMap(summit)`);
   }
 
-  // ---- the feature list (2026-10-27 copy cleanup): the route first, the other 10 on request, from the keyboard too
-  const more = page.locator('[data-feature-more]');
-  check((await page.locator('[data-feature]').count()) === 5 && (await more.getAttribute('aria-expanded')) === 'false', 'list: the 5 route features first, the rest closed');
+  // Secondary route figures are available on request, including from the keyboard.
+  const routePlan = page.locator('[data-route-plan]');
+  check(!(await routePlan.locator('[data-plan]').isVisible()), 'route figures closed initially');
+  await routePlan.locator('button').focus();
+  await page.keyboard.press('Enter');
+  check(await routePlan.locator('[data-plan]').isVisible(), 'Enter reveals all route figures');
+  await page.keyboard.press('Enter');
+  check(!(await routePlan.locator('[data-plan]').isVisible()), 'Enter closes route figures without changing the activity');
+
+  // ---- the feature bar: the route's 5 in the bar, all 15 behind "כל הסימנים", from the keyboard too
+  const more = page.locator('[data-popover="all-features"]');
+  check((await page.locator('[data-feature]').count()) === 5 && (await more.getAttribute('aria-expanded')) === 'false', 'bar: the 5 route features, the full list closed');
   await more.focus();
   await page.keyboard.press('Enter');
-  check((await page.locator('[data-feature]').count()) === 15 && (await more.getAttribute('aria-expanded')) === 'true', 'list: Enter on the toggle opens all 15');
-  check(await more.evaluate((el) => document.activeElement === el), 'list: focus stays on the toggle');
-  await page.keyboard.press('Enter');
-  check((await page.locator('[data-feature]').count()) === 5, 'list: Enter again closes it');
+  check((await page.locator('[data-feature-option]').count()) === 15 && (await more.getAttribute('aria-expanded')) === 'true', 'bar: Enter on "כל הסימנים" opens all 15');
+  await page.keyboard.press('Escape');
+  check((await page.locator('[data-feature-option]').count()) === 0 && (await more.evaluate((el) => document.activeElement === el)), 'bar: Esc closes it, focus back on the toggle');
+  {
+    // The tallest learning state — details and the plan open — still fits the laptop view (≤ 760 px).
+    await page.locator('[data-feature="H2"]').click();
+    await page.locator('[data-feature-details-toggle]').click();
+    await routePlan.locator('button').click();
+    const tall = await page.locator('[data-activity="terrain-association"]').evaluate((el) => el.offsetHeight);
+    check(tall <= 760, `learning's tallest state fits (${tall} ≤ 760 px)`);
+    check(/בתכנון:/.test(await page.locator('[data-feature-details]').innerText()), 'details: a route feature names its legs of the plan');
+    await page.locator('[data-feature-details-toggle]').click();
+    await routePlan.locator('button').click();
+    await page.locator('[data-feature="H2"]').click();
+  }
   {
     const svgEl = page.locator('[data-panel="map"] svg[data-map-mode]');
     const t = worldToMap(WATER_TOWER);
@@ -157,12 +187,14 @@ try {
     await page.mouse.click(at[0], at[1]);
     await page.waitForTimeout(200);
     check((await state(page)).learnFeature === 'tower', 'map click on the water tower → tower');
-    check((await page.locator('[data-feature="tower"]').getAttribute('aria-pressed').catch(() => null)) === 'true', 'a hidden feature picked on the map opens the list, pressed');
+    check((await page.locator('[data-feature="tower"]').getAttribute('aria-pressed').catch(() => null)) === 'true', 'a feature off the route picked on the map joins the bar, pressed');
   }
   await shot(page, '01b-learn-list-open.png');
 
   // ---- linking: list → both views; map → both; model → both
-  await page.locator('[data-feature="G1"]').click();
+  await more.click();
+  await page.locator('[data-feature-option="G1"]').click();
+  check((await page.locator('[data-feature-option]').count()) === 0, 'list: a pick closes it');
   check((await state(page)).learnFeature === 'G1' && (await page.locator('[data-highlight="G1"]').count()) === 1, 'list: G1 selected and highlighted on the map');
   await page.waitForTimeout(500);
   await shot(page, '02-learn-grove.png');
@@ -189,6 +221,7 @@ try {
   await page.waitForTimeout(800);
   check((await view(page)).mode === 'eye', 'practice opens at the navigator\'s eye');
   const leg0 = LEGS[0];
+  check((await page.locator('[data-evidence]').count()) === 0 && (await page.locator('[data-radio="comparison"]').count()) === 0, 'opening practice asks only for a position; evidence and comparison follow its selection');
   check((await page.locator(`[data-model-label="${leg0.to}"]`).count()) === 0, 'no model label at the point being checked');
   check((await page.locator(`[data-checkpoint="${leg0.to}"]`).count()) === 0, 'no map mark at the point being checked');
   check(!(await page.locator('[data-strip="practice"]').innerText()).includes('כיפה 1'), 'the task does not name כיפה 1 on leg 1');
@@ -211,6 +244,7 @@ try {
   // ---- flows
   const wrong = leg0.candidates.find((c) => c !== leg0.answer);
   await pickChoice(page, leg0, { candidate: wrong, evidence: [], comparison: 'mismatch' });
+  check(await page.locator('[data-evidence]').isVisible() && await page.locator('[data-radio="comparison"]').isVisible(), 'selecting a position reveals its evidence and comparison');
   await checkBtn(page).click();
   check((await feedback(page)) === 'wrong', 'a wrong point: concrete mismatch');
   check(/נקודה [א-ת]׳/.test(await page.locator('[data-feedback]').innerText()), 'the feedback names the marked point');

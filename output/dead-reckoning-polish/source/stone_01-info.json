@@ -1,0 +1,63 @@
+{
+  "lods": true,
+  "name": "Stone 01",
+  "categories": [
+    "rocks",
+    "nature",
+    "collection: verdant_trail"
+  ],
+  "type": 2,
+  "version_required": {
+    "blend": "4.0.1"
+  },
+  "authors": {
+    "Dario Barresi": "Photography",
+    "Rico Cilliers": "photography, processing"
+  },
+  "info": null,
+  "date_published": 1707177600,
+  "staging": null,
+  "tags": [
+    "rock",
+    "stone",
+    "pebbles",
+    "dirt",
+    "terrain",
+    "gravel",
+    "quartz"
+  ],
+  "max_resolution": [
+    8192,
+    8192
+  ],
+  "polycount": 71916,
+  "texel_density": 36264.456258287806,
+  "dimensions": [
+    147.15217798948288,
+    89.41811323165894,
+    71.89157977700233
+  ],
+  "files_hash": "3b541260ddde766b6bcfae56be426b81ce1a1e81",
+  "sponsors": [
+    "95481047",
+    "84390067"
+  ],
+  "description": "Free 8K model of a weathered reddish quartz stone with a rough, pebbly surface, earthy dirt streaks, crystalline veins and detailed, rugged geometry.",
+  "category_id": "229f6baa-7051-5eb5-8f2d-ed2aba17c8ea",
+  "category": "Nature/Rocks & Stone/Boulders",
+  "collections": [
+    "verdant_trail"
+  ],
+  "attributes": {
+    "condition": [
+      "weathered"
+    ],
+    "material": [
+      "stone"
+    ],
+    "lods": true
+  },
+  "img_version": "347a4b6f",
+  "download_count": 4632,
+  "thumbnail_url": "https://cdn.polyhaven.com/asset_img/thumbs/stone_01.png?width=256&height=256&format=webp&v=347a4b6f"
+}

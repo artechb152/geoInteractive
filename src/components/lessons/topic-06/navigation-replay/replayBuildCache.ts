@@ -1,7 +1,8 @@
-/** Three fixed CPU worlds; one build per key, serial preparation, deterministic
+/** Three fixed CPU worlds (replayRoute.WorldKey); one build per key, serial preparation, deterministic
  * ownership. Only the currently mounted world owns GPU instance buffers. */
-export type WorldKey = 'depart' | 'approach' | 'after';
-export const worldKey = (station: string): WorldKey => station === 'after' ? 'after' : station === 'depart' ? 'depart' : 'approach';
+import type { WorldKey } from './replayRoute';
+export type { WorldKey };
+export const WORLD_KEYS: readonly WorldKey[] = ['start', 'legA', 'legB'];
 export function createBuildCache<T>(build: (key: WorldKey, signal: AbortSignal) => Promise<T>, disposeValue: (value: T) => void) {
     const jobs = new Map<WorldKey, Promise<T>>();
     const values = new Set<T>();
@@ -12,7 +13,7 @@ export function createBuildCache<T>(build: (key: WorldKey, signal: AbortSignal) 
         get size() { return jobs.size; },
         get ready() { return [...ready]; },
         get(key: WorldKey): Promise<T> {
-            if (!['depart', 'approach', 'after'].includes(key) || abort.signal.aborted)
+            if (!WORLD_KEYS.includes(key) || abort.signal.aborted)
                 return Promise.reject(new Error('Inactive or unknown replay world'));
             const existing = jobs.get(key);
             if (existing)

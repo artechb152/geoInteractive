@@ -23,6 +23,9 @@ import { verticalFovForAspect } from './replayViewStore';
 import type { W2 } from './replayWorld';
 import { ReplayFallback } from './ReplayFallback';
 import type { WalkStore } from './replayWalk';
+import type { StopId } from './replayRoute';
+import type { ViewPick } from './replayCheck';
+import type { PickFn, ViewMarker } from './ReplayMarkers';
 
 const LOADING_LABEL = 'טוען שטח תלת־ממדי…';
 
@@ -59,24 +62,28 @@ export type ViewMode = 'pending' | 'live' | 'static';
 export function ReplayView({
   stationKey,
   station,
-  momentIndex,
   view,
   description,
   reduce,
   onMode,
   walk,
+  pickPrompt,
+  onPick,
+  markers,
   className,
 }: {
-  stationKey: string;
+  stationKey: StopId;
   station: W2;
-  /** 0-based moment index (the fallback stills are per moment). */
-  momentIndex: number;
   view: ViewStore;
   /** What the view shows, for screen readers. */
   description: string;
   reduce: boolean;
   onMode?: (m: ViewMode) => void;
   walk: WalkStore;
+  /** When set, a click in the view identifies a sign (the check's first step); the text asks for it. */
+  pickPrompt: string | null;
+  onPick: (pick: ViewPick | null) => void;
+  markers: ViewMarker[];
   className?: string;
 }) {
   const uid = useId();
@@ -90,11 +97,14 @@ export function ReplayView({
   const [busy, setBusy] = useState(true);
   const [sceneUp, setSceneUp] = useState(false);
   const onSceneMount = useCallback(() => setSceneUp(true), []);
+  const onSceneReady = useCallback(() => setReady(true), []);
   const [fullscreen, setFullscreen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const fitScale = useLessonViewportScale();
-  const drag = useRef<{ x: number; y: number; id: number } | null>(null);
+  const drag = useRef<{ x: number; y: number; id: number; x0: number; y0: number; t0: number } | null>(null);
+  const pickRef = useRef<PickFn | null>(null);
+  const picking = !!pickPrompt;
   const look = useSyncExternalStore(view.subscribe, view.get, view.get);
   const walkPhase = useSyncExternalStore(walk.subscribe, walk.phase, walk.phase);
   const travelling = walkPhase !== 'idle';
@@ -179,6 +189,7 @@ export function ReplayView({
         <h4 id={`${uid}-title`} className="font-display text-lg font-bold leading-none text-black">
           מה רואים בשטח
         </h4>
+        {live && !travelling && <span className="text-base text-black">{picking ? 'גרירה לסיבוב המבט · לחיצה קצרה לבחירה' : 'גרירה לסיבוב המבט'}</span>}
         {mode === 'static' && <span className="text-sm text-fg-muted">תצלומים מהמודל · התצוגה החיה אינה זמינה</span>}
       </div>
       <div
@@ -192,7 +203,7 @@ export function ReplayView({
         onPointerDown={(e) => {
           if (!live || travelling || e.button !== 0) return;
           if ((e.target as HTMLElement).closest('button')) return;
-          drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+          drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now() };
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           setDragging(true);
         }}
@@ -208,7 +219,16 @@ export function ReplayView({
           view.turn(-dx * degPerPx, dy * degPerPx);
         }}
         onPointerUp={(e) => {
-          if (drag.current?.id === e.pointerId) drag.current = null;
+          const d = drag.current;
+          if (d?.id === e.pointerId) {
+            drag.current = null;
+            // a click (not a drag) while a sign is asked for: what did the eye look at there?
+            if (picking && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 6 && performance.now() - d.t0 < 700) {
+              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const pick = pickRef.current?.(((e.clientX - r.left) / r.width) * 2 - 1, -(((e.clientY - r.top) / r.height) * 2 - 1)) ?? null;
+              onPick(pick);
+            }
+          }
           setDragging(false);
         }}
         onPointerCancel={() => {
@@ -218,7 +238,7 @@ export function ReplayView({
         className={cn(
           'relative min-h-0 flex-1 select-none overflow-hidden rounded-b-xl bg-bg-accent outline-none',
           "after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-b-xl after:content-[''] focus-visible:after:ring-4 focus-visible:after:ring-inset focus-visible:after:ring-accent",
-          live ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default',
+          live ? (dragging ? 'cursor-grabbing' : picking ? 'cursor-crosshair' : 'cursor-grab') : 'cursor-default',
           fullscreen && 'rounded-none after:rounded-none',
         )}
         style={{ touchAction: 'none' }}
@@ -238,20 +258,30 @@ export function ReplayView({
               station={station}
               view={view}
               active={inView || fullscreen}
-              onReady={() => setReady(true)}
+              onReady={onSceneReady}
               onBusy={setBusy}
               onLost={fallBack}
               walk={walk}
               onMount={onSceneMount}
+              pickRef={pickRef}
+              markers={markers}
+              reduce={reduce}
             />
           </CanvasErrorBoundary>
         )}
-        {mode === 'static' && <ReplayFallback momentIndex={momentIndex} view={view} reduce={reduce} />}
+        {mode === 'static' && <ReplayFallback stop={stationKey} view={view} reduce={reduce} />}
 
         <HeadingRibbon look={look} hfov={hfov} />
 
+        {/* the check's first step: what to click in the view */}
+        {live && picking && !travelling && ready && !busy && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-3.5 z-10 flex justify-center" data-pick-prompt>
+            <span className="rounded-full bg-black/70 px-3.5 py-1 text-sm font-bold text-white shadow">{pickPrompt}</span>
+          </div>
+        )}
+
         {!travelling && (mode === 'live' || mode === 'static') && (
-          <div className="absolute bottom-3 z-10 flex gap-2" style={{ left: 12 }} dir="ltr" data-view-controls>
+          <div className="absolute bottom-3 start-3 z-10 flex gap-2" dir="ltr" data-view-controls>
             <ViewButton label="הגדלה" onClick={() => view.zoom(0.8)} disabled={!live}>
               <Plus className="size-5" aria-hidden />
             </ViewButton>

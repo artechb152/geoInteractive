@@ -1,0 +1,11 @@
+=== F01 | תמונה 2: תכנון — תוספות על אותו נוף ===
+קלט: F00 התלת־ממדית בלבד. לא להשתמש ב־F01 הישנה של המפה.
+שם לשמירה: F01-terrain-plan.png
+
+EDIT THE SUPPLIED IMAGE. Treat it as a locked photographic background. Preserve the exact camera position, lens, crop, perspective, lighting, terrain textures, navigator design and every existing landmark at its current pixel location. This is the next keyframe of the SAME shot, not a new composition. Keep the full image as realistic three-dimensional terrain. Do not convert it into a map or overhead view.
+
+Add only bold educational route overlays. Both alternatives start at the stationary blue navigator and end at the existing destination junction beside the stone building. Show a shorter candidate as a broad gray dashed line crossing the hill's steep exposed shoulder. Show the selected candidate as a thick solid burnt-orange ribbon following the lower ground around the near side of the hill, passing beside the existing palms, then continuing toward the same destination. Fit both routes to the supplied geography. These markings follow the ground's perspective and relief; they are teaching graphics, not newly constructed roads.
+
+Add two conspicuous hollow circular checkpoints on the orange route: one near the palms with the hill clearly visible, and one farther along before the destination. Add one small hollow destination diamond at the actual junction. Keep the navigator at its EXACT starting location and pose. Make the routes and checkpoint discs readable at 600-pixel display width without obscuring the terrain.
+
+Everything except these overlays stays unchanged. No map sheet filling the frame, contour-map conversion, split screen, camera motion, zoom, relighting, new hill, moved palms, changed junction, compass, walking figure, text, letters, numbers, interface, glow, logo or watermark.

@@ -1,0 +1,12 @@
+=== A02 | הנפשה 2: מאמתים מוצא ומיישרים כיוון ===
+פריים התחלה: F01-terrain-plan.png
+פריים סיום: F02-terrain-direction.png
+שם לשמירה: A02-terrain-direction.mp4
+
+Animate the supplied planning frame into the supplied departure-direction frame as one continuous locked-camera terrain shot. Keep identical framing, lens, lighting, geography, route and checkpoints. Target approximately eight seconds if available. The navigator stays at the EXACT departure point throughout; this clip happens before walking.
+
+Give the known departure point one deliberate blue hollow ring. Reduce the contrast of the rejected shortcut. Bring the large tangible teaching compass into its final foreground position with a clear lift and controlled settle. Do not cover the navigator or first checkpoint. Its orange travel arrow is physically fixed to its baseplate.
+
+Initially the baseplate is slightly misaligned with the first route leg. Briefly extend a broad temporary gray dashed ground ray along that mistaken heading: its gap from the intended first-leg direction grows with distance from departure. This demonstrates accumulated direction error, not another route option. Then rotate the ENTIRE compass baseplate toward the first planned checkpoint. The magnetic needle maintains the same world magnetic-north direction as the instrument body rotates around it. Bring its north end into the preset orienting mark. Align the broad orange ground arrow with the fixed travel arrow and the first route leg. Remove the temporary error ray completely.
+
+Hold the supplied aligned end frame for roughly the final second. Do not aim the north needle at the destination, rotate the travel arrow independently, move the navigator, change terrain, shift the camera, reveal a map, display a numeric bearing or add a GPS effect. No split screen, text, captions, speech, music, logo or watermark. Keep the action large and unambiguous.

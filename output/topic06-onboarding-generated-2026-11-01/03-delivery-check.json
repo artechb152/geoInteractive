@@ -1,0 +1,84 @@
+{
+  "status": "verified final aligned image set",
+  "image_count": 5,
+  "motion_prompt_count": 4,
+  "same_canvas": [
+    1672,
+    941
+  ],
+  "shared_route_pixels_compared": 7726,
+  "shared_route_identical": true,
+  "fixed_landmark_patches": [
+    "hill_summit",
+    "palm_fronds",
+    "building_roof"
+  ],
+  "landmark_patches_pixel_identical": true,
+  "anchors": {
+    "start": [
+      250,
+      810
+    ],
+    "checkpoints": [
+      [
+        1065,
+        588
+      ],
+      [
+        1450,
+        465
+      ]
+    ],
+    "destination": [
+      1485,
+      404
+    ]
+  },
+  "images": [
+    {
+      "name": "F00-terrain-base.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3755925,
+      "sha256": "82d3f4a49fdd630faed38c2066aaeda1c68d973f9c6c48d34c4edad00c2cdc58"
+    },
+    {
+      "name": "F01-route-planning.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3743943,
+      "sha256": "c390d86843fc78ef4acab5290d9d689d6a8a2e9e092b776a5e5baa01bcb77dbf"
+    },
+    {
+      "name": "F02-departure-direction.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3713981,
+      "sha256": "4116cb6a3427aa2f719bef51e6b36d7ca4de726a5cd384001cd7c1636c9be5f4"
+    },
+    {
+      "name": "F03-position-check.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3718482,
+      "sha256": "7907e5effd6ee43f076cd00431046967b73f0adb2126f5a9b188918595eacd83"
+    },
+    {
+      "name": "F04-destination-verification.png",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3722203,
+      "sha256": "2e4ed4ad700aef2f837f257ffbaa1c0742815949208ededc28e8fc1c55703ca7"
+    }
+  ],
+  "motion_prompts": [
+    "A01-planning.txt",
+    "A02-direction.txt",
+    "A03-position-check.txt",
+    "A04-destination.txt"
+  ],
+  "visual_review": "Five-frame contact sheet, full departure/checking/arrival images, actor cutouts and restored ground inspected.",
+  "videos_generated": false,
+  "site_code_changed": false,
+  "production_note": "Flow video output still needs inspection after generation; images alone do not guarantee video consistency."
+}

@@ -1,0 +1,12 @@
+=== F00 | תמונה 1: בסיס — רק אם צריך בסיס חדש ===
+קלט: רפרנס לחומרים משיעור 2 ולדמות משיעור 1, אם זמינים.
+שם לשמירה: F00-terrain-base.png
+אם F00 הקיימת טובה: שומרים אותה כפי שהיא ומדלגים לפרומפט F01.
+
+Create a single realistic 16:9 educational terrain scene that will remain the locked background for five consecutive animation keyframes. Use convincing semi-arid limestone, dusty beige ground, sparse olive vegetation and soft daylight. Use the supplied lesson references for material realism and the solid-blue three-dimensional navigator, not for copying their armies or exact terrain.
+
+Use a fixed elevated oblique camera. Show one rocky hill near the center, exactly three palms together beside its lower-right side, a recognizable Y-shaped dirt-track junction farther toward the upper-right, and one rectangular pale-stone building beside that junction. Show a steep exposed shoulder on the hill and gentler lower ground around its near and right sides. Keep the entire journey area visible. Make the junction and building large enough to identify without a later camera zoom.
+
+Place one grounded solid-blue navigator at departure in the lower-left foreground, with recognizable volume and boots. The figure is an educational character, not a map pin. A small folded cream paper map may be carried by the figure as an ordinary physical prop. All landmarks are sharp and visually distinct, including the distant junction and building. Match realistic lesson imagery; avoid toy styling and tilt-shift blur.
+
+No routes, compass, checkpoint discs, highlighted landmarks, text, labels, numbers, extra people, enemies, interface, split screen, map panel, floating map, logo or watermark. This exact camera, geography, framing and lighting must be retained throughout the series.

@@ -10,7 +10,8 @@
  */
 export type Look = { yawDeg: number; pitchDeg: number; vfovDeg: number };
 
-export const LOOK_LIMITS = { pitchMin: -22, pitchMax: 14, vfovMin: 16, vfovMax: 54 } as const;
+/** Up to 24° up: a summit close by (from the woodland's edge) must fit in the frame. */
+export const LOOK_LIMITS = { pitchMin: -22, pitchMax: 24, vfovMin: 16, vfovMax: 54 } as const;
 /** Legacy zoom-dial value; the actual opening is a fixed 80° horizontally. */
 export const DEFAULT_VFOV = 54;
 export const EYE_HEIGHT_M = 1.7;

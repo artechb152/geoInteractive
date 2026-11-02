@@ -153,7 +153,7 @@ export function PlanningLab({ title, intro }: { title: string; intro: string }) 
           {title}
         </h3>
         <StatusChip tone="badge" className="mt-1.5 text-sm">
-          שטח לימודי בדיוני · השחזור הבא ממשיך את דוגמת התכנון
+          שטח לימודי בדיוני · בהמשך: שחזור של מסלול לדוגמה
         </StatusChip>
       </div>
       <p className="mt-1.5 text-base leading-relaxed text-fg-muted">{intro}</p>
@@ -185,10 +185,10 @@ export function PlanningLab({ title, intro }: { title: string; intro: string }) 
         </div>
       </div>
 
-      {/* The workspace: model (inline start = right) · map · context panel (inline end = left) */}
-      <div className="mt-3 grid gap-x-4 gap-y-3" style={{ gridTemplateColumns: `minmax(0, 1fr) ${MAP_W}px ${PANEL_W}px`, gridTemplateRows: `${VIEW_H}px ${STRIP_H}px` }}>
-        <PlanningLabModel view={view} reduce={reduce} modelProps={modelProps} className="min-w-0" style={{ height: VIEW_H }} />
+      {/* The workspace: map (inline start = right) · model · context panel (inline end = left) */}
+      <div className="mt-3 grid gap-x-4 gap-y-3" style={{ gridTemplateColumns: `${MAP_W}px minmax(0, 1fr) ${PANEL_W}px`, gridTemplateRows: `${VIEW_H}px ${STRIP_H}px` }}>
         <MapPanel ready={ready} state={state} dispatch={dispatch} />
+        <PlanningLabModel view={view} reduce={reduce} modelProps={modelProps} className="min-w-0" style={{ height: VIEW_H }} />
         <div className="row-span-2 flex min-h-0 flex-col gap-3">
           {ready ? <ContextPanel state={state} dispatch={dispatch} view={view} /> : <div className="flex-1 rounded-xl border border-border bg-bg-accent/50" />}
           <MapTools />
@@ -592,7 +592,7 @@ function ContextPanel({ state, dispatch, view }: { state: State; dispatch: (a: A
             {inLeg && <LegLine leg={inLeg} n={i} onSelect={() => dispatch({ type: 'select', selection: { kind: 'leg', from: nodes[i - 1].id } })} />}
             {outLeg && <LegLine leg={outLeg} n={i + 1} onSelect={() => dispatch({ type: 'select', selection: { kind: 'leg', from: n.id } })} />}
           </div>
-          <p className={cn(BODY, 'mt-2 text-fg-muted')}>גררו את הנקודה, או הזיזו אותה בחיצי המקלדת במפה (Shift: 50 מ׳).</p>
+          <p className={cn(BODY, 'mt-2 text-fg-muted')}>גררו את הנקודה במפה כדי לשנות את המסלול. אפשר גם להזיז אותה בחיצי המקלדת (Shift: 50 מ׳).</p>
           <div className="mt-2.5 flex flex-wrap gap-2">
             {n.kind === 'check' ? (
               <>
@@ -696,9 +696,9 @@ function ContextPanel({ state, dispatch, view }: { state: State; dispatch: (a: A
       <>
         <h4 className={PANEL_TITLE}>עריכת מסלול</h4>
         <p className={cn(BODY, 'mt-1')} data-instruction>
-          הוסיפו נקודת מעבר במפה או גררו נקודה קיימת, ובחנו את הדרך בשטח.
+          לחצו על מקום פנוי במפה כדי להוסיף נקודה, או גררו נקודה קיימת. השוו במודל איך המסלול עובר בשטח.
         </p>
-        <p className={cn(BODY, 'mt-1 text-fg-muted')}>לחיצה על קו המסלול בוחרת קטע; גרירה ממנו מוסיפה נקודה.</p>
+        <p className={cn(BODY, 'mt-1 text-fg-muted')}>לחצו על קו המסלול או על קטע ברשימה כדי לראות את הכיוון והמרחק שלו.</p>
         <div className="mt-2.5 border-t border-border pt-2">
           <div className="font-display text-base font-bold text-black">קטעי הדרך</div>
           <div className="mt-1 space-y-0.5" data-legs>
@@ -716,7 +716,7 @@ function ContextPanel({ state, dispatch, view }: { state: State; dispatch: (a: A
       state.tool === 'checks' ? (
         <>
           <h4 className={PANEL_TITLE}>נקודות אימות</h4>
-          <p className={cn(BODY, 'mt-1')}>בחרו סימן שהמסלול עובר בו: במפה, במודל או ברשימה. הנקודה נקבעת במקום שבו המסלול עובר בסימן, בלי לשנות את הדרך.</p>
+          <p className={cn(BODY, 'mt-1')}>לחצו על סימן שהמסלול עובר בו — במפה, במודל או ברשימה למטה. תתווסף שם נקודת אימות: מקום שבו תעצרו לבדוק את המיקום.</p>
           <ol className="mt-2 space-y-0.5 text-base leading-snug text-black" data-check-list>
             <li>
               <span className="font-display font-bold">A</span> · המבנה הבולט
@@ -737,7 +737,7 @@ function ContextPanel({ state, dispatch, view }: { state: State; dispatch: (a: A
       ) : (
         <>
           <h4 className={PANEL_TITLE}>זיהוי בשטח</h4>
-          <p className={cn(BODY, 'mt-1')}>בחרו סימן במפה, במודל או ברשימה, והשוו איך הוא נראה בכל תצוגה.</p>
+          <p className={cn(BODY, 'mt-1')}>לחצו על סימן במפה, במודל או ברשימה למטה. הוא יודגש בשתי התצוגות; השוו איך הוא מסומן במפה ואיך הוא נראה בשטח.</p>
         </>
       );
   }

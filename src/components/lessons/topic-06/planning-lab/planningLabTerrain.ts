@@ -725,6 +725,54 @@ export function shrubs(): readonly Shrub[] {
   return shrubCache;
 }
 
+let understoryCache: Shrub[] | null = null;
+/**
+ * Model-only cover, below the map's mapping threshold like the maquis (no symbol, nothing listed above
+ * changes — its own random sequence): low shrubs under the grove's pines, out of their trunks' way and
+ * the clearing on the rocks at B; and a strip of greener shrubs on both banks of the stream and, thinner,
+ * of the ravine — the line of growth that marks a water course on the ground.
+ */
+export function understory(): readonly Shrub[] {
+  if (!understoryCache) {
+    const out: Shrub[] = [];
+    const rand = rng(0x7f4a7c15);
+    const pines = trees().filter((t) => t.group === 'grove');
+    for (const p of poissonInRing(groveRing, 4.2, 3, rand)) {
+      const keep = rand();
+      const size = rand();
+      const tone = rand();
+      const spin = rand() * Math.PI * 2;
+      if (keep < 0.3 || !clearOfLines(p) || Math.hypot(p.E - ROCKS.E, p.N - ROCKS.N) < ROCKS.rM * 0.6) continue;
+      if (pines.some((t) => Math.abs(t.E - p.E) < 2 && Math.abs(t.N - p.N) < 2)) continue;
+      out.push({ E: p.E, N: p.N, baseM: heightAt(p.E, p.N), heightM: 0.6 + size * 1.0, radiusM: 0.9 + size * 1.3, tone, spin });
+    }
+    const w = water();
+    const bank = (pts: readonly XY[], inner: number, outer: number, keepP: number) => {
+      for (let k = 2; k < pts.length - 2; k += 2) {
+        const [aE, aN] = pts[k - 2];
+        const [bE, bN] = pts[k + 2];
+        const len = Math.hypot(bE - aE, bN - aN) || 1;
+        for (const side of [-1, 1]) {
+          const keep = rand();
+          const off = inner + rand() * (outer - inner);
+          const along = (rand() - 0.5) * 3;
+          const size = rand();
+          const tone = rand();
+          const spin = rand() * Math.PI * 2;
+          if (keep > keepP) continue;
+          const p = { E: pts[k][0] + (-(bN - aN) / len) * off * side + ((bE - aE) / len) * along, N: pts[k][1] + ((bE - aE) / len) * off * side + ((bN - aN) / len) * along };
+          if (!inCoverArea(p) || nearLine(p, ROAD_WIDTH_M / 2 + 4, ['road']) || nearBuilding(p, 26)) continue;
+          out.push({ E: p.E, N: p.N, baseM: heightAt(p.E, p.N), heightM: 0.9 + size * 1.5, radiusM: 1.1 + size * 1.6, tone, spin });
+        }
+      }
+    };
+    bank(w.stream.pts, 6, 13, 0.62);
+    bank(w.ravine.pts, 2.8, 7, 0.7);
+    understoryCache = out;
+  }
+  return understoryCache;
+}
+
 export type Boulder = { readonly E: number; readonly N: number; readonly baseM: number; readonly sizeM: number; readonly spin: number; readonly tone: number; /** The outcrop at B — drawn on the map as the rocks sign. */ readonly atB: boolean };
 
 let boulderCache: Boulder[] | null = null;
@@ -761,6 +809,49 @@ export function boulders(): readonly Boulder[] {
     boulderCache = out;
   }
   return boulderCache;
+}
+
+let bedCache: Boulder[] | null = null;
+/**
+ * Model-only stones in the beds (the map draws only the rocks at B; its own random sequence): rounded
+ * stones and a few boulders strewn down the ravine's bed and along the stream's shallows, so a water
+ * course reads as a bed of stones, not a strip of gravel.
+ */
+export function bedStones(): readonly Boulder[] {
+  if (!bedCache) {
+    const out: Boulder[] = [];
+    const rand = rng(0x5be0cd19);
+    const w = water();
+    const strew = (pts: readonly XY[], every: number, halfFrom: number, halfTo: number, big: number) => {
+      for (let k = 1; k < pts.length - 1; k += every) {
+        const t = k / (pts.length - 1);
+        const half = halfFrom + (halfTo - halfFrom) * t;
+        const [aE, aN] = pts[k - 1];
+        const [bE, bN] = pts[k + 1];
+        const len = Math.hypot(bE - aE, bN - aN) || 1;
+        // in clusters with bare stretches between, not a row: a slow noise along the bed sets how many
+        const cluster = 0.5 + 0.5 * valueNoise(pts[k][0] / 22 + 3.3, pts[k][1] / 22 - 1.9);
+        const n = Math.floor(rand() * 5 * cluster * cluster);
+        for (let q = 0; q < n; q++) {
+          // most in the bed, a few thrown up onto its banks
+          const off = (rand() * 2 - 1) * half * (rand() < 0.2 ? 1.8 : 1);
+          const along = (rand() - 0.5) * every * 2;
+          const size = rand();
+          const spin = rand() * Math.PI * 2;
+          const tone = rand();
+          const p = { E: pts[k][0] - ((bN - aN) / len) * off + ((bE - aE) / len) * along, N: pts[k][1] + ((bE - aE) / len) * off + ((bN - aN) / len) * along };
+          if (!inCoverArea(p) || nearLine(p, ROAD_WIDTH_M / 2 + 1.5, ['road'])) continue;
+          out.push({ E: p.E, N: p.N, baseM: heightAt(p.E, p.N), sizeM: 0.35 + size * size * big, spin, tone, atB: false });
+        }
+      }
+    };
+    // the ravine: from under the saddle (its first point) to the stream, the bed widening
+    strew(w.ravine.pts, 2, 0.6, 1.9, 1.5);
+    // the stream: on its gravel either side of the water, every ~8 m
+    strew(w.stream.pts, 4, 3.4, 3.4, 1.0);
+    bedCache = out;
+  }
+  return bedCache;
 }
 
 // ---------------------------------------------------------------- map label placement

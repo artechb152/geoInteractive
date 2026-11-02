@@ -43,14 +43,14 @@ const check = (cond, m) => (cond ? ok(m) : fail(m));
 const SEL = '[data-activity="north-lab"]';
 
 const REL = {
-  true: 'זה הבסיס להשוואה: הזוויות שעל החצים במפה נמדדות ממנו.',
-  grid: 'בדוגמה, צפון הרשת נוטה 2° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־2°.',
+  true: 'הצפון האמיתי הוא נקודת הייחוס להשוואה.',
+  grid: 'צפון הרשת נוטה 2° מזרחה מהאמיתי; האזימוט קטן ב־2°.',
   magnetic: (d) =>
     d === 0
-      ? 'בדוגמה, הצפון המגנטי חופף לצפון האמיתי, ולכן האזימוט זהה.'
+      ? 'הצפון המגנטי חופף לצפון האמיתי; האזימוט זהה.'
       : d < 0
-        ? `בדוגמה, הצפון המגנטי נוטה ${-d}° מערבה מהצפון האמיתי, ולכן האזימוט גדול ב־${-d}°.`
-        : `בדוגמה, הצפון המגנטי נוטה ${d}° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־${d}°.`,
+        ? `הצפון המגנטי נוטה ${-d}° מערבה מהאמיתי; האזימוט גדול ב־${-d}°.`
+        : `הצפון המגנטי נוטה ${d}° מזרחה מהאמיתי; האזימוט קטן ב־${d}°.`,
 };
 
 async function open(browser, opts = {}) {
@@ -193,15 +193,15 @@ try {
   const text = await page.locator(SEL).innerText();
   const COPY = [
     'שלושה סוגי צפון',
-    'הכיוון מ־A אל B לא משתנה. משתנה רק הצפון שממנו מודדים — ואיתו ערך האזימוט.',
+    'אותו יעד, צפון אחר — אזימוט אחר. בחרו צפון והשוו את המדידה.',
     'מאיזה צפון מודדים?',
-    'צפון מגנטי (Magnetic North)',
-    'הכיוון שמורה הקצה הצפוני של מחט המצפן, בהתאם לשדה המגנטי המקומי של כדור הארץ. ממנו מודדים כיוון במצפן.',
-    'דגש לשימוש: מתכות ושדות מגנטיים סמוכים עלולים לשבש את הקריאה.',
+    'צפון מגנטי',
+    'כיוון הקצה הצפוני של מחט המצפן; ממנו מודדים אזימוט במצפן.',
+    'מתכות ושדות מגנטיים עלולים לשבש את הקריאה.',
     'נטייה מגנטית לדוגמה',
-    'הזווית בין הצפון האמיתי לצפון המגנטי. היא משתנה לפי המקום והזמן.',
+    'ההפרש בין הצפון האמיתי למגנטי; משתנה לפי המקום והזמן.',
     'השוואת אזימוטים לאותו יעד',
-    'במעבר בין מפה למצפן: בודקים את ההפרש בין צפון הרשת לצפון המגנטי ומתקנים את האזימוט בהתאם לנתונים העדכניים לאזור.',
+    'ממפה למצפן: מתקנים את האזימוט לפי ההפרש העדכני באזור בין צפון הרשת לצפון המגנטי.',
   ];
   for (const c of COPY) check(text.includes(c), `copy: "${c.slice(0, 32)}…"`);
   const GONE = [
@@ -216,7 +216,7 @@ try {
   ];
   for (const g of GONE) check(!text.includes(g), `removed: "${g.slice(0, 32)}…"`);
   const once = (s) => text.split(s).length - 1;
-  for (const s of ['משתנה לפי המקום והזמן', 'במעבר בין מפה למצפן', 'לנתונים העדכניים', 'מתכות ושדות מגנטיים']) {
+  for (const s of ['משתנה לפי המקום והזמן', 'ממפה למצפן', 'ההפרש העדכני באזור', 'מתכות ושדות מגנטיים']) {
     check(once(s) === 1, `once: "${s}" ×${once(s)}`);
   }
   const mapNote = await page.evaluate((sel) => document.querySelector(`${sel} [data-map]`).textContent.includes('הנתונים להמחשה בלבד'), SEL);
@@ -272,7 +272,7 @@ try {
     `inset labels: names only ${JSON.stringify(s0.insetLabels)}`,
   );
   check(!/\b(TN|GN|MN)\b/.test(await page.locator(`${SEL} [data-map]`).textContent()), 'no TN / GN / MN abbreviations on the map');
-  check(s0.panelText.startsWith('צפון מגנטי (Magnetic North)'), `opening: panel "${s0.panelText.slice(0, 40)}…"`);
+  check(s0.panelText.startsWith('צפון מגנטי'), `opening: panel "${s0.panelText.slice(0, 40)}…"`);
   fitCheck(s0, 'opening');
   await overlapCheck(page, 'opening');
   await shot(page, '01-opening-magnetic');
@@ -288,7 +288,7 @@ try {
   check(JSON.stringify(sT.A) === JSON.stringify(s0.A) && JSON.stringify(sT.B) === JSON.stringify(s0.B) && sT.slider === -6, 'true: A, B and slider unchanged');
   check(sT.cardH === s0.cardH && sT.readingBox.top === s0.readingBox.top, `true: card height ${sT.cardH} = ${s0.cardH}; reading box stays at ${sT.readingBox.top}`);
   check(
-    sT.panelText === 'צפון אמיתי (True North) הכיוון אל הקוטב הצפוני הגאוגרפי לאורך קו האורך המקומי. משמש כייחוס גאוגרפי למדידת כיוונים. דגש לשימוש: מצפן מגנטי אינו מורה בהכרח לכיוון זה.',
+    sT.panelText === 'צפון אמיתי הכיוון לקוטב הצפוני הגאוגרפי לאורך קו האורך המקומי. מחט המצפן לא בהכרח מצביעה אליו.',
     `true: panel "${sT.panelText}"`,
   );
   fitCheck(sT, 'true');
@@ -303,7 +303,7 @@ try {
   check(sG.relation === REL.grid, `grid: relation "${sG.relation}"`);
   check(sG.cardH === s0.cardH && JSON.stringify(sG.B) === JSON.stringify(s0.B) && sG.readingBox.top === s0.readingBox.top, 'grid: card height, reading position and B unchanged');
   check(
-    sG.panelText === 'צפון רשת (Grid North) כיוון הצפון לאורך הקווים האנכיים של רשת הקואורדינטות במפה. לפיו מודדים כיוונים במפה. דגש לשימוש: עשוי להיות שונה מצפון אמיתי ומצפון מגנטי.',
+    sG.panelText === 'צפון רשת הצפון של קווי הרשת האנכיים; ממנו מודדים אזימוט במפה. עשוי להיות שונה מהצפון האמיתי והמגנטי.',
     `grid: panel "${sG.panelText}"`,
   );
   fitCheck(sG, 'grid');

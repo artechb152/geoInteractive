@@ -1,0 +1,68 @@
+{
+  "moments": {
+    "depart": {
+      "changeMs": 5362,
+      "dragFps": 61,
+      "stats": {
+        "station": "depart",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2978,
+        "shrubsFar": 18037,
+        "cushions": 2597,
+        "grass": 4888,
+        "stones": 10066,
+        "rocks": 8609,
+        "eyeY": 323.7729285743464
+      }
+    },
+    "enroute": {
+      "changeMs": 1847,
+      "dragFps": 61,
+      "stats": {
+        "station": "enroute",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2989,
+        "shrubsFar": 17984,
+        "cushions": 2587,
+        "grass": 4917,
+        "stones": 7732,
+        "rocks": 8775,
+        "eyeY": 339.41779482862495
+      }
+    },
+    "saddle": {
+      "changeMs": 1558,
+      "dragFps": 61,
+      "stats": {
+        "station": "saddle",
+        "terrainTriangles": 701120,
+        "shrubsNear": 2296,
+        "shrubsFar": 17746,
+        "cushions": 2628,
+        "grass": 6843,
+        "stones": 2323,
+        "rocks": 8729,
+        "eyeY": 417.32322551795573
+      }
+    },
+    "after": {
+      "changeMs": 1675,
+      "dragFps": 59,
+      "stats": {
+        "station": "after",
+        "terrainTriangles": 701120,
+        "shrubsNear": 1760,
+        "shrubsFar": 18033,
+        "cushions": 2675,
+        "grass": 7313,
+        "stones": 1293,
+        "rocks": 7984,
+        "eyeY": 390.32020133087536
+      }
+    }
+  },
+  "errors": [
+    "TypeError: Cannot read properties of undefined (reading 'metresPerUnit')",
+    "%o\n\n%s TypeError: Cannot read properties of undefined (reading 'metresPerUnit')\n    at createGroundMaterial (webpack-internal:///(app-pages-browser)/./src/components/lessons/topic-06/terrain-nav/terrainNavMaterials.ts:327:17)\n    at Terrain.useMemo (webpack-internal:///(app-pages-browser)/./src/components/lessons/topic-06/planning-lab/PlanningLab3D.tsx:399:106)\n    at ec (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:9653:25)\n    at Object.useMemo (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:13232:32)\n    at exports.useMemo (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.5.18_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react/cjs/react.development.js:1240:34)\n    at Terrain (webpack-internal:///(app-pages-browser)/./src/components/lessons/topic-06/planning-lab/PlanningLab3D.tsx:386:82)\n    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:13092:32)\n    at It (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:9044:25)\n    at ks (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:10164:374)\n    at tt (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:10486:32)\n    at B (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:7903:70)\n    at Ph (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12365:50)\n    at wh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12282:36)\n    at Ff (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12273:21)\n    at Lf (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12044:75)\n    at Ap (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:8284:35)\n    at Wa (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:8228:165)\n    at _h (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12556:195)\n    at Hf (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12460:42)\n    at yh (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12102:17)\n    at Lf (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:12087:33)\n    at Tu (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/@react-three+fiber@9.7.0_@t_a10d0b5c593796bc50987db77d2b111b/node_modules/@react-three/fiber/dist/events-156d8d12.esm.js:8280:129)\n    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler/cjs/scheduler.development.js:45:48) The above error occurred in the <CanvasImpl> component. It was handled by the <CanvasErrorBoundary> error boundary."
+  ]
+}

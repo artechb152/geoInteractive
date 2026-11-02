@@ -82,7 +82,7 @@ export function PlanningTipsScene() {
         <div data-tips-screen="plan">
           <PlanningLab
             title="לפני שיוצאים: מה צריך לתכנן?"
-            intro="בנו את התכנון על המפה ובחנו אותו בשטח: מוצא ויעד מזוהים, דרך שנבחרת לפי צורות הקרקע, כיוון ומרחק בכל קטע, וסימנים לבדיקת המיקום."
+            intro="תכננו מסלול מהמוצא A ליעד B: שנו את הדרך במפה, לחצו על קטע לבדיקת כיוון ומרחק, והוסיפו נקודות אימות — מקומות שבהם תבדקו את המיקום במהלך הניווט."
           />
         </div>
       </ScreenFit>
@@ -280,7 +280,7 @@ function ConclusionCard() {
     <div className="mt-6 surface p-5 sm:p-6">
       <p className="text-base text-fg leading-relaxed text-pretty">
         התכנון קובע מה צפוי בדרך, ובתנועה משווים את השטח לתכנון.{' '}
-        <strong className="text-fg">בחלק הבא: טכניקות ניווט, ואיך בוחרים ביניהן לפי הסימנים הזמינים והראות.</strong>
+        <strong className="text-fg">בחלק הבא: עקרונות הניווט.</strong>
       </p>
     </div>
   );
