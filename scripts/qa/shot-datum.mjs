@@ -27,7 +27,7 @@ import { mkdir } from 'node:fs/promises';
 
 const outDir = process.argv[2] || 'design/screenshots/datum-guided/tasks-14-15';
 const BASE = process.env.QA_BASE || 'http://localhost:3000';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates`;
 await mkdir(outDir, { recursive: true });
 
 /* The block's poses (datumDemo.ts — the unit tests pin them). */

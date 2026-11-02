@@ -3733,3 +3733,12 @@ User request (2026-11-02): switching between the projection tabs must reset the 
 - **Now:** a tab switch stops a running demonstration, resets the progress to 0 % ("עטיפה") and the view angle; the new method shows its start step and "הפעלת ההדגמה". The practice and "מבט התחלתי" are unchanged.
 - **Comparing methods** at the end now takes "הפעלת ההדגמה" (or End on the slider) after the switch.
 - **Code / tests:** `projections/ProjectionsLab.tsx` (`chooseMethod`), `scripts/qa/shot-projections-lab.mjs` (switch → `p = 0.000`, then End to compare the circles); passing at 1440 × 1122.
+
+## Public lesson renumbering and the lesson-2 split (2026-11-02)
+
+User request: on the main site, lesson 6 becomes lesson 3, lesson 2 becomes lesson 1, and lesson 2 is split so that a new lesson 2 runs from „קנה מידה” to „משמעות מעשית”. Archive numbering stays as it was.
+- **Ids:** `topic-02` keeps the first half (פתיחה → טופוגרפיה + its own recap), now number 1. The second half is a new lesson `topic-02b`, number 2 (קנה מידה → משמעות מעשית + recap); its scenes still live in `src/components/lessons/topic-02/` (`Topic02bLesson`). `topic-06` is number 3. Existing URLs are unchanged; the moved scenes are now under `/lessons/topic-02b/`.
+- **Archive:** `Lesson.archiveNumber` keeps the original number (2, 6) for archive labels (`archiveNumberOf`); archived lessons keep their numbers and "מתוך 12".
+- **Assumed (not specified):** names — lesson 1 „תבליט, תכסית וטופוגרפיה”, lesson 2 keeps „יסודות קרטוגרפיה וקריאת מפות” and the approved card label „קרטוגרפיה קריאת מפות”; lesson 1 wears the landforms diorama (`lesson-03-landforms`) so the two cards differ; durations 20 + 30 min; the recap terms, objectives and quiz split at „קנה מידה” (lesson 1: q1, q7; lesson 2: q2–q6); the map practice („קוראים את המפה”) stays with lesson 2, so lesson 1's תרגול tab shows the placeholder; lesson 2 has no hook/onboarding of its own (it opens on „קנה מידה”); lesson 1's hook no longer promises scale/coordinates/contours.
+- **Dioramas by id:** `lessonDioramaSrc(id)` reads `lessonAssets`, since numbers no longer match the file names.
+- **Known, not caused by this change:** a `useId` hydration mismatch that starts above the lesson shell (app root); it now shows on `/lessons/topic-02b/` because its first screen (the scale lab) uses `useId`.

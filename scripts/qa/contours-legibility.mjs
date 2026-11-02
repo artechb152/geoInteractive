@@ -19,7 +19,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 const W = 1440;
 const H = 1122;
 const BASE = process.env.QA_BASE ?? 'http://localhost:3000';
-const URL = `${BASE}/lessons/topic-02/#scene-contours`;
+const URL = `${BASE}/lessons/topic-02b/#scene-contours`;
 const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'qa-output/contours-legibility';
 const STRICT = process.argv.includes('--strict');
 const MIN_LABEL_PX = 12;

@@ -1,5 +1,5 @@
 // Browser QA for topic-02 "כיצד מפרשים קואורדינטות?" (reading-coordinates/ReadingCoordinates.tsx), in the
-// lesson: /lessons/topic-02/#scene-coordinates-2, the screen after the reference-systems map.
+// lesson: /lessons/topic-02b/#scene-coordinates-2, the screen after the reference-systems map.
 //
 // Usage (a dev server):
 //   QA_BASE=http://localhost:3000 node scripts/qa/shot-reading-coordinates.mjs [outDir]
@@ -28,7 +28,7 @@ import { mkdir, readdir, unlink } from 'node:fs/promises';
 
 const BASE = process.env.QA_BASE || 'http://localhost:3000';
 const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) || 'design/screenshots/reading-coordinates-2026-10-26';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates-2`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates-2`;
 const W = 1440;
 const H = 1122;
 const SCREEN = '[data-screen="reading-coordinates"]';

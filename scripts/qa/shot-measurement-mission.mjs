@@ -49,7 +49,7 @@ import { createRequire } from 'node:module';
 const sharp = createRequire(import.meta.url)('../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp');
 
 const outDir = process.argv[2] || 'design/screenshots/measurement-mission-clarity-2026-10-12/qa';
-const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02/#scene-coordinates`;
+const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02b/#scene-coordinates`;
 const W = 1440;
 const H = 1122;
 /** Gap between the site's fixed header and the card's top (the screen fit uses the same). */

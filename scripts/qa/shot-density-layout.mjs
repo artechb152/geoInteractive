@@ -15,7 +15,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 const label = process.argv[2] ?? 'after';
 const SIZES = (process.argv.length > 3 ? process.argv.slice(3) : ['1440x1122']).map((s) => s.split('x').map(Number));
 const BASE = process.env.QA_BASE ?? 'http://localhost:3000';
-const URL = `${BASE}/lessons/topic-02/#scene-contours`;
+const URL = `${BASE}/lessons/topic-02b/#scene-contours`;
 const outDir = `design/screenshots/density-layout-${label}`;
 const SITE_HEADER = 80;
 const GAP = 24;

@@ -21,7 +21,7 @@ export function groupForPath(pathname: string, basePath = ''): string {
   let p = pathname;
   if (basePath && p.startsWith(basePath)) p = p.slice(basePath.length);
   if (p === '' || p === '/' || p === '/index.html') return HOME_GROUP;
-  const m = p.match(/^\/lessons\/(topic-\d\d)(?:\/|$)/);
+  const m = p.match(/^\/lessons\/(topic-\d\d[a-z]?)(?:\/|$)/);
   return m ? m[1] : '';
 }
 

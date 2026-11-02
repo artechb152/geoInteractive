@@ -36,7 +36,8 @@ export type LessonItem = {
 /** תוויות מאושרות במוקאפ ל-01–07; 08–12 נופלים חזרה ל-shortTitle */
 const APPROVED_TITLES: Record<string, string> = {
   'topic-01': 'מבוא',
-  'topic-02': 'קרטוגרפיה קריאת מפות',
+  // topic-02 (פרק 1 הציבורי) נופל ל-shortTitle; קריאת המפות עברה לפרק 2.
+  'topic-02b': 'קרטוגרפיה קריאת מפות',
   'topic-03': 'טופוגרפיה\nומורפולוגיית שטח',
   'topic-04': 'ניידות ותמרון',
   'topic-05': 'קווי ראייה',
@@ -51,7 +52,7 @@ export function toLessonItem(l: Lesson): LessonItem {
     id: l.id,
     num: String(l.number).padStart(2, '0'),
     title: APPROVED_TITLES[l.id] ?? l.shortTitle,
-    img: lessonDioramaSrc(l.number),
+    img: lessonDioramaSrc(l.id),
     chapters: (lessonScenes[l.id] ?? [])
       .filter((s) => !FRAMING_SCENE_IDS.has(s.id))
       .map((s) => s.label),

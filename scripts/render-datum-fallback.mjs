@@ -15,7 +15,7 @@ const OUT = 'public/assets/lessons/topic02/datum-guided/datum-fallback.webp';
 const browser = await chromium.launch({ channel: 'chrome' });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 1122 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
 const page = await ctx.newPage();
-await page.goto(`${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02/?datum-capture#scene-coordinates`, { waitUntil: 'networkidle', timeout: 180000 });
+await page.goto(`${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02b/?datum-capture#scene-coordinates`, { waitUntil: 'networkidle', timeout: 180000 });
 const stage = '[role=group][aria-label="דאטום: התאמת האליפסואיד לכדור הארץ"]';
 await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center' }), stage);
 await page.waitForSelector(`${stage} canvas`, { timeout: 60000 });

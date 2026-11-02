@@ -23,7 +23,7 @@ import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 const [W, H] = (process.argv[2] ?? '1440x1122').split('x').map(Number);
-const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02/#scene-contours`;
+const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02b/#scene-contours`;
 const outDir = 'design/screenshots/contours-map-keys';
 await mkdir(outDir, { recursive: true });
 

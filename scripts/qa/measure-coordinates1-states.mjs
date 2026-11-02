@@ -7,7 +7,7 @@ const BASE = process.argv[2] ?? 'http://localhost:3117';
 const [width, height] = (process.argv[3] ?? '1920x1080').split('x').map(Number);
 const browser = await chromium.launch({ channel: 'chrome' });
 const page = await browser.newPage({ viewport: { width, height } });
-await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 240000 });
+await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 240000 });
 await page.waitForSelector('#scene-coordinates', { state: 'attached', timeout: 120000 });
 await page.waitForTimeout(3000);
 

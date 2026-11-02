@@ -26,7 +26,7 @@ const ROOT = process.cwd();
 const RAW = path.join(ROOT, 'qa-output/measurement-fallback');
 const OUT = path.join(ROOT, 'public/reference-assets/measurement-mission');
 const DATA = path.join(ROOT, 'src/components/lessons/topic-02/measurementFallback.data.ts');
-const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02/#scene-coordinates`;
+const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02b/#scene-coordinates`;
 const CARD = '#scene-coordinates [aria-label="שכבות החתך"]';
 const PROFILE = '0.0,9.0';
 await mkdir(RAW, { recursive: true });

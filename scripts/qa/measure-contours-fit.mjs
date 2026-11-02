@@ -5,7 +5,7 @@
 // screens (3D model + map card, density section) and the prev/next row.
 import { chromium } from 'playwright';
 
-const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02/#scene-contours`;
+const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02b/#scene-contours`;
 const sizes = (process.argv.slice(2).length ? process.argv.slice(2) : ['1920x1080']).map((s) => s.split('x').map(Number));
 const browser = await chromium.launch({ channel: 'chrome' });
 

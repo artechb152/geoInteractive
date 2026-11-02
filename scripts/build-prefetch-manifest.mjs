@@ -54,10 +54,10 @@ function walk(dir, out = []) {
 /** Public lessons, in course order: ids from allLessons minus ARCHIVED_TOPIC_IDS. */
 function publicLessons() {
   const src = readFileSync(join(ROOT, 'src/lib/lessons.ts'), 'utf8');
-  const all = [...src.matchAll(/id:\s*'(topic-\d\d)',\s*\n\s*number:\s*(\d+)/g)].map((m) => ({ id: m[1], number: Number(m[2]) }));
+  const all = [...src.matchAll(/id:\s*'(topic-\d\d[a-z]?)',\s*\n\s*number:\s*(\d+)/g)].map((m) => ({ id: m[1], number: Number(m[2]) }));
   const archivedBlock = src.match(/ARCHIVED_TOPIC_IDS[^=]*=\s*new Set\(\[([\s\S]*?)\]\)/);
   if (!all.length || !archivedBlock) throw new Error('build-prefetch-manifest: could not read lessons from src/lib/lessons.ts');
-  const archived = new Set([...archivedBlock[1].replace(/\/\/.*$/gm, '').matchAll(/'(topic-\d\d)'/g)].map((m) => m[1]));
+  const archived = new Set([...archivedBlock[1].replace(/\/\/.*$/gm, '').matchAll(/'(topic-\d\d[a-z]?)'/g)].map((m) => m[1]));
   return all.filter((l) => !archived.has(l.id));
 }
 
@@ -113,9 +113,12 @@ const groups = [
     id: 'home',
     files: (() => {
       const set = filesFor(assetRefs([src('app/page.tsx'), src('components/landing'), src('components/LessonCard.tsx')]));
-      // lessonDioramaSrc(n) builds the diorama (and its -hook still) from the lesson number.
+      // lessonDioramaSrc(id) is the lesson's card in lessonAssets; take it and its -hook still.
+      const assets = readFileSync(join(ROOT, 'src/lib/lesson-scenes.ts'), 'utf8');
       for (const l of lessons) {
-        for (const f of filesStartingWith('assets/isometric', `lesson-${String(l.number).padStart(2, '0')}-`)) {
+        const card = assets.match(new RegExp(`'${l.id}':\\s*\\{[^}]*card:\\s*'/assets/isometric/([^.']+)\\.png'`));
+        if (!card) throw new Error(`build-prefetch-manifest: no lessonAssets card for ${l.id}`);
+        for (const f of filesStartingWith('assets/isometric', card[1])) {
           if (RUNTIME_EXT.has(extname(f).toLowerCase())) set.add(f);
         }
       }
@@ -131,7 +134,8 @@ const groups = [
       ]),
     ),
   },
-  ...lessons.map((l) => ({ id: l.id, files: filesFor(assetRefs([src('components/lessons', l.id)])) })),
+    // A split lesson (topic-02b) keeps its scenes in the original lesson's folder.
+  ...lessons.map((l) => ({ id: l.id, files: filesFor(assetRefs([src('components/lessons', l.id.replace(/[a-z]$/, ''))])) })),
 ];
 
 // Docs that sit next to assets are not runtime files even with a runtime extension.

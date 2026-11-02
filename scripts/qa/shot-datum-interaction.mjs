@@ -24,7 +24,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && !/datum-fallback\.webp/.test(m.text()) && errors.push(m.text()));
-await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 180000 });
+await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 180000 });
 await page.waitForSelector(stageSel, { state: 'attached', timeout: 120000 });
 await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center' }), stageSel);
 await page.waitForSelector(`${stageSel} canvas`, { timeout: 60000 });

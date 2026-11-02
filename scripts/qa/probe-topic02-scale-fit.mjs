@@ -106,7 +106,7 @@ async function runViewport(w, h) {
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(`${key} ${m.text()}`);
   });
-  await page.goto(`${BASE}/lessons/topic-02/#scene-scale`, { waitUntil: 'networkidle', timeout: 180000 });
+  await page.goto(`${BASE}/lessons/topic-02b/#scene-scale`, { waitUntil: 'networkidle', timeout: 180000 });
   await page.waitForSelector('[data-qa="sheet-viewport"]');
   await page.waitForTimeout(1800);
   await page.evaluate(() => scrollTo(0, 0));
