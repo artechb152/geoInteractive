@@ -15,7 +15,8 @@
  * MessageChannel after each load. A new manifest version moves the entries
  * whose content hash (rev) did not change into geo-prefetch-<version> and
  * drops every older geo-prefetch-* cache, so a deploy re-downloads only what
- * changed. Replies { cacheName }.
+ * changed. Replies { cacheName }. { type: 'geo-prefetch-adopt', paths } stores
+ * what a page loaded before the worker controlled it.
  */
 const META_CACHE = 'geo-prefetch-meta';
 const META_KEY = 'state.json';
@@ -98,6 +99,25 @@ async function syncNow(manifest) {
   return cacheName;
 }
 
+/**
+ * Stores files a page loaded before this worker controlled it. They come from
+ * the HTTP cache (a revalidation at most), one at a time.
+ */
+async function adopt(paths) {
+  const state = await ensureState();
+  if (!state) return;
+  const cache = await caches.open(state.cacheName);
+  for (const p of paths) {
+    if (typeof p !== 'string' || !state.revs.has(p.slice(BASE.length))) continue;
+    const key = self.location.origin + p;
+    if (await cache.match(key)) continue;
+    try {
+      const res = await fetch(key);
+      if (res.ok && res.status === 200 && res.type === 'basic') await cache.put(key, res);
+    } catch {}
+  }
+}
+
 async function cacheFirst(event, url) {
   const state = await ensureState();
   const path = url.pathname.slice(BASE.length);
@@ -125,6 +145,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   const data = event.data;
+  if (data && data.type === 'geo-prefetch-adopt' && Array.isArray(data.paths)) {
+    event.waitUntil(adopt(data.paths).catch(() => {}));
+    return;
+  }
   if (!data || data.type !== 'geo-prefetch-sync' || !data.manifest) return;
   const port = event.ports && event.ports[0];
   event.waitUntil(

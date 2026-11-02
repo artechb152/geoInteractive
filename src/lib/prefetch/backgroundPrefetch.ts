@@ -36,6 +36,7 @@ const state = {
   started: false,
   stopped: false,
   group: '',
+  path: '',
   pausedUntil: 0,
 };
 
@@ -84,14 +85,27 @@ function idle(): Promise<void> {
 
 /** Called on every pathname change (and once on mount). */
 export function prefetchNavigate(pathname: string) {
-  const group = groupForPath(pathname, BASE);
-  if (state.started) state.pausedUntil = Date.now() + NAV_PAUSE_MS;
-  state.group = group;
+  if (state.started && pathname !== state.path) state.pausedUntil = Date.now() + NAV_PAUSE_MS;
+  state.path = pathname;
+  state.group = groupForPath(pathname, BASE);
+}
+
+/** Paths of the assets this page has already loaded (resource timing). */
+function loadedAssetPaths(): Set<string> {
+  const paths = new Set<string>();
+  for (const e of performance.getEntriesByType('resource')) {
+    try {
+      const p = new URL(e.name).pathname;
+      if (p.startsWith(`${BASE}/assets/`) || p.startsWith(`${BASE}/draco/`)) paths.add(p);
+    } catch {}
+  }
+  return paths;
 }
 
 export function startBackgroundPrefetch(pathname: string) {
   if (state.started) return;
   state.started = true;
+  state.path = pathname;
   state.group = groupForPath(pathname, BASE);
 
   const flag = readFlag();
@@ -138,15 +152,7 @@ async function run() {
 
   // Files this page already loaded go first: they come from the HTTP cache,
   // and through the worker they land in Cache Storage for the next refresh.
-  const loaded = new Set(
-    performance.getEntriesByType('resource').map((e) => {
-      try {
-        return new URL(e.name).pathname;
-      } catch {
-        return '';
-      }
-    }),
-  );
+  const loaded = loadedAssetPaths();
   const taken = new Set<number>();
   let orderFor = '';
   let order: number[] = [];
@@ -230,12 +236,16 @@ const swSupported = () => process.env.NODE_ENV === 'production' && 'serviceWorke
 /**
  * Registers public/sw.js (it loads the manifest itself on activation) and
  * asks for persistent storage, so the browser does not evict the course
- * under storage pressure. Never throws (LMS iframe, blocked storage).
+ * under storage pressure. Then hands the worker what this page loaded before
+ * it took control (a first visit), so a refresh right away is served from
+ * Cache Storage too. Never throws (LMS iframe, blocked storage).
  */
 async function registerServiceWorker() {
   if (!swSupported()) return;
   try {
     await navigator.serviceWorker.register(`${BASE}/sw.js`, { scope: `${BASE}/` });
+    const reg = await navigator.serviceWorker.ready;
+    reg.active?.postMessage({ type: 'geo-prefetch-adopt', paths: [...loadedAssetPaths()] });
     if (navigator.storage?.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
   } catch {}
 }
