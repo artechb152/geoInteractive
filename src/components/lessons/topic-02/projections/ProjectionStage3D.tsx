@@ -22,7 +22,8 @@
      disposed on unmount. */
 
 import { Component, useEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { ellipsoidMesh } from '../geo-globe/geoCoords';
@@ -788,7 +789,7 @@ export default function ProjectionStage3D({ images, view, reduce, active, api, o
   const scale = useLessonViewportScale();
   return (
     <StageBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
         resize={LESSON_FIT_CANVAS_RESIZE}
         flat
         dpr={[1, 2]}
@@ -809,7 +810,7 @@ export default function ProjectionStage3D({ images, view, reduce, active, api, o
         <Sheets view={view} reduce={reduce} />
         <DragTurn api={api} onEngage={onEngage} scale={scale} />
         <FrameCount onReady={onReady} />
-      </Canvas>
+      </QualityCanvas>
     </StageBoundary>
   );
 }

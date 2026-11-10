@@ -1,7 +1,8 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -604,7 +605,7 @@ export default function ReliefCover3D({ state, reduce, command, onHeading, onRea
     return [x, y + HOME.distance * Math.cos(p), z + HOME.distance * Math.sin(p)] as [number, number, number];
   }, []);
   return (
-    <Canvas
+    <QualityCanvas
       aria-hidden
       dpr={[1, 2]}
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
@@ -633,6 +634,6 @@ export default function ReliefCover3D({ state, reduce, command, onHeading, onRea
         <Model state={state} reduce={reduce} />
         <SceneSetup onReady={onReady} />
       </Suspense>
-    </Canvas>
+    </QualityCanvas>
   );
 }

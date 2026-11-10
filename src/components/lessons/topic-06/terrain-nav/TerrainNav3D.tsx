@@ -1,7 +1,8 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Html, Line, OrbitControls, useGLTF, useTexture } from '@react-three/drei';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 import * as THREE from 'three';
@@ -1554,7 +1555,7 @@ export default function TerrainNav3D({ view, reduce, highlights, route, labels, 
     return { target: t, pos: [t[0], t[1] + r * Math.cos(polar), t[2] + r * Math.sin(polar)] as [number, number, number] };
   }, []);
   return (
-    <Canvas
+    <QualityCanvas
       aria-hidden
       dpr={[1, 1.75]}
       shadows={{ type: THREE.PCFShadowMap }}
@@ -1582,6 +1583,6 @@ export default function TerrainNav3D({ view, reduce, highlights, route, labels, 
       {route && <RouteOnGround pts={route.pts} dashed={route.dashed} />}
       <Pins pins={pins} />
       <Labels labels={labels} />
-    </Canvas>
+    </QualityCanvas>
   );
 }

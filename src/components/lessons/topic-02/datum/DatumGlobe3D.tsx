@@ -40,7 +40,8 @@
    render on demand only. */
 
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import {
@@ -1137,7 +1138,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
   if (!images) return null;
   return (
     <GlobeBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
         flat
         dpr={[1, 2]}
         resize={LESSON_FIT_CANVAS_RESIZE}
@@ -1190,7 +1191,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
             onReady();
           }}
         />
-      </Canvas>
+      </QualityCanvas>
     </GlobeBoundary>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Bloom, EffectComposer, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { BlendFunction, ToneMappingMode } from 'postprocessing';
 import { DriveAtmosphere } from './DriveAtmosphere';
@@ -53,7 +53,7 @@ export function DriveCanvas({
 
   return (
     <div ref={ref} className="size-full">
-      <Canvas
+      <QualityCanvas
         className="size-full"
         // PCF + per-light shadow.radius (DriveAtmosphere) — three r18x
         // deprecated PCFSoftShadowMap and silently falls back to PCF anyway.
@@ -99,7 +99,7 @@ export function DriveCanvas({
           <Vignette eskil={false} offset={0.3} darkness={0.28} blendFunction={BlendFunction.NORMAL} />
           <SMAA />
         </EffectComposer>
-      </Canvas>
+      </QualityCanvas>
     </div>
   );
 }

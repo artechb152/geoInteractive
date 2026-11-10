@@ -1,7 +1,8 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Bvh, Html, Line, OrbitControls, useGLTF, useProgress, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
@@ -591,7 +592,11 @@ function Scene({
     if (stacked) {
       setShowStack(true);
       setBvhOn(true);
-    } else hideProbe();
+    } else {
+      hideProbe();
+      // the handlers come off with the stack, so no pointer-out will reset it
+      gl.domElement.style.cursor = '';
+    }
     invalidate();
     // hideProbe only touches refs/state setters
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -674,7 +679,9 @@ function Scene({
 
   return (
     <>
-      <group ref={dioramaGroup} {...layerEvents('3d')}>
+      {/* Pointer events only while stacked (the only view with hover and pick): any handler makes
+          every pointer move raycast the ~470k-triangle terrain, which has no BVH before then. */}
+      <group ref={dioramaGroup} {...(stacked ? layerEvents('3d') : {})}>
         <Bvh firstHitOnly enabled={bvhOn}>
           <primitive object={terrain} dispose={null} />
         </Bvh>
@@ -870,7 +877,8 @@ export default function TopographyTerrain3D({
     <div ref={containerRef} className={cn('relative h-full w-full overflow-hidden bg-bg-elevated', fullscreen ? '' : 'rounded-xl')}>
       <div role="img" aria-label={ariaLabel} className="absolute inset-0" style={{ cursor: orbit ? 'grab' : 'default' }}>
         {activated && (
-          <Canvas
+          <QualityCanvas
+            shadowCache
             aria-hidden
             resize={LESSON_FIT_CANVAS_RESIZE}
             shadows={{ type: THREE.PCFShadowMap }}
@@ -936,7 +944,7 @@ export default function TopographyTerrain3D({
               dampingFactor={0.08}
             />
             <CameraRig mode={mode} size={size} reduce={reduce} controlsRef={controlsRef} onNearTop={setNearTop} />
-          </Canvas>
+          </QualityCanvas>
         )}
         {/* The map sheet, registered on the canvas through sheetRect(). */}
         <TopographyMapSheet reveal={mode === 'topo' && nearTop} className="pointer-events-none absolute inset-0 size-full" />

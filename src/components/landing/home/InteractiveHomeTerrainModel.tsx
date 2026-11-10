@@ -1,7 +1,8 @@
 'use client';
 
 import { Suspense, useEffect, useRef } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { ContactShadows, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
@@ -126,7 +127,8 @@ export default function InteractiveHomeTerrainModel() {
   const { controlsRef, onStart, onEnd } = useAutoRotateGate(reduce);
 
   return (
-    <Canvas
+    <QualityCanvas
+      shadowCache
       className="size-full"
       orthographic
       camera={{ position: INITIAL_CAMERA_POSITION, zoom: 100, near: 0.1, far: 20 }}
@@ -194,6 +196,6 @@ export default function InteractiveHomeTerrainModel() {
         onStart={onStart}
         onEnd={onEnd}
       />
-    </Canvas>
+    </QualityCanvas>
   );
 }

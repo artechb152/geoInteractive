@@ -1,7 +1,8 @@
 'use client';
 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -767,7 +768,7 @@ export default function LocationCheckTerrain3D({
   onReady?: () => void;
 }) {
   return (
-    <Canvas
+    <QualityCanvas
       aria-hidden
       dpr={[1, 2]}
       shadows={{ type: THREE.PCFShadowMap }}
@@ -789,6 +790,6 @@ export default function LocationCheckTerrain3D({
       <Suspense fallback={null}>
         <World onReady={onReady} />
       </Suspense>
-    </Canvas>
+    </QualityCanvas>
   );
 }

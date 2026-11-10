@@ -23,7 +23,8 @@
      away from the viewport). */
 
 import { Component, useEffect, useMemo, useRef, type MutableRefObject, type ReactNode, type RefObject } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
@@ -615,7 +616,7 @@ export default function Globe3D({ images, sel, win, choices, target, note, reduc
   const scale = useLessonViewportScale();
   return (
     <GlobeBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
         resize={LESSON_FIT_CANVAS_RESIZE}
         flat
         dpr={[1, 2]}
@@ -647,7 +648,7 @@ export default function Globe3D({ images, sel, win, choices, target, note, reduc
         />
         <CameraRig api={api} reduce={reduce} memory={memory} />
         <OverlaySync refs={refs} sel={sel} choices={choices} target={target} note={note} onFrame={onFrame} />
-      </Canvas>
+      </QualityCanvas>
     </GlobeBoundary>
   );
 }
