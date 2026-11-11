@@ -45,7 +45,9 @@ LENS = 85.0
 # squashes it to ~0.845 of its width on screen. The instrument is pre-stretched vertically to make up most of that
 # (anamorphic pixels; horizontal scale and placement unchanged), so on the page its dial reads nearly round while
 # the flat map print under it keeps the card's pose. 1 = a plain render.
-ANAMORPH = float(os.environ.get('HNC_ANAMORPH', '1.16'))
+# Measured on the page (1920×910, chapter 03's slot): the posed card shows the art at ~0.95 of its height, so 1.05
+# brings the dial back to round (1.16 left it ~6% too tall and the ring looked swollen).
+ANAMORPH = float(os.environ.get('HNC_ANAMORPH', '1.05'))
 # placement on the card (fractions): case centre and case radius. The card's copy zone is top-right, so the
 # lid opens toward the left and runs off the card's edge.
 PLACE = json.loads(os.environ.get('HNC_PLACE', 'null')) or {'cx': 0.35, 'cy': 0.66, 'r': 0.25}
@@ -59,7 +61,9 @@ WEAR = float(os.environ.get('HNC_WEAR', '0.35'))                 # paint wear on
 Z_SEAT = 0.40      # top of the bezel / where the lid closes
 Z_GLASS = 0.352
 Z_DIAL = 0.206
-DIAL_R = 0.822
+# LIP: how far the bezel's inner lip, the glass and the dial are pushed outward — a slimmer ring, a larger face
+LIP = float(os.environ.get('HNC_LIP', '0.034'))
+DIAL_R = 0.822 + LIP
 Z_NEEDLE = Z_DIAL + 0.082   # the needle floats well clear of the dial and casts its own small shadow
 
 OLIVE = os.environ.get('HNC_OLIVE', '#474d37')       # paint, before light
@@ -178,8 +182,8 @@ def mat_paint(name, base=OLIVE, rough=0.46, wear=WEAR, grooves=(), shade=0.55):
     co = obj_coords(nt)
     b.inputs['Metallic'].default_value = 0.0
     b.inputs['Specular IOR Level'].default_value = 0.42
-    b.inputs['Coat Weight'].default_value = 0.12
-    b.inputs['Coat Roughness'].default_value = 0.34
+    b.inputs['Coat Weight'].default_value = float(os.environ.get('HNC_COAT', '0.22'))
+    b.inputs['Coat Roughness'].default_value = float(os.environ.get('HNC_COAT_ROUGH', '0.22'))
     # tone: the paint is never one flat colour
     tone = nt.nodes.new('ShaderNodeTexNoise'); tone.inputs['Scale'].default_value = 2.4; tone.inputs['Detail'].default_value = 4.0
     nt.links.new(co, tone.inputs['Vector'])
@@ -292,22 +296,27 @@ def mat_paper():
     return m
 
 
-SOFTBOX = json.loads(os.environ.get('HNC_SOFTBOX', '[-0.08, 0.02, -135, 2.4]'))   # offset x, offset y, roll°, strength
+# Reflectors only reflections see — a studio's window strips, mirrored in the glass and the bezel's clear coat.
+# Each: [offset x, offset y, roll°, strength, width, edge feather]. The offsets tip the strip away from the glass's
+# mirror direction; on the glass a strip lands about 0.47 R out per 0.1 of offset. The strip's
+# orientation on the glass follows both its roll and its offset — tune by render, not by formula.
+#   1. the main window: a soft wash over the dial's left half, its edge just short of the needle
+#   2. a thin bright strip near the lower-right rim, the second edge a domed glass always shows
+SOFTBOXES = json.loads(os.environ.get('HNC_SOFTBOXES', '[[-0.074, 0.074, -135, 15, 1.4, 0.16], [0.112, -0.112, -45, 22, 0.22, 0.3]]'))
 
 
-def softbox():
-    """A feathered strip of light that only reflections see: a faint diagonal sheen on the glass and a soft
-    long highlight along the bezel. It never lights the scene."""
+def softbox(strength, width, edge):
+    """A feathered strip of light that only reflections see. It never lights the scene."""
     bpy.ops.mesh.primitive_plane_add(size=1)
     ob = bpy.context.active_object; ob.name = 'softbox'
-    ob.scale = (7.0, float(os.environ.get('HNC_SOFTBOX_W', '2.2')), 1)
+    ob.scale = (7.0, width, 1)
     m = bpy.data.materials.new('softbox'); m.use_nodes = True
     nt = m.node_tree; nt.nodes.clear()
     out = nt.nodes.new('ShaderNodeOutputMaterial')
     tc = nt.nodes.new('ShaderNodeTexCoord')
     sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(tc.outputs['Generated'], sep.inputs['Vector'])
     fall = []
-    for axis, edge in (('X', 0.22), ('Y', 0.45)):
+    for axis, edge in (('X', 0.22), ('Y', edge)):
         mr = nt.nodes.new('ShaderNodeMath'); mr.operation = 'PINGPONG'; mr.inputs[1].default_value = 0.5
         nt.links.new(sep.outputs[axis], mr.inputs[0])
         sm = nt.nodes.new('ShaderNodeMapRange'); sm.interpolation_type = 'SMOOTHERSTEP'
@@ -315,7 +324,7 @@ def softbox():
         nt.links.new(mr.outputs['Value'], sm.inputs['Value']); fall.append(sm)
     mul = math_node(nt, 'MULTIPLY', fall[0].outputs['Result'], fall[1].outputs['Result'])
     em = nt.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (1.0, 0.985, 0.95, 1)
-    nt.links.new(math_node(nt, 'MULTIPLY', mul, SOFTBOX[3]), em.inputs['Strength'])
+    nt.links.new(math_node(nt, 'MULTIPLY', mul, strength), em.inputs['Strength'])
     nt.links.new(em.outputs['Emission'], out.inputs['Surface'])
     ob.data.materials.append(m)
     ob.visible_camera = False; ob.visible_diffuse = False; ob.visible_shadow = False
@@ -485,9 +494,9 @@ def build():
     # all edges softly rounded (machined, not moulded), then a small chamfer and a short lip down to the glass
     lathe('bezel', rounded([
         (0.963, 0.282), (0.978, 0.283), (0.992, 0.293, 0.008), (0.994, 0.372, 0.018), (0.978, Z_SEAT, 0.016),
-        (0.884, Z_SEAT - 0.004, 0.012), (0.864, 0.385, 0.008), (0.854, Z_GLASS + 0.016, 0.005), (0.852, Z_GLASS + 0.006, 0.003), (0.846, Z_GLASS + 0.004),
+        (0.884 + LIP, Z_SEAT - 0.004, 0.012), (0.864 + LIP, 0.385, 0.008), (0.854 + LIP, Z_GLASS + 0.016, 0.005), (0.852 + LIP, Z_GLASS + 0.006, 0.003), (0.846 + LIP, Z_GLASS + 0.004),
     ], steps=6), paint_bezel, sharp_deg=70)
-    lathe('inner-wall', [(0.846, Z_GLASS + 0.004), (0.838, Z_GLASS - 0.006), (0.832, Z_GLASS - 0.04), (0.828, Z_DIAL + 0.012), (0.826, Z_DIAL - 0.004)], paint_inner)
+    lathe('inner-wall', [(r + LIP, z) for r, z in [(0.846, Z_GLASS + 0.004), (0.838, Z_GLASS - 0.006), (0.832, Z_GLASS - 0.04), (0.828, Z_DIAL + 0.012), (0.826, Z_DIAL - 0.004)]], paint_inner)
     # dial
     lathe('dial', [(0, Z_DIAL), (DIAL_R + 0.004, Z_DIAL), (DIAL_R + 0.004, Z_DIAL - 0.02)], mat_dial())
     # pivot: a post up from the dial, a brass cap over the needle
@@ -496,8 +505,8 @@ def build():
                     (0.024, Z_DIAL + 0.001), (0.026, Z_DIAL)], brass, segments=128, sharp_deg=50)
     needle(mat_enamel('needle-red', '#bf3a2b', rough=0.32, coat=0.3), mat_enamel('needle-dark', '#2d3133', rough=0.36, coat=0.25))
     # glass: thin and gently domed, seated under the bezel lip
-    lathe('glass', [(0, Z_GLASS + 0.014), (0.5, Z_GLASS + 0.011), (0.8, Z_GLASS + 0.004), (0.844, Z_GLASS),
-                    (0.844, Z_GLASS - 0.006), (0.8, Z_GLASS - 0.002), (0.5, Z_GLASS + 0.005), (0, Z_GLASS + 0.008)], mat_glass(), segments=256)
+    lathe('glass', [(0, Z_GLASS + 0.014), (0.5, Z_GLASS + 0.011), (0.8 + LIP, Z_GLASS + 0.004), (0.844 + LIP, Z_GLASS),
+                    (0.844 + LIP, Z_GLASS - 0.006), (0.8 + LIP, Z_GLASS - 0.002), (0.5, Z_GLASS + 0.005), (0, Z_GLASS + 0.008)], mat_glass(), segments=256)
 
     # ── crown and bail, opposite the hinge
     uc = Vector((math.cos(HINGE + math.pi), math.sin(HINGE + math.pi), 0))
@@ -620,14 +629,13 @@ def build():
     cam.shift_x = 0.5 - PLACE['cx']
     cam.shift_y = (PLACE['cy'] - 0.5) / ANAMORPH   # shift is in frame widths; the frame now spans 1/ANAMORPH as much height
     cam.clip_start = 0.1; cam.clip_end = 200
-    # the softbox sits beyond the glass's mirror direction (camera ray reflected), pushed up-left so only its
-    # feathered edge crosses the glass: a faint diagonal sheen over the upper-left, the needle stays clear
-    if SOFTBOX[3] > 0:
-        w = softbox()
-        d = Vector((SOFTBOX[0], math.sin(TILT) + SOFTBOX[1], math.cos(TILT))).normalized()
+    # each strip sits beyond the glass's mirror direction (camera ray reflected), tipped by its offset
+    for ox, oy, roll, strength, width, edge in SOFTBOXES:
+        w = softbox(strength, width, edge)
+        d = Vector((ox, math.sin(TILT) + oy, math.cos(TILT))).normalized()
         w.location = Vector((0, 0, Z_GLASS)) + 8.0 * d
         w.rotation_euler = (-d).to_track_quat('-Z', 'Y').to_euler()
-        w.rotation_euler.rotate_axis('Z', math.radians(SOFTBOX[2]))
+        w.rotation_euler.rotate_axis('Z', math.radians(roll))
 
     if os.environ.get('HNC_BLEND'):
         bpy.ops.wm.save_as_mainfile(filepath=os.environ['HNC_BLEND'])
