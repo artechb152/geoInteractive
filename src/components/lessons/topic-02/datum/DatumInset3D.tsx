@@ -345,9 +345,10 @@ export function InsetPass({ pose, inspect, region, emph, enabled }: { pose: Pose
   const inset = useMemo(() => buildInset(), []);
   useEffect(() => () => inset.dispose(), [inset]);
   useEffect(() => {
-    inset.update(pose, inspect, region, emph);
+    // the close-up is rebuilt only while it shows (stations 1 and 3 have none)
+    if (enabled) inset.update(pose, inspect, region, emph);
     invalidate();
-  }, [inset, pose, inspect, region, emph, invalidate]);
+  }, [inset, pose, inspect, region, emph, enabled, invalidate]);
 
   useFrame(({ gl, scene, camera, size }) => {
     gl.render(scene, camera);

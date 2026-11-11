@@ -125,9 +125,12 @@ function crestKernel(E: number, N: number): number {
   return h;
 }
 
+/** Both lists, joined once (heightAt runs thousands of times a frame while the view moves). */
+const KNOLL_LIST = [...KNOLLS, ...DISTANT_HILLS];
+
 function knollKernel(E: number, N: number): number {
   let h = 0;
-  for (const k of [...KNOLLS, ...DISTANT_HILLS]) {
+  for (const k of KNOLL_LIST) {
     const q = Math.hypot(E - k.E, N - k.N) / k.r;
     if (q < 4) h += k.rise * domeProfile(q);
   }

@@ -145,6 +145,9 @@ export default function TerrainCanvas({ feature }: { feature: Feature }) {
   return (
     <>
       <QualityCanvas
+        name="terrain-canvas"
+        // endless pulses on the markers
+        profile="animated"
         shadowCache
         shadows
         camera={{ position: POVS.flat.pos, fov: POVS.flat.fov, near: 0.1, far: 60 }}

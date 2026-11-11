@@ -128,6 +128,7 @@ export default function InteractiveHomeTerrainModel() {
 
   return (
     <QualityCanvas
+      name="home-terrain"
       shadowCache
       className="size-full"
       orthographic

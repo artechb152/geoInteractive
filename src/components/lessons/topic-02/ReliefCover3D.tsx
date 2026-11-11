@@ -194,6 +194,9 @@ function drapeMaterial(shared: Shared, mode: Mode, spread = 1) {
 
 // ---------------------------------------------------------------- geometry
 
+/** The camera's view direction this frame (reused). */
+const VIEW_DIR = new THREE.Vector3();
+
 /** Deterministic PRNG (mulberry32). */
 function rng(seed: number) {
   let a = seed >>> 0;
@@ -557,7 +560,7 @@ function CameraRig({ command, reduce, onHeading }: { command: ViewCommand | null
       if (k >= 1) tween.current = null;
       else invalidate();
     }
-    const dir = camera.getWorldDirection(new THREE.Vector3());
+    const dir = camera.getWorldDirection(VIEW_DIR);
     const top = dir.y < -0.985;
     const yaw = top ? 0 : (Math.atan2(dir.x, -dir.z) * 180) / Math.PI;
     const [py, pt] = heading.current;
@@ -606,11 +609,11 @@ export default function ReliefCover3D({ state, reduce, command, onHeading, onRea
   }, []);
   return (
     <QualityCanvas
+      name="relief-cover"
       aria-hidden
       dpr={[1, 2]}
-      gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
+      gl={{ antialias: true, powerPreference: 'high-performance' }}
       camera={{ fov: 31, near: 5, far: 6000, position: pos }}
-      frameloop="demand"
       resize={LESSON_FIT_CANVAS_RESIZE}
       style={{ position: 'absolute', inset: 0 }}
     >

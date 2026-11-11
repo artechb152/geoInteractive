@@ -1,0 +1,561 @@
+{
+ "gpu": "hw",
+ "cpu": 1,
+ "tier": "auto",
+ "cycles": 3,
+ "machine": "NVIDIA RTX A5000, Xeon W-2265, Windows 11, Chrome 156",
+ "viewport": "1440x900@1x",
+ "taken": "2026-11-10",
+ "results": [
+  {
+   "scene": "relief",
+   "tier": "high",
+   "loadS": 4.2,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.3,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.9,
+    "gapMaxMs": 17.4,
+    "drawsPerFrame": 6,
+    "trisPerFrame": 314358,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 62.2,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     64,
+     64.2,
+     64.4
+    ],
+    "growthMB": 0.4,
+    "domNodes": [
+     1008,
+     1008,
+     1008
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 0,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "topography",
+   "tier": "high",
+   "loadS": 3.1,
+   "density": {
+    "rest": 1.5,
+    "moving": 1.5,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": null,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.4,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 17,
+    "drawsPerFrame": 7,
+    "trisPerFrame": 567192,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1.5
+   },
+   "heapMB": 44.3,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     45.2,
+     45.5,
+     45.8
+    ],
+    "growthMB": 0.6,
+    "domNodes": [
+     943,
+     943,
+     943
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 1,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "datum",
+   "tier": "high",
+   "loadS": 6.1,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.3,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 83.4,
+    "drawsPerFrame": 45,
+    "trisPerFrame": 649166,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 43.4,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     44,
+     44.3,
+     44.5
+    ],
+    "growthMB": 0.5,
+    "domNodes": [
+     802,
+     802,
+     802
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 3,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "measurement",
+   "tier": "high",
+   "loadS": 2.2,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 12.8,
+    "gapMedMs": 83.2,
+    "gapP90Ms": 83.5,
+    "gapMaxMs": 83.7,
+    "drawsPerFrame": 6,
+    "trisPerFrame": 421542,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 43.5,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "globe",
+   "tier": "high",
+   "loadS": 4,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.4,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 83.3,
+    "drawsPerFrame": 2,
+    "trisPerFrame": 147462,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 50.8,
+   "contexts": {
+    "created": 3,
+    "live": 0
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     56,
+     56.6,
+     57.1
+    ],
+    "growthMB": 1.1,
+    "domNodes": [
+     1778,
+     1778,
+     1778
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 0,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "projections",
+   "tier": "high",
+   "loadS": 2.7,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 13.4,
+    "gapMedMs": 66.9,
+    "gapP90Ms": 83.5,
+    "gapMaxMs": 83.7,
+    "drawsPerFrame": 4,
+    "trisPerFrame": 139266,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 55,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "contours",
+   "tier": "high",
+   "loadS": 3.3,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.4,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 83.4,
+    "drawsPerFrame": 35,
+    "trisPerFrame": 239114,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 37.7,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     37.9,
+     38.1,
+     38.3
+    ],
+    "growthMB": 0.4,
+    "domNodes": [
+     905,
+     905,
+     905
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 0,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "location-check",
+   "tier": "high",
+   "loadS": 5.3,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.2,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 17,
+    "drawsPerFrame": 12,
+    "trisPerFrame": 1210897,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 38,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     40.3,
+     40.6,
+     40.8
+    ],
+    "growthMB": 0.5,
+    "domNodes": [
+     1972,
+     1972,
+     1972
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 2,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "planning-lab",
+   "tier": "high",
+   "loadS": 12.5,
+   "density": {
+    "rest": 2,
+    "moving": 2,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 59.3,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.9,
+    "gapMaxMs": 17.2,
+    "drawsPerFrame": 79,
+    "trisPerFrame": 7055936,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 2
+   },
+   "heapMB": 210.8,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     175.1,
+     214.5,
+     214.2
+    ],
+    "growthMB": 39.1,
+    "domNodes": [
+     2481,
+     2481,
+     2481
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 0,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "replay",
+   "tier": "high",
+   "loadS": 9.6,
+   "density": {
+    "rest": 2,
+    "moving": 2,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": null,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 12.3,
+    "gapMedMs": 83.3,
+    "gapP90Ms": 83.5,
+    "gapMaxMs": 100.1,
+    "drawsPerFrame": 81,
+    "trisPerFrame": 6464716,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 2
+   },
+   "heapMB": 210.3,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "terrain-nav",
+   "tier": "high",
+   "loadS": 7.3,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 60,
+   "drag": {
+    "fps": 59.3,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 17.1,
+    "drawsPerFrame": 62,
+    "trisPerFrame": 2450852,
+    "shadowPasses": 0,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 188.8,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": {
+    "heapMB": [
+     185.1,
+     186,
+     186.3
+    ],
+    "growthMB": 1.2,
+    "domNodes": [
+     2325,
+     2325,
+     2325
+    ],
+    "domGrowth": 0,
+    "keptCanvases": 1,
+    "detachedLiveContexts": 0
+   },
+   "errors": []
+  },
+  {
+   "scene": "dead-reckoning",
+   "tier": "high",
+   "loadS": 5.8,
+   "density": {
+    "rest": 1,
+    "moving": 1,
+    "recoverS": 0
+   },
+   "idleFps": 60.3,
+   "settledFps": 60.4,
+   "offscreenFps": null,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 60.1,
+    "gapMedMs": 16.7,
+    "gapP90Ms": 16.8,
+    "gapMaxMs": 17,
+    "drawsPerFrame": 69,
+    "trisPerFrame": 2884461,
+    "shadowPasses": 120,
+    "longTaskMs": 0,
+    "density": 1
+   },
+   "heapMB": 187.9,
+   "contexts": {
+    "created": 3,
+    "live": 2
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "drive",
+   "tier": "high",
+   "loadS": 4.7,
+   "density": {
+    "rest": 1,
+    "moving": null,
+    "recoverS": null
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": null,
+   "offscreenPageFps": 0,
+   "drag": {
+    "drawsPerFrame": 72,
+    "trisPerFrame": 137813
+   },
+   "heapMB": 20.8,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "home",
+   "noCanvas": true,
+   "contexts": 0,
+   "live": 0,
+   "threeLoaded": false,
+   "errors": []
+  }
+ ]
+}

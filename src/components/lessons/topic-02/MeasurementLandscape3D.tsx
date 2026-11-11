@@ -835,11 +835,12 @@ export default function MeasurementLandscape3D({
   return (
     <GLBoundary onFail={onFail}>
       <QualityCanvas
+        name="measurement-landscape"
         aria-hidden
         flat
         dpr={[1, 2]}
         resize={LESSON_FIT_CANVAS_RESIZE}
-        frameloop={active ? 'demand' : 'never'}
+        paused={!active}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         camera={{ manual: true, fov: cam.fovY, near: cam.near, far: cam.far, position: cam.eye, up: [0, 0, 1] }}
         style={{ position: 'absolute', inset: 0 }}

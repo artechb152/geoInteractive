@@ -11,7 +11,7 @@
  * lands them one label-width off their point).
  */
 import { useEffect, useMemo, useRef, type MutableRefObject } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Raycaster, Vector2, Vector3, type Group, type PerspectiveCamera } from 'three';
 import type { StationTerrain } from './replayTerrain';
@@ -110,12 +110,9 @@ export function Markers({ markers, terrain, reduce }: { markers: ViewMarker[]; t
 
 function Marker({ m, y, reduce }: { m: ViewMarker; y: number; reduce: boolean }) {
   const group = useRef<Group>(null);
-  const invalidate = useThree((s) => s.invalidate);
   const pos = useMemo(() => new Vector3(m.at.x, y, m.at.z), [m.at.x, m.at.z, y]);
-  // the hint pulses (the canvas draws on demand, so it asks for its frames while shown)
-  useFrame(() => {
-    if (m.tone === 'hint' && !reduce) invalidate();
-  });
+  // The hint's pulse is a CSS animation: it needs no WebGL frames (drawing the whole view 60 times a
+  // second while a hint shows kept the GPU busy for nothing). Html follows the frames that do draw.
   return (
     <group ref={group} position={pos}>
       <Html center zIndexRange={[15, 10]} wrapperClass="[direction:ltr] pointer-events-none" style={{ pointerEvents: 'none' }}>

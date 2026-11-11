@@ -4,14 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/remove-next-junction.mjs && node scripts/build-prefetch-manifest.mjs --quiet && node scripts/build-prototypes.mjs --if-changed && next dev",
-    "build": "node scripts/remove-next-junction.mjs && node scripts/build-prefetch-manifest.mjs && node scripts/build-prototypes.mjs --if-changed && next build",
+    "build": "node scripts/remove-next-junction.mjs && node scripts/check-3d.mjs && node scripts/build-prefetch-manifest.mjs && node scripts/build-prototypes.mjs --if-changed && next build",
     "start": "next start",
     "lint": "next lint",
     "scorm:package": "node scripts/build-scorm.mjs",
     "prototypes:build": "node scripts/build-prototypes.mjs",
     "prototypes:sync": "node scripts/sync-prototypes.mjs",
     "qa:svg": "node scripts/qa/render-svg.mjs",
-    "qa:rtl": "node scripts/qa/rtl-audit.mjs"
+    "qa:rtl": "node scripts/qa/rtl-audit.mjs",
+    "check:3d": "node scripts/check-3d.mjs",
+    "perf:3d": "node scripts/perf/bench-3d.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

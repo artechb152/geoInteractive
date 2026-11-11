@@ -36,6 +36,7 @@ import { CoordinateControl } from './CoordinateControl';
 import { GlobeFlatMap } from './GlobeFlatMap';
 import { loadGlobeImages, type GlobeImages } from './globeAssets';
 import type { GlobeApi, OverlayRefs } from './Globe3D';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const Globe3D = dynamic(() => import('./Globe3D'), { ssr: false, loading: () => null });
 
@@ -86,16 +87,7 @@ export function GlobeExplorer() {
   // ── WebGL, the images, the first frame ──
   const [webgl, setWebgl] = useState<'unknown' | 'yes' | 'no'>('unknown');
   useEffect(() => {
-    let ok = false;
-    try {
-      const probe = document.createElement('canvas').getContext('webgl2');
-      ok = !!probe;
-      // give the probe's context back at once — the page holds several 3-D views
-      probe?.getExtension('WEBGL_lose_context')?.loseContext();
-    } catch {
-      ok = false;
-    }
-    setWebgl(ok ? 'yes' : 'no');
+    setWebgl(hasWebGL() ? 'yes' : 'no');
   }, []);
   const [images, setImages] = useState<GlobeImages | null>(null);
   const [failed, setFailed] = useState<null | 'webgl' | 'images'>(null);

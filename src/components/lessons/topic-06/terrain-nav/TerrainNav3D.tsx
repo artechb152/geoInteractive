@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Html, Line, OrbitControls, useGLTF, useTexture } from '@react-three/drei';
@@ -580,12 +580,15 @@ function useScreenCull(refs: readonly React.RefObject<THREE.InstancedMesh | null
   const full = useRef<{ m: Float32Array; c: Float32Array | null }[]>([]);
   const last = useRef({ x: NaN, y: 0, z: 0, k: 0 });
   const order = useMemo(() => new Uint32Array(radiiM.length), [radiiM]);
+  // the instances drawn now (n = -1: none yet, or a refill to copy again)
+  const chosen = useMemo(() => ({ ids: new Uint32Array(radiiM.length), n: -1 }), [radiiM]);
   useLayoutEffect(() => {
     full.current = refs.map((r) => {
       const m = r.current;
       return m ? { m: (m.instanceMatrix.array as Float32Array).slice(), c: m.instanceColor ? (m.instanceColor.array as Float32Array).slice() : null } : { m: new Float32Array(0), c: null };
     });
     last.current.x = NaN;
+    chosen.n = -1;
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invalidate, ...deps]);
@@ -605,16 +608,37 @@ function useScreenCull(refs: readonly React.RefObject<THREE.InstancedMesh | null
       const dz = centres[i * 3 + 2] - p.z;
       if ((radiiM[i] * k) / Math.max(Math.sqrt(dx * dx + dy * dy + dz * dz) * S, 1) >= loPx) order[n++] = i;
     }
+    // The same instances as drawn: nothing to copy or upload (most frames of an orbit).
+    let same = n === chosen.n;
+    for (let q = 0; same && q < n; q++) same = order[q] === chosen.ids[q];
+    if (same) return;
+    chosen.ids.set(order.subarray(0, n));
+    chosen.n = n;
+    // Copied element by element (no typed-array view per instance) and uploaded as far as drawn.
     refs.forEach((r, j) => {
       const m = r.current;
       const f = full.current[j];
       if (!m || !f || !f.m.length) return;
       const ma = m.instanceMatrix.array as Float32Array;
-      for (let q = 0; q < n; q++) ma.set(f.m.subarray(order[q] * 16, order[q] * 16 + 16), q * 16);
+      for (let q = 0; q < n; q++) {
+        const from = order[q] * 16;
+        const to = q * 16;
+        for (let e = 0; e < 16; e++) ma[to + e] = f.m[from + e];
+      }
+      m.instanceMatrix.clearUpdateRanges();
+      m.instanceMatrix.addUpdateRange(0, n * 16);
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor && f.c) {
         const ca = m.instanceColor.array as Float32Array;
-        for (let q = 0; q < n; q++) ca.set(f.c.subarray(order[q] * 3, order[q] * 3 + 3), q * 3);
+        for (let q = 0; q < n; q++) {
+          const from = order[q] * 3;
+          const to = q * 3;
+          ca[to] = f.c[from];
+          ca[to + 1] = f.c[from + 1];
+          ca[to + 2] = f.c[from + 2];
+        }
+        m.instanceColor.clearUpdateRanges();
+        m.instanceColor.addUpdateRange(0, n * 3);
         m.instanceColor.needsUpdate = true;
       }
       m.count = n;
@@ -1547,7 +1571,8 @@ function World({ highlights, onReady, view }: { highlights: readonly FeatureId[]
 useTexture.preload(ALL_TEXTURES);
 useGLTF.preload(ROCKS_URL);
 
-export default function TerrainNav3D({ view, reduce, highlights, route, labels, pins, onPick, onReady, pointerScale = 1 }: ModelProps) {
+/** Memoised: the model's panel re-renders on every frame of an orbit or a look (its live heading). */
+export default memo(function TerrainNav3D({ view, reduce, highlights, route, labels, pins, onPick, onReady, pointerScale = 1 }: ModelProps) {
   const home = useMemo(() => {
     const t = toWorld3(SHEET_CENTER.E, SHEET_CENTER.N, HOME_VIEW.targetHeightM);
     const polar = THREE.MathUtils.degToRad(HOME_VIEW.polarDeg);
@@ -1556,12 +1581,14 @@ export default function TerrainNav3D({ view, reduce, highlights, route, labels, 
   }, []);
   return (
     <QualityCanvas
+      name="terrain-nav"
       aria-hidden
+      // Sun schedules both shadow maps itself (the near one follows the eye)
+      shadowCache={false}
       dpr={[1, 1.75]}
       shadows={{ type: THREE.PCFShadowMap }}
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ fov: 40, near: 5 / S, far: 30000 / S, position: home.pos }}
-      frameloop="demand"
       // Inside CombatNavScene's LessonViewportFit: size from the untransformed box.
       resize={LESSON_FIT_CANVAS_RESIZE}
       onCreated={({ gl }) => {
@@ -1585,4 +1612,4 @@ export default function TerrainNav3D({ view, reduce, highlights, route, labels, 
       <Labels labels={labels} />
     </QualityCanvas>
   );
-}
+});

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { signedTurn } from '../locationCheckGeometry';
 import { DEFAULT_PITCH, type LookRig } from './deadReckoningLook';
 import { DeadReckoningField } from './DeadReckoningField';
+import { hasWebGL } from '@/lib/webgl-support';
 
 /**
  * The view frame of the dead-reckoning activity: the live first-person scene
@@ -31,15 +32,6 @@ const Scene3D = dynamic(() => import('./DeadReckoningScene3D'), {
   ssr: false,
   loading: () => <ModelLoading label="טוען שטח מדברי תלת־ממדי…" className="bg-[#c1a484] pe-[var(--dr-map-w,0px)]" />,
 });
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!c.getContext('webgl2');
-  } catch {
-    return false;
-  }
-}
 
 export function DeadReckoningView({
   distM,

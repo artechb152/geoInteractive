@@ -9,10 +9,12 @@
  * <1.4 M over the shared walking corridor, out to the same 16 km horizon);
  * everything else the view shows — sky, light, ground material, scanned
  * plants and rocks with levels of detail, trees — is scene/ReplayVisuals.tsx.
- * frameloop "demand" (look or walking frames), paused off-screen.
+ * Drawn on demand (look or walking frames) through QualityCanvas, which pauses it off-screen and owns
+ * the pixel ratio (PIXEL_BUDGET at rest; lower while moving on a slow GPU).
  */
 import { memo, Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import type { MutableRefObject } from 'react';
 import type { PerspectiveCamera } from 'three';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
@@ -23,7 +25,7 @@ import type { WalkStore } from './replayWalk';
 import { EYE_HEIGHT_M, verticalFovForAspect, type ViewStore } from './replayViewStore';
 import type { W2 } from './replayWorld';
 import { D2R } from './scene/visualConfig';
-import { REPLAY_GL, ReplayVisuals, setupReplayRenderer } from './scene/ReplayVisuals';
+import { PIXEL_BUDGET, REPLAY_GL, ReplayVisuals, setupReplayRenderer } from './scene/ReplayVisuals';
 
 export { REPLAY_ASSETS } from './scene/visualConfig';
 
@@ -57,9 +59,13 @@ export default memo(function ReplayScene3D(props: SceneProps) {
   // before the first paint, so no frame goes by without a loading line
   useLayoutEffect(() => onMount?.(), [onMount]);
   return (
-    <Canvas
-      frameloop={props.active ? 'demand' : 'never'}
+    <QualityCanvas
+      name="navigation-replay"
+      paused={!props.active}
       dpr={[1, 2]}
+      pixelBudget={PIXEL_BUDGET}
+      // both shadow maps are scheduled by the scene (the far one per world, the near one as the eye moves)
+      shadowCache={false}
       shadows="percentage"
       gl={REPLAY_GL}
       camera={{ fov: 54, near: 0.1, far: 30000, position: [props.station.x, 400, props.station.z] }}
@@ -77,7 +83,7 @@ export default memo(function ReplayScene3D(props: SceneProps) {
       <Suspense fallback={null}>
         <World {...props} />
       </Suspense>
-    </Canvas>
+    </QualityCanvas>
   );
 });
 

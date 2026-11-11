@@ -1,28 +1,44 @@
 'use client';
 /**
- * QualityCanvas — the course's react-three-fiber <Canvas>, made to hold its frame rate on a weak GPU
- * (an integrated Intel UHD 630, a laptop on battery, a browser drawing without the GPU) without
+ * QualityCanvas — the course's react-three-fiber <Canvas>. Every 3D model draws through it (`npm run
+ * check:3d` fails on a raw <Canvas>), so every model holds its frame rate on a weak GPU (an
+ * integrated Intel UHD 630, a laptop on battery, a browser drawing without the GPU) without
  * thinning out the scene: geometry, textures, lights, shadows and effects stay exactly as authored.
- * What gives way is pixel density, and only while something moves:
+ * What it does, for every model, without the model asking:
  *
- * - Resolution follows the frame rate. Frames drawn back to back while the camera moves are timed;
- *   when they run slower than ~28 fps the pixel ratio steps down (to MIN_DPR at most), and when
- *   they run fast again it climbs back. A fast GPU never steps down.
- * - A demand-drawn scene rests sharp: REST_MS after its last frame it draws once more at the full
- *   pixel ratio, so a slow GPU sees a softer image only while the view moves.
- * - `shadowCache`: shadow maps are drawn again only when a shadow caster or a shadow-casting light
- *   changed — not on every frame of an orbit (the same shadows, without a 4096² depth pass per
- *   frame). For scenes whose shadow casters only move through their transforms, geometry and
- *   materials; topic-06's scenes, which schedule their own shadow updates, leave it off.
- * - A continuously drawn scene ('always') stops while it is off-screen.
- * - The context asks for the high-performance GPU (a dual-GPU laptop's discrete card).
- * - A weak GPU (lib/gpu-tier) starts moving frames at a pixel ratio it can hold; a browser drawing
- *   on the CPU also rests at a pixel ratio of 1 at most.
+ * - Draws only when needed. `profile` says how the model draws:
+ *     'interactive' (default) — on demand: when the camera, a control or the scene's state changes
+ *                    (OrbitControls, tweens and React props invalidate);
+ *     'static'      — on demand, and always at full resolution (nothing moves for long);
+ *     'animated'    — every frame (an animation that runs on its own).
+ *   `animating` turns an interactive model into an animated one while an animation plays, and
+ *   `moving` does the same while the view changes without the camera moving (a dragged handle).
+ * - Stops drawing off-screen (and when the host says `paused`: a hidden step). The first frame is
+ *   drawn even off-screen, so the model is built before it scrolls in.
+ * - Resolution follows the frame rate, only while something moves. Frames drawn back to back
+ *   (an animation, a damped orbit, a drag) are timed; slower than ~28 fps the pixel ratio steps down
+ *   (to MIN_DPR at most), fast again it climbs back. Frames paced by the input (a slow drag) or
+ *   held up by the CPU are not the GPU's pace and are not counted, so a fast GPU never steps down.
+ *   A demand-drawn model rests sharp: REST_MS after the camera stops it draws again at full
+ *   resolution. Post-processing follows the pixel ratio through QualityComposer.
+ * - `pixelBudget`: supersamples a small canvas up to that many device pixels at rest (never below
+ *   the screen's own pixel ratio, never above dpr's max).
+ * - Shadow maps (`shadowCache`, on unless 'animated') are drawn again only when a shadow caster or a
+ *   shadow-casting light changed — not on every frame of an orbit. A model that schedules its own
+ *   shadow updates (shadowMap.autoUpdate = false) passes shadowCache={false}.
+ * - A scroll does not redraw the model (R3F re-measures the canvas on scroll by default).
+ * - A closed canvas is let go: the renderer's 'dispose' listeners come off the textures, geometries and
+ *   materials that outlive it (shared caches, three's own), which otherwise keep the old renderer, its
+ *   context and the section's DOM alive after every visit (releaseOnClose).
+ * - The context asks for the high-performance GPU (a dual-GPU laptop's discrete card); a browser
+ *   drawing on the CPU (lib/gpu-tier 'software') gets no MSAA and rests at a pixel ratio of 1 at most,
+ *   and a weak GPU ('low') starts moving frames at a pixel ratio it can hold.
  *
- * Drop-in for <Canvas>: same props, plus `shadowCache`. Scenes that already pace their own pixel
- * ratio (PlanningLab3D's Resolution, DeadReckoningScene3D, the navigation replay's pixel budget)
- * keep the plain <Canvas>.
- * QA: the canvas carries data-gpu-tier; `?gpu=high|low|software|auto` overrides the detection.
+ * One owner per renderer setting: a model never sets the pixel ratio (setDpr, drei AdaptiveDpr /
+ * PerformanceMonitor) or the frameloop itself.
+ * QA: the canvas carries data-scene (`name`), data-profile and data-gpu-tier; `?gpu=high|low|software|auto`
+ * overrides the detection. Benchmark: `npm run perf:3d` (scripts/perf). Guide: design/docs/3d-performance.md.
+ * Animations must not rely on clock.elapsedTime surviving a pause (R3F restarts the clock).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Canvas, useFrame, useThree, type CanvasProps } from '@react-three/fiber';
@@ -44,6 +60,8 @@ const MIN_WINDOW = 4;
 const WINDOW_MS = 600;
 /** A longer gap ends a run of frames (a GPU drawing on the CPU still manages ~3 fps). */
 const RUN_GAP_MS = 1000;
+/** A frame whose own JavaScript took this share of the gap was held up by the CPU, not the GPU. */
+const CPU_SHARE = 0.6;
 /** Shader compiles and texture uploads after the first frame are not the GPU's pace. */
 const WARMUP_MS = 1200;
 /** Frames skipped after a pixel-ratio change (the canvas and its render targets are reallocated). */
@@ -52,25 +70,57 @@ const SETTLE_FRAMES = 2;
 const REST_MS = 320;
 /** A step up that slows down again within this long settles at the pixel ratio before it. */
 const RAISE_TRIAL_MS = 4000;
+/** Off-screen margin: a model this close to the viewport keeps drawing. */
+const ONSCREEN_MARGIN = '100px';
 
 /** The pixel ratio a moving view starts at, by tier (it then follows the frame rate). */
 const START_MOTION_DPR: Record<GpuTier, number> = { high: Infinity, low: 1, software: 0.75 };
 /** The highest pixel ratio at all, by tier. */
 const MAX_DPR: Record<GpuTier, number> = { high: Infinity, low: Infinity, software: 1 };
 
-export type QualityCanvasProps = CanvasProps & {
-  /** Draw shadow maps again only when a shadow caster or a shadow-casting light changed. */
+export type SceneProfile = 'static' | 'interactive' | 'animated';
+
+export type QualityCanvasProps = Omit<CanvasProps, 'frameloop'> & {
+  /** The model's name — data-scene on the canvas; the benchmark finds it by it (scripts/perf/scenes-3d.mjs). */
+  name: string;
+  /** How the model draws (default 'interactive'; see the header). */
+  profile?: SceneProfile;
+  /** An animation plays: draw every frame while true. */
+  animating?: boolean;
+  /** The view changes without the camera moving (a dragged handle): draw every frame, at the moving resolution, while true. */
+  moving?: boolean;
+  /** Draw nothing while true (a hidden step; the host's own visibility rule). Off-screen pausing is automatic. */
+  paused?: boolean;
+  /** Draw shadow maps again only when a shadow caster or a shadow-casting light changed (default: on unless 'animated'). */
   shadowCache?: boolean;
+  /** Supersample up to this many device pixels at rest (between the screen's pixel ratio and dpr's max). */
+  pixelBudget?: number;
 };
 
 function resolveDpr(dpr: CanvasProps['dpr'], own: number): number {
   if (Array.isArray(dpr)) return Math.min(Math.max(dpr[0], own), dpr[1]);
   return dpr ?? own;
 }
+const maxOf = (dpr: CanvasProps['dpr'], own: number) => (Array.isArray(dpr) ? dpr[1] : (dpr ?? own));
 
 const round = (dpr: number) => Math.round(dpr * 100) / 100;
 
-export function QualityCanvas({ dpr = [1, 2], frameloop = 'always', gl, shadowCache = false, ref, children, ...props }: QualityCanvasProps) {
+export function QualityCanvas({
+  name,
+  profile = 'interactive',
+  animating = false,
+  moving: movingProp = false,
+  paused = false,
+  shadowCache = profile !== 'animated',
+  pixelBudget,
+  dpr = [1, 2],
+  gl,
+  resize,
+  onCreated,
+  ref,
+  children,
+  ...props
+}: QualityCanvasProps) {
   const [tier] = useState(gpuTier);
   const [own, setOwn] = useState(() => (typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1));
   useEffect(() => {
@@ -80,67 +130,204 @@ export function QualityCanvas({ dpr = [1, 2], frameloop = 'always', gl, shadowCa
     return () => window.removeEventListener('resize', read);
   }, []);
 
-  const full = Math.min(resolveDpr(dpr, own), MAX_DPR[tier]);
+  // css pixels of the canvas, for pixelBudget (reported from inside the canvas: R3F's own size)
+  const [cssPixels, setCssPixels] = useState(0);
+  const budgetDpr = pixelBudget && cssPixels > 0 ? Math.min(maxOf(dpr, own), Math.sqrt(pixelBudget / cssPixels)) : 0;
+  const full = round(Math.min(Math.max(resolveDpr(dpr, own), budgetDpr), MAX_DPR[tier]));
   const [learned, setLearned] = useState<number | null>(null);
   const motion = Math.min(full, learned ?? START_MOTION_DPR[tier]);
-  const [moving, setMoving] = useState(false);
-  const continuous = frameloop === 'always';
-  const current = continuous || moving ? motion : full;
+  const [cameraMoving, setCameraMoving] = useState(false);
+  const continuous = profile === 'animated' || animating || movingProp;
+  const adaptive = profile !== 'static';
+  const current = adaptive && (continuous || cameraMoving) ? motion : full;
 
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const setCanvas = useCallback(
     (el: HTMLCanvasElement | null) => {
       canvas.current = el;
-      if (el) el.dataset.gpuTier = tier;
+      if (el) {
+        el.dataset.scene = name;
+        el.dataset.profile = profile;
+        el.dataset.gpuTier = tier;
+      }
       if (typeof ref === 'function') ref(el);
       else if (ref) (ref as RefObject<HTMLCanvasElement | null>).current = el;
     },
-    [ref, tier],
+    [ref, name, profile, tier],
   );
 
+  // Off-screen (or display: none): no frames — once the first one is drawn.
   const [onScreen, setOnScreen] = useState(true);
+  const [drawn, setDrawn] = useState(false);
   useEffect(() => {
     const el = canvas.current;
-    if (!continuous || !el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: '100px' });
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: ONSCREEN_MARGIN });
     io.observe(el);
     return () => io.disconnect();
-  }, [continuous]);
+  }, []);
+  const stopped = paused || (!onScreen && drawn);
+  const frameloop = stopped ? 'never' : continuous ? 'always' : 'demand';
 
   const onLearn = useCallback((next: number) => setLearned(round(next)), []);
-  const glProps = typeof gl === 'function' || (gl && 'render' in gl) ? gl : { powerPreference: 'high-performance' as const, ...gl };
+  const onDrawn = useCallback(() => setDrawn(true), []);
+  const created = useRef(onCreated);
+  created.current = onCreated;
+  const onRoot = useCallback<NonNullable<CanvasProps['onCreated']>>((state) => {
+    releaseOnClose(state.gl);
+    return created.current?.(state);
+  }, []);
+  const glProps =
+    typeof gl === 'function' || (gl && 'render' in gl)
+      ? gl
+      : { powerPreference: 'high-performance' as const, ...gl, ...(tier === 'software' ? { antialias: false } : null) };
 
   return (
-    <Canvas {...props} ref={setCanvas} dpr={current} frameloop={continuous && !onScreen ? 'never' : frameloop} gl={glProps}>
-      <Governor continuous={continuous} motion={motion} full={full} current={current} onLearn={onLearn} onMoving={setMoving} />
+    <Canvas {...props} ref={setCanvas} dpr={current} frameloop={frameloop} gl={glProps} resize={{ scroll: false, ...resize }} onCreated={onRoot}>
+      <Governor
+        adaptive={adaptive}
+        continuous={continuous}
+        motion={motion}
+        full={full}
+        current={current}
+        onLearn={onLearn}
+        onMoving={setCameraMoving}
+        onDrawn={onDrawn}
+        onCssPixels={pixelBudget ? setCssPixels : undefined}
+      />
       {shadowCache && <ShadowCache />}
       {children}
     </Canvas>
   );
 }
 
+/**
+ * three gives every texture, geometry, material and render target a renderer draws a 'dispose' listener
+ * of that renderer, and WebGLRenderer.dispose() leaves them there. A resource that outlives the canvas —
+ * three's own module-level empty textures, a model's module-level cache — keeps the listener and through it
+ * the renderer, its WebGL context, the canvas and the lesson section around it: ~5 MB on every visit to a
+ * sub-topic. So the listeners a QualityCanvas renderer adds are noted (while one of its methods runs) and
+ * taken off when R3F closes the renderer.
+ */
+type DisposeListener = (event: { type: 'dispose'; target: unknown }) => void;
+// weakly: a resource disposed while the canvas lives must not be kept by this list
+type Owned = [WeakRef<THREE.EventDispatcher<{ dispose: object }>>, DisposeListener][];
+let owning: Owned | null = null;
+let dispatcherPatched = false;
+const OWNED = Symbol('qualityCanvasOwnedListeners');
+const DRAWING_METHODS = ['render', 'compile', 'compileAsync', 'initTexture', 'initRenderTarget', 'setRenderTarget', 'copyTextureToTexture', 'copyFramebufferToTexture'] as const;
+
+function releaseOnClose(gl: THREE.WebGLRenderer) {
+  // the renderer's methods, wrapped in place
+  const r = gl as unknown as Record<string | symbol, unknown>;
+  if (r[OWNED]) return; // React's dev double mount: wrapped once
+  if (!dispatcherPatched) {
+    dispatcherPatched = true;
+    const add = THREE.EventDispatcher.prototype.addEventListener;
+    THREE.EventDispatcher.prototype.addEventListener = function (this: THREE.EventDispatcher, type: string, listener: never) {
+      if (owning && type === 'dispose') {
+        owning.push([new WeakRef(this as THREE.EventDispatcher<{ dispose: object }>), listener]);
+        // drop what is gone or already let go (three removes the listener when the resource is disposed)
+        if (owning.length > 4096) {
+          const live = owning.filter(([t, l]) => t.deref()?.hasEventListener('dispose', l as never));
+          owning.length = 0;
+          owning.push(...live);
+        }
+      }
+      return add.call(this, type as never, listener);
+    } as typeof add;
+  }
+  const owned: Owned = (r[OWNED] = []);
+  for (const name of DRAWING_METHODS) {
+    const method = r[name];
+    if (typeof method !== 'function') continue;
+    r[name] = function (this: unknown, ...args: unknown[]) {
+      const outer = owning;
+      owning = owned;
+      try {
+        return (method as (...a: unknown[]) => unknown).apply(this, args);
+      } finally {
+        owning = outer;
+      }
+    };
+  }
+  const release = () => {
+    for (const [ref, listener] of owned) {
+      const target = ref.deref();
+      if (target?.hasEventListener('dispose', listener as never)) target.removeEventListener('dispose', listener as never);
+    }
+    owned.length = 0;
+  };
+  for (const name of ['forceContextLoss', 'dispose'] as const) {
+    const method = gl[name].bind(gl) as () => void;
+    r[name] = () => {
+      release();
+      method();
+    };
+  }
+}
+
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[xs.length >> 1];
 
 function Governor(props: {
+  adaptive: boolean;
   continuous: boolean;
   motion: number;
   full: number;
   current: number;
   onLearn: (dpr: number) => void;
   onMoving: (moving: boolean) => void;
+  onDrawn: () => void;
+  onCssPixels?: (px: number) => void;
 }) {
   const live = useRef(props);
   live.current = props;
-  const s = useRef({ last: 0, start: 0, applied: 0, settle: 0, gaps: [] as number[], fast: 0, moved: false, pace: 0, moving: false, rest: 0, ceiling: Infinity, raisedFrom: 0, raisedAt: -Infinity }).current;
+  const s = useRef({
+    last: 0, start: 0, applied: 0, settle: 0, gaps: [] as number[], fast: 0, moved: false, pace: 0, moving: false, rest: 0,
+    ceiling: Infinity, raisedFrom: 0, raisedAt: -Infinity,
+    // this frame's start; the last frame's JavaScript time and whether it asked for the next frame
+    frameStart: 0, cpu: 0, queued: false, drawn: false,
+  }).current;
   const seen = useMemo(() => new THREE.Matrix4(), []);
   useEffect(() => () => window.clearTimeout(s.rest), [s]);
+
+  const scene = useThree((st) => st.scene);
+  const get = useThree((st) => st.get);
+  const width = useThree((st) => st.size.width);
+  const height = useThree((st) => st.size.height);
+  const onCssPixels = props.onCssPixels;
+  useEffect(() => onCssPixels?.(width * height), [onCssPixels, width, height]);
+
+  // The end of the frame's last scene render: its JavaScript time, and whether it asked for the next frame
+  // (an invalidate from inside the frame — damping, a tween — or a continuous loop; R3F decrements after).
+  useEffect(() => {
+    const after = scene.onAfterRender;
+    scene.onAfterRender = function (...args) {
+      after.apply(this, args);
+      const st = get();
+      s.cpu = performance.now() - s.frameStart;
+      s.queued = st.frameloop === 'always' || st.internal.frames > 1;
+      if (!s.drawn) {
+        s.drawn = true;
+        live.current.onDrawn();
+      }
+    };
+    return () => {
+      scene.onAfterRender = after;
+    };
+  }, [scene, get, s]);
 
   useFrame(({ camera }) => {
     const p = live.current;
     const now = performance.now();
     const gap = now - s.last;
+    // the gap is the GPU's pace only if the last frame asked for this one and its own JavaScript was short
+    const paced = s.queued && s.cpu < gap * CPU_SHARE;
+    s.queued = false;
     s.last = now;
+    s.frameStart = now;
     s.start ||= now;
+    if (!p.adaptive) return;
     // The camera moved over the last two frames: an orbit, a drag or a tween — not a single cut, and
     // not the endless sub-pixel tail of OrbitControls' damping.
     const step = !nearlyEqual(camera.matrixWorld, seen);
@@ -164,7 +351,7 @@ function Governor(props: {
       }
     }
 
-    // Time only consecutive frames drawn at the moving pixel ratio while the camera moves.
+    // Time only frames drawn back to back at the moving pixel ratio while the view moves.
     if (p.current !== s.applied) {
       s.applied = p.current;
       s.settle = SETTLE_FRAMES;
@@ -179,7 +366,7 @@ function Governor(props: {
       s.gaps.length = 0;
       return;
     }
-    if (p.current !== p.motion || !(p.continuous || moved)) return;
+    if (p.current !== p.motion || !(p.continuous || moved) || !paced) return;
     s.gaps.push(gap);
     if (s.gaps.length < WINDOW && (s.gaps.length < MIN_WINDOW || s.gaps.reduce((a, b) => a + b, 0) < WINDOW_MS)) return;
     const med = median(s.gaps);
@@ -200,7 +387,7 @@ function Governor(props: {
       // the last few percent are not worth a pixel ratio of their own (and a switch on every move)
       p.onLearn(dpr * 1.15 > top * 0.95 ? top : dpr * 1.15);
     } else s.fast = 0;
-  });
+  }, -1000);
   return null;
 }
 
@@ -220,6 +407,8 @@ type ShadowLight = THREE.DirectionalLight | THREE.SpotLight | THREE.PointLight;
  * changed: the shadow-casting lights (transform, target, shadow camera, map size) and the visible
  * shadow casters (transform, geometry, instances, morphs, materials, clipping). The check runs in
  * the scene's onBeforeRender — after three has updated the world matrices, before the shadow pass.
+ * Shadow casters animated inside a shader (a vertex-shader wind, a uniform-driven displacement) are
+ * invisible to it: such a model passes shadowCache={false}.
  */
 function ShadowCache() {
   const gl = useThree((s) => s.gl);
@@ -240,7 +429,7 @@ function ShadowCache() {
     const before = scene.onBeforeRender;
     scene.onBeforeRender = (...args) => {
       before.apply(scene, args);
-      if (checked === frame.current) return;
+      if (!map.enabled || checked === frame.current) return;
       checked = frame.current;
       if (shadowInputsChanged(scene, gl, sig)) map.needsUpdate = true;
     };

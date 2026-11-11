@@ -30,6 +30,17 @@ This project must match the provided visual mockups as closely as possible ("pix
 - Never mirror maps, diagrams, or illustrations for RTL.
 - On SVG `<text>`, always set `textAnchor` explicitly (default anchoring clips labels off-frame under RTL).
 
+## 3D performance (mandatory for every 3D change)
+
+Every 3D model must stay smooth on weak hardware (an integrated Intel UHD 630, a browser drawing without the GPU) and look exactly as designed on a strong GPU. Performance is part of implementing a 3D model, not a later task. Guide: `design/docs/3d-performance.md`.
+
+- Draw through the shared system: `QualityCanvas` (`src/components/three/QualityCanvas.tsx`) for every react-three-fiber canvas, `QualityComposer` for post-processing, `hasWebGL()` (`src/lib/webgl-support.ts`) for the WebGL check. A raw `<Canvas>`, `EffectComposer` or `getContext('webgl…')` needs a written reason next to it (`// perf-3d-allow(<rule>): <why>`).
+- Pick the model's `profile`: `interactive` (default, drawn on demand), `static`, or `animated` (only when it really moves on its own; prefer `animating={playing}`). Give it a unique `name` and register it in `scripts/perf/scenes-3d.mjs`.
+- One owner per renderer setting: never set the pixel ratio (`setDpr`, drei `AdaptiveDpr` / `PerformanceMonitor`, `regress`) or the frameloop yourself. Leave `shadowCache` on unless the model schedules its own shadow updates.
+- No needless per-frame work: no allocations, React state updates or unconditional `invalidate()` inside `useFrame`; ask for frames only while something moves (animate DOM overlays with CSS). Attach pointer handlers only where used and give large meshes a BVH. Build geometries, materials and textures once (stable `useMemo`, no inline `<Line points={[…]}>`); memoise the scene component so a live value does not re-render the R3F tree every frame. Dispose what you create, never shared/cached resources.
+- Never lower visual quality on a strong GPU to win a benchmark (no geometry thinning, no removed effects); weak hardware adapts through the shared system.
+- Verify every 3D change: `npm run check:3d` (also part of `npm run build`), then on a production build `npm run perf:3d -- --scenes=<name> --shots=<dir>` — at rest and off-screen a non-animated model draws 0 fps; draw calls, triangles and shadow passes do not grow; screenshots at the same camera match the previous build. Simulated weak hardware (`--gpu=sw`, `--cpu=4`, `--tier=low`) is not proof for a real UHD 630 — say so when reporting.
+
 ## Target viewport
 
 - Desktop: **1440px width** — this is the only target until desktop is pixel-accurate.

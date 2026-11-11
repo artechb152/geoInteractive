@@ -11,6 +11,8 @@
  * Override on a misjudged machine, or for QA: `?gpu=high|low|software` (kept in
  * localStorage['geo:gpu']); `?gpu=auto` clears it.
  */
+import { webglProbe } from './webgl-support';
+
 export type GpuTier = 'high' | 'low' | 'software';
 
 const FLAG_KEY = 'geo:gpu';
@@ -21,12 +23,6 @@ const SOFTWARE = /swiftshader|llvmpipe|softpipe|lavapipe|software|basic render/i
 const INTEGRATED = /intel(?!.*\barc\b)|radeon\(tm\) graphics|radeon graphics|vega \d+ graphics|radeon r\d graphics|mali|adreno|powervr|videocore/i;
 
 let cached: GpuTier | null = null;
-
-/** The renderer string of a WebGL context ('' when the browser hides it). */
-function rendererOf(gl: WebGLRenderingContext): string {
-  const info = gl.getExtension('WEBGL_debug_renderer_info');
-  return String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '');
-}
 
 export function classifyRenderer(renderer: string, majorPerformanceCaveat: boolean): GpuTier {
   if (majorPerformanceCaveat || SOFTWARE.test(renderer)) return 'software';
@@ -46,18 +42,9 @@ function override(): GpuTier | null {
 }
 
 function detect(): GpuTier {
-  try {
-    const canvas = document.createElement('canvas');
-    // A context the browser would only give on the CPU fails with the caveat flag set.
-    const fast = canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true });
-    const gl = fast ?? document.createElement('canvas').getContext('webgl');
-    if (!gl) return 'software';
-    const tier = classifyRenderer(rendererOf(gl), !fast);
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return tier;
-  } catch {
-    return 'high';
-  }
+  const probe = webglProbe();
+  if (!probe.webgl2) return 'software';
+  return classifyRenderer(probe.renderer, probe.caveat);
 }
 
 /** The GPU tier of this browser ('high' on the server). */

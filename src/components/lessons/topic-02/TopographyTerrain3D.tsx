@@ -422,6 +422,11 @@ function Outline({ y, active }: { y: number; active: boolean }) {
 
 /** Top face of the map slab (world y). */
 const MAP_TOP = SLAB_H / 2;
+/** The probe's stem: a unit line the stem group scales (a constant: new points rebuild drei's Line). */
+const STEM_POINTS: [number, number, number][] = [
+  [0, 0, 0],
+  [0, 1, 0],
+];
 
 /**
  * One feature outlined on both layers of the stack: tinted and outlined on the
@@ -672,7 +677,13 @@ function Scene({
     () =>
       TOPO.guides.map((g) => {
         const [x, z] = sheetToWorld(g.x, g.y);
-        return { x, z, top: STACK_GAP + heightToY(g.heightM) + 0.03 };
+        const top = STACK_GAP + heightToY(g.heightM) + 0.03;
+        // built once: new points on every hover render rebuild drei's Line and drop its shader
+        const points: [number, number, number][] = [
+          [x, MAP_TOP + 0.002, z],
+          [x, top, z],
+        ];
+        return { x, z, top, points };
       }),
     [],
   );
@@ -682,7 +693,9 @@ function Scene({
       {/* Pointer events only while stacked (the only view with hover and pick): any handler makes
           every pointer move raycast the ~470k-triangle terrain, which has no BVH before then. */}
       <group ref={dioramaGroup} {...(stacked ? layerEvents('3d') : {})}>
-        <Bvh firstHitOnly enabled={bvhOn}>
+        {/* drei's Bvh reads `enabled` on mount only: the key remounts it when the stack first opens.
+            strategy 0 (three-mesh-bvh's CENTER) builds the ~470k-triangle tree in a fraction of SAH's time. */}
+        <Bvh key={bvhOn ? 'bvh' : 'plain'} firstHitOnly enabled={bvhOn} strategy={0}>
           <primitive object={terrain} dispose={null} />
         </Bvh>
         {rest.map((o) => (
@@ -693,17 +706,14 @@ function Scene({
       {/* The map slab. At rest it sits hidden inside the diorama's plinth, so
           when the model lifts off it the map is what it leaves behind. */}
       <group visible={showStack}>
-        <mesh material={mapMats} {...layerEvents('topo')} castShadow receiveShadow>
+        <mesh material={mapMats} {...(stacked ? layerEvents('topo') : {})} castShadow receiveShadow>
           <boxGeometry args={[WORLD.w, SLAB_H, WORLD.h]} />
         </mesh>
         {stacked &&
           guides.map((g, i) => (
             <group key={i}>
               <Line
-                points={[
-                  [g.x, MAP_TOP + 0.002, g.z],
-                  [g.x, g.top, g.z],
-                ]}
+                points={g.points}
                 color={INK}
                 lineWidth={1.4}
                 dashed
@@ -727,10 +737,7 @@ function Scene({
         <group ref={probe} visible={false}>
           <group ref={stem}>
             <Line
-              points={[
-                [0, 0, 0],
-                [0, 1, 0],
-              ]}
+              points={STEM_POINTS}
               color={ACCENT}
               lineWidth={1.8}
             />
@@ -878,6 +885,7 @@ export default function TopographyTerrain3D({
       <div role="img" aria-label={ariaLabel} className="absolute inset-0" style={{ cursor: orbit ? 'grab' : 'default' }}>
         {activated && (
           <QualityCanvas
+            name="topography"
             shadowCache
             aria-hidden
             resize={LESSON_FIT_CANVAS_RESIZE}
@@ -885,7 +893,7 @@ export default function TopographyTerrain3D({
             dpr={[1.5, 2]}
             gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
             camera={{ fov: 30, near: 0.05, far: 120, position: [1.2, 3.2, 5.2] }}
-            frameloop={inView ? 'demand' : 'never'}
+            paused={!inView}
             // Neutral (Khronos PBR) tone mapping keeps the ground's colours
             // true to the albedo — ACES darkens and shifts them.
             onCreated={({ gl }) => {

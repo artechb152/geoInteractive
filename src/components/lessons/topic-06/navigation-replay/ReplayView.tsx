@@ -26,6 +26,7 @@ import type { WalkStore } from './replayWalk';
 import type { StopId } from './replayRoute';
 import type { ViewPick } from './replayCheck';
 import type { PickFn, ViewMarker } from './ReplayMarkers';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const LOADING_LABEL = 'טוען שטח תלת־ממדי…';
 
@@ -33,15 +34,6 @@ const ReplayScene3D = dynamic(() => import('./ReplayScene3D'), {
   ssr: false,
   loading: () => <ModelLoading label={LOADING_LABEL} className="bg-bg-accent" />,
 });
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
 
 /** A canvas that fails to start (no context, shader error, asset error) switches the panel to the stills. */
 class CanvasErrorBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {

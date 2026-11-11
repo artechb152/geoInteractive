@@ -9,6 +9,7 @@ import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { NorthArrow } from '../terrain-nav/TerrainNavModel';
 import type { ViewStore } from '../terrain-nav/terrainNavViewStore';
 import type { Lab3DProps } from './PlanningLab3D';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const LABEL = 'טוען שטח תלת־ממדי…';
 /** The frame's own background: the loader and the canvas share it, so a half-built canvas never shows. */
@@ -27,15 +28,6 @@ const PlanningLab3D = dynamic(() => import('./PlanningLab3D'), {
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 /** A still of this model from its opening camera (scripts/qa/shot-planning-lab.mjs), for browsers without WebGL. */
 export const FALLBACK_SRC = `${BASE}/assets/lessons/topic06/planning-lab/overview.jpg`;
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
 
 /** A canvas that fails to start (no context, shader error) switches the panel to the labelled still. */
 class CanvasErrorBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {

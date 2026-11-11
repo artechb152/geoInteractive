@@ -188,7 +188,8 @@ export function MeasurementIllustration({
   const zoomed = ellipsoid && phase !== 'identify';
   const zoomH = zoomed ? zoomHeight(stageH) : 0;
   const sectionH = zoomed ? stageH - zoomH - GAP : stageH;
-  const geo = sectionGeometry(sectionW, sectionH);
+  // ~1 ms to build: not again on every move of a drag (the component re-renders on each)
+  const geo = useMemo(() => sectionGeometry(sectionW, sectionH), [sectionW, sectionH]);
   // the enlargement shows the area from the body's angle: turning the body turns it too
   const zoom = useMemo(() => zoomGeometry(zoomH || zoomHeight(stageH), { left: SECTION.plotLeft, right: sectionW - SECTION.padRight }, ell), [zoomH, stageH, sectionW, ell]);
   const areaInSight = ellipsoid && patchView(ell, modelW, stageH, ellZoom).front;

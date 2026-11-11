@@ -2,6 +2,7 @@
 
 import { Component, type ReactNode, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const InteractiveHomeTerrainModel = dynamic(() => import('./InteractiveHomeTerrainModel'), {
   ssr: false,
@@ -36,19 +37,6 @@ class TerrainErrorBoundary extends Component<{ children: ReactNode }, { hasError
   }
 }
 
-function supportsWebGL(): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    return !!(
-      canvas.getContext('webgl2') ||
-      canvas.getContext('webgl') ||
-      canvas.getContext('experimental-webgl')
-    );
-  } catch {
-    return false;
-  }
-}
-
 /**
  * HomeTerrainDiorama — swaps in the interactive 3D terrain model
  * (InteractiveHomeTerrainModel) once WebGL support is confirmed client-side;
@@ -63,7 +51,7 @@ export function HomeTerrainDiorama() {
   const [webglOk, setWebglOk] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setWebglOk(supportsWebGL());
+    if (SHOW_3D_MODEL) setWebglOk(hasWebGL());
   }, []);
 
   if (!SHOW_3D_MODEL || webglOk === null || webglOk === false) {

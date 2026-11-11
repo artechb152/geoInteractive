@@ -116,8 +116,11 @@ function RenderOpaque({ built }: { built: PreparedWorld }) {
   }, 1);
   return null;
 }
-/** Pixels to draw (CSS px × DPR²): ~3.6 M — DPR 2 in the lesson's panel, ~1.3 at 1920 × 1080 full screen. */
-const PIXEL_BUDGET = 3.6e6;
+/**
+ * Pixels to draw at rest (CSS px × DPR²): ~3.6 M — DPR 2 in the lesson's panel, ~1.3 at 1920 × 1080 full
+ * screen (never below the screen's own DPR). ReplayScene3D passes it to QualityCanvas, which owns the DPR.
+ */
+export const PIXEL_BUDGET = 3.6e6;
 
 /** For the Canvas's onCreated: tone mapping, shadows drawn on demand, the haze. */
 export function setupReplayRenderer(gl: WebGLRenderer, scene: Scene) {
@@ -130,16 +133,6 @@ export function setupReplayRenderer(gl: WebGLRenderer, scene: Scene) {
   scene.background = HAZE.clone();
 }
 
-/** Resolution follows the panel's size: supersampled when small, a fixed pixel budget at full screen. */
-function AdaptiveDpr() {
-  const size = useThree((s) => s.size);
-  const setDpr = useThree((s) => s.setDpr);
-  useEffect(() => {
-    const px = Math.max(1, size.width * size.height);
-    setDpr(Math.min(2, Math.max(1, Math.sqrt(PIXEL_BUDGET / px))));
-  }, [size.width, size.height, setDpr]);
-  return null;
-}
 
 // ───────────────────────────────────────────── the visuals
 
@@ -214,7 +207,6 @@ export function ReplayVisuals({ built }: { built: PreparedWorld }) {
   return (
     <>
       {process.env.NODE_ENV !== 'production' && <DevEye built={built} />}
-      <AdaptiveDpr />
       <RenderOpaque built={built} />
       <Sky texture={skyTex} />
       <SkyLight sky={skyTex} />
