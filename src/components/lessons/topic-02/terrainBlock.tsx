@@ -48,6 +48,7 @@ void main() { gl_FragColor = vec4(v_col, 1.0); }`;
 // Draws the block blended from pose `from` to pose `to` at s (0 → 1) onto the
 // canvas, in the board's viewBox. Null when WebGL isn't available.
 function morphRenderer(canvas: HTMLCanvasElement, index: Uint16Array, from: Float32Array, to: Float32Array) {
+  // perf-3d-allow(webgl-context): the block's own 2D-board renderer (one quad morph, no three.js); released when it lands
   const gl = canvas.getContext('webgl', { antialias: true, depth: false, stencil: false });
   if (!gl) return null;
   const shader = (type: number, src: string) => {

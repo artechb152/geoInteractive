@@ -173,9 +173,16 @@ export class InstanceField {
   private push(vi: number, li: number, i: number, fade: number) {
     const L = this.levels[vi][li];
     const at = L.fill;
+    // copied element by element: a typed-array view per instance and part was ~10k objects a frame
+    const M = this.matrices;
+    const C = this.colors;
     for (const m of L.meshes) {
-      (m.instanceMatrix.array as Float32Array).set(this.matrices.subarray(i * 16, i * 16 + 16), at * 16);
-      (m.instanceColor!.array as Float32Array).set(this.colors.subarray(i * 3, i * 3 + 3), at * 3);
+      const ma = m.instanceMatrix.array as Float32Array;
+      for (let e = 0; e < 16; e++) ma[at * 16 + e] = M[i * 16 + e];
+      const ca = m.instanceColor!.array as Float32Array;
+      ca[at * 3] = C[i * 3];
+      ca[at * 3 + 1] = C[i * 3 + 1];
+      ca[at * 3 + 2] = C[i * 3 + 2];
       ((m.geometry.getAttribute('aFade') as InstancedBufferAttribute).array as Float32Array)[at] = fade;
     }
     L.fill = at + 1;
@@ -278,7 +285,10 @@ export class InstanceField {
         if (dx * dx + dz * dz > r2) continue;
         const vi = this.variant[i];
         const at = fills[vi]++;
-        for (const m of sets[vi]) (m.instanceMatrix.array as Float32Array).set(this.matrices.subarray(i * 16, i * 16 + 16), at * 16);
+        for (const m of sets[vi]) {
+          const ma = m.instanceMatrix.array as Float32Array;
+          for (let e = 0; e < 16; e++) ma[at * 16 + e] = this.matrices[i * 16 + e];
+        }
       }
       sets.forEach((ms, vi) =>
         ms.forEach((m) => {

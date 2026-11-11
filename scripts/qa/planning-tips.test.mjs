@@ -118,7 +118,9 @@ test('question: a wrong answer explains why, the fix explains the principle, res
   assert.ok(ok.text.startsWith('נכון.') && /המרחק/.test(ok.text) && /סדר הסימנים/.test(ok.text), 'correct: says what to compare and why');
   assert.equal((await page.locator(`${Q} [data-tips-reset]`).textContent()).trim(), 'התחלה מחדש');
   await page.locator(`${Q} [data-tips-reset]`).click();
-  await page.waitForTimeout(450);
+  // Reset clears the choice immediately; AnimatePresence retains its exiting
+  // node until the browser has painted the closing animation (3D may be warming).
+  await page.locator(`${Q} [data-tips-feedback]`).waitFor({ state: 'detached', timeout: 3000 });
   assert.equal(await feedback(), null, 'reset: feedback gone');
   assert.equal(await page.locator(`${Q} [aria-pressed="true"]`).count(), 0, 'reset: nothing marked');
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-option')), 'looks', 'reset: focus on the first answer');

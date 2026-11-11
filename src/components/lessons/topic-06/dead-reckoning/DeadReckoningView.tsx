@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { signedTurn } from '../locationCheckGeometry';
 import { DEFAULT_PITCH, type LookRig } from './deadReckoningLook';
 import { DeadReckoningField } from './DeadReckoningField';
+import { hasWebGL } from '@/lib/webgl-support';
 
 /**
  * The view frame of the dead-reckoning activity: the live first-person scene
@@ -31,15 +32,6 @@ const Scene3D = dynamic(() => import('./DeadReckoningScene3D'), {
   ssr: false,
   loading: () => <ModelLoading label="טוען שטח מדברי תלת־ממדי…" className="bg-[#c1a484] pe-[var(--dr-map-w,0px)]" />,
 });
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!c.getContext('webgl2');
-  } catch {
-    return false;
-  }
-}
 
 export function DeadReckoningView({
   distM,
@@ -80,17 +72,25 @@ export function DeadReckoningView({
   const [gl, setGl] = useState<'unknown' | 'yes' | 'no'>('unknown');
   const [ready, setReady] = useState(false);
   const [onScreen, setOnScreen] = useState(false);
+  const [seen, setSeen] = useState(false);
   const [looked, setLooked] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const fit = useLessonViewportScale();
 
   useEffect(() => setGl(hasWebGL() ? 'yes' : 'no'), []);
+  // Near the screen (200 px) the scene loads and builds; once built it draws — every frame, the dust
+  // drifts — only while a fifth of it is in view, so it doesn't take the GPU from the activity above.
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: '200px 0px' });
-    io.observe(el);
-    return () => io.disconnect();
+    const near = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: '200px 0px' });
+    const inView = new IntersectionObserver(([e]) => setSeen(e.isIntersecting && e.intersectionRatio >= 0.2), { threshold: [0, 0.2] });
+    near.observe(el);
+    inView.observe(el);
+    return () => {
+      near.disconnect();
+      inView.disconnect();
+    };
   }, []);
 
   // Drag to look: the world follows the pointer (as in a street-level photo viewer).
@@ -154,7 +154,7 @@ export function DeadReckoningView({
           data-look-surface
         >
           {onScreen || ready ? (
-            <Scene3D distM={distM} look={look} wadiLabel={wadiLabel} reduceMotion={reduceMotion} active={onScreen} onReady={() => setReady(true)} onFail={() => setGl('no')} />
+            <Scene3D distM={distM} look={look} wadiLabel={wadiLabel} reduceMotion={reduceMotion} active={ready ? seen : onScreen} onReady={() => setReady(true)} onFail={() => setGl('no')} />
           ) : (
             <ModelLoading label="טוען שטח מדברי תלת־ממדי…" className="bg-[#c1a484] pe-[var(--dr-map-w,0px)]" />
           )}

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { ModelLoading } from '@/components/lesson/ModelLoading';
 import type { StateId } from './reliefCoverCompare.data';
+import { hasWebGL } from '@/lib/webgl-support';
 
 /**
  * The "בשטח" board of „אותה גבעה, שלושה נופים”: the live model (ReliefCover3D, loaded only near the
@@ -21,15 +22,6 @@ const ReliefCover3D = dynamic(() => import('./ReliefCover3D'), { ssr: false, loa
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 export const FALLBACK = (s: StateId) => `${BASE}/assets/lessons/topic02/relief-cover-compare/${s}.jpg`;
 const HAZE = 'bg-[#E4E1D6]';
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
 
 /** A canvas that fails to start (no context, shader error) switches the board to the still. */
 class CanvasErrorBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {

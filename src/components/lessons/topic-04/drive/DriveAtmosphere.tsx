@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
@@ -81,11 +81,14 @@ function SunLight({ mood }: { mood: AtmosphereMood }) {
  * standard PBR materials to sit inside it.
  */
 export function DriveAtmosphere({ mood, moodKey }: { mood: AtmosphereMood; moodKey: string }) {
+  // drei's Environment bakes again whenever its children change: the same element on every re-render
+  // (a status change re-renders the canvas), so it bakes once per mood
+  const sky = useMemo(() => <SkyDome mood={mood} disc={false} />, [mood]);
   return (
     <>
       {/* Re-baked once per mood (keyed) — a static gradient needs no per-frame updates. */}
       <Environment key={moodKey} resolution={128} frames={1} environmentIntensity={mood.skyFill}>
-        <SkyDome mood={mood} disc={false} />
+        {sky}
       </Environment>
       <SkyDome mood={mood} followCamera />
 

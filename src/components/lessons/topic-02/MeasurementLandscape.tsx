@@ -11,6 +11,7 @@ import type { StationId } from './measurementMission.data';
 import type { BodyTab } from './MeasurementSection';
 import { MODEL_URLS, heightGrid, heightLens, hiddenBy, projectWith, type HeightGrid, type LandCamera, type LivePin, type ModelState } from './measurementView';
 import { arrowTurn, useDragTurn } from './viewControls';
+import { hasWebGL } from '@/lib/webgl-support';
 
 /**
  * Where the turnable model stands:
@@ -46,24 +47,6 @@ export type LandscapeSource = {
 const HEIGHTS_TIMEOUT_MS = 15000;
 
 /**
- * Whether this browser draws WebGL 2 — asked once per page. The probe's context is
- * given back at once: it would otherwise count against the browser's limit of live
- * contexts until garbage collection, a few more on every visit to this sub-topic.
- */
-let webglProbe: boolean | null = null;
-function canDrawWebGL(): boolean {
-  if (webglProbe !== null) return webglProbe;
-  try {
-    const gl = document.createElement('canvas').getContext('webgl2');
-    webglProbe = !!gl;
-    gl?.getExtension('WEBGL_lose_context')?.loseContext();
-  } catch {
-    webglProbe = false;
-  }
-  return webglProbe;
-}
-
-/**
  * WebGL or not, the model's status, and the height grid the model and the
  * overlay's hiding test share (loaded either way: without WebGL it still says
  * what the ground hides). Every request is aborted when the scene unmounts, and
@@ -76,7 +59,7 @@ export function useLandscapeSource(): LandscapeSource {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const webgl = canDrawWebGL();
+    const webgl = hasWebGL();
     if (webgl) setStatus((s) => (s === 'live' ? s : 'loading'));
     else setStatus('no-webgl');
     if (grid) return;

@@ -42,6 +42,7 @@ import {
 import { GapInset, SectionSvg } from './DatumSection';
 import { GlobeOverlays, GuideLegend, INSET, MARKER_R, makeOverlayRefs } from './datumOverlays';
 import { FitScreen } from '../coordinates1Fit';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const DatumGlobe3D = dynamic(() => import('./DatumGlobe3D'), { ssr: false, loading: () => null });
 
@@ -190,14 +191,7 @@ export function DatumGuided() {
   const [ready, setReady] = useState(false);
   const [capture, setCapture] = useState(false);
   useEffect(() => {
-    let ok = false;
-    try {
-      const c = document.createElement('canvas');
-      ok = !!(c.getContext('webgl2') || c.getContext('webgl'));
-    } catch {
-      ok = false;
-    }
-    setWebgl(ok ? 'yes' : 'no');
+    setWebgl(hasWebGL() ? 'yes' : 'no');
     setCapture(new URLSearchParams(window.location.search).has('datum-capture'));
   }, []);
   const onFail = useCallback(() => setWebgl('no'), []);

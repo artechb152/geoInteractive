@@ -13,6 +13,7 @@
  * colour-space conversion, no premultiplied alpha. Films without AUX get a
  * 1 x 1 black texture on `uC`.
  */
+import { gpuTier } from '@/lib/gpu-tier';
 
 const VERTEX = `
 attribute vec2 aPos;
@@ -93,6 +94,7 @@ export async function createTimelapse(
   images: TimelapseImages,
   fragment: string,
 ): Promise<Timelapse> {
+  // perf-3d-allow(webgl-context): a single full-frame shader player (no three.js); paused off-screen, released on dispose
   const gl = canvas.getContext('webgl', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
   if (!gl) throw new Error('webgl unavailable');
   const [a, b, c] = await Promise.all([
@@ -142,7 +144,8 @@ export async function createTimelapse(
   const uT = gl.getUniformLocation(prog, 'uT');
 
   const resize = () => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // every pixel runs the whole layered shader: a weak GPU draws at the screen's own ratio, at most 1
+    const dpr = Math.min(window.devicePixelRatio || 1, gpuTier() === 'high' ? 2 : 1);
     const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
     const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) {
@@ -173,6 +176,11 @@ export async function createTimelapse(
       textures.forEach((tex) => gl.deleteTexture(tex));
       gl.deleteBuffer(buf);
       gl.deleteProgram(prog);
+      // A canvas taken off the page gives its context back now, not at garbage collection (the browser
+      // keeps ~16 live contexts and drops the oldest); one still on the page is reused (React's dev double mount).
+      setTimeout(() => {
+        if (!canvas.isConnected) gl.getExtension('WEBGL_lose_context')?.loseContext();
+      }, 0);
     },
   };
 }

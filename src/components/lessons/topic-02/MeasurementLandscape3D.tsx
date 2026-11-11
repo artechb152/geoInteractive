@@ -1,6 +1,7 @@
 'use client';
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { MEASUREMENT_LANDSCAPE as L } from './measurementLandscape.data';
@@ -833,12 +834,13 @@ export default function MeasurementLandscape3D({
 }) {
   return (
     <GLBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
+        name="measurement-landscape"
         aria-hidden
         flat
         dpr={[1, 2]}
         resize={LESSON_FIT_CANVAS_RESIZE}
-        frameloop={active ? 'demand' : 'never'}
+        paused={!active}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         camera={{ manual: true, fov: cam.fovY, near: cam.near, far: cam.far, position: cam.eye, up: [0, 0, 1] }}
         style={{ position: 'absolute', inset: 0 }}
@@ -849,7 +851,7 @@ export default function MeasurementLandscape3D({
         <CameraRig cam={cam} />
         <Model grid={grid} state={state} cam={cam} reduce={reduce} active={active} onReady={onReady} onFail={onFail} />
         <LensPass lens={lens} shown={!!state.plumb} reduce={reduce} />
-      </Canvas>
+      </QualityCanvas>
     </GLBoundary>
   );
 }

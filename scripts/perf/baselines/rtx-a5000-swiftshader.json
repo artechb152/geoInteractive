@@ -1,0 +1,110 @@
+{
+ "gpu": "sw",
+ "cpu": 1,
+ "tier": "auto",
+ "cycles": 0,
+ "machine": "NVIDIA RTX A5000, Xeon W-2265, Windows 11, Chrome 156",
+ "viewport": "1440x900@1x",
+ "taken": "2026-11-10",
+ "results": [
+  {
+   "scene": "relief",
+   "tier": "software",
+   "loadS": 5.2,
+   "density": {
+    "rest": 1,
+    "moving": 0.6,
+    "recoverS": 3.1
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 23.6,
+    "gapMedMs": 49.9,
+    "gapP90Ms": 50,
+    "gapMaxMs": 83.3,
+    "drawsPerFrame": 6,
+    "trisPerFrame": 314358,
+    "shadowPasses": 0,
+    "longTaskMs": 1363,
+    "density": 0.6
+   },
+   "heapMB": 59.4,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "topography",
+   "tier": "software",
+   "loadS": 3.7,
+   "density": {
+    "rest": 1,
+    "moving": 0.6,
+    "recoverS": 4.1
+   },
+   "idleFps": 0,
+   "settledFps": 3,
+   "offscreenFps": null,
+   "offscreenPageFps": 1.7,
+   "drag": {
+    "fps": 14.7,
+    "gapMedMs": 66.7,
+    "gapP90Ms": 83.3,
+    "gapMaxMs": 100,
+    "drawsPerFrame": 7,
+    "trisPerFrame": 567192,
+    "shadowPasses": 0,
+    "longTaskMs": 25150,
+    "density": 0.6
+   },
+   "heapMB": 41.4,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  },
+  {
+   "scene": "location-check",
+   "tier": "software",
+   "loadS": 10.3,
+   "density": {
+    "rest": 1,
+    "moving": 0.6,
+    "recoverS": 1.1
+   },
+   "idleFps": 0,
+   "settledFps": 0,
+   "offscreenFps": 0,
+   "offscreenPageFps": 0,
+   "drag": {
+    "fps": 2.4,
+    "gapMedMs": 416.6,
+    "gapP90Ms": 450,
+    "gapMaxMs": 583.2,
+    "drawsPerFrame": 12,
+    "trisPerFrame": 1210897,
+    "shadowPasses": 0,
+    "longTaskMs": 150322,
+    "density": 0.6
+   },
+   "heapMB": 33.2,
+   "contexts": {
+    "created": 2,
+    "live": 1
+   },
+   "contextWarnings": 0,
+   "memory": null,
+   "errors": []
+  }
+ ]
+}

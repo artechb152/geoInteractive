@@ -115,7 +115,11 @@ export function otherPose(s: DatumState): Pose {
 /** The pose on screen: the station's, reached through the view's ease. */
 export function viewPose(s: DatumState): Pose {
   const to = stationPose(s);
-  return s.view ? lerpPose(s.view.from, to, ease(s.view.t)) : to;
+  if (!s.view) return to;
+  const k = ease(s.view.t);
+  // The hold before the ease, and its end, are the poses themselves — the same objects on every tick,
+  // so what is keyed on the pose (the wall canvases, the close-up) is not drawn again while it stands.
+  return k === 0 ? s.view.from : k === 1 ? to : lerpPose(s.view.from, to, k);
 }
 
 /** The close-up's check point (station 2 only shows it). */

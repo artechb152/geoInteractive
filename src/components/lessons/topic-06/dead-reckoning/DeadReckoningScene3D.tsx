@@ -1,12 +1,13 @@
 'use client';
 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Html, useGLTF, useProgress, useTexture } from '@react-three/drei';
 import type { MotionValue } from 'framer-motion';
 import * as THREE from 'three';
 import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { SEGMENT_M, WADI_CROSSING_M, along } from './deadReckoningModel';
 import {
   CHUNK_M,
@@ -18,6 +19,7 @@ import {
   eyeHeightAt,
   heightAt,
   instanceMatrix,
+  LEG,
   legToEN,
   scatterChunk,
   toScene,
@@ -36,6 +38,7 @@ import {
   type GroundTextures,
 } from './deadReckoningMaterials';
 import type { LookRig } from './deadReckoningLook';
+import { signedTurn } from '../locationCheckGeometry';
 
 /**
  * The live first-person view of the dead-reckoning walk: the eye 1.7 m over
@@ -73,6 +76,16 @@ export const DUST_BG = '#c1a484';
  * stones near the edges of the view round wherever one looks.
  */
 const HFOV = 64;
+/**
+ * Rocks and shrubs are drawn only in a wedge around the line of sight (half the view plus WEDGE_MARGIN_DEG
+ * each side) and all around within NEAR_ALL_M (the shadow box, and what a glance down shows) — not the
+ * ~70% of the circle behind and beside the eye. The wedge is refilled once the look turns WEDGE_REFILL_DEG
+ * from it (at once past WEDGE_URGENT_DEG), long before an unfilled part could come into view.
+ */
+const WEDGE_MARGIN_DEG = 50;
+const WEDGE_REFILL_DEG = 15;
+const WEDGE_URGENT_DEG = 30;
+const NEAR_ALL_M = 45;
 const vfovFor = (aspect: number) => (2 * Math.atan(Math.tan((HFOV * Math.PI) / 360) / aspect) * 180) / Math.PI;
 /**
  * Sun through the dust: high in the north-north-east, ahead of the walker — the
@@ -109,13 +122,17 @@ export type SceneProps = {
 
 export default function DeadReckoningScene3D(props: SceneProps) {
   const [ready, setReady] = useState(false);
-  const { progress, active: loading } = useProgress();
   return (
     <div className="absolute inset-0">
-      <Canvas
+      <QualityCanvas
+        name="dead-reckoning"
+        // the dust and the blown grains move all the time
+        profile="animated"
+        paused={!props.active}
+        // the shadow box follows the eye; standing still, the 2048² map is not redrawn every frame
+        shadowCache
         className="!absolute inset-0"
         resize={LESSON_FIT_CANVAS_RESIZE}
-        frameloop={props.active ? 'always' : 'never'}
         dpr={[0.85, 1.25]}
         shadows
         camera={{ fov: vfovFor(1280 / 560), near: 0.08, far: 600, position: [0, 1.7, 0] }}
@@ -141,11 +158,17 @@ export default function DeadReckoningScene3D(props: SceneProps) {
             }}
           />
         </Suspense>
-      </Canvas>
+      </QualityCanvas>
       {/* Centred in the part of the view the open planning map leaves free (--dr-map-w, set by the view) */}
-      {!ready && <ModelLoading label="טוען שטח מדברי תלת־ממדי…" progress={loading ? progress : undefined} className="bg-[#c1a484] pe-[var(--dr-map-w,0px)]" />}
+      {!ready && <Loading />}
     </div>
   );
+}
+
+/** The loader, with the page's loading progress — its own component, so a progress tick re-renders only it. */
+function Loading() {
+  const { progress, active } = useProgress();
+  return <ModelLoading label="טוען שטח מדברי תלת־ממדי…" progress={active ? progress : undefined} className="bg-[#c1a484] pe-[var(--dr-map-w,0px)]" />;
 }
 
 // ---------------------------------------------------------------- the world
@@ -155,7 +178,7 @@ type ChunkRec = { i: number; j: number; mesh: THREE.Mesh; rocks: Packed; shrubs:
 type Scatter = ReturnType<typeof scatterChunk>;
 
 function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
-  const { gl, scene, camera, setDpr } = useThree();
+  const { gl, scene, camera } = useThree();
   const textures = useTexture(TEXTURE_URLS);
   const rocksGltf = useGLTF(ROCKS_URL);
   const shrubsGltf = useGLTF(SHRUBS_URL);
@@ -281,6 +304,8 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
   const queue = useRef<{ i: number; j: number }[]>([]);
   const instancesDirty = useRef(false);
   const lastRebuild = useRef(0);
+  /** The look's azimuth the instances were filled around (NaN: not yet). */
+  const filledYaw = useRef(Number.NaN);
   const initial = useRef<{ total: number; done: boolean; frames: number }>({ total: 0, done: false, frames: 0 });
 
   const scatterOf = (i: number, j: number) => {
@@ -347,12 +372,21 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
     instancesDirty.current = true;
   };
 
-  /** Fill the instanced meshes from the chunks near enough to `u` for each family (DRAW_M). */
-  const rebuildInstances = (u: number) => {
+  /** Fill the instanced meshes from the chunks near enough to `u` for each family (DRAW_M), in the view's wedge. */
+  const rebuildInstances = (u: number, yaw: number) => {
     const fill = new Map<THREE.InstancedMesh, number>();
     for (const list of res.instanced.values()) for (const im of list) fill.set(im, 0);
+    filledYaw.current = yaw;
     for (const rec of chunks.current.values()) {
-      const dist = Math.hypot((rec.i + 0.5) * CHUNK_M - u, (rec.j + 0.5) * CHUNK_M);
+      const da = (rec.i + 0.5) * CHUNK_M - u;
+      const dl = (rec.j + 0.5) * CHUNK_M;
+      const dist = Math.hypot(da, dl);
+      if (dist > NEAR_ALL_M) {
+        // the chunk's azimuth from the eye, widened by its own angular size (+3 m for what overhangs it)
+        const bearing = (Math.atan2(da * LEG.aE + dl * LEG.rE, da * LEG.aN + dl * LEG.rN) * 180) / Math.PI;
+        const spread = (Math.asin(Math.min(1, (CHUNK_M * 0.71 + 3) / dist)) * 180) / Math.PI;
+        if (Math.abs(signedTurn(yaw, bearing)) > HFOV / 2 + WEDGE_MARGIN_DEG + spread) continue;
+      }
       for (const src of [rec.rocks, rec.shrubs]) {
         for (const [shape, { m, c }] of src) {
           if (dist > DRAW_M[family(shape)] + CHUNK_M * 0.71) continue;
@@ -434,7 +468,6 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
   // ---- camera and streaming, every frame
   const lastU = useRef(Number.NaN);
   const frameU = useRef(Number.NaN);
-  const perf = useRef({ t: 0, frames: 0, dpr: 1.25, checked: 0, fast: 0, fps: 0 });
   useEffect(() => {
     const u = distM.get();
     syncChunks(u);
@@ -451,7 +484,6 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
           const el = gl.domElement;
           return [((v.x + 1) / 2) * el.clientWidth, ((1 - v.y) / 2) * el.clientHeight, v.z];
         },
-        fps: () => perf.current,
         renderInfo: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, geometries: gl.info.memory.geometries, textures: gl.info.memory.textures }),
         projectWadiLabel: () => {
           const v = new THREE.Vector3(...wadiAnchorRef.current).project(camera);
@@ -496,8 +528,10 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
       queue.current.shift();
       buildOne(c.i, c.j);
     }
-    if (instancesDirty.current && (performance.now() - lastRebuild.current > 120 || !initial.current.done)) {
-      rebuildInstances(u);
+    const turned = Number.isNaN(filledYaw.current) ? Infinity : Math.abs(signedTurn(filledYaw.current, look.yaw));
+    if (turned > WEDGE_REFILL_DEG) instancesDirty.current = true;
+    if (instancesDirty.current && (performance.now() - lastRebuild.current > 120 || !initial.current.done || turned > WEDGE_URGENT_DEG)) {
+      rebuildInstances(u, look.yaw);
       lastRebuild.current = performance.now();
     }
 
@@ -537,30 +571,7 @@ function World({ distM, look, wadiLabel, reduceMotion, onReady }: SceneProps) {
         onReady();
       }
     }
-
-    // Resolution follows the frame rate, measured over 2 s windows while no chunks are being built (a
-    // reset or a long jump builds many at once): a step down below 40 fps, back up after three windows above 57.
-    if (initial.current.done && queue.current.length === 0) {
-      const pf = perf.current;
-      pf.frames += 1;
-      pf.t += dt;
-      if (pf.t > 2) {
-        const fps = pf.frames / pf.t;
-        pf.checked += 1;
-        pf.fast = fps > 57 ? pf.fast + 1 : 0;
-        if (fps < 40 && pf.dpr > 0.86) {
-          pf.dpr = Math.max(0.85, pf.dpr - 0.2);
-          setDpr(pf.dpr);
-        } else if (pf.fast >= 3 && pf.dpr < 1.25) {
-          pf.dpr = Math.min(1.25, pf.dpr + 0.1);
-          pf.fast = 0;
-          setDpr(pf.dpr);
-        }
-        pf.fps = fps;
-        pf.t = 0;
-        pf.frames = 0;
-      }
-    }
+    // Resolution follows the frame rate in QualityCanvas (chunk builds are CPU time, not counted there).
   });
 
   const wadiAnchor = wadiAnchorRef.current;

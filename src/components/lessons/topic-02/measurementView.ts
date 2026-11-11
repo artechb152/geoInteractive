@@ -167,8 +167,13 @@ function solve(view: LandView, aspect: number, points: readonly (readonly number
     }
     // centred across; down to the window's floor — a model narrower than its box (held to the span) keeps
     // the spare height above it, where the pins stand, and none under it
-    target = add(add(target, right, ((u0 + u1) / 2 - (U0 + U1) / 2) * tw * dist * 0.5), up, (v0 - V0) * th * dist * 0.5);
+    const du = ((u0 + u1) / 2 - (U0 + U1) / 2) * tw * 0.5;
+    const dv = (v0 - V0) * th * 0.5;
+    target = add(add(target, right, du * dist), up, dv * dist);
     dist *= 1 + (k - 1) * 0.5;
+    // Settled to the last bits: the rounds left would move nothing (and this runs on every move of a
+    // drag — ~1 ms for the full 400 on a fast CPU).
+    if (Math.abs(du) + Math.abs(dv) + Math.abs(k - 1) < 1e-13) break;
   }
   return { target, eye: add(target, back, dist) };
 }

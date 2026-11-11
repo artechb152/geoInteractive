@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { Html, Line, OrbitControls, useGLTF, useProgress, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import type { ViewStore } from '../terrain-nav/terrainNavViewStore';
 import { DEST, START, STREAM, WATER_TANK, WORLD, type Point } from './planningLabWorld';
 import { bedStones, behindGround, boulders, buildings, crownShape, heightAt, insideSheet, shrubs, terrainMeshArrays, trees, understory, waterCourses, type Boulder, type Shrub, type Tree } from './planningLabTerrain';
@@ -817,6 +818,8 @@ function PlanOnGround({ nodes, selection, showDirect }: { nodes: readonly RouteN
   const selLeg = selection?.kind === 'leg' ? nodes.findIndex((n) => n.id === selection.from) : -1;
   const sel = useMemo(() => (selLeg >= 0 && legs[selLeg] ? drape([legs[selLeg].from, legs[selLeg].to], LIFT_M + 0.3) : null), [legs, selLeg]);
   const direct = useMemo(() => drape([START, DEST], LIFT_M - 0.4), []);
+  // built with the legs: new points on every render rebuild drei's Lines
+  const chevrons = useMemo(() => legs.map((l, k) => (l.distanceM > 60 ? chevron(l.from, l.to, k === selLeg ? 12 : 8) : null)), [legs, selLeg]);
   return (
     <group>
       {showDirect && <Line points={direct} color="#FFFFFF" lineWidth={2.6} dashed dashSize={14 / S} gapSize={10 / S} renderOrder={1} transparent opacity={0.95} />}
@@ -824,7 +827,7 @@ function PlanOnGround({ nodes, selection, showDirect }: { nodes: readonly RouteN
       <Line points={route} color="#FDFBF3" lineWidth={7} renderOrder={2} depthWrite={false} />
       <Line points={route} color={ORANGE} lineWidth={4.2} renderOrder={3} />
       {sel && <Line points={sel} color={ORANGE} lineWidth={10} renderOrder={1} transparent opacity={0.42} depthWrite={false} />}
-      {legs.map((l, k) => (l.distanceM > 60 ? <Line key={nodes[k].id} points={chevron(l.from, l.to, k === selLeg ? 12 : 8)} color="#FFFFFF" lineWidth={k === selLeg ? 3.2 : 2.4} renderOrder={4} /> : null))}
+      {chevrons.map((pts, k) => (pts ? <Line key={nodes[k].id} points={pts} color="#FFFFFF" lineWidth={k === selLeg ? 3.2 : 2.4} renderOrder={4} /> : null))}
     </group>
   );
 }
@@ -1078,80 +1081,13 @@ function SceneSetup() {
 }
 
 /**
- * Pixels drawn per CSS pixel: as many as fit a budget of about 3.2 million, between 1 and 2 (and never
- * fewer than the screen's own). In the lesson's panel that is twice the panel's size each way — every
- * shrub, road and ridge line supersampled — and in full screen as much as the budget allows.
- *
- * On a slow GPU a moving view (an orbit, a drag) would stutter at that size: while frames come in back
- * to back, the time between them is watched, and if the median runs past ~26 ms the resolution steps
- * down (to 0.6 of it at most) until the view rests; 350 ms after the last frame it draws once more at full
- * resolution. A fast GPU never steps down.
+ * Pixels drawn per CSS pixel at rest: as many as fit a budget of about 3.2 million, between 1 and 2 (and
+ * never fewer than the screen's own). In the lesson's panel that is twice the panel's size each way —
+ * every shrub, road and ridge line supersampled — and in full screen as much as the budget allows.
+ * QualityCanvas owns the pixel ratio: on a slow GPU a moving view (an orbit, a dragged point) steps
+ * down and the view rests sharp again; a fast GPU never steps down.
  */
 const PIXEL_BUDGET = 3.2e6;
-function Resolution({ onDpr: setDpr }: { onDpr: (dpr: number) => void }) {
-  const size = useThree((s) => s.size);
-  const invalidate = useThree((s) => s.invalidate);
-  const full = useMemo(() => {
-    const own = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
-    const fit = Math.sqrt(PIXEL_BUDGET / Math.max(1, size.width * size.height));
-    return Math.min(2, Math.max(1, own, Math.min(2, fit)));
-  }, [size.width, size.height]);
-  const scale = useRef(1);
-  const last = useRef(0);
-  const gaps = useRef<number[]>([]);
-  const rest = useRef(0);
-  useEffect(() => {
-    scale.current = 1;
-    setDpr(full);
-  }, [full, setDpr]);
-  useEffect(() => () => window.clearTimeout(rest.current), []);
-  // dev-only: pin the pixel ratio for a measurement
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
-    const w = window as unknown as { __plSetDpr?: (d: number) => void };
-    w.__plSetDpr = (d) => setDpr(d);
-    return () => {
-      delete w.__plSetDpr;
-    };
-  }, [setDpr]);
-  const seen = useMemo(() => new THREE.Matrix4(), []);
-  useFrame(({ camera }) => {
-    const now = performance.now();
-    const gap = now - last.current;
-    last.current = now;
-    // only while the camera itself moves (an orbit, a zoom, a tween): React has little to do then, so a
-    // slow frame is the GPU's — a drag's or the map's own work must not lower the resolution
-    const moving = !camera.matrixWorld.equals(seen);
-    seen.copy(camera.matrixWorld);
-    const g = gaps.current;
-    if (moving && gap < 120) g.push(gap);
-    if (g.length > 24) g.shift();
-    const fixed = process.env.NODE_ENV !== 'production' && (window as unknown as { __plFixedDpr?: boolean }).__plFixedDpr;
-    if (g.length >= 8 && !fixed) {
-      const recent = g.slice(-8).sort((a, b) => a - b);
-      if (recent[4] > 28 && scale.current > 0.6) {
-        scale.current = Math.max(0.6, scale.current * 0.8);
-        setDpr(full * scale.current);
-        g.length = 0;
-      } else if (g.length >= 24 && scale.current < 1 && [...g].sort((a, b) => a - b)[12] < 17.5) {
-        // a passing hitch (a first frame, the page busy): back up as soon as the frames keep pace again
-        scale.current = Math.min(1, scale.current * 1.25);
-        setDpr(full * scale.current);
-        g.length = 0;
-      }
-    }
-    window.clearTimeout(rest.current);
-    rest.current = window.setTimeout(() => {
-      gaps.current.length = 0;
-      if (scale.current < 1) {
-        scale.current = 1;
-        setDpr(full);
-        invalidate();
-      }
-    }, 350);
-  });
-  return null;
-}
 
 /** drei's loader count, passed up while it is loading (the wrapper's bar fills over its sheen). */
 function Progress({ onProgress }: { onProgress?: (p: number | undefined) => void }) {
@@ -1202,9 +1138,8 @@ function World({ highlights, onReady }: { highlights: readonly FeatureId[]; onRe
   );
 }
 
-export default function PlanningLab3D({ view, reduce, nodes, selection, showDirect, highlights, dragging, dispatch, onGround, onReady, onProgress, onHidden, pointerScale = 1 }: Lab3DProps) {
-  // the canvas' pixel ratio (Resolution), passed as the Canvas prop so a re-render keeps it
-  const [dpr, setDpr] = useState(1);
+/** Memoised: the model's panel re-renders on every frame of an orbit (its live north arrow). */
+export default memo(function PlanningLab3D({ view, reduce, nodes, selection, showDirect, highlights, dragging, dispatch, onGround, onReady, onProgress, onHidden, pointerScale = 1 }: Lab3DProps) {
   // the hidden route points, told up as one flag
   const hiddenIds = useRef(new Set<string>());
   const onHandleHidden = useCallback(
@@ -1234,14 +1169,19 @@ export default function PlanningLab3D({ view, reduce, nodes, selection, showDire
     return { target: t, pos: [t[0] + r * Math.sin(polar) * Math.sin(az), t[1] + r * Math.cos(polar), t[2] + r * Math.sin(polar) * Math.cos(az)] as [number, number, number] };
   }, []);
   return (
-    <Canvas
+    <QualityCanvas
+      name="planning-lab"
       aria-hidden
-      dpr={dpr}
+      dpr={[1, 2]}
+      pixelBudget={PIXEL_BUDGET}
+      // a dragged route point changes the view without moving the camera
+      moving={dragging !== null}
+      // StaticShadows draws the shadow map once (the world does not move)
+      shadowCache={false}
       // PCF with a radius: soft-edged shadows (three's PCFSoftShadowMap is deprecated and falls back to it)
       shadows={{ type: THREE.PCFShadowMap }}
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ fov: 38, near: 5 / S, far: 30000 / S, position: home.pos }}
-      frameloop="demand"
       // Inside the lesson's LessonViewportFit: size from the untransformed box.
       resize={LESSON_FIT_CANVAS_RESIZE}
       onCreated={({ gl }) => {
@@ -1252,7 +1192,6 @@ export default function PlanningLab3D({ view, reduce, nodes, selection, showDire
       style={{ position: 'absolute', inset: 0 }}
     >
       <SceneSetup />
-      <Resolution onDpr={setDpr} />
       <OrbitControls
         makeDefault
         target={home.target}
@@ -1282,8 +1221,8 @@ export default function PlanningLab3D({ view, reduce, nodes, selection, showDire
           <Labels nodes={nodes} selection={selection} highlights={highlights} />
         </>
       )}
-    </Canvas>
+    </QualityCanvas>
   );
-}
+});
 
 useGLTF.preload(ROCKS_URL);

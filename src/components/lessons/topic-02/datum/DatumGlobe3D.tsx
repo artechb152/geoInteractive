@@ -40,7 +40,8 @@
    render on demand only. */
 
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import {
@@ -908,6 +909,9 @@ function CameraRig({ reduce, pose }: { reduce: boolean; pose: Pose }) {
 
 /* ───────────────────────── overlays ───────────────────────── */
 
+/** The ellipsoid chip's anchor direction (front right, toward the open quarter). */
+const ELL_ANCHOR_DIR = new THREE.Vector3(Math.cos(0.3) * Math.cos(0.62), Math.sin(0.3), Math.cos(0.3) * Math.sin(0.62));
+
 function OverlaySync({
   refs,
   pose,
@@ -963,7 +967,7 @@ function OverlaySync({
     // a point on the ellipsoid's surface toward the open quarter (front right)
     const ellAnchor = (() => {
       const { center, rotZ, radii } = poseToWorld(pose);
-      const dir = new THREE.Vector3(Math.cos(0.3) * Math.cos(0.62), Math.sin(0.3), Math.cos(0.3) * Math.sin(0.62));
+      const dir = ELL_ANCHOR_DIR;
       const c = Math.cos(rotZ);
       const s = Math.sin(rotZ);
       const lx = dir.x * c + dir.y * s;
@@ -1137,13 +1141,14 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
   if (!images) return null;
   return (
     <GlobeBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
+        name="datum-globe"
         flat
         dpr={[1, 2]}
         resize={LESSON_FIT_CANVAS_RESIZE}
         camera={{ position: camPosition(CAM.az, CAM.el, CAM.dist), fov: FOV, near: 0.1, far: 60 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: capture }}
-        frameloop={active ? 'demand' : 'never'}
+        paused={!active}
         style={{ cursor: 'grab', touchAction: 'none' }}
         onCreated={({ gl }) => {
           gl.domElement.addEventListener('webglcontextlost', (e) => {
@@ -1190,7 +1195,7 @@ export default function DatumGlobe3D(props: DatumGlobeProps) {
             onReady();
           }}
         />
-      </Canvas>
+      </QualityCanvas>
     </GlobeBoundary>
   );
 }

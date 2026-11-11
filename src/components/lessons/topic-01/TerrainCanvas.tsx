@@ -1,6 +1,7 @@
 'use client';
 
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
@@ -143,7 +144,11 @@ export default function TerrainCanvas({ feature }: { feature: Feature }) {
   // that same pre-existing ancestor for positioning.
   return (
     <>
-      <Canvas
+      <QualityCanvas
+        name="terrain-canvas"
+        // endless pulses on the markers
+        profile="animated"
+        shadowCache
         shadows
         camera={{ position: POVS.flat.pos, fov: POVS.flat.fov, near: 0.1, far: 60 }}
         dpr={[1, 2]}
@@ -197,7 +202,7 @@ export default function TerrainCanvas({ feature }: { feature: Feature }) {
         <EnemyForce position={ENEMY_POS} showLabel={enemyLabel} />
 
         <MovementPath feature={feature} />
-      </Canvas>
+      </QualityCanvas>
       <Vignette />
     </>
   );

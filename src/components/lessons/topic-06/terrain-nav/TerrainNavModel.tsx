@@ -9,6 +9,7 @@ import { ModelLoading } from '@/components/lesson/ModelLoading';
 import { formatBearing } from './terrainNavGeometry';
 import type { ModelProps } from './TerrainNav3D';
 import type { ViewStore } from './terrainNavViewStore';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const TerrainNav3D = dynamic(() => import('./TerrainNav3D'), { ssr: false, loading: () => null });
 
@@ -18,15 +19,6 @@ export const FALLBACK = {
   overview: `${BASE}/assets/lessons/topic06/terrain-nav/overview.jpg`,
   leg: (k: number) => `${BASE}/assets/lessons/topic06/terrain-nav/leg-${k + 1}.jpg`,
 } as const;
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
 
 /** A canvas that fails to start (no context, shader error) switches the panel to the static view. */
 class CanvasErrorBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {

@@ -22,7 +22,8 @@
      disposed on unmount. */
 
 import { Component, useEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
 import { ellipsoidMesh } from '../geo-globe/geoCoords';
@@ -593,6 +594,8 @@ export type StageApi = {
 };
 
 type Pose = { el: number; az: number; target: THREE.Vector3; dist: number };
+/** The camera rig's view direction this frame (reused). */
+const RIG_DIR = new THREE.Vector3();
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 function Rig({ view, reduce, api, shadowFade }: { view: StageView; reduce: boolean; api: MutableRefObject<StageApi | null>; shadowFade: MutableRefObject<number> }) {
@@ -657,6 +660,7 @@ function Rig({ view, reduce, api, shadowFade }: { view: StageView; reduce: boole
     const az = b.az + offset.current.az;
     const e = view.m === 'az' ? 0 : view.p;
     const fit = fitCamera(framePoints(view.m, e, el, az), el, az, size.width / Math.max(1, size.height), CAM_FOV, 0.96);
+    // perf-3d-allow(alloc-in-frame): the pose is kept (last.current) — a tween starts from it
     let pose: Pose = { el, az, target: new THREE.Vector3(...fit.target), dist: fit.dist };
     const pt = poseTween.current;
     if (pt) {
@@ -674,7 +678,7 @@ function Rig({ view, reduce, api, shadowFade }: { view: StageView; reduce: boole
     last.current = pose;
     const ce = pose.el * D2R;
     const ca = pose.az * D2R;
-    const d = new THREE.Vector3(Math.cos(ce) * Math.cos(ca), Math.sin(ce), -Math.cos(ce) * Math.sin(ca));
+    const d = RIG_DIR.set(Math.cos(ce) * Math.cos(ca), Math.sin(ce), -Math.cos(ce) * Math.sin(ca));
     camera.position.copy(pose.target).addScaledVector(d, pose.dist);
     camera.up.set(-Math.sin(ce) * Math.cos(ca), Math.cos(ce), Math.sin(ce) * Math.sin(ca));
     camera.lookAt(pose.target);
@@ -788,13 +792,14 @@ export default function ProjectionStage3D({ images, view, reduce, active, api, o
   const scale = useLessonViewportScale();
   return (
     <StageBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
+        name="projection-stage"
         resize={LESSON_FIT_CANVAS_RESIZE}
         flat
         dpr={[1, 2]}
         camera={{ fov: CAM_FOV, near: 0.1, far: 60, position: [6, 1.6, -0.8] }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        frameloop={active ? 'demand' : 'never'}
+        paused={!active}
         style={{ touchAction: 'none' }}
         onCreated={({ gl }) => {
           gl.domElement.addEventListener('webglcontextlost', (e) => {
@@ -809,7 +814,7 @@ export default function ProjectionStage3D({ images, view, reduce, active, api, o
         <Sheets view={view} reduce={reduce} />
         <DragTurn api={api} onEngage={onEngage} scale={scale} />
         <FrameCount onReady={onReady} />
-      </Canvas>
+      </QualityCanvas>
     </StageBoundary>
   );
 }

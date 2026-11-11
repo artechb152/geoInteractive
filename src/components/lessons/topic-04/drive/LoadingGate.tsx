@@ -7,20 +7,12 @@ import { Icon } from '@/components/Icon';
 import { DriveHUD } from './DriveHUD';
 import type { SoilConfig } from './terrainConfigs';
 import type { DriveStatus } from './vehicleController';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const DriveCanvas = dynamic(() => import('./DriveCanvas').then((m) => m.DriveCanvas), {
   ssr: false,
   loading: () => null,
 });
-
-function supportsWebGL(): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    return !!(canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl'));
-  } catch {
-    return false;
-  }
-}
 
 class DriveErrorBoundary extends Component<{ children: ReactNode; onError: () => void }, { hasError: boolean }> {
   state = { hasError: false };
@@ -64,7 +56,7 @@ export function LoadingGate({ soil }: { soil: SoilConfig }) {
   const [recoverToken, setRecoverToken] = useState(0);
 
   useEffect(() => {
-    setWebglOk(supportsWebGL());
+    setWebglOk(hasWebGL());
   }, []);
 
   const unsupported = webglOk === false || failed;

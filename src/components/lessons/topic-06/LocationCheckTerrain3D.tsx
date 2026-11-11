@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { memo, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -714,6 +715,10 @@ function Sun() {
 function StaticShadows({ casters, onReady }: { casters: React.RefObject<THREE.Group | null>; onReady?: () => void }) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
+  // A new onReady (an inline callback, on every frame of a look) must not draw the shadow map again —
+  // with the caster volumes on screen — so the pass runs once and reads the latest callback.
+  const ready = useRef(onReady);
+  ready.current = onReady;
   useEffect(() => {
     gl.shadowMap.autoUpdate = false;
     gl.shadowMap.needsUpdate = true;
@@ -723,10 +728,10 @@ function StaticShadows({ casters, onReady }: { casters: React.RefObject<THREE.Gr
     let raf = requestAnimationFrame(() => {
       if (casters.current) casters.current.visible = false;
       invalidate();
-      raf = requestAnimationFrame(() => onReady?.());
+      raf = requestAnimationFrame(() => ready.current?.());
     });
     return () => cancelAnimationFrame(raf);
-  }, [gl, invalidate, onReady, casters]);
+  }, [gl, invalidate, casters]);
   return null;
 }
 
@@ -757,7 +762,8 @@ function SceneSetup() {
   return null;
 }
 
-export default function LocationCheckTerrain3D({
+/** Memoised: the observation panel re-renders on every frame of a look (its heading tape). */
+export default memo(function LocationCheckTerrain3D({
   lookStore,
   reduce,
   onReady,
@@ -767,13 +773,15 @@ export default function LocationCheckTerrain3D({
   onReady?: () => void;
 }) {
   return (
-    <Canvas
+    <QualityCanvas
+      name="location-check"
       aria-hidden
+      // StaticShadows draws the shadow map once, with its caster volumes shown for that frame only
+      shadowCache={false}
       dpr={[1, 2]}
       shadows={{ type: THREE.PCFShadowMap }}
       gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
       camera={{ fov: 50, near: 0.25 / S, far: 9000 / S, position: [0, 0, 0] }}
-      frameloop="demand"
       // Inside PrinciplesScene's LessonViewportFit: size from the untransformed box.
       resize={LESSON_FIT_CANVAS_RESIZE}
       onCreated={({ gl }) => {
@@ -789,6 +797,6 @@ export default function LocationCheckTerrain3D({
       <Suspense fallback={null}>
         <World onReady={onReady} />
       </Suspense>
-    </Canvas>
+    </QualityCanvas>
   );
-}
+});

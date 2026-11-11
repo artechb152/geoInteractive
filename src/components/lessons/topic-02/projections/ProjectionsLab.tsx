@@ -37,6 +37,7 @@ import {
   circlesOn, demoDuration, easeInOut, feedbackOf, initialPractice, isOver, isPart, mapLabelWithCircles, mapOpacity, phaseOf, practiceReducer, sliderKey, stageDescription,
   targetOf, type Feedback, type Method,
 } from './projectionsModel';
+import { hasWebGL } from '@/lib/webgl-support';
 
 const Stage3D = dynamic(() => import('./ProjectionStage3D'), { ssr: false, loading: () => null });
 
@@ -82,15 +83,7 @@ export function ProjectionsLab() {
   }, []);
   const [webgl, setWebgl] = useState<'unknown' | 'yes' | 'no'>('unknown');
   useEffect(() => {
-    let ok = false;
-    try {
-      const probe = document.createElement('canvas').getContext('webgl2');
-      ok = !!probe;
-      probe?.getExtension('WEBGL_lose_context')?.loseContext();
-    } catch {
-      ok = false;
-    }
-    setWebgl(ok ? 'yes' : 'no');
+    setWebgl(hasWebGL() ? 'yes' : 'no');
   }, []);
   const [stageImages, setStageImages] = useState<StageImages | null>(null);
   const [pixels, setPixels] = useState<EarthPixels | null>(null);

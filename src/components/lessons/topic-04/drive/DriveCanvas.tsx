@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { Bloom, EffectComposer, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
+import { QualityComposer } from '@/components/three/QualityComposer';
+import { Bloom, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { BlendFunction, ToneMappingMode } from 'postprocessing';
 import { DriveAtmosphere } from './DriveAtmosphere';
 import { getAtmosphere, OCCLUSION_TINT } from './atmosphere';
@@ -53,13 +54,16 @@ export function DriveCanvas({
 
   return (
     <div ref={ref} className="size-full">
-      <Canvas
+      <QualityCanvas
+        name="drive"
+        // drawn on demand: VehicleRig keeps frames coming while the car, its camera or its dust moves
+        // or a key is held; a parked car is not redrawn 60 times a second
         className="size-full"
         // PCF + per-light shadow.radius (DriveAtmosphere) — three r18x
         // deprecated PCFSoftShadowMap and silently falls back to PCF anyway.
         shadows="percentage"
         dpr={[1, 1.75]}
-        frameloop={inView ? 'always' : 'never'}
+        paused={!inView}
         // fov/position are only the pre-first-frame defaults — ChaseCamera
         // (chaseCamera.ts) owns both from the first frame on. `far` has to
         // reach the HorizonBackdrop ridges from anywhere on the tile.
@@ -81,7 +85,7 @@ export function DriveCanvas({
           <VehicleRig soil={soil} heightAt={heightAt} active={active} recoverToken={recoverToken} onStatus={onStatus} />
         </Suspense>
 
-        <EffectComposer multisampling={0}>
+        <QualityComposer multisampling={0}>
           {/* Ground-truth-style AO (must be the first pass): world-space
               radius so it grounds the wheels, stake bases, rut walls and
               ledge risers, tinted warm umber instead of grey. Half-res keeps
@@ -98,8 +102,8 @@ export function DriveCanvas({
           <ToneMapping mode={ToneMappingMode.NEUTRAL} />
           <Vignette eskil={false} offset={0.3} darkness={0.28} blendFunction={BlendFunction.NORMAL} />
           <SMAA />
-        </EffectComposer>
-      </Canvas>
+        </QualityComposer>
+      </QualityCanvas>
     </div>
   );
 }

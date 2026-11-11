@@ -61,13 +61,13 @@ function publicLessons() {
   return all.filter((l) => !archived.has(l.id));
 }
 
-/** Literal `/assets/…` (or `/draco/…`) prefixes in the given source files/folders. */
-function assetRefs(paths) {
+/** Literal `/assets/…` (or `/draco/…`) prefixes in the given source files/folders (minus `skip`). */
+function assetRefs(paths, skip = new Set()) {
   const refs = new Set();
   for (const p of paths) {
     const files = existsSync(p) && statSync(p).isDirectory() ? walk(p) : existsSync(p) ? [p] : [];
     for (const f of files) {
-      if (!SOURCE_EXT.has(extname(f))) continue;
+      if (!SOURCE_EXT.has(extname(f)) || skip.has(f)) continue;
       const text = readFileSync(f, 'utf8');
       for (const m of text.matchAll(/\/(?:assets|draco)\/[A-Za-z0-9_.\-/]*/g)) refs.add(m[0]);
     }
@@ -108,11 +108,16 @@ function filesFor(refs) {
 const src = (...p) => join(ROOT, 'src', ...p);
 const lessons = publicLessons();
 
+// The home page's 3D model is switched off (SHOW_3D_MODEL in HomeTerrainDiorama): its 3.6 MB glb is
+// never shown, so it is not fetched either.
+const homeModelOn = /const SHOW_3D_MODEL = true/.test(readFileSync(src('components/landing/home/HomeTerrainDiorama.tsx'), 'utf8'));
+const homeSkip = new Set(homeModelOn ? [] : [src('components/landing/home/InteractiveHomeTerrainModel.tsx')]);
+
 const groups = [
   {
     id: 'home',
     files: (() => {
-      const set = filesFor(assetRefs([src('app/page.tsx'), src('components/landing'), src('components/LessonCard.tsx')]));
+      const set = filesFor(assetRefs([src('app/page.tsx'), src('components/landing'), src('components/LessonCard.tsx')], homeSkip));
       // lessonDioramaSrc(id) is the lesson's card in lessonAssets; take it and its -hook still.
       const assets = readFileSync(join(ROOT, 'src/lib/lesson-scenes.ts'), 'utf8');
       for (const l of lessons) {

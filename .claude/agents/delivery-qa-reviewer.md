@@ -14,5 +14,6 @@ Checklist to run for the target lesson(s):
 4. **RTL** — no mirrored diagrams, no absolute right-/left- (rtl-qa-reviewer).
 5. **Legibility** — diagrams readable on mobile 375px (cartographic + visual-qa).
 6. **a11y** — alt-text/aria on diagrams, keyboard reachability, contrast (basic pass).
+7. **3D performance** — `npm run check:3d` passes (it also runs inside `npm run build`); for a lesson whose 3D models changed, `npm run perf:3d -- --scenes=<names>` on the production export shows 0 fps at rest and off-screen for non-animated models and no regression against the baseline (design/docs/3d-performance.md).
 
 Output: a signed checklist with PASS/FAIL per item. Any FAIL = blocker; list blockers explicitly with `file:line`. No verdict of "ready" unless the build passes and all items pass.

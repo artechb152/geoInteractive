@@ -1,9 +1,11 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { AdaptiveDpr, Bvh, Environment, Html, Line, OrbitControls, useGLTF, useProgress, useTexture } from '@react-three/drei';
-import { EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
+import { Bvh,Environment, Html, Line, OrbitControls, useGLTF, useProgress, useTexture } from '@react-three/drei';
+import { N8AO, ToneMapping } from '@react-three/postprocessing';
+import { QualityComposer } from '@/components/three/QualityComposer';
 import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
 import { useReducedMotion } from 'framer-motion';
@@ -610,7 +612,9 @@ export default function ContourCake3D({
       style={{ cursor, background: BG }}
     >
       {activated && (
-        <Canvas
+        <QualityCanvas
+          name="contour-cake"
+          shadowCache
           // ContoursScene shrinks this card with LessonViewportFit on laptops:
           // size the canvas from its untransformed box, not the scaled rect.
           resize={LESSON_FIT_CANVAS_RESIZE}
@@ -618,11 +622,10 @@ export default function ContourCake3D({
           shadows={{ type: THREE.PCFShadowMap }}
           camera={{ position: START_POSITION, fov: FOV, near: 0.01, far: 80 }}
           dpr={[1, 2]}
-          // While the camera moves, render at reduced resolution (AdaptiveDpr +
-          // OrbitControls `regress`); full quality returns the moment it stops.
-          performance={{ min: 0.55 }}
+          // A slow GPU renders a moving camera at a reduced resolution
+          // (QualityCanvas); full quality returns the moment it stops.
           gl={{ antialias: false, alpha: true, powerPreference: 'high-performance', stencil: false }}
-          frameloop={inView ? 'demand' : 'never'}
+          paused={!inView}
           onPointerMissed={() => !dragging && setActiveRing(null)}
         >
           {/* No scene background: the canvas stays transparent so the card's
@@ -690,16 +693,14 @@ export default function ContourCake3D({
             maxPolarAngle={Math.PI / 2.05}
             enableDamping
             dampingFactor={0.08}
-            regress
           />
-          <AdaptiveDpr />
           <CameraRig view={view} viewNonce={viewNonce} reduce={reduce} controlsRef={controlsRef} liftRef={liftRef} />
 
-          <EffectComposer multisampling={4}>
+          <QualityComposer multisampling={4}>
             <N8AO aoRadius={0.12} distanceFalloff={0.6} intensity={2.2} quality="medium" />
             <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-          </EffectComposer>
-        </Canvas>
+          </QualityComposer>
+        </QualityCanvas>
       )}
 
       {activated && <LoadingOverlay />}

@@ -23,7 +23,8 @@
      away from the viewport). */
 
 import { Component, useEffect, useMemo, useRef, type MutableRefObject, type ReactNode, type RefObject } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import { QualityCanvas } from '@/components/three/QualityCanvas';
 import { Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { LESSON_FIT_CANVAS_RESIZE, useLessonViewportScale } from '@/components/lesson/LessonViewportFit';
@@ -271,6 +272,8 @@ const POLAR_MIN = 0.14;
 const POLAR_MAX = Math.PI - 0.14;
 const v3 = (p: Vec3) => new THREE.Vector3(p[0], p[1], p[2]);
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+/** The camera tween's rotation this frame (reused). */
+const TWEEN_Q = new THREE.Quaternion();
 
 /** Clamp a direction away from the poles (the camera's up stays north). */
 function clampPolar(d: THREE.Vector3) {
@@ -344,8 +347,7 @@ function CameraRig({ api, reduce, memory }: { api: MutableRefObject<GlobeApi | n
     if (!tw) return;
     tw.t = Math.min(1, tw.t + dt / tw.dur);
     const e = ease(tw.t);
-    const dir = tw.from.clone().applyQuaternion(new THREE.Quaternion().slerp(tw.q, e));
-    camera.position.copy(dir).multiplyScalar(tw.d0 + (tw.d1 - tw.d0) * e);
+    camera.position.copy(tw.from).applyQuaternion(TWEEN_Q.identity().slerp(tw.q, e)).multiplyScalar(tw.d0 + (tw.d1 - tw.d0) * e);
     camera.lookAt(0, 0, 0);
     controls?.update();
     if (tw.t >= 1) tween.current = null;
@@ -615,13 +617,14 @@ export default function Globe3D({ images, sel, win, choices, target, note, reduc
   const scale = useLessonViewportScale();
   return (
     <GlobeBoundary onFail={onFail}>
-      <Canvas
+      <QualityCanvas
+        name="geo-globe"
         resize={LESSON_FIT_CANVAS_RESIZE}
         flat
         dpr={[1, 2]}
         camera={{ position: memory.current ?? p, fov: CAM_FOV, near: 0.5, far: 20 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-        frameloop={active ? 'demand' : 'never'}
+        paused={!active}
         style={{ touchAction: 'none' }}
         onCreated={({ gl }) => {
           gl.domElement.addEventListener('webglcontextlost', (e) => {
@@ -647,7 +650,7 @@ export default function Globe3D({ images, sel, win, choices, target, note, reduc
         />
         <CameraRig api={api} reduce={reduce} memory={memory} />
         <OverlaySync refs={refs} sel={sel} choices={choices} target={target} note={note} onFrame={onFrame} />
-      </Canvas>
+      </QualityCanvas>
     </GlobeBoundary>
   );
 }

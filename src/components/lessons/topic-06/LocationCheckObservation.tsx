@@ -23,6 +23,7 @@ import { FORK, READINGS } from './locationCheckScenario';
 import { bearingToViewX, formatBearing, normalizeDegrees, projectToView, signedTurn, type EyePoint } from './locationCheckGeometry';
 import { heightAt, observerEye } from './locationCheckTerrain';
 import { INITIAL_LOOK, type LookStore } from './locationCheckViewStore';
+import { hasWebGL } from '@/lib/webgl-support';
 
 /**
  * The observation panel: the live eye-level canvas (LocationCheckTerrain3D)
@@ -48,15 +49,6 @@ export const OBSERVATION_ASPECT = 4 / 3;
 const TAPE_H = 30;
 /** Radius of the ring on a marker's real target (px). */
 const RING_R_PX = 7;
-
-function hasWebGL() {
-  try {
-    const c = document.createElement('canvas');
-    return !!(c.getContext('webgl2') || c.getContext('webgl'));
-  } catch {
-    return false;
-  }
-}
 
 /** A canvas that fails to start (no context, shader error) switches the panel to the static view. */
 class CanvasErrorBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
@@ -108,6 +100,7 @@ export function LocationCheckObservation({
 
   useEffect(() => setMode(hasWebGL() ? 'live' : 'static'), []);
   const fallBack = useCallback(() => setMode('static'), []);
+  const onReady = useCallback(() => setReady(true), []);
 
   useEffect(() => {
     const el = frameRef.current;
@@ -241,7 +234,7 @@ export function LocationCheckObservation({
             <LocationCheckTerrain3D
               lookStore={lookStore}
               reduce={reduce}
-              onReady={() => setReady(true)}
+              onReady={onReady}
             />
           </CanvasErrorBoundary>
         )}
