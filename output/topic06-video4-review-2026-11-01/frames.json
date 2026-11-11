@@ -1,0 +1,96 @@
+{
+  "width": 1280,
+  "height": 720,
+  "duration": 8.042667,
+  "input": "C:/Users/idog2/Downloads/Navigator_walking_orange_route_t…_b9d51d6e.mp4",
+  "frames": [
+    {
+      "time": 0,
+      "file": "frame-00000.png"
+    },
+    {
+      "time": 0.125,
+      "file": "frame-00125.png"
+    },
+    {
+      "time": 0.25,
+      "file": "frame-00250.png"
+    },
+    {
+      "time": 0.5,
+      "file": "frame-00500.png"
+    },
+    {
+      "time": 0.75,
+      "file": "frame-00750.png"
+    },
+    {
+      "time": 1,
+      "file": "frame-01000.png"
+    },
+    {
+      "time": 1.25,
+      "file": "frame-01250.png"
+    },
+    {
+      "time": 1.5,
+      "file": "frame-01500.png"
+    },
+    {
+      "time": 1.75,
+      "file": "frame-01750.png"
+    },
+    {
+      "time": 2,
+      "file": "frame-02000.png"
+    },
+    {
+      "time": 2.5,
+      "file": "frame-02500.png"
+    },
+    {
+      "time": 3,
+      "file": "frame-03000.png"
+    },
+    {
+      "time": 3.5,
+      "file": "frame-03500.png"
+    },
+    {
+      "time": 4,
+      "file": "frame-04000.png"
+    },
+    {
+      "time": 4.5,
+      "file": "frame-04500.png"
+    },
+    {
+      "time": 5,
+      "file": "frame-05000.png"
+    },
+    {
+      "time": 5.5,
+      "file": "frame-05500.png"
+    },
+    {
+      "time": 6,
+      "file": "frame-06000.png"
+    },
+    {
+      "time": 6.5,
+      "file": "frame-06500.png"
+    },
+    {
+      "time": 7,
+      "file": "frame-07000.png"
+    },
+    {
+      "time": 7.5,
+      "file": "frame-07500.png"
+    },
+    {
+      "time": 7.993,
+      "file": "frame-07993.png"
+    }
+  ]
+}

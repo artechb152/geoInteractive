@@ -86,7 +86,7 @@ test('an open workspace: no stations, no stepper, every tool open from the start
   );
   assert.ok(tools.every((t) => !t.disabled && !/\d/.test(t.text)), 'unnumbered, enabled');
   assert.equal(await attr('data-tool'), 'route');
-  assert.match(await text('[data-instruction]'), /הוסיפו נקודת מעבר במפה או גררו נקודה קיימת, ובחנו את הדרך בשטח\./);
+  assert.match(await text('[data-instruction]'), /לחצו על מקום פנוי במפה כדי להוסיף נקודה.*גררו נקודה קיימת.*השוו במודל/);
   const s = await state();
   assert.deepEqual(s.nodes.map((n) => n.kind), ['start', 'way', 'end']);
   assert.equal(await attr('data-crossing'), 'peak-west', 'the opening line climbs over the western summit');

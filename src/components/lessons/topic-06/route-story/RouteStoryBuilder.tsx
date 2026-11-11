@@ -1,283 +1,81 @@
 'use client';
-
-import { useId, useReducer, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Icon } from '@/components/Icon';
+import { useId, useReducer, useRef, useEffect } from 'react';
+import { Compass, Ruler, MapPin, Undo2, RotateCcw, Check, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { RouteMap } from '../PlanningRouteMap';
-import { RouteStoryPanel } from './RouteStoryPanel';
-import {
-  INITIAL_STATE,
-  LEGS,
-  POINTS,
-  QUESTION_LEG,
-  STOPS,
-  deg,
-  describe,
-  isHidden,
-  legStates,
-  metres,
-  pointStates,
-  reducer,
-  type Stop,
-} from './routeStoryModel';
+import { LEGS, POINTS, END_LABEL, END_OPTIONS, deg, metres, TOTAL_M, type Field, type EndOption } from './routeStoryModel';
+import { INITIAL_WORKBENCH, workbenchReducer, complete, routeComplete, fieldVerdict, feedback, type Tool } from './workbenchModel';
+import { WorkbenchMap } from './WorkbenchMap';
 
-/**
- * „סיפור דרך: חמש נקודות וארבעה קטעים” — the route-story activity of lesson
- * 6, one card: the story as a list that alternates the five points and the
- * four legs between them, the map beside it (drawn from the same data), and
- * under the list a panel for the selected stop — what to see on the way and
- * which sign checks the position at the end — or, on leg ד׳, the learner's
- * own entry for that leg, read from the map.
- *
- * The panel sits beside the map, not under it, so the whole card fits one
- * laptop screen (≤ ~790 px at the reference width, like lesson 2's
- * activities). On leg ד׳ the list folds into one row of route chips (the
- * same buttons, keys and order) to make room for the question.
- */
-
-const ROW =
-  'group relative isolate flex w-full items-center gap-3 rounded-xl border px-3 text-start cursor-pointer transition-colors duration-200 ease-snap before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[inherit] before:transition-colors before:duration-200 before:ease-snap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent';
-
-function stopLabel(s: Stop) {
-  if (s.kind === 'leg') {
-    const leg = LEGS[s.i];
-    return `קטע ${leg.letter} · מנקודה ${leg.from + 1} אל נקודה ${leg.to + 1}`;
-  }
-  const p = POINTS[s.i];
-  return `נקודה ${p.n} · ${p.name}${p.abbr ? ` (${p.abbr})` : ''}`;
-}
+const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2';
 
 export function RouteStoryBuilder() {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
-  const titleId = useId();
-  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const last = STOPS.length - 1;
-  const stop = STOPS[state.stop];
-  const legsState = legStates(stop);
-  const pointsState = pointStates(stop);
-  const folded = stop.kind === 'leg' && stop.i === QUESTION_LEG;
-
-  const go = (i: number, focus = false) => {
-    const next = Math.max(0, Math.min(last, i));
-    dispatch({ type: 'select', stop: next });
-    if (focus) btnRefs.current[next]?.focus();
+  const [history, dispatch] = useReducer(workbenchReducer, INITIAL_WORKBENCH);
+  const state = history.present;
+  const { selectedLeg, selectedPoint, tool } = state;
+  const { answer, checked, done } = state.legs[selectedLeg];
+  const allDone = routeComplete(state);
+  const completedCount = state.legs.filter(l => l.done).length;
+  const leg = LEGS[selectedLeg];
+  const editable = !done;
+  const uid = useId();
+  const statusRef = useRef<HTMLParagraphElement>(null);
+  const wasDone = useRef(false);
+  useEffect(() => { if (done && !wasDone.current) statusRef.current?.focus(); wasDone.current = done; }, [done]);
+  const chooseTool = (next: Tool) => dispatch({ type: 'tool', tool: next });
+  const chooseLeg = (index: number) => dispatch({type:'leg', index});
+  const setNumber = (field: 'az' | 'm', value: string) => dispatch({ type: 'answer', field, value: value === '' ? null : Number(value) });
+  const displayAz = answer.az;
+  const displayM = answer.m;
+  const displayEnd = answer.end ? END_LABEL[answer.end] : null;
+  const status = allDone ? `סיפור הדרך הושלם: ארבעה קטעים, ${metres(TOTAL_M)} מנ.ה עד נ.ס.` : done ? 'הקטע הושלם. אפשר להמשיך לקטע הבא.' : checked ? 'בדקו את המשוב ליד כל שדה. אפשר לתקן ולבדוק שוב.' : complete(answer) ? 'הקטע מוכן לבדיקה.' : 'השלימו כיוון, מרחק וסימן כדי לבדוק את הקטע.';
+  const showFeedback = (field: Field) => {
+    const verdict = fieldVerdict(state, field);
+    return verdict && <p data-feedback={field} data-verdict={verdict} className={cn('mt-1 text-base leading-snug', verdict === 'right' ? 'text-brand-dark' : 'text-accent-hot')}>{feedback(state, field)}</p>;
   };
-
-  // ↓ / ← (forward in RTL) → next stop · ↑ / → → previous · Home / End
-  const onListKey = (e: ReactKeyboardEvent<HTMLOListElement>) => {
-    const from = btnRefs.current.indexOf(e.target as HTMLButtonElement);
-    if (from < 0) return;
-    const target: Record<string, number> = {
-      ArrowDown: from + 1,
-      ArrowLeft: from + 1,
-      ArrowUp: from - 1,
-      ArrowRight: from - 1,
-      Home: 0,
-      End: last,
-    };
-    if (!(e.key in target)) return;
-    e.preventDefault();
-    go(target[e.key], true);
-  };
+  const fieldButton = (next: Tool) => cn('flex size-11 shrink-0 items-center justify-center rounded-xl border transition-colors', FOCUS, tool === next ? 'border-brand-dark bg-brand-dark text-white' : 'border-border bg-bg-accent text-fg hover:border-brand');
+  const input = cn('h-11 w-full min-w-0 rounded-xl border border-border bg-bg-elevated px-3 text-center font-display text-lg tabular-nums text-black disabled:bg-bg-accent/40', FOCUS);
 
   return (
-    <div data-qa="route-builder" data-done={state.done || undefined} className="surface-elevated p-6 lg:p-8">
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 items-start">
-        <div>
-          <h3 id={titleId} className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
-            סיפור דרך: חמש נקודות וארבעה קטעים
-          </h3>
-          <p className="mt-2 mb-3 text-base text-fg-muted leading-relaxed">
-            כל <strong className="text-fg">קטע דרך</strong> מחבר שתי נקודות. בחרו נקודה או קטע, ברשימה או במפה. את <strong className="text-fg">קטע ד׳</strong> משלימים בעצמכם מהמפה. הנתונים לדוגמה בלבד.
-          </p>
-          <ol
-            aria-labelledby={titleId}
-            onKeyDown={onListKey}
-            data-folded={folded || undefined}
-            className={folded ? 'flex flex-wrap items-center gap-1.5' : 'space-y-0.5'}
-          >
-            {STOPS.map((s, k) => {
-              const selected = state.stop === k;
-              const common = {
-                ref: (el: HTMLButtonElement | null) => {
-                  btnRefs.current[k] = el;
-                },
-                type: 'button' as const,
-                tabIndex: selected ? 0 : -1,
-                onClick: () => go(k),
-                'aria-current': selected ? ('step' as const) : undefined,
-              };
-              if (s.kind === 'point') {
-                const p = POINTS[s.i];
-                const st = pointsState[s.i];
-                const badge = cn(
-                  'size-8 shrink-0 rounded-full grid place-items-center font-display text-sm font-bold tabular-nums transition-colors duration-200',
-                  st === 'focus'
-                    ? 'bg-accent text-white'
-                    : st === 'passed' || st === 'from'
-                      ? 'bg-brand/15 text-brand-dark'
-                      : st === 'to'
-                        ? 'border-2 border-accent bg-bg-elevated text-ember-deep'
-                        : 'border border-border-strong/60 bg-bg-elevated text-fg-muted'
-                );
-                if (folded) {
-                  // folded strip: the point is its numbered badge alone
-                  return (
-                    <li key={k}>
-                      <button
-                        {...common}
-                        data-stop-row={`point:${s.i}`}
-                        className={cn(badge, 'cursor-pointer hover:ring-2 hover:ring-brand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent')}
-                      >
-                        <span className="sr-only">נקודה {p.n}: {p.name}</span>
-                        <span aria-hidden>{p.n}</span>
-                      </button>
-                    </li>
-                  );
-                }
-                return (
-                  <li key={k}>
-                    <button
-                      {...common}
-                      data-stop-row={`point:${s.i}`}
-                      className={cn(ROW, 'py-0.5', selected ? 'border-accent before:bg-accent/10' : 'border-transparent hover:before:bg-brand/[0.04]')}
-                    >
-                      <span aria-hidden className={badge}>
-                        {p.n}
-                      </span>
-                      <span className="flex-1 min-w-0 font-display text-base font-bold leading-tight text-fg">
-                        <span className="sr-only">נקודה {p.n}: </span>
-                        {p.name}
-                        {p.abbr && <span className="font-medium text-fg-muted"> ({p.abbr})</span>}
-                      </span>
-                    </button>
-                  </li>
-                );
-              }
-              const leg = LEGS[s.i];
-              const st = legsState[s.i];
-              const hidden = isHidden(s.i, state.done);
-              const line = cn(
-                'border-s-[3px] transition-colors duration-200',
-                st === 'focus' ? 'border-solid border-accent' : st === 'next' ? 'border-dashed border-accent' : st === 'walked' ? 'border-solid border-brand' : 'border-dashed border-border-strong/70'
-              );
-              if (folded) {
-                // folded strip: the leg is its letter on a short stretch of route
-                return (
-                  <li key={k}>
-                    <button
-                      {...common}
-                      data-stop-row={`leg:${s.i}`}
-                      className={cn(
-                        ROW,
-                        'h-8 w-auto gap-1.5 px-2.5 bg-bg-elevated font-display text-sm font-bold text-fg',
-                        selected ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
-                      )}
-                    >
-                      <span aria-hidden className={cn('h-4', line)} />
-                      קטע {leg.letter}
-                    </button>
-                  </li>
-                );
-              }
-              return (
-                <li key={k}>
-                  <button
-                    {...common}
-                    data-stop-row={`leg:${s.i}`}
-                    className={cn(
-                      ROW,
-                      'py-1 bg-bg-elevated',
-                      selected ? 'border-accent before:bg-accent/10' : 'border-border hover:border-brand/30 hover:before:bg-brand/[0.03]'
-                    )}
-                  >
-                    {/* the leg as a stretch of route between two point badges: solid = selected / walked, dashed = leaving the selected point / ahead */}
-                    <span aria-hidden className="w-8 shrink-0 flex justify-center">
-                      <span className={cn('h-7', line)} />
-                    </span>
-                    <span className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-2">
-                      <span className="font-display text-base font-bold leading-tight text-fg">קטע {leg.letter}</span>
-                      <span className="text-sm leading-snug text-fg-muted">
-                        מנקודה {leg.from + 1} אל נקודה {leg.to + 1}
-                        {hidden && ' · להשלמה'}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-1.5">
-                      <span
-                        dir="ltr"
-                        className={cn(
-                          'inline-flex h-7 items-center rounded-full px-2.5 font-display text-sm font-bold tabular-nums',
-                          hidden ? 'border border-dashed border-accent text-ember-deep' : 'bg-bg-accent text-fg'
-                        )}
-                      >
-                        {hidden ? '?°' : deg(leg.az)}
-                      </span>
-                      <span
-                        className={cn(
-                          'inline-flex h-7 items-center rounded-full px-2.5 font-display text-sm font-bold tabular-nums',
-                          hidden ? 'border border-dashed border-accent text-ember-deep' : 'bg-bg-accent text-fg'
-                        )}
-                      >
-                        {hidden ? '? מ׳' : metres(leg.m)}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-
-          <RouteStoryPanel state={state} dispatch={dispatch} />
-        </div>
-
-        <div className="lg:sticky lg:top-24">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <span className="text-sm font-display font-semibold text-fg-muted" aria-hidden data-stop-label>
-              {stopLabel(stop)}
-            </span>
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => go(state.stop - 1)}
-                disabled={state.stop === 0}
-                aria-label="לנקודה או לקטע הקודם"
-                className="size-9 rounded-xl border border-border bg-bg-elevated grid place-items-center text-fg-muted transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] hover:text-fg disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Icon name="arrow-right" size={16} strokeWidth={2} />
-              </button>
-              {/* the route in miniature: dots = points, bars = legs */}
-              <div className="flex items-center gap-1" aria-hidden data-stop-dots>
-                {STOPS.map((s, k) => (
-                  <span
-                    key={k}
-                    className={cn(
-                      'rounded-full transition-colors duration-300 ease-snap motion-reduce:transition-none',
-                      s.kind === 'point' ? 'size-2.5' : 'h-1 w-4',
-                      k === state.stop ? 'bg-accent' : k < state.stop ? 'bg-brand' : 'bg-border'
-                    )}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => go(state.stop + 1)}
-                disabled={state.stop === last}
-                aria-label="לנקודה או לקטע הבא"
-                className="size-9 rounded-xl border border-border bg-bg-elevated grid place-items-center text-fg-muted transition-colors duration-200 ease-snap hover:border-brand/30 hover:bg-brand/[0.03] hover:text-fg disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Icon name="arrow-left" size={16} strokeWidth={2} />
-              </button>
+    <section data-qa="route-builder" data-done={allDone || undefined} data-selected-leg={selectedLeg} aria-labelledby={`${uid}-title`} className="surface-elevated p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <div><h3 id={`${uid}-title`} className="font-display text-2xl font-bold leading-tight text-black">שולחן התכנון</h3><p className="mt-1 text-base text-fg-muted">חמש נקודות · {completedCount} מתוך 4 קטעים הושלמו</p></div>
+        <div className="flex items-center gap-1"><Button variant="ghost" size="sm" onClick={()=>dispatch({type:'undo'})} disabled={!history.past.length}><Undo2 className="size-5" aria-hidden/>ביטול</Button><Button variant="ghost" size="sm" onClick={()=>dispatch({type:'reset'})}><RotateCcw className="size-5" aria-hidden/>איפוס</Button></div>
+      </div>
+      <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.8fr)] items-stretch gap-3">
+        <div data-qa="route-panel" className="flex min-h-[580px] flex-col rounded-xl border border-border bg-bg-elevated p-4">
+          <h4 className="font-display text-xl font-bold text-black">כרטיס סיפור הדרך</h4>
+          {selectedPoint !== null ? <div className="mt-4 space-y-5 text-base leading-relaxed text-black">
+            <p className="rounded-xl bg-bg-accent p-3 font-bold">נקודה {selectedPoint+1}{(selectedPoint===0 || state.legs[selectedPoint-1].done) && ` · ${POINTS[selectedPoint].name}`}</p>
+            <p>{selectedPoint>0&&!state.legs[selectedPoint-1].done?'זהו במפה את סימן השטח שבנקודה והשלימו אותו בכרטיס הקטע הנכנס.':POINTS[selectedPoint].identify}</p>
+            <div><h5 className="font-bold">הקטע הנכנס</h5>{selectedPoint===0?<p>כאן מתחיל הציר. אין קטע נכנס.</p>:<button className={cn('mt-1 underline underline-offset-4',FOCUS)} onClick={()=>chooseLeg(selectedPoint-1)}>קטע {LEGS[selectedPoint-1].letter} · מנקודה {selectedPoint} לנקודה {selectedPoint+1}</button>}</div>
+            <div><h5 className="font-bold">הקטע היוצא</h5>{selectedPoint===4?<p>כאן מסתיים הציר. אין קטע יוצא.</p>:<button className={cn('mt-1 underline underline-offset-4',FOCUS)} onClick={()=>chooseLeg(selectedPoint)}>קטע {LEGS[selectedPoint].letter} · מנקודה {selectedPoint+1} לנקודה {selectedPoint+2}</button>}</div>
+            <p>לפני שממשיכים, מאמתים שהסימן בשטח תואם למפה.</p>
+          </div> : <>
+            <p className="mt-3 rounded-xl bg-accent/15 px-3 py-2 text-center font-display text-base font-bold text-black">קטע {leg.letter} · מנקודה {leg.from+1} לנקודה {leg.to+1}</p>
+            <div className="mt-4 space-y-4">
+              <div><label htmlFor={`${uid}-az`} className="mb-1.5 block font-display text-base font-bold text-black">אזימוט</label><div className="flex gap-2"><button aria-label="מדידת אזימוט במפה" className={fieldButton('azimuth')} onClick={()=>chooseTool('azimuth')}><Compass className="size-5"/></button><input id={`${uid}-az`} data-field="az" className={input} type="number" dir="ltr" inputMode="decimal" min={0} max={360} step={1} placeholder="— °" value={displayAz??''} disabled={!editable} onChange={e=>setNumber('az',e.target.value)}/></div>{showFeedback('az')}</div>
+              <div><label htmlFor={`${uid}-m`} className="mb-1.5 block font-display text-base font-bold text-black">מרחק במטרים</label><div className="flex gap-2"><button aria-label="מדידת מרחק במפה" className={fieldButton('distance')} onClick={()=>chooseTool('distance')}><Ruler className="size-5"/></button><input id={`${uid}-m`} data-field="m" className={input} type="number" dir="ltr" inputMode="numeric" min={0} max={5000} step={1} placeholder="—" value={displayM??''} disabled={!editable} onChange={e=>setNumber('m',e.target.value)}/></div>{showFeedback('m')}</div>
+              <div><label htmlFor={`${uid}-end`} className="mb-1.5 block font-display text-base font-bold text-black">סימן בסוף הקטע</label><div className="flex gap-2"><button aria-label="בחירת סימן במפה" className={fieldButton('landmarks')} onClick={()=>chooseTool('landmarks')}><MapPin className="size-5"/></button><select id={`${uid}-end`} data-field="end" className={cn(input,'text-base')} value={answer.end??''} disabled={!editable} onChange={e=>dispatch({type:'answer',field:'end',value:(e.target.value||null) as EndOption|null})}><option value="">בחרו סימן במפה</option>{END_OPTIONS.map(v=><option key={v} value={v}>{END_LABEL[v]}</option>)}</select></div>{showFeedback('end')}</div>
             </div>
-          </div>
-          <div className="overflow-hidden rounded-xl border border-border/70">
-            <RouteMap stop={state.stop} done={state.done} onSelect={(i) => go(i)} ariaLabel={`מפת סיפור הדרך. ${describe(stop, state.done)}`} />
-          </div>
+            <div className="mt-5 border-t border-border pt-3"><h5 className="font-display text-base font-bold text-black">הסיפור שלכם</h5><p className="mt-2 rounded-xl bg-bg-accent p-3 text-base leading-relaxed text-black">מנקודה {leg.from+1} מתקדמים באזימוט <bdi>{displayAz===null?'___':deg(displayAz)}</bdi> לאורך {displayM===null?'___':metres(displayM)}, עד {displayEnd??'___'}.</p>{done&&<p className="mt-2 text-base leading-relaxed text-black">{leg.along}</p>}</div>
+            <div className="mt-auto pt-4"><p ref={statusRef} tabIndex={-1} role="status" className="mb-2 text-base leading-snug text-black focus:outline-none">{done&&<Check className="me-1 inline size-5 text-brand-dark"/>}{status}</p>{allDone?<Button className="w-full" variant="secondary" onClick={()=>dispatch({type:'reset'})}>תרגול מחדש</Button>:done?<Button className="w-full" onClick={()=>selectedLeg<3?dispatch({type:'next'}):chooseLeg(state.legs.findIndex(l=>!l.done))}>לקטע הבא<ArrowLeft className="size-4"/></Button>:<Button className="w-full" disabled={!complete(answer)} onClick={()=>dispatch({type:'check'})}>בדיקת הקטע</Button>}</div>
+          </>}
+        </div>
+        {/* The map's tools only help the learner measure; the numbers in the card are always typed by the learner. */}
+        <WorkbenchMap selectedLeg={selectedLeg} selectedPoint={selectedPoint} tool={tool} done={done} resetSignal={state.resets} onTool={chooseTool} onSelectLeg={chooseLeg} onSelectPoint={index=>dispatch({type:'point',index})} onSelectLandmark={value=>dispatch({type:'answer',field:'end',value})}/>
+      </div>
+      <div className="mt-3 rounded-xl border border-border p-3">
+        <h4 className="mb-2 font-display text-lg font-bold text-black">סיפור הדרך שנבנה</h4>
+        <table className="w-full border-collapse text-start text-base text-black" aria-label="סיפור הדרך: ארבעה קטעים">
+          <thead className="bg-bg-accent"><tr>{['קטע','מנקודה לנקודה','אזימוט','מרחק','נקודת אימות'].map(h=><th key={h} className="border-b border-border px-3 py-1.5 text-start font-bold">{h}</th>)}</tr></thead>
+          <tbody>{LEGS.map((l,i)=><tr key={i} data-leg-row={i} className={cn('border-b border-border/60',selectedLeg===i&&selectedPoint===null&&'bg-accent/10')}><th scope="row" className="px-3 py-1.5 text-start"><button className={cn('rounded px-2 py-0.5 font-bold',FOCUS)} onClick={()=>chooseLeg(i)} aria-label={`בחירת קטע ${l.letter}`} aria-current={selectedLeg===i&&selectedPoint===null?'step':undefined}>{l.letter}{state.legs[i].done&&<Check className="ms-1 inline size-4 text-brand-dark" aria-label="הושלם"/>}</button></th><td className="px-3">{l.from+1} עד {l.to+1}</td><td className="px-3"><bdi>{state.legs[i].answer.az===null?'—':deg(state.legs[i].answer.az!)}</bdi></td><td className="px-3">{state.legs[i].answer.m===null?'—':metres(state.legs[i].answer.m!)}</td><td className="px-3">{state.legs[i].answer.end?END_LABEL[state.legs[i].answer.end!]:'—'}</td></tr>)}</tbody>
+        </table>
+        <div className="mx-auto mt-4 flex max-w-4xl items-center justify-center" aria-label="חמש נקודות וארבעה קטעי דרך">
+          {POINTS.map((p,i)=><div key={p.n} className={cn('flex items-center',i<4&&'flex-1')}><button onClick={()=>dispatch({type:'point',index:i})} aria-label={`נקודה ${p.n}`} className={cn('grid size-10 shrink-0 place-items-center rounded-full border-2 bg-bg-elevated font-display text-lg font-bold',FOCUS,selectedPoint===i?'border-accent text-accent':'border-brand-dark text-fg')}>{p.n}</button>{i<4&&<button onClick={()=>chooseLeg(i)} aria-label={`קטע ${LEGS[i].letter}`} className={cn('relative mx-2 flex h-10 flex-1 items-center justify-center border-b-2 font-display text-base',FOCUS,selectedLeg===i?'border-accent text-accent':'border-brand-dark text-fg')}>קטע {LEGS[i].letter}</button>}</div>)}
         </div>
       </div>
-
-      <p className="sr-only" aria-live="polite" data-live>
-        {describe(stop, state.done)}
-      </p>
-    </div>
+      <p className="mt-2 text-base text-fg-muted">דוגמה לימודית · הנתונים להמחשה בלבד. מדידות במפה מתקבלות בקירוב: עד 3° בכיוון ועד 35 מ׳ במרחק.</p>
+    </section>
   );
 }

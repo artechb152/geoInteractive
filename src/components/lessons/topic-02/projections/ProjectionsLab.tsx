@@ -8,7 +8,7 @@
    start, right: the illustration) → the map it makes (inline end, left), which comes in as the
    surface unrolls; three equal circles on the globe show, on the sheet and the map, where the
    method distorts. A slider opens the surface (0 % at the right, "עטיפה" → 100 % at the left,
-   "מפה שטוחה"); switching methods keeps the progress, so the same moment is compared. One line
+   "מפה שטוחה"); switching methods resets the progress to the wrap (0 %). One line
    says the phase's one idea and one action. "נסו לזהות את המשטח" turns the same card into
    practice: four target maps (whole or a window), a surface to choose and check; a check shows
    the chosen surface unrolling with the same mechanism; a first miss says where to look, a second
@@ -196,11 +196,12 @@ export function ProjectionsLab() {
     api.current?.resetView();
     setTurned(false);
   };
-  // another method at the same progress: the same moment of the process, compared
+  // another method starts its own process from the wrap, never at the previous method's end
   const chooseMethod = (m: Method) => {
     if (m === method) return;
     stopDemo();
     setMethod(m);
+    setP(0);
     resetView();
   };
   const tabKeys = useRovingKeys(METHODS, method, chooseMethod);

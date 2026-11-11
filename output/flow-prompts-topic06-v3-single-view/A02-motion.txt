@@ -1,0 +1,7 @@
+Animate the supplied planning frame into the supplied departure-direction frame in approximately six seconds. Keep one continuous full-width terrain scene with the same camera, hill, palm cluster, tracks, building, checkpoints and stationary blue navigator. Maintain sharp focus across the landscape.
+
+After a brief hold, make the discarded gray route quieter. Bring a large tangible teaching compass up into the foreground beside the departure point with a clear lifting and settling motion. Its size and depth must make it an immediately noticeable object, not a small corner icon. Do not cover the navigator or first checking place.
+
+Keep its north needle pointing toward the same fixed north reference. Rotate the separate orange travel-direction pointer on the baseplate from an unaligned orientation into agreement with the first leg of the planned route. A broad ground arrow turns with the travel pointer. While unaligned it visibly misses the first checkpoint; when aligned it points toward that checkpoint. Remove any temporary misaligned arrow so the final image shows one clear direction. Never rotate the north needle toward the destination.
+
+Hold the correct alignment at the end. The navigator has not started walking. No paper map, side panel, split screen, inset, GPS lock, new route, altered geography, arbitrary degree reading, text, captions, numbers, extra compass types, glow, logo or watermark. Match the supplied end frame.

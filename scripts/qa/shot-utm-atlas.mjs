@@ -32,7 +32,7 @@ import {
 
 const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'design/screenshots/utm-atlas-map-practice-2026-10-26';
 const BASE = process.env.QA_BASE || 'http://localhost:3001';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates-2`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates-2`;
 await mkdir(outDir, { recursive: true });
 
 const failures = [];
@@ -789,7 +789,7 @@ check(
 check(await page.$$eval('[data-frame]', (fs) => fs.every((f) => f.getAttribute('dir') === 'ltr')), 'map frames are dir="ltr" (never mirrored)');
 
 // leave the sub-topic and come back
-await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates`, { waitUntil: 'networkidle' });
+await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates`, { waitUntil: 'networkidle' });
 await page.waitForSelector('#scene-coordinates', { timeout: 60000 });
 await page.goto(URL, { waitUntil: 'networkidle' });
 await page.waitForSelector('[data-atlas-land]', { timeout: 60000 });

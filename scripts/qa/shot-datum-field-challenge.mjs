@@ -42,7 +42,7 @@ import { MAP, PLACES } from '../../src/components/lessons/topic-02/datum-field/d
 import { xOfE, yOfN } from '../../src/components/lessons/topic-02/datum-field/datumFieldProjection.ts';
 
 const BASE = process.env.QA_BASE || 'http://localhost:3000';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates`;
 const outDir = process.argv[2] || 'design/screenshots/datum-field-challenge';
 const W = 1440;
 const H = 1122;

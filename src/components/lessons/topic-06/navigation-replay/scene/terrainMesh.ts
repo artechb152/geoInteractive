@@ -11,27 +11,29 @@
  */
 import { BufferAttribute, BufferGeometry } from 'three';
 import type { StationTerrain } from '../replayTerrain';
+import { finish, runBatched } from '../replayBatch';
 
 export const SEGMENTS = 448;
 export const HORIZON_M = 16000;
 const EARTH_R = 6371000;
 
 export function buildTerrainGeometry(t: StationTerrain, sx: number, sz: number): BufferGeometry {
-  const k = 1 + (2 * Math.PI) / SEGMENTS;
+  return finish(terrainSteps(t, sx, sz, 0));
+}
+export function buildTerrainGeometryAsync(t: Pick<StationTerrain, 'height' | 'road' | 'stream'>, sx: number, sz: number, focusRadius: number, signal?: AbortSignal) {
+  return runBatched(terrainSteps(t, sx, sz, focusRadius), signal);
+}
+function* terrainSteps(t: Pick<StationTerrain, 'height' | 'road' | 'stream'>, sx: number, sz: number, focusRadius: number): Generator<void, BufferGeometry> {
+  const segments = focusRadius > 0 ? 768 : SEGMENTS;
+  const k = 1 + (2 * Math.PI) / segments;
   const radii: number[] = [0];
-  for (let r = 0.3; r < HORIZON_M; r *= k) radii.push(r);
+  for (let r = 0.3; r < HORIZON_M; r = r < focusRadius ? r + 0.8 : r * k) radii.push(r);
   radii.push(HORIZON_M);
   const rings = radii.length;
-  const n = 1 + (rings - 1) * SEGMENTS;
+  const n = 1 + (rings - 1) * segments;
   const pos = new Float32Array(n * 3);
   const road = new Float32Array(n);
   const stream = new Float32Array(n);
-  const cos = new Float32Array(SEGMENTS);
-  const sin = new Float32Array(SEGMENTS);
-  for (let s = 0; s < SEGMENTS; s++) {
-    cos[s] = Math.cos((s / SEGMENTS) * Math.PI * 2);
-    sin[s] = Math.sin((s / SEGMENTS) * Math.PI * 2);
-  }
   // centre vertex
   pos[1] = t.height(sx, sz);
   road[0] = t.road(sx, sz);
@@ -42,8 +44,8 @@ export function buildTerrainGeometry(t: StationTerrain, sx: number, sz: number):
     const drop = (r * r) / (2 * EARTH_R);
     // stagger alternate rings by half a segment: even triangles, no radial seams
     const off = ri % 2 ? 0.5 : 0;
-    for (let s = 0; s < SEGMENTS; s++) {
-      const a = ((s + off) / SEGMENTS) * Math.PI * 2;
+    for (let s = 0; s < segments; s++) {
+      const a = ((s + off) / segments) * Math.PI * 2;
       const dx = r * Math.cos(a);
       const dz = r * Math.sin(a);
       const x = sx + dx;
@@ -61,21 +63,22 @@ export function buildTerrainGeometry(t: StationTerrain, sx: number, sz: number):
       }
       v++;
     }
+    yield;
   }
   // indices: a fan around the centre, then quads between rings
-  const tris = SEGMENTS + (rings - 2) * SEGMENTS * 2;
+  const tris = segments + (rings - 2) * segments * 2;
   const idx = new Uint32Array(tris * 3);
   let q = 0;
-  for (let s = 0; s < SEGMENTS; s++) {
+  for (let s = 0; s < segments; s++) {
     idx[q++] = 0;
-    idx[q++] = 1 + ((s + 1) % SEGMENTS);
+    idx[q++] = 1 + ((s + 1) % segments);
     idx[q++] = 1 + s;
   }
   for (let ri = 1; ri < rings - 1; ri++) {
-    const a0 = 1 + (ri - 1) * SEGMENTS;
-    const b0 = a0 + SEGMENTS;
-    for (let s = 0; s < SEGMENTS; s++) {
-      const s1 = (s + 1) % SEGMENTS;
+    const a0 = 1 + (ri - 1) * segments;
+    const b0 = a0 + segments;
+    for (let s = 0; s < segments; s++) {
+      const s1 = (s + 1) % segments;
       const a = a0 + s;
       const a1 = a0 + s1;
       const b = b0 + s;
@@ -98,6 +101,7 @@ export function buildTerrainGeometry(t: StationTerrain, sx: number, sz: number):
         idx[q++] = b1;
       }
     }
+    yield;
   }
   const g = new BufferGeometry();
   g.setAttribute('position', new BufferAttribute(pos, 3));

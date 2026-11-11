@@ -34,7 +34,7 @@ async function probe(width, height) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 240000 });
+  await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 240000 });
   await page.waitForSelector('#scene-coordinates', { state: 'attached', timeout: 120000 });
   await page.waitForTimeout(4000);
   const r = await page.evaluate(() => {

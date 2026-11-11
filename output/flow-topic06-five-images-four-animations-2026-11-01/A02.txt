@@ -1,0 +1,13 @@
+=== A02 | הנפשה 2: מאימות המוצא לקביעת כיוון ===
+פריים התחלה: F01-map-plan.png
+פריים סיום: F02-terrain-departure.png
+שם לשמירה: A02-departure.mp4
+משך בימוי מוצע: 8 שניות.
+
+Animate the supplied full-frame planning map into the supplied terrain departure frame, approximately eight seconds. Keep one continuous full-frame representation at any moment. Maintain the exact hill, three palms, two checkpoints, Y junction, building and approved southern-and-eastern route. The navigator must not start walking.
+
+First give the existing southwest departure point one deliberate broad ring, confirming the known start before selecting a direction. Quiet the discarded dashed shortcut. Then resolve the map into the matching realistic terrain while lowering the camera to the approved oblique viewpoint: contours correspond to the existing hill, three symbols to the same three palms, and map route to the same orange ground ribbon. The blue map symbol becomes the same single grounded blue navigator, still at departure.
+
+Bring the oversized teaching compass into the foreground with a noticeable lift and controlled settle. The whole baseplate initially points slightly away from the planned first leg. Extend a broad temporary gray dashed ground ray along that mistaken heading; make its sideways separation from the correct first-leg direction visibly increase farther from departure. This is a brief direction-error demonstration, not an additional planned route. Do not move the navigator or invent a distance value.
+
+Rotate the compass BASEPLATE, with its fixed direction-of-travel arrow, until it aligns with the first route leg toward the first checkpoint. The magnetized needle remains aligned with the same world magnetic-north direction while the instrument body turns around it. Its north end settles inside the preset orienting mark. The orange ground arrow aligns with the travel arrow. Remove the temporary error ray completely and hold the supplied end frame. Never steer the north needle toward the destination or rotate the travel arrow independently of its baseplate. No numeric bearing, north-conversion lesson, GPS lock, split screen, new landmark, text, captions, speech, music, logo or watermark.

@@ -17,7 +17,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 const label = process.argv[2] ?? 'after';
 const [W, H] = (process.argv[3] ?? '1440x1122').split('x').map(Number);
-const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02/#scene-contours`;
+const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02b/#scene-contours`;
 const outDir = `design/screenshots/contours-model-${label}`;
 await mkdir(outDir, { recursive: true });
 

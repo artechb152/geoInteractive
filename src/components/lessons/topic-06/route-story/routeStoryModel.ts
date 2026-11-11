@@ -281,14 +281,16 @@ export function halos(stop: Stop, done: boolean): { feature: FeatureId; role: 'p
 // ---------------------------------------------------------------- the application step: write leg ד׳
 
 export type Field = 'az' | 'm' | 'end';
-export type EndOption = 'road' | 'grove' | 'pines-rocks';
+export type EndOption = 'stream-bend' | 'saddle' | 'road' | 'grove' | 'pines-rocks';
 
 const Q = LEGS[QUESTION_LEG];
 /** Each wrong option is a named mistake: the reverse bearing, the angle measured counter-clockwise; half or double the length; the sign at the start or on the way. */
 export const AZ_OPTIONS = [Q.az, (Q.az + 180) % 360, 360 - Q.az] as const; // 40 · 220 · 320
 export const M_OPTIONS = [Q.m / 2, Q.m, Q.m * 2] as const; // 300 · 600 · 1200
-export const END_OPTIONS: readonly EndOption[] = ['road', 'grove', 'pines-rocks'];
+export const END_OPTIONS: readonly EndOption[] = ['stream-bend', 'saddle', 'road', 'grove', 'pines-rocks'];
 export const END_LABEL: Record<EndOption, string> = {
+  'stream-bend': 'עיקול הנחל',
+  saddle: 'אוכף ברכס',
   road: 'דרך עפר',
   grove: 'חורשה',
   'pines-rocks': 'אורנים בקרקע סלעית',
@@ -357,6 +359,8 @@ export const FEEDBACK: { az: Record<number, string>; m: Record<number, string>; 
     [M_OPTIONS[2]]: `${metres(M_OPTIONS[2])} הם יותר מפי שניים מאורך הסרגל, שמייצג 500 מ׳. השוו את אורך הקטע לסרגל שבפינת המפה.`,
   },
   end: {
+    'stream-bend': 'עיקול הנחל מופיע מוקדם יותר בציר. חפשו סימן בסוף הקטע הנבחר.',
+    saddle: 'האוכף מופיע מוקדם יותר בציר. חפשו סימן בסוף הקטע הנבחר.',
     road: 'דרך העפר נמצאת בנקודה 4, שממנה הקטע יוצא. בסוף הקטע מחפשים סימן אחר.',
     grove: 'החורשה באמצע הקטע, משמאל לציר. כשעוברים לידה, הקטע עוד לא נגמר.',
     'pines-rocks': 'נכון: קבוצת האורנים בקרקע הסלעית נמצאת בנ.ס, בסוף הקטע. החורשה שבדרך מסמנת התקדמות, לא הגעה.',

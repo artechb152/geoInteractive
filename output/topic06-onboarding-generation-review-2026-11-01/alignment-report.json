@@ -1,0 +1,42 @@
+{
+  "method": "User-authorized deterministic compositing over one common photographic background",
+  "canvas": [
+    1672,
+    941
+  ],
+  "route_start": [
+    250,
+    810
+  ],
+  "checkpoints": [
+    [
+      1065,
+      588
+    ],
+    [
+      1450,
+      465
+    ]
+  ],
+  "destination": [
+    1485,
+    404
+  ],
+  "same_route_layer_in": [
+    "F01",
+    "F02",
+    "F03",
+    "F04"
+  ],
+  "person_translations": {
+    "F03": [
+      34,
+      -6
+    ],
+    "F04": [
+      -3,
+      -4
+    ]
+  },
+  "remaining_note": "Actor clothing details come from generated source images; no claim of surveyed geographic accuracy."
+}

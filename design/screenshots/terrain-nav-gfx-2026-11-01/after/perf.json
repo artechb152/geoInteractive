@@ -1,0 +1,29 @@
+{
+  "perf": [
+    {
+      "label": "learn-orbit",
+      "fps": 57.22233260480826,
+      "p95ms": 16.80000000000109,
+      "maxMs": 33.399999999999636,
+      "info": {
+        "calls": 41,
+        "triangles": 7549066,
+        "geometries": 45,
+        "textures": 29
+      }
+    },
+    {
+      "label": "eye-look",
+      "fps": 58.01708722431949,
+      "p95ms": 16.799999999995634,
+      "maxMs": 33.400000000001455,
+      "info": {
+        "calls": 39,
+        "triangles": 7544598,
+        "geometries": 35,
+        "textures": 29
+      }
+    }
+  ],
+  "errors": []
+}

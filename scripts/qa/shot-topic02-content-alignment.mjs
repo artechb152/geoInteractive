@@ -279,9 +279,9 @@ const pick = (page, n, label) => item(page, n).locator('button', { hasText: labe
   await ctx.close();
 }
 
-/* ── 6. The תרגול tab, unchanged (documented, not edited) ──────────── */
+/* ── 6. The תרגול tab, unchanged (documented, not edited) — now in topic-02b ──────────── */
 {
-  const { ctx, page } = await open('/lessons/topic-02/', TAB('תרגול'));
+  const { ctx, page } = await open('/lessons/topic-02b/', TAB('תרגול'));
   await page.click(TAB('תרגול'));
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${outDir}/30-practice-tab-unchanged.png` });

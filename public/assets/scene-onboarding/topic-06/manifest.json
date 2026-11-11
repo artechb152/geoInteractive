@@ -1,0 +1,10 @@
+{
+  "fps": 12,
+  "counts": {
+    "transition-1-2": 95,
+    "transition-2-3": 95,
+    "transition-3-4": 95,
+    "transition-4-5": 96
+  },
+  "videos": "public/assets/video/topic-06/onboarding"
+}

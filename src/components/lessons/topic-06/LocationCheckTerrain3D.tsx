@@ -2,14 +2,15 @@
 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { useGLTF, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { GROVES, ROAD_WIDTH_M, WORLD_BOUNDS, type GroveId } from './locationCheckScenario';
+import { GROVES, OBSERVER, ROAD_WIDTH_M, WORLD_BOUNDS, type GroveId } from './locationCheckScenario';
 import { WORLD3D, grovePolygon, toWorld3, verticalFov } from './locationCheckGeometry';
-import { ROAD_VERGE_M, crownShape, groundStones, groundTufts, groveTrees, heightField, meshAxis, observerEye, roads, rng, shrubs } from './locationCheckTerrain';
+import { ROAD_VERGE_M, crownShape, distanceToRoads, groundStones, groundTufts, groveTrees, heightAt, heightField, meshAxis, observerEye, roads, rng, shrubs, type Stone } from './locationCheckTerrain';
 import type { LookStore } from './locationCheckViewStore';
-import { createTerrainMaterial, createSkyMaterial, SKY } from './locationCheckMaterials';
+import { CONTACT, createCardMaterial, createStoneMaterial, createTerrainMaterial, createSkyMaterial, SKY } from './locationCheckMaterials';
+import { SPRITE_CELLS, type SpriteCell } from './locationCheckSpriteAtlas';
 import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit';
 
 /**
@@ -20,10 +21,15 @@ import { LESSON_FIT_CANVAS_RESIZE } from '@/components/lesson/LessonViewportFit'
  *   terrain   the 5 m sheet grid with its SW–NE triangles, unexaggerated
  *             (verticalExaggeration 1), plus an apron of the same generator
  *             out to the hazy horizon.
- *   cover     the grove trees and the scrub as instanced meshes at their
- *             heightAt() positions; the roads and the grove floor painted by
- *             the ground shader from a mask drawn with the same centre-lines
- *             and the shared 8 m road width.
+ *   cover     the grove trees and the scrub as cards of scanned plants
+ *             (Poly Haven island trees and Searsia maquis, rendered once in
+ *             Blender — the eye never moves, so a card turned towards it shows
+ *             what the plant itself would), lit by the scene's sun and sky
+ *             through the scans' own normals; their old lumpy volumes stay as
+ *             shadow casters only. Scanned limestone stones and grass tufts
+ *             on the foreground; all at their heightAt() positions. The roads
+ *             and the grove floor are painted by the ground shader from a mask
+ *             drawn with the same centre-lines and the shared 8 m road width.
  *
  * The heading tape and every control live in the DOM layer
  * (LocationCheckObservation) and use the same pure projection, so they work
@@ -46,6 +52,9 @@ const TEXTURE_URLS = {
   rockN: `${TEX}/rock_nor.jpg`,
   forestD: `${TEX}/forest_diff.jpg`,
 };
+const VEG = `${BASE}/assets/lessons/topic06/location-check/vegetation`;
+const VEG_URLS = { albedo: `${VEG}/atlas_albedo.webp`, normal: `${VEG}/atlas_normal.webp` };
+const ROCKS_URL = `${BASE}/assets/lessons/topic06/location-check/rocks.glb`;
 
 // ---------------------------------------------------------------- camera
 
@@ -188,11 +197,48 @@ function buildMaskTexture() {
   return tex;
 }
 
+/**
+ * Contact occlusion (CONTACT): a soft dark disc, added up in R, at the foot of
+ * every shrub, tuft and stone and around every trunk inside the square.
+ */
+function buildContactTexture() {
+  const { centerE, centerN, sizeM, px } = CONTACT;
+  const k = px / sizeM;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = px;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, px, px);
+  ctx.globalCompositeOperation = 'lighter';
+  const disc = (E: number, N: number, rM: number, a: number) => {
+    const x = (E - centerE + sizeM / 2) * k;
+    const y = (centerN + sizeM / 2 - N) * k;
+    const r = Math.max(1.5, rM * k);
+    if (x < -r || y < -r || x > px + r || y > px + r) return;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(255,0,0,${a})`);
+    g.addColorStop(0.55, `rgba(255,0,0,${a * 0.55})`);
+    g.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  };
+  for (const s of shrubs()) disc(s.E, s.N, s.radiusM * 1.25, 0.75);
+  for (const t of groundTufts()) disc(t.E, t.N, t.heightM * 0.9, 0.35);
+  for (const s of groundStones()) disc(s.E, s.N, s.sizeM * 1.5, 0.7);
+  for (const t of groveTrees()) disc(t.E, t.N, t.crownR * 0.9, 0.45);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 function Terrain() {
   const gl = useThree((s) => s.gl);
   const tex = useTexture(TEXTURE_URLS);
   const geometry = useMemo(buildTerrainGeometry, []);
   const mask = useMemo(buildMaskTexture, []);
+  const contact = useMemo(buildContactTexture, []);
   const material = useMemo(() => {
     const aniso = gl.capabilities.getMaxAnisotropy();
     for (const [key, t] of Object.entries(tex)) {
@@ -204,15 +250,18 @@ function Terrain() {
     // The roads are seen obliquely from the eye: full anisotropic filtering keeps them sharp.
     mask.anisotropy = aniso;
     mask.needsUpdate = true;
-    return createTerrainMaterial({ ...tex, mask });
-  }, [tex, mask, gl]);
+    contact.anisotropy = aniso;
+    contact.needsUpdate = true;
+    return createTerrainMaterial({ ...tex, mask, contact });
+  }, [tex, mask, contact, gl]);
   useEffect(
     () => () => {
       geometry.dispose();
       mask.dispose();
+      contact.dispose();
       material.dispose();
     },
-    [geometry, mask, material],
+    [geometry, mask, contact, material],
   );
   // Nothing in the scene is a raycast target: the view is only turned, never clicked into.
   return <mesh geometry={geometry} material={material} receiveShadow raycast={() => null} />;
@@ -284,42 +333,10 @@ function shrubGeometry() {
   return geo.scale(1, 0.75, 1).translate(0, 0.42, 0);
 }
 
-/**
- * Dry grass blades fanning out of one point, unit height. Lit like the ground
- * (every normal points up) and emitted with both windings, so no blade turns
- * dark from behind.
- */
-function tuftGeometry() {
-  const rand = rng(0x7137449e);
-  const pos: number[] = [];
-  const col: number[] = [];
-  for (let k = 0; k < 11; k++) {
-    const a = (k / 11) * Math.PI * 2 + rand() * 0.5;
-    const lean = 0.18 + rand() * 0.4;
-    const h = 0.55 + rand() * 0.45;
-    const w = 0.07;
-    const bx = Math.cos(a + Math.PI / 2) * w;
-    const bz = Math.sin(a + Math.PI / 2) * w;
-    const tx = Math.cos(a) * lean;
-    const tz = Math.sin(a) * lean;
-    pos.push(-bx, 0, -bz, bx, 0, bz, tx, h, tz, bx, 0, bz, -bx, 0, -bz, tx, h, tz);
-    col.push(0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.08, 1.08, 1.08, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 1.08, 1.08, 1.08);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('normal', new THREE.Float32BufferAttribute(new Array(pos.length / 3).fill(0).flatMap(() => [0, 1, 0]), 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  return geo;
-}
-
 const CROWN_DARK = new THREE.Color('#34421F');
 const CROWN_LIGHT = new THREE.Color('#56652F');
 const SHRUB_A = new THREE.Color('#4E5531');
 const SHRUB_B = new THREE.Color('#7A7650');
-const STONE_A = new THREE.Color('#A39B88');
-const STONE_B = new THREE.Color('#CFC6B0');
-const TUFT_A = new THREE.Color('#B09A63');
-const TUFT_B = new THREE.Color('#D6C38E');
 
 /** Fills an instanced mesh once; matrices and colours never change afterwards. */
 function useInstances(
@@ -432,54 +449,208 @@ function Scrub() {
   return <instancedMesh ref={ref} args={[geo, mat, list.length]} castShadow receiveShadow raycast={() => null} />;
 }
 
-/** Loose stones: flattened, jittered lumps, half sunk into the ground. */
-function stoneGeometry() {
-  const geo = clumpGeometry(0x1b2c3d4e, [[0, 0, 0, 1], [0.35, -0.1, 0.2, 0.7]], 1, 0.22);
-  return geo.scale(1, 0.55, 0.85);
+/** Scanned stones by footprint radius at scale 1 (rocks.glb, metres), small pieces first (rock_a is left out: its scan is open underneath). */
+const STONE_SHAPES = [
+  { name: 'stone_a', r: 0.07 },
+  { name: 'stone_b', r: 0.06 },
+  { name: 'stone_c', r: 0.07 },
+  { name: 'stone_e', r: 0.06 },
+  { name: 'rock_b', r: 0.18 },
+  { name: 'rock_c', r: 0.17 },
+  { name: 'rock_d', r: 0.18 },
+] as const;
+
+/**
+ * Pebbles and gravel on the foreground, 6–20 cm across, densest at the feet and
+ * thinning out by 45 m (beyond, a pebble is under a pixel): the grain the
+ * ground photos lose up close. Never on the road (its own compacted surface).
+ */
+function pebbles(): Stone[] {
+  const rand = rng(0x1e3779b9);
+  const out: Stone[] = [];
+  for (let k = 0; k < 5200; k++) {
+    const d = 1.4 + 44 * Math.pow(rand(), 1.6);
+    const a = rand() * Math.PI * 2;
+    const E = OBSERVER.E + Math.sin(a) * d;
+    const N = OBSERVER.N + Math.cos(a) * d;
+    const size = rand();
+    const spin = rand() * Math.PI * 2;
+    const tone = rand();
+    // Patchy: gravel spreads and bare stretches.
+    if (rand() > 0.25 + 0.6 * (0.5 + 0.5 * Math.sin(E / 3.1 + Math.cos(N / 2.3) * 1.6) * Math.cos(N / 4.7 - E / 6.1))) continue;
+    if (distanceToRoads({ E, N }) < ROAD_WIDTH_M / 2 + 0.5) continue;
+    out.push({ E, N, baseM: heightAt(E, N), sizeM: 0.025 + size * size * 0.06, spin, tone });
+  }
+  return out;
 }
 
+/** Loose limestone stones and pebbles: the weathered scans, one instanced mesh per shape, a third sunk into the ground. */
 function Stones() {
-  const list = useMemo(() => groundStones(), []);
-  const geo = useMemo(stoneGeometry, []);
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 }), []);
-  const ref = useRef<THREE.InstancedMesh>(null);
-  useEffect(
-    () => () => {
-      geo.dispose();
-      mat.dispose();
-    },
-    [geo, mat],
+  const gltf = useGLTF(ROCKS_URL);
+  const list = useMemo(() => [...groundStones(), ...pebbles()], []);
+  const invalidate = useThree((s) => s.invalidate);
+  const meshes = useMemo(() => {
+    const rand = rng(0x3ad5e1c7);
+    const pick = list.map((st) => (st.sizeM < 0.26 ? Math.floor(rand() * 4) : 4 + Math.floor(rand() * 3)));
+    const mats = new Map<THREE.Material, THREE.Material>();
+    const out: THREE.InstancedMesh[] = [];
+    STONE_SHAPES.forEach((shape, k) => {
+      const node = gltf.scene.getObjectByName(shape.name) as THREE.Mesh | undefined;
+      if (!node?.isMesh) return;
+      const idx = list.flatMap((_, i) => (pick[i] === k ? [i] : []));
+      const src = node.material as THREE.MeshStandardMaterial;
+      let mat = mats.get(src);
+      if (!mat) {
+        mat = createStoneMaterial(src);
+        mats.set(src, mat);
+      }
+      const im = new THREE.InstancedMesh(node.geometry, mat, Math.max(1, idx.length));
+      im.count = idx.length;
+      const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      const c = new THREE.Color();
+      if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+      const topM = node.geometry.boundingBox!.max.y;
+      idx.forEach((i, n) => {
+        const st = list[i];
+        const sc = (st.sizeM * 1.25) / shape.r;
+        const sy = sc * (0.8 + st.tone * 0.5);
+        q.setFromAxisAngle(UP, st.spin);
+        // A third of the stone in the ground: it sits in the soil, and the scan's open underside never shows.
+        m.compose(new THREE.Vector3(...toWorld3(st.E, st.N, st.baseM - topM * sy * 0.33)), q, new THREE.Vector3(sc / S, sy / S, sc / S));
+        im.setMatrixAt(n, m);
+        im.setColorAt(n, c.setScalar(0.78 + st.tone * 0.3));
+      });
+      im.castShadow = true;
+      im.receiveShadow = true;
+      im.raycast = () => null;
+      im.computeBoundingSphere();
+      out.push(im);
+    });
+    return { out, mats };
+  }, [gltf, list]);
+  useEffect(() => {
+    invalidate();
+    return () => {
+      for (const m of meshes.mats.values()) m.dispose();
+      for (const im of meshes.out) im.dispose();
+    };
+  }, [meshes, invalidate]);
+  return (
+    <>
+      {meshes.out.map((im) => (
+        <primitive key={im.uuid} object={im} />
+      ))}
+    </>
   );
-  const q = useMemo(() => new THREE.Quaternion(), []);
-  useInstances(ref, list.length, (i, m, c) => {
-    const s = list[i];
-    q.setFromAxisAngle(UP, s.spin);
-    m.compose(new THREE.Vector3(...toWorld3(s.E, s.N, s.baseM + s.sizeM * 0.12)), q, new THREE.Vector3(s.sizeM / S, s.sizeM / S, s.sizeM / S));
-    c.copy(STONE_A).lerp(STONE_B, s.tone);
-  });
-  return <instancedMesh ref={ref} args={[geo, mat, list.length]} castShadow receiveShadow raycast={() => null} />;
 }
 
-function Tufts() {
-  const list = useMemo(() => groundTufts(), []);
-  const geo = useMemo(tuftGeometry, []);
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }), []);
-  const ref = useRef<THREE.InstancedMesh>(null);
-  useEffect(
-    () => () => {
-      geo.dispose();
-      mat.dispose();
-    },
-    [geo, mat],
+/** A deterministic 0–1 hash of an index (the card variant of each plant). */
+const hash01 = (i: number, salt: number) => {
+  let h = Math.imul(i ^ salt, 0x9e3779b1);
+  h = Math.imul(h ^ (h >>> 15), 0x85ebca77);
+  return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+};
+
+type CardSpec = { E: number; N: number; baseM: number; heightM: number; widthM: number; tone: number; cell: SpriteCell };
+
+/**
+ * One instanced unit square per plant, standing on its root and turned about
+ * the vertical towards the eye; each instance shows its own atlas cell
+ * (aCell), scaled to the plant's height, its width stretched a little (0.8–1.5×)
+ * towards the plant's own footprint. A "mound" cell (a bush's crown alone)
+ * stands deeper, so its cut edge is under the ground. Neither casts nor
+ * receives shadows: the volumes in World cast them onto the ground, and a card
+ * would only shade itself. The grass tufts are cards of one tussock scan,
+ * graded to summer straw.
+ */
+function Cards() {
+  const tex = useTexture(VEG_URLS);
+  const invalidate = useThree((s) => s.invalidate);
+  const built = useMemo(() => {
+    tex.albedo.colorSpace = THREE.SRGBColorSpace;
+    tex.normal.colorSpace = THREE.NoColorSpace;
+    for (const t of [tex.albedo, tex.normal]) {
+      t.anisotropy = 4;
+      t.needsUpdate = true;
+    }
+    const [ex, , ez] = toWorld3(observerEye().E, observerEye().N, 0);
+    const treeCells = SPRITE_CELLS.filter((c) => c.kind === 'tree');
+    const shrubCells = SPRITE_CELLS.filter((c) => c.kind === 'shrub');
+    const trees: CardSpec[] = groveTrees().map((t, i) => ({
+      E: t.E,
+      N: t.N,
+      baseM: t.baseM,
+      heightM: t.heightM,
+      widthM: 2 * t.crownR,
+      tone: t.tone,
+      cell: treeCells[Math.floor(hash01(i, 0x51ed) * treeCells.length)],
+    }));
+    const scrub: CardSpec[] = shrubs().map((s, i) => {
+      // One of the five renders whose shape is closest to this clump's.
+      const want = (2 * s.radiusM) / s.heightM;
+      const near = [...shrubCells].sort((a, b) => Math.abs(a.widthM / a.heightM - want) - Math.abs(b.widthM / b.heightM - want)).slice(0, 5);
+      return { E: s.E, N: s.N, baseM: s.baseM, heightM: s.heightM * 1.08, widthM: 2 * s.radiusM, tone: s.tone, cell: near[Math.floor(hash01(i, 0x5b0b) * near.length)] };
+    });
+    const grassCells = SPRITE_CELLS.filter((c) => c.kind === 'grass');
+    const grass: CardSpec[] = groundTufts().map((t, i) => {
+      const cell = grassCells[Math.floor(hash01(i, 0x6a55) * grassCells.length)];
+      return { E: t.E, N: t.N, baseM: t.baseM, heightM: t.heightM, widthM: (cell.widthM / cell.heightM) * t.heightM * (0.6 + t.tone * 0.5), tone: t.tone, cell };
+    });
+    const make = (list: CardSpec[], mat: THREE.Material, toneOf: (t: number, c: THREE.Color) => THREE.Color) => {
+      const geo = new THREE.PlaneGeometry(1, 1).translate(0.5, 0.5, 0);
+      const cells = new Float32Array(list.length * 4);
+      const im = new THREE.InstancedMesh(geo, mat, list.length);
+      const m = new THREE.Matrix4();
+      const k = new THREE.Matrix4();
+      const c = new THREE.Color();
+      list.forEach((p, i) => {
+        const sc = p.heightM / p.cell.heightM;
+        const sx = THREE.MathUtils.clamp(p.widthM / (p.cell.widthM * sc), 0.8, 1.5);
+        const side = (p.cell.cellM * sc) / S;
+        const [x, y, z] = toWorld3(p.E, p.N, p.baseM - p.heightM * (p.cell.model.includes('mound') ? 0.2 : 0.03));
+        m.makeTranslation(x, y, z)
+          .multiply(k.makeRotationY(Math.atan2(ex - x, ez - z)))
+          .multiply(k.makeScale(side * sx, side, 1))
+          .multiply(k.makeTranslation(-p.cell.rootU, -p.cell.rootV, 0));
+        im.setMatrixAt(i, m);
+        im.setColorAt(i, toneOf(p.tone, c));
+        cells.set([p.cell.u0, p.cell.v0, p.cell.du, p.cell.dv], i * 4);
+      });
+      geo.setAttribute('aCell', new THREE.InstancedBufferAttribute(cells, 4));
+      im.raycast = () => null;
+      im.computeBoundingSphere();
+      return im;
+    };
+    const treeMat = createCardMaterial(tex.albedo, tex.normal, { tint: new THREE.Color(0.92, 0.95, 0.86), saturation: 0.9 });
+    const shrubMat = createCardMaterial(tex.albedo, tex.normal, { tint: new THREE.Color(1.0, 0.98, 0.82), saturation: 0.9 });
+    const grassMat = createCardMaterial(tex.albedo, tex.normal, { tint: new THREE.Color(1.7, 1.36, 0.6), saturation: 0.15 });
+    return {
+      mats: [treeMat, shrubMat, grassMat],
+      meshes: [
+        make(trees, treeMat, (t, c) => c.setRGB(0.86 + t * 0.2, 0.88 + t * 0.18, 0.86 + t * 0.12)),
+        make(scrub, shrubMat, (t, c) => c.setRGB(0.82 + t * 0.32, 0.84 + t * 0.26, 0.8 + t * 0.16)),
+        make(grass, grassMat, (t, c) => c.setRGB(0.84 + t * 0.26, 0.84 + t * 0.24, 0.84 + t * 0.2)),
+      ],
+    };
+  }, [tex]);
+  useEffect(() => {
+    invalidate();
+    return () => {
+      for (const m of built.mats) m.dispose();
+      for (const im of built.meshes) {
+        im.geometry.dispose();
+        im.dispose();
+      }
+    };
+  }, [built, invalidate]);
+  return (
+    <>
+      {built.meshes.map((im) => (
+        <primitive key={im.uuid} object={im} />
+      ))}
+    </>
   );
-  const q = useMemo(() => new THREE.Quaternion(), []);
-  useInstances(ref, list.length, (i, m, c) => {
-    const t = list[i];
-    q.setFromAxisAngle(UP, t.spin);
-    m.compose(new THREE.Vector3(...toWorld3(t.E, t.N, t.baseM - 0.03)), q, new THREE.Vector3(t.heightM / S, t.heightM / S, t.heightM / S));
-    c.copy(TUFT_A).lerp(TUFT_B, t.tone);
-  });
-  return <instancedMesh ref={ref} args={[geo, mat, list.length]} receiveShadow raycast={() => null} />;
 }
 
 // ---------------------------------------------------------------- sky, light, shadows
@@ -535,31 +706,42 @@ function Sun() {
   );
 }
 
-/** The world never moves: draw the shadow map once, after every caster is in place. */
-function StaticShadows({ onReady }: { onReady?: () => void }) {
+/**
+ * The world never moves: draw the shadow map once, after every caster is in
+ * place. The plants' volumes (casters) take part in that one pass only and
+ * are hidden from the frames after it — the cards show the plants.
+ */
+function StaticShadows({ casters, onReady }: { casters: React.RefObject<THREE.Group | null>; onReady?: () => void }) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     gl.shadowMap.autoUpdate = false;
     gl.shadowMap.needsUpdate = true;
+    if (casters.current) casters.current.visible = true;
     invalidate();
+    // Animation-frame callbacks run in the order they were asked for: this one follows the frame that drew the shadow map.
     let raf = requestAnimationFrame(() => {
+      if (casters.current) casters.current.visible = false;
+      invalidate();
       raf = requestAnimationFrame(() => onReady?.());
     });
     return () => cancelAnimationFrame(raf);
-  }, [gl, invalidate, onReady]);
+  }, [gl, invalidate, onReady, casters]);
   return null;
 }
 
 function World({ onReady }: { onReady?: () => void }) {
+  const casters = useRef<THREE.Group>(null);
   return (
     <>
       <Terrain />
-      <Groves />
-      <Scrub />
-      <Tufts />
+      <group ref={casters}>
+        <Groves />
+        <Scrub />
+      </group>
+      <Cards />
       <Stones />
-      <StaticShadows onReady={onReady} />
+      <StaticShadows casters={casters} onReady={onReady} />
     </>
   );
 }

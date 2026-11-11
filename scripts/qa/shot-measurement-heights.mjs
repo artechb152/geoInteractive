@@ -18,7 +18,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 const label = process.argv[2] || 'after';
 const outDir = `${process.argv[3] || 'design/screenshots/measurement-mission-clarity-2026-10-12'}/${label}`;
-const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02/#scene-coordinates`;
+const URL = `${process.env.QA_BASE || 'http://localhost:3000'}/lessons/topic-02b/#scene-coordinates`;
 const SIZES = [
   [1440, 1122],
   [1440, 900],

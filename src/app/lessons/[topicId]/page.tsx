@@ -10,7 +10,7 @@ import { LessonContent } from '@/components/lesson/LessonContent';
 import { Quiz } from '@/components/interactive/Quiz';
 import { InteractionPlaceholder } from '@/components/interactive/InteractionPlaceholder';
 import { Topic01Lesson } from '@/components/lessons/topic-01/Topic01Lesson';
-import { Topic02Lesson } from '@/components/lessons/topic-02/Topic02Lesson';
+import { Topic02Lesson, Topic02bLesson } from '@/components/lessons/topic-02/Topic02Lesson';
 import { Topic03Lesson } from '@/components/lessons/topic-03/Topic03Lesson';
 import { Topic04Lesson } from '@/components/lessons/topic-04/Topic04Lesson';
 import { Topic05Lesson } from '@/components/lessons/topic-05/Topic05Lesson';
@@ -27,6 +27,7 @@ import { CartographyPractice } from '@/components/lessons/topic-02/cartography-p
 const customLearn: Record<string, () => React.ReactNode> = {
   'topic-01': () => <Topic01Lesson />,
   'topic-02': () => <Topic02Lesson />,
+  'topic-02b': () => <Topic02bLesson />,
   'topic-03': () => <Topic03Lesson />,
   'topic-04': () => <Topic04Lesson />,
   'topic-05': () => <Topic05Lesson />,
@@ -41,7 +42,8 @@ const customLearn: Record<string, () => React.ReactNode> = {
 
 // A lesson's own practice, where it has one; the others keep the placeholder.
 const customPractice: Record<string, () => React.ReactNode> = {
-  'topic-02': () => <CartographyPractice />,
+  // The map practice (relief, slope, distance, UTM) leans on the scale-to-contours half, so it stays with topic-02b.
+  'topic-02b': () => <CartographyPractice />,
   'topic-06': () => <NavigationSim />,
 };
 

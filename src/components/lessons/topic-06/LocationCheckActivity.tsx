@@ -28,17 +28,13 @@ import { LocationCheckObservation, MEASURED_MARKER, OBSERVATION_ASPECT, type Tap
  * (locationCheckState.evaluate): the distance fits both areas, the direction
  * tells them apart. The groves are landmarks only.
  *
- * Layout (RTL, laid out at the lesson fit's 1344 px, ≤ 760 px tall in every
- * state): title, instruction and field readings on top; then one row — the
- * 3D observation (inline start, right), the map, and at the inline end a
- * narrow control column: in reading order the area choice, the check and the
- * reset on top, the map tools (legend, fullscreen) at its foot, level with
- * the map's bottom edge; under the row, the full-width result of the last
- * check, as tall as its tallest content.
+ * Layout (RTL, laid out at the lesson fit's 1344 px):
+ * title, instruction and field readings on top; then one row — the
+ * 3D observation (inline start, right) and the map. Both views use the full
+ * row. Below them, one compact action row holds the area choice, check and
+ * reset in reading order, with the map tools at the inline end. The result
+ * follows at a fixed height so changing the verdict never moves the views.
  */
-
-/** Width of the control column at the inline end of the views row (px). */
-const CONTROLS_W = 176;
 
 /** A numeric range kept left-to-right inside Hebrew text (U+2066 … U+2069 isolate). */
 const ltr = (s: string) => `⁦${s}⁩`;
@@ -94,10 +90,10 @@ export function LocationCheckActivity() {
         </p>
       </div>
 
-      {/* The two views at one height (column widths follow their aspects), then the control column. */}
+      {/* Both views use the full width; their aspects keep them at one height. */}
       <div
         className="mt-4 grid gap-3"
-        style={{ gridTemplateColumns: `minmax(0, ${OBSERVATION_ASPECT}fr) minmax(0, ${MAP_ASPECT}fr) ${CONTROLS_W}px` }}
+        style={{ gridTemplateColumns: `minmax(0, ${OBSERVATION_ASPECT}fr) minmax(0, ${MAP_ASPECT}fr)` }}
       >
         <div className="min-w-0">
           <div className="overflow-hidden rounded-xl border border-border/70" data-panel="observation">
@@ -120,29 +116,31 @@ export function LocationCheckActivity() {
             />
           </div>
         </div>
-        <div className="flex min-w-0 flex-col">
-          {/* Decision, in reading order: choose an area → check it → start over. */}
-          <div className="flex flex-col gap-4" data-decision>
-            <ChoiceRow
-              id={`${uid}-area`}
-              title="בחרו אזור"
-              options={CANDIDATES.map((c) => ({ id: c.id, label: c.label }))}
-              value={sel.candidateId}
-              onChange={(id) => dispatch({ type: 'selectCandidate', id })}
-            />
-            <div className="flex flex-col gap-1">
-              <Button variant="primary" size="md" className="w-full" onClick={() => dispatch({ type: 'check' })}>
-                בדקו את הבחירה
-              </Button>
-              <Button variant="ghost" size="md" className="w-full" onClick={reset} title="איפוס הפעילות">
-                <RotateCcw className="size-4" aria-hidden />
-                איפוס
-              </Button>
-            </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3" data-action-row>
+        {/* Decision, in reading order: choose an area → check it → start over. */}
+        <div className="flex flex-wrap items-center gap-4" data-decision>
+          <ChoiceRow
+            id={`${uid}-area`}
+            title="בחרו אזור"
+            options={CANDIDATES.map((c) => ({ id: c.id, label: c.label }))}
+            value={sel.candidateId}
+            onChange={(id) => dispatch({ type: 'selectCandidate', id })}
+          />
+          <div className="flex items-center gap-1">
+            <Button variant="primary" size="md" onClick={() => dispatch({ type: 'check' })}>
+              בדקו את הבחירה
+            </Button>
           </div>
-          {/* Map tools at the foot of the column, level with the map's bottom edge. */}
+        </div>
+        {/* Secondary actions share one quiet group at the map side. */}
+        <div className="flex shrink-0 items-center gap-2" data-utility-tools>
+          <Button variant="ghost" size="sm" onClick={reset} title="איפוס הפעילות">
+            <RotateCcw className="size-4" aria-hidden />
+            איפוס
+          </Button>
           <MapTools
-            className="mt-auto"
             area={!!sel.candidateId}
             checked={checked}
             solved={solved}
@@ -244,7 +242,7 @@ function ChoiceRow<T extends string>({
     refs.current[nextIdx]?.focus();
   };
   return (
-    <div className="flex flex-col gap-2" data-choice="area">
+    <div className="flex items-center gap-3" data-choice="area">
       <span id={id} className="whitespace-nowrap font-display text-base font-bold text-black">
         {title}
       </span>

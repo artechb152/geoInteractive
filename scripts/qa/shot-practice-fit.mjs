@@ -61,7 +61,7 @@ async function captureViewport(w, h) {
   page.on('framenavigated', (f) => { if (f === page.mainFrame()) reloaded = true; });
   page.on('pageerror', (e) => errors.push(`${w}x${h} ${e}`));
   try {
-    await page.goto(`${BASE}/lessons/topic-02/#scene-practice`, { waitUntil: 'networkidle', timeout: 240000 });
+    await page.goto(`${BASE}/lessons/topic-02b/#scene-practice`, { waitUntil: 'networkidle', timeout: 240000 });
     await page.waitForSelector('#scene-practice', { timeout: 120000 });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(1500);

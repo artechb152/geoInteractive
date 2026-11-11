@@ -1,0 +1,13 @@
+=== F03 | תמונה 4: בתנועה — עצירה וזיהוי באותו נוף ===
+קלט: F02 המאושרת.
+שם לשמירה: F03-terrain-position-check.png
+
+EDIT the supplied departure frame into a stopped position-check keyframe, preserving the exact same locked camera, lens, crop, terrain, lighting and all landmark pixel locations. Keep the entire image as one realistic three-dimensional landscape. Do not flatten it into a map, change viewpoint or introduce a map panel.
+
+Remove the oversized compass, departure-direction ground arrow and discarded shortcut. Preserve the chosen orange route and its two planned checkpoints. Move the SAME SINGLE blue navigator from departure to the FIRST checkpoint beside the existing palms. Keep natural perspective: its apparent size follows its new distance from the locked camera. The navigator is now completely stopped with grounded feet, body turned toward the existing hill and palms.
+
+The navigator holds an unfolded cream paper map at waist height and looks between it and the actual landmarks. This is a physical hand-held prop within the landscape, naturally lit and perspectivally foreshortened, not an inset, floating screen or replacement background. Its simple schematic markings suggest the same hill, palm group, route and junction. Do not rely on fine map details being readable to explain the frame.
+
+Emphasize the EXISTING hill with one broad open burnt-orange ring following its base on the ground. Emphasize the EXISTING palm group with a distinct broad open bracket around the ground area occupied by the palms. Make both highlights large and readable without obscuring the actual features. The shape difference identifies two separate observations. Leave the final destination diamond hollow.
+
+No new hill, additional palms, shifted roads, duplicate figure, blue GPS pin, success tick, full-frame map, split screen, camera zoom, new lighting, text, letters, numbers, glowing interface, logo or watermark.

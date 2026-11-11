@@ -40,7 +40,7 @@ async function run(page, width, height) {
   const out = { states: {}, pointer: {} };
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
-  await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 240000 });
+  await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 240000 });
   await page.waitForSelector('#scene-coordinates', { state: 'attached', timeout: 120000 });
   await page.waitForTimeout(2500);
   const vp = `${width}x${height}`;

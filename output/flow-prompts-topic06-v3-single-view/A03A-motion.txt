@@ -1,0 +1,7 @@
+Animate from the supplied departure frame to the supplied full-frame topographic map, targeting approximately eight seconds. There is only ONE view at any moment. Start with the exact realistic terrain and finish with the exact flat map. Do not show both side by side, add a divider, or use a map inset.
+
+First retract the oversized compass and its temporary ground arrow. Move the same single blue three-dimensional navigator along the chosen orange route to the first checkpoint near the hill and palm cluster. This is schematic time-compressed progress, without a distance counter or real-time speed claim. Stop the figure clearly before changing the viewpoint.
+
+After the stop, lift the camera smoothly into a true overhead view of the same location. Transition that entire view into the warm flat topographic map: the existing hill's shape is represented by nested contours, the existing palm cluster becomes its corresponding symbols, and roads and the stone building retain their actual arrangement. This is a change of representation, not the landscape physically changing or a new world appearing.
+
+Once the map fills the whole frame, emphasize the hill's contour group with a broad open ring. Then emphasize the palm-symbol group with an open bracket. Keep the blue location symbol at the same checked position. Hold the supplied map frame at the end. No new landmark, mirrored geography, teleporting checkpoint, automatic GPS fix, text, letters, numbers, captions, logos or watermarks.

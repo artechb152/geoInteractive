@@ -2,23 +2,25 @@
 /**
  * The replay's fallback when WebGL is missing, fails to start, an asset fails
  * or the context is lost: photographs of the SAME model from the SAME
- * stations — four per moment, a quarter turn apart, starting at the opening
- * view (captured from the live canvas by
+ * stops — four per stop, a quarter turn apart, starting at the opening view
+ * (captured from the live canvas by
  * scripts/qa/capture-navigation-replay-fallback.mjs). The learner can turn by
- * quarters and finish the activity; the decision data does not depend on the
- * view. Marked as a fallback in the panel's header.
+ * quarters and finish the activity (signs are then chosen from the list); the
+ * decision data does not depend on the view. Marked as a fallback in the
+ * panel's header.
  */
 import { useSyncExternalStore } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { turnDeg } from './replayWorld';
 import type { ViewStore } from './replayViewStore';
+import type { StopId } from './replayRoute';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 export const FALLBACK_DIR = `${BASE}/assets/lessons/topic06/navigation-replay/fallback`;
-export const fallbackSrc = (momentIndex: number, quarter: number) => `${FALLBACK_DIR}/m${momentIndex + 1}-${quarter}.webp`;
+export const fallbackSrc = (stop: StopId, quarter: number) => `${FALLBACK_DIR}/${stop}-${quarter}.webp`;
 const QUARTER_NAMES = ['מבט הפתיחה', 'רבע סיבוב ימינה', 'מבט לאחור', 'רבע סיבוב שמאלה'];
 
-export function ReplayFallback({ momentIndex, view, reduce }: { momentIndex: number; view: ViewStore; reduce: boolean }) {
+export function ReplayFallback({ stop, view, reduce }: { stop: StopId; view: ViewStore; reduce: boolean }) {
   const look = useSyncExternalStore(view.subscribe, view.get, view.get);
   const home = view.home();
   const quarter = (((Math.round(turnDeg(home.yawDeg, look.yawDeg) / 90) % 4) + 4) % 4) as 0 | 1 | 2 | 3;
@@ -27,7 +29,7 @@ export function ReplayFallback({ momentIndex, view, reduce }: { momentIndex: num
     <div className="absolute inset-0" data-fallback data-quarter={quarter}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={fallbackSrc(momentIndex, quarter)}
+        src={fallbackSrc(stop, quarter)}
         alt={`תצלום מהמודל, ${QUARTER_NAMES[quarter]}`}
         className="h-full w-full object-cover"
         draggable={false}

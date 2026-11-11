@@ -188,6 +188,26 @@ export class TerrainGrid {
     const b = arr[i + this.nx] + (arr[i + this.nx + 1] - arr[i + this.nx]) * tx;
     return a + (b - a) * tz;
   }
+  /**
+   * Catmull–Rom (bicubic) lookup: continuous in slope across cell edges. The bilinear lookup creases
+   * along every grid line, and a mesh sampling those creases a little off the grid's own spacing
+   * shows them in its normals as a lattice on far slopes.
+   */
+  sampleSmooth(arr: Float32Array, x: number, z: number) {
+    const fxp = Math.min(this.nx - 1.0001, Math.max(0, (x - this.x0) / this.step));
+    const fzp = Math.min(this.nz - 1.0001, Math.max(0, (z - this.z0) / this.step));
+    const ix = Math.floor(fxp);
+    const iz = Math.floor(fzp);
+    const tx = fxp - ix;
+    const tz = fzp - iz;
+    const cr = (t: number, p0: number, p1: number, p2: number, p3: number) => p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+    const row = (j: number) => {
+      const r = Math.min(this.nz - 1, Math.max(0, j)) * this.nx;
+      const at = (k: number) => arr[r + Math.min(this.nx - 1, Math.max(0, k))];
+      return cr(tx, at(ix - 1), at(ix), at(ix + 1), at(ix + 2));
+    };
+    return cr(tz, row(iz - 1), row(iz), row(iz + 1), row(iz + 2));
+  }
 }
 
 /** Fills a grid, yielding to the browser every ~12 ms so the page stays responsive. */
@@ -237,7 +257,7 @@ export class StationTerrain {
       const g = this.grids[k];
       const inset = g.inset(x, z);
       if (inset < 0) continue;
-      const v = g.sample(g[arr], x, z);
+      const v = arr === 'h' ? g.sampleSmooth(g.h, x, z) : g.sample(g[arr], x, z);
       if (Number.isNaN(value)) value = v;
       else {
         const blend = Math.min(1, inset / (g.step * 6));

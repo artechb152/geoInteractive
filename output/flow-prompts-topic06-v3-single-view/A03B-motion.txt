@@ -1,0 +1,7 @@
+Animate from the supplied full-frame topographic map back to the supplied terrain-check frame in approximately four seconds. Start with the flat map filling the entire 16:9 image. End with the same continuous realistic terrain filling the entire image. Never show simultaneous panels, a paper-map inset, a screen divider or a floating extra sheet.
+
+Briefly hold the map's two highlighted landmark groups. Then smoothly return from the flat topographic representation to the exact matching oblique terrain viewpoint: the nested contour group resolves into the existing rocky hill, the palm symbols resolve into the same existing palm cluster, and the road junction and building maintain their relative locations. Restore natural ground textures and depth as a representation transition, not as new terrain or trees being constructed.
+
+Keep the broad hill ring and palm bracket associated with their same features during the transition, so the relationship remains visible. The blue map symbol resolves into the same single blue three-dimensional navigator, still stopped at the same first checkpoint. It must not walk, duplicate itself, jump to a new place or acquire a GPS signal.
+
+Settle on the approved terrain frame with deep focus and hold it cleanly for the last second. Preserve the chosen route, remaining checkpoint, daylight and geography. No new landmarks, different tree count, changed building location, text, letters, numbers, labels, logos, watermark, flashing interface or decorative effects.

@@ -175,7 +175,7 @@ if (process.argv.includes('--still')) {
     await chunkHeld;
     await route.continue();
   });
-  await page.route(/location-check\/textures\/.*\.jpg/, async (route) => {
+  await page.route(/planning-lab\/(terrain\/|sky\.webp|rocks\.glb)/, async (route) => {
     await texHeld;
     await route.continue();
   });

@@ -1,0 +1,12 @@
+=== F02 | תמונה 3: קביעת הכיוון לפני היציאה ===
+קלט: F00 לזהות השטח והדמות; F01 למסלול ולנקודות הבדיקה.
+שם לשמירה: F02-terrain-departure.png
+אקורדיון: יציאה: קביעת כיוון.
+
+Create the departure-direction state of the supplied navigation scene. Restore the exact realistic oblique terrain view from F00, using F01 only to transfer the approved route and checkpoint locations. The entire 16:9 image is one terrain view. Keep the same central rocky hill, exactly three palms to its southeast, northeastern Y junction and the single rectangular stone building immediately east of that junction. Preserve lighting, textures and landscape identity.
+
+The same single solid-blue navigator remains at the southwest departure point and has not begun walking. Transfer the selected route from the map onto the ground as a thick burnt-orange teaching ribbon following the southern and eastern lower ground. Transfer both hollow checkpoint discs to their exact corresponding terrain locations. Suppress the discarded shortcut.
+
+Introduce one oversized but physically coherent baseplate compass in the foreground beside the navigator, occupying about one quarter of frame width without hiding the first checkpoint. Show a pale dial, a clearly recognizable two-tone magnetic needle, a preset orienting mark and a separate burnt-orange direction-of-travel arrow fixed to the baseplate. Its markings are schematic and unnumbered. The baseplate is aligned with the FIRST route leg toward the first checkpoint, not directly toward the final junction across the hill. The magnetic north end is aligned with the preset orienting mark; the needle represents magnetic north, not the destination. A broad orange ground arrow repeats the first-leg direction. Make departure a large blue hollow ring under the stationary navigator, indicating the known starting point being checked.
+
+Keep all landmarks sharply focused. No paper map, split screen, extra compass, freely rotating travel arrow detached from its baseplate, north needle pointing magically toward the destination, numeric bearing, GPS display, extra person, text, logo or watermark.

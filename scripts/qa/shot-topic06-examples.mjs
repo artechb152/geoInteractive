@@ -41,7 +41,7 @@ try {
     await page.screenshot({ path: `${out}/example-${i + 1}.png` });
   }
   assert.equal(await page.getByRole('button', { name: 'דגשים לתכנון ולניווט', exact: true }).count(), 1);
-  await page.goto(`${base}/lessons/topic-02/#scene-practice`);
+  await page.goto(`${base}/lessons/topic-02b/#scene-practice`);
   await page.locator('#history-detail-panel').waitFor();
   assert.equal(await page.locator('button[aria-controls="history-detail-panel"]').count(), 4);
   assert.deepEqual(errors, []);

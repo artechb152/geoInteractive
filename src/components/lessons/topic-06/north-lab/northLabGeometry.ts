@@ -68,14 +68,14 @@ export function declinationText(d: number) {
  * follows the slider. Unsigned degrees only, so the text needs no LTR island.
  */
 export function relationText(id: NorthId, declination: number) {
-  if (id === 'true') return 'זה הבסיס להשוואה: הזוויות שעל החצים במפה נמדדות ממנו.';
+  if (id === 'true') return 'הצפון האמיתי הוא נקודת הייחוס להשוואה.';
   const name = id === 'grid' ? 'צפון הרשת' : 'הצפון המגנטי';
   const v = Math.round(referenceAngle(id, declination));
-  if (v === 0) return `בדוגמה, ${name} חופף לצפון האמיתי, ולכן האזימוט זהה.`;
+  if (v === 0) return `${name} חופף לצפון האמיתי; האזימוט זהה.`;
   const n = Math.abs(v);
   return v < 0
-    ? `בדוגמה, ${name} נוטה ${n}° מערבה מהצפון האמיתי, ולכן האזימוט גדול ב־${n}°.`
-    : `בדוגמה, ${name} נוטה ${n}° מזרחה מהצפון האמיתי, ולכן האזימוט קטן ב־${n}°.`;
+    ? `${name} נוטה ${n}° מערבה מהאמיתי; האזימוט גדול ב־${n}°.`
+    : `${name} נוטה ${n}° מזרחה מהאמיתי; האזימוט קטן ב־${n}°.`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

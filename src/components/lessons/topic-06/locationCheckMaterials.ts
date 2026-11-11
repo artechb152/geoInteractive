@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OBSERVER } from './locationCheckScenario';
 
 /**
  * Runtime materials for the location-check observation (LocationCheckTerrain3D).
@@ -27,7 +28,16 @@ export type GroundTextures = {
   rockN: THREE.Texture;
   forestD: THREE.Texture;
   mask: THREE.Texture;
+  /** Contact occlusion around the observer (R, additive), see CONTACT. */
+  contact: THREE.Texture;
 };
+
+/**
+ * The contact-occlusion texture: a square of the ground centred on the
+ * observation point, where every plant, tuft and stone darkens the ground
+ * at its foot (the shade and litter that seat it on the ground).
+ */
+export const CONTACT = { centerE: OBSERVER.E, centerN: OBSERVER.N, sizeM: 280, px: 1400, strength: 0.5 } as const;
 
 /** South-south-east, mid-morning: glancing light on the slopes that face the observer, shadows falling away to the north-north-west. */
 const SUN_AZIMUTH_DEG = 150;
@@ -81,6 +91,7 @@ export function createTerrainMaterial(tex: GroundTextures) {
     uRockN: { value: tex.rockN },
     uForestD: { value: tex.forestD },
     uMask: { value: tex.mask },
+    uContact: { value: tex.contact },
   };
   mat.customProgramCacheKey = () => 'location-check-ground';
   mat.onBeforeCompile = (shader) => {
@@ -100,7 +111,7 @@ export function createTerrainMaterial(tex: GroundTextures) {
         /* glsl */ `#include <common>
         varying vec3 vLcM;
         varying vec3 vLcN;
-        uniform sampler2D uGrassD, uGrassN, uDryD, uDryN, uRockD, uRockN, uForestD, uMask;
+        uniform sampler2D uGrassD, uGrassN, uDryD, uDryN, uRockD, uRockN, uForestD, uMask, uContact;
         ${NOISE_GLSL}
         vec3 lcTex(sampler2D t, vec2 m, float a, float b) {
           return mix(texture2D(t, m / a).rgb, texture2D(t, m / b + 0.37).rgb, 0.42);
@@ -160,7 +171,19 @@ export function createTerrainMaterial(tex: GroundTextures) {
         lcCol = mix(lcCol, kVerge * dG, lcWVerge * 0.8);
         float lcVar = (0.9 + 0.2 * lcMacro) * mix(0.82, 1.08, lcMeso);
         lcCol *= lcVar;
+        // Metre-scale mottling — worn, crusted and littered patches — that still reads where the
+        // photos' own grain has blurred into its average, a few tens of metres out.
+        lcCol *= 0.84 + 0.3 * lcFbm(lcM / 3.3 + 3.0);
+        // Close to the eye, a finer grain of the same ground (pebbles, crumbs, straw), faded out by
+        // the pixel's footprint before it could shimmer.
+        float lcPx = length(fwidth(lcM));
+        float lcNear = 1.0 - smoothstep(0.02, 0.12, lcPx);
+        lcCol *= mix(1.0, lcDetail(uDryD, lcM, 1.45, 2.6, 1.6), lcNear * 0.85 * (1.0 - lcWRoad * 0.6));
         lcCol = mix(lcCol, kDust * mix(dD, 1.0, 0.8) * mix(lcVar, 1.0, 0.7), lcWRoad);
+        // Contact shade at the foot of every plant and stone near the eye.
+        vec2 lcCuv = (lcM - vec2(${CONTACT.centerE.toFixed(1)}, ${CONTACT.centerN.toFixed(1)})) / ${CONTACT.sizeM.toFixed(1)} + 0.5;
+        float lcCin = step(0.0, lcCuv.x) * step(lcCuv.x, 1.0) * step(0.0, lcCuv.y) * step(lcCuv.y, 1.0);
+        lcCol *= 1.0 - ${CONTACT.strength.toFixed(2)} * clamp(texture2D(uContact, lcCuv).r * lcCin, 0.0, 1.0);
         diffuseColor.rgb *= lcCol;`,
       )
       .replace(
@@ -225,4 +248,79 @@ export function createSkyMaterial() {
     depthTest: false,
     fog: false,
   });
+}
+
+/**
+ * The vegetation cards (scripts/build-location-check-assets.mjs): an instanced
+ * unit square per plant, turned to face the eye, its atlas cell given by the
+ * per-instance attribute aCell (u0, v0, du, dv). The atlas carries the scan's
+ * colour × baked occlusion and its normals as seen from the eye, so the
+ * scene's own sun and sky light each plant. Coverage is alpha-to-coverage;
+ * it is boosted with the mip level, so a far crown keeps its body instead of
+ * thinning out to nothing.
+ */
+export function createCardMaterial(albedo: THREE.Texture, normal: THREE.Texture, grade: { tint: THREE.Color; saturation: number }) {
+  const mat = new THREE.MeshStandardMaterial({
+    map: albedo,
+    normalMap: normal,
+    roughness: 0.88,
+    metalness: 0,
+    alphaTest: 0.5,
+    alphaToCoverage: true,
+  });
+  const img = albedo.image as { width: number; height: number } | undefined;
+  const size = new THREE.Vector2(img?.width ?? 2560, img?.height ?? 2560);
+  const uniforms = { uAtlasSize: { value: size }, uTint: { value: grade.tint }, uSat: { value: grade.saturation } };
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 aCell;')
+      .replace('#include <uv_vertex>', '#include <uv_vertex>\nvMapUv = aCell.xy + uv * aCell.zw;\nvNormalMapUv = vMapUv;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec2 uAtlasSize;\nuniform vec3 uTint;\nuniform float uSat;')
+      .replace(
+        '#include <map_fragment>',
+        /* glsl */ `#include <map_fragment>
+        {
+          float l = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+          diffuseColor.rgb = mix(vec3(l), diffuseColor.rgb, uSat) * uTint;
+        }`,
+      )
+      .replace(
+        '#include <alphatest_fragment>',
+        /* glsl */ `{
+          vec2 lcTexel = vMapUv * uAtlasSize;
+          float lcLod = 0.5 * log2(max(dot(dFdx(lcTexel), dFdx(lcTexel)), dot(dFdy(lcTexel), dFdy(lcTexel))));
+          diffuseColor.a *= 1.0 + max(lcLod, 0.0) * 0.3;
+        }
+        #include <alphatest_fragment>`,
+      );
+  };
+  mat.customProgramCacheKey = () => `location-check-card-${grade.saturation}`;
+  return mat;
+}
+
+/**
+ * A scanned rock's material (the weathered stones of the dead-reckoning set),
+ * graded to the pale grey limestone of the hills: the scan's own detail as
+ * luminance, the colour pulled towards the local stone, a little darker in
+ * the crevices.
+ */
+export function createStoneMaterial(src: THREE.MeshStandardMaterial) {
+  const m = src.clone();
+  m.metalness = 0;
+  m.envMapIntensity = 0;
+  m.roughness = 0.92;
+  m.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      /* glsl */ `#include <map_fragment>
+      {
+        float l = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.95, 0.88, 0.76) * pow(l, 0.85) * 1.9, 0.85);
+      }`,
+    );
+  };
+  m.customProgramCacheKey = () => `location-check-stone-${src.name}`;
+  return m;
 }

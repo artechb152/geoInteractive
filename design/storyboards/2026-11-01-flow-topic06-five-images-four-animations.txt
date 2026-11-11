@@ -1,0 +1,185 @@
+שיעור 6 — לפני שמתחילים: חמישה פריימים וארבע הנפשות ל־Google Flow
+01.11.2026
+
+הסקירה והכיוון המוצע
+בשיעור 1 ההמחשה מציגה שינוי פיזי גדול בשטח: הר עולה, נהר וגשר מופיעים, ומעבר נעשה צר. בשיעור 2 מתווספות שכבות מוחשיות לאותו נוף: תשתיות, מבנים, קו גבול וכוחות. המשותף הוא פעולה גדולה שאפשר לזהות, רציפות בין המצבים ותוצאה שנשארת מול העיניים בזמן הקריאה.
+בשיעור 6 ה־SVG כבר משתנה לפי ארבעת האקורדיונים, אבל התוכן דורש להראות פעולות ניווט: בחירה בין חלופות, כיוון לפני הליכה, השוואה למפה ואימות לפי סימני זיהוי. לכן השטח עצמו יישאר קבוע; הדמות, המצלמה ושכבת ההסבר הם שישתנו.
+
+ההצעה בחבילה הזאת: מקום אחד, תלת־ממד מציאותי ומפה גדולה שמוצגים בזה אחר זה. אין מסך מפוצל או מפה זעירה בצד. תמונת הבסיס היא השטח; תמונת התכנון היא המפה שלו; תמונת היציאה היא השטח עם מצפן; תמונת הבדיקה היא אותה מפה עם מקום העצירה; תמונת ההגעה היא תקריב בשטח. כך גם פעולת התכנון מתרחשת על מפה, בהתאם לטקסט הקיים, ונשארים בדיוק עם 5 תמונות ו־4 קליפים. זו הצעת בימוי, לא שינוי שבוצע באתר.
+
+מיפוי לתוכן האקורדיונים
+תכנון: בחירת המסלול — משווים חלופה קצרה שחוצה כתף תלולה וחשופה לחלופה עוקפת, ובוחרים נקודות בדיקה מראש. אין הבטחה שמסלול עוקף תמיד בטוח או מתאים יותר.
+יציאה: קביעת כיוון — מאמתים את המוצא, ורק אז מיישרים את המצפן לקטע הראשון. הכיוון השגוי יוצר פער שהולך וגדל, לפני שמתקנים אותו. אין תרגיל מעלות או המרת סוגי צפון.
+בתנועה: בדיקת המיקום — מתקדמים, עוצרים ליד הגבעה והדקלים, ומקשרים כל סימן למקבילה שלו במפה. מציגים בדיקה מוצלחת; ההוראה לבדוק שוב במקרה של אי־התאמה נשארת בטקסט, ואין אישור GPS אוטומטי.
+הגעה: אימות היעד — מזהים תחילה את צורת הצומת ואחר כך את המבנה שלידו. אישור ההגעה מופיע רק אחרי שתי הבדיקות. הערת הטקסט על חושך וראות מוגבלת נשארת בטקסט כדי לא להחליף את התאורה באמצע הרצף.
+
+סדר הפקה
+1. מפיקים את F00 עם תמונת שטח אחת משיעור 2 כרפרנס לחומרים, ותמונה משיעור 1 כרפרנס לדמות הכחולה. אין להשתמש בגיליון השוואה בן ארבע תמונות כפריים ההתחלה: בוחרים פריים בודד.
+2. F01 מופקת מתוך F00. מאשרים במיוחד שהמפה היא של אותו מקום.
+3. F02 מופקת באמצעות F00 כרפרנס לשטח ולדמות, ו־F01 כרפרנס למסלול.
+4. F03 מופקת בעריכת F01. F02 משמשת רפרנס לזהות העצמים בלבד; אין להמציא מפה חדשה.
+5. F04 מופקת באמצעות F00 ו־F02 כרפרנס לשטח, ו־F03 כרפרנס למיקום ההתקדמות.
+6. מפיקים ארבע הנפשות עם זוג פריימים מוגדר: F00→F01, F01→F02, F02→F03, F03→F04.
+
+כל פרומפט באנגלית שלהלן מלא להעתקה. שמות הקבצים הם שמות לשמירה מקומית, לא טקסט שצריך להופיע בתמונה. 16:9 הוא יחס ההפקה המוצע. בהנפשות אפשר לכוון ל־8 שניות, אם האורך זמין במודל שנבחר; חלוקת הזמן היא הנחיית בימוי ולא הבטחה לביצוע מדויק. אין צורך בקול כדי להבין את הרצף.
+
+=== F00 | תמונה 1: אותו שטח, לפני תכנון ===
+קלט: פריים בודד משיעור 2 לחומרים; פריים בודד משיעור 1 לדמות הכחולה.
+שם לשמירה: F00-terrain-base.png
+תפקיד: פריים התחלה לקליפ הראשון בלבד; אינו אקורדיון חמישי.
+
+Create one full-frame 16:9 realistic educational terrain scene for a geography lesson. Use the supplied lesson-2 reference for convincing limestone, dusty earth, vegetation and daylight; use the lesson-1 reference for the solid-blue three-dimensional navigator. Borrow their material language, not their exact geography or armies. The result is one image, not a reference collage.
+
+Show a fictional semi-arid landscape from an elevated oblique camera. Establish this exact geography for the entire series: departure in the southwest foreground; one broad rocky hill in the center; exactly three palms together southeast of the hill; a three-arm Y-shaped dirt-track junction northeast of the hill; one rectangular pale-stone building immediately east of that junction. The hill has a visibly steep, exposed shoulder. Lower, gentler ground runs around its southern and eastern sides. The junction is the intended destination. Keep its three road arms easy to distinguish.
+
+Place one solid-blue navigator at departure, approximately 12 percent of image height, with believable volume, boots and contact shadow. Keep the hill, three palms, junction and building simultaneously readable within the central 80 percent of the image. Use warm limestone, dusty beige ground, restrained olive vegetation and soft consistent daylight. Maintain deep focus; distant identification features must remain sharp. This is tangible terrain, not a flat vector diagram or a toy on a pedestal.
+
+No route markings, compass, map panel, checkpoint discs, extra people, weapons, enemies, added buildings, text, letters, numbers, labels, interface, glow, logo or watermark. No split screen, tilt-shift blur or mirrored landscape.
+
+=== F01 | תמונה 2: תכנון על המפה ===
+קלט: F00 המאושרת כייחוס גאוגרפי.
+שם לשמירה: F01-map-plan.png
+אקורדיון: תכנון: בחירת המסלול.
+
+Translate the supplied terrain image into one full-frame 16:9 top-down topographic teaching map of that exact fictional place. The map occupies the entire image, with warm cream paper texture, crisp brown contour lines and restrained olive symbols. There is no simultaneous terrain panel, inset or visible desk. Use the source geography, not a generic map.
+
+Keep north at the top: departure southwest, one central hill represented by nested closed contours, exactly three palm symbols southeast of the hill, the same Y-shaped dirt-track junction northeast, and one rectangular building footprint immediately east of that junction. Contour spacing must express the steep hill shoulder and gentler southern and eastern ground. Preserve the actual relative locations and road connections when changing from perspective to plan view.
+
+Place a plain blue triangular departure marker and a hollow diamond at the destination junction. Draw two conspicuous route alternatives between these same endpoints. A broad gray dashed shortcut crosses the steep hill shoulder. A broad solid burnt-orange selected route goes around the hill on the southern lower ground, passes beside the three palms, then turns north along the eastern side to the destination. These are teaching overlays, not physical roads. The selected route is an example choice, not a universal safety claim.
+
+Place two large hollow circular checkpoints on the selected route: the first beside the palms where both palms and hill can be compared, the second farther north before the destination junction. Make routes and checkpoints unmistakable at a display width of 600 pixels. Leave the navigator at departure as the blue map symbol. No compass, movement trail, text, coordinates, letters, numbers, degree values, GPS interface, split screen, floating paper sheet, logo or watermark. Do not invent new geography.
+
+=== F02 | תמונה 3: קביעת הכיוון לפני היציאה ===
+קלט: F00 לזהות השטח והדמות; F01 למסלול ולנקודות הבדיקה.
+שם לשמירה: F02-terrain-departure.png
+אקורדיון: יציאה: קביעת כיוון.
+
+Create the departure-direction state of the supplied navigation scene. Restore the exact realistic oblique terrain view from F00, using F01 only to transfer the approved route and checkpoint locations. The entire 16:9 image is one terrain view. Keep the same central rocky hill, exactly three palms to its southeast, northeastern Y junction and the single rectangular stone building immediately east of that junction. Preserve lighting, textures and landscape identity.
+
+The same single solid-blue navigator remains at the southwest departure point and has not begun walking. Transfer the selected route from the map onto the ground as a thick burnt-orange teaching ribbon following the southern and eastern lower ground. Transfer both hollow checkpoint discs to their exact corresponding terrain locations. Suppress the discarded shortcut.
+
+Introduce one oversized but physically coherent baseplate compass in the foreground beside the navigator, occupying about one quarter of frame width without hiding the first checkpoint. Show a pale dial, a clearly recognizable two-tone magnetic needle, a preset orienting mark and a separate burnt-orange direction-of-travel arrow fixed to the baseplate. Its markings are schematic and unnumbered. The baseplate is aligned with the FIRST route leg toward the first checkpoint, not directly toward the final junction across the hill. The magnetic north end is aligned with the preset orienting mark; the needle represents magnetic north, not the destination. A broad orange ground arrow repeats the first-leg direction. Make departure a large blue hollow ring under the stationary navigator, indicating the known starting point being checked.
+
+Keep all landmarks sharply focused. No paper map, split screen, extra compass, freely rotating travel arrow detached from its baseplate, north needle pointing magically toward the destination, numeric bearing, GPS display, extra person, text, logo or watermark.
+
+=== F03 | תמונה 4: עצירה ובדיקת המיקום במפה ===
+קלט: עריכת F01; F02 כייחוס למסלול ולזהות הסימנים.
+שם לשמירה: F03-map-position-check.png
+אקורדיון: בתנועה: בדיקת המיקום.
+
+Edit the supplied approved full-frame planning map F01 into the stopped position-check state. Preserve its exact 16:9 map extent, north-up orientation, contour geometry, three palm symbols, Y-junction road connections, building footprint, route and checkpoint positions. Do not generate a new map or change the geography. Keep cream paper, crisp brown contours and restrained olive symbols.
+
+Move the single blue location symbol from the departure point to the FIRST checkpoint beside the three palms southeast of the central hill. Show only one location symbol, now stationary at that checkpoint. It represents a position being checked through observation, not a satellite fix. Keep a small hollow departure ring at the original starting point. Remove the discarded shortcut, and keep both planned checkpoints and the destination diamond in place. The completed part of the chosen orange route can be slightly thicker than the remaining part, without moving either segment.
+
+Make the correspondence between terrain and map immediately visible: put one broad open ring around the central hill's nested contour group, and one different-shaped open bracket around exactly the three palm symbols. Their distinct shapes must identify two separate observations without relying on color alone. Keep all contour lines and palm symbols readable inside the highlights. The blue checkpoint position lies beside these features, not on top of the hill or inside the palms. Do not mark arrival at the final junction.
+
+The map fills the whole image. No terrain panel, inset, compass, additional blue symbols, GPS pulse, success tick, coordinates, text, letters, numbers, labels, glowing interface, new landmarks, logo or watermark.
+
+=== F04 | תמונה 5: הגעה ואימות סימני היעד ===
+קלט: F00 ו־F02 לזהות השטח; F03 למהלך המסלול.
+שם לשמירה: F04-terrain-destination.png
+אקורדיון: הגעה: אימות היעד.
+
+Create the final destination-verification image in the same realistic navigation landscape as the supplied terrain references. Use the approved map to preserve the route and destination identity. Restore one continuous 16:9 terrain view, then bring the elevated oblique camera closer to the EXISTING northeastern Y-shaped dirt-track junction and the EXISTING rectangular pale-stone building immediately east of it. This is the same place seen closer, not a new destination. Keep all three junction arms readable and the building on its correct geographic side.
+
+Place the same single solid-blue three-dimensional navigator stopped at the exact planned junction. The junction and adjacent building together occupy about half the image, large enough to inspect at a 600-pixel display width. Retain a visible incoming segment of the selected orange teaching ribbon. Show enough surrounding terrain to connect this close view to the earlier landscape; do not relocate the hill or palms to fit the crop.
+
+Emphasize the junction's three-arm shape with a bold open ring. Separately emphasize the rectangular building with a bold open bracket. These are the two preselected identification signs. A small filled orange destination diamond marks the completed verification at the junction itself, rather than a broad arrival zone. Remove the earlier hill and palm highlights and the oversized compass.
+
+Maintain the same natural daylight, limestone textures, grounded blue figure and deep focus. No map panel, split screen, new building, different junction, automatic GPS lock, broad proximity circle, giant checkmark, celebration, background blur, text, captions, letters, numbers, logo or watermark. The final image must communicate recognition of a precise place through two concrete signs.
+
+=== A01 | הנפשה 1: מהשטח לבחירת מסלול במפה ===
+פריים התחלה: F00-terrain-base.png
+פריים סיום: F01-map-plan.png
+שם לשמירה: A01-plan.mp4
+משך בימוי מוצע: 8 שניות.
+
+Animate from the supplied unmarked terrain start frame to the supplied planning-map end frame in one clear educational sequence, approximately eight seconds. The viewer must recognize one unchanged fictional location represented first as terrain and then as a map. Use one full-frame view at any moment; no split screen or map inset.
+
+Begin with a brief clean hold on the realistic landscape. Smoothly lift the camera toward a true overhead view. Resolve the existing hill into nested contours, the same three palms into three map symbols, the same Y junction into its three road arms, and the same building into its rectangular footprint. The blue navigator becomes one blue departure symbol at the corresponding southwest location. This is a change in representation, not terrain physically flattening or landmarks moving. Finish the transition early enough to spend most of the clip on planning.
+
+On the full-frame map, draw the broad gray dashed shortcut first, visibly crossing the steep hill contours. Then draw the thick orange lower-ground alternative with a strong traveling front, sweeping around the hill's south side, passing the palms and turning north to the same junction. The line growth should feel as tangible and noticeable as the orange boundary growing across the landscape in lesson 2. Neither route constructs a physical road.
+
+Settle the choice on the orange route. Add the two hollow checkpoint discs one after the other, large and deliberate. The blue departure symbol remains stationary. Hold the complete supplied end frame for roughly the final second. Preserve all geography and paper styling. No walking, growing hill, new trees, compass, numeric comparison, safety guarantee, GPS effects, text, captions, speech, music, logo or watermark. The teaching action must work silently.
+
+=== A02 | הנפשה 2: מאימות המוצא לקביעת כיוון ===
+פריים התחלה: F01-map-plan.png
+פריים סיום: F02-terrain-departure.png
+שם לשמירה: A02-departure.mp4
+משך בימוי מוצע: 8 שניות.
+
+Animate the supplied full-frame planning map into the supplied terrain departure frame, approximately eight seconds. Keep one continuous full-frame representation at any moment. Maintain the exact hill, three palms, two checkpoints, Y junction, building and approved southern-and-eastern route. The navigator must not start walking.
+
+First give the existing southwest departure point one deliberate broad ring, confirming the known start before selecting a direction. Quiet the discarded dashed shortcut. Then resolve the map into the matching realistic terrain while lowering the camera to the approved oblique viewpoint: contours correspond to the existing hill, three symbols to the same three palms, and map route to the same orange ground ribbon. The blue map symbol becomes the same single grounded blue navigator, still at departure.
+
+Bring the oversized teaching compass into the foreground with a noticeable lift and controlled settle. The whole baseplate initially points slightly away from the planned first leg. Extend a broad temporary gray dashed ground ray along that mistaken heading; make its sideways separation from the correct first-leg direction visibly increase farther from departure. This is a brief direction-error demonstration, not an additional planned route. Do not move the navigator or invent a distance value.
+
+Rotate the compass BASEPLATE, with its fixed direction-of-travel arrow, until it aligns with the first route leg toward the first checkpoint. The magnetized needle remains aligned with the same world magnetic-north direction while the instrument body turns around it. Its north end settles inside the preset orienting mark. The orange ground arrow aligns with the travel arrow. Remove the temporary error ray completely and hold the supplied end frame. Never steer the north needle toward the destination or rotate the travel arrow independently of its baseplate. No numeric bearing, north-conversion lesson, GPS lock, split screen, new landmark, text, captions, speech, music, logo or watermark.
+
+=== A03 | הנפשה 3: התקדמות, עצירה והשוואה למפה ===
+פריים התחלה: F02-terrain-departure.png
+פריים סיום: F03-map-position-check.png
+שם לשמירה: A03-position-check.mp4
+משך בימוי מוצע: 8 שניות; חשוב לא להאיץ את ההשוואה בהטמעה עתידית.
+
+Animate from the supplied terrain departure frame to the supplied full-frame position-check map, approximately eight seconds. The learning action is: move, stop, identify the hill and palms, compare them with the map. Do not finish as an unexplained map reveal. Maintain the same geography, route, daylight and single blue navigator throughout.
+
+Retract the oversized compass and the temporary departure arrow. Move the navigator visibly along the selected orange lower-ground ribbon around the southern side of the hill to the FIRST planned checkpoint beside the three palms. This is time-compressed instructional progress, not a real walking-speed simulation. The navigator's feet remain grounded and it follows the route without cutting across the hill. Stop completely at the checkpoint before beginning the comparison.
+
+While still in terrain view, trace a large open ring around the existing rocky hill; then place an open bracket around the existing group of exactly three palms. Pause long enough to recognize the two different features. Smoothly lift to overhead and transition the whole image into the approved map of this exact place. Carry the hill ring onto its matching contour group and the palm bracket onto the corresponding three palm symbols. Let each correspondence remain visually trackable during the change of representation. No new objects grow or relocate.
+
+The stopped navigator becomes the single blue map symbol at that same first checkpoint. Settle on the supplied map end frame, briefly emphasize the hill group and then the palm group in that order, and hold both clearly for the final second. Match the supplied contours, junction, building and route exactly. No additional blue marker, automatic GPS fix, satellite pulse, arrival approval, compass, split screen, map inset, text, letters, numbers, narration, music, logo or watermark. The correspondence must remain understandable without sound.
+
+=== A04 | הנפשה 4: הגעה לנקודה ואימות שני סימנים ===
+פריים התחלה: F03-map-position-check.png
+פריים סיום: F04-terrain-destination.png
+שם לשמירה: A04-destination-verification.mp4
+משך בימוי מוצע: 8 שניות.
+
+Animate the supplied full-frame checkpoint map into the supplied realistic destination close view, approximately eight seconds. Show the causal sequence clearly: resume after checking position, reach the intended place, stop, inspect two identification signs, then confirm. Use one full-frame view at any moment and preserve the exact existing geography.
+
+Start by resolving the checked map back into the same realistic oblique terrain. The blue map symbol becomes the same single blue navigator, still at the first checkpoint beside the three palms. The contour group becomes the same hill; roads and the building keep their geographic positions. Release the earlier hill ring and palm bracket once the terrain match is clear.
+
+Move the navigator along the remaining selected orange route, past the second planned checkpoint and toward the EXISTING northeastern Y junction. Use schematic time-compressed travel with no clock or distance counter. Smoothly push the camera toward that same destination while keeping an elevated oblique view. Do not swap in a different junction or move the building. Make all three road arms and the rectangular building large and sharp, as in the supplied end frame.
+
+Stop the navigator at the junction itself. Only after the stop, trace the junction with a bold open ring. Then draw a separate open bracket around the existing building immediately east of it. These two observations must happen sequentially and remain readable, not flash simultaneously. Only after both have been shown, fill the small destination diamond at the exact junction. Hold the supplied final frame for roughly the last second.
+
+No confirmation while merely nearby, broad arrival radius, GPS lock, new landmark, duplicated navigator, split screen, inset, compass, sudden night scene, shallow-focus blur, giant checkmark, celebration, text, labels, degree values, speech, music, logo or watermark. Communicate precise destination recognition through the junction and building.
+
+בדיקה לפני אישור כל תוצר
+• בודקים את התוצרים גם ברוחב תצוגה של כ־600 פיקסלים: הדמות, המסלול, המצפן והסימנים צריכים להישאר בולטים.
+• משווים F01 ו־F03: זו חייבת להיות אותה מפה בדיוק, כולל קווי גובה, צומת, מבנה ושלושת הדקלים. אם יש שינוי גאוגרפי מתקנים את תמונות המקור לפני הנפשה.
+• במעברי מפה–שטח מותר לשנות היטל וזווית מצלמה, אך לא מיקום גאוגרפי, מספר עצמים או חיבורי דרכים. אין לשקף עבור RTL.
+• בשלב התכנון רואים בבירור שתי חלופות בין אותם קצוות ושתי נקודות בדיקה. הבחירה מוסברת בתנאי השטח; לא נוצרת הבטחת בטיחות.
+• ביציאה הדמות נשארת במוצא. חץ התנועה מקובע לבסיס המצפן; המחט המגנטית אינה מכוונת ליעד. המצפן הוא המחשה איכותית, לא תרגיל אזימוט מדויק.
+• בבדיקת המיקום יש עצירה לפני השוואה, והדגשות הגבעה והדקלים עוברות למקבילות הנכונות במפה. אם ההמרה לא נשמרת, הקליפ אינו מוכן לשילוב.
+• בהגעה אין אישור לפני זיהוי צומת ומבנה. לא מחליפים אימות סימנים באפקט מיקום אוטומטי.
+• הוראות הפרומפט אינן מבטיחות ש־Flow יפיק מיפוי או מצפן נכונים; בודקים את התוצאה בפועל. החבילה כוללת פרומפטים בלבד, ולא תמונות או סרטונים שנוצרו ונבדקו.
+
+שילוב עתידי ונגישות
+F00 היא בסיס להנפשת הפתיחה בלבד. ארבעת האקורדיונים מקבלים את תמונות הסיום F01–F04 ואת A01–A04 בהתאמה. נגן שיעור 6 יצטרך לתמוך בקליפ פתיחה, ולא רק במעבר בין מצבים. לא בוצע שינוי בנגן במסגרת העבודה הזאת.
+אין להעתיק אוטומטית את זמן המעבר הקצר של נגני שיעורים 1–2: כאן צריך זמן לראות שתי התאמות ולקרוא את המפה. במעבר עתידי אחורה אין לנגן לאחור את פעולת אימות ההגעה או הליכה לאחור; עדיף לעבור לתמונת המצב או לבחור מעבר מתאים בעת המימוש.
+כל מסר מובן בלי קול ומגובה בטקסט האקורדיון. למעדיפים תנועה מופחתת מציגים את F01–F04 ישירות. ההדגשות משתמשות גם בצורה — טבעת וברקט — ולא בצבע בלבד. סימונים מדויקים בעברית, אם יידרשו, יתווספו באתר כטקסט נגיש.
+תיאורים חלופיים מוצעים:
+F00: מנווט בנקודת מוצא מול גבעה, שלושה דקלים וצומת לצד מבנה אבן.
+F01: מפה המשווה מסלול קצר דרך גבעה למסלול עוקף, ובו שתי נקודות לבדיקת מיקום.
+F02: מנווט במוצא ומצפן גדול שחץ התנועה שלו מיושר לקטע הראשון של המסלול.
+F03: המיקום שנבדק ליד הגבעה והדקלים, המודגשים גם בקווי הגובה ובסמלי המפה.
+F04: המנווט בצומת היעד; צורת הצומת והמבנה שלידו מודגשים כשני סימני אימות.
+
+בדיקת הבנה קצרה לפני שילוב
+תגובה לחוויה: הציגו בלי טקסט ושאלו ״באיזה רגע היה ברור מה הפעולה, ובאיזה רגע ההמחשה הייתה מהירה מדי?״
+למידה: לאחר מכן בקשו מהצופה להסביר למה לא נבחר רק הקיצור, מה מכוונים לפני ההליכה, אילו שני סימנים הושוו למפה, ולמה עצירה ליד היעד אינה מספיקה. אין צורך להוסיף את השאלות לממשק כדי לבצע את בדיקת ההפקה.
+
+מקורות שנקראו
+src/components/lessons/topic-01/OnboardingScene.tsx
+src/components/lessons/topic-01/SceneOnboardingFramePlayer.tsx
+src/components/lessons/topic-02/OnboardingScene.tsx
+src/components/lessons/topic-02/SceneOnboardingFramePlayer.tsx
+src/components/lessons/topic-06/OnboardingScene.tsx
+content/topic-06.md
+design/docs/lesson-screen-guide.md
+פריימי ההשוואה הקיימים: design/storyboards/topic06-v2-reference-review/lesson1-transition1.png ו־lesson2-transition3.png; צילום ההמחשה הישנה בשיעור 6: design/screenshots/topic06-onboarding-copy-plan.png. צילום שיעור 6 הוא ייחוס חזותי ישן; נוסח האקורדיונים נלקח מהקוד הנוכחי.
+טיוטות 29.10.2026 נשמרו ללא שינוי. בשונה מגרסה 3, החבילה הזאת דורשת בדיוק חמש תמונות וארבע הנפשות, ללא פריים ביניים נוסף.
+Flow — הוספת פריימי התחלה וסיום: https://support.google.com/flow/answer/16353334?co=GENIE.Platform%3DDesktop&hl=en-GB
+מצפן — הבדלה בין מחט מגנטית לחץ התנועה: https://geomag.nrcan.gc.ca/mag_fld/compass-en.php?p=1

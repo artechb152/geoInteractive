@@ -48,3 +48,51 @@ lighting or a station changes.
 
 No runtime network access: every file is served from this folder (paths honour `NEXT_PUBLIC_BASE_PATH`),
 so the static export and the SCORM package carry them.
+
+## Second generation — `v2/` (2026-11-01 graphics pass)
+
+The live view now loads `v2/` (the first-generation files above stay for older builds; `sky.webp`
+is still shared). Built by `scripts/build-navigation-replay-assets.mjs --only=v2-*` and
+`scripts/blender/build_navigation_replay_v2.py` (headless Blender 5.2, CPU) from the public
+Poly Haven API — the order is in the script's v2 section. All sources CC0 1.0 (public domain).
+
+| Used as | Poly Haven asset | URL |
+|---|---|---|
+| Ground layer `cover` (dry turf, dead grass and roots; tiled at its 2.5 m) | Grass Ground | https://polyhaven.com/a/grass_ground |
+| Ground layer `soil` (brown earth with stones; 2 m) | Rocks Ground 02 | https://polyhaven.com/a/rocks_ground_02 |
+| Ground layer `karst` (limestone knobs through the soil; 3 m) — also the rocks' triplanar detail | Rocks Ground 05 | https://polyhaven.com/a/rocks_ground_05 |
+| Ground layer `gravel` (road bed, stream bed; 3 m) | Rocks Ground 09 | https://polyhaven.com/a/rocks_ground_09 |
+| Maquis `maquis_0/1/3`, leaf clusters `maquis_clusters`, far shrubs | Searsia Burchellii | https://polyhaven.com/a/searsia_burchellii |
+| Maquis `maquis_2`, leaf clusters `lucida_clusters` (also the olives' and sage's foliage) | Searsia Lucida | https://polyhaven.com/a/searsia_lucida |
+| Dwarf shrubs `dwarf_0…3`, leaf clusters `dwarf_clusters` | Wild Rooibos Bush | https://polyhaven.com/a/wild_rooibos_bush |
+| Grass clumps `grass_0…2` (the dried diffuse) | Grass Medium 02 | https://polyhaven.com/a/grass_medium_02 |
+| Oaks / olives `oak_0` (trunk and branching), `oak_bark` | Island Tree 02 | https://polyhaven.com/a/island_tree_02 |
+| Oaks `oak_1` (trunk and branching), `oak_bark` | Island Tree 01 | https://polyhaven.com/a/island_tree_01 |
+| Pine needle clusters `pine_clusters`, `pine_bark` | Pine Sapling Small | https://polyhaven.com/a/pine_sapling_small |
+| Rocks `rock_0…6` | Moon Rock 01–07 | https://polyhaven.com/a/moon_rock_01 (… _07) |
+| Rock `rock_7` (karst boulder) | Boulder 01 | https://polyhaven.com/a/boulder_01 |
+| Rock `rock_8` (rounded slab) | Namaqualand Boulder 05 | https://polyhaven.com/a/namaqualand_boulder_05 |
+
+What was done to them:
+
+- `v2/ground/<layer>_albedo.jpg` — the diffuse map, 2048 px (`cover`) / 1536 px, JPEG q82.
+  `<layer>_normal.jpg` — OpenGL normal X / Y in RG, the displacement (stretched to 0–1) in B, 1024 px,
+  JPEG 4:4:4 q84. The shader tiles each at the scan's real width and height-blends the four.
+- `v2/rocks.glb` — each rock scan normalised to 1 m across, origin at its base, welded and decimated
+  to two levels (`rock_<k>_lod0` ~2.4–4.2k, `_lod1` ~0.4–0.9k triangles); geometry only.
+  `v2/rocks/rock_<k>_albedo.jpg`, `_normal.jpg` — the scans' maps, 512 px (moon rocks) / 1024 px.
+  In the scene they are graded towards pale limestone, with lichen, dust and soil stains, in the shader.
+- `v2/plants.glb` — geometry only, two levels each (`<variant>_lod0|lod1_leaf|wood`). The scans'
+  thousands of single-leaf cards are replaced by cluster cards (below) placed at a random subset of the
+  scans' own leaf positions; the twigs and stems are kept, small pieces dropped, decimated. Grass
+  clumps keep their own blade cards (thinned for lod1). Maquis normalised to 1 m tall, dwarf shrubs
+  0.5 m, grass 0.35 m; trees keep their metres and are fitted to each map tree's crown in the scene.
+- `v2/pines.glb` — Aleppo pines built in the script (a tall bent bole, branches, an open crown of
+  needle-tuft cards); only the needle clusters and the bark come from the scan.
+- `v2/plants/<atlas>_clusters.webp` — 8 Cycles renders (sky light only, transparent film) of a patch
+  of each scan's outer foliage with its cut-out mask, 4 × 2 cells of 512 px, each faded to a lobed
+  round edge; `far_shrubs.webp` — four whole shrubs seen from the side, 2 × 2. The colour under every
+  not-fully-opaque texel is dilated from the leaves, so edges filter to leaf colour, never to the
+  background.
+- `v2/plants/<species>_albedo.webp` — the scans' own diffuse with their cut-out mask in A (dilated),
+  1024 px: the wood of the shrubs and the grass blades. `oak_bark.jpg`, `pine_bark.jpg` — 512 px.

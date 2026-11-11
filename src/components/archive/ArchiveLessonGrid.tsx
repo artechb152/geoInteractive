@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { archivedLessons, getLesson } from '@/lib/lessons';
+import { archiveNumberOf, archivedLessons, getLesson } from '@/lib/lessons';
 import { archivedScenes } from '@/lib/lesson-scenes';
 import {
   LESSON_GRID_CLASS,
@@ -42,7 +42,7 @@ export function ArchiveLessonGrid() {
                 <span className="text-[20px] font-extrabold text-olive-ink">{s.label}</span>
                 {s.lesson && (
                   <span className="text-[14px] leading-[1.45] text-olive-muted">
-                    מתוך שיעור {s.lesson.number}
+                    מתוך שיעור {archiveNumberOf(s.lesson)}
                     <br />
                     {s.lesson.shortTitle}
                   </span>

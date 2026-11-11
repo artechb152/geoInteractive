@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArchiveGate } from '@/components/archive/ArchiveGate';
-import { getLesson } from '@/lib/lessons';
+import { archiveNumberOf, getLesson } from '@/lib/lessons';
 import { archivedScenes } from '@/lib/lesson-scenes';
 import { TacticalTerrainScene } from '@/components/lessons/topic-03/TacticalTerrainScene';
 import { GeologyScene } from '@/components/lessons/topic-02/GeologyScene';
@@ -54,7 +54,7 @@ export default async function ArchivedScenePage({ params }: { params: Params }) 
       <main className="min-h-[calc(100dvh-var(--header-h))] pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 flex items-center justify-between gap-4 text-sm">
           <span className="text-fg-muted">
-            ארכיון · שיעור {lesson.number} · {lesson.shortTitle}
+            ארכיון · שיעור {archiveNumberOf(lesson)} · {lesson.shortTitle}
           </span>
           <Link href="/archive/" className="font-semibold text-accent-hover hover:underline">
             חזרה לארכיון

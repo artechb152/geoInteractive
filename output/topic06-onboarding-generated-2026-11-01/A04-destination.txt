@@ -1,0 +1,12 @@
+הנפשה 4 — הגעה ואימות היעד
+Start frame: F03-position-check.png
+End frame: F04-destination-verification.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Animate between the supplied start and end images as one uninterrupted eight-second realistic terrain shot. Lock the camera, lens, crop and daylight. The physical hill, three palms, Y-junction, single stone building, all tracks and vegetation stay fixed. Preserve the orange route and both checkpoint rings.
+
+Compress the journey in time while retaining continuous visible steps and natural gait. The clip is not a demonstration of real walking speed, distance or travel time.
+
+0–1 s: Fade the earlier hill outline and palm bracket while the single blue navigator lowers or folds his existing paper map. 1–4 s: He walks continuously along the REMAINING orange route from the first checkpoint, through the second checkpoint and onward to the exact central meeting point of the Y-junction. Use a brisk continuous walk with grounded feet and correct perspective scaling; no teleportation, cloning, sliding or walking through obstacles. Preserve the blue-clad map-reader's identity as closely as the supplied frames permit. Keep the destination diamond hollow throughout the walk. 4–5 s: He stops at the junction, looks at its three connected road arms, and orange identification accents trace those EXISTING arms as shown in the end frame. These branch accents identify the junction pattern; they are not extra selected routes. 5–6.5 s: He looks toward the existing stone building and checks his map; a separate orange outline traces that SAME building. 6.5–7 s: ONLY AFTER both identifying features have been observed, fill the small destination diamond. 7–8 s: Hold the completed destination-verification frame exactly.
+
+Communicate that arrival is confirmed by matching the junction and building to the plan, not by being nearby. Keep all three real road arms visible. No expanding arrival radius, GPS lock, early success, confetti, giant tick, camera movement, zoom, cuts, new building, changed tracks, disappearing palms, extra person, full-frame map, inset, labels, text, speech, music or watermark. If audio is generated, quiet footsteps ending at arrival and natural ambience only.

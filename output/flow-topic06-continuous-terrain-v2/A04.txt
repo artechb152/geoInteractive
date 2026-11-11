@@ -1,0 +1,12 @@
+=== A04 | הנפשה 4: מגיעים ובודקים צומת ומבנה ===
+פריים התחלה: F03-terrain-position-check.png
+פריים סיום: F04-terrain-arrival.png
+שם לשמירה: A04-terrain-arrival.mp4
+
+Animate the supplied checkpoint frame into the supplied arrival frame as ONE continuous locked-camera shot. Target approximately eight seconds if available. Keep the same camera position, lens, crop, scale, lighting and physical landscape throughout. Do not zoom in on the destination or substitute a closer shot. The destination becomes noticeable through strong overlays on existing features.
+
+Release the hill ring and palm bracket. Have the same single blue navigator lower or fold its physical paper map, then move forward along the remaining selected orange ribbon, past the second checkpoint and onward to the existing destination junction. Preserve route bends and natural perspective scaling. Use schematic time-compressed travel without distance or time counters. The figure must follow the route continuously rather than teleport.
+
+Stop the navigator at the intended junction itself. Only after the stop, trace one bold open ring around the three-arm junction pattern, large enough to be conspicuous while preserving its road shape. Then draw a separate bold open bracket around the existing rectangular stone building beside the junction. Reveal these observations sequentially and give each a readable pause. Only AFTER both checks, fill the small destination diamond. Hold the exact supplied final keyframe for about the final second.
+
+Keep the route, checkpoints, hill, palms, junction and building fixed in the background. No full-frame map, map panel, split screen, camera move, new building, changed roads, duplicated navigator, broad proximity radius, GPS lock, giant checkmark, celebration, text, captions, numbers, narration, music, logo or watermark. Arrival is verified by recognizing two specific signs.
