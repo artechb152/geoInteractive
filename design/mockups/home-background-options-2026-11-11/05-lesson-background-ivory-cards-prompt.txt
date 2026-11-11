@@ -1,0 +1,24 @@
+Created using the built-in image generation tool. Visual mockup only; application code unchanged.
+References: 04-olive-cards-cream-map.png (composition/edit target) and public/assets/lessons/shared/scene-background/LESSON-SCENE-BG-TILE.png (actual shared lesson background).
+
+Use case: ui-mockup. Create ONE refined desktop homepage mockup by EDITING Image 1 (the Hebrew homepage with olive-green course cards), using Image 2 as the EXACT VISUAL REFERENCE FOR THE SITE'S EXISTING LESSON BACKGROUND. This is a more subtle alternative to the green cards. Return a single edge-to-edge front-on website screenshot in the same extra-wide landscape proportions as Image 1, about 1920:910, crisp high resolution. No presentation board, no browser chrome.
+
+REFERENCE ROLES:
+Image 1 is the EDIT TARGET: preserve its complete composition, header, text, hierarchy, square card dimensions, spacing, physical perspective and illustrated subjects.
+Image 2 is the BACKGROUND MATERIAL / PATTERN REFERENCE: this pale cream parchment with very faint fine tan contour lines toward the side margins and generous clean center is the actual shared lesson background. Match it closely so this homepage feels part of the same learning site.
+
+PRIMARY CHANGE — SUBTLE MATERIAL AND LIGHTNESS HIERARCHY:
+1. Replace the full-page orange/beige, heavily printed map in Image 1 with the MUCH QUIETER, LIGHTER shared lesson background of Image 2. It must fill the viewport, no exposed dark green felt, no enclosing paper rectangle. Very fine matte cream paper, barely visible warm fibres, delicate tan contours at outer side margins, spacious calm center. Cartographic lines stay much fainter and sparser than Image 1. If a fold is retained, make it extremely subtle, never a strong horizontal stripe and never under text. Do not add an extra large sheet or panel above the background. The background itself IS the continuous quiet map surface.
+2. Replace ALL THREE green card bodies with LIGHT IVORY / NEAR-WHITE card stock approximating #FDFBF3 / #F8F2E7. They are distinctly lighter, smoother and less textured than the background. This is the key contrast: warm pale parchment environment vs fresh ivory physical cards. No solid green card fills, no green panels or green frames.
+3. Retain believable card thickness and depth: slim natural ivory edge, extremely fine muted olive/tan hairline, restrained soft contact and cast shadows. They should feel like premium real paper cards resting on the parchment, not flat white boxes, not thick white borders, not glowing UI tiles. Keep square geometry, mild common perspective and a slight natural lean from the source. Shadow softness is enough to distinguish them without dramatic dark halos.
+4. All chapter numbers, underlines and card titles become DARK OLIVE (#38432E) with excellent readability, rather than cream text. Keep the same heavy italic serif numerals and bold Hebrew titles. Keep generous blank near-white card stock behind all copy. Olive is used for typography and fine accents only.
+
+Preserve EXACT RTL layout/content:
+- Centered header: ochre "המשך ללמוד" button, mountain emblem and "גיאוגרפיה צבאית" brand.
+- Large upper-right headline, with the same shape/scale: "כל מסע מתחיל" / "בקריאת השטח."
+- Section title "פרקי הקורס" right-aligned above the cards.
+- RIGHT square card: "01", "תבליט, תכסית" / "וטופוגרפיה". Detailed photoreal green-gold mountain range fills lower and left parts, climbing high on the left and fading NATURALLY INTO IVORY CARD PAPER, not green. Keep natural terrain colors; leave upper-right text region clear.
+- MIDDLE square card: "02", "קרטוגרפיה" / "וקריאת מפות". Fine warm brown/tan topographic hill contours and a quiet muted blue stream printed on ivory paper, concentrated at left and bottom. Do NOT keep the gold-on-green palette of Image 1. Keep text region blank and quiet.
+- LEFT square card: "03", "ניווטים". Keep the highly photoreal polished WARM GOLD / BRASS compass with thick dimensional body, fine knurled metal sides, ivory dial, red needle, delicate glass reflections and contact shadow. It rests on a lightly printed ivory navigation map with restrained sage land patches, thin tan contours and muted red route. The gold compass remains a refined focal detail, no green compass replacement. Keep upper-right number/title region clear.
+
+OVERALL: calm, bright, premium educational interface with the same parchment language as the lessons. The cards stand out through a subtle difference in LIGHTNESS, SMOOTHNESS, EDGE DEFINITION and PHYSICAL DEPTH, not through strongly different colors. Preserve legibility and current generous composition. No new sections, no benefit tiles, no new text, no GEO9900, no dark corners, no arrows or pagination, no desktop props, no watermarks. Do not wash the illustrations into monochrome, do not flatten the compass or mountains. Hebrew spelling and numerals must remain exact and unmirrored.

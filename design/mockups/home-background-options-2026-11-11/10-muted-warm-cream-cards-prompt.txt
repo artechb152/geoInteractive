@@ -1,0 +1,17 @@
+Created using the built-in image generation tool. Mockup only; application code unchanged.
+
+Use case: ui-mockup. Make a precise color correction to the supplied Hebrew homepage mockup. EDIT ONLY THE MATERIAL COLOR OF THE THREE CARD SURFACES.
+
+The user rejected the current card color because it is too yellow/golden/ochre and does not look enough like CREAM. Correct all three cards to a recognizably CREAM / IVORY-PARCHMENT tone that is somewhat deeper than the unchanged pale cream background, but LOW in saturation. Approximate card stock #DED2BE or #DED3C0: softly shaded natural cream, with a restrained milky beige warmth. Prioritize the unmistakable appearance of warm CREAM over extreme darkness. Think thick natural cream art paper in gentle shade, NOT mustard, honey, caramel, golden sand, camel leather, saturated yellow, brown or grey-green.
+
+Color correction requirements:
+- Greatly reduce the excessive yellow/gold saturation of the CURRENT CARD STOCK.
+- Shift it toward soft muted cream, slightly deeper and less white than the pale cream lesson background.
+- Keep a visible but refined lightness difference from the background through the full card material, including all empty number/title areas, not only the edges.
+- Do not make the card faces white; do not return to the background's nearly identical color.
+- Do not introduce grey/greige or taupe as the dominant impression. It should read as cream paper.
+- Keep all three card substrates the same material/color, with a tiny natural matte grain, no yellow gradient or antiqued staining.
+
+Do NOT recolor the pictures: leave the realistic polished GOLD compass golden, its dial ivory, needle red. Leave natural green/gold mountains, brown/tan contours, blue river and red route intact. Only the paper behind them changes. Blend the mountain's edge into the corrected low-saturation cream, with no residual ochre patch. Keep clear quiet card material behind the chapter numbers and headings. Keep the dark olive card typography and underlines unchanged.
+
+LOCK ALL OTHER PIXELS / DESIGN AS CLOSELY AS POSSIBLE: the supplied very pale cream lesson background and fine side contours, same centered brand and ochre CTA, same upper-right headline and section title, same square card positions, physical perspective, dimensions, corners, thickness, soft shadows and all Hebrew wording. Do not weaken contrast by changing the background. Preserve EXACT RTL cards: right 01 "תבליט, תכסית" / "וטופוגרפיה"; middle 02 "קרטוגרפיה" / "וקריאת מפות"; left 03 "ניווטים". Preserve "גיאוגרפיה צבאית", "המשך ללמוד", "כל מסע מתחיל" / "בקריאת השטח.", and "פרקי הקורס". Same extra-wide edge-to-edge desktop website screenshot, no new elements, labels or watermark. This is a correction from overly GOLD-YELLOW paper to subdued NATURAL CREAM paper.

@@ -1,0 +1,19 @@
+Created using the built-in image generation tool. Mockup only; application code unchanged.
+
+Use case: ui-mockup. EDIT the supplied Hebrew homepage mockup with ONE tightly constrained change: recolor the THREE CARD PAPER SURFACES from green-grey sage to WARM NEUTRAL STONE GREY / GREIGE. Keep all other content and styling exactly unchanged.
+
+The user explicitly does NOT want the greenish cast of these cards. Make the card material a visibly neutral warm stone grey, approximately #C9C2B8 or #CEC7BD: desaturated grey with a restrained taupe/beige warmth, no green, no mint, no sage, no blue. It should read as smooth matte mineral-grey card stock. Keep it light enough for dark olive text but clearly DARKER than the pale cream map/page behind it. The broad plain card surfaces must be visibly different from the cream background at first glance, not near-white or another matching cream.
+
+Edit the full material surface of each card, including the blank area behind its number, underline and heading, the substrate under printed contour-map marks, and the matching thin physical card edge. Do not merely change a border. Keep any fine natural texture subtle.
+
+DO NOT recolor the illustrations:
+- Preserve the highly photoreal polished GOLD BRASS compass exactly, with its ivory dial, red needle, glass and metallic thickness.
+- Keep natural green-gold mountains, warm tan/brown map contours, fine blue river and muted red navigation route.
+- The mountain's fading background must transition smoothly INTO NEUTRAL STONE GREY card material, with no leftover sage patch.
+- Map/navigation illustrations are printed directly onto the new greige substrate; no cream inset panels.
+- Leave the whole number/title area clear of illustrations.
+- Keep all card headings and numbers DARK OLIVE, not white, same shape and weight.
+
+LOCK EVERYTHING ELSE: exact supplied warm PALE CREAM lesson background from edge to edge, faint contour lines at its sides, same spacious layout, identical header, ochre "המשך ללמוד" button and brand "גיאוגרפיה צבאית", same large italic headline "כל מסע מתחיל" / "בקריאת השטח.", same "פרקי הקורס" heading. Preserve all three square cards in the same positions, mild shared physical perspective, sizes, corner radii, thickness and soft contact shadows. The clear contrast must come from the actual card material color, not heavier shadows or extra frames.
+
+Preserve exact RTL order/text: RIGHT "01" and "תבליט, תכסית" / "וטופוגרפיה"; MIDDLE "02" and "קרטוגרפיה" / "וקריאת מפות"; LEFT "03" and "ניווטים". No new text, no arrows, no pagination, no GEO9900, no developer badge, no watermarks. Same extra-wide front-on desktop website screenshot, same aspect ratio and crisp detail as source. NO GREEN TINT IN THE CARD STOCK; greens may remain only in the existing dark-olive text and natural illustrated subjects.

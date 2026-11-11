@@ -1,0 +1,373 @@
+/* Homepage map table — materials, light and perspective from
+   design/mockups/home-directions-2026-11-11/03-tactile-mission-table-v2-clean.png, with the 2026-11-11
+   follow-up brief: the map sheet fills most of the window and the content is laid out on it.
+
+   The sheet is rendered in four frames, one per window shape (scripts/blender/home_map_table_sheets.json —
+   keep these numbers in sync). The frame is fitted into the window (contain) and everything on it is measured
+   in its own units, u, so the copy and cards keep their place on the sheet: never on a fold, never over the
+   printed marks. Colours were sampled from the reference. */
+.table {
+  --table-ink: #110d08;
+  --table-green: #0c310d;
+  --table-olive: #38432e;
+  --table-felt: #192210;
+  --table-gold: #dc9418;
+  /* card stock and map paper: design/mockups/home-background-options-2026-11-11/10-muted-warm-cream-cards.png */
+  --card-stock: #E5D3BD;
+  --card-lit: #E8D7C2;
+  --card-edge: #C8B69D;
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  margin-block-start: calc(-1 * var(--header-h));
+  inline-size: 100%;
+  block-size: 100vh;
+  block-size: 100svh;
+  container-type: size;
+  background: var(--table-felt);
+  color: var(--table-ink);
+}
+
+/* the felt desk fills the window (cover keeps its fibres undistorted) */
+.felt {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── the sheet frame ─────────────────────────────────────────────────────── */
+.sheet {
+  /* frame size (u) and where the headline / section title / card row start on it */
+  --aw: 1640; --ah: 1262; --hero-top: 232; --title-top: 494; --cards-top: 606;
+  --u: min(calc(100cqw / var(--aw)), calc(100cqh / var(--ah)));
+  --card: calc(468 * var(--u));
+  --gap: calc(26 * var(--u));
+  /* the content column: the card row, centred; the brand, headline and title align to its edges */
+  --col: calc((var(--aw) * var(--u) - 3 * var(--card) - 2 * var(--gap)) / 2);
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: calc(var(--aw) * var(--u));
+  block-size: calc(var(--ah) * var(--u));
+}
+@media (min-aspect-ratio: 29/20) { .sheet { --aw: 1640; --ah: 1025; --hero-top: 150; --title-top: 348; --cards-top: 445; } }
+@media (min-aspect-ratio: 17/10) { .sheet { --aw: 1780; --ah: 1000; --hero-top: 146; --title-top: 340; --cards-top: 432; } }
+@media (min-aspect-ratio: 39/20) { .sheet { --aw: 2120; --ah: 1000; --hero-top: 146; --title-top: 340; --cards-top: 432; } }
+
+/* the sheet render has exactly the frame's aspect: shown 1:1, never stretched */
+.paper, .paper img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* a soft desk-lamp pool that follows the mouse (fine pointers only, never with reduced motion) */
+.lamp {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle calc(560 * var(--u)) at var(--lamp-x, 50%) var(--lamp-y, 30%), #fff6dc33, #fff6dc12 45%, transparent 70%);
+  mix-blend-mode: soft-light;
+  transition: opacity 600ms;
+}
+.table[data-lamp='on'] .lamp { opacity: 1; }
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+/* the brand and the continue button sit together as one row, centred on the sheet */
+.header {
+  position: absolute;
+  inset: calc(68 * var(--u)) 0 auto;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(56 * var(--u));
+  pointer-events: none;
+}
+.header > * { pointer-events: auto; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  color: var(--table-olive);
+}
+.emblem { inline-size: calc(84 * var(--u)); block-size: calc(29 * var(--u)); }
+.brandTitle { font-family: var(--font-rubik), sans-serif; font-size: calc(33 * var(--u)); font-weight: 700; line-height: 1; letter-spacing: -0.005em; }
+
+.continue {
+  position: relative;
+  /* room for the two trailing stripes (::before/::after), so the row centres on what is drawn */
+  margin-inline-end: calc(50 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(12 * var(--u));
+  inline-size: calc(247 * var(--u));
+  block-size: calc(50 * var(--u));
+  border-radius: calc(5 * var(--u));
+  /* the site's primary button (ui/Button primary: bg-cta-ember, white bold text, shadow-cta-ember) */
+  background: linear-gradient(to bottom, #E08A38, #C96714);
+  box-shadow: calc(-1.5 * var(--u)) calc(6 * var(--u)) calc(16 * var(--u)) #c967144d;
+  color: #fff;
+  font-family: var(--font-rubik), sans-serif;
+  font-size: calc(29 * var(--u));
+  line-height: 1;
+  font-weight: 800;
+  transform: skewX(-14deg);
+  transition: filter 180ms, box-shadow 180ms, translate 180ms;
+}
+.continue > * { transform: skewX(14deg); }
+.continue::before, .continue::after { content: ''; position: absolute; inset-block: 0; inline-size: calc(12 * var(--u)); background: inherit; border-radius: calc(2 * var(--u)); }
+.continue::before { inset-inline-start: calc(100% + 18 * var(--u)); }
+.continue::after { inset-inline-start: calc(100% + 38 * var(--u)); }
+.continue:hover { filter: brightness(1.05); box-shadow: calc(-3 * var(--u)) calc(8 * var(--u)) calc(18 * var(--u)) #c9671466; translate: 0 calc(-2 * var(--u)); }
+
+/* ── headline ───────────────────────────────────────────────────────────── */
+.hero { position: absolute; inset-block-start: calc(var(--hero-top) * var(--u)); inset-inline-start: calc(var(--col) + 4 * var(--u)); }
+.hero h1 {
+  margin: 0;
+  color: var(--table-ink);
+  font-family: var(--font-map-headline), var(--font-rubik), sans-serif;
+  font-size: calc(79 * var(--u));
+  font-style: italic;
+  font-weight: 800;
+  line-height: calc(77 * var(--u));
+  letter-spacing: -0.005em;
+}
+
+/* ── chapters ───────────────────────────────────────────────────────────── */
+.chapters { position: absolute; inset: 0; pointer-events: none; }
+.chapters > * { pointer-events: auto; }
+/* No shade under the card row: the deep-cream card stock stands off the pale map on its own, and the
+   paper around the cards stays the mockup's #FDF2EB (design/docs/assumptions.md, 2026-11-11 tones). */
+.sectionTitle {
+  position: absolute;
+  inset-block-start: calc(var(--title-top) * var(--u));
+  inset-inline-start: var(--col);
+  display: flex;
+  align-items: center;
+  gap: calc(20 * var(--u));
+  margin: 0;
+  color: var(--table-green);
+  font-family: var(--font-rubik), sans-serif;
+  font-size: calc(45 * var(--u));
+  font-weight: 800;
+  line-height: 1.2;
+  scroll-margin-block-start: 24px;
+}
+.sectionTitle::after { content: ''; inline-size: calc(76 * var(--u)); block-size: calc(3.5 * var(--u)); margin-block-start: calc(8 * var(--u)); background: currentColor; }
+
+/* One camera for the whole row: the cards lie on the table (rotateX) and are seen from the reader's
+   side, from just left of the row's centre (2026-11-11 user tweak: a gentle lean, slightly to the
+   right overall, instead of the reference's strong lean to the left). In-card measures are in the reference card's
+   units (--cu = 1/452 of a card) so the copy and art keep their proportions. */
+.track {
+  --cu: calc(var(--card) / 452);
+  --pose: 21deg;
+  position: absolute;
+  inset-block-start: calc(var(--cards-top) * var(--u));
+  inset-inline-start: var(--col);
+  display: flex;
+  gap: var(--gap);
+  perspective: calc(3800 * var(--cu));
+  perspective-origin: 45% 50%;
+}
+/* the tilted card leans behind its flat slot (z < 0 at the top): the slot must not take the pointer,
+   or hovering / clicking a card's number and title would miss the link */
+.cardSlot { position: relative; flex: none; inline-size: var(--card); block-size: var(--card); transform-style: preserve-3d; pointer-events: none; }
+
+.card {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: calc(20 * var(--cu));
+  /* Card stock (--card-stock / --card-edge) and the rim in the map paper #FDF2EB, from the 2026-11-11 tone mockup.
+     The muted deep-cream face against the pale cream sheet does the separating; the shadows stay soft.
+     Fine olive outline, visible board thickness, contact shadow and soft cast shadow — all from the
+     sheet's one light (high beyond the far edge, a little to the right), so they fall toward the
+     viewer and slightly left, like the sheet's own shadow on the felt. */
+  background: var(--card-stock);
+  box-shadow:
+    0 0 0 calc(1 * var(--cu)) #38432e40,
+    calc(-1 * var(--cu)) calc(3.5 * var(--cu)) 0 var(--card-edge),
+    calc(-2.5 * var(--cu)) calc(7 * var(--cu)) calc(6 * var(--cu)) #38432e4a,
+    calc(-8 * var(--cu)) calc(24 * var(--cu)) calc(34 * var(--cu)) calc(-6 * var(--cu)) #28322358;
+  transform: rotateX(var(--pose));
+  transform-origin: 50% 50%;
+  text-decoration: none;
+  -webkit-user-drag: none;
+  overflow: hidden;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 300ms cubic-bezier(.2,.8,.2,1), box-shadow 300ms;
+}
+/* The edge sits above the opaque artwork; it is decorative and never intercepts a link. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 calc(2 * var(--cu)) #FDF2EB99,
+    inset 0 calc(2 * var(--cu)) 0 #FDF2EBcc;
+  pointer-events: none;
+}
+.card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at var(--light-x, 50%) var(--light-y, 35%), #fff6, transparent 65%); transition: opacity 300ms; }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* the pointer response is layered on top of the resting pose and returns to it on leave */
+  .card:hover {
+    transform: rotateX(calc(var(--pose) + var(--tilt-x, 0deg))) rotateY(var(--tilt-y, 0deg)) translateZ(calc(22 * var(--cu)));
+    box-shadow:
+      0 0 0 calc(1 * var(--cu)) #38432e40,
+      calc(-1 * var(--cu)) calc(3.5 * var(--cu)) 0 var(--card-edge),
+      calc(-4 * var(--cu)) calc(12 * var(--cu)) calc(10 * var(--cu)) #38432e33,
+      calc(-11 * var(--cu)) calc(34 * var(--cu)) calc(40 * var(--cu)) calc(-8 * var(--cu)) #28322370;
+  }
+  .card:hover::after { opacity: .5; }
+}
+.card:focus-visible { transform: rotateX(var(--pose)) translateZ(calc(16 * var(--cu))); }
+.artwork { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; filter: brightness(1.08) saturate(.94); pointer-events: none; user-select: none; }
+
+.cardCopy { position: absolute; inset-block-start: calc(13 * var(--cu)); inset-inline: calc(29 * var(--cu)) calc(20 * var(--cu)); text-align: start; user-select: text; }
+.number {
+  display: table;
+  padding-block-end: calc(4 * var(--cu));
+  border-block-end: calc(4 * var(--cu)) solid currentColor;
+  color: var(--table-green);
+  font-family: var(--font-map-numeral), Georgia, serif;
+  font-size: calc(84 * var(--cu));
+  font-style: italic;
+  font-weight: 900;
+  font-variation-settings: 'wdth' 90, 'opsz' 72;
+  line-height: .92;
+  letter-spacing: -0.02em;
+}
+.cardTitle {
+  margin: calc(14 * var(--cu)) 0 0;
+  color: var(--table-ink);
+  font-family: var(--font-rubik), sans-serif;
+  font-size: calc(42 * var(--cu));
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+}
+.cardTitle span { display: block; }
+
+/* Sub-chapters: a slip of the same card stock that rises over the art on hover / keyboard focus.
+   It lives in the card's plane (same pose and tilt) and never catches the pointer, so a click
+   anywhere on the card opens the chapter. */
+.parts {
+  position: absolute;
+  inset-inline: calc(20 * var(--cu));
+  inset-block-end: calc(20 * var(--cu));
+  padding: calc(13 * var(--cu)) calc(22 * var(--cu)) calc(14 * var(--cu));
+  border-radius: calc(12 * var(--cu));
+  background: var(--card-stock);
+  background-image: linear-gradient(var(--card-lit), #E8D7C200 40%);
+  box-shadow:
+    inset 0 calc(1 * var(--cu)) 0 #fffc,
+    0 calc(-1 * var(--cu)) 0 #c8b69d66,
+    0 calc(8 * var(--cu)) calc(22 * var(--cu)) #2b1d0e3d;
+  color: var(--table-olive);
+  pointer-events: none;
+  opacity: 0;
+  translate: 0 calc(18 * var(--cu));
+  transition: opacity 200ms ease, translate 280ms cubic-bezier(.2,.8,.2,1);
+}
+.card:hover .parts, .card:focus-visible .parts { opacity: 1; translate: 0 0; }
+.partsHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--cu));
+  padding-block-end: calc(7 * var(--cu));
+  margin-block-end: calc(8 * var(--cu));
+  border-block-end: calc(1.5 * var(--cu)) solid #38432e33;
+  font-family: var(--font-rubik), sans-serif;
+  font-size: calc(17 * var(--cu));
+  font-weight: 700;
+  line-height: 1.2;
+  color: #5d6648;
+}
+.enter { display: inline-flex; align-items: center; gap: calc(6 * var(--cu)); color: var(--table-green); font-weight: 800; }
+.enter svg { inline-size: calc(20 * var(--cu)); block-size: calc(20 * var(--cu)); stroke-width: 2.6; }
+.partsList {
+  display: grid;
+  gap: calc(3 * var(--cu));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: part;
+  font-family: var(--font-rubik), sans-serif;
+  font-size: calc(20 * var(--cu));
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--table-ink);
+}
+.partsList li { display: flex; align-items: baseline; gap: calc(12 * var(--cu)); counter-increment: part; }
+.partsList li::before {
+  content: counter(part);
+  flex: none;
+  min-inline-size: calc(16 * var(--cu));
+  color: var(--table-green);
+  font-family: var(--font-map-numeral), Georgia, serif;
+  font-size: calc(19 * var(--cu));
+  font-style: italic;
+  font-weight: 900;
+  text-align: center;
+}
+.srOnly { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* ── paging (rendered only when more chapters exist than fit on the sheet) ──────── */
+.controls {
+  position: absolute;
+  inset-block-start: calc(var(--title-top) * var(--u) + 6 * var(--u));
+  inset-inline-end: var(--col);
+  display: flex;
+  align-items: center;
+  gap: calc(18 * var(--u));
+}
+.arrow { display: grid; place-items: center; inline-size: calc(48 * var(--u)); block-size: calc(44 * var(--u)); border: calc(2 * var(--u)) solid #38432e66; border-radius: calc(10 * var(--u)); background: var(--card-stock); color: var(--table-olive); transition: background 180ms, color 180ms, opacity 180ms; }
+.arrow svg { inline-size: calc(28 * var(--u)); block-size: calc(28 * var(--u)); stroke-width: 3; }
+.arrow:hover:not(:disabled) { background: var(--table-olive); color: var(--card-stock); }
+.arrow:disabled { opacity: .35; cursor: default; }
+.dots { display: flex; align-items: center; }
+.dot { display: grid; place-items: center; inline-size: calc(32 * var(--u)); block-size: calc(40 * var(--u)); }
+.dot::after { content: ''; inline-size: calc(14 * var(--u)); block-size: calc(14 * var(--u)); border-radius: 50%; background: #38432e40; transition: background 180ms; }
+.dot[aria-pressed='true']::after { background: var(--table-gold); }
+.table a:focus-visible, .table button:focus-visible { outline: calc(3 * var(--u)) solid var(--table-gold); outline-offset: calc(6 * var(--u)); --tw-ring-offset-width: 0px; --tw-ring-shadow: 0 0 #0000; }
+
+/* ── arrival: the sheet settles on the desk, the copy is printed in, the cards are laid down ───── */
+@media (prefers-reduced-motion: no-preference) {
+  .paper { animation: sheet-in 900ms cubic-bezier(.2,.8,.2,1) both; }
+  .header, .hero, .sectionTitle { animation: copy-in 650ms 260ms cubic-bezier(.2,.8,.2,1) both; }
+  .card { animation: card-in 720ms calc(420ms + var(--i, 0) * 110ms) cubic-bezier(.2,.8,.2,1) both; }
+}
+@keyframes sheet-in {
+  from { opacity: 0; translate: 0 calc(16 * var(--u)); scale: 1.012; rotate: .35deg; }
+}
+@keyframes copy-in {
+  from { opacity: 0; translate: 0 calc(10 * var(--u)); }
+}
+@keyframes card-in {
+  from { opacity: 0; translate: 0 calc(-40 * var(--cu)) calc(110 * var(--cu)); }
+}
+
+/* Reduced motion keeps the designed resting pose and the sub-chapter reveal; only movement is switched off. */
+@media (prefers-reduced-motion: reduce) {
+  .table *, .table *::before, .table *::after { transition: none !important; animation: none !important; }
+  .parts { translate: none; }
+  .lamp { display: none; }
+}

@@ -1,0 +1,27 @@
+{
+  "_doc": [
+    "The homepage map sheet comes in four frames, one per window shape (picked by <picture> media and the same",
+    "@media queries in MapTableHome.module.css). Each frame is measured in u = CSS var(--u): the frame is fitted",
+    "into the window (contain), so text, folds and printed marks keep fixed positions on the sheet within a frame.",
+    "w/h: frame size; ex/ey: felt between the frame edge and the sheet.",
+    "heroTop/titleTop/cardsTop: where the headline, the 'פרקי הקורס' title and the card row start (keep in sync",
+    "with the CSS). card/gap: the chapter card and the gap between cards; the row is centred.",
+    "Folds: the sheet was folded in half across its width, then once lengthwise off-centre. The vertical fold",
+    "runs at w/2 + foldXOffset, through the gap between the brand and 'המשך ללמוד'; the horizontal fold at foldY",
+    "runs behind the card row (cardsTop + 200), far below 'פרקי הקורס'.",
+    "Quiet zones: the print is a real relief with a flat valley floor under the brand row, the headline and the",
+    "section title (home_map_table_maps.cjs), so no printed line runs behind them."
+  ],
+  "pxPerU": 2,
+  "rotateDeg": -0.35,
+  "card": 468,
+  "gap": 26,
+  "headerTop": 74,
+  "foldXOffset": -15,
+  "variants": {
+    "a": { "minAspect": 0,    "w": 1640, "h": 1262, "ex": 34, "ey": 34, "heroTop": 232, "titleTop": 494, "cardsTop": 606, "foldY": 806 },
+    "b": { "minAspect": 1.45, "w": 1640, "h": 1025, "ex": 34, "ey": 30, "heroTop": 150, "titleTop": 348, "cardsTop": 445, "foldY": 645 },
+    "c": { "minAspect": 1.7,  "w": 1780, "h": 1000, "ex": 34, "ey": 30, "heroTop": 146, "titleTop": 340, "cardsTop": 432, "foldY": 632 },
+    "d": { "minAspect": 1.95, "w": 2120, "h": 1000, "ex": 36, "ey": 30, "heroTop": 146, "titleTop": 340, "cardsTop": 432, "foldY": 632 }
+  }
+}

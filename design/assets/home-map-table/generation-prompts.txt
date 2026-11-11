@@ -1,0 +1,13 @@
+Superseded (2026-11-11, fidelity pass).
+
+The homepage map-table art is no longer image-generated. Every asset in
+public/assets/home/map-table is rebuilt from scratch by scripts:
+
+  node scripts/blender/fetch_home_map_table_sources.mjs
+  node scripts/blender/home_map_table_maps.cjs
+  node scripts/blender/home_map_table_sheet_ink.cjs
+  blender --background --python scripts/blender/render_home_map_table.py -- felt sheet-a sheet-b sheet-c sheet-d terrain cardstock
+  node scripts/blender/package_home_map_table.cjs
+
+Sources and licences: public/assets/home/map-table/ATTRIBUTIONS.md
+Decisions: design/docs/assumptions.md ("Map-table homepage — fidelity pass" and "— map sheet + chapter entry").

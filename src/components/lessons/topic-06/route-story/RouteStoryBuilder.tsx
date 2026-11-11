@@ -68,7 +68,7 @@ export function RouteStoryBuilder() {
       <div className="mt-3 rounded-xl border border-border p-3">
         <h4 className="mb-2 font-display text-lg font-bold text-black">סיפור הדרך שנבנה</h4>
         <table className="w-full border-collapse text-start text-base text-black" aria-label="סיפור הדרך: ארבעה קטעים">
-          <thead className="bg-bg-accent"><tr>{['קטע','מנקודה לנקודה','אזימוט','מרחק','סימן בסיום'].map(h=><th key={h} className="border-b border-border px-3 py-1.5 text-start font-bold">{h}</th>)}</tr></thead>
+          <thead className="bg-bg-accent"><tr>{['קטע','מנקודה לנקודה','אזימוט','מרחק','נקודת אימות'].map(h=><th key={h} className="border-b border-border px-3 py-1.5 text-start font-bold">{h}</th>)}</tr></thead>
           <tbody>{LEGS.map((l,i)=><tr key={i} data-leg-row={i} className={cn('border-b border-border/60',selectedLeg===i&&selectedPoint===null&&'bg-accent/10')}><th scope="row" className="px-3 py-1.5 text-start"><button className={cn('rounded px-2 py-0.5 font-bold',FOCUS)} onClick={()=>chooseLeg(i)} aria-label={`בחירת קטע ${l.letter}`} aria-current={selectedLeg===i&&selectedPoint===null?'step':undefined}>{l.letter}{state.legs[i].done&&<Check className="ms-1 inline size-4 text-brand-dark" aria-label="הושלם"/>}</button></th><td className="px-3">{l.from+1} עד {l.to+1}</td><td className="px-3"><bdi>{state.legs[i].answer.az===null?'—':deg(state.legs[i].answer.az!)}</bdi></td><td className="px-3">{state.legs[i].answer.m===null?'—':metres(state.legs[i].answer.m!)}</td><td className="px-3">{state.legs[i].answer.end?END_LABEL[state.legs[i].answer.end!]:'—'}</td></tr>)}</tbody>
         </table>
         <div className="mx-auto mt-4 flex max-w-4xl items-center justify-center" aria-label="חמש נקודות וארבעה קטעי דרך">

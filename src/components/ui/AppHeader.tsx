@@ -12,7 +12,6 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import { BrandEmblem } from './BrandEmblem';
 
 const NAV_LINKS: { href: string; label: string }[] = [
   { href: '/', label: 'בית' },
@@ -47,11 +46,16 @@ export function AppHeader() {
           {/* מותג — 10% מהצד הכי ימני של המסך */}
           <Link
             href="/"
-            className="absolute top-1/2 start-[3%] flex min-w-0 -translate-y-1/2 items-center gap-2.5"
+            className="absolute top-1/2 start-[3%] flex min-w-0 -translate-y-1/2 items-center gap-2.5 text-olive-ink"
             aria-label="עמוד הבית"
           >
-            <BrandEmblem className="size-9" />
-            <span className="min-w-0 font-display text-xl font-extrabold leading-none tracking-tight text-fg">
+            {/* אותו סמל הרים כמו בעמוד הבית (MapTableHome) — יחס 84×29 */}
+            <svg aria-hidden viewBox="0 0 104 36" className="h-[21px] w-[61px] shrink-0" fill="currentColor">
+              <path d="M0 35 25 4l17 21-5 1L25 11 6 35Z" />
+              <path d="M30 26 61 1l43 34h-8L61 9 37 28Z" />
+              <path d="M44 22 61 9l-2 6-12 9Z" opacity=".55" />
+            </svg>
+            <span className="min-w-0 font-display text-2xl font-bold leading-none tracking-[-0.005em]">
               גיאוגרפיה צבאית
             </span>
           </Link>

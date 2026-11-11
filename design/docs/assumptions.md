@@ -3766,3 +3766,117 @@ User request (2026-11-10): a full audit and optimisation of every 3D model (curr
 - **A memory leak in every closed canvas, fixed in QualityCanvas.** three hangs a `dispose` listener of the renderer on every texture, geometry and material it draws and `WebGLRenderer.dispose()` never takes them off; a resource that outlives the canvas (three's own module-level empty textures, the models' module-level caches) kept every closed renderer alive — with its WebGL context, its canvas and the whole lesson section's DOM. On lesson 6's „טכניקות ניווט” each visit kept ~7 MB (heap snapshots, 5 more visits: reachable memory 192.5 → 226.7 MB, 23 MB of geometry arrays and ~6,900 SVG nodes of old sections). QualityCanvas now notes the listeners its renderer adds (while its render / compile / upload methods run) and removes them when R3F closes the renderer: 185.3 → 187.4 MB over the same visits (compiled code only). The benchmark's mount cycles report the closed canvases still reachable and the DOM nodes (its own instrumentation now holds contexts weakly — it used to keep them alive itself).
 - **Kept as is (judged, documented):** shadow-map sizes, N8AO quality, the topography's 1.5× resting supersampling and texture anisotropy are the strong GPU's look — the weak one adapts through resolution while moving. Not done (larger, not measured as bottlenecks here): building dead-reckoning chunks in a worker, frustum sectors for the replay ground and terrain-nav grass, terrain-nav's near shadow map following the eye every walk frame, the globe's 4K texture re-upload on remount.
 - **Not fixable from the page** (unchanged): a browser drawing on the CPU stays slow; a dual-GPU laptop's GPU choice is Windows'. Simulated weak hardware (SwiftShader, CPU throttling, the forced `low` tier) is not a real UHD 630.
+## Clean map-table homepage (2026-11-11)
+
+- The user approved `design/mockups/home-directions-2026-11-11/03-tactile-mission-table-v2-clean.png` for implementation, replacing the old homepage reference for this route. The latest clarification requires square chapter cards (CSS aspect ratio 1:1).
+- Scope is the homepage only, at 1440 x 1122. Existing archive/course-panel components and unrelated working changes remain intact. No commit is authorized.
+- The blank paper/felt background and three chapter artworks are separate decorative WebP assets. All headings, chapter numbers, links, navigation and status are real HTML, never baked into a full-page image.
+- The approved reference authorizes the new local forest-green/cream/ochre palette. Ink `#0c280c` and action gold `#dc9418` were sampled/quantized from the reference; these are scoped CSS properties, not new global theme tokens. Typography uses the existing Heebo family for the approved homepage composition.
+- Interaction unspecified by the still mockup: arrows/dots and RTL arrow keys rotate the three existing public chapters, selecting one at inline-start. Home/End select the first/last chapter. Horizontal swipes require a 50px threshold; dragging suppresses navigation. No autoplay or replacement hover text.
+- Depth is implemented with CSS perspective, cursor-responsive tilt, light and shadow plus spring-based position transitions. The illustrations stay unmirrored. Reduced-motion disables tilt/transitions while retaining carousel controls and native links.
+- Desktop fidelity is the target; a narrow-window fallback retains the 1:1 cards, but mobile design is a separate task. The deliberately quiet upper-left paper area is preserved.
+
+## Map-table homepage — fidelity pass (2026-11-11, later)
+
+User request: make the homepage much more faithful to `03-tactile-mission-table-v2-clean.png` (new background, card artwork, resting angle, type, one-screen fit). These decisions supersede the matching lines of the entry above.
+- **One stage.** The composition is laid out in the reference's own 1487 × 1058 px and scaled uniformly (`--u` = min(width/1487, height/1058) of the viewport, via container units), so brand, continue link, headline, cards and controls always fit one screen; `max(100svh, 73.6vw)` / `min-height: 900px` are gone. Assumed: wider-than-1.405 windows (e.g. 1920 × 910) show more felt either side of the sheet rather than stretching anything; nothing is clipped.
+- **Background** = two layers, never stretched: `felt.webp` (cover) and `paper.webp` rendered on exactly the stage frame (same aspect, `inset: 0`). The sheet has no map marks. Its outline (including the shorter upper-left panel) was traced from the reference.
+- **Square cards + resting pose.** The reference's cards are not square (≈ 485 × 410). Per the user's explicit rule the base geometry is 1:1 (452 u). The reference's distortion was measured per card: bottoms wider than tops (ratio ≈ 0.95) and a lean growing toward the left (card 03 left edge ≈ −55 px, card 01 ≈ −19 px), with no in-plane rotation (top edges level). One camera explains every card: `rotateX(21deg)` per card under a shared `perspective: 3800u` with its origin at stage x ≈ 1400. So no per-card random angles were added; each card's different silhouette comes from where it sits. Text, number and art are children of the rotated card, so they are printed in the same plane. Hover adds lift/tilt on top of the pose and returns to it; reduced motion keeps the pose and removes only movement.
+- **Type, checked in the browser against crops of the reference:** headline = Rubik Italic (variable, 800) — true italic, slant and rounded corners match, width within ~3 % at equal letter height; card titles, „פרקי הקורס” and the brand = upright Rubik 800/700 (the reference letters are upright; their dynamism there comes from the card plane, reproduced by the pose); numbers 01–03 = Merriweather Italic 900 (`wdth` 90) — sturdy bold-italic serif with flagged/based 1, oval 0, flat-based 2, the closest of 18 serif candidates (Georgia/Bodoni/Playfair were too thin or too high-contrast). Both fonts load from Google via `next/font` on the homepage only.
+- **Card art** is rebuilt, not upscaled: chapter 01 = real relief (Mount Hermon, SRTM-derived Terrarium tiles, 1.7–3.2× vertical exaggeration) rendered in Cycles with the summit high in the upper-left and the ridge falling to the right, as in the reference; chapter 02 = a generated topographic sheet (4 m contours, 20 m index, wadi drawn along its valley so contours V upstream, spot heights 784 / 720 in knock-outs, tracks, grid); chapter 03 = a CC0 brass compass model lying on a generated route map (red dashed route, two checkpoints) with a real contact shadow. Assumed: the compass lid is the sighting lid of the CC0 model (a window, not the reference's solid lid); the 01 terrain is a real massif, so its ridge pattern differs in detail from the painted reference.
+- Sources/licences: `public/assets/home/map-table/ATTRIBUTIONS.md`. Rebuild scripts: `scripts/blender/{fetch_home_map_table_sources.mjs, home_map_table_maps.cjs, render_home_map_table.py, package_home_map_table.cjs}`.
+
+## Map-table homepage — map sheet + chapter entry (2026-11-11, follow-up)
+
+The follow-up brief overrides the reference in the places it names (map size, map identity, the navigation art, blank copy zones, no carousel, hover sub-chapters). The reference still sets materials, mood and perspective.
+
+- **One sheet per window shape.** Neither one uniform scale nor one image can keep a large sheet filling the window from 4:3 to 21:9 without stretching paper or cropping cards. So the sheet is rendered for four frames (`scripts/blender/home_map_table_sheets.json`: a ≤ 1.45, b ≤ 1.7, c ≤ 1.95, d wider; 1640–2120 × 1000–1262 u). `<picture>` and the same `@media (min-aspect-ratio)` rules pick one. The frame is fitted into the window (contain), and the copy and cards are laid out on it in that frame's units (`--u`). That way the headline, „פרקי הקורס” and the cards keep fixed places *on the sheet*, never on a fold or over the printed marks. Measured coverage: the sheet frame is ≥ 85 % of the window at 1920×910 / 1440×1122 / 1440×900 / 1366×768; the felt is a 2–4 % frame (a little more between frame shapes).
+- **Content stays a readable size:**
+  - cards are 468 u (≈ 360–425 px on the four test sizes);
+  - type sizes are unchanged in u;
+  - the card row is centred, with the brand, headline and section title aligned to its edges;
+  - on wide windows the extra sheet becomes margin with faded print, not bigger cards (height is the limit).
+- **Folds that explain themselves:** the map was folded in quarters. The vertical centre fold is a valley. The horizontal centre fold is a ridge on the left half and a valley on the right, because the second fold went through two oppositely facing layers. Other physical details:
+  - each quarter bows a little;
+  - the edges are a straight machine cut with light wear (the old stepped top edge is gone);
+  - the near-left corner curls up slightly.
+
+  The horizontal fold runs behind the card row and shows only beside it. „פרקי הקורס” sits ≥ 6 % of the sheet height above it, which is asserted in the e2e at all four sizes.
+- **Map identity, kept quiet:**
+  - a faded olive neatline with a graduated ("piano-key") border just inside the sheet edge;
+  - faded tan contours only in the quiet zones: upper-left, plus the side margins on wide frames.
+
+  Nothing is printed behind the brand, the headline, the section title or the card row. The paper material for the sheet is smoother than the card stock (less mottling, fibre and crinkle).
+- **Navigation art redrawn in the site's language.** It is no longer the dark CC0 brass compass. It uses the course's own lesson-6 compass: the rendered body from `build_compass_body.py` (olive bezel, ivory face), with the same printed scale and pivot as `CompassMapVisuals`, a red north / olive south needle and the housing set to a bearing. It lies on a route map in the site's map symbology (`topographyTerrainStyle` MAP: tan contours, sage woodland with a dotted olive edge, sand roads with tan casing, subdued water), with the red dashed route and two checkpoints.
+- **Blank copy zones:**
+  - The number, its rule and every title line were measured in the browser, with the pose removed, and saved as card-face fractions (`home_map_table_card_zones.json`).
+  - The art keeps that area plus 4.5 % clearance (covering the italic slant) as plain card stock. Beyond that, it runs out into the same stock over a 7 % band; no plate is added behind the text.
+  - Card 01: the aerial view is rolled 8° about the summit, which is exactly a camera roll, and set high on the left, so the ridge falls under the title into haze the colour of the board.
+  - Card 02: the ground is shaped as hills on the left and along the bottom, falling to a flat valley floor where the copy is printed. A plain has no contours, so none cross it.
+  - Card 03: the map and route are composed around the zone.
+  - The e2e checks each zone on the shipped WebP for marks.
+- **Entry:**
+  - Click opens the chapter directly. The whole card is one link, and the sub-chapter slip never takes the pointer.
+  - Hover or keyboard focus raises a slip of the same card stock over the art, in the card's plane, listing the chapter's sub-chapters. They come from `lessonScenes` minus the framing scenes, the same rule as `CoursePlanPanel.toLessonItem`. The slip has a „כניסה לפרק ←” cue and is exposed as the link's `aria-describedby`.
+  - The selected-card state of the old carousel is gone.
+- **Paging:** controls render only when there are more public chapters than fit (`VISIBLE = 3`), and then page through real extra chapters. With three chapters there are no arrows, dots or carousel semantics.
+- **Arrival and response:** about 1 s from first paint:
+  - the sheet settles;
+  - the copy fades in;
+  - the cards are laid down one after another;
+  - a faint desk-lamp pool follows the mouse;
+  - cards tilt and catch light on hover, on top of their pose.
+
+  Reduced motion keeps the pose and the sub-chapter reveal and drops all movement and the lamp.
+
+
+## Map-table homepage — surfaces and a real map sheet (2026-11-11, later)
+
+User request: separate the surfaces by colour (warm cream cards, a light muted stone grey-olive map, the dark green desk), make the map sheet physically real (matte paper, fine fibres, edge thickness, natural folds, contact shadows from one light), make the print read as a real map, keep quiet zones behind the copy and „פרקי הקורס” away from the fold — changed at the source, not with a filter. These lines supersede the matching ones above.
+
+- **Map stock colour.** No new token: a light, muted, neutral-warm stone between olive.muted `#8A8873` and paper.page `#F3E9DC`, rendered at ≈ `#CDC6BB` under the desk light. The base in Blender is a little cooler (`MAP_STONE #d2d0cd`, `render_home_map_table.py`) because the light is warm. The first pass (≈ `#C9C7B9`, grey-olive) read too green; the user asked for a little less green at the same lightness. The cards keep paper.card `#F8F2E7` and their cream card stock; the felt is unchanged.
+- **Paper material** (map sheet only; card stock untouched): no mottling or aged rim (they read as stains), a trace of formation cloud, fine fibres and grain, no crinkle, no sheen, roughness 0.96, low specular — matte, uncoated stock.
+- **One light.** The sun in `lights()` sits high beyond the far edge, a little to the right. Everything follows it:
+  - the sheet's edge rolls over in the shader (a bump from the edge mask), so its far/right edges catch the light and its near/left edges turn away;
+  - a hair of shaded cut face shows on the near/left side (edge thickness);
+  - the contact shadow on the felt is offset toward the viewer and left (it used to go right, against the light);
+  - the card and „המשך ללמוד” shadows in CSS gained the same small leftward offset and are a little softer, since colour now does the separating.
+- **Folds.** Folded in half across the width, then once lengthwise off-centre: the vertical fold runs through the gap between the brand and „המשך ללמוד” (`foldXOffset −15 u`); the horizontal fold runs behind the card row (`foldY` = cardsTop + 200 u), so „פרקי הקורס” is ≥ 15 % of the sheet height above it (was ≥ 6 %). Creases wander by ~1–2 u and vary in sharpness along their length. Assumed: an off-centre second fold is acceptable (real maps are often folded unevenly); it puts the crease where the cards hide most of it.
+- **Print** (`home_map_table_sheet_ink.cjs`, new; the old faded-contour generator in `home_map_table_maps.cjs` is gone):
+  - one relief over the whole sheet — ridged hills rising from a broad valley floor, 10 m contours, 50 m index contours;
+  - wadis traced from the same height field (filled depressions, D8 flow), so they run down the valleys the contours draw and die out on the valley floor;
+  - a few index labels set in a gap, reading uphill and never upside down; spot heights on visible summits; a faint 1 km grid;
+  - inks from the site palette only: tanline.badge (contours), terrain.sky (water), olive.ink (grid, spot heights).
+- **Quiet zones.** The valley floor lies between two contour levels under the brand row, the headline and „פרקי הקורס”, so nothing is printed there and no knock-out halo is needed (only the faint grid is interrupted). The e2e checks the shipped sheet WebPs for marks behind each piece of copy.
+- **Card-row shade (2026-11-11, user's choice: "darken the map behind the cards").** `.chapters::before` in `MapTableHome.module.css` is a soft radial pool under the card row (starts 80 u above `--cards-top`, runs 150 u past the row on both sides, fades to nothing before the sheet border), blended with `multiply` so the print stays visible. Strength set by eye (no mockup value): centre ≈ 24 % ink, so the paper between the cards goes from ~#B1B0A0 to ~#979587. Tint is the warm neutral `--table-ink` (#110d08), not olive: the user asked for "a little less green".
+
+## Map-table homepage — card 03 compass in gilded brass (2026-11-11)
+
+User request: replace the compass in the „ניווטים” card with a photoreal, gilded brass pocket compass like the one in `design/mockups/home-directions-2026-11-11/03-tactile-mission-table-v2-clean.png`. Only the card art changed (`chapter-navigation.webp`); the page, the CSS and the interactions are untouched.
+
+- **Model** (`render_home_nav_compass.py`): the case has a convex back, a thick rounded bezel, a recessed ivory dial under a slightly domed glass, a red / blued-steel needle on a jewelled pivot, a crown and bail on the near-right, and a three-knuckle hinge with the lid open 112°. The dial print comes from `home_nav_compass_print.cjs`: 1° graduations, figures every 30°, a 16-point rose and serif N/E/S/W.
+- **Gold.** A warm, bright gilded brass (`#f6cf7e`…`#e7b45c` base colour, fully metallic) with a lathe-turned circular grain, faint tone variation, sparse short use marks and a mild AO shade where parts meet. There is no blackening or patina. The lid's inside is engine-turned with an engraved double border.
+- **Light.** The card's warm key (far edge, a little left) lights the scene and casts the contact shadow. It is hidden from reflections; the metal reflects a CC0 studio HDRI (glossy rays only), plus a feathered glossy-only softbox for the glass sheen. Colour management is AgX Medium High Contrast; the old olive compass used Standard.
+- **Placement, assumed.** In the mockup the lid hinges at the upper-left and runs off the card. Here the hinge sits at ~156° (left / up-left) so the lid clears the route's start checkpoint, which the mockup does not have in that spot. The lid is cropped by the card's print edge, as in the mockup. The case centre is at (0.33, 0.67) of the card with radius 0.25, outside the number + title zone (the e2e copy-zone check passes).
+- `navcompass-{dial,bezel}.png` (from `home_map_table_maps.cjs`) are no longer used by the render. Only `navcompass.json`'s card size is read.
+
+## Map-table homepage — card 03 compass: olive paint, near top-down (2026-11-11, supersedes the gilded-brass pose above)
+
+User request: make the „ניווטים” compass photoreal like the latest mockups (`design/mockups/home-background-options-2026-11-11/04…`, `05…`): seen almost from above with only a slight tilt, olive body (matte-satin paint on metal), ivory dial, red needle, a less illustrated bezel, very clear glass, a raised needle, small shadows between parts, scene-matched light and a contact shadow. Only the card art changed (`render_home_nav_compass.py` → `chapter-navigation.webp`); the page, CSS, copy zone and interactions are untouched.
+
+- **View.** Camera 13° from straight down (`HNC_TILT`), so only the near side shows the body's thickness.
+- **Card pose compensation, assumed.** On the page the card is posed (`.card` rotateX 21° in perspective) and shows at ~0.845 of its width in height, which turned the round dial into an ellipse (~0.82 with the camera tilt). The instrument layer is pre-stretched vertically 1.15× (`HNC_ANAMORPH`, anamorphic pixels; placement unchanged), so the dial measures ≈ 0.96 height/width on screen at 1440 and 1920. The flat map print keeps the card's pose.
+- **Paint.** Base `#474d37` drifting to `#393e2d`, roughness ≈ 0.4–0.46 with a light clear coat, a fine orange-peel bump, AO shade in joints and a faint lighter wear only on exposed convex edges (`HNC_WEAR`). No outlines. The recess wall is a darker `#353a2a`. Fittings are painted. Bail ring and hinge pin are satin steel, the pivot cap is brass. The red needle is `#bf3a2b`, the south half dark steel `#2d3133`.
+- **Bezel.** A separate turned ring: straight outer wall, a broad crown band, all edges filleted (0.8–1.8 % of R), a small chamfer and a short lip to the glass, a fine seam step where it meets the case, and one hairline turned groove on the crown (shader bump only).
+- **Glass and needle.** Fresnel reflection 0.34 + a feathered glossy-only softbox at low strength give a faint sheen over the upper-left of the dial. The glass casts no shadow. The needle floats 0.082 R above the dial.
+- **Light.** The key now matches the sheet's sun (from beyond the far edge, 10° from the right, 32° off vertical, soft), so the contact shadow falls toward the viewer and slightly left like the cards'. The flat back sits on the shadow catcher, so the case reads as resting on the map.
+- **Lid.** It is opened as far as the hinge allows (179°), so it lies nearly flat beside the case, cropped by the card's left print edge. The hinge is at 168° and the case centre at (0.35, 0.66) of the card, r 0.25.
+
+## Map-table homepage — muted warm-cream tones (2026-11-11, supersedes the stone map colour and the card-row shade above)
+
+User request: retone the homepage to `design/mockups/home-background-options-2026-11-11/10-muted-warm-cream-cards.png` — map paper `#FDF2EB`, card stock `#E5D3BD`, lit areas of the cards `#E8D7C2`. Tones only: layout, type, interactions, the felt frame around the sheet, the art and the compass are unchanged. No global palette change (the tones live in `MapTableHome.module.css` and `package_home_map_table.cjs`, not in `tailwind.config.ts`).
+
+- **Map sheet** (`package_home_map_table.cjs` `paper()`): the sheet render's blank paper (per-channel median inside the sheet mask) is scaled in linear light onto `#FDF2EB`. The print keeps its relative contrast and the paper its fibre; the contour ink picks up the same warm shift. The existing light falloff (≤ 6 % toward the near-left) stays. Measured on screen at 1920×910: paper p50 `#FDF2EA`.
+- **Card stock** (`cardFace()`): the board render's grain (luminance / median) is laid on `#E5D3BD`; grain above the median rises toward `#E8D7C2`, which the board's p90 grain reaches. Card faces are drawn through `.artwork { filter: brightness(1.08) saturate(.94) }`, so the stock is written as that filter's inverse (assumed: Chrome applies CSS filter functions to sRGB values). Measured on screen: number/title zones p50 `#E3D2BC`–`#E4D3BD`, p90 `#E8D7C1`. The art keeps its filter and colours; the terrain card's far haze is the card stock, so the ridges dissolve into it.
+- **CSS:** `--card-stock #E5D3BD`, `--card-lit #E8D7C2`, `--card-edge #C8B69D` (board thickness; sampled from the mockup's card edge, ≈ `#C5B39B`). The card rim is the map paper `#FDF2EB` at 60–80 % alpha. The sub-chapter slip and paging arrows use the card stock, the slip's top sheen `--card-lit`.
+- **Card-row shade removed.** The multiply pool under the card row (`.chapters::before`, user's earlier choice) was there to separate cream cards from a cream map. With the deeper card stock the cards separate on their own, and the pool turned the paper around them grey instead of the requested `#FDF2EB` (the mockup has none). Restore it from git history if the cards should sit in a shade again.
