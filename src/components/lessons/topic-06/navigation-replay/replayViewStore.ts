@@ -2,15 +2,16 @@
  * Where the replay's eye looks — shared by the canvas, the heading ribbon and
  * the view controls without re-rendering the activity.
  *
- * The eye never moves: it stands at the moment's station, ground + 1.7 m, and
- * only turns (yaw), tilts (pitch) and zooms (vertical field of view). There is
+ * At a decision the eye stands at its station, ground + 1.7 m, and only turns
+ * (yaw), tilts (pitch) and zooms. replayWalk owns forward transitions. There is
  * no free flight and no view from above, so the view cannot answer the
  * question by itself. The look is not part of the activity's state: turning
  * the view never changes an answer.
  */
 export type Look = { yawDeg: number; pitchDeg: number; vfovDeg: number };
 
-export const LOOK_LIMITS = { pitchMin: -22, pitchMax: 14, vfovMin: 16, vfovMax: 54 } as const;
+/** Up to 24° up: a summit close by (from the woodland's edge) must fit in the frame. */
+export const LOOK_LIMITS = { pitchMin: -22, pitchMax: 24, vfovMin: 16, vfovMax: 54 } as const;
 /** Legacy zoom-dial value; the actual opening is a fixed 80° horizontally. */
 export const DEFAULT_VFOV = 54;
 export const EYE_HEIGHT_M = 1.7;

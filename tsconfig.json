@@ -35,11 +35,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next-contours/types/**/*.ts",
+    ".next-relief/types/**/*.ts",
+    ".next-route-workbench-dev/types/**/*.ts",
     ".next-slopes/types/**/*.ts",
     ".next-t11/types/**/*.ts",
     ".next/types/**/*.ts",
-    "next-env.d.ts",
-    ".next-relief/types/**/*.ts"
+    "next-env.d.ts"
   ],
   "exclude": [
     "node_modules",

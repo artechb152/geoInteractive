@@ -1,0 +1,27 @@
+Continue the supplied start frame as one uninterrupted, fixed-camera shot lasting approximately eight seconds. The image is the source of truth for the existing person, landscape, lighting, palette and three-dimensional rendering style. Animate the existing scene rather than recreating it.
+
+ONE PERSISTENT PERSON
+There is exactly one navigator throughout the entire shot. The figure visible beside the palms is the only person to animate. His feet start at their exact visible position inside the existing ring. The destination stays unoccupied until this same person reaches it. His outfit, headwear, backpack, paper map, anatomy and body proportions remain consistent.
+
+CONTINUOUS FORWARD MOVEMENT
+Begin with a small, natural turn in place toward the orange ribbon immediately ahead of his feet. Keep his ground position during this turn. His first step then advances from that exact position along the ribbon toward the hollow destination diamond beside the building.
+He follows only the remaining ribbon ahead of him: across the low ground to image-right, through the next existing checkpoint ring, then around the visible upward bend to the destination diamond. His progress along this path increases continuously.
+Give this walk most of the shot. Show a coherent sequence of alternating steps, grounded footfalls, natural hip and shoulder movement, and a gentle turn of his whole body as the path curves. His torso, backpack and limbs retain three-dimensional volume as they turn. Perspective makes him gradually smaller with distance. The contact shadow follows the grounded feet consistently with the existing sunlight. His map remains the same handheld prop.
+
+FIXED CAMERA AND FIXED TEACHING MARKS
+The camera remains perfectly stationary: identical framing, lens, horizon, perspective and focus. All physical landmarks remain in place.
+The COMPLETE orange route ribbon, including its curved beginning far behind the navigator, is already finished and remains visible and stationary for the whole clip. Preserve its exact curve, endpoints, width, raised edges, highlights and shadows. Both checkpoint rings stay fixed on the ground; they are planned locations, not rings attached to the moving person.
+Keep the hill outline and palm brackets unchanged while he is walking. His movement is independent of every orange graphic. The existing ribbon is a stationary teaching overlay, not a trail that is created, erased or moved by walking.
+
+ARRIVAL AND VERIFICATION
+During the final part of the shot, the same navigator slows smoothly and stops with his feet at the existing hollow destination diamond, in the junction area beside the building. He briefly looks between the connected road arms, the building and his map.
+Only after he has stopped, add restrained local orange identification outlines around the existing junction pattern and the existing building. Keep these accents confined to those two features. Fill the existing destination diamond after both features have been checked. Hold this final pose briefly.
+The route and both checkpoint rings remain visible and unchanged during verification. Retain the earlier hill and palm highlights in this generation; removing them is not part of the action.
+
+EXCLUDE THESE RESULTS
+Additional people; a stationary copy left by the palms; a second person appearing at the destination; ghost figures; person-to-person crossfades; disappearing and respawning characters; replacement characters; an opening position reset; backward travel; returning to an earlier section of the path; teleportation; skipped path segments; a still figure followed by a sudden jump; abrupt speed changes.
+Pasted sprites; flat cutout figures; billboard-like bodies that keep the same profile around a bend; repeated identical walk-loop poses; sliding feet; skating; floating; stretched limbs; sudden changes in body size or outfit; detached shadows.
+Route drawing, growth, shortening, retraction, relocation, deformation or fading; moving checkpoint rings; new route branches; a newly constructed road; global fading of orange graphics; changed terrain or landmarks; zooms, pans, tracking shots, camera cuts, scene dissolves or map-view transitions.
+Text, captions, interface elements, speech and music.
+
+Priority if details compete: one continuously visible volumetric person, forward-only movement from the supplied starting position, an unchanged orange ribbon, and the same visual style as the supplied frame. Quiet footsteps and light natural ambience only.

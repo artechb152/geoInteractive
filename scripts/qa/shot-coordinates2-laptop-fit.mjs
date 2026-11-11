@@ -31,7 +31,7 @@ for (const [width, height] of sizes) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
+  await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
   await page.waitForSelector('#scene-coordinates-2', { timeout: 120000 });
   // let the WebGL stages come up
   await page.waitForSelector('[data-projections-lab][data-ready="true"]', { timeout: 90000 }).catch(() => errors.push('projections not ready'));

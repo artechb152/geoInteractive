@@ -1,0 +1,17 @@
+{
+  "readyMs": 9677,
+  "dpr": 1,
+  "overviewInfo": {
+    "calls": 51,
+    "triangles": 7550118,
+    "geometries": 45,
+    "textures": 29
+  },
+  "eyeInfo": {
+    "calls": 39,
+    "triangles": 7544598,
+    "geometries": 35,
+    "textures": 29
+  },
+  "errors": []
+}

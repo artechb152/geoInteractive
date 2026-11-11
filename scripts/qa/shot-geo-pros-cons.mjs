@@ -18,7 +18,7 @@ const browser = await chromium.launch({ channel: 'chrome' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1122 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
-await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
+await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
 const screen = page.locator('[data-coordinates2-screen="geo-pros-cons"]');
 await screen.waitFor({ state: 'attached', timeout: 120000 });
 await page.evaluate(() => {

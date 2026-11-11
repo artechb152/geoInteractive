@@ -113,8 +113,8 @@ export function NorthLab() {
         <h3 className="font-display text-2xl font-bold leading-tight text-fg sm:text-3xl">
           שלושה סוגי צפון
         </h3>
-        <p className="mt-2 max-w-3xl text-base leading-relaxed text-fg-muted">
-          הכיוון מ־A אל B לא משתנה. משתנה רק הצפון שממנו מודדים — ואיתו ערך האזימוט.
+        <p className="mt-2 max-w-3xl text-base leading-relaxed text-black">
+          אותו יעד, צפון אחר — אזימוט אחר. בחרו צפון והשוו את המדידה.
         </p>
       </div>
 
@@ -183,7 +183,7 @@ export function NorthLab() {
           </div>
 
           <p className="text-base leading-relaxed text-black lg:mt-auto" data-note>
-            <strong className="font-bold">במעבר בין מפה למצפן:</strong> בודקים את ההפרש בין צפון הרשת לצפון המגנטי ומתקנים את האזימוט בהתאם לנתונים העדכניים לאזור.
+            <strong className="font-bold">ממפה למצפן:</strong> מתקנים את האזימוט לפי ההפרש העדכני באזור בין צפון הרשת לצפון המגנטי.
           </p>
         </div>
 
@@ -344,7 +344,7 @@ function DeclinationControl({
         </p>
       </div>
       <p id={hintId} className="mt-1 text-base leading-snug text-black">
-        הזווית בין הצפון האמיתי לצפון המגנטי. היא משתנה לפי המקום והזמן.
+        ההפרש בין הצפון האמיתי למגנטי; משתנה לפי המקום והזמן.
       </p>
 
       <div dir="ltr" className="relative mt-3 w-full" data-slider>
@@ -415,11 +415,11 @@ function NorthInfoContent({ id }: { id: NorthId }) {
         <span className="me-1.5 inline-block align-[-2px]">
           <NorthSwatch id={id} />
         </span>
-        {meta.label} <span className="text-base font-medium text-fg-muted">({meta.english})</span>
+        {meta.label}
       </h4>
       <p className="mt-1.5 text-pretty text-base leading-relaxed text-black">{meta.what}</p>
       <p className="mt-2 text-pretty text-base leading-snug text-black">
-        <span className="font-display font-bold">דגש לשימוש:</span> {meta.note}
+        {meta.note}
       </p>
     </>
   );

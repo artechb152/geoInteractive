@@ -28,7 +28,7 @@ import { chromium } from 'playwright';
 import { mkdir, readdir, unlink } from 'node:fs/promises';
 
 const BASE = process.env.QA_BASE || 'http://localhost:3000';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates-2`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates-2`;
 const outDir = process.argv[2] || 'design/screenshots/base60-workbench';
 const W = 1440;
 const H = 1122;

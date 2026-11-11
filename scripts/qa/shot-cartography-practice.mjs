@@ -31,7 +31,7 @@ import { scenario, SCENARIO_COUNT } from '../../src/components/lessons/topic-02/
 const args = process.argv.slice(2);
 const outDir = args.find((a) => !a.startsWith('--')) ?? 'design/screenshots/cartography-practice';
 const BASE = (args.find((a) => a.startsWith('--base=')) ?? '--base=http://localhost:3000').slice(7);
-const URL = `${BASE}/lessons/topic-02/`;
+const URL = `${BASE}/lessons/topic-02b/`;
 await mkdir(outDir, { recursive: true });
 
 const failures = [];

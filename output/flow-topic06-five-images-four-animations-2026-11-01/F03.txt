@@ -1,0 +1,12 @@
+=== F03 | תמונה 4: עצירה ובדיקת המיקום במפה ===
+קלט: עריכת F01; F02 כייחוס למסלול ולזהות הסימנים.
+שם לשמירה: F03-map-position-check.png
+אקורדיון: בתנועה: בדיקת המיקום.
+
+Edit the supplied approved full-frame planning map F01 into the stopped position-check state. Preserve its exact 16:9 map extent, north-up orientation, contour geometry, three palm symbols, Y-junction road connections, building footprint, route and checkpoint positions. Do not generate a new map or change the geography. Keep cream paper, crisp brown contours and restrained olive symbols.
+
+Move the single blue location symbol from the departure point to the FIRST checkpoint beside the three palms southeast of the central hill. Show only one location symbol, now stationary at that checkpoint. It represents a position being checked through observation, not a satellite fix. Keep a small hollow departure ring at the original starting point. Remove the discarded shortcut, and keep both planned checkpoints and the destination diamond in place. The completed part of the chosen orange route can be slightly thicker than the remaining part, without moving either segment.
+
+Make the correspondence between terrain and map immediately visible: put one broad open ring around the central hill's nested contour group, and one different-shaped open bracket around exactly the three palm symbols. Their distinct shapes must identify two separate observations without relying on color alone. Keep all contour lines and palm symbols readable inside the highlights. The blue checkpoint position lies beside these features, not on top of the hill or inside the palms. Do not mark arrival at the final junction.
+
+The map fills the whole image. No terrain panel, inset, compass, additional blue symbols, GPS pulse, success tick, coordinates, text, letters, numbers, labels, glowing interface, new landmarks, logo or watermark.

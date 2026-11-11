@@ -23,7 +23,7 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && /geo-globe|Globe3D|GlobeExplorer|THREE/.test(`${m.text()} ${m.location()?.url ?? ''}`) && errors.push(m.text()));
 
-await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
+await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
 const card = page.locator('[data-geo-explorer]');
 await card.waitFor({ state: 'attached', timeout: 120000 });
 const stage = card.locator('[aria-roledescription="גלובוס"]');

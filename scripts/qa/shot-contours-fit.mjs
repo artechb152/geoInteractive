@@ -19,7 +19,7 @@ const label = process.argv[2] ?? 'after';
 const SIZES = (process.argv.length > 3 ? process.argv.slice(3) : ['1366x768', '1536x864', '1440x1122', '1920x1080']).map((s) =>
   s.split('x').map(Number),
 );
-const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02/#scene-contours`;
+const URL = `http://localhost:${process.env.QA_PORT ?? 3000}/lessons/topic-02b/#scene-contours`;
 const outDir = `design/screenshots/contours-fit-${label}`;
 const SITE_HEADER = 80;
 const GAP = 24;

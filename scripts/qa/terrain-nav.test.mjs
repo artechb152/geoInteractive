@@ -363,12 +363,12 @@ test('four legs to the square, the summary, and an explicit restart', () => {
 
 // ---------------------------------------------------------------- the approved copy
 
-// Shortened 2026-10-27 (lesson-6 copy cleanup): the principle ends with when the method fits,
-// and the walk-through under the lab, which repeated the caption, is gone.
+// Shortened 2026-10-29: keep the method, visibility condition and handrail example;
+// the walk-through under the lab, which repeated the caption, stays removed.
 test('the approved copy is in the scene, and nothing folds it away', () => {
   const src = readFileSync(new URL('../../src/components/lessons/topic-06/CombatNavScene.tsx', import.meta.url), 'utf8');
   const approved = [
-    'בוחרים סימנים שאפשר לזהות במפה ובשטח: תבליט (כמו כיפה או ערוץ) ותכסית (כמו כפר או חורשה), ובודקים את המיקום ביחס אליהם, יחד עם כיוון ומרחק. תוואי רציף לאורך המסלול, כמו דרך או ערוץ, יכול לשמש ״מעקה״. השיטה מתאימה כשיש סימנים בולטים לאורך הדרך והראות מאפשרת להשוות אותם למפה.',
+    'מזהים במפה ובשטח סימנים כמו כיפה, ערוץ או כפר, ובודקים לפיהם מיקום, כיוון ומרחק. מתאים כשהסימנים ברורים והראות טובה. דרך או ערוץ רציפים יכולים לשמש ״מעקה״.',
     'הציר עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר (B).',
     'ניווט עיוור מתבסס על נקודת מוצא ידועה ועל אזימוט ומרחק שנקבעו מראש.',
   ];

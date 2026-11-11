@@ -7,7 +7,7 @@ import {
   ArrowRight,
   ChevronLeft,
 } from 'lucide-react';
-import { allLessons, getLesson, isArchivedTopic, nextLesson, prevLesson } from '@/lib/lessons';
+import { allLessons, courseLengthFor, getLesson, isArchivedTopic, nextLesson, prevLesson } from '@/lib/lessons';
 import { lessonScenes, lessonAssets, interactionLabels } from '@/lib/lesson-scenes';
 import { LessonStatsBar } from '@/components/lesson/LessonStatsBar';
 import { IsometricAsset } from '@/components/assets/IsometricAsset';
@@ -77,7 +77,7 @@ export default async function LessonOverviewPage({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusChip tone="brand">
-                  תדריך שיעור {num} מתוך {allLessons.length}
+                  תדריך שיעור {num} מתוך {courseLengthFor(topicId)}
                 </StatusChip>
                 <StatusChip tone="neutral">
                   {interactionLabels[lesson.interactions[0]]}

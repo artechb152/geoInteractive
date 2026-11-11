@@ -33,7 +33,7 @@ async function shoot(state, dpr) {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 1122 }, deviceScaleFactor: dpr })).newPage();
   page.on('pageerror', (e) => errors.push(`${state}: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && errors.push(`${state}: ${m.text().slice(0, 200)}`));
-  await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 180000 });
+  await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates`, { waitUntil: 'networkidle', timeout: 180000 });
   // the first station row at y = 386, as in the reference frame
   const align = () =>
     page.evaluate(() => {

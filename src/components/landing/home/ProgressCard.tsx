@@ -35,7 +35,7 @@ export function ProgressCard() {
       <div className="relative flex flex-1 items-center justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element -- static export; images.unoptimized */}
         <img
-          src={lessonDioramaSrc(lessonNumber)}
+          src={lessonDioramaSrc(lesson.id)}
           alt={`שיעור ${String(lessonNumber).padStart(2, '0')} — ${lesson.shortTitle}`}
           className="size-[265px] object-contain drop-shadow-lg"
         />

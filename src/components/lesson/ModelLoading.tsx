@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { HoldBackgroundPrefetch } from '@/components/prefetch/HoldBackgroundPrefetch';
 
 /**
  * ModelLoading — the one loading indicator of every 3-D model in the lessons
@@ -18,6 +19,8 @@ import { cn } from '@/lib/utils';
  *   and bar sit on a small card so they read on any image.
  *
  * No three.js here — the wrappers that hold the lazy 3-D chunk can use it.
+ * While mounted it holds the background prefetcher off, so the model's own
+ * files get the bandwidth.
  */
 export function ModelLoading({
   label,
@@ -32,6 +35,7 @@ export function ModelLoading({
 }) {
   return (
     <div role="status" className={cn('pointer-events-none absolute inset-0 flex flex-col items-center justify-center', className)} data-loading>
+      <HoldBackgroundPrefetch />
       <div className={cn('flex flex-col items-center gap-2', card && 'rounded-lg bg-bg-elevated/90 px-4 py-2.5 shadow-sm')}>
         <div className="font-display text-base font-bold text-black">{label}</div>
         <div className="relative h-1.5 w-40 overflow-hidden rounded-full bg-border/60" dir="ltr">

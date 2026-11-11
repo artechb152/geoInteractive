@@ -9,8 +9,8 @@ export type Pt = {
 };
 export const M_PER_UNIT = 25;
 export const VB_W = 100, VB_H = 75;
-/** Includes the full stream fix ring and its label, at the map panel aspect. */
-export const REPLAY_MAP_VIEW = { x: 24.5, y: 19, w: 60, h: 34 } as const;
+/** The decision exercise's map crop: the stream crossing to the road and the pines, at the map panel's aspect. */
+export const REPLAY_MAP_VIEW = { x: 27.2, y: 16.4, w: 46, h: 35.8 } as const;
 export const fromLab = (p: Point): Pt => ({ x: 30 + p.E / M_PER_UNIT, y: 61.5 - p.N / M_PER_UNIT });
 export const toLab = (p: Pt): Point => ({ E: (p.x - 30) * M_PER_UNIT, N: (61.5 - p.y) * M_PER_UNIT });
 export const fx = (n: number) => Math.round(n * 100) / 100;

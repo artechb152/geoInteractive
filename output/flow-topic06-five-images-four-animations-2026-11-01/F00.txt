@@ -1,0 +1,12 @@
+=== F00 | תמונה 1: אותו שטח, לפני תכנון ===
+קלט: פריים בודד משיעור 2 לחומרים; פריים בודד משיעור 1 לדמות הכחולה.
+שם לשמירה: F00-terrain-base.png
+תפקיד: פריים התחלה לקליפ הראשון בלבד; אינו אקורדיון חמישי.
+
+Create one full-frame 16:9 realistic educational terrain scene for a geography lesson. Use the supplied lesson-2 reference for convincing limestone, dusty earth, vegetation and daylight; use the lesson-1 reference for the solid-blue three-dimensional navigator. Borrow their material language, not their exact geography or armies. The result is one image, not a reference collage.
+
+Show a fictional semi-arid landscape from an elevated oblique camera. Establish this exact geography for the entire series: departure in the southwest foreground; one broad rocky hill in the center; exactly three palms together southeast of the hill; a three-arm Y-shaped dirt-track junction northeast of the hill; one rectangular pale-stone building immediately east of that junction. The hill has a visibly steep, exposed shoulder. Lower, gentler ground runs around its southern and eastern sides. The junction is the intended destination. Keep its three road arms easy to distinguish.
+
+Place one solid-blue navigator at departure, approximately 12 percent of image height, with believable volume, boots and contact shadow. Keep the hill, three palms, junction and building simultaneously readable within the central 80 percent of the image. Use warm limestone, dusty beige ground, restrained olive vegetation and soft consistent daylight. Maintain deep focus; distant identification features must remain sharp. This is tangible terrain, not a flat vector diagram or a toy on a pedestal.
+
+No route markings, compass, map panel, checkpoint discs, extra people, weapons, enemies, added buildings, text, letters, numbers, labels, interface, glow, logo or watermark. No split screen, tilt-shift blur or mirrored landscape.

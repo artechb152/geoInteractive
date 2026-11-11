@@ -1,0 +1,7 @@
+Animate from the supplied unmarked base image to the supplied planning image in one single full-frame terrain scene, targeting approximately six seconds. Preserve the exact geography, camera, realistic materials, soft daylight, blue navigator and deep focus. Nothing in the physical landscape is built or moved. Only the teaching overlays develop.
+
+Hold the unmarked scene briefly. Draw the shorter gray dashed route across the rocky hill shoulder toward the existing destination. Let the viewer recognize which terrain it crosses. Then build the broader burnt-orange lower-ground route from the same departure around the hill toward that same destination. The orange route grows with a clearly traveling front, like the prominent orange border in the reference lesson-2 animation. It is an overlay above existing ground, not a new road being constructed.
+
+Once both alternatives are visible, emphasize the chosen orange route while keeping the shorter alternative gray and dashed. Add the first large hollow checking disc on the selected route, then the second. Let each settle visibly instead of appearing as a tiny blink. Hold the complete plan for about the final second. The navigator remains at departure throughout.
+
+Keep the scene visually strong and uncluttered. No map panel, inset, split screen, camera move, altered endpoints, growing hill, new palms, compass, walking figure, text, degree values, captions, logos, watermark or decorative particles. Finish precisely on the supplied planning frame.

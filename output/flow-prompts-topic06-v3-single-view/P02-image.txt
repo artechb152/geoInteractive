@@ -1,0 +1,7 @@
+Edit the approved planning image into the departure-direction state. Preserve the same single full-width landscape, exact geography, deep focus, blue navigator at departure, chosen orange route and checkpoint positions. Reduce the prominence of the unchosen gray route. Do not move the navigator yet.
+
+Introduce one large tangible educational compass in the foreground beside the navigator. It should occupy roughly one quarter of the frame width, large enough to read at a small display size, while leaving the figure and first checkpoint visible. Give it a pale face, material depth, a clearly distinct north needle and a separate burnt-orange travel-direction pointer on its baseplate. Fine numerals or letters are unnecessary.
+
+The north needle remains aligned with the scene's north reference. The separate orange travel pointer is aligned with the FIRST leg of the chosen route toward the first checkpoint. It must not aim straight at the final destination across the hill. A broad matching arrow on the ground clearly indicates that same first leg. The final state shows one unambiguous departure direction, not a fan of overlapping rays.
+
+Keep realistic limestone, natural vegetation, soft daylight and all landmarks sharp. The oversized compass is a teaching prop, not a new physical landmark. No walking navigator, north needle magically pointing to the destination, invented degree reading, extra north references, paper map, split screen, inset, text, captions, GPS display, glowing effects, logos or watermarks.

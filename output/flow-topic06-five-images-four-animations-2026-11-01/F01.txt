@@ -1,0 +1,12 @@
+=== F01 | תמונה 2: תכנון על המפה ===
+קלט: F00 המאושרת כייחוס גאוגרפי.
+שם לשמירה: F01-map-plan.png
+אקורדיון: תכנון: בחירת המסלול.
+
+Translate the supplied terrain image into one full-frame 16:9 top-down topographic teaching map of that exact fictional place. The map occupies the entire image, with warm cream paper texture, crisp brown contour lines and restrained olive symbols. There is no simultaneous terrain panel, inset or visible desk. Use the source geography, not a generic map.
+
+Keep north at the top: departure southwest, one central hill represented by nested closed contours, exactly three palm symbols southeast of the hill, the same Y-shaped dirt-track junction northeast, and one rectangular building footprint immediately east of that junction. Contour spacing must express the steep hill shoulder and gentler southern and eastern ground. Preserve the actual relative locations and road connections when changing from perspective to plan view.
+
+Place a plain blue triangular departure marker and a hollow diamond at the destination junction. Draw two conspicuous route alternatives between these same endpoints. A broad gray dashed shortcut crosses the steep hill shoulder. A broad solid burnt-orange selected route goes around the hill on the southern lower ground, passes beside the three palms, then turns north along the eastern side to the destination. These are teaching overlays, not physical roads. The selected route is an example choice, not a universal safety claim.
+
+Place two large hollow circular checkpoints on the selected route: the first beside the palms where both palms and hill can be compared, the second farther north before the destination junction. Make routes and checkpoints unmistakable at a display width of 600 pixels. Leave the navigator at departure as the blue map symbol. No compass, movement trail, text, coordinates, letters, numbers, degree values, GPS interface, split screen, floating paper sheet, logo or watermark. Do not invent new geography.

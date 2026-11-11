@@ -1,0 +1,15 @@
+{
+  "_doc": [
+    "Where each chapter card's live copy sits (number + its rule + every title line), in fractions of the card",
+    "face (x right, y down), measured in the browser with the pose removed (MapTableHome, Rubik / Merriweather).",
+    "The card art keeps this zone blank card stock: pad = clearance around the letters (incl. the italic slant),",
+    "fade = width of the art's natural run-out into the paper beyond it."
+  ],
+  "pad": 0.045,
+  "fade": 0.07,
+  "cards": {
+    "topic-02": [[0.7517, 0.0287, 0.9359, 0.2158], [0.3669, 0.237, 0.9359, 0.349], [0.5019, 0.3337, 0.9359, 0.4456]],
+    "topic-02b": [[0.7308, 0.0287, 0.9359, 0.2158], [0.499, 0.237, 0.9359, 0.349], [0.4117, 0.3337, 0.9359, 0.4456]],
+    "topic-06": [[0.7387, 0.0287, 0.9359, 0.2158], [0.6662, 0.237, 0.9359, 0.349]]
+  }
+}

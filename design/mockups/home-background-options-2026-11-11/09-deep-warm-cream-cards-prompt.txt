@@ -1,0 +1,20 @@
+Created using the built-in image generation tool. Mockup only; application code unchanged.
+
+Use case: ui-mockup. EDIT the supplied Hebrew homepage mockup with exactly one material-color change: make the THREE CARD SURFACES DARKER WARM CREAM, keeping the pale cream page/map background unchanged.
+
+COLOR INTENT: The user wants the SAME warm cream color family as the page background, but noticeably deeper/darker on the card bodies. Choose a rich MID-TONE WARM CREAM / GOLDEN SAND / DEEP BUTTERY PARCHMENT approximately #CDB17D or #D0B482. This must still read as creamy warm paper: yellow-beige with gentle golden warmth, not brown, not grey/greige, not taupe, not olive, not green, not orange, not near-black. It should be clearly darker and warmer than the light cream page background so the whole card is visibly separated from the map, not a barely changed ivory-on-cream. Think naturally warm unbleached heavy cotton card stock under soft light, with very fine matte grain.
+
+Change the full physical card stock of all three cards, including their number/title areas, all blank areas, the substrate beneath map marks, and the matching thin card edges. Do not merely change the borders. Keep the same color consistently on all three cards. Maintain quiet uniform dark-warm-cream behind the typography.
+
+PRESERVE ARTWORK AND TYPE:
+All card text/numbers/underlines remain DARK OLIVE for good contrast on this mid-tone warm cream.
+The polished photoreal GOLD BRASS compass stays unchanged: its ivory face, red needle, metallic highlights, thickness and glass are not recolored. The printed navigation map underneath receives the new warm cream substrate while tan contours, muted sage patches and red route retain natural colors.
+The center card retains its delicate tan/brown topographic lines and fine blue river, printed directly on the deeper warm cream paper.
+The right card retains its natural green-gold mountains, reaching high at the left, with its illustrated edges blending seamlessly into the new deeper warm cream stock. Do not apply a blanket yellow filter over the mountain or compass.
+
+LOCK EVERYTHING ELSE EXACTLY:
+The pale light cream lesson/page background, faint side contour lines, spacious extra-wide layout, centered brand "גיאוגרפיה צבאית" and mountain emblem, ochre "המשך ללמוד" button, upper-right headline "כל מסע מתחיל" / "בקריאת השטח.", section title "פרקי הקורס" all remain unchanged.
+Keep same three square card sizes, positions, slight common perspective/lean, corner radii, realistic thickness and soft natural shadows. No stronger shadows or extra frames to manufacture contrast.
+Exact RTL order and text: RIGHT "01", "תבליט, תכסית" / "וטופוגרפיה"; MIDDLE "02", "קרטוגרפיה" / "וקריאת מפות"; LEFT "03", "ניווטים".
+No marks behind title/number areas. No dark corners, no new sections, no arrows/pagination, no GEO9900, no watermarks. Same front-on edge-to-edge wide desktop screenshot and crisp resolution.
+Success: unmistakably WARM CREAM cards, significantly deeper than the PALE WARM CREAM map environment; natural cream-on-cream harmony with clear full-surface contrast, not a grey/brown/green palette.

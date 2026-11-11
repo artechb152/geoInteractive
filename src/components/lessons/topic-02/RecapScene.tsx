@@ -4,7 +4,7 @@ import { SceneHeader } from './SceneHeader';
 import { L } from './Ltr';
 
 const TERMS: { term: string; def: React.ReactNode }[] = [
-  // In lesson order: תבליט ותכסית → תבניות נוף → טופוגרפיה → קנה מידה → קואורדינטות 1 → קואורדינטות 2 → קווי גובה.
+  // In lesson order: תבליט ותכסית → תבניות נוף → טופוגרפיה; topic-02b: קנה מידה → קואורדינטות 1 → קואורדינטות 2 → קווי גובה.
   { term: 'תבליט',               def: 'מבנה פני הקרקע: הרים וגבעות, עמקים ומדרונות, מישורים ושקעים.' },
   { term: 'תכסית',               def: 'המרכיבים שעל פני הקרקע: טבעיים, כגון עצים ושיחים, או מלאכותיים, כגון מבנים, כבישים ושדות.' },
   { term: 'כיפה',                def: 'התרוממות בולטת של פני הקרקע מעל סביבתה.' },
@@ -15,7 +15,11 @@ const TERMS: { term: string; def: React.ReactNode }[] = [
   { term: 'טופוגרפיה',         def: 'תיאור צורת פני השטח, הגבהים והשיפועים.' },
   { term: 'מפה טופוגרפית',     def: 'מפה המציגה את צורת השטח באמצעות קווי גובה וסימנים מוסכמים, בקנה מידה מוגדר.' },
   { term: 'תצ״א (תצלום אוויר)', def: 'תצלום של פני השטח מכלי טיס. הוא מציג את מראה השטח במועד הצילום; מתצלום בודד קשה להעריך גבהים ושיפועים.' },
-  { term: 'קנה מידה',          def: 'היחס בין מרחק במפה למרחק האופקי המקביל בשטח, באותן יחידות. בקנה מידה 1:50,000, ס״מ אחד מייצג 500 מטר.' },
+];
+
+// The second public lesson (topic-02b) starts at scale.
+const MAP_READING_TERMS: { term: string; def: React.ReactNode }[] = [
+  { term: 'קנה מידה',         def: 'היחס בין מרחק במפה למרחק האופקי המקביל בשטח, באותן יחידות. בקנה מידה 1:50,000, ס״מ אחד מייצג 500 מטר.' },
   // קואורדינטות 1: על מה מודדים
   {
     term: 'אליפסואיד וגיאואיד',
@@ -75,6 +79,14 @@ const TERMS: { term: string; def: React.ReactNode }[] = [
 ];
 
 export function RecapScene() {
+  return <Recap terms={TERMS} />;
+}
+
+export function MapReadingRecapScene() {
+  return <Recap terms={MAP_READING_TERMS} />;
+}
+
+function Recap({ terms }: { terms: { term: string; def: React.ReactNode }[] }) {
   return (
     <section id="scene-recap" className="max-w-lesson mx-auto px-4 sm:px-6 lg:px-8">
       <SceneHeader
@@ -82,14 +94,14 @@ export function RecapScene() {
         eyebrow="סיכום"
         title={
           <>
-            סיכום השיעור: {TERMS.length} מושגים מרכזיים
+            סיכום השיעור: {terms.length} מושגים מרכזיים
           </>
         }
         intro="חזרו על המושגים המרכזיים ועל הגדרותיהם. אם מושג אינו ברור, חזרו להסבר ולהמחשה בתת־הנושא המתאים לפני המעבר לבדיקת הידע."
       />
 
       <div className="grid sm:grid-cols-2 gap-3">
-        {TERMS.map((t, i) => (
+        {terms.map((t, i) => (
           <div key={t.term} className="surface p-5">
             <div className="flex items-baseline gap-3">
               <span className="shrink-0 font-display text-base font-medium text-fg-muted">{String(i + 1).padStart(2, '0')}</span>

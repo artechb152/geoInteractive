@@ -1,0 +1,12 @@
+=== F04 | תמונה 5: הגעה ואימות סימני היעד ===
+קלט: F00 ו־F02 לזהות השטח; F03 למהלך המסלול.
+שם לשמירה: F04-terrain-destination.png
+אקורדיון: הגעה: אימות היעד.
+
+Create the final destination-verification image in the same realistic navigation landscape as the supplied terrain references. Use the approved map to preserve the route and destination identity. Restore one continuous 16:9 terrain view, then bring the elevated oblique camera closer to the EXISTING northeastern Y-shaped dirt-track junction and the EXISTING rectangular pale-stone building immediately east of it. This is the same place seen closer, not a new destination. Keep all three junction arms readable and the building on its correct geographic side.
+
+Place the same single solid-blue three-dimensional navigator stopped at the exact planned junction. The junction and adjacent building together occupy about half the image, large enough to inspect at a 600-pixel display width. Retain a visible incoming segment of the selected orange teaching ribbon. Show enough surrounding terrain to connect this close view to the earlier landscape; do not relocate the hill or palms to fit the crop.
+
+Emphasize the junction's three-arm shape with a bold open ring. Separately emphasize the rectangular building with a bold open bracket. These are the two preselected identification signs. A small filled orange destination diamond marks the completed verification at the junction itself, rather than a broad arrival zone. Remove the earlier hill and palm highlights and the oversized compass.
+
+Maintain the same natural daylight, limestone textures, grounded blue figure and deep focus. No map panel, split screen, new building, different junction, automatic GPS lock, broad proximity circle, giant checkmark, celebration, background blur, text, captions, letters, numbers, logo or watermark. The final image must communicate recognition of a precise place through two concrete signs.

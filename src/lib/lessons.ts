@@ -13,9 +13,13 @@ export type InteractionKind =
   | 'sensor-fusion'      // מיזוג סנסורים (GEOINT)
   | 'gis-layers';        // משחק שכבות GIS
 
+import { lessonAssets } from './lesson-scenes';
+
 export type Lesson = {
   id: string;            // 'topic-01'
-  number: number;        // 1
+  number: number;        // 1 — המספר המוצג במסלול שהשיעור שייך אליו (ציבורי או ארכיון)
+  /** המספר במספור המקורי, כשהשיעור הציבורי מוספר מחדש — לשימוש בארכיון, שמספורו לא משתנה. */
+  archiveNumber?: number;
   title: string;
   shortTitle: string;
   subtitle: string;
@@ -27,25 +31,9 @@ export type Lesson = {
   tags: string[];
 };
 
-/** slug של קובץ המיני-דיורמה ב-public/assets/isometric לכל מספר שיעור */
-const DIORAMA_SLUGS: Record<number, string> = {
-  1: 'strategy-terrain',
-  2: 'map-reading',
-  3: 'landforms',
-  4: 'mobility',
-  5: 'los',
-  6: 'navigation',
-  7: 'weather',
-  8: 'logistics',
-  9: 'chokepoints',
-  10: 'urban',
-  11: 'borders',
-  12: 'gis-layers',
-};
-
-/** נתיב תמונת המיני-דיורמה של שיעור לפי מספרו */
-export function lessonDioramaSrc(number: number): string {
-  return `/assets/isometric/lesson-${String(number).padStart(2, '0')}-${DIORAMA_SLUGS[number]}.png`;
+/** נתיב תמונת המיני-דיורמה של שיעור — לפי המזהה, כי מספרי השיעורים הציבוריים השתנו */
+export function lessonDioramaSrc(id: string): string {
+  return lessonAssets[id].card;
 }
 
 export const allLessons: Lesson[] = [
@@ -68,22 +56,38 @@ export const allLessons: Lesson[] = [
     ],
     tags: ['רמות מלחמה', 'MDO', 'אסימטרי'],
   },
+  // שיעור 2 המקורי פוצל (2026-11-02): פרק 1 — מהפתיחה עד טופוגרפיה; פרק 2 (topic-02b) — מקנה מידה עד משמעות מעשית.
   {
     id: 'topic-02',
-    number: 2,
-    title: 'יסודות קרטוגרפיה וקריאת מפות',
-    shortTitle: 'קרטוגרפיה',
-    subtitle: 'טופוגרפיה, קנה מידה, קואורדינטות וקווי גובה',
-    duration: 50,
+    number: 1,
+    archiveNumber: 2,
+    title: 'תבליט, תכסית וטופוגרפיה',
+    shortTitle: 'תבליט, תכסית וטופוגרפיה',
+    subtitle: 'תבליט ותכסית, תבניות נוף, סוגי תכסית וטופוגרפיה',
+    duration: 20,
     difficulty: 'foundation',
-    hero: { color: 'from-terrain-sand/25 via-bg to-bg', icon: 'map' },
-    interactions: ['map-explorer'],
+    hero: { color: 'from-terrain-ridge/30 via-bg to-bg', icon: 'mountain' },
+    interactions: ['terrain-classifier'],
     objectives: [
       'להבחין בין תבליט (מבנה פני הקרקע) לבין תכסית (מה שנמצא עליה) ולשייך רכיבי שטח לכל אחד מהם',
       'לזהות חמש תבניות נוף בסיסיות (כיפה, שלוחה, גיא, אוכף, מכתש) במפה ובשטח',
       'לסווג מדרון לאחד מ-4 הסוגים (קצוב, קמור, קעור, כתף)',
       'לסווג תכסית לטבעית או מלאכותית, ולפי סוג: צומח, פעילות האדם ותשתיות',
       'להסביר מהי טופוגרפיה ולהשוות בין מפה טופוגרפית, תצ״א ומודל תלת־ממדי למדידה ולתכנון תנועה',
+    ],
+    tags: ['תבליט', 'תכסית', 'טופוגרפיה'],
+  },
+  {
+    id: 'topic-02b',
+    number: 2,
+    title: 'יסודות קרטוגרפיה וקריאת מפות',
+    shortTitle: 'קרטוגרפיה',
+    subtitle: 'קנה מידה, קואורדינטות, קווי גובה ומשמעות מעשית',
+    duration: 30,
+    difficulty: 'foundation',
+    hero: { color: 'from-terrain-sand/25 via-bg to-bg', icon: 'map' },
+    interactions: ['map-explorer'],
+    objectives: [
       'לחשב מרחק אמיתי לפי קנה מידה ולהבחין בין קנה גדול לקטן',
       'להבחין בין אליפסואיד לגיאואיד ולחשב גובה מעל פני הים בעזרת הגליות (H = h − N)',
       'להסביר מהו דאטום ומדוע ממירים קואורדינטות בין דאטומים, ולא רק מחליפים את שם הדאטום',
@@ -150,7 +154,8 @@ export const allLessons: Lesson[] = [
   },
   {
     id: 'topic-06',
-    number: 6,
+    number: 3,
+    archiveNumber: 6,
     title: 'ניווטים: התמצאות, אזימוט ותכנון ציר',
     shortTitle: 'ניווטים',
     subtitle: 'אזימוט, סיפור דרך, ניווט בשטח אויב ובסביבת GPS-Denied',
@@ -302,6 +307,18 @@ export function isArchivedTopic(id: string): boolean {
 export const lessons: Lesson[] = allLessons.filter((l) => !isArchivedTopic(l.id));
 
 export const archivedLessons: Lesson[] = allLessons.filter((l) => isArchivedTopic(l.id));
+
+/** מספר השיעור בארכיון: המספור המקורי, גם לשיעור ציבורי שמוספר מחדש. */
+export function archiveNumberOf(lesson: Lesson): number {
+  return lesson.archiveNumber ?? lesson.number;
+}
+
+/** אורך המסלול שהשיעור שייך אליו: הציבורי, או המספור המקורי (12) בארכיון. */
+export function courseLengthFor(id: string): number {
+  return isArchivedTopic(id)
+    ? Math.max(...allLessons.map(archiveNumberOf))
+    : lessons.length;
+}
 
 /** מחפש בכל השיעורים, כולל ארכיון (עמודי השיעור עצמם עדיין קיימים). */
 export function getLesson(id: string): Lesson | undefined {

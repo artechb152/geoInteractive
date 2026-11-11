@@ -25,6 +25,9 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'landforms', label: 'תבניות נוף' },
     { id: 'landcover', label: 'תכסית' },
     { id: 'topography', label: 'טופוגרפיה' },
+    { id: 'recap', label: 'סיכום' },
+  ],
+  'topic-02b': [
     { id: 'scale', label: 'קנה מידה' },
     { id: 'coordinates', label: 'קואורדינטות 1' },
     { id: 'coordinates-2', label: 'קואורדינטות 2' },
@@ -36,8 +39,8 @@ export const lessonScenes: Record<string, SceneMeta[]> = {
     { id: 'hook', label: 'פתיחה' },
     { id: 'onboarding', label: 'לפני שמתחילים' },
     { id: 'tips', label: 'דגשים לתכנון ולניווט' },
-    { id: 'combatnav', label: 'טכניקות ניווט' },
     { id: 'principles', label: 'עקרונות הניווט' },
+    { id: 'combatnav', label: 'טכניקות ניווט' },
     { id: 'planning', label: 'תכנון ציר' },
     { id: 'recap', label: 'סיכום' },
   ],
@@ -166,7 +169,9 @@ export const difficultyLabels: Record<'foundation' | 'intermediate' | 'advanced'
  */
 export const lessonAssets: Record<string, { card: string; hook: string; slug: string }> = {
   'topic-01': { slug: 'strategy-terrain', card: '/assets/isometric/lesson-01-strategy-terrain.png', hook: '/assets/isometric/lesson-01-strategy-terrain-hook.png' },
-  'topic-02': { slug: 'map-reading', card: '/assets/isometric/lesson-02-map-reading.png', hook: '/assets/isometric/lesson-02-map-reading-hook.png' },
+  // פרק 1 הציבורי (תבליט, תכסית וטופוגרפיה) לובש את דיורמת תבניות הנוף; קריאת המפות עברה ל-topic-02b.
+  'topic-02': { slug: 'landforms', card: '/assets/isometric/lesson-03-landforms.png', hook: '/assets/isometric/lesson-03-landforms-hook.png' },
+  'topic-02b': { slug: 'map-reading', card: '/assets/isometric/lesson-02-map-reading.png', hook: '/assets/isometric/lesson-02-map-reading-hook.png' },
   'topic-03': { slug: 'landforms', card: '/assets/isometric/lesson-03-landforms.png', hook: '/assets/isometric/lesson-03-landforms-hook.png' },
   'topic-04': { slug: 'mobility', card: '/assets/isometric/lesson-04-mobility.png', hook: '/assets/isometric/lesson-04-mobility-hook.png' },
   'topic-05': { slug: 'los', card: '/assets/isometric/lesson-05-los.png', hook: '/assets/isometric/lesson-05-los-hook.png' },

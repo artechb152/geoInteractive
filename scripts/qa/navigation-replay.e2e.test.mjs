@@ -1,342 +1,296 @@
-// Browser tests for the lesson-6 navigation replay („מתי עוצרים לבדוק?”, PlanningTipsScene screen 2).
-// Needs a running dev server (WebGL from the machine's GPU). Run:
-//   QA_BASE=http://localhost:3000 node --test scripts/qa/navigation-replay.e2e.test.mjs
+// Browser tests for the lesson-6 navigation decision exercise („במהלך הניווט: מה צריך לבדוק?”,
+// PlanningTipsScene screen 2). Signs are picked with real clicks in the live 3D view (aimed through the
+// canvas' own camera) and on the SVG map; every decision path is played to its debrief.
+// Needs a running dev server or static export (WebGL from the machine's GPU). Run:
+//   QA_BASE=http://localhost:3000 node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs --test scripts/qa/navigation-replay.e2e.test.mjs
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
 const BASE = process.env.QA_BASE ?? 'http://localhost:3000';
 const URL = `${BASE}/lessons/topic-06/#scene-tips`;
-const VIEW = { width: 1440, height: 1122 };
 const A = '[data-activity="navigation-replay"]';
 const GPU = ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'];
+const base = '../../src/components/lessons/topic-06/navigation-replay/';
+const R = await import(base + 'replayRoute.ts');
+const W = await import(base + 'replayWorld.ts');
+const T = await import(base + 'replayTerrain.ts');
 
 let browser;
-let page;
 const errors = [];
-const watch = (p, list) => {
-  p.on('pageerror', (e) => list.push(String(e)));
+const watch = (p) => {
+  p.on('pageerror', (e) => errors.push(String(e)));
   p.on('console', (m) => {
-    // this page's own errors only (other sessions' assets may 404 on a shared server)
-    if (m.type() === 'error' && !/Failed to load resource|Download the React DevTools/.test(m.text())) list.push(m.text());
+    // this activity's own errors only (other sessions' assets may 404 on a shared server)
+    if (m.type() === 'error' && !/Failed to load resource|Download the React DevTools/.test(m.text())) errors.push(m.text());
   });
 };
 
-async function open(p, url = URL) {
-  await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 180000 });
-  await p.waitForSelector(A, { timeout: 180000 });
-  await p.evaluate(() => document.querySelector('[data-tips-screen="nav"]').scrollIntoView({ block: 'start', behavior: 'instant' }));
+async function open(viewport = { width: 1440, height: 1122 }, opts = {}) {
+  const ctx = await browser.newContext({ viewport, ...opts });
+  // This suite exercises independent navigation; the walkthrough is tested separately.
+  await ctx.addInitScript(() => localStorage.setItem('geo9900:topic06:position-walkthrough:v1', 'skipped'));
+  const p = await ctx.newPage();
+  watch(p);
+  await p.goto(URL, { waitUntil: 'domcontentloaded', timeout: 240000 });
+  await p.waitForSelector(A, { timeout: 240000 });
+  await toTop(p);
+  await ready(p);
+  return p;
 }
-const liveReady = (p) =>
+const toTop = (p) => p.evaluate(() => document.querySelector('[data-tips-screen="nav"]').scrollIntoView({ block: 'start', behavior: 'instant' }));
+const ready = (p) =>
   p.waitForFunction((s) => {
     const f = document.querySelector(s + ' [data-view-frame]');
-    return f?.hasAttribute('data-ready') && !f.querySelector('[data-loading]');
-  }, A, { timeout: 180000 });
-const click = async (sel) => {
-  await page.click(`${A} ${sel}`);
-  await page.waitForTimeout(320);
+    return !f || (f.hasAttribute('data-ready') && !f.querySelector('[data-loading]'));
+  }, A, { timeout: 240000 });
+const run = (p) => p.evaluate(() => { const r = window.__replayRun; const v = r.visits[r.visits.length - 1]; return { stop: v.stop, phase: r.phase, fix: r.know.fix.stop, counted: r.know.counted, msg: v.check?.msg?.kind ?? null, pending: v.check?.pending ?? null, matched: v.check?.matched ?? [], verdict: v.check?.verdict?.kind ?? null, agrees: v.agrees, review: r.review, truth: v.truth }; });
+const attr = (p, name) => p.locator(A).getAttribute(name);
+
+/** Turn to a sign, aim through the live camera, click it in the view. */
+async function clickSign(p, sign) {
+  const { truth: eye } = await run(p);
+  let at = R.signAnchor(sign, eye);
+  let lift = 0.3;
+  if (sign === 'summitW' || sign === 'summitE') {
+    const d = W.distW(eye, at);
+    at = { x: at.x + ((eye.x - at.x) * 45) / d, z: at.z + ((eye.z - at.z) * 45) / d };
+    lift = 0;
+  }
+  if (sign === 'saddle') lift = 4;
+  if (sign === 'saddle' && W.distW(eye, at) < 40) at = W.along(eye, await p.evaluate(() => window.__replayView.get().yawDeg), 22), (lift = 0);
+  if (sign === 'pines') (at = R.SIGNS.pines.members.reduce((b, q) => (W.distW(eye, q) < W.distW(eye, b) ? q : b))), (lift = 7);
+  const yaw = W.bearingW(eye, at);
+  const pitch = (Math.atan2(T.heightAt(at.x, at.z) + lift - T.heightAt(eye.x, eye.z) - 1.7, W.distW(eye, at)) * 180) / Math.PI;
+  await p.evaluate(([y, t]) => window.__replayView.set({ yawDeg: y, pitchDeg: Math.max(-22, Math.min(24, t)), vfovDeg: 40 }), [yaw, pitch]);
+  await p.waitForTimeout(350);
+  const ndc = await p.evaluate(([x, z, l]) => window.__replayProject(x, z, l), [at.x, at.z, lift]);
+  const box = await p.locator(`${A} [data-view-frame]`).boundingBox();
+  const y = Math.min(box.y + box.height - 6, Math.max(box.y + 6, box.y + ((1 - ndc.y) / 2) * box.height));
+  await p.mouse.click(box.x + ((ndc.x + 1) / 2) * box.width, y);
+  await p.waitForTimeout(250);
+}
+/** Click a world point on the SVG map, through the map's own transform. */
+async function clickMap(p, w) {
+  const m = W.toMap(w);
+  const pt = await p.evaluate(([s, x, y]) => {
+    const svg = document.querySelector(s + ' [data-panel="map"] svg[role="img"]');
+    const q = new DOMPoint(x, y).matrixTransform(svg.getScreenCTM());
+    return { x: q.x, y: q.y };
+  }, [A, m.x, m.y]);
+  await p.mouse.click(pt.x, pt.y);
+  await p.waitForTimeout(250);
+}
+const mapPoint = (sign, eye) => (sign === 'road' || sign === 'stream' ? R.signAnchor(sign, eye) : R.SIGNS[sign].at);
+async function useSign(p, sign) {
+  await clickSign(p, sign);
+  let s = await run(p);
+  assert.equal(s.pending, sign, `view click on ${sign} → ${s.msg}`);
+  await clickMap(p, mapPoint(sign, s.truth));
+  s = await run(p);
+  assert.ok(s.matched.includes(sign), `map click on ${sign} → ${s.msg}`);
+}
+const click = async (p, sel) => {
+  await p.click(`${A} ${sel}`);
+  await p.waitForTimeout(250);
 };
-const state = () =>
-  page.evaluate((s) => {
-    const root = document.querySelector(s);
-    const map = root.querySelector('[data-panel="map"] svg[role="img"]');
-    return {
-      active: root.getAttribute('data-active'),
-      phase: root.getAttribute('data-phase'),
-      done: [...root.querySelectorAll('[data-timeline] [data-moment]')].filter((b) => b.hasAttribute('data-done')).map((b) => b.getAttribute('data-moment')),
-      current: root.querySelector('[data-timeline] [aria-current="step"]')?.getAttribute('data-moment'),
-      counter: root.querySelector('[data-counter]').textContent.trim(),
-      story: root.querySelector('[data-info-card="story"] p').textContent.trim(),
-      field: root.querySelector('[data-info-card="field"] p').textContent.trim(),
-      mapLabel: map.getAttribute('aria-label'),
-      truthMarks: map.querySelectorAll('[data-marker="truth"], [data-truth]').length,
-      estimate: map.querySelector('[data-marker="estimate"]') ? 1 : 0,
-      fix: map.querySelector('[data-marker="fix"]')?.getAttribute('data-name'),
-      text: root.innerText,
-      height: Math.round(root.getBoundingClientRect().height),
-    };
-  }, A);
+async function walkOn(p, sel = '[data-choice="continue"], [data-action="next"], [data-action="continue-anyway"]') {
+  const before = (await run(p)).stop;
+  await p.click(`${A} :is(${sel})`);
+  await p.waitForFunction(([s, b]) => { const r = window.__replayRun; return r.phase !== 'walking' && (r.visits.at(-1).stop !== b || r.phase === 'done'); }, [A, before], { timeout: 60000 });
+  await ready(p);
+  // the decision bar cross-fades (0.2 s) to the new stop's question
+  await p.waitForFunction((s) => !document.querySelector(s + ' [data-travel-status]'), A);
+  await p.waitForTimeout(400);
+}
+async function guided(p) {
+  await useSign(p, 'saddle');
+  await useSign(p, 'stream');
+  await click(p, '[data-action="commit"]');
+  assert.equal((await run(p)).fix, 'stream');
+}
+const checkWith = async (p, signs, distance) => {
+  await click(p, '[data-choice="check"]');
+  for (const s of signs) await useSign(p, s);
+  if (distance) await click(p, '[data-action="distance"]');
+  await click(p, '[data-action="commit"]');
+};
+const noTruth = async (p) => assert.equal(await p.locator(`${A} [data-panel="map"] [data-truth], ${A} [data-panel="map"] [data-layer="debrief"]`).count(), 0, 'the true track must not show before the debrief');
 
 before(async () => {
   browser = await chromium.launch({ channel: 'chrome', args: GPU });
-  page = await browser.newPage({ viewport: VIEW });
-  watch(page, errors);
-  await open(page);
-  await liveReady(page);
 });
 after(async () => browser?.close());
 
-test('direct load of #scene-tips: the replay screen, the live view drawn, one canvas', async () => {
-  const s = await state();
-  assert.equal(s.active, 'depart');
-  assert.equal(s.counter, 'רגע 1 מתוך 4');
-  assert.equal(await page.locator(`${A} canvas`).count(), 1);
-  const heading = await page.locator('[data-tips-screen="nav"] h3').textContent();
-  assert.equal(heading.trim(), 'במהלך הניווט: מה צריך לבדוק?');
-  assert.match(await page.locator('[data-tips-screen="nav"] header p').textContent(), /השוו את דוגמת התכנון למראה השטח/);
-  const stats = await page.evaluate(() => window.__replayStats);
-  assert.equal(stats.station, 'depart');
-  assert.ok(stats.shrubsNear > 500 && stats.rocks > 1000 && stats.grass > 1000, JSON.stringify(stats));
+test('opening: one card, one canvas, the guided check with its pointer, and the map keeps fix / estimate / target apart', async () => {
+  const p = await open();
+  assert.equal(await p.locator('[data-tips-screen="nav"] .surface-elevated').count(), 1);
+  assert.equal(await p.locator(`${A} canvas`).count(), 1);
+  assert.equal((await p.locator('[data-tips-screen="nav"] h3').textContent()).trim(), 'במהלך הניווט: מה צריך לבדוק?');
+  assert.match(await p.locator('[data-tips-screen="nav"] header p').textContent(), /בכל תחנה החליטו: ממשיכים, או עוצרים לבדוק/);
+  assert.equal(await attr(p, 'data-phase'), 'check');
+  assert.match(await p.locator(`${A} [data-prompt]`).textContent(), /דוגמה מודרכת/);
+  assert.equal(await p.locator(`${A} [data-view-marker="hint"]`).count(), 1, 'the sign to find is pointed out');
+  assert.match(await p.locator(`${A} [data-map-key] [data-key="fix"]`).textContent(), /חציית הנחל/);
+  assert.match(await p.locator(`${A} [data-map-key] [data-key="target"]`).textContent(), /האוכף/);
+  assert.equal(await p.locator(`${A} [data-choice="continue"]`).count(), 0, 'no walking before the guided check');
+  await noTruth(p);
+  await p.context().close();
 });
 
-test('the screen fits the 1440 × 1122 view at the lesson scale, with no horizontal scroll', async () => {
-  const r = await page.evaluate(() => {
-    const el = document.querySelector('[data-tips-screen="nav"]');
-    el.scrollIntoView({ block: 'start', behavior: 'instant' });
-    window.scrollBy({ top: -96, behavior: 'instant' });
-    const b = el.getBoundingClientRect();
-    return { top: b.top, bottom: b.bottom, scale: +el.closest('[data-lesson-viewport-fit]').getAttribute('data-fit-scale'), h: document.documentElement.scrollWidth - document.documentElement.clientWidth };
-  });
-  assert.ok(r.top >= 80 && r.bottom <= VIEW.height, `screen ${r.top}–${r.bottom}`);
-  assert.ok(Math.abs(r.scale - 0.7827) < 0.002, `scale ${r.scale}`);
-  assert.equal(r.h, 0);
-});
-
-test('moment 4 before a decision: the plan, the last fix and the estimate — never the truth', async () => {
-  await click('[data-moment="after"]');
-  await liveReady(page);
-  const s = await state();
-  assert.equal(s.active, 'after');
-  assert.equal(s.fix, 'האוכף');
-  assert.equal(s.estimate, 1);
-  assert.equal(s.truthMarks, 0, 'no true position or track on the map');
-  assert.match(s.story, /מהאוכף: כ־450 מ׳ עד חציית דרך עפר/);
-  assert.match(s.field, /מרחק משוער מהנקודה המזוהה האחרונה: כ־450 מ׳/);
-  for (const w of ['בפועל', 'שלוחה', 'סטה', 'סטייה', 'ממזרח', 'צפונה']) {
-    assert.ok(!s.text.includes(w), `"${w}" visible before the decision`);
-    assert.ok(!s.mapLabel.includes(w), `"${w}" in the map's accessible name`);
-  }
-  const sr = await page.evaluate((a) => document.querySelector(a + ' [data-view-frame] .sr-only').textContent, A);
-  assert.ok(!/בפועל|שלוחה|סטה/.test(sr), 'the view description gives nothing away');
-  // viewing moment 4 first completes nothing earlier
-  assert.deepEqual(s.done, []);
-});
-
-test('moment 4: continue → retry; check → a wrong and a partial reason explained; the right one opens the debrief', async () => {
-  const h0 = (await state()).height;
-  await click('[data-choice="continue"]');
-  let s = await state();
-  assert.equal(s.phase, 'decided');
-  assert.match(s.text, /עוד לא\./);
-  assert.equal(s.truthMarks, 0);
-  await click('[data-action="retry"]');
-  await click('[data-choice="check"]');
-  await click('[data-option="proof"]');
-  s = await state();
-  assert.match(s.text, /לא מוכיח לאן סטיתם/);
-  assert.equal(s.truthMarks, 0, 'a wrong reason reveals nothing');
-  await click('[data-option="routine"]');
-  assert.match((await state()).text, /חלקית\./);
-  await click('[data-option="missing"]');
-  s = await state();
-  assert.equal(s.phase, 'done');
-  assert.ok(s.truthMarks >= 2, 'debrief: the true track and position');
-  assert.match(s.mapLabel, /בפועל/);
-  assert.match(s.text, /בשחזור:/);
-  assert.match(s.text, /בשטח לא יודעים זאת מראש/);
-  assert.match(s.text, /עכשיו:/);
-  assert.equal(s.height, h0, 'the card keeps its height');
-  assert.deepEqual(s.done, ['after']);
-  assert.equal(await page.locator(`${A} [data-view-frame]`).getAttribute('data-mode'), 'live', 'the debrief keeps the live renderer');
-});
-
-test('answers stay per moment; the timeline steps and jumps without completing anything', async () => {
-  await click('[data-prev]');
-  let s = await state();
-  assert.equal(s.active, 'saddle');
-  assert.equal(s.phase, 'viewing', 'moment 3 untouched');
-  assert.equal(s.truthMarks, 0, 'no debrief leaks into moment 3');
-  assert.equal(s.fix, 'חציית הנחל', 'the saddle is not verified yet');
-  await click('[data-moment="after"]');
-  s = await state();
-  assert.equal(s.phase, 'done');
-  assert.ok(s.truthMarks >= 2, 'moment 4 kept its debrief');
-  assert.equal(await page.locator(`${A} [data-next]`).isDisabled(), true, 'no moment after 4');
-  await click('[data-moment="depart"]');
-  assert.equal(await page.locator(`${A} [data-prev]`).isDisabled(), true, 'no moment before 1');
-  assert.equal((await state()).current, 'depart');
-});
-
-test('the guided opening, a cautious check at moment 2, the saddle verified with evidence', async () => {
-  await click('[data-look="place"]');
-  const yaw = await page.evaluate(() => window.__replayView.get().yawDeg);
-  await page.waitForTimeout(700);
-  const yaw2 = await page.evaluate(() => window.__replayView.get().yawDeg);
-  assert.ok(Math.abs(yaw2 - 255) < 1, `"show in the field" turns to the stream (${yaw} → ${yaw2})`);
-  await click('[data-action="depart"]');
-  await liveReady(page);
-  let s = await state();
-  assert.equal(s.active, 'enroute');
-  assert.ok(s.done.includes('depart'));
-  await click('[data-choice="check"]');
-  s = await state();
-  assert.equal(s.phase, 'done');
-  assert.match(s.text, /בדיקה כאן אינה טעות/);
-  await click('[data-action="next"]');
-  await liveReady(page);
-  await click('[data-choice="continue"]');
-  assert.match((await state()).text, /זו נקודת בדיקה מתוכננת/);
-  await click('[data-action="retry"]');
-  await click('[data-choice="check"]');
-  await click('[data-option="distance"]');
-  assert.match((await state()).text, /מרחק משוער לבדו אינו מאמת הגעה/);
-  await click('[data-option="combined"]');
-  s = await state();
-  assert.equal(s.phase, 'done');
-  assert.equal(s.fix, 'האוכף', 'the saddle becomes the last fix on the map');
-  assert.deepEqual(s.done.sort(), ['after', 'depart', 'enroute', 'saddle']);
-});
-
-test('summary connects the four principles and leads to the application question', async () => {
-  await click('[data-moment="after"]');
-  await click('[data-action="next"]');
-  const t = (await state()).text;
-  for (const p of ['מאמתים מיקום וכיוון לפני ההתקדמות', 'משווים בין הצפוי לנראה בשטח', 'משלבים כיוון, מרחק וסימני שטח', 'בודקים אי־התאמה לפני שממשיכים']) assert.ok(t.includes(p), p);
-  await click('[data-action="to-question"]');
-  await page.waitForTimeout(900);
-  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-option')), 'looks', 'focus on the question');
-});
-
-test('reset: back to moment 1, every answer cleared, focus on the first action', async () => {
-  await page.evaluate(() => document.querySelector('[data-tips-screen="nav"]').scrollIntoView({ block: 'start', behavior: 'instant' }));
-  await click('[data-reset]');
-  // moment 1 fades in after the old content leaves, and takes the focus once mounted (slower with the planning lab's model on the page)
-  await page.waitForFunction(() => document.activeElement?.getAttribute('data-action') === 'depart', null, { timeout: 3000 }).catch(() => {});
-  const s = await state();
-  assert.equal(s.active, 'depart');
-  assert.deepEqual(s.done, []);
-  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-action')), 'depart');
-});
-
-test('keyboard: the view turns, tilts, zooms and returns home; the decision is all buttons', async () => {
-  await liveReady(page);
-  await page.focus(`${A} [data-view-frame]`);
-  const look = () => page.evaluate(() => window.__replayView.get());
-  const l0 = await look();
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('ArrowUp');
-  await page.keyboard.press('+');
-  const l1 = await look();
-  assert.ok(Math.abs(((l1.yawDeg - l0.yawDeg + 540) % 360) - 180 - 8) < 1e-6, 'turned 8°');
-  assert.ok(l1.pitchDeg > l0.pitchDeg && l1.vfovDeg < l0.vfovDeg);
-  await page.keyboard.press('Home');
-  await page.waitForTimeout(800);
-  const l2 = await look();
-  assert.ok(Math.abs(l2.yawDeg - l0.yawDeg) < 0.5 && Math.abs(l2.vfovDeg - l0.vfovDeg) < 0.5, 'home');
-  // the activity state never changed while looking
-  assert.equal((await state()).phase, 'viewing');
-  // decisions reachable by Tab + Enter
-  await click('[data-moment="saddle"]');
-  await page.focus(`${A} [data-choice="check"]`);
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(350);
-  assert.equal((await state()).phase, 'decided');
-  await page.keyboard.press('Tab');
-  assert.ok(await page.evaluate(() => document.activeElement?.hasAttribute('data-option')), 'Tab reaches the reasons');
-});
-
-test('drag to look: a horizontal drag turns the view and leaves the answers alone', async () => {
-  await click('[data-reset]');
-  await liveReady(page);
-  const box = await page.locator(`${A} [data-view-frame]`).boundingBox();
-  const y0 = await page.evaluate(() => window.__replayView.get().yawDeg);
-  await page.mouse.move(box.x + box.width * 0.6, box.y + box.height * 0.6);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.6, { steps: 6 });
-  await page.mouse.up();
-  const y1 = await page.evaluate(() => window.__replayView.get().yawDeg);
-  // drag left by 30 % of the width ≈ turn right; inside the fit the drag is divided by the scale
-  const d = ((y1 - y0 + 540) % 360) - 180;
-  assert.ok(d > 15 && d < 40, `turned ${d.toFixed(1)}°`);
-  assert.equal((await state()).active, 'depart');
-});
-
-test('full screen opens on the view panel and returns focus to its button', async () => {
-  await page.click(`${A} [data-view-controls] button[aria-label="מסך מלא"]`);
-  await page.waitForTimeout(600);
-  const fs = await page.evaluate(() => document.fullscreenElement?.getAttribute('data-panel') ?? null);
-  if (fs === null) {
-    test.skip?.('fullscreen not available in this browser mode');
-    return;
-  }
-  assert.equal(fs, 'view');
-  await page.evaluate(() => document.exitFullscreen());
-  await page.waitForTimeout(600);
-  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')), 'מסך מלא');
-});
-
-test('reduced motion: going home is immediate', async () => {
-  const p = await browser.newPage({ viewport: VIEW, reducedMotion: 'reduce' });
-  const errs = [];
-  watch(p, errs);
-  await open(p);
-  await liveReady(p);
-  await p.evaluate(() => window.__replayView.turn(70, 0));
-  await p.click(`${A} [data-view-controls] button[aria-label="חזרה למבט הפתיחה"]`);
-  const yaw = await p.evaluate(() => window.__replayView.get().yawDeg);
-  const home = await p.evaluate(() => window.__replayView.home().yawDeg);
-  assert.ok(Math.abs(yaw - home) < 1e-6, 'no animated turn');
-  await p.close();
-  assert.deepEqual(errs, []);
-});
-
-test('the loader covers the wait for the 3D assets and goes once the view is drawn', async () => {
-  const p = await browser.newPage({ viewport: VIEW });
-  let release;
-  const gate = new Promise((r) => (release = r));
-  await p.route('**/navigation-replay/rocks.glb', async (route) => {
-    await gate;
-    await route.continue();
-  });
-  await open(p);
-  await p.waitForSelector(`${A} [data-view-frame] [data-loading]`, { timeout: 120000 });
-  assert.equal(await p.locator(`${A} [data-view-frame] [data-loading]`).count(), 1, 'one loading line at a time');
-  assert.match(await p.locator(`${A} [data-view-frame] [data-loading]`).textContent(), /טוען שטח תלת־ממדי…/);
-  release();
-  await liveReady(p);
-  assert.equal(await p.locator(`${A} [data-view-frame] [data-loading]`).count(), 0);
-  await p.close();
-});
-
-test('no WebGL: the photographed fallback, labelled, turns by quarters, and the activity completes', async () => {
-  const p = await browser.newPage({ viewport: VIEW });
-  await p.addInitScript(() => {
-    const orig = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type, ...a) {
-      return /webgl/.test(type) ? null : orig.call(this, type, ...a);
-    };
-  });
-  await open(p);
-  await p.waitForSelector(`${A} [data-fallback] img`, { timeout: 60000 });
-  await p.waitForFunction((s) => document.querySelector(s + ' [data-fallback] img')?.naturalWidth > 0, A);
-  assert.match(await p.locator(`${A} [data-panel="view"]`).innerText(), /תצלומים מהמודל/);
-  assert.equal(await p.locator(`${A} canvas`).count(), 0);
-  await p.focus(`${A} [data-view-frame]`);
-  await p.keyboard.press('ArrowRight');
-  assert.equal(await p.locator(`${A} [data-fallback]`).getAttribute('data-quarter'), '1');
-  await p.click(`${A} [data-action="depart"]`);
-  await p.click(`${A} [data-choice="continue"]`);
-  await p.click(`${A} [data-option="landmark"]`);
-  assert.equal(await p.locator(A).getAttribute('data-phase'), 'done');
-  assert.match(await p.locator(`${A} [data-fallback] img`).getAttribute('src'), /m2-0\.webp$/);
-  await p.close();
-});
-
-test('a failed 3D asset falls back to the stills', async () => {
-  const p = await browser.newPage({ viewport: VIEW });
-  await p.route('**/navigation-replay/rocks.glb', (route) => route.fulfill({ status: 404, body: '' }));
-  await open(p);
-  await p.waitForSelector(`${A} [data-fallback] img`, { timeout: 120000 });
-  await p.close();
-});
-
-test('another sub-topic and back: one canvas, no errors', async () => {
-  await page.goto(`${BASE}/lessons/topic-06/#scene-combatnav`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(1500);
-  await page.goto('about:blank');
-  await open(page);
-  await liveReady(page);
-  // the replay's own canvas, once (the planning lab on screen 1 has its own model)
-  assert.equal(await page.locator('[data-activity="navigation-replay"] canvas').count(), 1);
+test('decisions with checks: the guided check, a continue that matches, verified saddle, the woodland drift found and corrected', async () => {
+  const p = await open();
+  await guided(p);
+  assert.equal(await p.locator(`${A} [data-timeline] [data-moment="stream"]`).getAttribute('data-status'), 'fix');
+  await walkOn(p);
+  let s = await run(p);
+  assert.equal(s.stop, 'enroute');
+  assert.ok(s.counted > 70);
+  assert.equal(await p.locator(`${A} [data-panel="map"] [data-marker="estimate"]`).count(), 1, 'the estimate is drawn as a ring');
+  const r1 = +(await p.locator(`${A} [data-panel="map"] [data-marker="estimate"]`).getAttribute('data-r'));
+  await walkOn(p);
+  s = await run(p);
+  assert.equal(s.stop, 'saddle');
+  assert.equal(s.fix, 'stream', 'continuing does not verify');
+  assert.ok(+(await p.locator(`${A} [data-panel="map"] [data-marker="estimate"]`).getAttribute('data-r')) > r1, 'the uncertainty grows');
+  assert.match(await p.locator(`${A} [data-line="changed"]`).textContent(), /האומדן התקדם/);
+  // the saddle: stood in + the distance counted
+  await checkWith(p, ['saddle'], true);
+  s = await run(p);
+  assert.equal(s.fix, 'saddle');
+  assert.equal(s.agrees, true);
+  assert.match(await p.locator(`${A} [data-feedback="fix"]`).textContent(), /המיקום אומת/);
+  await walkOn(p);
+  s = await run(p);
+  assert.equal(s.stop, 'woods');
+  assert.match(await p.locator(`${A} [data-line="event"]`).textContent(), /החורש|בחורש/);
+  await noTruth(p);
+  await checkWith(p, ['pines'], true);
+  s = await run(p);
+  assert.equal(s.agrees, false);
+  assert.match(await p.locator(`${A} [data-feedback="fix"]`).textContent(), /סטייה של כ־\d+ מ׳/);
+  assert.equal(await p.locator(`${A} [data-panel="map"] [data-layer="correction"]`).count(), 1, 'the corrected leg is drawn');
+  assert.ok((await p.locator(`${A} [data-panel="map"] [data-locus="sight"]`).count()) >= 1);
+  await walkOn(p);
+  assert.equal((await run(p)).stop, 'crossing');
+  await checkWith(p, ['road'], true);
+  assert.equal((await run(p)).agrees, true);
+  await walkOn(p, '[data-action="next"]');
+  assert.equal((await run(p)).phase, 'done');
+  assert.equal(await p.locator(`${A} [data-panel="debrief"]`).count(), 1);
+  assert.equal(await p.locator(`${A} [data-panel="map"] [data-truth="track"]`).count(), 1, 'the debrief shows the true track');
+  assert.match(await p.locator(`${A} [data-summary]`).textContent(), /מיד אחרי החורש/);
+  assert.equal(await p.locator(`${A} [data-debrief-stop]`).count(), 5);
   assert.deepEqual(errors, []);
+  await p.context().close();
+});
+
+test('continuing despite the mismatch: the road comes early, a short walk past it, then only a check — and its cost in the debrief', async () => {
+  const p = await open();
+  await guided(p);
+  for (const expected of ['enroute', 'saddle', 'woods', 'road']) {
+    await walkOn(p);
+    assert.equal((await run(p)).stop, expected);
+  }
+  assert.match(await p.locator(`${A} [data-line="expect"]`).textContent(), /עוד כ־\d+ מ׳ עד חציית הדרך/);
+  await walkOn(p);
+  assert.equal((await run(p)).stop, 'beyond');
+  assert.equal(await p.locator(`${A} [data-choice="continue"]`).count(), 0, 'no more walking from an unknown point');
+  assert.equal(await p.locator(`${A} [data-must-check]`).count(), 1);
+  await noTruth(p);
+  await checkWith(p, ['summitW', 'pines'], false);
+  assert.equal((await run(p)).agrees, false);
+  await walkOn(p);
+  assert.equal((await run(p)).stop, 'crossing');
+  await walkOn(p);
+  assert.equal((await run(p)).phase, 'done');
+  assert.match(await p.locator(`${A} [data-summary]`).textContent(), /אחרי שחציתם את דרך העפר/);
+  assert.match(await p.locator(`${A} [data-panel="debrief"]`).textContent(), /950|940|960/);
+  assert.deepEqual(errors, []);
+  await p.context().close();
+});
+
+test('one sign gives a line, not a position; leaving the check keeps the drift', async () => {
+  const p = await open();
+  await guided(p);
+  for (let i = 0; i < 3; i++) await walkOn(p);
+  assert.equal((await run(p)).stop, 'woods');
+  await click(p, '[data-choice="check"]');
+  assert.equal(await p.locator(`${A} [data-action="commit"]`).isDisabled(), true, 'no evidence, no position to determine');
+  await useSign(p, 'pines');
+  assert.equal(await p.locator(`${A} [data-action="commit"]`).isDisabled(), true, 'one sign still needs a second piece of evidence');
+  assert.match(await p.locator(`${A} [data-evidence-progress]`).textContent(), /ראיה אחת מתוך שתיים/);
+  assert.equal((await run(p)).fix, 'stream');
+  await click(p, '[data-action="cancel-check"]');
+  await walkOn(p);
+  assert.equal((await run(p)).stop, 'road', 'the partial check corrected nothing');
+  await p.context().close();
+});
+
+test('wrong picks are named, keyboard picks work, review is read-only, reset starts over', async () => {
+  const p = await open();
+  // empty ground in the view, then a map click on the wrong sign
+  const box = await p.locator(`${A} [data-view-frame]`).boundingBox();
+  // the sky behind, away from every sign
+  await p.evaluate(() => window.__replayView.set({ yawDeg: 170, pitchDeg: 22 }));
+  await p.waitForTimeout(300);
+  await p.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.2);
+  assert.equal((await run(p)).msg, 'view-none');
+  await clickSign(p, 'saddle');
+  await clickMap(p, R.SIGNS.summitE.at);
+  assert.equal((await run(p)).msg, 'map-wrong');
+  assert.match(await p.locator(`${A} [data-check-feedback]`).textContent(), /במפה לחצתם על הפסגה המזרחית/);
+  // the keyboard path: choose from the lists
+  await p.selectOption(`${A} [data-list="map"]`, 'saddle');
+  await p.selectOption(`${A} [data-list="view"]`, 'stream');
+  await p.selectOption(`${A} [data-list="map"]`, 'stream');
+  await click(p, '[data-action="commit"]');
+  assert.equal((await run(p)).fix, 'stream');
+  await walkOn(p);
+  await walkOn(p);
+  await click(p, '[data-timeline] [data-moment="enroute"]');
+  assert.equal(await attr(p, 'data-review'), 'true');
+  assert.equal(await p.locator(`${A} [data-choice]`).count(), 0, 'no decisions in the review');
+  assert.match(await p.locator(`${A} [data-decision="review"]`).textContent(), /המשכתם/);
+  await click(p, '[data-action="back-to-current"]');
+  assert.equal(await attr(p, 'data-review'), null);
+  assert.equal((await run(p)).stop, 'saddle');
+  await click(p, '[data-reset]');
+  const s = await run(p);
+  assert.equal(s.stop, 'stream');
+  assert.equal(s.phase, 'check');
+  await p.context().close();
+});
+
+test('reduced motion: continuing arrives at once, without a walk', async () => {
+  const p = await open({ width: 1440, height: 1122 }, { reducedMotion: 'reduce' });
+  await p.selectOption(`${A} [data-list="view"]`, 'saddle');
+  await p.selectOption(`${A} [data-list="map"]`, 'saddle');
+  await p.selectOption(`${A} [data-list="view"]`, 'stream');
+  await p.selectOption(`${A} [data-list="map"]`, 'stream');
+  await click(p, '[data-action="commit"]');
+  await p.click(`${A} [data-action="next"]`);
+  await p.waitForTimeout(150);
+  assert.equal(await p.locator(`${A} [data-skip-walk]`).count(), 0);
+  assert.equal((await run(p)).stop, 'enroute');
+  await p.context().close();
+});
+
+test('fit: the whole activity stays on screen in every state at 1440×1122 and 1920×910', async () => {
+  for (const vp of [{ width: 1440, height: 1122 }, { width: 1920, height: 910 }]) {
+    const p = await open(vp);
+    const fits = async (label) => {
+      await toTop(p);
+      await p.waitForTimeout(200);
+      const r = await p.evaluate(() => document.querySelector('[data-tips-screen="nav"]').getBoundingClientRect().toJSON());
+      assert.ok(r.bottom <= vp.height + 1, `${vp.width}×${vp.height} ${label}: bottom ${Math.round(r.bottom)}`);
+      assert.ok(r.top >= -1, `${label}: top ${r.top}`); // scaled lesson coordinates may round just below zero
+    };
+    await fits('guided check');
+    await p.selectOption(`${A} [data-list="view"]`, 'saddle');
+    await p.selectOption(`${A} [data-list="map"]`, 'saddle');
+    assert.equal(await p.locator(`${A} [data-action="commit"]`).isDisabled(), true);
+    await fits('second evidence instruction');
+    await p.close();
+  }
 });

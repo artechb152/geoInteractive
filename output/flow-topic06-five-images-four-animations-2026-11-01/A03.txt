@@ -1,0 +1,13 @@
+=== A03 | הנפשה 3: התקדמות, עצירה והשוואה למפה ===
+פריים התחלה: F02-terrain-departure.png
+פריים סיום: F03-map-position-check.png
+שם לשמירה: A03-position-check.mp4
+משך בימוי מוצע: 8 שניות; חשוב לא להאיץ את ההשוואה בהטמעה עתידית.
+
+Animate from the supplied terrain departure frame to the supplied full-frame position-check map, approximately eight seconds. The learning action is: move, stop, identify the hill and palms, compare them with the map. Do not finish as an unexplained map reveal. Maintain the same geography, route, daylight and single blue navigator throughout.
+
+Retract the oversized compass and the temporary departure arrow. Move the navigator visibly along the selected orange lower-ground ribbon around the southern side of the hill to the FIRST planned checkpoint beside the three palms. This is time-compressed instructional progress, not a real walking-speed simulation. The navigator's feet remain grounded and it follows the route without cutting across the hill. Stop completely at the checkpoint before beginning the comparison.
+
+While still in terrain view, trace a large open ring around the existing rocky hill; then place an open bracket around the existing group of exactly three palms. Pause long enough to recognize the two different features. Smoothly lift to overhead and transition the whole image into the approved map of this exact place. Carry the hill ring onto its matching contour group and the palm bracket onto the corresponding three palm symbols. Let each correspondence remain visually trackable during the change of representation. No new objects grow or relocate.
+
+The stopped navigator becomes the single blue map symbol at that same first checkpoint. Settle on the supplied map end frame, briefly emphasize the hill group and then the palm group in that order, and hold both clearly for the final second. Match the supplied contours, junction, building and route exactly. No additional blue marker, automatic GPS fix, satellite pulse, arrival approval, compass, split screen, map inset, text, letters, numbers, narration, music, logo or watermark. The correspondence must remain understandable without sound.

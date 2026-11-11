@@ -1,0 +1,84 @@
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { chromium } from 'playwright';
+
+const out = 'design/screenshots/navigation-replay-ux-2026-11-02';
+await mkdir(out, { recursive: true });
+const browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
+try {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1122 }, reducedMotion: 'reduce' });
+  // First-time guidance has its own action-driven walkthrough suite.
+  await page.addInitScript(() => localStorage.setItem('geo9900:topic06:position-walkthrough:v1', 'skipped'));
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+  await page.goto(`${process.env.QA_BASE ?? 'http://localhost:3000'}/lessons/topic-06/#scene-tips`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  const a = page.locator('[data-activity="navigation-replay"]');
+  await a.waitFor({ timeout: 180000 });
+  const task = a.locator('[data-next-task]');
+  const commit = a.locator('[data-action="commit"]');
+  const focused = () => page.evaluate(() => document.activeElement?.getAttribute('data-list') ?? document.activeElement?.getAttribute('data-action'));
+  let activityHeight;
+  const shot = async (name) => {
+    await page.waitForFunction(() => document.querySelector('[data-activity="navigation-replay"] [data-view-frame]')?.hasAttribute('data-ready'), {}, { timeout: 180000 });
+    await page.locator('[data-tips-screen="nav"]').evaluate((e) => window.scrollTo({ top: e.getBoundingClientRect().top + scrollY - 104, behavior: 'instant' }));
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${out}/${name}.png` });
+    const box = await a.boundingBox();
+    assert.ok(box.y >= 80 && box.y + box.height <= 1122, `${name}: entire activity fits below the header`);
+    activityHeight ??= box.height;
+    assert.ok(Math.abs(box.height - activityHeight) < 1, `${name}: activity height stays stable`);
+  };
+  await task.waitFor({ timeout: 5000 });
+  await page.waitForFunction(() => document.querySelector('[data-activity="navigation-replay"] [data-view-frame]')?.hasAttribute('data-ready'), {}, { timeout: 180000 });
+  assert.match(await task.innerText(), /האוכף/);
+  assert.equal(await task.getAttribute('data-target'), 'view');
+  assert.equal(await commit.isDisabled(), true);
+  await shot('01-field');
+  await a.locator('[data-list="view"]').selectOption('saddle');
+  assert.equal(await task.getAttribute('data-target'), 'map');
+  assert.equal(await focused(), 'map');
+  assert.match(await task.innerText(), /האוכף/);
+  await shot('02-map');
+  // A wrong map choice must keep the instruction on the same pending sign.
+  await a.locator('[data-list="map"]').selectOption('summitE');
+  assert.match(await a.locator('[data-check-feedback]').innerText(), /במפה לחצתם על הפסגה המזרחית/);
+  assert.equal(await task.getAttribute('data-target'), 'map');
+  await a.locator('[data-list="map"]').selectOption('saddle');
+  assert.equal(await focused(), 'view');
+  assert.equal(await commit.isDisabled(), true, 'one line cannot determine a position');
+  assert.match(await task.innerText(), /הנחל/);
+  await shot('03-second-sign');
+  await a.locator('[data-list="view"]').selectOption('stream');
+  await a.locator('[data-list="map"]').selectOption('stream');
+  assert.equal(await task.getAttribute('data-target'), 'commit');
+  assert.equal(await focused(), 'commit');
+  assert.equal(await commit.isEnabled(), true);
+  await shot('04-ready');
+  await commit.click();
+  await a.locator('[data-action="next"]').waitFor();
+  assert.match(await a.locator('[data-feedback="fix"]').innerText(), /המיקום אומת/);
+  await shot('05-fixed');
+  await a.locator('[data-action="next"]').click();
+  await a.locator('[data-choice="check"]').waitFor();
+  await shot('06-decision');
+  await a.locator('[data-choice="check"]').click();
+  await a.locator('[data-list="view"]').selectOption('saddle');
+  await a.locator('[data-list="map"]').selectOption('saddle');
+  assert.equal(await task.getAttribute('data-target'), 'distance');
+  assert.equal(await focused(), 'distance');
+  assert.equal(await commit.isDisabled(), true);
+  await a.locator('summary').click();
+  await shot('07-optional-sign');
+  await a.locator('summary').click();
+  await a.locator('[data-action="distance"]').click();
+  assert.equal(await task.getAttribute('data-target'), 'commit');
+  assert.equal(await focused(), 'commit');
+  await shot('08-distance-added');
+  await a.locator('[data-reset]').click();
+  assert.equal(await task.getAttribute('data-target'), 'view');
+  assert.equal(await commit.isDisabled(), true);
+  assert.deepEqual(errors, []);
+  console.log('PASS: guided field/map steps, wrong-choice recovery, two-evidence gate, distance, arrival, reset, 1440px fit; no page errors.');
+} finally {
+  await browser.close();
+}

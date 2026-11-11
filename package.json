@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/remove-next-junction.mjs && node scripts/build-prototypes.mjs --if-changed && next dev",
-    "build": "node scripts/remove-next-junction.mjs && node scripts/build-prototypes.mjs --if-changed && next build",
+    "dev": "node scripts/remove-next-junction.mjs && node scripts/build-prefetch-manifest.mjs --quiet && node scripts/build-prototypes.mjs --if-changed && next dev",
+    "build": "node scripts/remove-next-junction.mjs && node scripts/build-prefetch-manifest.mjs && node scripts/build-prototypes.mjs --if-changed && next build",
     "start": "next start",
     "lint": "next lint",
     "scorm:package": "node scripts/build-scorm.mjs",

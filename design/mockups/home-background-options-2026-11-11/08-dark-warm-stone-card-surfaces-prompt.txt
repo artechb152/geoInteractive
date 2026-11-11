@@ -1,0 +1,18 @@
+Created using the built-in image generation tool. Mockup only; application code unchanged.
+
+Use case: ui-mockup. EDIT the supplied homepage image. It has LIGHT WARM STONE-GREY / GREIGE card surfaces. Create a DARK counterpart of EXACTLY THE SAME WARM NEUTRAL COLOR FAMILY, preserving the full homepage layout and the pale cream lesson background.
+
+The user's precise color intent: mirror the lightness of the current card stock around the middle of the perceptual lightness scale, so the dark card's distance from BLACK is approximately equal to the current light card's distance from WHITE. Think CIELAB L*dark ≈ 100 − L*light, retaining the SAME hue direction and a restrained similar chroma. Do NOT RGB-invert the colors, since that would turn warm greige into blue. The result should be VERY DARK WARM STONE / TAUPE-CHARCOAL, approximately #39332D or #38342F, a near-black warm grey in which the subtle beige/taupe undertone is still visible. Not green, not blue, not burgundy, not vivid chocolate brown, not pure featureless black. A matte smooth physical dark mineral-grey card material with restrained realistic light.
+
+Change ALL THREE card bodies and matching paper edges to this very dark warm greige, including the blank number/title areas and the substrate under all map illustration. No leftover cream or light-grey paper patches on cards. Keep quiet uniform dark card material behind all letters.
+
+FOR READABILITY ON THE NEW DARK CARD STOCK ONLY: change chapter NUMBERS, underlines and TITLES to warm IVORY (#FDFBF3), keeping their exact fonts, sizes, positions and wording. Reproduce the thin warm tan cartographic lines in a sufficiently light tan/ivory value to remain legible on dark stock; retain red route, blue river and their identities. Do not add outlines or strong glows to lettering.
+
+LOCK BACKGROUND AND LAYOUT: the entire pale CREAM lesson/page background must remain exactly as supplied, including its faint side contour lines and brightness. The centered header, brand "גיאוגרפיה צבאית", ochre "המשך ללמוד" button, large headline "כל מסע מתחיל" / "בקריאת השטח.", and section title "פרקי הקורס" remain unchanged. Do not make the whole page dark. Only the card material and the minimum text/line color adjustments needed for readability change.
+
+Preserve every illustrated subject in natural colors:
+RIGHT card "01" "תבליט, תכסית" / "וטופוגרפיה": richly photoreal green-gold mountains, high at left and across bottom, blending naturally into the NEW DARK WARM GREY substrate at the upper/right edges. Keep upper-right typography clear.
+MIDDLE card "02" "קרטוגרפיה" / "וקריאת מפות": delicate light tan topographic contours and fine blue stream printed directly on the dark neutral material.
+LEFT card "03" "ניווטים": polished realistic GOLD BRASS compass exactly as supplied, ivory dial, red needle, glass reflection, physical metallic thickness and contact shadow. Its dial and metal DO NOT become dark; the navigation map beneath uses dark greige substrate, light tan contour print and muted red route.
+
+Keep identical square card sizes, spacing, subtle shared physical perspective, corner radii and soft contact/cast shadows. Differentiate the fine physical dark card edge from its face through realistic lighting, without decorative bright frames. Same extra-wide image aspect ratio, same crisp detail, front-on website screenshot. No new panels, no new text, no arrows, no pagination, no GEO9900, no developer badge, no watermark. Aim for a premium dark-taupe-on-cream material contrast while clearly retaining the warm neutral color family of the source's LIGHT GREIGE cards.

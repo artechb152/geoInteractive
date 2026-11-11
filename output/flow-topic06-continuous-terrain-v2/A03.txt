@@ -1,0 +1,12 @@
+=== A03 | הנפשה 3: הולכים, עוצרים ובודקים סימנים ===
+פריים התחלה: F02-terrain-direction.png
+פריים סיום: F03-terrain-position-check.png
+שם לשמירה: A03-terrain-position-check.mp4
+
+Animate from the supplied departure frame to the supplied position-check frame in the SAME uninterrupted locked-camera realistic terrain shot. Target approximately eight seconds if available. All landmark positions, materials, lighting, crop and perspective remain unchanged. The viewer must see movement, a deliberate stop and inspection of two real terrain features.
+
+Retract the oversized compass and temporary departure arrow; fade the rejected shortcut. Move the single blue navigator visibly along the chosen orange ribbon to the FIRST checkpoint beside the existing palms. Follow the route around the lower side of the hill without cutting across it. Keep grounded footfalls and correct perspective scaling as the figure moves away. This is time-compressed instructional travel, not a real-speed walking claim.
+
+Stop the navigator completely at the checkpoint. Only after stopping, have it unfold a physical cream paper map at waist height. The map remains an ordinary prop in the figure's hands, inside the unchanged landscape. Turn the figure's attention from the paper toward the existing hill. Trace a large open orange ring at that hill's base. Then direct attention toward the existing palm group and draw a separate broad open bracket around it. Let the viewer recognize the hill first and the palms second. Keep the paper map understated; do not enlarge it into a panel or change representation.
+
+Settle exactly on the supplied end frame with both terrain highlights visible and the navigator stopped. Hold the result for about the final second. No overhead view, map morph, camera move, new trees, changing hill shape, duplicate figure, teleportation, GPS pulse, automatic approval, text, numbers, speech, music, logos or watermarks.

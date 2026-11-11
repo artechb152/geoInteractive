@@ -31,7 +31,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const sharp = require('../../node_modules/.pnpm/sharp@0.34.5/node_modules/sharp');
 const BASE = process.env.QA_BASE || 'http://localhost:3000';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates`;
 const outDir = process.argv[2] && !process.argv[2].startsWith('--') ? process.argv[2] : 'qa-output/measurement-round6';
 const touchAt = process.argv.indexOf('--touch');
 const TOUCH = touchAt > 0 ? process.argv[touchAt + 1] : null;

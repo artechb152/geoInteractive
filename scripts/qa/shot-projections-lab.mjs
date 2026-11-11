@@ -3,7 +3,7 @@
 // at the end — one idea and one action per phase, the map coming in as the surface unrolls, the
 // equal circles (with their dashed true size) at the end; the slider's keys and direction; the
 // demonstration (play / stop / replay); "מבט התחלתי" appearing only once the view is turned and
-// keeping the progress; a method switch keeping the progress (the same moment compared); the
+// keeping the progress; a method switch resetting the progress to the wrap (0 %); the
 // method tabs by keyboard; the practice — a first miss (where to look, never the answer), back to
 // the demonstration and back, a second miss (the answer shown), windows, the summary, repeat.
 // Each state logs the card's readout; the card's height is checked to stay one value.
@@ -32,7 +32,7 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && /projections|ProjectionStage|ProjectionsLab|THREE|WebGL/.test(`${m.text()} ${m.location()?.url ?? ''}`) && errors.push(m.text()));
 
-await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
+await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
 const card = page.locator('[data-projections-lab]');
 await card.waitFor({ state: 'attached', timeout: 120000 });
 async function align() {
@@ -176,15 +176,20 @@ if (!NOGL) {
   assert.equal(await progress(), before, '"מבט התחלתי" keeps the progress');
 }
 
-/* ── a method switch keeps the progress: the same moment, compared ── */
+/* ── a method switch starts the new method from the wrap, never at the previous end ── */
 await key('End');
 await card.locator('[data-tab="cone"]').click();
-r = await shot('cone-compare-flat');
+r = await shot('cone-after-switch');
 assert.equal(r.method, 'cone');
-assert.equal(r.p, '1.000', 'switching methods keeps the progress');
+assert.equal(r.p, '0.000', 'switching methods resets the progress');
+assert.equal(r.playing, 'false');
+await key('End');
+r = await shot('cone-compare-flat');
 assert.equal(r.circles, '3@1.00');
 assert.equal(r.truths, 2, 'cone: the circle on the line of contact stays true');
 await card.locator('[data-tab="az"]').click();
+assert.equal((await readout()).p, '0.000', 'and again for the plane');
+await key('End');
 r = await shot('az-compare-flat');
 assert.equal(r.p, '1.000');
 assert.equal(r.truths, 2, 'plane: the circle near the pole stays true');

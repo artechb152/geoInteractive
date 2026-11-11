@@ -33,7 +33,7 @@ import { READINGS, NBSP, fx, fy } from '../../src/components/lessons/topic-02/re
 
 const outDir = process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'design/screenshots/reference-systems-2026-10-12';
 const BASE = process.env.QA_BASE || 'http://localhost:3001';
-const URL = `${BASE}/lessons/topic-02/#scene-coordinates-2`;
+const URL = `${BASE}/lessons/topic-02b/#scene-coordinates-2`;
 await mkdir(outDir, { recursive: true });
 
 const failures = [];

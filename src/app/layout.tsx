@@ -4,6 +4,7 @@ import './globals.css';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { SiteBackground } from '@/components/ui/SiteBackground';
 import { ASSET_IMG_ERROR_SCRIPT } from '@/components/assets/asset-img-error-script';
+import { BackgroundPrefetcher } from '@/components/prefetch/BackgroundPrefetcher';
 
 const heebo = Heebo({
   subsets: ['hebrew', 'latin'],
@@ -42,6 +43,8 @@ export default function RootLayout({
             התוכן יושב מתחתיו דרך pt לפי --header-h. */}
         <AppHeader />
         <div className="min-h-screen flex flex-col pt-[var(--header-h)]">{children}</div>
+        {/* מוריד ברקע את שאר הקורס בזמן הגלישה (docs/superpowers/specs/2026-11-02-background-prefetch-design.md). */}
+        <BackgroundPrefetcher />
       </body>
     </html>
   );

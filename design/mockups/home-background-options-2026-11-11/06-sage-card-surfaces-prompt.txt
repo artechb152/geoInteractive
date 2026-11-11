@@ -1,0 +1,24 @@
+Created with the built-in image generation tool. Mockup only. Application code unchanged.
+Edit target: 05-lesson-background-ivory-cards.png. Only card stock changes to light grey-sage.
+
+Use case: ui-mockup. EDIT the supplied homepage mockup with an extremely narrow change: RECOLOR ONLY THE PHYSICAL PAPER SURFACES OF ALL THREE COURSE CARDS FROM IVORY TO LIGHT GREY-SAGE. Return one image, same composition, same dimensions/aspect ratio, same text, same artwork, same background.
+
+The user needs CLEAR, IMMEDIATELY VISIBLE separation between the card bodies and the cream map background. Prior ivory-on-cream was too similar. Make each ENTIRE card surface an opaque matte LIGHT GREY-SAGE, a desaturated cool grey-green approximately #BDCCBE (light-to-medium-light sage grey). This should be visibly cooler and darker than the untouched pale cream background, while remaining light, subtle and refined. Do not make it dark olive or forest green. Do not use a barely perceptible green wash. The difference must be obvious at first glance across the broad blank parts of the cards.
+
+MASK / EDIT BOUNDARIES:
+- Change the paper/material color of the full card face and matching physical edge, including the empty area behind each number and every title line, plus the substrate underneath each card's printed map illustration.
+- Preserve all artwork on that substrate in its ORIGINAL NATURAL COLORS. Keep mountains green-gold, compass polished gold with ivory dial and red needle, contour lines tan/brown, river blue, route red. Do not recolor the compass dial sage. Do not apply a green filter over the illustrations.
+- On the mountain card, transition the edges of the mountain illustration smoothly into the NEW SAGE CARD STOCK, not into a leftover cream patch.
+- On the map/navigation cards, map marks must appear printed directly on sage stock. No cream inset rectangles.
+- The upper-right copy areas should be uniform quiet sage material, with no illustration beneath text.
+- Keep original dark olive typography on the cards: do not change it to white.
+
+LOCK EVERYTHING ELSE:
+Keep the full-bleed PALE CREAM LESSON BACKGROUND, its faint side-margin contour lines, its lightness and texture EXACTLY as supplied. Do not recolor or darken the background to manufacture contrast.
+Keep the centered mountain emblem and "גיאוגרפיה צבאית" brand, ochre "המשך ללמוד" button, large upper-right italic headline "כל מסע מתחיל" / "בקריאת השטח.", and section heading "פרקי הקורס" exactly as provided.
+Keep the three square card sizes, shared gentle perspective, spacing, corner radii, physical thickness and existing soft shadows. No added thick frames, new borders, stronger shadows, extra panels or new graphic elements.
+Preserve EXACT RTL order and text: RIGHT "01" / "תבליט, תכסית" / "וטופוגרפיה"; MIDDLE "02" / "קרטוגרפיה" / "וקריאת מפות"; LEFT "03" / "ניווטים".
+Keep the photoreal golden compass unchanged in size, angle, body design and location. Do not replace it with a green compass for this edit.
+No GEO9900 text, no arrows, no pagination, no developer badge, no watermark.
+
+Visual success criterion: the only meaningful difference from the source image is that the entire body of every card now reads unmistakably as smooth light grey-sage stock sitting on a warmer cream map. The contrast is achieved through the actual card surface color, not through edge/shadow tricks.

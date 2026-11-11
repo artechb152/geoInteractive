@@ -1,28 +1,27 @@
 import * as THREE from 'three';
 import { GROVE, ORCHARD, ROAD_WIDTH_M, ROCKS, BUILDING, STREAM, WOODLAND, WORLD, type XY } from './planningLabWorld';
-import { GRID, TONE, heightGrid, ringPoints, roads, saddle, summits, toneGrid, waterCourses } from './planningLabTerrain';
-import { WORLD3D } from './planningLabView';
+import { GRID, TONE, bedStones, blockCorners, boulders, buildings, heightGrid, ringPoints, roads, saddle, shrubs, summits, toneGrid, trees, understory, waterCourses } from './planningLabTerrain';
 import type { FeatureId } from './planningLabPlan';
-import type { GroundFrame } from '../terrain-nav/terrainNavMaterials';
+import { ANALYSIS, terrainAnalysis } from './planningLabAnalysis';
 import { pointInPolygon } from '../locationCheckGeometry';
 
 /**
- * The masks and the feature-id map that the shared ground shader
- * (terrain-nav createGroundMaterial) reads, drawn from this lab's own
- * centre-lines and polygons — the same ones the map draws — so a road, the
- * grove floor or the rocks at B are exactly where the map shows them. The
- * shader colours the real mesh; it never moves it.
+ * The masks and maps the planning lab's ground shader (planningLabGround)
+ * reads, drawn from this lab's own centre-lines, polygons and cover lists — the
+ * same ones the map draws — so a road, the grove floor or the shade under a
+ * tree is exactly where the map and the model put it. The shader colours the
+ * real mesh; it never moves it.
  *
- * Channel meanings are the shader's:
- *   lines  1 m/px — R road surface, G road verge, B water-course bed
- *   cover  2 m/px — B pale bare ground (the rocks at B, the yard of the building)
- *   veg    2 m/px — R grove / woodland floor, B orchard floor
+ *   lines  1 m/px — distance fields of the roads, the stream and the ravine
+ *   areas  2 m/px — the grove, the woodland and the orchard
+ *   shade  1 m/px — the contact shade of every tree, shrub, boulder and
+ *          building (1 = open sky)
+ *
+ * All three cover the tone map's ground (TONE_RECT: the sheet and 300 m around it).
  */
 
 const SHEET_W = WORLD.maxE - WORLD.minE;
 const SHEET_H = WORLD.maxN - WORLD.minN;
-
-export const GROUND_FRAME: GroundFrame = { sheetW: SHEET_W, sheetH: SHEET_H, world: WORLD3D, rockHighM: [492, 530], rockMix: 0.3, key: 'planning-lab-ground' };
 
 /** Feature ids in the id map (0 = none). */
 export const FEATURE_INDEX: Record<FeatureId, number> = {
@@ -39,89 +38,153 @@ export const FEATURE_INDEX: Record<FeatureId, number> = {
   rocks: 11,
 };
 
-function canvas2d(w: number, h: number) {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, w, h);
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  return { c, ctx };
-}
+/** Metres of distance the line field encodes (0 on a centre-line … 1 at LINE_REACH_M or more). */
+export const LINE_REACH_M = 24;
 
-function maskTexture(c: HTMLCanvasElement) {
-  const t = new THREE.CanvasTexture(c);
+/** A road continued past its drawn end (the map's sheet stops there; the land around the model goes on): reach and how fast it narrows away. */
+const ROAD_RUN_ON_M = 260;
+
+/**
+ * The lines on the ground as distance fields, 1 m/px over the tone map's ground
+ * (TONE_RECT), rows from the south — the distance in metres from the nearest
+ * centre-line, LINE_REACH_M and beyond = 1:
+ *
+ *   R  the roads (both); past the drawn ends they run on beyond the sheet and
+ *      narrow away (their distance grows), so no road stops on a line
+ *   G  the stream
+ *   B  the ravine
+ *
+ * Read with linear filtering, a distance field keeps sub-metre edges at 1 m per
+ * texel, so the shader draws wheel ruts, banks and verges crisply from it.
+ */
+export function buildGroundLines() {
+  const w = Math.round(TONE_RECT.sizeE);
+  const h = Math.round(TONE_RECT.sizeN);
+  const R = LINE_REACH_M;
+  const field = [new Float32Array(w * h).fill(R), new Float32Array(w * h).fill(R), new Float32Array(w * h).fill(R)];
+  /** Distance to segment a→b (plus extra metres) into channel c, for texels within reach. */
+  const segment = (c: number, ax: number, ay: number, bx: number, by: number, extraA: number, extraB: number) => {
+    const x0 = Math.max(0, Math.floor(Math.min(ax, bx) - TONE_RECT.minE - R));
+    const x1 = Math.min(w - 1, Math.ceil(Math.max(ax, bx) - TONE_RECT.minE + R));
+    const y0 = Math.max(0, Math.floor(Math.min(ay, by) - TONE_RECT.minN - R));
+    const y1 = Math.min(h - 1, Math.ceil(Math.max(ay, by) - TONE_RECT.minN + R));
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len2 = dx * dx + dy * dy || 1;
+    const f = field[c];
+    for (let y = y0; y <= y1; y++) {
+      const N = TONE_RECT.minN + y + 0.5;
+      for (let x = x0; x <= x1; x++) {
+        const E = TONE_RECT.minE + x + 0.5;
+        const t = Math.min(1, Math.max(0, ((E - ax) * dx + (N - ay) * dy) / len2));
+        const d = Math.hypot(E - (ax + t * dx), N - (ay + t * dy)) + extraA + (extraB - extraA) * t;
+        if (d < f[y * w + x]) f[y * w + x] = d;
+      }
+    }
+  };
+  const polyline = (c: number, pts: readonly XY[], extra?: (k: number) => number) => {
+    for (let k = 0; k < pts.length - 1; k++) segment(c, pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], extra?.(k) ?? 0, extra?.(k + 1) ?? 0);
+  };
+  for (const r of roads()) {
+    polyline(0, r.pts);
+    // run on past both ends: along the last direction, bending gently, the distance growing (the road narrows to a trace)
+    for (const end of [0, 1]) {
+      const p = end ? r.pts[r.pts.length - 1] : r.pts[0];
+      const q = end ? r.pts[r.pts.length - 6] : r.pts[5];
+      let a = Math.atan2(p[1] - q[1], p[0] - q[0]);
+      const run: XY[] = [p];
+      for (let s = 4; s <= ROAD_RUN_ON_M; s += 4) {
+        a += Math.sin(s / 47 + end * 2.1) * 0.012;
+        const last = run[run.length - 1];
+        run.push([last[0] + Math.cos(a) * 4, last[1] + Math.sin(a) * 4]);
+      }
+      polyline(0, run, (k) => Math.max(0, (k * 4 - 40) / (ROAD_RUN_ON_M - 40)) ** 1.4 * 5);
+    }
+  }
+  const wc = waterCourses();
+  polyline(1, wc.stream.pts);
+  polyline(2, wc.ravine.pts);
+  const data = new Uint8Array(w * h * 4);
+  for (let k = 0; k < w * h; k++) {
+    data[k * 4] = Math.round((field[0][k] / R) * 255);
+    data[k * 4 + 1] = Math.round((field[1][k] / R) * 255);
+    data[k * 4 + 2] = Math.round((field[2][k] / R) * 255);
+    data[k * 4 + 3] = 255;
+  }
+  const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
   t.colorSpace = THREE.NoColorSpace;
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
   t.anisotropy = 8;
+  t.needsUpdate = true;
   return t;
 }
 
-export function buildGroundMasks() {
-  const lines = canvas2d(SHEET_W, SHEET_H);
-  {
-    const { ctx } = lines;
-    const px = (E: number, N: number): [number, number] => [E - WORLD.minE, WORLD.maxN - N];
-    const stroke = (pts: readonly XY[], color: string, widthM: number, blur: number) => {
-      ctx.filter = `blur(${blur}px)`;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = widthM;
-      ctx.beginPath();
-      pts.forEach(([E, N], i) => (i ? ctx.lineTo(...px(E, N)) : ctx.moveTo(...px(E, N))));
-      ctx.stroke();
-    };
-    for (const r of roads()) stroke(r.pts, 'rgb(0,255,0)', ROAD_WIDTH_M + 4, 1.5);
-    for (const r of roads()) stroke(r.pts, 'rgb(255,0,0)', ROAD_WIDTH_M, 0.8);
-    const w = waterCourses();
-    stroke(w.stream.pts, 'rgb(0,0,255)', 13, 2);
-    stroke(w.ravine.pts, 'rgb(0,0,210)', 7, 1.5);
-  }
+/** Metres per texel of the area masks. */
+const AREA_STEP_M = 2;
 
-  const S = 2;
-  const ring = (ctx: CanvasRenderingContext2D, pts: readonly XY[]) => {
+/**
+ * The areas on the ground, 2 m/px over the tone map's ground (TONE_RECT), rows
+ * from the south, softened by a few metres: R the pine grove, G the natural
+ * woodland, B the olive orchard. (One texture for the three keeps the ground
+ * shader within WebGL's texture units.)
+ */
+export function buildGroundAreas() {
+  const w = Math.round(TONE_RECT.sizeE / AREA_STEP_M);
+  const h = Math.round(TONE_RECT.sizeN / AREA_STEP_M);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'lighter';
+  const ring = (pts: readonly XY[]) => {
     ctx.beginPath();
-    pts.forEach(([E, N], i) => (i ? ctx.lineTo((E - WORLD.minE) / S, (WORLD.maxN - N) / S) : ctx.moveTo((E - WORLD.minE) / S, (WORLD.maxN - N) / S)));
+    pts.forEach(([E, N], i) => {
+      const x = (E - TONE_RECT.minE) / AREA_STEP_M;
+      const y = (TONE_RECT.minN + TONE_RECT.sizeN - N) / AREA_STEP_M;
+      if (i) ctx.lineTo(x, y);
+      else ctx.moveTo(x, y);
+    });
     ctx.closePath();
   };
-  const disc = (ctx: CanvasRenderingContext2D, E: number, N: number, rM: number) => {
-    ctx.beginPath();
-    ctx.arc((E - WORLD.minE) / S, (WORLD.maxN - N) / S, rM / S, 0, Math.PI * 2);
-  };
-
-  const cover = canvas2d(SHEET_W / S, SHEET_H / S);
-  {
-    const { ctx } = cover;
-    ctx.filter = 'blur(4px)';
-    ctx.fillStyle = 'rgb(0,0,235)';
-    disc(ctx, ROCKS.E, ROCKS.N, ROCKS.rM);
-    ctx.fill();
-    ctx.fillStyle = 'rgb(0,0,200)';
-    disc(ctx, BUILDING.E - 4, BUILDING.N + 4, 22);
+  ctx.filter = 'blur(2.5px)';
+  ctx.fillStyle = 'rgb(255,0,0)';
+  ring(GROVE);
+  ctx.fill();
+  ctx.fillStyle = 'rgb(0,255,0)';
+  for (const wd of WOODLAND) {
+    ring(wd.ring);
     ctx.fill();
   }
-
-  const veg = canvas2d(SHEET_W / S, SHEET_H / S);
-  {
-    const { ctx } = veg;
-    ctx.filter = 'blur(3px)';
-    ctx.fillStyle = 'rgb(255,0,0)';
-    ring(ctx, GROVE);
-    ctx.fill();
-    ctx.fillStyle = 'rgb(90,0,0)';
-    for (const wd of WOODLAND) {
-      ring(ctx, wd.ring);
-      ctx.fill();
+  ctx.filter = 'blur(1.5px)';
+  ctx.fillStyle = 'rgb(0,0,255)';
+  ring(ORCHARD.ring);
+  ctx.fill();
+  const rgba = ctx.getImageData(0, 0, w, h).data;
+  const data = new Uint8Array(w * h * 4);
+  for (let j = 0; j < h; j++) {
+    const src = (h - 1 - j) * w;
+    for (let i = 0; i < w; i++) {
+      const k = (src + i) * 4;
+      const o = (j * w + i) * 4;
+      data[o] = rgba[k];
+      data[o + 1] = rgba[k + 1];
+      data[o + 2] = rgba[k + 2];
+      data[o + 3] = 255;
     }
-    ctx.filter = 'blur(2px)';
-    ctx.fillStyle = 'rgb(0,0,255)';
-    ring(ctx, ORCHARD.ring);
-    ctx.fill();
   }
-
-  return { lines: maskTexture(lines.c), cover: maskTexture(cover.c), veg: maskTexture(veg.c) };
+  const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
+  t.colorSpace = THREE.NoColorSpace;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.needsUpdate = true;
+  return t;
 }
 
 /**
@@ -299,6 +362,103 @@ export function buildToneTexture() {
   t.minFilter = THREE.LinearMipmapLinearFilter;
   t.generateMipmaps = true;
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  return t;
+}
+
+/**
+ * The terrain analysis (planningLabAnalysis) as one texture over its grid, rows from the south:
+ * R the sky the ground sees, G where water gathers, B how wet the ground stays, A where the rock breaks through.
+ */
+export function buildAnalysisTexture() {
+  const { sky, drain, wet, rock } = terrainAnalysis();
+  const n = ANALYSIS.nE * ANALYSIS.nN;
+  const data = new Uint8Array(n * 4);
+  for (let k = 0; k < n; k++) {
+    data[k * 4] = Math.round(sky[k] * 255);
+    data[k * 4 + 1] = Math.round(drain[k] * 255);
+    data[k * 4 + 2] = Math.round(wet[k] * 255);
+    data[k * 4 + 3] = Math.round(rock[k] * 255);
+  }
+  const t = new THREE.DataTexture(data, ANALYSIS.nE, ANALYSIS.nN, THREE.RGBAFormat, THREE.UnsignedByteType);
+  t.colorSpace = THREE.NoColorSpace;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.needsUpdate = true;
+  return t;
+}
+
+/** Metres per texel of the contact-shade map. */
+const SHADE_STEP_M = 1;
+
+/**
+ * The contact shade of the cover: under every tree crown, shrub and boulder,
+ * and around the building's walls, the ground sees less of the sky — a soft
+ * dark disc a little wider than the thing itself (the sun's shadow map draws
+ * the cast shadows; this is the ambient light they leave out). Single channel,
+ * 1 = open ground, over the tone map's ground (TONE_RECT), rows from the south.
+ */
+export function buildShadeTexture() {
+  const w = Math.round(TONE_RECT.sizeE / SHADE_STEP_M);
+  const h = Math.round(TONE_RECT.sizeN / SHADE_STEP_M);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+  // one soft disc, stamped at every size (falls off as the light under a canopy does: dark core, long rim)
+  const sprite = document.createElement('canvas');
+  sprite.width = sprite.height = 64;
+  {
+    const g = sprite.getContext('2d')!;
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(0,0,0,1)');
+    grad.addColorStop(0.45, 'rgba(0,0,0,0.75)');
+    grad.addColorStop(0.75, 'rgba(0,0,0,0.3)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+  }
+  const x = (E: number) => (E - TONE_RECT.minE) / SHADE_STEP_M;
+  const y = (N: number) => (TONE_RECT.minN + TONE_RECT.sizeN - N) / SHADE_STEP_M;
+  const stamp = (E: number, N: number, rM: number, a: number) => {
+    const r = rM / SHADE_STEP_M;
+    ctx.globalAlpha = a;
+    ctx.drawImage(sprite, x(E) - r, y(N) - r, 2 * r, 2 * r);
+  };
+  for (const t of trees()) stamp(t.E, t.N, t.crownR * 1.35, t.kind === 'pine' ? 0.5 : 0.58);
+  for (const s of shrubs()) stamp(s.E, s.N, s.radiusM * 1.25, 0.5);
+  for (const s of understory()) stamp(s.E, s.N, s.radiusM * 1.25, 0.45);
+  for (const b of boulders()) stamp(b.E, b.N, b.sizeM * (b.atB ? 0.95 : 0.85), 0.55);
+  for (const b of bedStones()) stamp(b.E, b.N, b.sizeM * 0.85, 0.5);
+  ctx.globalAlpha = 0.5;
+  ctx.filter = 'blur(1.6px)';
+  ctx.fillStyle = '#000';
+  for (const b of buildings()) {
+    ctx.beginPath();
+    blockCorners({ ...b, lenM: b.lenM + 2.4, widM: b.widM + 2.4 }).forEach((q, i) => (i ? ctx.lineTo(x(q.E), y(q.N)) : ctx.moveTo(x(q.E), y(q.N))));
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.filter = 'none';
+  ctx.globalAlpha = 1;
+  const rgba = ctx.getImageData(0, 0, w, h).data;
+  // flipped into rows from the south, like the tone map
+  const data = new Uint8Array(w * h);
+  for (let j = 0; j < h; j++) {
+    const src = (h - 1 - j) * w;
+    for (let i = 0; i < w; i++) data[j * w + i] = rgba[(src + i) * 4];
+  }
+  const t = new THREE.DataTexture(data, w, h, THREE.RedFormat, THREE.UnsignedByteType);
+  t.colorSpace = THREE.NoColorSpace;
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.unpackAlignment = 1;
   t.needsUpdate = true;
   return t;
 }

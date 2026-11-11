@@ -1,0 +1,416 @@
+{
+  "msToReady": 11226,
+  "gpu": "ANGLE (NVIDIA, NVIDIA RTX A5000 (0x00002231) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "cameraGroundM": {
+    "saddle": {
+      "eye": 334.04817770260706,
+      "at": 415.73480578426825
+    },
+    "grove": {
+      "eye": 439.8956400456882,
+      "at": 360.7966204121112
+    },
+    "building": {
+      "eye": 355.9549300569415,
+      "at": 341.3984142609479
+    },
+    "rocks": {
+      "eye": 376.6645822657665,
+      "at": 365.77010940400214
+    },
+    "stream": {
+      "eye": 335.7865348438281,
+      "at": 326.5475168425837
+    },
+    "orchard": {
+      "eye": 343.9784990494445,
+      "at": 334.58624861686985
+    },
+    "flank": {
+      "eye": 343.41132917088544,
+      "at": 404.2766531898451
+    },
+    "ground": {
+      "eye": 363.79513017254794,
+      "at": 381.496081089972
+    },
+    "groveSide": {
+      "eye": 353.0121130990665,
+      "at": 362.78203367564856
+    },
+    "road": {
+      "eye": 383.2988524236498,
+      "at": 361.2780059580473
+    },
+    "ridge": {
+      "eye": 338.88348003474675,
+      "at": 420.4524447266522
+    }
+  },
+  "bench": {
+    "home": {
+      "ms": 7.38,
+      "calls": 79,
+      "triangles": 7055937,
+      "textures": 21,
+      "geometries": 67,
+      "pixelRatio": 2,
+      "buffer": [
+        1150,
+        876
+      ],
+      "cover": {
+        "planning-lab-foliage-v2-crown-pine": {
+          "n": 295,
+          "tris": 378880
+        },
+        "onBeforeCompile() {}": {
+          "n": 1807,
+          "tris": 173472
+        },
+        "planning-lab-foliage-v2-crown-oak": {
+          "n": 1389,
+          "tris": 1416240
+        },
+        "planning-lab-foliage-v2-crown-olive": {
+          "n": 123,
+          "tris": 93920
+        },
+        "planning-lab-foliage-v2-maquis": {
+          "n": 16654,
+          "tris": 3322160
+        },
+        "planning-lab-rock-v2-lone-namaqualand_stones_01": {
+          "n": 2075,
+          "tris": 372651
+        },
+        "planning-lab-rock-v2-lone-namaqualand_rocks_02": {
+          "n": 590,
+          "tris": 412702
+        },
+        "planning-lab-rock-v2-lone-rock_moss_set_02": {
+          "n": 1000,
+          "tris": 699578
+        },
+        "planning-lab-rock-v2-kept-namaqualand_rocks_02": {
+          "n": 12,
+          "tris": 8392
+        },
+        "planning-lab-rock-v2-kept-rock_moss_set_02": {
+          "n": 14,
+          "tris": 9796
+        },
+        "planning-lab-wall-v2": {
+          "n": 2,
+          "tris": 24
+        },
+        "planning-lab-roof-v2": {
+          "n": 1,
+          "tris": 6
+        }
+      }
+    },
+    "saddle": {
+      "ms": 2.36,
+      "calls": 62,
+      "triangles": 6949995,
+      "textures": 21,
+      "geometries": 66,
+      "pixelRatio": 2,
+      "buffer": [
+        1150,
+        876
+      ],
+      "cover": {
+        "planning-lab-foliage-v2-crown-pine": {
+          "n": 295,
+          "tris": 378880
+        },
+        "onBeforeCompile() {}": {
+          "n": 1807,
+          "tris": 173472
+        },
+        "planning-lab-foliage-v2-crown-oak": {
+          "n": 1389,
+          "tris": 1416240
+        },
+        "planning-lab-foliage-v2-crown-olive": {
+          "n": 123,
+          "tris": 93920
+        },
+        "planning-lab-foliage-v2-maquis": {
+          "n": 16654,
+          "tris": 3322160
+        },
+        "planning-lab-rock-v2-lone-namaqualand_stones_01": {
+          "n": 2075,
+          "tris": 372651
+        },
+        "planning-lab-rock-v2-lone-namaqualand_rocks_02": {
+          "n": 590,
+          "tris": 412702
+        },
+        "planning-lab-rock-v2-lone-rock_moss_set_02": {
+          "n": 1000,
+          "tris": 699578
+        },
+        "planning-lab-rock-v2-kept-namaqualand_rocks_02": {
+          "n": 12,
+          "tris": 8392
+        },
+        "planning-lab-rock-v2-kept-rock_moss_set_02": {
+          "n": 14,
+          "tris": 9796
+        },
+        "planning-lab-wall-v2": {
+          "n": 2,
+          "tris": 24
+        },
+        "planning-lab-roof-v2": {
+          "n": 1,
+          "tris": 6
+        }
+      }
+    },
+    "grove": {
+      "ms": 2.19,
+      "calls": 61,
+      "triangles": 6949983,
+      "textures": 21,
+      "geometries": 65,
+      "pixelRatio": 2,
+      "buffer": [
+        1150,
+        876
+      ],
+      "cover": {
+        "planning-lab-foliage-v2-crown-pine": {
+          "n": 295,
+          "tris": 378880
+        },
+        "onBeforeCompile() {}": {
+          "n": 1807,
+          "tris": 173472
+        },
+        "planning-lab-foliage-v2-crown-oak": {
+          "n": 1389,
+          "tris": 1416240
+        },
+        "planning-lab-foliage-v2-crown-olive": {
+          "n": 123,
+          "tris": 93920
+        },
+        "planning-lab-foliage-v2-maquis": {
+          "n": 16654,
+          "tris": 3322160
+        },
+        "planning-lab-rock-v2-lone-namaqualand_stones_01": {
+          "n": 2075,
+          "tris": 372651
+        },
+        "planning-lab-rock-v2-lone-namaqualand_rocks_02": {
+          "n": 590,
+          "tris": 412702
+        },
+        "planning-lab-rock-v2-lone-rock_moss_set_02": {
+          "n": 1000,
+          "tris": 699578
+        },
+        "planning-lab-rock-v2-kept-namaqualand_rocks_02": {
+          "n": 12,
+          "tris": 8392
+        },
+        "planning-lab-rock-v2-kept-rock_moss_set_02": {
+          "n": 14,
+          "tris": 9796
+        },
+        "planning-lab-wall-v2": {
+          "n": 2,
+          "tris": 24
+        },
+        "planning-lab-roof-v2": {
+          "n": 1,
+          "tris": 6
+        }
+      }
+    },
+    "ground": {
+      "ms": 1.85,
+      "calls": 42,
+      "triangles": 6524595,
+      "textures": 21,
+      "geometries": 65,
+      "pixelRatio": 2,
+      "buffer": [
+        1150,
+        876
+      ],
+      "cover": {
+        "planning-lab-foliage-v2-crown-pine": {
+          "n": 295,
+          "tris": 378880
+        },
+        "onBeforeCompile() {}": {
+          "n": 1807,
+          "tris": 173472
+        },
+        "planning-lab-foliage-v2-crown-oak": {
+          "n": 1389,
+          "tris": 1416240
+        },
+        "planning-lab-foliage-v2-crown-olive": {
+          "n": 123,
+          "tris": 93920
+        },
+        "planning-lab-foliage-v2-maquis": {
+          "n": 16654,
+          "tris": 3322160
+        },
+        "planning-lab-rock-v2-lone-namaqualand_stones_01": {
+          "n": 2075,
+          "tris": 372651
+        },
+        "planning-lab-rock-v2-lone-namaqualand_rocks_02": {
+          "n": 590,
+          "tris": 412702
+        },
+        "planning-lab-rock-v2-lone-rock_moss_set_02": {
+          "n": 1000,
+          "tris": 699578
+        },
+        "planning-lab-rock-v2-kept-namaqualand_rocks_02": {
+          "n": 12,
+          "tris": 8392
+        },
+        "planning-lab-rock-v2-kept-rock_moss_set_02": {
+          "n": 14,
+          "tris": 9796
+        },
+        "planning-lab-wall-v2": {
+          "n": 2,
+          "tris": 24
+        },
+        "planning-lab-roof-v2": {
+          "n": 1,
+          "tris": 6
+        }
+      }
+    }
+  },
+  "nodesAtStart": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p1",
+      480,
+      613.5
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "modelDrag": {
+    "frames": 129,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.9,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterModelDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p1",
+      851.98,
+      1137.22
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "mapHandleAfterModelDrag": {
+    "dx": 0,
+    "dy": 0
+  },
+  "mapDrag": {
+    "frames": 164,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 17,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "afterMapDrag": [
+    [
+      "A",
+      785,
+      152
+    ],
+    [
+      "p1",
+      649,
+      655.5
+    ],
+    [
+      "B",
+      175,
+      1075
+    ]
+  ],
+  "crossing": "saddle",
+  "modelHandleAfterMapDrag": {
+    "dx": 0,
+    "dyAboveGround": 0.7
+  },
+  "handlesAfterMapDrag": [
+    {
+      "id": "A",
+      "hidden": false
+    },
+    {
+      "id": "p1",
+      "hidden": false
+    },
+    {
+      "id": "B",
+      "hidden": false
+    }
+  ],
+  "orbitDrag": {
+    "frames": 186,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.8,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "wheelZoom": {
+    "frames": 80,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 33.4,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "fullscreen": true,
+  "fsOrbitDrag": {
+    "frames": 211,
+    "medianMs": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 33.4,
+    "longTasks": 0,
+    "longestTaskMs": 0
+  },
+  "errors": []
+}

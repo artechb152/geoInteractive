@@ -1,0 +1,1550 @@
+{
+  "status": "rendered",
+  "fps": 24,
+  "frames": 192,
+  "duration": 8,
+  "same_background": true,
+  "same_route": true,
+  "actor_count": 1,
+  "route_progress_monotonic": true,
+  "gait_source": "Clean walk segment from user supplied video",
+  "source_gait_period_frames": 23,
+  "positions": [
+    {
+      "frame": 0,
+      "time": 0.0,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 1,
+      "time": 0.04167,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 2,
+      "time": 0.08333,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 3,
+      "time": 0.125,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 4,
+      "time": 0.16667,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 5,
+      "time": 0.20833,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 6,
+      "time": 0.25,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 7,
+      "time": 0.29167,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 8,
+      "time": 0.33333,
+      "x": 1065.0,
+      "y": 595.0,
+      "progress": 0.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 9,
+      "time": 0.375,
+      "x": 1065.0054,
+      "y": 594.9993,
+      "progress": 1.1e-05,
+      "actor_count": 1
+    },
+    {
+      "frame": 10,
+      "time": 0.41667,
+      "x": 1065.101,
+      "y": 594.9869,
+      "progress": 0.000209,
+      "actor_count": 1
+    },
+    {
+      "frame": 11,
+      "time": 0.45833,
+      "x": 1065.4257,
+      "y": 594.9448,
+      "progress": 0.00088,
+      "actor_count": 1
+    },
+    {
+      "frame": 12,
+      "time": 0.5,
+      "x": 1066.1007,
+      "y": 594.8574,
+      "progress": 0.002276,
+      "actor_count": 1
+    },
+    {
+      "frame": 13,
+      "time": 0.54167,
+      "x": 1067.2179,
+      "y": 594.7126,
+      "progress": 0.004587,
+      "actor_count": 1
+    },
+    {
+      "frame": 14,
+      "time": 0.58333,
+      "x": 1068.8317,
+      "y": 594.5036,
+      "progress": 0.007924,
+      "actor_count": 1
+    },
+    {
+      "frame": 15,
+      "time": 0.625,
+      "x": 1070.9552,
+      "y": 594.2285,
+      "progress": 0.012316,
+      "actor_count": 1
+    },
+    {
+      "frame": 16,
+      "time": 0.66667,
+      "x": 1073.5584,
+      "y": 593.892,
+      "progress": 0.017699,
+      "actor_count": 1
+    },
+    {
+      "frame": 17,
+      "time": 0.70833,
+      "x": 1076.5711,
+      "y": 593.5026,
+      "progress": 0.02393,
+      "actor_count": 1
+    },
+    {
+      "frame": 18,
+      "time": 0.75,
+      "x": 1079.8888,
+      "y": 593.0746,
+      "progress": 0.03079,
+      "actor_count": 1
+    },
+    {
+      "frame": 19,
+      "time": 0.79167,
+      "x": 1083.3811,
+      "y": 592.6243,
+      "progress": 0.038012,
+      "actor_count": 1
+    },
+    {
+      "frame": 20,
+      "time": 0.83333,
+      "x": 1086.9159,
+      "y": 592.169,
+      "progress": 0.045322,
+      "actor_count": 1
+    },
+    {
+      "frame": 21,
+      "time": 0.875,
+      "x": 1090.4509,
+      "y": 591.7139,
+      "progress": 0.052632,
+      "actor_count": 1
+    },
+    {
+      "frame": 22,
+      "time": 0.91667,
+      "x": 1093.9859,
+      "y": 591.2591,
+      "progress": 0.059942,
+      "actor_count": 1
+    },
+    {
+      "frame": 23,
+      "time": 0.95833,
+      "x": 1097.521,
+      "y": 590.8044,
+      "progress": 0.067251,
+      "actor_count": 1
+    },
+    {
+      "frame": 24,
+      "time": 1.0,
+      "x": 1101.0561,
+      "y": 590.3497,
+      "progress": 0.074561,
+      "actor_count": 1
+    },
+    {
+      "frame": 25,
+      "time": 1.04167,
+      "x": 1104.5911,
+      "y": 589.895,
+      "progress": 0.081871,
+      "actor_count": 1
+    },
+    {
+      "frame": 26,
+      "time": 1.08333,
+      "x": 1108.1261,
+      "y": 589.4401,
+      "progress": 0.089181,
+      "actor_count": 1
+    },
+    {
+      "frame": 27,
+      "time": 1.125,
+      "x": 1111.6611,
+      "y": 588.985,
+      "progress": 0.096491,
+      "actor_count": 1
+    },
+    {
+      "frame": 28,
+      "time": 1.16667,
+      "x": 1115.1961,
+      "y": 588.5297,
+      "progress": 0.103801,
+      "actor_count": 1
+    },
+    {
+      "frame": 29,
+      "time": 1.20833,
+      "x": 1118.731,
+      "y": 588.0737,
+      "progress": 0.111111,
+      "actor_count": 1
+    },
+    {
+      "frame": 30,
+      "time": 1.25,
+      "x": 1122.2659,
+      "y": 587.6172,
+      "progress": 0.118421,
+      "actor_count": 1
+    },
+    {
+      "frame": 31,
+      "time": 1.29167,
+      "x": 1125.8006,
+      "y": 587.1602,
+      "progress": 0.125731,
+      "actor_count": 1
+    },
+    {
+      "frame": 32,
+      "time": 1.33333,
+      "x": 1129.3353,
+      "y": 586.7023,
+      "progress": 0.133041,
+      "actor_count": 1
+    },
+    {
+      "frame": 33,
+      "time": 1.375,
+      "x": 1132.8698,
+      "y": 586.2434,
+      "progress": 0.140351,
+      "actor_count": 1
+    },
+    {
+      "frame": 34,
+      "time": 1.41667,
+      "x": 1136.4043,
+      "y": 585.7837,
+      "progress": 0.147661,
+      "actor_count": 1
+    },
+    {
+      "frame": 35,
+      "time": 1.45833,
+      "x": 1139.9386,
+      "y": 585.3227,
+      "progress": 0.154971,
+      "actor_count": 1
+    },
+    {
+      "frame": 36,
+      "time": 1.5,
+      "x": 1143.4727,
+      "y": 584.8603,
+      "progress": 0.162281,
+      "actor_count": 1
+    },
+    {
+      "frame": 37,
+      "time": 1.54167,
+      "x": 1147.0066,
+      "y": 584.3968,
+      "progress": 0.169591,
+      "actor_count": 1
+    },
+    {
+      "frame": 38,
+      "time": 1.58333,
+      "x": 1150.5404,
+      "y": 583.9317,
+      "progress": 0.176901,
+      "actor_count": 1
+    },
+    {
+      "frame": 39,
+      "time": 1.625,
+      "x": 1154.0739,
+      "y": 583.4645,
+      "progress": 0.184211,
+      "actor_count": 1
+    },
+    {
+      "frame": 40,
+      "time": 1.66667,
+      "x": 1157.6072,
+      "y": 582.9957,
+      "progress": 0.19152,
+      "actor_count": 1
+    },
+    {
+      "frame": 41,
+      "time": 1.70833,
+      "x": 1161.1403,
+      "y": 582.5252,
+      "progress": 0.19883,
+      "actor_count": 1
+    },
+    {
+      "frame": 42,
+      "time": 1.75,
+      "x": 1164.673,
+      "y": 582.0519,
+      "progress": 0.20614,
+      "actor_count": 1
+    },
+    {
+      "frame": 43,
+      "time": 1.79167,
+      "x": 1168.2055,
+      "y": 581.5764,
+      "progress": 0.21345,
+      "actor_count": 1
+    },
+    {
+      "frame": 44,
+      "time": 1.83333,
+      "x": 1171.7376,
+      "y": 581.0987,
+      "progress": 0.22076,
+      "actor_count": 1
+    },
+    {
+      "frame": 45,
+      "time": 1.875,
+      "x": 1175.2695,
+      "y": 580.6184,
+      "progress": 0.22807,
+      "actor_count": 1
+    },
+    {
+      "frame": 46,
+      "time": 1.91667,
+      "x": 1178.8008,
+      "y": 580.1345,
+      "progress": 0.23538,
+      "actor_count": 1
+    },
+    {
+      "frame": 47,
+      "time": 1.95833,
+      "x": 1182.3318,
+      "y": 579.6479,
+      "progress": 0.24269,
+      "actor_count": 1
+    },
+    {
+      "frame": 48,
+      "time": 2.0,
+      "x": 1185.8624,
+      "y": 579.1583,
+      "progress": 0.25,
+      "actor_count": 1
+    },
+    {
+      "frame": 49,
+      "time": 2.04167,
+      "x": 1189.3926,
+      "y": 578.6652,
+      "progress": 0.25731,
+      "actor_count": 1
+    },
+    {
+      "frame": 50,
+      "time": 2.08333,
+      "x": 1192.9221,
+      "y": 578.1677,
+      "progress": 0.26462,
+      "actor_count": 1
+    },
+    {
+      "frame": 51,
+      "time": 2.125,
+      "x": 1196.4512,
+      "y": 577.6666,
+      "progress": 0.27193,
+      "actor_count": 1
+    },
+    {
+      "frame": 52,
+      "time": 2.16667,
+      "x": 1199.9797,
+      "y": 577.1617,
+      "progress": 0.27924,
+      "actor_count": 1
+    },
+    {
+      "frame": 53,
+      "time": 2.20833,
+      "x": 1203.5077,
+      "y": 576.6527,
+      "progress": 0.28655,
+      "actor_count": 1
+    },
+    {
+      "frame": 54,
+      "time": 2.25,
+      "x": 1207.0349,
+      "y": 576.1378,
+      "progress": 0.29386,
+      "actor_count": 1
+    },
+    {
+      "frame": 55,
+      "time": 2.29167,
+      "x": 1210.5614,
+      "y": 575.6183,
+      "progress": 0.30117,
+      "actor_count": 1
+    },
+    {
+      "frame": 56,
+      "time": 2.33333,
+      "x": 1214.0872,
+      "y": 575.0939,
+      "progress": 0.30848,
+      "actor_count": 1
+    },
+    {
+      "frame": 57,
+      "time": 2.375,
+      "x": 1217.6123,
+      "y": 574.5645,
+      "progress": 0.315789,
+      "actor_count": 1
+    },
+    {
+      "frame": 58,
+      "time": 2.41667,
+      "x": 1221.1366,
+      "y": 574.0291,
+      "progress": 0.323099,
+      "actor_count": 1
+    },
+    {
+      "frame": 59,
+      "time": 2.45833,
+      "x": 1224.6598,
+      "y": 573.4866,
+      "progress": 0.330409,
+      "actor_count": 1
+    },
+    {
+      "frame": 60,
+      "time": 2.5,
+      "x": 1228.1821,
+      "y": 572.9381,
+      "progress": 0.337719,
+      "actor_count": 1
+    },
+    {
+      "frame": 61,
+      "time": 2.54167,
+      "x": 1231.7034,
+      "y": 572.383,
+      "progress": 0.345029,
+      "actor_count": 1
+    },
+    {
+      "frame": 62,
+      "time": 2.58333,
+      "x": 1235.2237,
+      "y": 571.8212,
+      "progress": 0.352339,
+      "actor_count": 1
+    },
+    {
+      "frame": 63,
+      "time": 2.625,
+      "x": 1238.7428,
+      "y": 571.2522,
+      "progress": 0.359649,
+      "actor_count": 1
+    },
+    {
+      "frame": 64,
+      "time": 2.66667,
+      "x": 1242.2607,
+      "y": 570.6746,
+      "progress": 0.366959,
+      "actor_count": 1
+    },
+    {
+      "frame": 65,
+      "time": 2.70833,
+      "x": 1245.7771,
+      "y": 570.0882,
+      "progress": 0.374269,
+      "actor_count": 1
+    },
+    {
+      "frame": 66,
+      "time": 2.75,
+      "x": 1249.2922,
+      "y": 569.4934,
+      "progress": 0.381579,
+      "actor_count": 1
+    },
+    {
+      "frame": 67,
+      "time": 2.79167,
+      "x": 1252.8058,
+      "y": 568.8897,
+      "progress": 0.388889,
+      "actor_count": 1
+    },
+    {
+      "frame": 68,
+      "time": 2.83333,
+      "x": 1256.3178,
+      "y": 568.2767,
+      "progress": 0.396199,
+      "actor_count": 1
+    },
+    {
+      "frame": 69,
+      "time": 2.875,
+      "x": 1259.8282,
+      "y": 567.6538,
+      "progress": 0.403509,
+      "actor_count": 1
+    },
+    {
+      "frame": 70,
+      "time": 2.91667,
+      "x": 1263.3368,
+      "y": 567.0205,
+      "progress": 0.410819,
+      "actor_count": 1
+    },
+    {
+      "frame": 71,
+      "time": 2.95833,
+      "x": 1266.8434,
+      "y": 566.3762,
+      "progress": 0.418129,
+      "actor_count": 1
+    },
+    {
+      "frame": 72,
+      "time": 3.0,
+      "x": 1270.3478,
+      "y": 565.7194,
+      "progress": 0.425439,
+      "actor_count": 1
+    },
+    {
+      "frame": 73,
+      "time": 3.04167,
+      "x": 1273.85,
+      "y": 565.0502,
+      "progress": 0.432749,
+      "actor_count": 1
+    },
+    {
+      "frame": 74,
+      "time": 3.08333,
+      "x": 1277.3497,
+      "y": 564.3683,
+      "progress": 0.440058,
+      "actor_count": 1
+    },
+    {
+      "frame": 75,
+      "time": 3.125,
+      "x": 1280.8469,
+      "y": 563.6731,
+      "progress": 0.447368,
+      "actor_count": 1
+    },
+    {
+      "frame": 76,
+      "time": 3.16667,
+      "x": 1284.3414,
+      "y": 562.9638,
+      "progress": 0.454678,
+      "actor_count": 1
+    },
+    {
+      "frame": 77,
+      "time": 3.20833,
+      "x": 1287.833,
+      "y": 562.2399,
+      "progress": 0.461988,
+      "actor_count": 1
+    },
+    {
+      "frame": 78,
+      "time": 3.25,
+      "x": 1291.3214,
+      "y": 561.5004,
+      "progress": 0.469298,
+      "actor_count": 1
+    },
+    {
+      "frame": 79,
+      "time": 3.29167,
+      "x": 1294.8064,
+      "y": 560.7447,
+      "progress": 0.476608,
+      "actor_count": 1
+    },
+    {
+      "frame": 80,
+      "time": 3.33333,
+      "x": 1298.2878,
+      "y": 559.9719,
+      "progress": 0.483918,
+      "actor_count": 1
+    },
+    {
+      "frame": 81,
+      "time": 3.375,
+      "x": 1301.7653,
+      "y": 559.1811,
+      "progress": 0.491228,
+      "actor_count": 1
+    },
+    {
+      "frame": 82,
+      "time": 3.41667,
+      "x": 1305.2385,
+      "y": 558.3715,
+      "progress": 0.498538,
+      "actor_count": 1
+    },
+    {
+      "frame": 83,
+      "time": 3.45833,
+      "x": 1308.7072,
+      "y": 557.542,
+      "progress": 0.505848,
+      "actor_count": 1
+    },
+    {
+      "frame": 84,
+      "time": 3.5,
+      "x": 1312.171,
+      "y": 556.6919,
+      "progress": 0.513158,
+      "actor_count": 1
+    },
+    {
+      "frame": 85,
+      "time": 3.54167,
+      "x": 1315.6295,
+      "y": 555.8199,
+      "progress": 0.520468,
+      "actor_count": 1
+    },
+    {
+      "frame": 86,
+      "time": 3.58333,
+      "x": 1319.0823,
+      "y": 554.925,
+      "progress": 0.527778,
+      "actor_count": 1
+    },
+    {
+      "frame": 87,
+      "time": 3.625,
+      "x": 1322.5289,
+      "y": 554.0062,
+      "progress": 0.535088,
+      "actor_count": 1
+    },
+    {
+      "frame": 88,
+      "time": 3.66667,
+      "x": 1325.9689,
+      "y": 553.0623,
+      "progress": 0.542398,
+      "actor_count": 1
+    },
+    {
+      "frame": 89,
+      "time": 3.70833,
+      "x": 1329.4018,
+      "y": 552.0921,
+      "progress": 0.549708,
+      "actor_count": 1
+    },
+    {
+      "frame": 90,
+      "time": 3.75,
+      "x": 1332.8269,
+      "y": 551.0942,
+      "progress": 0.557018,
+      "actor_count": 1
+    },
+    {
+      "frame": 91,
+      "time": 3.79167,
+      "x": 1336.2432,
+      "y": 550.0662,
+      "progress": 0.564327,
+      "actor_count": 1
+    },
+    {
+      "frame": 92,
+      "time": 3.83333,
+      "x": 1339.65,
+      "y": 549.0059,
+      "progress": 0.571637,
+      "actor_count": 1
+    },
+    {
+      "frame": 93,
+      "time": 3.875,
+      "x": 1343.0467,
+      "y": 547.9136,
+      "progress": 0.578947,
+      "actor_count": 1
+    },
+    {
+      "frame": 94,
+      "time": 3.91667,
+      "x": 1346.4327,
+      "y": 546.7877,
+      "progress": 0.586257,
+      "actor_count": 1
+    },
+    {
+      "frame": 95,
+      "time": 3.95833,
+      "x": 1349.807,
+      "y": 545.6267,
+      "progress": 0.593567,
+      "actor_count": 1
+    },
+    {
+      "frame": 96,
+      "time": 4.0,
+      "x": 1353.1688,
+      "y": 544.4289,
+      "progress": 0.600877,
+      "actor_count": 1
+    },
+    {
+      "frame": 97,
+      "time": 4.04167,
+      "x": 1356.5162,
+      "y": 543.1911,
+      "progress": 0.608187,
+      "actor_count": 1
+    },
+    {
+      "frame": 98,
+      "time": 4.08333,
+      "x": 1359.8471,
+      "y": 541.9087,
+      "progress": 0.615497,
+      "actor_count": 1
+    },
+    {
+      "frame": 99,
+      "time": 4.125,
+      "x": 1363.1616,
+      "y": 540.5839,
+      "progress": 0.622807,
+      "actor_count": 1
+    },
+    {
+      "frame": 100,
+      "time": 4.16667,
+      "x": 1366.4585,
+      "y": 539.2151,
+      "progress": 0.630117,
+      "actor_count": 1
+    },
+    {
+      "frame": 101,
+      "time": 4.20833,
+      "x": 1369.7354,
+      "y": 537.7983,
+      "progress": 0.637427,
+      "actor_count": 1
+    },
+    {
+      "frame": 102,
+      "time": 4.25,
+      "x": 1372.9884,
+      "y": 536.3267,
+      "progress": 0.644737,
+      "actor_count": 1
+    },
+    {
+      "frame": 103,
+      "time": 4.29167,
+      "x": 1376.2185,
+      "y": 534.8048,
+      "progress": 0.652047,
+      "actor_count": 1
+    },
+    {
+      "frame": 104,
+      "time": 4.33333,
+      "x": 1379.4236,
+      "y": 533.2302,
+      "progress": 0.659357,
+      "actor_count": 1
+    },
+    {
+      "frame": 105,
+      "time": 4.375,
+      "x": 1382.5964,
+      "y": 531.5907,
+      "progress": 0.666667,
+      "actor_count": 1
+    },
+    {
+      "frame": 106,
+      "time": 4.41667,
+      "x": 1385.7397,
+      "y": 529.8945,
+      "progress": 0.673977,
+      "actor_count": 1
+    },
+    {
+      "frame": 107,
+      "time": 4.45833,
+      "x": 1388.8485,
+      "y": 528.1353,
+      "progress": 0.681287,
+      "actor_count": 1
+    },
+    {
+      "frame": 108,
+      "time": 4.5,
+      "x": 1391.9174,
+      "y": 526.3065,
+      "progress": 0.688596,
+      "actor_count": 1
+    },
+    {
+      "frame": 109,
+      "time": 4.54167,
+      "x": 1394.9486,
+      "y": 524.415,
+      "progress": 0.695906,
+      "actor_count": 1
+    },
+    {
+      "frame": 110,
+      "time": 4.58333,
+      "x": 1397.9295,
+      "y": 522.4444,
+      "progress": 0.703216,
+      "actor_count": 1
+    },
+    {
+      "frame": 111,
+      "time": 4.625,
+      "x": 1400.8654,
+      "y": 520.4067,
+      "progress": 0.710526,
+      "actor_count": 1
+    },
+    {
+      "frame": 112,
+      "time": 4.66667,
+      "x": 1403.7346,
+      "y": 518.2756,
+      "progress": 0.717836,
+      "actor_count": 1
+    },
+    {
+      "frame": 113,
+      "time": 4.70833,
+      "x": 1406.5201,
+      "y": 516.0347,
+      "progress": 0.725146,
+      "actor_count": 1
+    },
+    {
+      "frame": 114,
+      "time": 4.75,
+      "x": 1409.2485,
+      "y": 513.724,
+      "progress": 0.732456,
+      "actor_count": 1
+    },
+    {
+      "frame": 115,
+      "time": 4.79167,
+      "x": 1411.9171,
+      "y": 511.3437,
+      "progress": 0.739766,
+      "actor_count": 1
+    },
+    {
+      "frame": 116,
+      "time": 4.83333,
+      "x": 1414.5223,
+      "y": 508.8935,
+      "progress": 0.747076,
+      "actor_count": 1
+    },
+    {
+      "frame": 117,
+      "time": 4.875,
+      "x": 1417.0642,
+      "y": 506.3772,
+      "progress": 0.754386,
+      "actor_count": 1
+    },
+    {
+      "frame": 118,
+      "time": 4.91667,
+      "x": 1419.5414,
+      "y": 503.7967,
+      "progress": 0.761696,
+      "actor_count": 1
+    },
+    {
+      "frame": 119,
+      "time": 4.95833,
+      "x": 1421.9529,
+      "y": 501.1541,
+      "progress": 0.769006,
+      "actor_count": 1
+    },
+    {
+      "frame": 120,
+      "time": 5.0,
+      "x": 1424.2981,
+      "y": 498.452,
+      "progress": 0.776316,
+      "actor_count": 1
+    },
+    {
+      "frame": 121,
+      "time": 5.04167,
+      "x": 1426.5771,
+      "y": 495.6934,
+      "progress": 0.783626,
+      "actor_count": 1
+    },
+    {
+      "frame": 122,
+      "time": 5.08333,
+      "x": 1428.7905,
+      "y": 492.8815,
+      "progress": 0.790936,
+      "actor_count": 1
+    },
+    {
+      "frame": 123,
+      "time": 5.125,
+      "x": 1430.9388,
+      "y": 490.019,
+      "progress": 0.798246,
+      "actor_count": 1
+    },
+    {
+      "frame": 124,
+      "time": 5.16667,
+      "x": 1433.0233,
+      "y": 487.1096,
+      "progress": 0.805556,
+      "actor_count": 1
+    },
+    {
+      "frame": 125,
+      "time": 5.20833,
+      "x": 1435.0474,
+      "y": 484.1574,
+      "progress": 0.812865,
+      "actor_count": 1
+    },
+    {
+      "frame": 126,
+      "time": 5.25,
+      "x": 1437.014,
+      "y": 481.1663,
+      "progress": 0.820175,
+      "actor_count": 1
+    },
+    {
+      "frame": 127,
+      "time": 5.29167,
+      "x": 1438.9266,
+      "y": 478.1401,
+      "progress": 0.827485,
+      "actor_count": 1
+    },
+    {
+      "frame": 128,
+      "time": 5.33333,
+      "x": 1440.7892,
+      "y": 475.0827,
+      "progress": 0.834795,
+      "actor_count": 1
+    },
+    {
+      "frame": 129,
+      "time": 5.375,
+      "x": 1442.605,
+      "y": 471.997,
+      "progress": 0.842105,
+      "actor_count": 1
+    },
+    {
+      "frame": 130,
+      "time": 5.41667,
+      "x": 1444.3799,
+      "y": 468.8875,
+      "progress": 0.849415,
+      "actor_count": 1
+    },
+    {
+      "frame": 131,
+      "time": 5.45833,
+      "x": 1446.1203,
+      "y": 465.7583,
+      "progress": 0.856725,
+      "actor_count": 1
+    },
+    {
+      "frame": 132,
+      "time": 5.5,
+      "x": 1447.832,
+      "y": 462.6132,
+      "progress": 0.864035,
+      "actor_count": 1
+    },
+    {
+      "frame": 133,
+      "time": 5.54167,
+      "x": 1449.5205,
+      "y": 459.4556,
+      "progress": 0.871345,
+      "actor_count": 1
+    },
+    {
+      "frame": 134,
+      "time": 5.58333,
+      "x": 1451.1943,
+      "y": 456.29,
+      "progress": 0.878655,
+      "actor_count": 1
+    },
+    {
+      "frame": 135,
+      "time": 5.625,
+      "x": 1452.8606,
+      "y": 453.1205,
+      "progress": 0.885965,
+      "actor_count": 1
+    },
+    {
+      "frame": 136,
+      "time": 5.66667,
+      "x": 1454.5275,
+      "y": 449.9513,
+      "progress": 0.893275,
+      "actor_count": 1
+    },
+    {
+      "frame": 137,
+      "time": 5.70833,
+      "x": 1456.2035,
+      "y": 446.7869,
+      "progress": 0.900585,
+      "actor_count": 1
+    },
+    {
+      "frame": 138,
+      "time": 5.75,
+      "x": 1457.8985,
+      "y": 443.6328,
+      "progress": 0.907895,
+      "actor_count": 1
+    },
+    {
+      "frame": 139,
+      "time": 5.79167,
+      "x": 1459.6211,
+      "y": 440.4937,
+      "progress": 0.915205,
+      "actor_count": 1
+    },
+    {
+      "frame": 140,
+      "time": 5.83333,
+      "x": 1461.3825,
+      "y": 437.3765,
+      "progress": 0.922515,
+      "actor_count": 1
+    },
+    {
+      "frame": 141,
+      "time": 5.875,
+      "x": 1463.1918,
+      "y": 434.287,
+      "progress": 0.929825,
+      "actor_count": 1
+    },
+    {
+      "frame": 142,
+      "time": 5.91667,
+      "x": 1465.0618,
+      "y": 431.2341,
+      "progress": 0.937135,
+      "actor_count": 1
+    },
+    {
+      "frame": 143,
+      "time": 5.95833,
+      "x": 1467.0001,
+      "y": 428.2245,
+      "progress": 0.944444,
+      "actor_count": 1
+    },
+    {
+      "frame": 144,
+      "time": 6.0,
+      "x": 1469.0223,
+      "y": 425.2711,
+      "progress": 0.951754,
+      "actor_count": 1
+    },
+    {
+      "frame": 145,
+      "time": 6.04167,
+      "x": 1471.1239,
+      "y": 422.395,
+      "progress": 0.95903,
+      "actor_count": 1
+    },
+    {
+      "frame": 146,
+      "time": 6.08333,
+      "x": 1473.2625,
+      "y": 419.673,
+      "progress": 0.966101,
+      "actor_count": 1
+    },
+    {
+      "frame": 147,
+      "time": 6.125,
+      "x": 1475.3742,
+      "y": 417.1802,
+      "progress": 0.972776,
+      "actor_count": 1
+    },
+    {
+      "frame": 148,
+      "time": 6.16667,
+      "x": 1477.3909,
+      "y": 414.9741,
+      "progress": 0.978884,
+      "actor_count": 1
+    },
+    {
+      "frame": 149,
+      "time": 6.20833,
+      "x": 1479.2429,
+      "y": 413.0878,
+      "progress": 0.984286,
+      "actor_count": 1
+    },
+    {
+      "frame": 150,
+      "time": 6.25,
+      "x": 1480.8692,
+      "y": 411.533,
+      "progress": 0.988885,
+      "actor_count": 1
+    },
+    {
+      "frame": 151,
+      "time": 6.29167,
+      "x": 1482.2309,
+      "y": 410.3099,
+      "progress": 0.992627,
+      "actor_count": 1
+    },
+    {
+      "frame": 152,
+      "time": 6.33333,
+      "x": 1483.299,
+      "y": 409.3914,
+      "progress": 0.995507,
+      "actor_count": 1
+    },
+    {
+      "frame": 153,
+      "time": 6.375,
+      "x": 1484.0738,
+      "y": 408.7461,
+      "progress": 0.997568,
+      "actor_count": 1
+    },
+    {
+      "frame": 154,
+      "time": 6.41667,
+      "x": 1484.5817,
+      "y": 408.337,
+      "progress": 0.998902,
+      "actor_count": 1
+    },
+    {
+      "frame": 155,
+      "time": 6.45833,
+      "x": 1484.862,
+      "y": 408.1112,
+      "progress": 0.999638,
+      "actor_count": 1
+    },
+    {
+      "frame": 156,
+      "time": 6.5,
+      "x": 1484.9774,
+      "y": 408.0182,
+      "progress": 0.999941,
+      "actor_count": 1
+    },
+    {
+      "frame": 157,
+      "time": 6.54167,
+      "x": 1484.9999,
+      "y": 408.0001,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 158,
+      "time": 6.58333,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 159,
+      "time": 6.625,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 160,
+      "time": 6.66667,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 161,
+      "time": 6.70833,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 162,
+      "time": 6.75,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 163,
+      "time": 6.79167,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 164,
+      "time": 6.83333,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 165,
+      "time": 6.875,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 166,
+      "time": 6.91667,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 167,
+      "time": 6.95833,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 168,
+      "time": 7.0,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 169,
+      "time": 7.04167,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 170,
+      "time": 7.08333,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 171,
+      "time": 7.125,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 172,
+      "time": 7.16667,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 173,
+      "time": 7.20833,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 174,
+      "time": 7.25,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 175,
+      "time": 7.29167,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 176,
+      "time": 7.33333,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 177,
+      "time": 7.375,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 178,
+      "time": 7.41667,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 179,
+      "time": 7.45833,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 180,
+      "time": 7.5,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 181,
+      "time": 7.54167,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 182,
+      "time": 7.58333,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 183,
+      "time": 7.625,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 184,
+      "time": 7.66667,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 185,
+      "time": 7.70833,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 186,
+      "time": 7.75,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 187,
+      "time": 7.79167,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 188,
+      "time": 7.83333,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 189,
+      "time": 7.875,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 190,
+      "time": 7.91667,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    },
+    {
+      "frame": 191,
+      "time": 7.95833,
+      "x": 1485.0,
+      "y": 408.0,
+      "progress": 1.0,
+      "actor_count": 1
+    }
+  ]
+}

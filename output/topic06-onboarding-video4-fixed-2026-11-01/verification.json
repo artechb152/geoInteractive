@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "decoded_frames": 192,
+  "fps": 24,
+  "duration_seconds": 8,
+  "resolution": [
+    1280,
+    720
+  ],
+  "beginning_route_minimum_mask_iou": 1,
+  "beginning_route_maximum_mean_rgb_change": 0.0253,
+  "largest_actor_backward_centroid_change_pixels": 1.0,
+  "largest_actor_centroid_step_pixels": 6.083,
+  "continuous_actor_detected_every_frame": true,
+  "monotonic_ground_anchor": true,
+  "original_audio_preserved": true,
+  "note": "Small centroid oscillations are normal during a gait cycle. The previous roughly 400-pixel reset is absent."
+}

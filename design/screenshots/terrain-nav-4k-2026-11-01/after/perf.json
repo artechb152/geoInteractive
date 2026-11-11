@@ -1,0 +1,54 @@
+{
+  "readyMs": 8615,
+  "dpr": 1,
+  "overviewInfo": {
+    "calls": 62,
+    "triangles": 2450564,
+    "geometries": 103,
+    "textures": 38,
+    "lodK": 612.6874645383808,
+    "byMaterial": {
+      "ShaderMaterial": 3968,
+      "MeshStandardMaterial": 3813498,
+      "wood-pine": 157018,
+      "leaves-pine": 0,
+      "core-pine": 259840,
+      "wood-oak": 274810,
+      "leaves-oak": 0,
+      "core-oak": 474880,
+      "wood-olive": 49658,
+      "leaves-olive": 0,
+      "core-olive": 172320,
+      "leaves-shrub": 0,
+      "core-shrub": 753200,
+      "sand_rocks_small_01": 0,
+      "LineMaterial": 12,
+      "MeshBasicMaterial": 320
+    }
+  },
+  "eyeInfo": {
+    "calls": 95,
+    "triangles": 4667392,
+    "geometries": 98,
+    "textures": 38,
+    "lodK": 377.8403189336494,
+    "byMaterial": {
+      "ShaderMaterial": 3968,
+      "MeshStandardMaterial": 3813370,
+      "wood-pine": 391008,
+      "leaves-pine": 148492,
+      "core-pine": 259840,
+      "wood-oak": 413636,
+      "leaves-oak": 105520,
+      "core-oak": 474880,
+      "wood-olive": 49658,
+      "leaves-olive": 0,
+      "core-olive": 172320,
+      "leaves-shrub": 18060,
+      "core-shrub": 753200,
+      "sand_rocks_small_01": 418116,
+      "MeshBasicMaterial": 64
+    }
+  },
+  "errors": []
+}

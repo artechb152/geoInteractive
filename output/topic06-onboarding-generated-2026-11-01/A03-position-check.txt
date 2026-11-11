@@ -1,0 +1,12 @@
+הנפשה 3 — הליכה, עצירה ובדיקת המיקום
+Start frame: F02-departure-direction.png
+End frame: F03-position-check.png
+משך מוצע: 8 שניות, אם זמין במודל הנבחר.
+
+Create one uninterrupted eight-second animation between these exact start and end frames. The camera is fully locked. Keep all rocks, shrubs, the hill, exactly three palms, Y-junction, building, lighting and ground texture fixed. Preserve the selected orange route, both planned checkpoint locations and the hollow destination diamond.
+
+Compress the journey in time while retaining continuous visible steps and natural gait. The clip is not a demonstration of real walking speed, distance or travel time.
+
+0–1 s: Fade out the enlarged teaching compass, the departure ring and the short direction arrow, leaving the route visible. 1–4 s: The SAME SINGLE blue navigator walks continuously from departure along the orange low-ground route to the FIRST hollow checkpoint beside the palms. Show every part of this short walk, using brisk but readable continuous motion rather than teleportation. Keep his boots grounded, natural leg articulation and perspective-correct apparent scale. Do not clone him or leave a second figure at departure. 4–5 s: He stops completely at that checkpoint, opens or raises his existing cream paper map, and looks between it and the landscape. 5–6 s: Trace the open orange outline around the existing rocky hill exactly as in the end frame; he looks at the hill and back to the map. 6–7 s: Draw the separate open bracket around the THREE existing palms; he looks at the palms and back to the map. 7–8 s: Hold the stopped checking pose with both landmarks emphasized.
+
+The map remains a physical handheld prop within the same shot. This is a deliberate comparison of two terrain references, not a GPS position fix or final arrival. Match the supplied end frame. No camera follow, zoom, viewpoint change, full-frame map, split screen, terrain morphing, new trees, moving landmarks, destination confirmation, tick mark, labels, text, speech, music or watermark. If audio is generated, quiet footsteps ending at the stop and natural ambience only.

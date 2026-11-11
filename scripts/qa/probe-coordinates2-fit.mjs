@@ -8,7 +8,7 @@ const sizes = (process.argv.slice(2).length ? process.argv.slice(2) : ['1920x108
 const browser = await chromium.launch({ channel: 'chrome' });
 for (const [width, height] of sizes) {
   const page = await browser.newPage({ viewport: { width, height } });
-  await page.goto(`${BASE}/lessons/topic-02/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
+  await page.goto(`${BASE}/lessons/topic-02b/#scene-coordinates-2`, { waitUntil: 'networkidle', timeout: 240000 });
   await page.waitForSelector('#scene-coordinates-2', { timeout: 120000 });
   await page.waitForTimeout(2500);
   const r = await page.evaluate(() => {

@@ -14,8 +14,8 @@ const SCENES: PagedScene[] = [
   { id: 'hook',       label: 'פתיחה',                 Comp: HookScene },
   { id: 'onboarding', label: 'לפני שמתחילים',  Comp: OnboardingScene },
   { id: 'tips', label: 'דגשים לתכנון ולניווט', Comp: PlanningTipsScene },
-  { id: 'combatnav',  label: 'טכניקות ניווט',  Comp: CombatNavScene },
   { id: 'principles', label: 'עקרונות הניווט', Comp: PrinciplesScene },
+  { id: 'combatnav',  label: 'טכניקות ניווט',  Comp: CombatNavScene },
   { id: 'planning',   label: 'תכנון ציר',      Comp: PlanningScene },
   { id: 'recap',      label: 'סיכום',          Comp: RecapScene },
 ];

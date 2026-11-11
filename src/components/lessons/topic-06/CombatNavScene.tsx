@@ -24,7 +24,7 @@ label: 'ניווט לפי השטח',
 english: 'Terrain Association',
 icon: 'route' as never, // Not used
 oneLiner: 'מתקדמים בעזרת סימנים מזוהים בשטח ומשווים אותם למפה לאורך הדרך.',
-detail: 'בוחרים סימנים שאפשר לזהות במפה ובשטח: תבליט (כמו כיפה או ערוץ) ותכסית (כמו כפר או חורשה), ובודקים את המיקום ביחס אליהם, יחד עם כיוון ומרחק. תוואי רציף לאורך המסלול, כמו דרך או ערוץ, יכול לשמש ״מעקה״. השיטה מתאימה כשיש סימנים בולטים לאורך הדרך והראות מאפשרת להשוות אותם למפה.',
+detail: 'מזהים במפה ובשטח סימנים כמו כיפה, ערוץ או כפר, ובודקים לפיהם מיקום, כיוון ומרחק. מתאים כשהסימנים ברורים והראות טובה. דרך או ערוץ רציפים יכולים לשמש ״מעקה״.',
  },
  {
 id: 'dead',
@@ -50,12 +50,10 @@ const SUPPORT: Record<'handrail', SupportData> = {
 handrail: {
 caption: 'הציר עובר בשלוש כיפות ומסתיים בכיכר המרכזית בכפר (B).',
 legend: [
- { kind: 'hill', label: 'כיפה — צורת קרקע בולטת (תבליט)' },
- { kind: 'village', label: 'כפר — מבנים על הקרקע (תכסית)' },
- { kind: 'route', label: 'הציר — מסימן לסימן' },
+ { kind: 'hill', label: 'כיפה — תבליט' },
+ { kind: 'village', label: 'כפר — תכסית' },
+ { kind: 'route', label: 'ציר הניווט' },
  { kind: 'checkpoint', label: 'נקודה לבדיקת המיקום' },
- { kind: 'start', label: 'נקודת מוצא (A)' },
- { kind: 'target', label: 'היעד — הכיכר המרכזית בכפר (B)' },
 ],
 },
 };
@@ -119,29 +117,6 @@ title="התאמת הניווט לתנאי השטח"
 intro="הסימנים הזמינים והראות קובעים איך מנווטים: לפי השטח או לפי כיוון ומרחק בלבד."
  />
 
- {/* Two terms the techniques rely on — this sub-topic comes before azimuth and route
-     planning are taught, so they are introduced briefly here (plain info text, no cards,
-     the same opening as the principles and planning sub-topics). */}
- <div className="grid md:grid-cols-2 gap-6 md:gap-10 mb-10">
- <div>
- <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- אזימוט <span className="text-fg-muted font-medium text-base sm:text-lg">(Azimuth)</span>
- </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
- זווית הנמדדת במעלות <strong className="text-fg">מכיוון הצפון, עם כיוון השעון</strong>, ומתארת את כיוון התנועה. כאן הוא ניתן כנתון מוכן.
- </p>
- </div>
-
- <div>
- <h3 className="font-display text-lg font-bold leading-snug text-fg md:text-xl text-balance mb-2">
- קטע דרך
- </h3>
- <p className="text-base text-fg leading-relaxed text-pretty">
- חלק מהמסלול בין שתי נקודות מזוהות. בסופו נמצאת <strong className="text-fg">נקודה לבדיקת המיקום</strong>, ושם מוודאים היכן אתם לפני שממשיכים.
- </p>
- </div>
- </div>
-
  <nav aria-label="חלקי תת־הנושא" className="-mt-4 mb-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-black">
  <span>בחלק זה:</span>
  {METHODS.map((m, i) => (
@@ -173,11 +148,6 @@ className="rounded font-display font-semibold underline decoration-border-strong
  );
 }
 
-/** The technique's copy in three tiers: sub-heading → body / list (Table 2 of checking-design-fidelity). */
-function SubHeading({ children }: { children: React.ReactNode }) {
-return <div className="text-base font-display font-bold text-black mb-1.5">{children}</div>;
-}
-
 /* ═══ Technique 1 — ניווט לפי השטח ═════════════════════════════════════
    One card: the title and the principle (ending with when the method fits)
    head it; the lab itself — a live terrain model and the topographic map
@@ -197,10 +167,7 @@ return (
  </h3>
  }
  intro={
- <div>
- <SubHeading>עקרון הפעולה</SubHeading>
  <p className="text-base leading-relaxed text-black">{data.detail}</p>
- </div>
  }
  />
  </section>

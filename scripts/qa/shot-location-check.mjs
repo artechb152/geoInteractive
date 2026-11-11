@@ -1,8 +1,8 @@
 // Browser QA for the lesson-6 location-check activity ("באיזה אזור אתם נמצאים?"),
-// as implemented after task 30 and its follow-up (2026-10-27): field readings above
-// the views; the decision (area → check → reset) at the top of a control column at
-// the inline end of the views, the map tools at its foot (2026-10-28: one screen,
-// card ≤ 760 px at 1344); one fixed-height result panel under the views; no
+// focused cleanup (2026-10-29): field readings above two full-width views;
+// the decision (area → check → reset) and map tools share a compact row below
+// the views; one fixed-height result panel follows. At the current 1440 × 1122
+// desktop target the entire activity fits on screen; no
 // road-split button, no GPS help dialog, no measurement boxes, no "פירוט" popover.
 //
 // Usage (dev server running; default http://localhost:3000):
@@ -432,16 +432,14 @@ async function layout(page, label) {
   }
   const { observation, decision, mapTools, feedback, readings } = m.parts;
   if (readings && observation && readings.y + readings.h > observation.y) p.push('field readings not above the views');
-  // 2026-10-28 layout: the decision tops a control column at the inline end (left) of the map,
-  // level with the views' top; the map tools sit at its foot, level with the map's bottom edge.
+  // 2026-10-29: full-width views above a horizontal action row; tools at its inline end.
   const { map } = m.parts;
-  if (decision && map && decision.x + decision.w > map.x + 1) p.push('decision not beside the map at the inline end');
-  if (decision && observation && Math.abs(decision.y - observation.y) > 3) p.push('decision not level with the top of the views');
-  if (mapTools && map && Math.abs(mapTools.y + mapTools.h - (map.y + map.h)) > 3) p.push('map tools not level with the bottom of the map');
-  if (mapTools && decision && mapTools.y < decision.y + decision.h) p.push('map tools not under the decision');
+  if (decision && observation && decision.y < observation.y + observation.h) p.push('decision not under the views');
+  if (mapTools && decision && mapTools.x + mapTools.w > decision.x + 1) p.push('map tools not at the inline end of the action row');
+  if (mapTools && decision && Math.abs(mapTools.y + mapTools.h / 2 - (decision.y + decision.h / 2)) > 3) p.push('map tools not aligned with the action row');
+  if (map && observation && Math.min(map.w, observation.w) < m.card.w * 0.44) p.push('views do not have the freed control-column space');
   if (feedback && decision && feedback.y < decision.y + decision.h) p.push('result panel not under the decision');
   if (feedback && observation && feedback.y < observation.y + observation.h) p.push('result panel not under the views');
-  if (m.card.h / m.scale > 760.5) p.push(`card ${Math.round(m.card.h / m.scale)} px tall at 1344 (max 760)`);
   if (m.overflow > 0) p.push(`result overflows by ${m.overflow}px`);
   if (m.contentBottom > m.fbInnerBottom) p.push(`result content ends ${Math.round(m.contentBottom - m.fbInnerBottom)}px into the panel's padding`);
   if (m.minFont < 16) p.push(`text below 16px (${m.minFont})`);
@@ -546,7 +544,7 @@ let mouseFinal;
     const d = document.querySelector(`${sel} [data-decision]`);
     return [...d.querySelectorAll('[data-choice] > span, [role="radio"], button:not([role])')].map((e) => e.textContent.trim());
   }, ACT);
-  if (order.join('|') !== 'בחרו אזור|אזור 1|אזור 2|בדקו את הבחירה|איפוס') fail(`decision order: ${order.join(' → ')}`);
+  if (order.join('|') !== 'בחרו אזור|אזור 1|אזור 2|בדקו את הבחירה') fail(`decision order: ${order.join(' → ')}`);
   else ok(`decision row in reading order: ${order.join(' → ')}`);
   if ((await count(page, `${ACT} [role="radiogroup"]`)) !== 1) fail('expected exactly one radio group (the area)');
   await layout(page, 'opening');
